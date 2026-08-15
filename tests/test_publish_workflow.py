@@ -32,6 +32,7 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
         "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131"
     ) == 2
     assert "ignore-empty-workdir: true" in workflow
+    assert "--refresh-package b123d-recognisers" in workflow
 
 
 def test_ci_workflow_pins_node24_actions() -> None:
