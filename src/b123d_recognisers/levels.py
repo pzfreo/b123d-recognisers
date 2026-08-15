@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""levels — horizontal face-level recognition (ADR 0007).
+"""Horizontal face-level and step-riser recognition.
 
 ``recognise_face_levels`` returns the Z-coords of a part's horizontal planar faces —
 the step levels of a *prismatic* part. It is the complement of ``recognise_turned_steps``
 (turned.py): a box-stepped part has no cylinders, so the OD-silhouette recogniser
 cannot see its steps, while a turned shaft's shoulders are better filtered by the OD
-silhouette than by a raw face scan (#191 — the two are dispatched by part class in
-`analysis`, not duplicates). Bottom of the recognition DAG: depends only on
-build123d/OCP.
+silhouette than by a raw face scan. These are complementary geometry classes, not duplicate
+answers: a consumer chooses the applicable ladder from its part classification. Bottom of the
+recognition DAG: depends only on build123d/OCP.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class FaceLevel(Record):
 
     ``x_span`` / ``y_span`` are the union bounds of the horizontal faces at ``z``. They let
     downstream dimensions retain a real witness station instead of inventing the part's
-    envelope edge after the face correspondence has been discarded (#915). ``None`` keeps
+    envelope edge after the face correspondence has been discarded. ``None`` keeps
     construction of legacy value-only records compatible. ``order=True`` makes recognition
     deterministic.
     """
@@ -43,7 +43,7 @@ class FaceLevel(Record):
 
 @dataclass(frozen=True, order=True)
 class StepShoulder(Record):
-    """A recognised step/rebate shoulder (#555). ``axis`` is the riser's normal axis
+    """A recognised step/rebate shoulder. ``axis`` is the riser's normal axis
     ("x"/"y"); ``position`` is the world coord of the shoulder along it. ``order=True``
     so recognisers can return a deterministically sorted list."""
 
@@ -53,21 +53,21 @@ class StepShoulder(Record):
 
 @dataclass(frozen=True, order=True)
 class RiserEvidence(Record):
-    """One candidate step riser, recognised WITHOUT reference to any level set (#1025).
+    """One candidate step riser, recognised WITHOUT reference to any level set.
 
     :func:`recognise_risers` scans the solid once and emits these; each consumer then calls
     :func:`project_step_shoulders` with the level set *it* cares about. The split exists
     because the scan is the cost and the levels are only a filter: model construction
     projects over levels filtered by plate and pocket ownership, while critique must project
-    over the unfiltered ones (ADR 0015 forbids lint taking its inventory from the model). One
-    scan, two answers — rather than one scan per asker.
+    over the unfiltered ones (the independent-evidence rule forbids lint taking its inventory
+    from the model). One scan, two answers — rather than one scan per asker.
 
     ``z_lo``/``z_hi`` are the riser face's vertical extent, kept raw so the level test stays
     in the projection. ``lo_at_envelope``/``hi_at_envelope`` pre-answer the part of the
     oblique tie-test that does NOT depend on levels — whether that end sits on the part's top
     or bottom — so the projection needs the levels and nothing else about the solid.
 
-    ``order=True`` for a deterministic recogniser return, per ADR 0013.
+    ``order=True`` for a deterministic recogniser return, per package ADR 0002.
     """
 
     vertical: bool
@@ -83,7 +83,7 @@ class RiserEvidence(Record):
     #: Without this the split silently broke a non-default ``tol``: the old one-stage call used
     #: one value for the geometric gates AND the level ties, whereas ``recognise_risers(part,
     #: tol=0.1)`` followed by a bare ``project_step_shoulders(...)`` mixed 0.1 with the
-    #: projection's own default (Codex #1031 r1). Carried on the record rather than passed
+    #: projection's own default. Carried on the record rather than passed
     #: separately because a caller who has the evidence should not have to remember how it was
     #: produced.
     tol: float = 0.5
@@ -102,7 +102,7 @@ def recognise_face_levels(
     horizontal faces is at least ``min_area_frac × (x_size × y_size)`` (the
     part's plan footprint). This drops sub-feature faces — e.g. fragments of
     engraved text/numbers — that are not real steps and would otherwise be
-    dimensioned as phantom shoulders (staircase.step review).
+    dimensioned as phantom shoulders.
     """
     buckets: dict = {}  # bucket key -> representative z
     areas: dict = {}  # bucket key -> total horizontal-face area
@@ -151,7 +151,7 @@ def recognise_face_levels(
 
 # Minimum horizontal-face area (as a fraction of the plan footprint) for a Z level to count
 # as a genuine prismatic step — drops an incidental tiny face (a blind-pocket floor, a small
-# pad top) that would otherwise read as a phantom step rung (#578 review / staircase.step).
+# pad top) that would otherwise read as a phantom step rung.
 _STEP_MIN_AREA_FRAC = 0.01
 
 
@@ -168,16 +168,16 @@ def step_level_records(part: Part, *, tol: float = 0.6) -> list[FaceLevel]:
 def step_level_zs(part: Part, *, tol: float = 0.6) -> list[float]:
     """The interior prismatic step Z-levels: the area-filtered horizontal face levels strictly
     inside the part height (``base + tol < z < top - tol``). The single source of truth for the
-    step-height ladder (``analysis.py``) and the ``declare.step_level`` object flavour — using
-    the raw, unfiltered :func:`recognise_face_levels` in one and this gate in the other let a
-    tiny incidental face leak in as a phantom level, diverging the two paths (#578 review)."""
+    step-height ladder for every consumer. Using raw, unfiltered
+    :func:`recognise_face_levels` in one path and this gate in another would let a tiny
+    incidental face leak in as a phantom level and make the answers diverge."""
     return [fl.z for fl in step_level_records(part, tol=tol)]
 
 
 def recognise_risers(
     part: Part, *, min_area_frac: float = 0.15, tol: float = 0.5
 ) -> list[RiserEvidence]:
-    """Scan *part* once for candidate step risers, independent of any level set (#1025).
+    """Scan *part* once for candidate step risers, independent of any level set.
 
     This is the expensive half of the old ``recognise_step_shoulders``: the full
     ``part.faces()`` walk and every geometric gate that does not need levels — planarity,
@@ -186,7 +186,7 @@ def recognise_risers(
 
     What it deliberately does NOT do is decide which candidates rise from a *recognised*
     level; that is :func:`project_step_shoulders`, because the answer differs per consumer
-    and re-scanning per consumer is the cost ADR 0017 exists to remove.
+    and re-scanning per consumer is the cost the aggregate single-scan design exists to remove.
 
     See :class:`RiserEvidence`. Returns a sorted, deduplicated list.
 
@@ -195,7 +195,7 @@ def recognise_risers(
     constrained (two different shoulder positions no longer draw the same sheet). A shoulder
     is either a vertical riser or an endpoint of a full-span slanted transition. The latter's
     two stations, together with the adjacent height levels, define the ramp without
-    a redundant angle dimension (#897).
+    a redundant angle dimension.
 
     The riser must also span the WHOLE part edge-to-edge on its perpendicular in-plane
     axis (reach both envelope edges within *tol*); this is what separates a step/rebate
@@ -235,7 +235,7 @@ def recognise_risers(
         # this excludes them (they rise from a level and can clear the area gate, but
         # they are not steps — the level tie alone doesn't separate a blind pocket from a
         # through slot). Without this, a central pad or blind pocket is mis-located as a
-        # shoulder (#555 review).
+        # shoulder.
         flo = fb.min.X if other == "x" else fb.min.Y
         fhi = fb.max.X if other == "x" else fb.max.Y
         full_span = flo <= lo[other] + tol and fhi >= hi[other] - tol
@@ -249,13 +249,13 @@ def recognise_risers(
             if not (lo[axis] + tol < pos < hi[axis] - tol):
                 continue  # interior only — an envelope face is not a shoulder
             # The "rises from a step level" test lives in project_step_shoulders — it is the
-            # one gate whose answer depends on which level set the asker holds (#1025).
+            # one gate whose answer depends on which level set the asker holds.
             positions = (pos,)
         else:
             # A genuine oblique profile face contributes both transition
             # stations. A bounded slanted interruption also contributes its
             # extrusion endpoints on the perpendicular in-plane axis, defining
-            # both the ramp and its width (#897).
+            # both the ramp and its width.
             if abs(nv.Z) <= 0.01 or tol >= fb.max.Z - fb.min.Z:
                 continue
             axis_positions = (
@@ -312,7 +312,7 @@ def project_step_shoulders(
     levels: Sequence[float],
     tol: float | None = None,
 ) -> list[StepShoulder]:
-    """Project :func:`recognise_risers` evidence onto *levels* — the pure half (#1025).
+    """Project :func:`recognise_risers` evidence onto *levels* — the pure half.
 
     A candidate riser counts as a step shoulder only if it rises from a level the caller
     recognises: a vertical riser's foot must sit on one, and an oblique ramp's two ends must
@@ -321,8 +321,8 @@ def project_step_shoulders(
     shared aggregate — its answer depends on who is asking.
 
     Model construction passes levels filtered by plate and pocket ownership; critique passes
-    the unfiltered geometry ladder, because ADR 0015 forbids lint taking its inventory from
-    the model. Both project the same evidence; neither rescans the solid.
+    the unfiltered geometry ladder, because the independent-evidence rule forbids lint taking
+    its inventory from the model. Both project the same evidence; neither rescans the solid.
 
     No *part* argument, by construction: this cannot look at geometry, so it cannot become a
     second recognition site. Returns a sorted, deduplicated list; empty when *levels* is empty

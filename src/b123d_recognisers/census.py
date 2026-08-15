@@ -1,16 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""score — feature-completeness metric (#148f / #608).
+"""Feature-recognition census.
 
 A **measurement tool**, not a recogniser: it counts how completely the recognition suite
 (:mod:`b123d_recognisers`) captures a part's machined features. It produces no consumer-domain
 feature or drawing policy.
 
 The metric is a **census**: the number of features each recogniser finds, per kind. Progress
-across the epic shows up directly — the census gains kinds and counts as each child lands (a
-slotted bar reports ``slot: 1`` only once #135/#148 recognises it; a grooved shaft gains
-``groove: 1`` only with #606). Sum the census over a corpus of representative parts to track
-the epic; a single part's census reads off exactly what was recognised.
+Across a representative corpus, changes in kinds and counts expose recognition changes directly;
+a single part's census states exactly what was recognised.
 
 *Why census-only, no completeness ratio.* A ratio needs an independent denominator, and there
 isn't a good one. The obvious substrate — :func:`b123d_recognisers.feature_diameters` —
@@ -19,7 +17,7 @@ against it is **tautological**: both sides move together, the ratio is 1.0 for e
 and a genuine recogniser regression drops the denominator too (so it never signals). The only
 independent substrate, the raw ``analyse_cylinders`` patch list, is **noisy** — radiused slot
 ends and other non-feature partial cylinders are never features, so legitimate parts would score
-below 1.0 permanently (exactly the #158 reason ``feature_diameters`` avoids that substrate). A
+below 1.0 permanently. That is why :func:`feature_diameters` avoids the raw substrate. A
 census is the one honest signal, so that is all this reports.
 
 Bottom of the DAG beside the recognisers: depends only on :mod:`b123d_recognisers` and build123d.
@@ -53,10 +51,10 @@ def feature_census(part: Part) -> dict[str, int]:
     """The count of recognised features per kind for *part* (see module docs).
 
     Runs every feature recogniser once — injecting hole patterns from the recognised holes and
-    one shared cylinder scan into every substrate recogniser (#703) — and returns
+    one shared cylinder scan into every substrate recogniser — and returns
     ``{kind: count}`` with a stable, complete set of
     keys (a kind absent from the part reports ``0``, not a missing key). The prismatic
-    *substrate* recognisers (face levels, step shoulders — #555) are excluded: they feed other
+    *substrate* recognisers (face levels and step risers) are excluded: they feed other
     recognisers rather than being distinct machined features, and their level-derivation belongs
     to the model layer, not a metric."""
     cyls = analyse_cylinders(part)

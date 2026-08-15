@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""fillets — fillet (rounded edge) radius recognition for prismatic parts (ADR 0007).
+"""Fillet (rounded-edge) radius recognition for prismatic parts.
 
 ``recognise_fillets`` recovers the radius of each external edge fillet so it can be
-called out (``R3`` / ``4× R3``) rather than left as a rendered-but-undimensioned round
-(#561). A fillet is the **arc analog** of a chamfer (:mod:`.chamfers`): where a chamfer
+called out (``R3`` / ``4× R3``) rather than left as a rendered-but-undimensioned round. A
+fillet is the **arc analog** of a chamfer (:mod:`.chamfers`): where a chamfer
 is a small *oblique planar* face bevelling a convex edge, a fillet is a small *partial
 cylindrical* face rounding one. The gates mirror the chamfer's, swapping the plane test
 for a cylinder test and the leg geometry for the cylinder radius:
@@ -62,10 +62,9 @@ class Fillet(Record):
 def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
     """A leader-tip point **on** the trimmed cylindrical blend face *s* (a
     ``BRepAdaptor_Surface``) — the middle of its angular (U) and axial (V) parameter spans.
-    Never the bbox centre, which sits off the round near the virtual sharp corner (#622).
-    The one implementation shared by :func:`recognise_fillets` and the declared front-end
-    (``model/declare._read_fillet_face``), so a declared fillet's leader tip is identical
-    to the detected one's (#704)."""
+    Never the bbox centre, which sits off the round near the virtual sharp corner.
+    The implementation is shared by :func:`recognise_fillets` and explicit-face readers,
+    so both paths select the same leader anchor."""
     u_mid = 0.5 * (s.FirstUParameter() + s.LastUParameter())
     v_mid = 0.5 * (s.FirstVParameter() + s.LastVParameter())
     p = s.Value(u_mid, v_mid)
@@ -101,7 +100,7 @@ def recognise_fillets(
     # Edge→faces adjacency, built once. build123d shape equality/hash is IsSame
     # (same TShape + Location, orientation-insensitive) — the identical predicate
     # the old per-pair scan used — so one dict pass replaces the
-    # O(faces² × edges²) IsSame sweep (#602: 3.7M IsSame calls, ~6 s of CTC-02's
+    # O(faces² × edges²) IsSame sweep: a measured 3.7M calls took about six seconds on
     # 10.8 s fillet detection).
     edge_faces: dict = {}
     for g in all_faces:
@@ -168,13 +167,13 @@ def recognise_fillets(
             continue  # concave corner — an internal round / slot-wall blend, not an edge fillet
 
         # Anchor the leader on the curved radius surface itself via the shared
-        # fillet_anchor (#622 lesson, one implementation with declare's front-end, #704).
+        # fillet_anchor: one shared implementation for automatic and explicit-face reads.
         # The adaptor's bounds are the FACE's trimmed range (already gated below a full
         # turn above), so a periodic seam is handled by using those bounds directly rather
         # than the raw 0..2π surface range. On-face for the ordinary quarter-round edge
         # blend (a UV-rectangular patch); a fillet whose UV region is punched by an
         # interior hole through its centre could still land mid-UV in that void — rare,
-        # and no worse than the bbox centre it replaces (review).
+        # and no worse than the bbox centre it replaces.
         p = fillet_anchor(s)
         out.append(
             Fillet(

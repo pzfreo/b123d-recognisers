@@ -1,6 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Recognition of bounded regular polygonal bosses (#676)."""
+"""Recognition of bounded regular hexagonal bosses and whole-stock prisms.
+
+The proven capability is intentionally narrow: Z-axis hexagons with six planar side faces,
+opposed equal support planes, and unambiguous terminal caps. Other axes or polygon classes fail
+closed until independent corpus evidence establishes their geometry contract.
+"""
 
 from __future__ import annotations
 
@@ -205,7 +210,7 @@ def _recognise_one(
     found: list[PolygonalBoss | PolygonalStock] = []
     for component in components:
         side_count = len(component)
-        # #676 slice 1 proves hexagonal bosses. Broader polygon classes need their own
+        # The accepted corpus proves hexagonal bosses. Broader polygon classes need their own
         # corpus evidence before automatic recognition can claim them.
         if side_count != 6:
             continue

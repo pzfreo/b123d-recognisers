@@ -5,7 +5,9 @@
 The first supported profile is a through double-D: two parallel chords joined by two arcs
 of one circle.  That correspondence matters.  Two lines plus two circular edges also
 describes an obround, while arbitrary circular arcs can describe a lens; neither is a
-double-D bore.
+double-D bore. Recognition is limited to principal-axis through bores: equal opposed boundary
+profiles are paired, then the complete profile prism is proved void so two blind recesses cannot
+masquerade as one through feature.
 """
 
 from __future__ import annotations

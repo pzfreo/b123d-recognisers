@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""countersinks — countersink recognition for drilled holes (ADR 0007, #558).
+"""Countersink recognition for drilled holes.
 
 ``recognise_countersinks`` recovers the countersinks a plain hole recogniser reports as
 mere openings: an internal **cone** that flares from a drilled bore (the minor circle)
@@ -22,8 +22,8 @@ Known limitations (edge geometries; the common one-face countersink is exact):
 
 - an **external transition chamfer** between two coaxial cylinders (e.g. a stepped
   shaft) presents a flared cone coaxial with a cylinder and can register in the
-  standalone recogniser — filtered by Draftwright's adapter (``_csink_for_hole`` only
-  attaches a countersink to a recognised internal bore, and a shaft has none); an
+  standalone recogniser. :func:`countersink_matches_hole` prevents consumers from attaching
+  that cone unless it is seated at a recognised internal bore; a shaft has no such bore. An
   internal/external face-orientation check would exclude it (a future behavior change, not part
   of the parity extraction);
 - a **DIN 332 lathe centre-drill** (a 60° cone flaring from a small pilot bore) is
@@ -54,7 +54,7 @@ _MAX_INCLUDED_ANGLE = 160.0
 # A screw seat flares to roughly twice the bore (a flat-head sits in it); an edge-break /
 # deburr / lead-in chamfer on a hole mouth is the same *shape* but barely wider than the
 # bore. Require the major to reach this multiple of the drill radius to exclude those —
-# else every chamfered hole mouth would be called out as a countersink (#558 review).
+# else every chamfered hole mouth would be called out as a countersink.
 _MIN_MAJOR_RATIO = 1.5
 _HOLE_DIA_TOL = 0.2
 _HOLE_AXIS_TOL = 0.2
@@ -124,7 +124,7 @@ def cone_rims(face: FaceLike) -> tuple[EdgeLike, EdgeLike, float] | None:
     rims (smallest- and largest-radius) and the full cone angle (2 dp) — or ``None`` when
     the cone has fewer than two circular rims (a drill-point cone / degenerate). The
     single-face cone read shared by :func:`recognise_countersinks` and the declared
-    front-end (``model/declare.read_countersink``), #704."""
+    explicit-face reader, so both paths use identical rim and angle semantics."""
     from OCP.BRepAdaptor import BRepAdaptor_Surface
 
     circles = sorted(face.edges().filter_by(GeomType.CIRCLE), key=lambda e: e.radius)
@@ -154,7 +154,7 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
 
     cones = list(part.faces().filter_by(GeomType.CONE))
     if not cones:
-        return []  # no cones → no countersinks; skip the cylinder scan (perf, #558 review)
+        return []  # no cones → no countersinks; skip the cylinder scan
 
     cyls = []
     for cy in part.faces().filter_by(GeomType.CYLINDER):
@@ -165,7 +165,7 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
 
     out: list[CounterSink] = []
     for f in cones:
-        rims = cone_rims(f)  # the shared single-face cone read (#704)
+        rims = cone_rims(f)  # the shared single-face cone read
         if rims is None:
             continue  # drill-point cone (one circle + apex) or degenerate
         minor_e, major_e, included_angle = rims

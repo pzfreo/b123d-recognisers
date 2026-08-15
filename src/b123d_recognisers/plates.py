@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""plates — thin-slab (plate/wall) recognition for multi-plate prismatics (ADR 0007).
+"""Thin-slab (plate/wall) recognition for multi-plate prismatic parts.
 
 ``recognise_plates`` returns the plate/wall thicknesses of a prismatic part — the thin
-extent of each slab that makes up an L-/T-/U-bracket and kin (#559). It is the
+extent of each slab that makes up an L-/T-/U-bracket and kin. It is the
 complement of the other prismatic recognisers: ``recognise_face_levels`` (levels.py)
 finds a monotonic Z staircase and ``EnvelopeFeature`` gives the overall bbox, but
 neither recovers a *plate thickness* that is (a) along X or Y, or (b) along Z yet
