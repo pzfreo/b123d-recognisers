@@ -52,6 +52,9 @@ consumer → b123d-recognisers → build123d/OCP
 The runtime package does not import Draftwright and does not return build123d or OCP objects in
 public feature records.
 
+Maintainers: see [the release guide](docs/releasing.md) for the TestPyPI-first, OIDC-only
+publication process.
+
 ## Licence
 
 Apache License 2.0. See [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), and
