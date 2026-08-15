@@ -1,0 +1,70 @@
+"""Shared semantic snapshot orchestration for old/new golden comparison."""
+
+from __future__ import annotations
+
+
+def recognition_snapshot(recognition, feature_census, part):
+    """Run every public recogniser and required substrate with injected shared evidence."""
+
+    cylinders = recognition.analyse_cylinders(part)
+    countersinks = recognition.recognise_countersinks(part)
+    holes = recognition.recognise_holes(part, cyls=cylinders, csinks=countersinks)
+    bosses = recognition.recognise_bosses(part, cyls=cylinders)
+    slots = recognition.recognise_slots(part)
+    pockets = recognition.recognise_pockets(part)
+
+    individual = {
+        "recognise_bosses": bosses,
+        "recognise_chamfers": recognition.recognise_chamfers(part),
+        "recognise_channels": recognition.recognise_channels(part),
+        "recognise_countersinks": countersinks,
+        "recognise_double_d_bores": recognition.recognise_double_d_bores(part),
+        "recognise_face_levels": recognition.recognise_face_levels(part),
+        "recognise_fillets": recognition.recognise_fillets(part),
+        "recognise_flats": recognition.recognise_flats(part, cyls=cylinders),
+        "recognise_grooves": recognition.recognise_grooves(part, cyls=cylinders),
+        "recognise_hole_patterns": recognition.recognise_hole_patterns(holes),
+        "recognise_holes": holes,
+        "recognise_plates": recognition.recognise_plates(part),
+        "recognise_pocket_patterns": recognition.recognise_pocket_patterns(pockets),
+        "recognise_pockets": pockets,
+        "recognise_polygonal_bosses": recognition.recognise_polygonal_bosses(part),
+        "recognise_polygonal_stock": recognition.recognise_polygonal_stock(part),
+        "recognise_rectangular_pads": recognition.recognise_rectangular_pads(part),
+        "recognise_repeating_radial_profiles": (
+            recognition.recognise_repeating_radial_profiles(part)
+        ),
+        "recognise_risers": recognition.recognise_risers(part),
+        "recognise_slot_patterns": recognition.recognise_slot_patterns(slots),
+        "recognise_slots": slots,
+        "recognise_turned_steps": recognition.recognise_turned_steps(part, cyls=cylinders),
+    }
+    public_recognisers = {name for name in recognition.__all__ if name.startswith("recognise_")}
+    if set(individual) != public_recognisers:
+        missing = sorted(public_recognisers - set(individual))
+        extra = sorted(set(individual) - public_recognisers)
+        raise RuntimeError(f"snapshot inventory mismatch: missing={missing}, extra={extra}")
+
+    return {
+        "individual": individual,
+        "substrates": {
+            "analyse_cylinders": cylinders,
+            "feature_diameters": recognition.feature_diameters(
+                part, cyls=cylinders, holes=holes, bosses=bosses
+            ),
+            "full_cylinders": [
+                recognition.full_cylinders(cylinders[0]),
+                recognition.full_cylinders(cylinders[1]),
+            ],
+            "step_level_records": recognition.step_level_records(part),
+        },
+        "aggregate": {
+            "prismatic": recognition.build_recognition_result(
+                part, cylinders=cylinders, rotational=False
+            ),
+            "rotational": recognition.build_recognition_result(
+                part, cylinders=cylinders, rotational=True
+            ),
+        },
+        "feature_census": feature_census(part),
+    }
