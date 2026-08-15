@@ -1,0 +1,899 @@
+{
+  "canonicalizer_version": 1,
+  "fixture": "straight_and_obround_slots",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "source_path": "tests/test_slot_pattern_recognition.py",
+    "source_repository": "https://github.com/pzfreo/draftwright.git"
+  },
+  "recognition": {
+    "aggregate": {
+      "prismatic": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                44.0,
+                0.0,
+                -8.0
+              ],
+              "diameter": 10.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 8.0,
+              "s_lo": -8.0,
+              "u_extent": 3.14159265
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                20.0,
+                0.0,
+                -8.0
+              ],
+              "diameter": 10.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 8.0,
+              "s_lo": -8.0,
+              "u_extent": 3.14159265
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": false,
+        "slot_patterns": [
+          {
+            "_type": "SlotArray",
+            "direction": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "pitch": 32.0,
+            "slots": [
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": -48.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": -16.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": 16.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": 48.0,
+                "width": 8.0,
+                "width_axis": "y"
+              }
+            ]
+          }
+        ],
+        "slots": [
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": -48.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": -16.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": 16.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": 48.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": 49.0,
+            "length": 34.0,
+            "lo": 15.0,
+            "long_axis": "x",
+            "w_center": 0.0,
+            "width": 10.0,
+            "width_axis": "y"
+          }
+        ],
+        "step_levels": [],
+        "turned_steps": []
+      },
+      "rotational": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                44.0,
+                0.0,
+                -8.0
+              ],
+              "diameter": 10.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 8.0,
+              "s_lo": -8.0,
+              "u_extent": 3.14159265
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                20.0,
+                0.0,
+                -8.0
+              ],
+              "diameter": 10.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 8.0,
+              "s_lo": -8.0,
+              "u_extent": 3.14159265
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": true,
+        "slot_patterns": [
+          {
+            "_type": "SlotArray",
+            "direction": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "pitch": 32.0,
+            "slots": [
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": -48.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": -16.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": 16.0,
+                "width": 8.0,
+                "width_axis": "y"
+              },
+              {
+                "_type": "Slot",
+                "body_key": [
+                  -65.0,
+                  -75.0,
+                  -8.0,
+                  65.0,
+                  75.0,
+                  8.0,
+                  291543.36293856,
+                  51537.57519189
+                ],
+                "d_hi": 8.0,
+                "d_lo": -8.0,
+                "hi": -17.0,
+                "length": 30.0,
+                "lo": -47.0,
+                "long_axis": "x",
+                "w_center": 48.0,
+                "width": 8.0,
+                "width_axis": "y"
+              }
+            ]
+          }
+        ],
+        "slots": [
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": -48.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": -16.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": 16.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": -17.0,
+            "length": 30.0,
+            "lo": -47.0,
+            "long_axis": "x",
+            "w_center": 48.0,
+            "width": 8.0,
+            "width_axis": "y"
+          },
+          {
+            "_type": "Slot",
+            "body_key": [
+              -65.0,
+              -75.0,
+              -8.0,
+              65.0,
+              75.0,
+              8.0,
+              291543.36293856,
+              51537.57519189
+            ],
+            "d_hi": 8.0,
+            "d_lo": -8.0,
+            "hi": 49.0,
+            "length": 34.0,
+            "lo": 15.0,
+            "long_axis": "x",
+            "w_center": 0.0,
+            "width": 10.0,
+            "width_axis": "y"
+          }
+        ],
+        "step_levels": [],
+        "turned_steps": []
+      }
+    },
+    "feature_census": {
+      "boss": 0,
+      "chamfer": 0,
+      "channel": 0,
+      "countersink": 0,
+      "fillet": 0,
+      "flat": 0,
+      "groove": 0,
+      "hole": 0,
+      "hole_pattern": 0,
+      "plate": 0,
+      "pocket": 0,
+      "slot": 5,
+      "step": 0
+    },
+    "individual": {
+      "recognise_bosses": [],
+      "recognise_chamfers": [],
+      "recognise_channels": [],
+      "recognise_countersinks": [],
+      "recognise_double_d_bores": [],
+      "recognise_face_levels": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -65.0,
+            65.0
+          ],
+          "y_span": [
+            -75.0,
+            75.0
+          ],
+          "z": -8.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -65.0,
+            65.0
+          ],
+          "y_span": [
+            -75.0,
+            75.0
+          ],
+          "z": 8.0
+        }
+      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
+      "recognise_grooves": [],
+      "recognise_hole_patterns": [],
+      "recognise_holes": [],
+      "recognise_plates": [],
+      "recognise_pocket_patterns": [],
+      "recognise_pockets": [],
+      "recognise_polygonal_bosses": [],
+      "recognise_polygonal_stock": [],
+      "recognise_rectangular_pads": [],
+      "recognise_repeating_radial_profiles": [],
+      "recognise_risers": [],
+      "recognise_slot_patterns": [
+        {
+          "_type": "SlotArray",
+          "direction": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "pitch": 32.0,
+          "slots": [
+            {
+              "_type": "Slot",
+              "body_key": [
+                -65.0,
+                -75.0,
+                -8.0,
+                65.0,
+                75.0,
+                8.0,
+                291543.36293856,
+                51537.57519189
+              ],
+              "d_hi": 8.0,
+              "d_lo": -8.0,
+              "hi": -17.0,
+              "length": 30.0,
+              "lo": -47.0,
+              "long_axis": "x",
+              "w_center": -48.0,
+              "width": 8.0,
+              "width_axis": "y"
+            },
+            {
+              "_type": "Slot",
+              "body_key": [
+                -65.0,
+                -75.0,
+                -8.0,
+                65.0,
+                75.0,
+                8.0,
+                291543.36293856,
+                51537.57519189
+              ],
+              "d_hi": 8.0,
+              "d_lo": -8.0,
+              "hi": -17.0,
+              "length": 30.0,
+              "lo": -47.0,
+              "long_axis": "x",
+              "w_center": -16.0,
+              "width": 8.0,
+              "width_axis": "y"
+            },
+            {
+              "_type": "Slot",
+              "body_key": [
+                -65.0,
+                -75.0,
+                -8.0,
+                65.0,
+                75.0,
+                8.0,
+                291543.36293856,
+                51537.57519189
+              ],
+              "d_hi": 8.0,
+              "d_lo": -8.0,
+              "hi": -17.0,
+              "length": 30.0,
+              "lo": -47.0,
+              "long_axis": "x",
+              "w_center": 16.0,
+              "width": 8.0,
+              "width_axis": "y"
+            },
+            {
+              "_type": "Slot",
+              "body_key": [
+                -65.0,
+                -75.0,
+                -8.0,
+                65.0,
+                75.0,
+                8.0,
+                291543.36293856,
+                51537.57519189
+              ],
+              "d_hi": 8.0,
+              "d_lo": -8.0,
+              "hi": -17.0,
+              "length": 30.0,
+              "lo": -47.0,
+              "long_axis": "x",
+              "w_center": 48.0,
+              "width": 8.0,
+              "width_axis": "y"
+            }
+          ]
+        }
+      ],
+      "recognise_slots": [
+        {
+          "_type": "Slot",
+          "body_key": [
+            -65.0,
+            -75.0,
+            -8.0,
+            65.0,
+            75.0,
+            8.0,
+            291543.36293856,
+            51537.57519189
+          ],
+          "d_hi": 8.0,
+          "d_lo": -8.0,
+          "hi": -17.0,
+          "length": 30.0,
+          "lo": -47.0,
+          "long_axis": "x",
+          "w_center": -48.0,
+          "width": 8.0,
+          "width_axis": "y"
+        },
+        {
+          "_type": "Slot",
+          "body_key": [
+            -65.0,
+            -75.0,
+            -8.0,
+            65.0,
+            75.0,
+            8.0,
+            291543.36293856,
+            51537.57519189
+          ],
+          "d_hi": 8.0,
+          "d_lo": -8.0,
+          "hi": -17.0,
+          "length": 30.0,
+          "lo": -47.0,
+          "long_axis": "x",
+          "w_center": -16.0,
+          "width": 8.0,
+          "width_axis": "y"
+        },
+        {
+          "_type": "Slot",
+          "body_key": [
+            -65.0,
+            -75.0,
+            -8.0,
+            65.0,
+            75.0,
+            8.0,
+            291543.36293856,
+            51537.57519189
+          ],
+          "d_hi": 8.0,
+          "d_lo": -8.0,
+          "hi": -17.0,
+          "length": 30.0,
+          "lo": -47.0,
+          "long_axis": "x",
+          "w_center": 16.0,
+          "width": 8.0,
+          "width_axis": "y"
+        },
+        {
+          "_type": "Slot",
+          "body_key": [
+            -65.0,
+            -75.0,
+            -8.0,
+            65.0,
+            75.0,
+            8.0,
+            291543.36293856,
+            51537.57519189
+          ],
+          "d_hi": 8.0,
+          "d_lo": -8.0,
+          "hi": -17.0,
+          "length": 30.0,
+          "lo": -47.0,
+          "long_axis": "x",
+          "w_center": 48.0,
+          "width": 8.0,
+          "width_axis": "y"
+        },
+        {
+          "_type": "Slot",
+          "body_key": [
+            -65.0,
+            -75.0,
+            -8.0,
+            65.0,
+            75.0,
+            8.0,
+            291543.36293856,
+            51537.57519189
+          ],
+          "d_hi": 8.0,
+          "d_lo": -8.0,
+          "hi": 49.0,
+          "length": 34.0,
+          "lo": 15.0,
+          "long_axis": "x",
+          "w_center": 0.0,
+          "width": 10.0,
+          "width_axis": "y"
+        }
+      ],
+      "recognise_turned_steps": []
+    },
+    "substrates": {
+      "analyse_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              44.0,
+              0.0,
+              -8.0
+            ],
+            "diameter": 10.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 8.0,
+            "s_lo": -8.0,
+            "u_extent": 3.14159265
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              20.0,
+              0.0,
+              -8.0
+            ],
+            "diameter": 10.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 8.0,
+            "s_lo": -8.0,
+            "u_extent": 3.14159265
+          }
+        ],
+        []
+      ],
+      "feature_diameters": [],
+      "full_cylinders": [
+        [],
+        []
+      ],
+      "step_level_records": []
+    }
+  },
+  "source": {
+    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "repository": "https://github.com/pzfreo/draftwright.git"
+  }
+}

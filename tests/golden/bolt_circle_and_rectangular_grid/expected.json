@@ -1,0 +1,2478 @@
+{
+  "canonicalizer_version": 1,
+  "fixture": "bolt_circle_and_rectangular_grid",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "source_path": "tests/test_recognition.py",
+    "source_repository": "https://github.com/pzfreo/draftwright.git"
+  },
+  "recognition": {
+    "aggregate": {
+      "prismatic": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -62.5,
+                -21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -37.5,
+                -21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -75.0,
+                0.0,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -25.0,
+                0.0,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                35.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                55.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                75.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -62.5,
+                21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -37.5,
+                21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                35.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                55.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                75.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [
+          {
+            "_type": "BoltCircle",
+            "center": [
+              -50.0,
+              0.0,
+              5.0
+            ],
+            "diameter": 50.0,
+            "holes": [
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -62.5,
+                  -21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -37.5,
+                  -21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -75.0,
+                  0.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -25.0,
+                  0.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -62.5,
+                  21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -37.5,
+                  21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              }
+            ]
+          },
+          {
+            "_type": "RectGrid",
+            "angle": 0.0,
+            "center": [
+              55.0,
+              0.0,
+              5.0
+            ],
+            "col_pitch": 20.0,
+            "cols": 3,
+            "holes": [
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  35.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  55.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  75.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  35.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  55.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  75.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              }
+            ],
+            "row_pitch": 36.0,
+            "rows": 2
+          }
+        ],
+        "holes": [
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -62.5,
+              -21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -37.5,
+              -21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -75.0,
+              0.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -25.0,
+              0.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              35.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              55.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              75.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -62.5,
+              21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -37.5,
+              21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              35.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              55.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              75.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          }
+        ],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": false,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [],
+        "turned_steps": []
+      },
+      "rotational": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -62.5,
+                -21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -37.5,
+                -21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -75.0,
+                0.0,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -25.0,
+                0.0,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                35.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                55.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                75.0,
+                -18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -62.5,
+                21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -37.5,
+                21.65063509,
+                -5.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                35.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                55.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                75.0,
+                18.0,
+                -5.0
+              ],
+              "diameter": 5.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 5.0,
+              "s_lo": -5.0,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [
+          {
+            "_type": "BoltCircle",
+            "center": [
+              -50.0,
+              0.0,
+              5.0
+            ],
+            "diameter": 50.0,
+            "holes": [
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -62.5,
+                  -21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -37.5,
+                  -21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -75.0,
+                  0.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -25.0,
+                  0.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -62.5,
+                  21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 6.0,
+                "location": [
+                  -37.5,
+                  21.65063509,
+                  5.0
+                ],
+                "spotface": null
+              }
+            ]
+          },
+          {
+            "_type": "RectGrid",
+            "angle": 0.0,
+            "center": [
+              55.0,
+              0.0,
+              5.0
+            ],
+            "col_pitch": 20.0,
+            "cols": 3,
+            "holes": [
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  35.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  55.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  75.0,
+                  -18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  35.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  55.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              },
+              {
+                "_type": "HoleRecord",
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 10.0,
+                "diameter": 5.0,
+                "location": [
+                  75.0,
+                  18.0,
+                  5.0
+                ],
+                "spotface": null
+              }
+            ],
+            "row_pitch": 36.0,
+            "rows": 2
+          }
+        ],
+        "holes": [
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -62.5,
+              -21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -37.5,
+              -21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -75.0,
+              0.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -25.0,
+              0.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              35.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              55.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              75.0,
+              -18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -62.5,
+              21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 6.0,
+            "location": [
+              -37.5,
+              21.65063509,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              35.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              55.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 10.0,
+            "diameter": 5.0,
+            "location": [
+              75.0,
+              18.0,
+              5.0
+            ],
+            "spotface": null
+          }
+        ],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": true,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [],
+        "turned_steps": []
+      }
+    },
+    "feature_census": {
+      "boss": 0,
+      "chamfer": 0,
+      "channel": 0,
+      "countersink": 0,
+      "fillet": 0,
+      "flat": 0,
+      "groove": 0,
+      "hole": 12,
+      "hole_pattern": 2,
+      "plate": 0,
+      "pocket": 0,
+      "slot": 0,
+      "step": 0
+    },
+    "individual": {
+      "recognise_bosses": [],
+      "recognise_chamfers": [],
+      "recognise_channels": [],
+      "recognise_countersinks": [],
+      "recognise_double_d_bores": [],
+      "recognise_face_levels": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -90.0,
+            90.0
+          ],
+          "y_span": [
+            -50.0,
+            50.0
+          ],
+          "z": -5.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -90.0,
+            90.0
+          ],
+          "y_span": [
+            -50.0,
+            50.0
+          ],
+          "z": 5.0
+        }
+      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
+      "recognise_grooves": [],
+      "recognise_hole_patterns": [
+        {
+          "_type": "BoltCircle",
+          "center": [
+            -50.0,
+            0.0,
+            5.0
+          ],
+          "diameter": 50.0,
+          "holes": [
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -62.5,
+                -21.65063509,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -37.5,
+                -21.65063509,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -75.0,
+                0.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -25.0,
+                0.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -62.5,
+                21.65063509,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 6.0,
+              "location": [
+                -37.5,
+                21.65063509,
+                5.0
+              ],
+              "spotface": null
+            }
+          ]
+        },
+        {
+          "_type": "RectGrid",
+          "angle": 0.0,
+          "center": [
+            55.0,
+            0.0,
+            5.0
+          ],
+          "col_pitch": 20.0,
+          "cols": 3,
+          "holes": [
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                35.0,
+                -18.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                55.0,
+                -18.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                75.0,
+                -18.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                35.0,
+                18.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                55.0,
+                18.0,
+                5.0
+              ],
+              "spotface": null
+            },
+            {
+              "_type": "HoleRecord",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 10.0,
+              "diameter": 5.0,
+              "location": [
+                75.0,
+                18.0,
+                5.0
+              ],
+              "spotface": null
+            }
+          ],
+          "row_pitch": 36.0,
+          "rows": 2
+        }
+      ],
+      "recognise_holes": [
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -62.5,
+            -21.65063509,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -37.5,
+            -21.65063509,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -75.0,
+            0.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -25.0,
+            0.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            35.0,
+            -18.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            55.0,
+            -18.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            75.0,
+            -18.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -62.5,
+            21.65063509,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 6.0,
+          "location": [
+            -37.5,
+            21.65063509,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            35.0,
+            18.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            55.0,
+            18.0,
+            5.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": null,
+          "depth": 10.0,
+          "diameter": 5.0,
+          "location": [
+            75.0,
+            18.0,
+            5.0
+          ],
+          "spotface": null
+        }
+      ],
+      "recognise_plates": [],
+      "recognise_pocket_patterns": [],
+      "recognise_pockets": [],
+      "recognise_polygonal_bosses": [],
+      "recognise_polygonal_stock": [],
+      "recognise_rectangular_pads": [],
+      "recognise_repeating_radial_profiles": [],
+      "recognise_risers": [],
+      "recognise_slot_patterns": [],
+      "recognise_slots": [],
+      "recognise_turned_steps": []
+    },
+    "substrates": {
+      "analyse_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -62.5,
+              -21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -37.5,
+              -21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -75.0,
+              0.0,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -25.0,
+              0.0,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              35.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              55.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              75.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -62.5,
+              21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -37.5,
+              21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              35.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              55.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              75.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "feature_diameters": [
+        5.0,
+        6.0
+      ],
+      "full_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -62.5,
+              -21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -37.5,
+              -21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -75.0,
+              0.0,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -25.0,
+              0.0,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              35.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              55.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              75.0,
+              -18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -62.5,
+              21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -37.5,
+              21.65063509,
+              -5.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              35.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              55.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              75.0,
+              18.0,
+              -5.0
+            ],
+            "diameter": 5.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 5.0,
+            "s_lo": -5.0,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "step_level_records": []
+    }
+  },
+  "source": {
+    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "repository": "https://github.com/pzfreo/draftwright.git"
+  }
+}
