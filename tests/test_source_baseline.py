@@ -33,6 +33,7 @@ def test_source_baseline_covers_the_whole_recognition_package_and_census_boundar
     paths = {source["path"] for source in _manifest()["sources"]}
 
     assert paths == {
+        "src/draftwright/_geometry.py",
         "src/draftwright/recognition/__init__.py",
         "src/draftwright/recognition/_features.py",
         "src/draftwright/recognition/_record.py",

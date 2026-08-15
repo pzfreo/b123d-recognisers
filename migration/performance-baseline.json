@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-08-15",
+  "environment": "epic migration development container; sequential runs",
+  "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+  "cases": [
+    "bolt_circle_and_rectangular_grid",
+    "chamfers_fillets_and_flats",
+    "plates_pads_levels_and_slanted_steps",
+    "turned_steps_and_grooves"
+  ],
+  "iterations": 7,
+  "draftwright": {
+    "seconds": [1.7883612610166892, 1.5960932760499418, 1.750726350932382, 2.176245774026029, 2.3636786750284955, 1.991315008024685, 2.093424961902201],
+    "median_seconds": 1.991315008024685
+  },
+  "package": {
+    "seconds": [1.7326247069286183, 1.7016751130577177, 1.7609112829668447, 1.7056418189313263, 1.6557273709913716, 1.9897900400683284, 1.9219749490730464],
+    "median_seconds": 1.7326247069286183
+  },
+  "package_to_baseline_ratio": 0.8700907189201177,
+  "commands": [
+    "uv run python tools/benchmark_recognition.py --implementation draftwright --baseline /tmp/draftwright-epic1-baseline --iterations 7",
+    "uv run python tools/benchmark_recognition.py --implementation package --iterations 7"
+  ]
+}
