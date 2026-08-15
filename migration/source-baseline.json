@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "https://github.com/pzfreo/draftwright.git",
+    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "commit_date": "2026-08-15",
+    "selection": "Clean origin/main after Draftwright v0.4.5 and before extraction work began"
+  },
+  "licensing": {
+    "copyright_owner": "Paul Fremantle",
+    "copyright_years": "2024-2026",
+    "relicense": "Apache-2.0",
+    "grant": "Relicensed for this extraction by the copyright owner",
+    "derived_notice": "The initial hole, boss, cylinder and pattern implementation in _features.py was derived from the Apache-2.0 build123d-drafting-helpers project and remains identified in NOTICE."
+  },
+  "excluded": [
+    {
+      "name": "RecognitionCache",
+      "reason": "Consumer build and lint lifecycle state remains owned by Draftwright under ADR 0001."
+    }
+  ],
+  "sources": [
+    {"path": "src/draftwright/recognition/__init__.py", "blob": "fa56d3818d52651cd7fa3db760a6fdaadbf2e009", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/_features.py", "blob": "7f954c8b2f1a3ab7993ece2000a700cd690ba8b3", "origin": "build123d-drafting-helpers-and-draftwright"},
+    {"path": "src/draftwright/recognition/_record.py", "blob": "e2c70cf0d78b71c891d242900d86d243ce02341c", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/chamfers.py", "blob": "3c17a842693fc31e506912c83ba6c38e5659e835", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/countersinks.py", "blob": "4ddeb4dd1efaa91db04b4d35f31481469049f8b6", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/fillets.py", "blob": "d323b48471a79f2559e86d7f2f23a9e75db6ed9c", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/flats.py", "blob": "fe787c376c22f7b4537f0164a8b1e456078ca637", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/grooves.py", "blob": "cddbcb991c9af29ca0995a8d44bfd781092ff624", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/levels.py", "blob": "bf6ec7a406d12c20edd2ae9d347d63bb62494236", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/pads.py", "blob": "b66b863475ff33f1d885d87a9a920ed61f8e2b3a", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/plates.py", "blob": "ffb4c49143f6f5b7d17720bd69de77596e3bf230", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/polygonal_bosses.py", "blob": "edbbb21ad8ad47433f8e2f8df774e2f6fcbeb016", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/profiled_bores.py", "blob": "8220632c86dbf1606c53a86713be34e40e9f1e92", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/repeating_profiles.py", "blob": "03a5439082dfbc050b0b47051a22de3484ef0a06", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/result.py", "blob": "536de6a34c7ea0d91e8a635374fb5fa0a8c94b71", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/slots.py", "blob": "bf65823afb89cc9bc155d2d68ea297dcec92a94a", "origin": "draftwright"},
+    {"path": "src/draftwright/recognition/turned.py", "blob": "bf44dcfcb6ba01048d4ba939c65b807f070f1292", "origin": "draftwright"},
+    {"path": "src/draftwright/score.py", "blob": "09e267125ae4106d0483e7ef74dc3b41d01f946f", "origin": "draftwright", "scope": "feature_census only"}
+  ]
+}
