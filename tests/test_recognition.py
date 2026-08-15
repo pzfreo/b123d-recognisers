@@ -44,6 +44,17 @@ def _drill_tool(radius, depth, top_z):
     ) * Cone(0, radius, tip)
 
 
+def test_exact_diagonal_cylinder_uses_stable_dominant_axis_tie_break():
+    angle = math.radians(45)
+    plane = Plane(origin=(0, 0, 0), z_dir=(math.sin(angle), 0, math.cos(angle)))
+
+    z_cylinders, cross_cylinders = analyse_cylinders(plane * Cylinder(5, 20))
+
+    assert z_cylinders
+    assert cross_cylinders == []
+    assert {record["axis"] for record in z_cylinders} == {"z"}
+
+
 class TestFindHoles:
     @pytest.mark.timeout(60)
     def test_plain_through_hole(self):

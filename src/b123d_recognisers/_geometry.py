@@ -12,9 +12,24 @@ _PLANE_AXES = {
     "z": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
 }
 
+_DOMINANT_TIE_TOL = 1e-12
+
 
 def _axis_letter_of(axis) -> str:
-    return max(zip("xyz", axis, strict=True), key=lambda item: abs(item[1]))[0]
+    """Return a platform-stable dominant axis, preferring Z then Y for numerical ties."""
+
+    components = tuple(abs(float(component)) for component in axis)
+    if len(components) != 3:
+        raise ValueError("axis must be a 3-vector")
+    peak = max(components)
+    # OCCT can perturb an exact diagonal by a final bit in opposite directions on Windows and
+    # Unix. The routing letter is discrete, so resolve numerical ties explicitly instead of
+    # allowing that insignificant noise to select a different feature universe.
+    return next(
+        letter
+        for letter, component in reversed(tuple(zip("xyz", components, strict=True)))
+        if peak - component <= _DOMINANT_TIE_TOL
+    )
 
 
 def plane_axes(axis) -> tuple[tuple[float, float, float], tuple[float, float, float]]:

@@ -42,7 +42,7 @@ from OCP.GeomAbs import (
 )
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._geometry import plane_axes
+from b123d_recognisers._geometry import _axis_letter_of, plane_axes
 from b123d_recognisers._record import Record
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
@@ -97,8 +97,7 @@ def analyse_cylinders(part):
         r = cyl.Radius()
         d = cyl.Axis().Direction()
         ap = cyl.Axis().Location()
-        comps = [("x", abs(d.X())), ("y", abs(d.Y())), ("z", abs(d.Z()))]
-        ax = max(comps, key=lambda t: t[1])[0]
+        ax = _axis_letter_of((d.X(), d.Y(), d.Z()))
         # Canonical direction (dominant component positive) so coaxial faces
         # report comparable axial coordinates whichever way their frame points
         sign = 1.0 if {"x": d.X(), "y": d.Y(), "z": d.Z()}[ax] > 0 else -1.0
