@@ -38,9 +38,10 @@ for the complete contract.
 
 The initial `0.1` release series preserves the recognition behavior of Draftwright commit
 `3fe20b0f71a71deced06b310943dd44cc66e355e`. The migration includes every public recogniser,
-shared cylinder/level substrates, the aggregate result, and `feature_census`. There are no
-intentional recognition changes. The checked-in semantic corpus records and continuously verifies
-the compatibility boundary; see [`migration/PARITY.md`](migration/PARITY.md).
+shared cylinder/level substrates, the aggregate result, and `feature_census`. There are no feature
+policy changes; one previously platform-dependent numerical axis tie is normalized to the pinned
+baseline result. The checked-in semantic corpus records and continuously verifies the compatibility
+boundary; see [`migration/PARITY.md`](migration/PARITY.md).
 
 The dependency direction is:
 

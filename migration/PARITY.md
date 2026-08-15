@@ -1,8 +1,14 @@
 # Draftwright migration parity
 
 The initial standalone implementation is an atomic extraction from Draftwright commit
-`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). There are no intentional recognition
-behavior differences.
+`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). There are no intentional feature-policy
+differences.
+
+One compatibility normalization is explicit: when two or more direction components differ by no
+more than `1e-12`, dominant-axis routing deterministically prefers Z, then Y. OCCT perturbs an exact
+45° diagonal by a final bit in opposite directions on Windows and Unix, so Draftwright's prior
+unqualified `max()` could route equivalent geometry to different inventories. The stable tie-break
+matches the pinned golden result and changes only that previously platform-dependent case.
 
 ## Evidence
 
