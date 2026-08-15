@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
+README = ROOT / "README.md"
 WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 VERIFY = ROOT / "tools" / "verify_release_assets.py"
@@ -41,9 +42,22 @@ def test_ci_workflow_pins_node24_actions() -> None:
     assert workflow.count("actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803") == 2
     assert workflow.count("astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78") == 2
     assert workflow.count("actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f") == 1
+    assert workflow.count("codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f") == 1
     assert "actions/checkout@v" not in workflow
     assert "astral-sh/setup-uv@v" not in workflow
     assert "actions/upload-artifact@v" not in workflow
+    assert "codecov/codecov-action@v" not in workflow
+    assert "id-token: write" in workflow
+    assert "use_oidc: true" in workflow
+    assert "fail_ci_if_error: true" in workflow
+
+
+def test_readme_links_the_codecov_badge_to_the_public_project() -> None:
+    readme = README.read_text(encoding="utf-8")
+
+    badge = "https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg"
+    project = "https://codecov.io/gh/pzfreo/b123d-recognisers"
+    assert f"[![codecov]({badge})]({project})" in readme
 
 
 def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_tag(

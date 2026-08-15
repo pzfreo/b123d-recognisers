@@ -1,5 +1,7 @@
 # b123d-recognisers
 
+[![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
+
 Deterministic, geometry-only feature recognition for build123d solids and imported STEP models.
 
 This is the standalone Apache-2.0 recognition layer extracted from

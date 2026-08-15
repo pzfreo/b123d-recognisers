@@ -20,6 +20,9 @@ jobs:
       - run: uv run mypy
 
   test:
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +37,14 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv sync --dev
       - run: uv run pytest
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          fail_ci_if_error: true
+          files: coverage.xml
+          flags: unittests
+          use_oidc: true
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
