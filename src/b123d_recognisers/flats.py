@@ -43,6 +43,7 @@ from b123d_recognisers._geometry import (
     _canonical_axis_span,
 )
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import CylinderInventory, Part
 
 # A normal counts as radial (perpendicular to the axis) / antiparallel to another within
 # these unit-vector tolerances.
@@ -162,7 +163,9 @@ class Flat(Record):
         return _axis_direction_is_aligned(self.axis, self.axis_direction)
 
 
-def recognise_flats(part, *, cyls=None) -> list[Flat]:
+def recognise_flats(
+    part: Part, *, cyls: CylinderInventory | None = None
+) -> list[Flat]:
     """Recognise the machined flats of *part* (see module docstring). Returns one
     :class:`Flat` per qualifying planar face truncating round stock, sorted
     deterministically. Empty when the part has no round stock or no flat.

@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 
 # Two bands are axially contiguous (one is the other's wall) when the gap between them is
 # within this (mm). A neighbour must be wider than the floor by more than this (mm of
@@ -76,7 +77,7 @@ class Groove(Record):
     at: tuple[float, float, float]
 
 
-def floor_face_anchor(face) -> tuple[float, float, float]:
+def floor_face_anchor(face: FaceLike) -> tuple[float, float, float]:
     """The groove leader-tip anchor: the **bbox centre** of the floor face (the reduced-OD
     band), unrounded. The one anchor contract shared by :func:`recognise_grooves` and the
     declared front-end (``model/declare._read_groove_face``), #704 — the substrates differ
@@ -90,7 +91,9 @@ def floor_face_anchor(face) -> tuple[float, float, float]:
     )
 
 
-def recognise_grooves(part, *, cyls=None) -> list[Groove]:
+def recognise_grooves(
+    part: Part, *, cyls: CylinderInventory | None = None
+) -> list[Groove]:
     """Recognise the turned grooves of *part* (see module docstring). Returns one
     :class:`Groove` per external band whose OD is a strict local minimum between two
     contiguous larger bands on the same shaft, sorted deterministically. Empty when the

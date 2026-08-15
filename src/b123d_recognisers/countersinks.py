@@ -38,11 +38,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 from build123d import GeomType
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import EdgeLike, FaceLike, Part
 
 _TOL = 0.05  # mm — dimension match tolerance (matches the other feature matchers)
 _COAXIAL_TOL = 0.1  # mm — how far the opening may sit off the drill's axis line
@@ -118,7 +119,7 @@ def countersink_matches_hole(countersink: CounterSink, hole: _HoleLike) -> bool:
     )
 
 
-def cone_rims(face):
+def cone_rims(face: FaceLike) -> tuple[EdgeLike, EdgeLike, float] | None:
     """``(minor_edge, major_edge, included_angle°)`` of a conical *face* — its two circular
     rims (smallest- and largest-radius) and the full cone angle (2 dp) — or ``None`` when
     the cone has fewer than two circular rims (a drill-point cone / degenerate). The
@@ -145,7 +146,7 @@ def _dist_to_line(pt, line_pt, line_dir) -> float:
     return math.sqrt(perp[0] ** 2 + perp[1] ** 2 + perp[2] ** 2)
 
 
-def recognise_countersinks(part) -> list[CounterSink]:
+def recognise_countersinks(part: Part) -> list[CounterSink]:
     """Recognise the countersinks of *part* (see module docstring). One
     :class:`CounterSink` per qualifying cone, sorted deterministically; empty when the
     part has none."""
@@ -159,7 +160,8 @@ def recognise_countersinks(part) -> list[CounterSink]:
     for cy in part.faces().filter_by(GeomType.CYLINDER):
         ax = BRepAdaptor_Surface(cy.wrapped).Cylinder().Axis()
         p, d = ax.Location(), ax.Direction()
-        cyls.append((cy.radius, (p.X(), p.Y(), p.Z()), (d.X(), d.Y(), d.Z())))
+        radius = cast(float, cy.radius)
+        cyls.append((radius, (p.X(), p.Y(), p.Z()), (d.X(), d.Y(), d.Z())))
 
     out: list[CounterSink] = []
     for f in cones:
@@ -196,7 +198,11 @@ def recognise_countersinks(part) -> list[CounterSink]:
         out.append(
             CounterSink(
                 axis=(round(axis[0], 4), round(axis[1], 4), round(axis[2], 4)),
-                location=tuple(round(v, 4) for v in opening_pt),
+                location=(
+                    round(opening_pt[0], 4),
+                    round(opening_pt[1], 4),
+                    round(opening_pt[2], 4),
+                ),
                 major_diameter=round(2 * major_r, 4),
                 drill_diameter=round(2 * minor_r, 4),
                 included_angle=included_angle,

@@ -32,10 +32,12 @@ Algorithm:
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import CylinderInventory, Part
 
 # A face's axial position counts as on a band edge / its normal counts as
 # axis-aligned within these tolerances (mm / unit-vector component).
@@ -86,7 +88,7 @@ class TurnedProfile(Record):
     steps: tuple[TurnedStep, ...]
 
     @classmethod
-    def from_steps(cls, steps) -> TurnedProfile | None:
+    def from_steps(cls, steps: Iterable[TurnedStep]) -> TurnedProfile | None:
         """Aggregate a recogniser's ``list[TurnedStep]`` into a profile, or ``None`` if
         empty (a non-turned part). The steps must be **coaxial** — a mixed-axis input is a
         programming error and raises (it would otherwise silently pick one axis and
@@ -115,7 +117,9 @@ class TurnedProfile(Record):
         return tuple(sorted({p for s in self.steps for p in (s.lo, s.hi)}))
 
 
-def recognise_turned_steps(part, *, cyls=None) -> list[TurnedStep]:
+def recognise_turned_steps(
+    part: Part, *, cyls: CylinderInventory | None = None
+) -> list[TurnedStep]:
     """Recognise the axial steps of a stepped turned ``part``.
 
     Returns ``[]`` for a non-turned part, a plain (single-diameter) cylinder, or

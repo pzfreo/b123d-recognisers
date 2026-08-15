@@ -15,6 +15,7 @@ from math import atan2, cos, hypot, pi, sin
 from build123d import GeomType
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 from b123d_recognisers.profiled_bores import principal_boundary_plane
 
 _SAMPLES_PER_CURVE = 9
@@ -380,7 +381,7 @@ def _recognise_solid(solid, *, tol: float) -> list[RepeatingRadialProfile]:
 
 
 def recognise_repeating_radial_profiles(
-    part, *, tol: float = 1e-5
+    part: Part, *, tol: float = 1e-5
 ) -> list[RepeatingRadialProfile]:
     """Return complete repeating outer-profile evidence for each independently owned solid."""
     solids = list(part.solids())

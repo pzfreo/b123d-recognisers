@@ -12,6 +12,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 
 
 @dataclass(frozen=True, order=True)
@@ -135,7 +136,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float) -> list[RaisedPad]:
     )
 
 
-def recognise_rectangular_pads(part, *, tol: float = 0.2) -> list[RaisedPad]:
+def recognise_rectangular_pads(part: Part, *, tol: float = 0.2) -> list[RaisedPad]:
     """Return bounded rectangular raised faces independently per solid.
 
     A candidate is a planar +Z face whose area fills its XY bounding rectangle

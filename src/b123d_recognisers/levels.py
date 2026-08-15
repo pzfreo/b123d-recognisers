@@ -13,6 +13,7 @@ build123d/OCP.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -21,6 +22,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 
 
 @dataclass(frozen=True, order=True)
@@ -88,7 +90,7 @@ class RiserEvidence(Record):
 
 
 def recognise_face_levels(
-    part, *, tol: float = 0.5, min_area_frac: float = 0.0
+    part: Part, *, tol: float = 0.5, min_area_frac: float = 0.0
 ) -> list[FaceLevel]:
     """Return the sorted unique horizontal (normal≈±Z) face levels as :class:`FaceLevel`
     records — one per distinct Z of a horizontal planar face.
@@ -153,7 +155,7 @@ def recognise_face_levels(
 _STEP_MIN_AREA_FRAC = 0.01
 
 
-def step_level_records(part, *, tol: float = 0.6) -> list[FaceLevel]:
+def step_level_records(part: Part, *, tol: float = 0.6) -> list[FaceLevel]:
     """Area-filtered interior face-level records, retaining their support bounds."""
     bb = part.bounding_box()
     return [
@@ -163,7 +165,7 @@ def step_level_records(part, *, tol: float = 0.6) -> list[FaceLevel]:
     ]
 
 
-def step_level_zs(part, *, tol: float = 0.6) -> list[float]:
+def step_level_zs(part: Part, *, tol: float = 0.6) -> list[float]:
     """The interior prismatic step Z-levels: the area-filtered horizontal face levels strictly
     inside the part height (``base + tol < z < top - tol``). The single source of truth for the
     step-height ladder (``analysis.py``) and the ``declare.step_level`` object flavour — using
@@ -173,7 +175,7 @@ def step_level_zs(part, *, tol: float = 0.6) -> list[float]:
 
 
 def recognise_risers(
-    part, *, min_area_frac: float = 0.15, tol: float = 0.5
+    part: Part, *, min_area_frac: float = 0.15, tol: float = 0.5
 ) -> list[RiserEvidence]:
     """Scan *part* once for candidate step risers, independent of any level set (#1025).
 
@@ -304,7 +306,12 @@ def recognise_risers(
     return sorted(set(out))
 
 
-def project_step_shoulders(risers, *, levels, tol: float | None = None) -> list[StepShoulder]:
+def project_step_shoulders(
+    risers: Sequence[RiserEvidence],
+    *,
+    levels: Sequence[float],
+    tol: float | None = None,
+) -> list[StepShoulder]:
     """Project :func:`recognise_risers` evidence onto *levels* — the pure half (#1025).
 
     A candidate riser counts as a step shoulder only if it rises from a level the caller

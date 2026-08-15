@@ -34,6 +34,7 @@ Bottom of the recognition DAG: depends only on build123d/OCP.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -42,6 +43,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 
 
 @dataclass(frozen=True)
@@ -62,13 +64,13 @@ class Plate(Record):
         return self.hi - self.lo
 
 
-def has_multi_axis_plates(plates) -> bool:
+def has_multi_axis_plates(plates: Sequence[Plate]) -> bool:
     """Whether plate evidence proves a base/wall structure rather than one slab axis."""
     return len({plate.axis for plate in plates}) >= 2
 
 
 def recognise_plates(
-    part,
+    part: Part,
     *,
     min_area_frac: float = 0.4,
     max_thick_frac: float = 0.5,

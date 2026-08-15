@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import os
 import subprocess
 import sys
 import tarfile
@@ -118,3 +119,25 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
         timeout=30,
     )
     assert completed.stderr == ""
+
+    consumer = ROOT / "tests" / "typing" / "public_consumer.py"
+    environment = os.environ.copy()
+    environment["MYPYPATH"] = str(target)
+    checked = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mypy",
+            "--config-file",
+            str(ROOT / "tests" / "typing" / "mypy.ini"),
+            "--no-incremental",
+            str(consumer),
+        ],
+        cwd=tmp_path,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert "Success: no issues found" in checked.stdout
