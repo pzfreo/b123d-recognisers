@@ -1,5 +1,21 @@
 # Release notes
 
+## 0.2.0
+
+Additive production-hardening release with no recognition-policy changes.
+
+- Adds a deterministic, versioned capability manifest covering every public recogniser and
+  record, with independent runtime/schema/evidence validation and installed-wheel parity.
+- Exposes supported Python and command-line manifest queries so consumers can fail closed on
+  unknown capability families without reading package internals.
+- Makes the shipped `py.typed` contract enforceable, aligns public capability prose with proven
+  behavior, and makes package rationale self-contained for standalone readers.
+- Bounds complete hole-grid candidate work, strengthens branch-sensitive coverage to an enforced
+  91.4% floor, and publishes Linux coverage through Codecov.
+
+All canonical semantic goldens remain unchanged. Draftwright consumes this release through its
+separately owned downstream capability declaration.
+
 ## 0.1.0
 
 First stable release of the standalone Apache-2.0 recognition package.

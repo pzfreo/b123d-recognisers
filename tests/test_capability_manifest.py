@@ -371,7 +371,7 @@ def test_alias_transition_validation_accepts_a_live_alias_and_rejects_stale_remo
         "kind": "family",
         "old": "cylindrical-bosses",
         "rationale": "Retained for one compatibility cycle after the stable ID was clarified.",
-        "remove_in": "0.2.0",
+        "remove_in": "0.3.0",
         "replacement": "bosses",
     }
     manifest["aliases"] = [alias]
@@ -387,7 +387,7 @@ def test_alias_validation_rejects_unknown_targets_cycles_reuse_and_bad_order() -
         "deprecated_in": "0.1.0",
         "kind": "family",
         "rationale": "Compatibility alias.",
-        "remove_in": "0.2.0",
+        "remove_in": "0.3.0",
     }
 
     manifest = capability_manifest()
@@ -425,7 +425,7 @@ def test_alias_validation_rejects_non_objects_bad_kinds_empty_values_and_elapsed
         "kind": "other",
         "old": "old-boss",
         "rationale": "Compatibility alias.",
-        "remove_in": "0.2.0",
+        "remove_in": "0.3.0",
         "replacement": "bosses",
     }
     manifest["aliases"] = [alias]

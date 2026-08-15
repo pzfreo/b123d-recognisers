@@ -17,13 +17,14 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_version_is_available() -> None:
-    assert __version__ == "0.1.0"
+    assert __version__ == "0.2.0"
 
 
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:
     notes = (ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
 
-    assert notes.startswith("# Release notes\n\n## 0.1.0\n")
+    assert notes.startswith("# Release notes\n\n## 0.2.0\n")
+    assert "capability manifest" in notes
     assert "Draftwright PR #1168" in notes
     assert "d659e7a6" in notes
     assert "no new recognition behaviour" in notes

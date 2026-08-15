@@ -130,8 +130,8 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned
 
 try:
     __version__ = version("b123d-recognisers")
-except PackageNotFoundError:
-    __version__ = "0.1.0"
+except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
+    __version__ = "0.2.0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402

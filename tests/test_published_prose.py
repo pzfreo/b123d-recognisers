@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 RUNTIME = ROOT / "src" / "b123d_recognisers"
+README = ROOT / "README.md"
 
 
 def _runtime_sources() -> list[Path]:
@@ -58,3 +59,14 @@ def test_runtime_prose_has_no_consumer_internal_paths() -> None:
         and any(token in text for token in private_paths)
     }
     assert unresolved == {}
+
+
+def test_readme_introduces_imported_brep_recognition_for_cad_consumers() -> None:
+    readme = README.read_text(encoding="utf-8")
+
+    assert "import_step" in readme
+    assert "boundary-representation (B-Rep)" in readme
+    assert "construction history is not available" in readme
+    assert "STEP editor" in readme and "topology-editing operation" in readme
+    assert "does not mutate the source model" in readme
+    assert "build123d solids and imported STEP models" not in readme

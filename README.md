@@ -2,26 +2,47 @@
 
 [![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
 
-Deterministic, geometry-only feature recognition for build123d solids and imported STEP models.
+Recover useful engineering features from imported STEP and boundary-representation (B-Rep)
+geometry.
 
-This is the standalone Apache-2.0 recognition layer extracted from
-[Draftwright](https://github.com/pzfreo/draftwright). It reports immutable geometric records and
-does not own drawing, manufacturing, editing, or consumer-cache policy.
+A STEP file normally gives a CAD application faces, edges, and solids, but not the design intent
+that produced them. `b123d-recognisers` analyses that topology and returns deterministic semantic
+records for features such as holes and counterbores, bosses, slots, pockets, pads, fillets,
+chamfers, grooves, hole and pocket patterns, and turned steps. The records contain ordinary,
+JSON-serialisable geometry values rather than build123d or OCP objects.
 
-## Usage
+That makes the library a useful foundation for systems which inspect, classify, annotate, compare,
+or modify imported CAD. For example, a STEP editor can recognise a hole, present its diameter and
+axis as editable intent, and use those values to drive its own topology-editing operation. The
+recognisers recover evidence; the consuming CAD system decides what that evidence means and how an
+edit should be performed.
 
-Run the complete shared recognition orchestration when a consumer needs one consistent inventory:
+The package is Apache-2.0 licensed and independent of any drawing or editing application. It uses
+build123d/OCP internally as its B-Rep kernel, but its purpose is recovering meaning from geometry
+whose construction history is not available.
+
+## Recognise an imported model
+
+Import a STEP file with build123d, then run the shared recognition orchestration to obtain one
+consistent feature inventory:
 
 ```python
+from build123d import import_step
 from b123d_recognisers import build_recognition_result
 
+part = import_step("gearbox-housing.step")
 result = build_recognition_result(part)
+
 for hole in result.holes:
-    print(hole.diameter, hole.depth, hole.through)
+    print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
 ```
 
-Individual recognisers remain public for focused consumers. Reusable evidence is explicitly
-injected so it is not rediscovered:
+`build_recognition_result()` shares intermediate geometric analysis across recognisers and is the
+usual entry point for a CAD application. Its frozen result can be inspected directly or projected
+to JSON-compatible dictionaries for storage, indexing, comparison, or an editing pipeline.
+
+Individual recognisers are also public when an application needs a narrower answer. Reusable
+evidence can be injected explicitly so it is not rediscovered:
 
 ```python
 from b123d_recognisers import analyse_cylinders, recognise_hole_patterns, recognise_holes
@@ -32,9 +53,23 @@ patterns = recognise_hole_patterns(holes)
 ```
 
 Every `recognise_*` function returns a deterministic list of frozen dataclass records. Records
-provide `to_dict()` projections containing only JSON-serialisable geometry values. See
+provide `to_dict()` projections containing only JSON-serialisable geometry values. The installed
+package also exposes a versioned capability manifest so larger CAD systems can validate which
+recognisers and record schemas they consume. See
+[`docs/capabilities.md`](docs/capabilities.md) for the proven feature inventory and
 [`docs/adr/0002-uniform-deterministic-recogniser-contract.md`](docs/adr/0002-uniform-deterministic-recogniser-contract.md)
 for the complete contract.
+
+## Scope
+
+Feature recognition is deliberately separate from feature editing. This package reports geometric
+facts; it does not mutate the source model, guess manufacturing intent, or prescribe a downstream
+CAD representation. That boundary lets an editor, drawing engine, CAM tool, model checker, or
+search/indexing service adopt the same recognition layer while retaining its own policy.
+
+`b123d-recognisers` began as the recognition layer of
+[Draftwright](https://github.com/pzfreo/draftwright), but the runtime package does not import
+Draftwright and is designed for standalone use.
 
 ## Migrated behavior
 
