@@ -24,6 +24,13 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert "password:" not in workflow and "API_TOKEN" not in workflow
     assert "uv build" not in workflow, "publish must promote reviewed GitHub release assets"
     assert "enable-cache: false" in workflow, "release workflows must not consume mutable caches"
+    assert workflow.count(
+        "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4"
+    ) == 1
+    assert workflow.count(
+        "actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53"
+    ) == 2
+    assert "ignore-empty-workdir: true" in workflow
 
 
 def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_tag(
