@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "b123d-recognisers"
+version = "0.1.0.dev0"
+description = "Deterministic, geometry-only feature recognition for build123d solids"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
+authors = [{ name = "Paul Fremantle", email = "pzfreo@gmail.com" }]
+requires-python = ">=3.10,<3.15"
+dependencies = ["build123d>=0.9,<0.12"]
+keywords = ["build123d", "cad", "brep", "feature-recognition", "step"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+Repository = "https://github.com/pzfreo/b123d-recognisers"
+Issues = "https://github.com/pzfreo/b123d-recognisers/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/b123d_recognisers"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+# cadquery-ocp-novtk 7.9.3.1.1 is missing OCP.GccEnt. Keep this aligned with
+# Draftwright until the upstream wheel is repaired.
+[tool.uv]
+constraint-dependencies = ["cadquery-ocp-novtk!=7.9.3.1.1"]

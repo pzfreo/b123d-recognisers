@@ -1,0 +1,51 @@
+# ADR 0003 — One recognition result and explicit reconciliation
+
+- **Status:** Proposed
+- **Date:** 2026-08-15
+- **Decider:** Paul Fremantle
+
+## Context
+
+Independent recognisers can describe overlapping physical regions: a groove floor may resemble a
+turned step, a pocket floor a global level, and a pattern both a group and several member
+features. First-match ownership scattered among consumers produces different answers from the same
+solid. A plain empty result also cannot distinguish absence, ambiguity, rejection and unsupported
+topology.
+
+Draftwright ADR 0017 identified the problem, but mixed recognition decisions with downstream
+requirement and annotation identity. This project owns only the geometry-side portion.
+
+## Proposed decision
+
+One call to `recognise(part)` produces one immutable `RecognitionResult` containing:
+
+- reusable geometry inventories;
+- proposed candidates and their evidence claims;
+- accepted feature records and physical measurables;
+- explicit rejected, ambiguous and unsupported outcomes;
+- deterministic feature, region and measurable identities.
+
+Candidate discovery and reconciliation are separate stages. A recogniser proposes a plausible
+interpretation; a named reconciler accepts, combines or rejects conflicting claims and records the
+reason. No universal constraint solver is required: family-specific rules may migrate behind the
+one reconciliation protocol incrementally.
+
+Identity is derived from geometry under documented tolerance. It must not use Python identity,
+kernel traversal order, display labels, page coordinates or a bare solid enumeration index.
+
+Consumer lifecycle caches are outside the result. A consumer may cache a result, but cannot make
+its cache semantics part of this package's aggregate value.
+
+## Required evidence before acceptance
+
+- One aggregate run performs each expensive substrate analysis once.
+- Equivalent re-imports produce identical serialized results and identities.
+- Conflicting groove/step, pocket/level and pattern/member fixtures have explicit outcomes.
+- An ambiguous or unsupported fixture cannot return clean absence.
+- Every accepted candidate has one reconciliation outcome and every claimed region is traceable.
+
+## Consequences
+
+Consumers receive one explainable physical feature universe. Migration can be feature-family by
+feature-family, but temporary partial results must say which families were not evaluated.
+

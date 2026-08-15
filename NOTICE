@@ -1,0 +1,8 @@
+b123d-recognisers
+Copyright 2024-2026 Paul Fremantle
+
+The initial hole, boss, cylinder and pattern recognition implementation was
+derived from build123d-drafting-helpers, an Apache-2.0 project copyright
+Paul Fremantle, and was subsequently developed in Draftwright. It is released
+here under Apache-2.0 by the copyright owner.
+
