@@ -5,7 +5,18 @@ import re
 from pathlib import Path
 
 import pytest
-from build123d import Align, Box, Cylinder, Pos, RegularPolygon, Rot, extrude
+from build123d import (
+    Align,
+    Box,
+    Circle,
+    Cylinder,
+    Pos,
+    Rectangle,
+    RegularPolygon,
+    Rot,
+    extrude,
+    loft,
+)
 
 import b123d_recognisers as recognition
 from b123d_recognisers import (
@@ -63,6 +74,13 @@ def test_polygonal_records_are_hexagonal_z_axis_only() -> None:
 
 def _double_d_tool(height: float):
     return Cylinder(5, height, align=_CENTRE) & Box(7.2, 20, 2 * height, align=_CENTRE)
+
+
+def _tapered_double_d_tool(height: float):
+    sketch_align = (Align.CENTER, Align.CENTER)
+    low = Circle(5) & Rectangle(7.2, 20, align=sketch_align)
+    high = Pos(0, 0, height) * (Circle(6) & Rectangle(8, 20, align=sketch_align))
+    return Pos(0, 0, -height / 2) * loft([low, high])
 
 
 @pytest.mark.parametrize(
@@ -127,3 +145,19 @@ def test_profiled_bore_rejects_blind_double_d_and_through_obround() -> None:
         read_double_d_tool(obround)
     with pytest.raises(ValueError, match="constant extrusion"):
         read_double_d_tool(_double_d_tool(20) + Pos(8, 0, 0) * Box(2, 2, 2, align=_CENTRE))
+
+
+def test_profiled_bore_rejects_tapered_and_non_principal_profiles() -> None:
+    plate = Box(30, 30, 10, align=_CENTRE)
+    tapered = _tapered_double_d_tool(20)
+
+    # Matching topology at the two openings is not enough: their unequal circle/chord metrics
+    # prove this is a taper, not the constant-profile feature represented by DoubleDBore.
+    assert recognise_double_d_bores(plate - tapered) == []
+    with pytest.raises(ValueError, match="constant extrusion"):
+        read_double_d_tool(tapered)
+
+    # The public contract is deliberately principal-axis-only. Rotating a valid bore must fail
+    # closed instead of snapping its axis or dimensions to the nearest drawing plane.
+    tilted = Rot(0, 15, 0) * (plate - _double_d_tool(20))
+    assert recognise_double_d_bores(tilted) == []

@@ -32,3 +32,9 @@ uv run ruff check .
 uv run mypy
 uv run pytest
 ```
+
+`uv run pytest` is also the coverage measurement used by CI. It records line and branch coverage,
+prints missing branches, writes `coverage.xml`, and fails below the evidence-based 91.4% combined
+floor. The floor was set from a clean Python 3.10 run at 91.47% combined coverage (93.44% lines and
+85.48% branches) before the focused profiled-bore tests were added. Raise the floor when coverage
+improves durably; do not weaken it or replace behavior assertions with execution-only tests.

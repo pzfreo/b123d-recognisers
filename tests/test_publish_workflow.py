@@ -40,8 +40,10 @@ def test_ci_workflow_pins_node24_actions() -> None:
 
     assert workflow.count("actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803") == 2
     assert workflow.count("astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78") == 2
+    assert workflow.count("actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f") == 1
     assert "actions/checkout@v" not in workflow
     assert "astral-sh/setup-uv@v" not in workflow
+    assert "actions/upload-artifact@v" not in workflow
 
 
 def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_tag(
