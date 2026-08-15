@@ -25,10 +25,10 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert "uv build" not in workflow, "publish must promote reviewed GitHub release assets"
     assert "enable-cache: false" in workflow, "release workflows must not consume mutable caches"
     assert workflow.count(
-        "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4"
+        "actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f"
     ) == 1
     assert workflow.count(
-        "actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53"
+        "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131"
     ) == 2
     assert "ignore-empty-workdir: true" in workflow
 
