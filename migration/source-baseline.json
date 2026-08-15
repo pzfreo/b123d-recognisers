@@ -20,6 +20,7 @@
     }
   ],
   "sources": [
+    {"path": "src/draftwright/_geometry.py", "blob": "cb87454756880dc7d2513da73f89c83159ee2f19", "origin": "draftwright", "scope": "shared plane-axis and canonical axis-line helpers only"},
     {"path": "src/draftwright/recognition/__init__.py", "blob": "fa56d3818d52651cd7fa3db760a6fdaadbf2e009", "origin": "draftwright"},
     {"path": "src/draftwright/recognition/_features.py", "blob": "7f954c8b2f1a3ab7993ece2000a700cd690ba8b3", "origin": "build123d-drafting-helpers-and-draftwright"},
     {"path": "src/draftwright/recognition/_record.py", "blob": "e2c70cf0d78b71c891d242900d86d243ce02341c", "origin": "draftwright"},
