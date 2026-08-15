@@ -19,7 +19,6 @@ import json
 from math import cos, pi, sin
 
 import pytest
-from b123d_recognisers._record import Record
 from build123d import Align, Axis, Box, Cylinder, Polygon, Pos, Rot, chamfer, extrude, fillet
 
 from b123d_recognisers import (
@@ -74,6 +73,7 @@ from b123d_recognisers import (
     recognise_slots,
     recognise_turned_steps,
 )
+from b123d_recognisers._record import Record
 
 # Every record class a recogniser returns. The coverage test asserts the drive-parts
 # below actually emit one of each — so a record type that silently stops being produced

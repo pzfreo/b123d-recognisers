@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from b123d_recognisers.census import feature_census
 from build123d import Box, Cylinder, Pos, Rotation
+
+from b123d_recognisers.census import feature_census
 
 
 def _grooved_shaft():
