@@ -31,6 +31,9 @@ classifiers = [
 Repository = "https://github.com/pzfreo/b123d-recognisers"
 Issues = "https://github.com/pzfreo/b123d-recognisers/issues"
 
+[project.scripts]
+b123d-recognisers-capabilities = "b123d_recognisers.capabilities:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.15,<2",
