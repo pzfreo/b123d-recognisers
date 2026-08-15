@@ -13,6 +13,7 @@ Leaf of the recognition DAG — imports only the stdlib.
 from __future__ import annotations
 
 import dataclasses
+from typing import cast
 
 
 class Record:
@@ -23,7 +24,11 @@ class Record:
     the contract test catches.
     """
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         # `self` is always a dataclass instance in practice (the mixin is only used
         # on records); mypy can't see that through the plain-class base.
-        return dataclasses.asdict(self)  # type: ignore[call-overload,no-any-return]
+        # Record is intentionally a non-dataclass mixin, so mypy cannot prove that every
+        # concrete subclass is a dataclass. The public contract test proves that invariant.
+        return cast(
+            dict[str, object], dataclasses.asdict(self)  # type: ignore[call-overload]
+        )

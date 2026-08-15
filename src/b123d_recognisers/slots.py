@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from types import SimpleNamespace
 from typing import TypeVar
@@ -45,6 +46,7 @@ from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part, Vector3
 
 _AXES = {"x": 0, "y": 1, "z": 2}
 # Shared by the through-slot (:func:`recognise_slots`) and blind-recess
@@ -124,9 +126,9 @@ class SlotArray(Record):
     the array); ``pitch`` is the centre-to-centre spacing and ``direction`` the (unit) array
     axis, both read by ``detect._slot_pattern_feature``."""
 
-    slots: tuple
+    slots: tuple[Slot, ...]
     pitch: float
-    direction: tuple
+    direction: Vector3
 
 
 @dataclass(frozen=True)
@@ -136,13 +138,13 @@ class SlotGrid(Record):
     ``rows``×``cols`` at ``row_pitch``/``col_pitch``, rotated ``angle`` degrees about
     ``center`` — the same convention :class:`PocketGrid` and `RectGrid` document."""
 
-    slots: tuple
+    slots: tuple[Slot, ...]
     rows: int
     cols: int
     row_pitch: float
     col_pitch: float
     angle: float
-    center: tuple
+    center: Vector3
 
 
 @dataclass(frozen=True)
@@ -253,9 +255,9 @@ class PocketArray(Record):
     :class:`Pocket` records (ordered along the array); ``pitch`` is the centre-to-centre spacing
     and ``direction`` the (unit) array axis, both read by ``detect._pocket_pattern_feature``."""
 
-    pockets: tuple
+    pockets: tuple[Pocket, ...]
     pitch: float
-    direction: tuple
+    direction: Vector3
 
 
 @dataclass(frozen=True)
@@ -266,13 +268,13 @@ class PocketGrid(Record):
     rotated ``angle`` degrees about ``center`` — the same convention `RectGrid` documents
     (columns along the first basis, ``angle`` naming that direction in ``[0, 180)``)."""
 
-    pockets: tuple
+    pockets: tuple[Pocket, ...]
     rows: int
     cols: int
     row_pitch: float
     col_pitch: float
     angle: float
-    center: tuple
+    center: Vector3
 
 
 # When the two non-width slot extents are within this fraction of each other the
@@ -851,7 +853,7 @@ def _body_scoped_records(sources, recognise_one):
     ]
 
 
-def recognise_slots(part) -> list[Slot]:
+def recognise_slots(part: Part) -> list[Slot]:
     """Recognise enclosed through-slots independently within each solid in *part*.
 
     Returns a list of :class:`Slot`, one per physical feature, in a
@@ -1146,7 +1148,7 @@ def _recognise_pockets_one(part) -> list[Pocket]:
     return _extend_obround_ends(_merge(candidates), part)
 
 
-def recognise_pockets(part) -> list[Pocket]:
+def recognise_pockets(part: Part) -> list[Pocket]:
     """Recognise blind rectangular recesses independently within each solid.
 
     The blind counterpart of :func:`recognise_slots`: the same facing-rectangular-wall
@@ -1191,7 +1193,7 @@ def _recognise_channels_one(part) -> list[Channel]:
     )
 
 
-def recognise_channels(part) -> list[Channel]:
+def recognise_channels(part: Part) -> list[Channel]:
     """Recognise full-span floored channels independently within each solid.
 
     This is deliberately separate from :func:`recognise_pockets`: a channel's length
@@ -1335,7 +1337,7 @@ def _mk_pocket_grid(members, rows, cols, row_pitch, col_pitch, angle, center) ->
     )
 
 
-def recognise_pocket_patterns(pockets) -> list[PocketArray | PocketGrid]:
+def recognise_pocket_patterns(pockets: Sequence[Pocket]) -> list[PocketArray | PocketGrid]:
     """Recognise :class:`PocketArray` (linear) and :class:`PocketGrid` (rectangular) arrays
     among *pockets* (``Pocket`` records, e.g. from :func:`recognise_pockets`) — the recess
     analog of :func:`b123d_recognisers.recognise_hole_patterns`.
@@ -1422,7 +1424,7 @@ def _mk_slot_grid(members, rows, cols, row_pitch, col_pitch, angle, center) -> S
     )
 
 
-def recognise_slot_patterns(slots) -> list[SlotArray | SlotGrid]:
+def recognise_slot_patterns(slots: Sequence[Slot]) -> list[SlotArray | SlotGrid]:
     """Recognise :class:`SlotArray` (linear) and :class:`SlotGrid` (rectangular) arrays among
     *slots* (``Slot`` records, e.g. from :func:`recognise_slots`) — the through-slot analog of
     :func:`recognise_pocket_patterns`.

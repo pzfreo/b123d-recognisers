@@ -44,6 +44,7 @@ from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import FaceLike, Part, Vector3
 
 
 @dataclass(frozen=True)
@@ -72,7 +73,9 @@ class BevelReject(ValueError):
         super().__init__(reason)
 
 
-def classify_bevel(face):
+def classify_bevel(
+    face: FaceLike,
+) -> tuple[int, Vector3, dict[int, tuple[float, float]], float, float]:
     """The single-face oblique-bevel read shared by :func:`recognise_chamfers` and the
     declared front-end (``model/declare._read_chamfer_face``) — one home for the
     normal→axis classification thresholds and the leg geometry (#704). Returns
@@ -115,7 +118,9 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
     return ax, (loc.X(), loc.Y(), loc.Z())[ax]
 
 
-def recognise_chamfers(part, *, tol: float = 0.5, max_leg_frac: float = 0.45) -> list[Chamfer]:
+def recognise_chamfers(
+    part: Part, *, tol: float = 0.5, max_leg_frac: float = 0.45
+) -> list[Chamfer]:
     """Recognise the chamfers of *part* (see module docstring). Returns one
     :class:`Chamfer` per qualifying oblique face, sorted deterministically. Empty when the
     part has no chamfer. Only single-axis chamfers (running along one principal axis) are

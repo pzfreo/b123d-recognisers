@@ -16,6 +16,7 @@ from math import asin, sqrt
 from build123d import Face, GeomType, Solid, Vector
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 
 
 @dataclass(frozen=True)
@@ -282,7 +283,7 @@ def _recognise_double_d_bores_one(part, *, tol: float) -> list[DoubleDBore]:
     return double_d_bores_from_openings(openings, bbox, part=part, tol=scan_tol)
 
 
-def recognise_double_d_bores(part, *, tol: float = 1e-5) -> list[DoubleDBore]:
+def recognise_double_d_bores(part: Part, *, tol: float = 1e-5) -> list[DoubleDBore]:
     """Recognise principal-axis through double-D bores, independently per solid.
 
     This slice is deliberately through-only: the same profile must appear at both opposite

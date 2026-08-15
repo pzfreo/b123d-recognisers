@@ -30,6 +30,7 @@ This module also hosts the low-level cylinder analysis consumers build on
 """
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -44,6 +45,7 @@ from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._geometry import _axis_letter_of, plane_axes
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
 # Cylinder patches around one axis spanning half a turn or less in total are
@@ -63,7 +65,7 @@ _STACK_GAP_TOL = 0.1
 _SPOTFACE_MAX_RATIO = 0.2
 
 
-def analyse_cylinders(part):
+def analyse_cylinders(part: Part) -> CylinderInventory:
     """Return (z_cyls, cross_cyls) from OCP cylindrical face analysis.
 
     Each entry is a dict with keys: diameter, axis (dominant axis letter),
@@ -77,8 +79,8 @@ def analyse_cylinders(part):
     z_cyls: cylinders whose axis is approximately Z.
     cross_cyls: cylinders whose axis is approximately X or Y.
     """
-    z_cyls: list[dict] = []
-    cross_cyls: list[dict] = []
+    z_cyls: list[CylinderEvidence] = []
+    cross_cyls: list[CylinderEvidence] = []
     # Attribute each face to its owning solid so coaxial bores in *different*
     # bodies of a multi-solid assembly are not grouped into one hole — which
     # would measure a depth across the gap between the bodies (#68). A single
@@ -106,7 +108,7 @@ def analyse_cylinders(part):
         # s(P) = P·dir for P = ap + v*d  →  s = ap·dir + sign*v
         s_ap = ap.X() * dir_xyz[0] + ap.Y() * dir_xyz[1] + ap.Z() * dir_xyz[2]
         s0, s1 = s_ap + sign * v0, s_ap + sign * v1
-        rec = dict(
+        rec: CylinderEvidence = dict(
             diameter=round(r * 2, 2),
             axis=ax,
             solid_idx=solid_idx,
@@ -171,7 +173,7 @@ def _merge_runs(items, key_fn):
     return runs
 
 
-def full_cylinders(cyls):
+def full_cylinders(cyls: list[CylinderEvidence]) -> list[CylinderEvidence]:
     """The feature-relevant ("full") cylinder records within *cyls*.
 
     *cyls* is one of the two record lists returned by :func:`analyse_cylinders`
@@ -225,8 +227,8 @@ class HoleRecord(Record):
     ``"unknown"`` when the adjacent geometry matches none of those.
     """
 
-    axis: tuple
-    location: tuple
+    axis: Vector3
+    location: Vector3
     diameter: float
     depth: float
     bottom: str
@@ -246,8 +248,8 @@ class BossRecord(Record):
     axis point at the free end, and ``height`` the axial extent.
     """
 
-    axis: tuple
-    location: tuple
+    axis: Vector3
+    location: Vector3
     diameter: float
     height: float
 
@@ -474,7 +476,7 @@ def _merge_stacks(stacks, edge_faces, cache=None):
     return merged
 
 
-def _csink_for_hole(h: HoleRecord, csinks: list[CounterSink]) -> CounterSink | None:
+def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink | None:
     """The countersink seated on hole *h*, or None (#558). A countersink belongs to the
     hole when its **minor circle** — where the cone meets the drilled bore — sits coaxially
     at one of the hole's bore *ends*: the opening (``s`` ≈ 0) or, for a through hole (open
@@ -488,7 +490,12 @@ def _csink_for_hole(h: HoleRecord, csinks: list[CounterSink]) -> CounterSink | N
     return None
 
 
-def recognise_holes(part, *, cyls=None, csinks=None) -> list[HoleRecord]:
+def recognise_holes(
+    part: Part,
+    *,
+    cyls: CylinderInventory | None = None,
+    csinks: Sequence[CounterSink] | None = None,
+) -> list[HoleRecord]:
     """Recognise drilled holes on *part* (see :class:`HoleRecord`).
 
     Coaxial internal cylinders are grouped into stacks — drill + optional
@@ -605,7 +612,9 @@ def recognise_holes(part, *, cyls=None, csinks=None) -> list[HoleRecord]:
     return holes
 
 
-def recognise_bosses(part, *, cyls=None) -> list[BossRecord]:
+def recognise_bosses(
+    part: Part, *, cyls: CylinderInventory | None = None
+) -> list[BossRecord]:
     """Recognise external cylindrical bosses on *part* (one
     :class:`BossRecord` per coaxial external cylinder segment, including a
     turned part's OD — callers wanting only local bosses can filter on
@@ -641,7 +650,12 @@ def recognise_bosses(part, *, cyls=None) -> list[BossRecord]:
     return bosses
 
 
-def feature_diameters(part, cyls=None, holes=None, bosses=None) -> list:
+def feature_diameters(
+    part: Part,
+    cyls: CylinderInventory | None = None,
+    holes: Sequence[HoleRecord] | None = None,
+    bosses: Sequence[BossRecord] | None = None,
+) -> list[float]:
     """Sorted unique diameters of the *recognised* dimensionable cylindrical
     features on *part*: every hole bore, each hole's counterbore/spotface step,
     and every boss.
@@ -698,8 +712,8 @@ class BoltCircle(Record):
     the bolt-circle diameter (BCD), ``holes`` the member features.
     """
 
-    holes: tuple
-    center: tuple
+    holes: tuple[HoleRecord, ...]
+    center: Vector3
     diameter: float
 
 
@@ -711,9 +725,9 @@ class LinearArray(Record):
     (members are ordered along it).
     """
 
-    holes: tuple
+    holes: tuple[HoleRecord, ...]
     pitch: float
-    direction: tuple
+    direction: Vector3
 
 
 @dataclass(frozen=True)
@@ -744,13 +758,13 @@ class RectGrid(Record):
     :class:`LinearArray` rows instead.
     """
 
-    holes: tuple
+    holes: tuple[HoleRecord, ...]
     rows: int
     cols: int
     row_pitch: float
     col_pitch: float
     angle: float
-    center: tuple
+    center: Vector3
 
 
 def _pattern_tol(nominal: float) -> float:
@@ -777,7 +791,7 @@ class HoleSpec(Record):
     ``draftwright``).
     """
 
-    axis: tuple
+    axis: Vector3
     diameter: float
     depth: float | None
     bottom: str
@@ -793,7 +807,15 @@ class HoleSpec(Record):
         depth = None if hole.bottom == "through" else hole.depth
         axis = tuple(0.0 if abs(c) < 1e-6 else round(c, 6) for c in hole.axis)
         csink = (hole.csink.major_diameter, hole.csink.included_angle) if hole.csink else None
-        return cls(axis, hole.diameter, depth, hole.bottom, hole.cbore, hole.spotface, csink)
+        return cls(
+            (axis[0], axis[1], axis[2]),
+            hole.diameter,
+            depth,
+            hole.bottom,
+            hole.cbore,
+            hole.spotface,
+            csink,
+        )
 
 
 def _spec_key(h):
@@ -1112,7 +1134,9 @@ def _mk_hole_grid(members, rows, cols, row_pitch, col_pitch, angle, center):
     )
 
 
-def recognise_hole_patterns(holes) -> list[BoltCircle | LinearArray | RectGrid]:
+def recognise_hole_patterns(
+    holes: Sequence[HoleRecord],
+) -> list[BoltCircle | LinearArray | RectGrid]:
     """Recognise :class:`BoltCircle`, :class:`LinearArray`, and
     :class:`RectGrid` patterns among *holes* (``HoleRecord`` records, e.g.
     from :func:`recognise_holes`).

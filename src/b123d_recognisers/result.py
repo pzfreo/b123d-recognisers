@@ -14,33 +14,51 @@ from dataclasses import dataclass
 from enum import Enum
 
 from b123d_recognisers._features import (
+    BoltCircle,
+    BossRecord,
+    HoleRecord,
+    LinearArray,
+    RectGrid,
     analyse_cylinders,
     recognise_bosses,
     recognise_hole_patterns,
     recognise_holes,
 )
-from b123d_recognisers.chamfers import recognise_chamfers
-from b123d_recognisers.countersinks import recognise_countersinks
-from b123d_recognisers.fillets import recognise_fillets
-from b123d_recognisers.flats import recognise_flats
-from b123d_recognisers.grooves import recognise_grooves
-from b123d_recognisers.levels import FaceLevel, recognise_risers, step_level_records
-from b123d_recognisers.pads import recognise_rectangular_pads
-from b123d_recognisers.plates import recognise_plates
+from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
+from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
+from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
+from b123d_recognisers.fillets import Fillet, recognise_fillets
+from b123d_recognisers.flats import Flat, recognise_flats
+from b123d_recognisers.grooves import Groove, recognise_grooves
+from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
+from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
+from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
+    PolygonalBoss,
+    PolygonalStock,
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
 )
-from b123d_recognisers.profiled_bores import recognise_double_d_bores
-from b123d_recognisers.repeating_profiles import recognise_repeating_radial_profiles
+from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
+from b123d_recognisers.repeating_profiles import (
+    RepeatingRadialProfile,
+    recognise_repeating_radial_profiles,
+)
 from b123d_recognisers.slots import (
+    Channel,
+    Pocket,
+    PocketArray,
+    PocketGrid,
+    Slot,
+    SlotArray,
+    SlotGrid,
     recognise_channels,
     recognise_pocket_patterns,
     recognise_pockets,
     recognise_slot_patterns,
     recognise_slots,
 )
-from b123d_recognisers.turned import TurnedProfile, recognise_turned_steps
+from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
 
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
@@ -158,26 +176,26 @@ class RecognitionResult:
     not a promise that the evidence-gated correspondence extensions have landed.
     """
 
-    cylinders: tuple[tuple, tuple]
-    countersinks: tuple
-    holes: tuple
-    double_d_bores: tuple
-    hole_patterns: tuple
-    bosses: tuple
-    polygonal_bosses: tuple
-    polygonal_stock: tuple
-    channels: tuple
-    slots: tuple
-    slot_patterns: tuple
-    grooves: tuple
-    flats: tuple
-    pockets: tuple
-    pocket_patterns: tuple
-    pads: tuple
+    cylinders: FrozenCylinderInventory
+    countersinks: tuple[CounterSink, ...]
+    holes: tuple[HoleRecord, ...]
+    double_d_bores: tuple[DoubleDBore, ...]
+    hole_patterns: tuple[BoltCircle | LinearArray | RectGrid, ...]
+    bosses: tuple[BossRecord, ...]
+    polygonal_bosses: tuple[PolygonalBoss, ...]
+    polygonal_stock: tuple[PolygonalStock, ...]
+    channels: tuple[Channel, ...]
+    slots: tuple[Slot, ...]
+    slot_patterns: tuple[SlotArray | SlotGrid, ...]
+    grooves: tuple[Groove, ...]
+    flats: tuple[Flat, ...]
+    pockets: tuple[Pocket, ...]
+    pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+    pads: tuple[RaisedPad, ...]
     #: Complete outer-wire cyclic correspondence.  Geometry-only: consumers may compare a
     #: declared axis/count, but this inventory never manufactures gear semantics (#1087).
-    repeating_radial_profiles: tuple
-    turned_steps: tuple
+    repeating_radial_profiles: tuple[RepeatingRadialProfile, ...]
+    turned_steps: tuple[TurnedStep, ...]
     #: Area-filtered interior prismatic levels. The support spans remain on each record so IR
     #: assembly can preserve level-to-face correspondence; sizing and critique project the Z
     #: values through :meth:`step_ladder` (#915).
@@ -190,18 +208,18 @@ class RecognitionResult:
     #: Candidate step risers, scanned once and projected per consumer (#1025). NOT shoulders:
     #: which risers count depends on the level set the asker holds, and that is the whole
     #: reason this family could not be hoisted until the scan and the filter were separated.
-    risers: tuple
+    risers: tuple[RiserEvidence, ...]
     #: Classification-gated inventories (#1028). Recognised only for the class that consumes
     #: them: chamfers and fillets on a non-rotational part (a turned part's chamfers are
     #: conical, so the recogniser finds none anyway), plates additionally only when there is no
     #: turned profile. The gate lives HERE, in the one orchestration, rather than at each call
     #: site — which is the distinction that let these migrate at all: owning a family and
     #: always running it are different things.
-    chamfers: tuple
-    fillets: tuple
-    plates: tuple
+    chamfers: tuple[Chamfer, ...]
+    fillets: tuple[Fillet, ...]
+    plates: tuple[Plate, ...]
 
-    def step_ladder(self, bb) -> list[float]:
+    def step_ladder(self, bb: Bounds) -> list[float]:
         """The effective step ladder for *bb*: turned shoulders for a Z-turned part, else the
         prismatic face levels (#1025).
 
@@ -220,7 +238,10 @@ class RecognitionResult:
 
 
 def build_recognition_result(
-    part, *, cylinders=None, rotational: bool = False
+    part: Part,
+    *,
+    cylinders: CylinderInventory | None = None,
+    rotational: bool = False,
 ) -> RecognitionResult:
     """Run the shared recognition inventory exactly once for *part*.
 

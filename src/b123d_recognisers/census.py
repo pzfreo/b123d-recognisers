@@ -27,6 +27,8 @@ Bottom of the DAG beside the recognisers: depends only on :mod:`b123d_recogniser
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from b123d_recognisers import (
     analyse_cylinders,
     recognise_bosses,
@@ -43,9 +45,11 @@ from b123d_recognisers import (
     recognise_slots,
     recognise_turned_steps,
 )
+from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part
 
 
-def feature_census(part) -> dict[str, int]:
+def feature_census(part: Part) -> dict[str, int]:
     """The count of recognised features per kind for *part* (see module docs).
 
     Runs every feature recogniser once — injecting hole patterns from the recognised holes and
@@ -57,7 +61,7 @@ def feature_census(part) -> dict[str, int]:
     to the model layer, not a metric."""
     cyls = analyse_cylinders(part)
     holes = recognise_holes(part, cyls=cyls)
-    records: dict[str, list] = {
+    records: dict[str, Sequence[Record]] = {
         "hole": holes,
         "hole_pattern": recognise_hole_patterns(holes),
         "boss": recognise_bosses(part, cyls=cyls),

@@ -39,6 +39,7 @@ from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers._record import Record
+from b123d_recognisers._typing import Part, SurfaceAdaptor
 
 # A convex edge fillet is a quarter-turn (≈π/2); a real bore keeps more than half a turn.
 # Gate below this (the same threshold that keeps partial cylinders out of hole/boss
@@ -58,7 +59,7 @@ class Fillet(Record):
     at: tuple[float, float, float]
 
 
-def fillet_anchor(s) -> tuple[float, float, float]:
+def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
     """A leader-tip point **on** the trimmed cylindrical blend face *s* (a
     ``BRepAdaptor_Surface``) — the middle of its angular (U) and axial (V) parameter spans.
     Never the bbox centre, which sits off the round near the virtual sharp corner (#622).
@@ -88,7 +89,7 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
 
 
 def recognise_fillets(
-    part, *, min_radius: float = 0.6, max_radius_frac: float = 0.45
+    part: Part, *, min_radius: float = 0.6, max_radius_frac: float = 0.45
 ) -> list[Fillet]:
     """Recognise the external edge fillets of *part* (see module docstring). Returns one
     :class:`Fillet` per qualifying cylindrical blend face, sorted deterministically. Empty
