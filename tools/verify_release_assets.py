@@ -10,8 +10,6 @@ import zipfile
 from email.parser import BytesParser
 from pathlib import Path
 
-import tomllib
-
 
 class ReleaseAssetError(ValueError):
     """The release artifacts are incomplete or disagree with their tag."""
@@ -38,20 +36,20 @@ def _wheel_version(path: Path) -> tuple[str, str]:
 
 def _sdist_version(path: Path) -> tuple[str, str]:
     with tarfile.open(path, "r:gz") as archive:
-        pyprojects = [
+        metadata_files = [
             member
             for member in archive.getmembers()
-            if member.name.endswith("/pyproject.toml")
+            if member.name.endswith("/PKG-INFO")
         ]
-        if len(pyprojects) != 1:
+        if len(metadata_files) != 1:
             raise ReleaseAssetError(
-                f"{path.name}: expected one sdist pyproject.toml, found {len(pyprojects)}"
+                f"{path.name}: expected one sdist PKG-INFO, found {len(metadata_files)}"
             )
-        extracted = archive.extractfile(pyprojects[0])
+        extracted = archive.extractfile(metadata_files[0])
         if extracted is None:
-            raise ReleaseAssetError(f"{path.name}: could not read pyproject.toml")
-        project = tomllib.loads(extracted.read().decode("utf-8"))["project"]
-    return project["name"], project["version"]
+            raise ReleaseAssetError(f"{path.name}: could not read PKG-INFO")
+        metadata = BytesParser().parsebytes(extracted.read())
+    return metadata["Name"], metadata["Version"]
 
 
 def verify(dist: Path, tag: str) -> str:
