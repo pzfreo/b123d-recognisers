@@ -743,6 +743,46 @@ class TestFindHolePatterns:
         assert grid.row_pitch == pytest.approx(25, abs=0.1)
         assert grid.col_pitch == pytest.approx(25, abs=0.1)
 
+    def test_full_grid_skips_strictly_dominated_candidate_enumeration(self, monkeypatch):
+        """A complete grid owns every hole, so no lower-priority candidate can survive.
+
+        This is an operation-bound regression rather than a wall-clock assertion: the
+        historical implementation still enumerated O(n^3) circle seeds with an O(n)
+        membership scan after finding the grid, then discarded every result.
+        """
+        import b123d_recognisers._features as features
+        from b123d_recognisers import RectGrid, recognise_hole_patterns
+
+        holes = [
+            HoleRecord(
+                axis=(0.0, 0.0, -1.0),
+                location=(float(col * 10), float(row * 12), 0.0),
+                diameter=5.0,
+                depth=10.0,
+                bottom="through",
+            )
+            for row in range(20)
+            for col in range(20)
+        ]
+
+        def dominated_path(*_args, **_kwargs):
+            pytest.fail("a complete grid must skip dominated circle/linear enumeration")
+
+        monkeypatch.setattr(features, "_bolt_circle_candidates", dominated_path)
+        monkeypatch.setattr(features, "_linear_array_candidates", dominated_path)
+
+        assert recognise_hole_patterns(holes) == [
+            RectGrid(
+                holes=tuple(holes),
+                rows=20,
+                cols=20,
+                row_pitch=12.0,
+                col_pitch=10.0,
+                angle=0.0,
+                center=(95.0, 114.0, 0.0),
+            )
+        ]
+
 
 class TestEdgeFaceMap:
     @pytest.mark.timeout(60)

@@ -1145,10 +1145,16 @@ def recognise_hole_patterns(holes) -> list[BoltCircle | LinearArray | RectGrid]:
             )
             for h in members
         ]
-        candidates: list = []
         grid = _rect_grid(members, pts, _mk_hole_grid)
         if grid is not None:
-            candidates.append((grid, frozenset(range(len(members)))))
+            # `_rect_grid` succeeds only when this entire same-spec group fills one
+            # lattice. The grid therefore claims every member, sorts ahead of every
+            # equal-sized candidate, and makes all circle/linear candidates impossible
+            # to allocate. Return it now instead of doing O(n^4) work whose results are
+            # guaranteed to be discarded (#15).
+            patterns.append(grid)
+            continue
+        candidates: list = []
         candidates += _bolt_circle_candidates(members, pts)
         candidates += _linear_array_candidates(members, pts, _mk_hole_linear)
         # allocate largest-first; a hole used by one pattern is off the table
