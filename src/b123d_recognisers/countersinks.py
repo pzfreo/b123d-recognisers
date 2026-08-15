@@ -10,9 +10,7 @@ two distinct-radius circular edges whose smaller radius matches a coaxial drille
 cylinder — excludes drill-point cones (a single circle + apex, not flared) and external
 edge chamfers (no coaxial bore).
 
-Geometry-mirrored with ``pzfreo/build123d-mcp``'s ``recognise_countersinks`` so the pair
-can converge in the shared ``b123d-recognisers`` package (ADR 0013). Bottom of the
-recognition DAG: depends only on build123d/OCP.
+Bottom of the recognition DAG: depends only on build123d/OCP.
 
 Heuristic limits (``recognised`` tier): an edge-break / deburr / lead-in chamfer at a hole
 mouth is geometrically a shallow countersink, so a **flare-ratio floor** (``_MIN_MAJOR_RATIO``)
@@ -24,10 +22,10 @@ Known limitations (edge geometries; the common one-face countersink is exact):
 
 - an **external transition chamfer** between two coaxial cylinders (e.g. a stepped
   shaft) presents a flared cone coaxial with a cylinder and can register in the
-  standalone recogniser — harmless in draftwright drawings (``_csink_for_hole`` only
+  standalone recogniser — filtered by Draftwright's adapter (``_csink_for_hole`` only
   attaches a countersink to a recognised internal bore, and a shaft has none); an
-  internal/external face-orientation check would exclude it (deferred to the shared
-  ``b123d-recognisers`` extraction);
+  internal/external face-orientation check would exclude it (a future behavior change, not part
+  of the parity extraction);
 - a **DIN 332 lathe centre-drill** (a 60° cone flaring from a small pilot bore) is
   geometrically near-indistinguishable from a small countersink and can register;
 - a through hole countersunk on **both** faces yields two coaxial countersinks, but the

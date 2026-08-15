@@ -2,10 +2,9 @@
 # Copyright 2024-2026 Paul Fremantle
 """features — geometric feature recognition for build123d parts (#87).
 
-Vendored from ``build123d_drafting.features`` (ADR 0007): draftwright owns
-feature recognition, helpers becomes the rendering library. This is the
-source of truth from here on — the upstream copy is frozen and deprecated.
-Imported via the package surface, :mod:`b123d_recognisers`.
+Originally derived from ``build123d_drafting.features`` and subsequently maintained in
+Draftwright. This package is now the source of truth; see ``NOTICE`` and the migration manifest
+for the complete provenance. Import through :mod:`b123d_recognisers`.
 
 Recognises drilled-hole and boss features from a solid's cylindrical faces:
 
@@ -26,8 +25,8 @@ located at the axial extreme of its lip, and its depth includes the lip
 overhang; counterbores on the far side of a through hole's bore are not
 reported.
 
-This module also hosts the low-level cylinder analysis that
-``make_drawing`` builds on (``analyse_cylinders``, ``full_cylinders``).
+This module also hosts the low-level cylinder analysis consumers build on
+(``analyse_cylinders``, ``full_cylinders``).
 """
 
 import math
@@ -731,7 +730,7 @@ class RectGrid(Record):
     ``col_pitch`` apart along the lattice's first basis direction and **rows**
     ``row_pitch`` apart along the second, and ``angle`` is the COLUMN direction's
     orientation in degrees within the holes' opening plane, measured in the
-    :func:`~draftwright._geometry.plane_axes` frame and normalised to ``[0, 180)``.
+    :func:`b123d_recognisers._geometry.plane_axes` frame and normalised to ``[0, 180)``.
 
     ``[0, 180)`` and not ``[0, 90)``: the lattice is unchanged by a half-turn (its
     cell set is symmetric about ``center``, so the basis sign carries no
@@ -814,7 +813,7 @@ def _project_out(w, *directions):
 def _plane_uv(axis):
     """Two orthonormal vectors spanning the plane perpendicular to *axis*.
 
-    Seeded from the shared :func:`~draftwright._geometry.plane_axes` basis for *axis*'s
+    Seeded from the shared :func:`b123d_recognisers._geometry.plane_axes` basis for *axis*'s
     dominant component — the very frame ``model.declare`` lays a declared pattern out in, so a
     grid angle measured here means the same thing there (#969) — then Gram-Schmidt'd against
     the *actual* axis so the result is exactly perpendicular to it whatever the axis is.
@@ -832,7 +831,7 @@ def _plane_uv(axis):
 
     **Scope.** The seed follows *axis*'s dominant component, so the frame does jump a quarter
     turn across a dominant-component tie (``(1, 1-ε, 0)`` → ``(1-ε, 1, 0)``). That is not a gap
-    between the two halves of the waist: :func:`~draftwright._geometry.plane_axes` and
+    between the two halves of the waist: :func:`b123d_recognisers._geometry.plane_axes` and
     ``detect._pattern_feature``'s axis LETTER are chosen by the same rule, so the frame and the
     letter turn together, and `test_the_frame_and_the_ir_axis_letter_agree` pins it. What such
     an axis does not have is a faithful declared counterpart at all — an oblique pattern

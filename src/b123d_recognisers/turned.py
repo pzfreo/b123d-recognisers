@@ -5,8 +5,7 @@
 ``recognise_turned_steps`` extracts the axial steps of a stepped shaft — the
 contiguous segments between shoulders — so the engine can dimension each step
 *length* (the drive-screw gap: every diameter dimensioned, but no shoulder
-locatable). It is draftwright's recognition (ADR 0007), built on the owned
-``analyse_cylinders`` primitive.
+locatable). It builds on this package's ``analyse_cylinders`` primitive.
 
 Why not ``recognise_bosses``: a boss's ``.height`` is its *cylindrical-face* length,
 shortened by the chamfers at each shoulder, so boss spans neither tile the axis

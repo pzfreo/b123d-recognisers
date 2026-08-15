@@ -2,10 +2,9 @@
 # Copyright 2024-2026 Paul Fremantle
 """score — feature-completeness metric (#148f / #608).
 
-A **measurement tool**, not a recogniser and not part of the drawing engine: it quantifies how
-completely the recognition suite (:mod:`b123d_recognisers`) captures a part's machined
-features, so the coverage broadening across the #148 epic (148a–e) is measurable. All-three-
-surfaces (ADR 0011) is N/A — this produces no drawn feature.
+A **measurement tool**, not a recogniser: it counts how completely the recognition suite
+(:mod:`b123d_recognisers`) captures a part's machined features. It produces no consumer-domain
+feature or drawing policy.
 
 The metric is a **census**: the number of features each recogniser finds, per kind. Progress
 across the epic shows up directly — the census gains kinds and counts as each child lands (a
@@ -14,7 +13,7 @@ slotted bar reports ``slot: 1`` only once #135/#148 recognises it; a grooved sha
 the epic; a single part's census reads off exactly what was recognised.
 
 *Why census-only, no completeness ratio.* A ratio needs an independent denominator, and there
-isn't a good one. The obvious substrate — :func:`~draftwright.recognition.feature_diameters` —
+isn't a good one. The obvious substrate — :func:`b123d_recognisers.feature_diameters` —
 is itself built from ``recognise_holes`` / ``recognise_bosses``, so diffing recognised diameters
 against it is **tautological**: both sides move together, the ratio is 1.0 for every real part,
 and a genuine recogniser regression drops the denominator too (so it never signals). The only
@@ -23,9 +22,7 @@ ends and other non-feature partial cylinders are never features, so legitimate p
 below 1.0 permanently (exactly the #158 reason ``feature_diameters`` avoids that substrate). A
 census is the one honest signal, so that is all this reports.
 
-Bottom of the DAG beside the recognisers: depends only on :mod:`b123d_recognisers` +
-build123d, and nothing in the engine imports it. Ranked 0 in the machine-enforced DAG
-(``tests/test_import_boundaries.py``), so importing the engine from here fails CI (#704).
+Bottom of the DAG beside the recognisers: depends only on :mod:`b123d_recognisers` and build123d.
 """
 
 from __future__ import annotations

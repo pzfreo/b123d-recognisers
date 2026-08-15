@@ -4,9 +4,8 @@
 
 It recognises milled *slots* — the class of feature the cylinder-based pipeline
 (``analyse_cylinders``/``recognise_holes`` in :mod:`._features`) is blind to.  It
-sits beside the hole/boss recognisers in :mod:`b123d_recognisers`, the
-single home for feature recognition (ADR 0007 — recognition lives in
-draftwright, not upstream); it mirrors their OCC face-scan idioms.
+sits beside the hole/boss recognisers in :mod:`b123d_recognisers`, the standalone home for
+feature recognition; it mirrors their OCC face-scan idioms.
 
 Scope: **rectangular recesses with straight walls** — enclosed through-slots
 (:func:`recognise_slots`), their blind counterparts (floored slots/pockets,
@@ -250,7 +249,7 @@ class Channel(Record):
 @dataclass(frozen=True)
 class PocketArray(Record):
     """N identical blind pockets in a straight, constant-pitch line (#841) — the recess analog
-    of :class:`~draftwright.recognition._features.LinearArray`. ``pockets`` are the member
+    of :class:`b123d_recognisers.LinearArray`. ``pockets`` are the member
     :class:`Pocket` records (ordered along the array); ``pitch`` is the centre-to-centre spacing
     and ``direction`` the (unit) array axis, both read by ``detect._pocket_pattern_feature``."""
 
@@ -262,7 +261,7 @@ class PocketArray(Record):
 @dataclass(frozen=True)
 class PocketGrid(Record):
     """N×M identical blind pockets on a rectangular lattice (#841) — the recess analog of
-    :class:`~draftwright.recognition._features.RectGrid`. ``pockets`` are the member
+    :class:`b123d_recognisers.RectGrid`. ``pockets`` are the member
     :class:`Pocket` records; the lattice is ``rows``×``cols`` at ``row_pitch``/``col_pitch``,
     rotated ``angle`` degrees about ``center`` — the same convention `RectGrid` documents
     (columns along the first basis, ``angle`` naming that direction in ``[0, 180)``)."""
@@ -1339,7 +1338,7 @@ def _mk_pocket_grid(members, rows, cols, row_pitch, col_pitch, angle, center) ->
 def recognise_pocket_patterns(pockets) -> list[PocketArray | PocketGrid]:
     """Recognise :class:`PocketArray` (linear) and :class:`PocketGrid` (rectangular) arrays
     among *pockets* (``Pocket`` records, e.g. from :func:`recognise_pockets`) — the recess
-    analog of :func:`~draftwright.recognition._features.recognise_hole_patterns`.
+    analog of :func:`b123d_recognisers.recognise_hole_patterns`.
 
     A DERIVED recogniser (single positional inventory, ADR 0013): pockets are grouped by
     orientation + size (:func:`_pocket_spec_key`), each group's centres are projected into the

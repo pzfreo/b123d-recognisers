@@ -3,8 +3,7 @@
 """The recognition-record base mixin (ADR 0013).
 
 Every feature-recognition record is a frozen, geometry-only dataclass — no
-build123d / OCP object leaks out (records are the future ``b123d-recognisers``
-surface, ADR 0013 Phase 2). This mixin gives them the one uniform serialization
+build123d / OCP object leaks out. This mixin gives them the one uniform serialization
 accessor the contract promises: :meth:`to_dict`, a plain nested dict of
 primitives (``dataclasses.asdict`` recurses into nested records and hole tuples).
 

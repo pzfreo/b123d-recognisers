@@ -36,7 +36,7 @@ for the complete contract.
 
 ## Migrated behavior
 
-Version `0.1.0` preserves the recognition behavior of Draftwright commit
+The initial `0.1` release series preserves the recognition behavior of Draftwright commit
 `3fe20b0f71a71deced06b310943dd44cc66e355e`. The migration includes every public recogniser,
 shared cylinder/level substrates, the aggregate result, and `feature_census`. There are no
 intentional recognition changes. The checked-in semantic corpus records and continuously verifies
