@@ -1,9 +1,8 @@
 from build123d import Rot
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
-from tests.golden._common import hex_prism
+from tests.golden._common import hex_prism, provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_1082_polygonal_stock.py")
 
 
 def build_fixture():

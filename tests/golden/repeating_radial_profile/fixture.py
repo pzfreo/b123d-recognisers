@@ -1,7 +1,6 @@
-from tests.golden._common import PROVENANCE as _PROVENANCE
-from tests.golden._common import toothed_prism
+from tests.golden._common import provenance, toothed_prism
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_1058_wheel_profile.py")
 
 
 def build_fixture():

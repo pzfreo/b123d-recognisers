@@ -1,9 +1,8 @@
 from build123d import Box, Pos
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
-from tests.golden._common import hex_prism
+from tests.golden._common import hex_prism, provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_676_polygonal_boss.py")
 
 
 def build_fixture():

@@ -2,9 +2,9 @@ from math import cos, radians, sin
 
 from build123d import Box, Cylinder, Plane
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_recognition.py")
 
 
 def build_fixture():

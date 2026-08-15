@@ -1,8 +1,8 @@
 from build123d import Axis, Box, Compound, Cylinder, Pos, chamfer, fillet
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_recogniser_contract.py")
 
 
 def build_fixture():

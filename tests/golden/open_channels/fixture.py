@@ -1,8 +1,8 @@
 from build123d import Box, Pos
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_917_open_channel.py")
 
 
 def build_fixture():

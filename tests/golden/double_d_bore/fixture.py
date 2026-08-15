@@ -1,8 +1,8 @@
 from build123d import Align, Box, Cylinder
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_1058_wheel_profile.py")
 
 _CENTER = (Align.CENTER, Align.CENTER, Align.CENTER)
 

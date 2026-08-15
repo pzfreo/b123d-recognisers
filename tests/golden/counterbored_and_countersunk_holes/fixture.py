@@ -1,8 +1,8 @@
 from build123d import Box, Cone, Cylinder, Pos
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_recognition.py")
 
 
 def build_fixture():

@@ -6,11 +6,19 @@ from math import cos, pi, sin
 
 from build123d import Box, Cylinder, Polygon, Pos, RegularPolygon, extrude
 
-PROVENANCE = {
-    "creator": "Paul Fremantle",
-    "source": "Synthetic build123d geometry created for b123d-recognisers epic #1",
-    "license": "Apache-2.0",
-}
+SOURCE_COMMIT = "3fe20b0f71a71deced06b310943dd44cc66e355e"
+
+
+def provenance(source_path: str) -> dict[str, str]:
+    """Record the exact relicensed Draftwright test source adapted by a fixture."""
+
+    return {
+        "creator": "Paul Fremantle",
+        "source_repository": "https://github.com/pzfreo/draftwright.git",
+        "source_commit": SOURCE_COMMIT,
+        "source_path": source_path,
+        "license": "Apache-2.0",
+    }
 
 
 def obround_tool(length: float, width: float, height: float):

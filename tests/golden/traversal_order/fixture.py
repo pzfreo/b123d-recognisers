@@ -1,8 +1,8 @@
 from build123d import Box, Compound, Pos
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_issue_1073_cross_body_patterns.py")
 
 
 def _body():

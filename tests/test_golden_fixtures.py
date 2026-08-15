@@ -43,11 +43,15 @@ def test_complete_synthetic_fixture_corpus_is_executable_and_provenanced():
     assert {path.parent.name for path in fixture_paths} == EXPECTED_CASES
     for path in fixture_paths:
         fixture = _load(path)
-        assert fixture.PROVENANCE == {
-            "creator": "Paul Fremantle",
-            "source": "Synthetic build123d geometry created for b123d-recognisers epic #1",
-            "license": "Apache-2.0",
-        }
+        assert fixture.PROVENANCE["creator"] == "Paul Fremantle"
+        assert fixture.PROVENANCE["source_repository"] == (
+            "https://github.com/pzfreo/draftwright.git"
+        )
+        assert fixture.PROVENANCE["source_commit"] == (
+            "3fe20b0f71a71deced06b310943dd44cc66e355e"
+        )
+        assert fixture.PROVENANCE["source_path"].startswith("tests/test_")
+        assert fixture.PROVENANCE["license"] == "Apache-2.0"
         shape = fixture.build_fixture()
         assert isinstance(shape, Shape)
         assert shape.is_valid

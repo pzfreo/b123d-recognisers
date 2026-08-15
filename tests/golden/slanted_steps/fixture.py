@@ -1,8 +1,8 @@
 from build123d import Align, Box, BuildPart, BuildSketch, Plane, Polygon, Pos, extrude
 
-from tests.golden._common import PROVENANCE as _PROVENANCE
+from tests.golden._common import provenance
 
-PROVENANCE = dict(_PROVENANCE)
+PROVENANCE = provenance("tests/test_slanted_blind_step.py")
 
 
 def build_fixture():

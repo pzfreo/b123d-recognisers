@@ -4,7 +4,9 @@
   "provenance": {
     "creator": "Paul Fremantle",
     "license": "Apache-2.0",
-    "source": "Synthetic build123d geometry created for b123d-recognisers epic #1"
+    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "source_path": "tests/test_pocket_pattern_recognition.py",
+    "source_repository": "https://github.com/pzfreo/draftwright.git"
   },
   "recognition": {
     "aggregate": {
