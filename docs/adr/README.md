@@ -11,6 +11,7 @@ acceptance.
 | [0002](0002-uniform-deterministic-recogniser-contract.md) | Uniform deterministic recogniser contract | Accepted |
 | [0003](0003-one-recognition-result-and-explicit-reconciliation.md) | One recognition result and explicit reconciliation | Proposed |
 | [0004](0004-attributed-geometry-graph-and-residual-evidence.md) | Attributed geometry graph and residual evidence | Proposed |
+| [0005](0005-versioned-cross-repository-capability-contract.md) | Versioned cross-repository capability contract | Accepted |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
