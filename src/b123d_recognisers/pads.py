@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Recognition of bounded, axis-aligned rectangular raised pads (#885)."""
+"""Recognition of bounded, axis-aligned rectangular raised pads."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float) -> list[RaisedPad]:
 
     # A tiered/staircase tower has rectangular ledges touching the candidate at its
     # recovered local base.  Lower ledges on a sloped support can touch the pad in plan
-    # without belonging to that stack (#909); comparing every different Z discarded the
+    # without belonging to that stack; comparing every different Z discarded the
     # real upper pad.  Disjoint pads may legitimately have any number of heights.
     def touches_plan(a: RaisedPad, b: RaisedPad) -> bool:
         return (
@@ -143,7 +143,7 @@ def recognise_rectangular_pads(part: Part, *, tol: float = 0.2) -> list[RaisedPa
     and is bounded on both in-plane axes. Full-span steps are excluded;
     non-rectangular pocket floors and perforated plate faces fail the area test.
     Body-local walls and bounds prevent a detached component from being treated
-    as a pad raised from another component (#958).
+    as a pad raised from another component.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]

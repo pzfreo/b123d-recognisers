@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""flats — machined-flat recognition on round stock (ADR 0007, #148b).
+"""Machined-flat recognition on round stock.
 
 ``recognise_flats`` recovers the *across-flats* size of each machined flat — a single
 planar face truncating round stock (a spanner flat / D-shaft / hex A/F) — so it can be
@@ -113,27 +113,27 @@ class Flat(Record):
     #: The stock axis line's perpendicular foot from the origin, stored as the two coordinates
     #: other than dominant ``axis`` (z → (x, y); x → (y, z); y → (x, z)). With
     #: ``axis_direction`` the omitted coordinate is recoverable, so this is canonical for
-    #: aligned and slanted lines (#1036).
+    #: aligned and slanted lines.
     #:
     #: The axis letter alone cannot say whether two flats belong to the same piece of round
-    #: stock, and that is the one thing both consumers need (#1013). Two faces at
+    #: stock, and that is the one thing both consumers need. Two faces at
     #: ``(-12.5, 0, 0)`` and ``(12.5, 0, 0)`` are one double-D — one A/F definition. Two at
     #: ``(0, 0, 0)`` and ``(100, 0, 0)`` are two parallel lobes — two independent ones. From
     #: ``axis``/``across``/``at`` those are the same shape of data, so the renderer collapsed
     #: the second case into one callout and coverage, mirroring it, called the result
     #: complete.
     #:
-    #: ADR 0013's rule for a record that looks too thin: the fix is the record. The
+    #: package ADR 0002's rule for a record that looks too thin: the fix is the record. The
     #: recogniser already had the owning cylinder in hand, so this costs nothing to carry.
     axis_line: tuple[float, float] = (0.0, 0.0)
     #: The owning stock's axial extent ``(lo, hi)`` along ``axis_direction``.
     #:
-    #: The axis line alone is NOT stock identity, and this code already knew it: #1015 taught
+    #: The axis line alone is not stock identity. Parallel shafts may share a direction, so
     #: the opposition test that "the same infinite axis is not the same piece of stock", and
     #: the same holds for grouping. Two D-shafts stacked coaxially with a gap share an axis
     #: line, so grouping on that alone merged two independent A/F definitions into one callout
-    #: — the very defect #1013 set out to fix, in a coaxial arrangement instead of a parallel
-    #: one (Codex #1035 r1).
+    #: — the same identity defect in a coaxial arrangement instead of a parallel
+    #: one.
     #:
     #: Together with ``axis_direction`` and ``axis_line`` this is the stock identity. Purely
     #: geometric — the recogniser's internal ``stock`` tuple also carries a solid index,
@@ -142,7 +142,7 @@ class Flat(Record):
     stock_span: tuple[float, float] = (0.0, 0.0)
     #: The real cylinder direction, with the named dominant component positive. Together
     #: with the perpendicular-foot ``axis_line`` and ``stock_span`` this is the canonical
-    #: stock-region identity ADR 0017 section 3 requires (#1036).
+    #: stock-region identity the aggregate single-scan design section 3 requires.
     axis_direction: tuple[float, float, float] | None = None
 
     def __post_init__(self) -> None:
@@ -171,7 +171,7 @@ def recognise_flats(
     deterministically. Empty when the part has no round stock or no flat.
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
-    re-scanning the solid (mirrors ``recognise_holes``'s parameter, #703)."""
+    re-scanning the solid, matching :func:`recognise_holes`'s dependency-injection contract."""
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
@@ -245,7 +245,7 @@ def recognise_flats(
                 # The same infinite axis is not the same piece of stock. Two lone D-flats on
                 # separate COAXIAL regions were each taken for the other's opposite face, so
                 # both got `across` = the sum of two unrelated chord offsets — a wrong number
-                # on the feature's only size parameter (#1015). The axial extent separates
+                # on the feature's only size parameter. The axial extent separates
                 # them; the axis line alone cannot.
                 continue
             dot = n[0] * other["n"][0] + n[1] * other["n"][1] + n[2] * other["n"][2]
@@ -267,7 +267,7 @@ def recognise_flats(
 
 
 def _axis_line(axis: str, ax, direction=None) -> tuple[float, float]:
-    """Canonical in-plane coordinates of the stock's axis line (#1013, #1036).
+    """Canonical in-plane coordinates of the stock's axis line.
 
     Rounded to the same 3 dp as every other coordinate a record carries, so two faces on one
     piece of stock compare equal rather than differing in float noise.

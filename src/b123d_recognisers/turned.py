@@ -52,7 +52,7 @@ _OD_SPAN_PAD = 0.7
 _CHAMFER_ALLOWANCE_ABS = 0.5
 _CHAMFER_ALLOWANCE_FRAC = 0.12
 # A genuine turned body is round about its axis: the perpendicular cross-section is
-# roughly square and the OD silhouette fills it (#293). Looser than the rotational
+# roughly square and the OD silhouette fills it. Looser than the rotational
 # classifier's gate (chamfers/features perturb the bbox), but firmly rejects an
 # incidental cylinder on a prismatic part (a tiny OD in a large oblong bbox).
 _SQUARENESS_TOL = 0.15
@@ -80,7 +80,7 @@ class TurnedStep(Record):
 class TurnedProfile(Record):
     """The turned-shaft **aggregate** for the annotation pipeline — the coaxial ``steps``
     plus their shared ``axis`` and derived shoulders. **Not a recogniser return**
-    (:func:`recognise_turned_steps` returns ``list[TurnedStep]`` per ADR 0013 §2); built
+    (:func:`recognise_turned_steps` returns ``list[TurnedStep]`` per package ADR 0002); built
     from that list via :meth:`from_steps` for consumers that want axis + shoulders as a
     unit."""
 
@@ -111,7 +111,7 @@ class TurnedProfile(Record):
         last ``hi`` for a contiguous chain (each ``hi`` is the next ``lo``), but
         also correct for a NON-contiguous profile (e.g. two coaxial discs with an
         axial gap), where an interior ``hi`` is a real end face, not a shared
-        shoulder — so it is not silently dropped (#797)."""
+        shoulder — so it is not silently dropped."""
         if not self.steps:
             return ()
         return tuple(sorted({p for s in self.steps for p in (s.lo, s.hi)}))
@@ -128,7 +128,7 @@ def recognise_turned_steps(
     :meth:`TurnedProfile.from_steps` if the axis/shoulders unit is wanted.
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
-    re-scanning the solid (mirrors ``recognise_holes``'s parameter, #703).
+    re-scanning the solid, matching :func:`recognise_holes`'s dependency-injection contract.
     """
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
@@ -144,7 +144,7 @@ def recognise_turned_steps(
     # (largest external band) fills a roughly-square cross-section perpendicular to the
     # axis. Reject incidental small cylinders on a prismatic part — e.g. a case shell's
     # side screw-holes — whose unrelated feature faces would otherwise be read as a
-    # spurious multi-step profile (#293).
+    # spurious multi-step profile.
     pbb = part.bounding_box()
     perp = [s for i, s in enumerate((pbb.size.X, pbb.size.Y, pbb.size.Z)) if i != idx]
     cross = max(perp)
@@ -188,7 +188,7 @@ def recognise_turned_steps(
         return []
     # A segment whose midpoint has no external band over it (`local_od` → 0) is a
     # gap between disconnected bands, not a real step — drop it so it never renders
-    # as a phantom ø0 diameter (#279).
+    # as a phantom ø0 diameter.
     steps = [
         s
         for i in range(len(planes) - 1)

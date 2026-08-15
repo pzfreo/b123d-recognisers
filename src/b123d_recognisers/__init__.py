@@ -26,7 +26,7 @@ Common to both: a **British** ``recognise_`` verb (not ``find_``/``analyse_``); 
 build123d types leak out; consumers adapt these values into their own domain models).
 
 The contract holds for **every** recogniser, including the two that once strained it —
-their records were simply the wrong shape (#568):
+their records were simply the wrong shape:
 
 - ``recognise_face_levels -> list[FaceLevel]`` (was ``list[float]``) — a level is now a
   ``FaceLevel(z)`` record.
@@ -43,9 +43,9 @@ Record class names avoid consumer-domain ``Feature`` types: for example, the pub
 under this contract — they are cylinder-analysis *substrate* (a tuple of dicts / a diameter
 query), and deliberately keep their names. Likewise the **shared single-face reads**
 (``classify_bevel``/``BevelReject``, ``fillet_anchor``, ``cone_rims``,
-``floor_face_anchor``, ``step_level_zs``, #704): helpers shared with the declared
+``floor_face_anchor``, ``step_level_zs``): helpers shared with the declared
 front-end, not recognisers — they traffic in build123d/OCP objects and are exposed only where
-existing Draftwright compatibility requires them.
+existing downstream compatibility requires them.
 
 ``project_step_shoulders`` is likewise not a recogniser but its mirror image: a **pure
 projection** over :func:`recognise_risers`' records, with no ``part`` and no geometry access

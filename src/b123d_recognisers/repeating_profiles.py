@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Geometry-only evidence for complete repeating radial boundary profiles (#1087).
+"""Geometry-only evidence for complete repeating radial boundary profiles.
 
 The recogniser proves cyclic correspondence over every edge of two opposed outer wires.  It
 does not attach gear semantics to the result: module, pressure angle, tooth form, quality and
-manufacturing intent remain authored requirements.
+manufacturing intent remain authored requirements. Both opposed outer wires must correspond,
+and every edge must participate in a bijective sector rotation; repeated tip arcs alone are
+insufficient. Repeat counts below five are excluded because ordinary low-order prismatic
+symmetry has no independent consumer correspondence.
 """
 
 from __future__ import annotations

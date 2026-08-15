@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""grooves — turned / circlip-groove recognition on round stock (ADR 0007, #148c).
+"""Turned/circlip-groove recognition on round stock.
 
 A *groove* is an annular channel turned into round stock — a circlip / retaining-ring
 groove, an O-ring groove, a run-out relief. It reads as a *narrow* band of the OD whose diameter
@@ -50,7 +50,7 @@ def _shaft_key(c) -> tuple:
     """The axis line a band is turned about: the axis letter plus the axis point projected
     onto the plane perpendicular to the axis direction (position-independent along the axis),
     plus the owning solid. Bands with the same key are coaxial on one shaft; distinct parallel
-    shafts differ, and — like the sibling ``_line_key`` (#68) — coaxial bands in *separate*
+    shafts differ, and — like the sibling ``_line_key`` — coaxial bands in *separate*
     butted solids stay distinct so three stacked bodies are never misread as one channel."""
     px, py, pz = c["axis_xyz"]
     dx, dy, dz = c["dir_xyz"]
@@ -80,7 +80,7 @@ class Groove(Record):
 def floor_face_anchor(face: FaceLike) -> tuple[float, float, float]:
     """The groove leader-tip anchor: the **bbox centre** of the floor face (the reduced-OD
     band), unrounded. The one anchor contract shared by :func:`recognise_grooves` and the
-    declared front-end (``model/declare._read_groove_face``), #704 — the substrates differ
+    explicit-face reader — the substrates differ
     (band dicts from ``analyse_cylinders`` vs a single user-supplied face), but the leader
     tip must not."""
     bb = face.bounding_box()
@@ -100,7 +100,8 @@ def recognise_grooves(
     part has no round stock or no groove.
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
-    re-scanning the solid (mirrors ``recognise_holes``'s parameter, #703)."""
+    re-scanning the solid, matching the dependency-injection contract of
+    :func:`recognise_holes`."""
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
@@ -131,7 +132,7 @@ def recognise_grooves(
             if abs(prev["diameter"] - nxt["diameter"]) > _WALL_DIA_TOL:
                 continue
             # A narrow channel: narrower than the WIDER of its two walls. A band as wide as its
-            # walls is a staircase step (#148c review); an end-adjacent groove keeps one wide
+            # walls is a staircase step; an end-adjacent groove keeps one wide
             # wall (the shaft) even when the other is a thin retaining land, so test the wider.
             cur_w = cur["s_hi"] - cur["s_lo"]
             wider_wall = max(prev["s_hi"] - prev["s_lo"], nxt["s_hi"] - nxt["s_lo"])

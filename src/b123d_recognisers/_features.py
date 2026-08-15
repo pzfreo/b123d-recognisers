@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""features — geometric feature recognition for build123d parts (#87).
+"""features — geometric feature recognition for build123d parts.
 
-Originally derived from ``build123d_drafting.features`` and subsequently maintained in
-Draftwright. This package is now the source of truth; see ``NOTICE`` and the migration manifest
-for the complete provenance. Import through :mod:`b123d_recognisers`.
+This package is the source of truth. See the installed ``NOTICE`` and migration manifest for
+the complete, commit-pinned provenance; import the supported surface through
+:mod:`b123d_recognisers`.
 
 Recognises drilled-hole and boss features from a solid's cylindrical faces:
 
@@ -74,7 +74,7 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
     is outward-facing — a boss/OD; False for a bore), dir_xyz (unit axis
     direction with its dominant component positive), s_lo/s_hi (the patch's
     axial extent as coordinates along dir_xyz), solid_idx (index of the owning
-    solid, keeping coaxial bores in different bodies distinct — see #68), and
+    solid, keeping coaxial bores in different bodies distinct), and
     face (the source face).
     z_cyls: cylinders whose axis is approximately Z.
     cross_cyls: cylinders whose axis is approximately X or Y.
@@ -83,7 +83,7 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
     cross_cyls: list[CylinderEvidence] = []
     # Attribute each face to its owning solid so coaxial bores in *different*
     # bodies of a multi-solid assembly are not grouped into one hole — which
-    # would measure a depth across the gap between the bodies (#68). A single
+    # would measure a depth across the gap between the bodies. A single
     # solid yields one group, i.e. the historical single-body behaviour.
     solids = part.solids()
     faces_by_solid = (
@@ -134,7 +134,7 @@ def _line_key(c):
     point projected onto the plane perpendicular to the axis direction (so it is
     position-independent along the axis, and exact for slanted axes too). The
     solid component keeps coaxial bores in different bodies of an assembly from
-    grouping into one hole (#68)."""
+    grouping into one hole."""
     px, py, pz = c["axis_xyz"]
     dx, dy, dz = c["dir_xyz"]
     t = px * dx + py * dy + pz * dz
@@ -188,7 +188,7 @@ def full_cylinders(cyls: list[CylinderEvidence]) -> list[CylinderEvidence]:
     higher-level inventory of dimensionable diameters use
     :func:`feature_diameters`, which is built from the recognised
     :func:`recognise_holes` / :func:`recognise_bosses` features instead. Public and
-    stable for downstream consumers (e.g. ``draftwright``).
+    stable for downstream consumers.
     """
     keep = []
     for run in _merge_runs(cyls, _cyl_group_key):
@@ -208,7 +208,13 @@ _full_cyls = full_cylinders
 
 @dataclass(frozen=True)
 class CounterBore(Record):
-    """A counterbore or spotface step of a hole: its diameter and axial depth."""
+    """A cylindrical enlargement at a hole mouth: diameter and axial depth.
+
+    The containing :class:`HoleRecord` distinguishes ``cbore`` from ``spotface``. Their
+    geometry is otherwise identical, so classification uses the documented depth/diameter
+    ratio: a shallow facing cut below ``_SPOTFACE_MAX_RATIO`` is a spotface; a deeper tool step
+    is a counterbore. Diameter alone cannot establish that manufacturing distinction.
+    """
 
     diameter: float
     depth: float
@@ -234,7 +240,7 @@ class HoleRecord(Record):
     bottom: str
     cbore: CounterBore | None = None
     spotface: CounterBore | None = None
-    # A countersink (flat-head seat) coaxial with the bore, or None (#558). Composed
+    # A countersink (flat-head seat) coaxial with the bore, or None. Composed
     # from the standalone :func:`recognise_countersinks` so the hole's spec/grouping and
     # the callout-width estimate all see it.
     csink: CounterSink | None = None
@@ -477,7 +483,7 @@ def _merge_stacks(stacks, edge_faces, cache=None):
 
 
 def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink | None:
-    """The countersink seated on hole *h*, or None (#558). A countersink belongs to the
+    """The countersink seated on hole *h*, or None. A countersink belongs to the
     hole when its **minor circle** — where the cone meets the drilled bore — sits coaxially
     at one of the hole's bore *ends*: the opening (``s`` ≈ 0) or, for a through hole (open
     at both faces), the far end (``s`` ≈ depth). Keying on the minor-at-a-bore-end (not the
@@ -509,9 +515,9 @@ def recognise_holes(
     re-scanning the solid (mirrors ``lint_feature_coverage``'s parameter).
 
     Pass *csinks* — a precomputed ``recognise_countersinks(part)`` result — to
-    compose each countersink onto the hole it flares (#558). Per the ADR 0013
+    compose each countersink onto the hole it flares. Per the package ADR 0002
     contract this recogniser does **not** recognise countersinks itself; the
-    caller owns the single inventory and injects it (``analysis.py`` / ``detect.py``).
+    caller owns the single inventory and injects it.
     With ``csinks=None`` the holes come back without countersink attribution.
     """
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
@@ -521,7 +527,7 @@ def recognise_holes(
     edge_faces = _edge_face_map(part)
     # one end-classification cache for the whole call: the same (seg, end) is
     # classified by _merge_stacks and again in the loop below, each scan walking
-    # every face's edges (#150).
+    # every face's edges.
     cache: dict = {}
     stacks = _merge_stacks(_merge_runs(_segments(internal), _line_key), edge_faces, cache)
 
@@ -600,10 +606,10 @@ def recognise_holes(
                 spotface=spotface,
             )
         )
-    # Compose the injected countersinks (#558): a coaxial cone flaring from the bore is
+    # Compose the injected countersinks: a coaxial cone flaring from the bore is
     # a hole attribute (like a counterbore), so it rides on the HoleRecord — HoleSpec
     # grouping and the callout-width estimate then see it for free. The caller injects the
-    # inventory (ADR 0013 — no sibling re-recognition here).
+    # inventory (package ADR 0002 — no sibling re-recognition here).
     if csinks:
         holes = [
             (replace(h, csink=cs) if (cs := _csink_for_hole(h, csinks)) is not None else h)
@@ -666,12 +672,12 @@ def feature_diameters(
     patch list, so partial cylinders that never become a real feature — slot ends and
     interrupted recesses (an exact half-cylinder pair sums to a full turn and
     fools an angle-only test, but is not a bore) — are excluded, while genuine
-    counterbore/spotface steps are kept. (#158)
+    counterbore/spotface steps are kept.
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to share one
     scan between ``recognise_holes`` and ``recognise_bosses``. Pass *holes* — a precomputed
     ``recognise_holes`` result — to reuse the single feature inventory instead of
-    re-detecting (ADR 0008 Amendment 5, #244).
+    re-detecting (the single-inventory rule).
     """
     cyls = analyse_cylinders(part) if cyls is None else cyls
     if holes is None:
@@ -690,7 +696,7 @@ def feature_diameters(
 
 # ---------------------------------------------------------------------------
 # Hole patterns — bolt circles, linear arrays, and rectangular grids
-# (#92; sub-clustering and grids #126/#144)
+# Pattern sub-clustering and grids
 # ---------------------------------------------------------------------------
 
 # A pattern's holes must share a radius (bolt circle) or pitch (linear array)
@@ -738,8 +744,7 @@ class RectGrid(Record):
     position is occupied (``rows * cols == len(holes)``). ``center`` is the world
     point at the grid centroid (opening plane).
 
-    The lattice convention is shared with ``model.declare``, which reconstructs a
-    declared grid from these very fields (#969): **columns** are spaced
+    The serialized lattice convention is self-contained: **columns** are spaced
     ``col_pitch`` apart along the lattice's first basis direction and **rows**
     ``row_pitch`` apart along the second, and ``angle`` is the COLUMN direction's
     orientation in degrees within the holes' opening plane, measured in the
@@ -787,8 +792,7 @@ class HoleSpec(Record):
     drilling direction snapped to 6 dp (boolean ops leave ~1e-16 noise on the
     components, and exact float keys would split a pattern silently). ``depth``
     is ``None`` for a through hole — its depth is irrelevant to the spec —
-    otherwise the bore depth. Public and stable for downstream consumers (e.g.
-    ``draftwright``).
+    otherwise the bore depth. Public and stable for downstream consumers.
     """
 
     axis: Vector3
@@ -798,7 +802,7 @@ class HoleSpec(Record):
     cbore: CounterBore | None
     spotface: CounterBore | None
     # The countersink's *size* only — ``(major_diameter, included_angle)`` — never its
-    # location, so identical countersunk holes at different positions share one spec (#558).
+    # location, so identical countersunk holes at different positions share one spec.
     csink: tuple[float, float] | None = None
 
     @classmethod
@@ -835,14 +839,14 @@ def _plane_uv(axis):
     """Two orthonormal vectors spanning the plane perpendicular to *axis*.
 
     Seeded from the shared :func:`b123d_recognisers._geometry.plane_axes` basis for *axis*'s
-    dominant component — the very frame ``model.declare`` lays a declared pattern out in, so a
-    grid angle measured here means the same thing there (#969) — then Gram-Schmidt'd against
+    dominant component — the public frame in which :attr:`RectGrid.angle` is defined — then
+    Gram-Schmidt'd against
     the *actual* axis so the result is exactly perpendicular to it whatever the axis is.
 
     Seed-and-orthogonalise rather than a near-axis special case: a threshold wide enough to
     absorb real STEP noise is also wide enough to return a basis that is NOT perpendicular to
-    the normal it was given, which silently distorts every projected pitch (Codex review of
-    #970 — a 0.999 cosine cutoff let a 2.5°-off normal through). An exactly axis-aligned axis
+    the normal it was given, which silently distorts every projected pitch. A 0.999 cosine
+    cutoff, for example, lets a 2.5°-off normal through. An exactly axis-aligned axis
     reproduces the canonical basis unchanged, and a noisy one lands imperceptibly beside it,
     with no cutoff for real geometry to sit near.
 
@@ -852,16 +856,12 @@ def _plane_uv(axis):
 
     **Scope.** The seed follows *axis*'s dominant component, so the frame does jump a quarter
     turn across a dominant-component tie (``(1, 1-ε, 0)`` → ``(1-ε, 1, 0)``). That is not a gap
-    between the two halves of the waist: :func:`b123d_recognisers._geometry.plane_axes` and
-    ``detect._pattern_feature``'s axis LETTER are chosen by the same rule, so the frame and the
-    letter turn together, and `test_the_frame_and_the_ir_axis_letter_agree` pins it. What such
-    an axis does not have is a faithful declared counterpart at all — an oblique pattern
-    would be flattened into its dominant plane by the letter, whatever frame it was found
-    in. The projection here stays geometrically honest (unforeshortened pitches, so the
-    lattice IS recognised correctly), and #971 settled what happens next: `model/detect.py`
-    refuses to build a `PatternFeature` for a non-principal axis, so the members stay
-    ordinary holes rather than a lattice in the wrong plane. Recognition still reports what
-    it finds — the limitation is the IR's, so the refusal lives at the adapter (ADR 0013).
+    between incompatible rules: :func:`b123d_recognisers._geometry.plane_axes` and the
+    dominant axis letter use the same tie-break, so the frame and letter turn together.
+    Recognition remains geometrically honest for an oblique pattern and reports its true,
+    unforeshortened pitches. A consumer whose model supports only principal-axis patterns must
+    reject that record rather than flatten it into the wrong plane; that policy remains outside
+    the geometry package (ADR 0002).
     """
     n = math.hypot(*axis)
     a = tuple(c / n for c in axis)
@@ -895,7 +895,7 @@ def _as_bolt_circle(holes, pts):
 def _as_linear_array(members, pts, make):
     """A linear-array record when *pts* (2D) are collinear at constant pitch.
 
-    Record-generic (#635): *make* ``(ordered_members, pitch, direction) -> Record`` builds the
+    Record-generic: *make* ``(ordered_members, pitch, direction) -> Record`` builds the
     concrete record (a :class:`LinearArray` for holes, a ``PocketArray`` for pockets) so the
     collinearity/pitch geometry is shared. *members* need a ``.location`` (world centre)."""
     n = len(pts)
@@ -995,7 +995,7 @@ def _linear_array_candidates(members, pts, make):
     """All linear arrays within a spec group: every pair seeds a line, the
     group's collinear points are gathered and sorted, and each maximal
     constant-pitch run of ≥3 becomes a candidate. Returns
-    ``(record, frozenset(member indices))`` candidates; *make* builds the record (#635)."""
+    ``(record, frozenset(member indices))`` candidates; *make* builds the record."""
     n = len(pts)
     out, seen = [], set()
     for i in range(n):
@@ -1042,7 +1042,7 @@ def _rect_grid(members, pts, make):
     define the lattice basis; every point must land on an integer cell and every
     cell must be occupied (no holes, no extras). 2×2 is excluded — four lattice
     corners are a rectangle, not a grid. *make* ``(members, rows, cols, row_pitch,
-    col_pitch, angle, center) -> Record`` builds the concrete record (#635)."""
+    col_pitch, angle, center) -> Record`` builds the concrete record."""
     n = len(pts)
     if n < 6:
         return None
@@ -1086,12 +1086,11 @@ def _rect_grid(members, pts, make):
         return None
     # `u1` is the FIRST lattice basis and `u2` the orthogonal one; the cell index along each
     # is `ci`/`cj`. Which of those is a "row" is a naming choice, and this recogniser made the
-    # opposite one to `declare._pattern_members`, which lays COLUMNS along its first local
-    # direction and ROWS along the second, reading `rp, cp = grid`. Feeding one into the other
-    # transposed every declared grid array (#969) — invisible on the hole path, which emits
-    # explicit `members=`, and exposed by pocket/slot arrays, which recompute.
+    # serialized convention defines COLUMNS along the first local direction and ROWS along
+    # the second. Swapping those names transposes counts and pitches when a consumer rebuilds
+    # member positions.
     #
-    # Detection now follows declaration, per the decision on #969: columns vary along the first
+    # The serialized convention is explicit: columns vary along the first
     # basis, rows along the second, and the pitch tuple is `(row_pitch, column_pitch)`. Note
     # `u1` is the SHORTEST pairwise vector, not "X" — so this is a consistent local-lattice
     # convention, not a world-axis one, and holds for a rotated grid.
@@ -1101,7 +1100,7 @@ def _rect_grid(members, pts, make):
     # NOT under a quarter-turn — a quarter-turn swaps the roles of rows and columns. Folding to
     # [0, 90) discarded exactly that distinction, so whenever the shortest basis was the
     # original ROW direction the rebuilt lattice came back transposed in place: same angle,
-    # swapped counts and pitches, different point set (Codex review of #970).
+    # swapped counts and pitches, and therefore a different point set.
     cols = max(c[0] for c in cells) + 1
     rows = max(c[1] for c in cells) + 1
     if rows < 2 or cols < 2 or max(rows, cols) < 3 or rows * cols != n:
@@ -1146,7 +1145,9 @@ def recognise_hole_patterns(
     separate bolt circles, the rows of a rectangular perimeter, a grid). All
     candidate sub-patterns are enumerated and allocated greedily largest-first,
     so each hole belongs to at most one pattern and the richest interpretation
-    wins. A filled N×M lattice becomes one :class:`RectGrid`; a rectangular
+    wins. Precedence is deterministic: a full grid claims its complete same-spec group first;
+    remaining candidates sort by member count with stable family order. A filled N×M lattice
+    becomes one :class:`RectGrid`; a rectangular
     ring or perimeter is reported as its edge :class:`LinearArray` rows.
 
     Collinearity is tested ahead of concyclicity (any three points are
@@ -1175,7 +1176,7 @@ def recognise_hole_patterns(
             # lattice. The grid therefore claims every member, sorts ahead of every
             # equal-sized candidate, and makes all circle/linear candidates impossible
             # to allocate. Return it now instead of doing O(n^4) work whose results are
-            # guaranteed to be discarded (#15).
+            # guaranteed to be discarded.
             patterns.append(grid)
             continue
         candidates: list = []

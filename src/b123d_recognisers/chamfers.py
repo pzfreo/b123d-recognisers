@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""chamfers — chamfer (bevelled edge) recognition for prismatic parts (ADR 0007).
+"""Chamfer (bevelled-edge) recognition for prismatic parts.
 
 ``recognise_chamfers`` recovers the manufacturing size of each chamfer so it can be called
-out (``C12`` / ``12 × 45°``) rather than left as a rendered-but-undimensioned bevel
-(#560). A chamfer is a small **oblique** planar face — one whose normal is not aligned
+out (``C12`` / ``12 × 45°``) rather than left as a rendered-but-undimensioned bevel. A
+chamfer is a small **oblique** planar face whose normal is not aligned
 with any principal axis (a 45° equal-leg chamfer on a Z edge has normal ≈ (0.707, 0.707,
 0)) — that breaks a **convex** edge where two mutually-perpendicular axis-aligned faces
 meet. Four gates keep it to genuine chamfers and recover the right size:
@@ -77,8 +77,8 @@ def classify_bevel(
     face: FaceLike,
 ) -> tuple[int, Vector3, dict[int, tuple[float, float]], float, float]:
     """The single-face oblique-bevel read shared by :func:`recognise_chamfers` and the
-    declared front-end (``model/declare._read_chamfer_face``) — one home for the
-    normal→axis classification thresholds and the leg geometry (#704). Returns
+    explicit-face reader — one home for the
+    normal→axis classification thresholds and the leg geometry. Returns
     ``(edge_i, nv, span, leg_hi, leg_lo)``: the along-edge axis index, the unit normal,
     per-axis ``(lo, hi)`` bbox spans, and the two in-plane leg lengths (unrounded,
     ``leg_hi >= leg_lo``). Raises :class:`BevelReject` when the face is not one."""
@@ -138,7 +138,7 @@ def recognise_chamfers(
         # in-plane bbox extents, not measured against a possibly distant outermost wall).
         # (The old extra skew gate on the in-plane normal components was unreachable — a
         # unit normal with two components < 0.05 forces the third > 0.99, which "aligned"
-        # already rejects — so it was dropped when the thresholds moved, #704 review.)
+        # already rejects, so the redundant gate was removed when thresholds moved.)
         try:
             edge_i, _nv, span, leg_hi, leg_lo = classify_bevel(f)
         except BevelReject:
@@ -174,7 +174,7 @@ def recognise_chamfers(
         # the chamfer face it lands in the removed-wedge *vacuum* for a real (convex)
         # chamfer (OUT), but in filled *material* for a gusset/rib/web bevelling a concave
         # re-entrant corner (IN). The nudge clears the on-boundary knife-edge at the raw
-        # corner; this is the discriminator adjacency alone can't make (#560 review).
+        # corner; this is the discriminator adjacency alone can't make.
         corner = [0.0, 0.0, 0.0]
         corner[edge_i] = fc[edge_i]
         corner[oi[0]] = neigh_coord[oi[0]]
@@ -186,7 +186,7 @@ def recognise_chamfers(
             continue  # concave corner — a gusset / rib / web, not a chamfer
         # Anchor the leader on the bevel FACE (its centroid), not the supporting plane's
         # parametric origin: that origin is arbitrary (OCC parameterisation) and can project to
-        # a chamfer endpoint/corner rather than the middle of the diagonal (#621). The centroid
+        # a chamfer endpoint/corner rather than the middle of the diagonal. The centroid
         # of the convex planar bevel lies on the face; this also matches declare's
         # _read_chamfer_face, so detected and declared chamfers anchor identically.
         fctr = f.center()

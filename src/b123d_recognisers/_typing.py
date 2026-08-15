@@ -3,7 +3,7 @@
 """Shared types for the public geometry boundary.
 
 These aliases describe build123d inputs and the one legacy dictionary substrate exported for
-Draftwright compatibility. Recognition records themselves continue to contain only serialisable
+downstream compatibility. Recognition records themselves continue to contain only serialisable
 geometry values.
 """
 

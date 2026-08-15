@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Recognition of non-cylindrical machined features (#135).
+"""Recognition of non-cylindrical machined features.
 
 It recognises milled *slots* — the class of feature the cylinder-based pipeline
 (``analyse_cylinders``/``recognise_holes`` in :mod:`._features`) is blind to.  It
@@ -9,8 +9,8 @@ feature recognition; it mirrors their OCC face-scan idioms.
 
 Scope: **rectangular recesses with straight walls** — enclosed through-slots
 (:func:`recognise_slots`), their blind counterparts (floored slots/pockets,
-:func:`recognise_pockets`, #148a), and full-span floored open channels
-(:func:`recognise_channels`, #917). The recogniser proves a candidate is such a
+:func:`recognise_pockets`), and full-span floored open channels
+(:func:`recognise_channels`). The recogniser proves a candidate is such a
 recess rather than some other facing-wall feature with three predicates a naive
 "opposed facing walls" test gets wrong:
 
@@ -20,7 +20,7 @@ recess rather than some other facing-wall feature with three predicates a naive
 2. **Slot walls** — both walls are bounded by straight (LINE) and/or circular-arc
    (CIRCLE) edges, with at least one straight edge and **at most one arc**
    (:func:`_is_wall`).  A rectangular wall (all LINE) qualifies; so does a wall a slot
-   cut into round stock clips into a single arc + a straight floor/chord (#148e).  A
+   cut into round stock clips into a single arc + a straight floor/chord.  A
    turned groove / circlip recess has an *annular* wall bounded by *two* concentric arcs
    (OD + floor), so the one-arc cap rejects it — even when a keyway / flat notches a
    straight edge into the annulus (otherwise a keyed shaft's groove reads as a slot).
@@ -97,7 +97,7 @@ class Slot(Record):
     d_lo: float
     d_hi: float
     # Geometry-derived identity of the physical solid that supplied this record.  A compound
-    # must not turn equal features on separate bodies into one manufacturing pattern (#1073).
+    # must not turn equal features on separate bodies into one manufacturing pattern.
     # The empty tuple preserves hand-built record compatibility. ``None`` is reserved for
     # unavailable/ambiguous recognised provenance and is ineligible for pattern grouping.
     body_key: tuple[float, ...] | None = ()
@@ -109,8 +109,8 @@ class Slot(Record):
     @property
     def location(self) -> tuple[float, float, float]:
         """The slot centroid in world XYZ — mid-span along ``long_axis``, the centreline on
-        ``width_axis``, mid-through on ``depth_axis``. The `.location` the shared pattern geometry
-        (#635) clusters on, as pockets/holes carry."""
+        ``width_axis``, mid-through on ``depth_axis``. The ``location`` is the shared pattern
+        geometry key, matching pocket and hole records."""
         coord = {
             self.long_axis: (self.lo + self.hi) / 2,
             self.width_axis: self.w_center,
@@ -121,10 +121,10 @@ class Slot(Record):
 
 @dataclass(frozen=True)
 class SlotArray(Record):
-    """N identical milled slots in a straight, constant-pitch line (#841) — the through-slot
+    """N identical milled slots in a straight, constant-pitch line — the through-slot
     analog of :class:`PocketArray`. ``slots`` are the member :class:`Slot` records (ordered along
     the array); ``pitch`` is the centre-to-centre spacing and ``direction`` the (unit) array
-    axis, both read by ``detect._slot_pattern_feature``."""
+    axis."""
 
     slots: tuple[Slot, ...]
     pitch: float
@@ -133,7 +133,7 @@ class SlotArray(Record):
 
 @dataclass(frozen=True)
 class SlotGrid(Record):
-    """N×M identical milled slots on a rectangular lattice (#841) — the through-slot analog of
+    """N×M identical milled slots on a rectangular lattice — the through-slot analog of
     :class:`PocketGrid`. ``slots`` are the member :class:`Slot` records; the lattice is
     ``rows``×``cols`` at ``row_pitch``/``col_pitch``, rotated ``angle`` degrees about
     ``center`` — the same convention :class:`PocketGrid` and `RectGrid` document."""
@@ -149,7 +149,7 @@ class SlotGrid(Record):
 
 @dataclass(frozen=True)
 class Pocket(Record):
-    """A blind rectangular recess — a milled slot/pocket capped by a floor (#148a).
+    """A blind rectangular recess — a milled slot/pocket capped by a floor.
 
     The through/blind split (:func:`_has_floor`) is the only difference from a
     :class:`Slot`: a pocket is floored, so it carries a third defining size — the
@@ -181,10 +181,10 @@ class Pocket(Record):
     # Which depth end is the OPENING: +1 opens toward +depth (floor at d_lo), -1 toward -depth
     # (floor at d_hi). d_lo/d_hi alone are the unordered extent, so without this two pockets on
     # opposite faces sharing an absolute depth range are indistinguishable — and would merge into
-    # one impossible array (Codex #849). Defaults to +1 for hand-built records.
+    # one impossible array. Defaults to +1 for hand-built records.
     open_sign: int = 1
     # A corner interruption touches two adjacent envelope edges, so its in-plane
-    # location is implicit and no centre-location dimensions are required (#897).
+    # location is implicit and no centre-location dimensions are required.
     edge_anchored: bool = False
     # See Slot.body_key.  Appended after the existing defaults to preserve positional callers.
     body_key: tuple[float, ...] | None = ()
@@ -196,8 +196,8 @@ class Pocket(Record):
     @property
     def location(self) -> tuple[float, float, float]:
         """The recess centroid in world XYZ — mid-span along ``long_axis``, the centreline on
-        ``width_axis``, mid-depth on ``depth_axis`` (matches ``detect._convert_pocket``). The
-        `.location` the shared pattern geometry (#635) clusters on, as holes carry."""
+        ``width_axis``, mid-depth on ``depth_axis``. The ``location`` is the shared pattern
+        geometry key, matching the corresponding hole and slot records."""
         coord = {
             self.long_axis: (self.lo + self.hi) / 2,
             self.width_axis: self.w_center,
@@ -250,10 +250,10 @@ class Channel(Record):
 
 @dataclass(frozen=True)
 class PocketArray(Record):
-    """N identical blind pockets in a straight, constant-pitch line (#841) — the recess analog
+    """N identical blind pockets in a straight, constant-pitch line — the recess analog
     of :class:`b123d_recognisers.LinearArray`. ``pockets`` are the member
     :class:`Pocket` records (ordered along the array); ``pitch`` is the centre-to-centre spacing
-    and ``direction`` the (unit) array axis, both read by ``detect._pocket_pattern_feature``."""
+    and ``direction`` the unit array axis."""
 
     pockets: tuple[Pocket, ...]
     pitch: float
@@ -262,7 +262,7 @@ class PocketArray(Record):
 
 @dataclass(frozen=True)
 class PocketGrid(Record):
-    """N×M identical blind pockets on a rectangular lattice (#841) — the recess analog of
+    """N×M identical blind pockets on a rectangular lattice — the recess analog of
     :class:`b123d_recognisers.RectGrid`. ``pockets`` are the member
     :class:`Pocket` records; the lattice is ``rows``×``cols`` at ``row_pitch``/``col_pitch``,
     rotated ``angle`` degrees about ``center`` — the same convention `RectGrid` documents
@@ -321,19 +321,20 @@ class _Face:
     normal: tuple
     axis: str
     bb: object
-    wall: bool  # a valid slot wall: LINE/CIRCLE edges, at least one straight LINE (#148e)
+    wall: bool  # a valid slot wall: LINE/CIRCLE edges, at least one straight LINE
 
 
 def _is_wall(face) -> bool:
     """True when *face* can be a slot wall: bounded only by straight (LINE) or circular-arc
     (CIRCLE) edges, with **at least one** straight edge and **at most one** arc. A fully
     rectangular wall qualifies (all LINE); a slot cut into round stock has a wall the OD clips
-    into a *single* arc + a straight floor/chord, which now qualifies too (#148e).
+    into a *single* arc + a straight floor/chord, which now qualifies too.
 
     A turned groove / circlip recess is still rejected — its annular wall is a washer bounded
     by *two* concentric arcs (the outer OD + the inner floor circle), so the ``<= 1`` arc cap
     excludes it. That cap holds even when a keyway / flat / cross-hole notches a straight edge
-    into the annulus (which defeated an "all edges must be straight" test — #148e review): the
+    into the annulus, which is why the arc-count proof is stronger than an
+    "all edges must be straight" test: the
     two concentric arcs survive, so a keyed groove never reads as a slot. A freeform
     (spline/ellipse) face is rejected outright."""
     types = [e.geom_type for e in face.edges()]
@@ -440,7 +441,7 @@ def _end_capped(faces, foot, foot_area, depth_axis, end, want) -> bool:
     high end) so the cap faces *into* the cavity; the part's own outer face at that level
     faces the other way and is excluded (that is what separates a real floor from a
     through-open end). Coverage is *aggregated* over all qualifying faces (not tested per
-    face), so a floor split by a rib/divider still counts (#146). The sum (not union) is
+    face), so a floor split by a rib/divider still counts. The sum (not union) is
     exact for the coplanar floor faces of a valid solid; overlaps only arise from
     interpenetrating solids (degenerate input)."""
     dk = _AXES[depth_axis]
@@ -463,8 +464,7 @@ def _floor_ends(faces, s: Slot) -> int:
     """How many of *s*'s two depth ends a planar floor caps: ``0`` = through (open both ends),
     ``1`` = a blind recess (one floor + one opening — a real pocket), ``2`` = a sealed internal
     void (capped both ends, no opening — NOT a machinable recess). The obround end-cap recovery
-    routes on this exact count, so a sealed void is not misread as a full-thickness-deep pocket
-    (#837 review)."""
+    routes on this exact count, so a sealed void is not misread as a full-thickness-deep pocket."""
     foot = {
         s.width_axis: (s.w_center - s.width / 2, s.w_center + s.width / 2),
         s.long_axis: (s.lo, s.hi),
@@ -502,7 +502,7 @@ _END_RADIUS_TOL = 0.15
 
 def _cylinder_faces(part) -> list[tuple]:
     """``(radius, axis_letter, axis_location, bbox, concave)`` for each axis-aligned cylindrical
-    face of *part* — the candidate obround end caps (#613). ``axis_location`` is a point on the
+    face of *part* — the candidate obround end caps. ``axis_location`` is a point on the
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
     some unrelated cylinder at a different depth); ``concave`` is True when the face bounds a
     *void* (its material-outward normal points inward, toward the axis) — a recess wall — rather
@@ -525,12 +525,12 @@ def _cylinder_faces(part) -> list[tuple]:
 
 
 def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
-    """True when a semicircular obround end cap sits at ``coord`` along the long axis (#613): a
+    """True when a semicircular obround end cap sits at ``coord`` along the long axis: a
     **concave** (void-bounding) cylinder of radius ≈ ``s.width/2`` about the depth axis, on the
     slot centreline, **spanning the slot's own depth extent** ``[d_lo, d_hi]``. Two clauses
     separate a real cap from a coaxial impostor at the same place: the depth-extent test rejects
     a boss/hole at a *different* depth, and the concavity test rejects added material — a post or
-    boss protruding *into* the slot end at the slot's depth (both review false positives)."""
+    boss protruding *into* the slot end at the slot's depth."""
     r = s.width / 2
     li, wi, di = _AXES[s.long_axis], _AXES[s.width_axis], _AXES[s.depth_axis]
     dc = "XYZ"[di]
@@ -547,15 +547,15 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
 
 
 def _extend_obround_ends(records: list[_R], part) -> list[_R]:
-    """Extend radiused-end (obround) slots/pockets to their **overall** length (#613).
+    """Extend radiused-end (obround) slots/pockets to their **overall** length.
 
     The recogniser pairs the two flat side walls, so the raw ``lo``/``hi`` stop at the straight
     portion — a slot with semicircular ends under-reports its length by the two end radii (each
     ``width/2``). A true obround is symmetric, so a slot is extended only when a semicircular end
     cap (:func:`_end_cap_at`) is present at **both** ends; each end is then pushed out by the
     radius, keeping the centre fixed. Requiring both ends (not one) avoids a lone coaxial
-    cylinder shifting a flat-ended slot's centre (review), and matches ``declare.slot(obj)``,
-    which reads the overall length off the object bounding box. Rectangular slots have no caps
+    cylinder shifting a flat-ended slot's centre, and matches explicit-object readers that
+    derive overall length from the object bounding box. Rectangular slots have no caps
     and are returned unchanged."""
     caps = _cylinder_faces(part)
     if not caps:
@@ -577,7 +577,7 @@ def _extend_obround_ends(records: list[_R], part) -> list[_R]:
     return out
 
 
-# An obround through-slot whose straight section is shorter than its width (#816) has flat side
+# An obround through-slot whose straight section is shorter than its width has flat side
 # walls too short to pair as an elongated slot: `_candidate` either rejects it (width > the short
 # straight length) or mistakes the full through-thickness for the length (a full-span cut). Its
 # length lives in the two semicircular ends, so recognise it directly from the end caps — a pair of
@@ -588,7 +588,7 @@ _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) /
 # by RATIO to the radius (2.0 / 1.0), so the discriminator holds at every scale, not just large r.
 # Coaxial cap faces (a semicircle a STEP importer split into two quarter-cylinders) are clustered
 # when their axis lines sit within this (mm); the ~0.02 mm split noise is well inside it, and a
-# real slot's two ends are separated by its straight run (≥ _MERGE_TOL), well outside (#837).
+# real slot's two ends are separated by its straight run (≥ _MERGE_TOL), well outside.
 _CAP_CLUSTER_TOL = 0.3
 
 
@@ -597,12 +597,13 @@ def _obround_end(cap: tuple):
     end, or None. A half-cylinder end's in-plane bounding box is ≈ 2r across (its width axis) by
     ≈ r along the bulge (its long axis) — a full cylinder (round hole) is 2r × 2r and is rejected.
     The 2r/r test is by RATIO to the radius so the classifier holds at any scale (fixing the
-    absolute-tolerance collapse for small r, review). Returns ``(width_axis, long_axis, depth_axis,
+    absolute-tolerance collapse for small radii). Returns
+    ``(width_axis, long_axis, depth_axis,
     radius, w_center, flat, direction, d_lo, d_hi)`` — ``flat`` is the cylinder-axis position on the
     long axis (the straight-wall junction), ``direction`` (±1) the side the cap bulges toward. The
     through/blind split is left to the caller's :func:`_has_floor` (authoritative and local, so a
-    through-slot in a thin step of stepped stock is not rejected by a global-thickness assumption,
-    review)."""
+    through-slot in a thin step of stepped stock is not rejected by a global-thickness
+    assumption)."""
     rad, ax, loc, bb, concave = cap
     if not concave or rad <= 0:
         return None
@@ -620,7 +621,7 @@ def _obround_end(cap: tuple):
     direction = -1 if (flat - getattr(bb.min, lc)) > (getattr(bb.max, lc) - flat) else 1
     # w_center from the (merged) bbox centre, not loc — an imported STEP splits an end into two
     # quarter faces whose axis Location differs by ~0.02 mm across the diameter, so loc[width] is
-    # unreliable while the union bbox centre is exact (#837). flat (loc[long]) stays consistent.
+    # unreliable while the union bbox centre is exact. flat (loc[long]) stays consistent.
     return (
         width_axis,
         long_axis,
@@ -642,7 +643,7 @@ def _has_side_walls(faces, s: Slot) -> bool:
     rejects two independent D-cutouts whose caps merely alternate ``-1, +1`` across solid.
     The normal-direction test is essential: the stock's own OUTWARD-facing side faces sit
     at the same ``w_center ± width/2`` when the stock is exactly as wide as the slot, and
-    would otherwise be mistaken for the channel walls (#816 review).
+    would otherwise be mistaken for the channel walls.
     """
     wk, lk = _AXES[s.width_axis], _AXES[s.long_axis]
     lo_wall, hi_wall = False, False
@@ -672,7 +673,7 @@ def _union_bb(a, b):
 
 def _obround_ends(part) -> list[tuple]:
     """The obround end caps of *part*, robust to the imported-STEP topology that splits a
-    semicircular end into two quarter-cylinder faces (#837).
+    semicircular end into two quarter-cylinder faces.
 
     A physical end is one or more **coaxial** concave cylinder faces sharing an axis line and depth:
     build123d emits it as a single half-cylinder face (in-plane bbox ``2r × r``), while a STEP
@@ -714,7 +715,7 @@ def _obround_ends(part) -> list[tuple]:
 
 def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
     """Recognise obround recesses from their semicircular end caps — the path for recesses whose
-    flat walls are too short for :func:`_candidate`/:func:`_pocket_candidate` to pair (#816/#837).
+    flat walls are too short for :func:`_candidate`/:func:`_pocket_candidate` to pair.
     Merged ends (:func:`_obround_ends`, quarter/half-cylinder agnostic) are grouped by centreline/
     radius/depth, then within a group sorted along the run and paired: a cap bulging toward -long
     immediately followed by one bulging toward +long is one recess's two ends (the void lies between
@@ -757,15 +758,15 @@ def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
                 d_lo=round(dlo, 2),
                 d_hi=round(dhi, 2),
             )
-            # Confirm a real channel (side walls) joins the ends — not two D-cutouts bridging solid
-            # (#816 review). On failure the caps may belong to a later valid pair, so
-            # advance by one.
+            # Confirm a real channel (side walls) joins the ends, rather than two D-cutouts
+            # bridging solid. On failure the caps may belong to a later valid pair, so advance
+            # by one.
             if not _has_side_walls(faces, s):
                 i += 1
                 continue
             # Route on the EXACT floor count: a pocket is capped on ONE end (floor + opening); a
             # through-slot on neither; a sealed internal void (both ends capped) is neither — do not
-            # emit it as a full-thickness-deep pocket (#837 review).
+            # emit it as a full-thickness-deep pocket.
             n_floor = _floor_ends(faces, s)
             if blind and n_floor == 1:
                 out.append(
@@ -809,15 +810,15 @@ def _recognise_slots_one(part) -> list[Slot]:
             for j in range(i + 1, len(walls)):
                 s = _candidate(walls[i], walls[j], part_ext)
                 # Keep only through-slots: a blind pocket (or the floored gap
-                # between bosses) is capped by a floor and is out of scope (#148).
+                # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
                     candidates.append(s)
     # Stubby obround through-slots (straight section < width) have no pairable flat walls, so
-    # recover them from their end caps (#816). Emitted at the straight-wall junctions like the
+    # recover them from their end caps. Emitted at the straight-wall junctions like the
     # flat-wall path, so `_merge` folds any duplicate an elongated obround also produced.
     candidates.extend(_recognise_obround_from_ends(part, faces))
-    # Recombine arms of a crossing channel split by the intersection (#604), then extend any
-    # radiused-end (obround) slot to its overall length (#613).
+    # Recombine arms of a crossing channel split by the intersection, then extend any
+    # radiused-end (obround) slot to its overall length.
     return _extend_obround_ends(_collapse_collinear(_merge(candidates), part), part)
 
 
@@ -825,9 +826,9 @@ def _body_signature(solid) -> tuple[float, ...]:
     """Exact geometry-derived correspondence key for one physical solid.
 
     Position, envelope, volume, and area are independent of compound traversal order.  The key
-    is deliberately not a traversal index or an OCP object/hash, so it remains serializable under
-    ADR 0013.  Callers treat duplicate signatures across separate solids as ambiguous and fail
-    closed rather than using the signature as proof of shared ownership.
+    is deliberately not a traversal index or an OCP object/hash, so it remains serializable
+    under package ADR 0002. Callers treat duplicate signatures across separate solids as
+    ambiguous and fail closed rather than using the signature as proof of shared ownership.
     """
     bb = solid.bounding_box()
     return (
@@ -860,10 +861,10 @@ def recognise_slots(part: Part) -> list[Slot]:
     deterministic order (co-located candidate pairs within a solid are merged,
     keeping the narrower width). See the module docstring for the recognition
     predicate and its deliberately narrow scope. Obround slots too stubby for
-    their flat walls to pair are recovered from their end caps (#816).
+    their flat walls to pair are recovered from their end caps.
 
     A compound is scanned per solid so faces from separate components cannot
-    combine into a fictitious slot across the gap between them (#958).
+    combine into a fictitious slot across the gap between them.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
@@ -876,7 +877,7 @@ def _same_channel_line(a: Slot, b: Slot):
     (width axis, centreline, width and depth extent) but disjoint along their run
     — return the gap ``(g_lo, g_hi)`` between them along ``long_axis``; else None.
 
-    Two arms of one channel that a crossing cut has split (#604) share every
+    Two arms of one channel that a crossing cut has split share every
     dimension but their run; two genuinely parallel slots have different
     centrelines (``w_center``) and never reach here."""
     if a.width_axis != b.width_axis or a.long_axis != b.long_axis:
@@ -906,14 +907,14 @@ def _gap_is_void(gap, arm: Slot, part) -> bool:
     it; a small unrelated hole between two aligned slots leaves the box corners
     solid — both keep a substantial intersection, so the arms stay separate.
     Testing the whole box (not a single sample point) is what distinguishes a
-    channel from an incidental hole at the gap centre (#610 re-reviews).
+    channel from an incidental hole at the gap centre.
 
     Known limitation: a wide *enclosed* void (a square window/pocket) flush with
     the arm ends also empties the box and so fuses the arms.  This is a continuum
     with the accepted symmetric-cross case — which likewise leaves the merged
     slot wall-less where the crossing channel passes — and distinguishing a
     narrow crossing channel from a wide window is an aspect-ratio judgement with
-    no clean line; #604's scope is intersecting *channels*, so it is left as-is."""
+    no clean line; the supported scope is intersecting *channels*, so it is left as-is."""
     span = {
         arm.long_axis: (gap[0], gap[1]),
         arm.width_axis: (arm.w_center - arm.width / 2, arm.w_center + arm.width / 2),
@@ -941,7 +942,7 @@ def _gap_is_void(gap, arm: Slot, part) -> bool:
 
 
 def _collapse_collinear(slots: list[Slot], part) -> list[Slot]:
-    """Recombine slot arms split by a crossing channel into whole channels (#604).
+    """Recombine slot arms split by a crossing channel into whole channels.
 
     A ``+`` of two intersecting through-channels is milled as one continuous slot
     each, but the central intersection removes the middle of both channels' walls,
@@ -1033,7 +1034,7 @@ def _floored_candidate(
     Unlike :func:`_candidate` (which splits the two non-width axes into long/depth by
     *size*), the depth axis is read from the geometry: it is capped on exactly one end
     (the floor) and open on the other.  This keeps a recess deeper than it is long from
-    having its floor mistaken for an end wall (#609).
+    having its floor mistaken for an end wall.
     """
     axis = fa.axis  # the width axis: the facing walls' shared normal axis
     k = _AXES[axis]
@@ -1143,7 +1144,7 @@ def _recognise_pockets_one(part) -> list[Pocket]:
                     candidates.append(p)
     candidates.extend(_recognise_corner_notches(faces, pbb))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
-    # recover them from their end caps (#837) — the blind counterpart of the through-slot path.
+    # recover them from their end caps — the blind counterpart of the through-slot path.
     candidates.extend(_recognise_obround_from_ends(part, faces, blind=True))
     return _extend_obround_ends(_merge(candidates), part)
 
@@ -1156,7 +1157,7 @@ def recognise_pockets(part: Part) -> list[Pocket]:
     extent) is read from the axis the floor is normal to -- see
     :func:`_pocket_candidate` -- not from a size heuristic, so a pocket deeper than it
     is long is dimensioned correctly. A compound is scanned per solid so separate
-    components cannot supply walls or floors for one fictitious recess (#958).
+    components cannot supply walls or floors for one fictitious recess.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
@@ -1199,7 +1200,7 @@ def recognise_channels(part: Part) -> list[Channel]:
     This is deliberately separate from :func:`recognise_pockets`: a channel's length
     and depth participate in the surrounding envelope/plate scheme, while only its
     wall-to-wall width is an independent defining measurement. Body-local bounds prove
-    that the channel reaches the ends of the same solid whose faces bound it (#958).
+    that the channel reaches the ends of the same solid whose faces bound it.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
@@ -1209,7 +1210,7 @@ def recognise_channels(part: Part) -> list[Channel]:
 
 def _recognise_corner_notches(faces: list[_Face], pbb, tol: float = 0.5) -> list[Pocket]:
     """Recognise an axis-aligned rectangular blind interruption open at two
-    adjacent envelope edges (#897).
+    adjacent envelope edges.
 
     A conventional pocket has opposed wall pairs.  A corner notch deliberately
     has only one X wall and one Y wall, so the pair-based pocket recogniser
@@ -1305,7 +1306,7 @@ def _pocket_spec_key(pk: Pocket) -> tuple:
     depth-axis extent (d_lo, d_hi) is part of the key: pattern detection projects the depth
     coordinate away, so without it pockets on different-height stepped faces — or opening
     opposite directions — whose in-plane centres happen to line up would merge into one planar
-    array that does not exist (Codex #849). Coordinates snap to 3 dp so boolean-op float noise
+    array that does not exist. Coordinates snap to 3 dp so boolean-op float noise
     does not split an array (mirrors ``HoleSpec``'s axis snap)."""
     return (
         pk.width_axis,
@@ -1342,10 +1343,10 @@ def recognise_pocket_patterns(pockets: Sequence[Pocket]) -> list[PocketArray | P
     among *pockets* (``Pocket`` records, e.g. from :func:`recognise_pockets`) — the recess
     analog of :func:`b123d_recognisers.recognise_hole_patterns`.
 
-    A DERIVED recogniser (single positional inventory, ADR 0013): pockets are grouped by
+    A DERIVED recogniser (single positional inventory, package ADR 0002): pockets are grouped by
     orientation + size (:func:`_pocket_spec_key`), each group's centres are projected into the
     opening plane (perpendicular to the shared depth axis), and the same collinear / lattice
-    geometry the hole patterns use (shared via *make* factories, #635) is enumerated and
+    geometry the hole patterns use (shared via *make* factories) is enumerated and
     allocated greedily largest-first so each pocket belongs to at most one array. Pockets have
     no bolt-circle form, so only grid + linear candidates are considered. Un-arrayed pockets
     are simply absent from the result."""
@@ -1429,11 +1430,12 @@ def recognise_slot_patterns(slots: Sequence[Slot]) -> list[SlotArray | SlotGrid]
     *slots* (``Slot`` records, e.g. from :func:`recognise_slots`) — the through-slot analog of
     :func:`recognise_pocket_patterns`.
 
-    A DERIVED recogniser (single positional inventory, ADR 0013): slots are grouped by
+    A DERIVED recogniser (single positional inventory, package ADR 0002): slots are grouped by
     orientation + size + through plane (:func:`_slot_spec_key`), each group's centres are
     projected into the face plane (perpendicular to the shared through axis), and the same
     collinear / lattice geometry the hole/pocket patterns use (shared via *make* factories,
-    #635) is enumerated and allocated greedily largest-first. Slots have no bolt-circle form, so
+    shared record-generic factories) is enumerated and allocated greedily largest-first. Slots
+    have no bolt-circle form, so
     only grid + linear candidates are considered. Un-arrayed slots are absent from the result."""
     from b123d_recognisers._features import (
         _linear_array_candidates,
