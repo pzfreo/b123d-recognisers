@@ -4,6 +4,11 @@ Contributions are welcome. By intentionally submitting a contribution for inclus
 project, you agree that it is provided under the Apache License 2.0, as described by section 5 of
 that licence, unless you explicitly state otherwise in writing.
 
+Changes to a recogniser or public record follow the tests-first
+[`docs/delivery-protocol.md`](docs/delivery-protocol.md). Start with the recogniser issue template,
+declare every downstream capability state, and run its two-checkout compatibility command before
+either repository merges.
+
 ## Architectural rules
 
 - Recognition is geometry-only: no drawing, editing-session, CAM-operation or UI policy.

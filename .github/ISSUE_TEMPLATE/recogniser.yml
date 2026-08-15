@@ -1,0 +1,68 @@
+name: Recogniser proposal
+description: Propose a geometry recogniser or a compatible extension to one
+title: "Recognise: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Recognition and downstream CAD policy are reviewed separately. Complete every evidence
+        field before implementation; use `docs/delivery-protocol.md` for the landing sequence.
+  - type: textarea
+    id: geometry
+    attributes:
+      label: Geometry scope
+      description: State the supported B-Rep invariants, tolerances, axes and topology limits.
+    validations:
+      required: true
+  - type: textarea
+    id: record
+    attributes:
+      label: Record contract
+      description: List immutable fields, types, units, schema version and serialization shape.
+    validations:
+      required: true
+  - type: textarea
+    id: negatives
+    attributes:
+      label: Negative and ambiguous cases
+      description: List near misses, unsupported topology and required fail-closed diagnostics.
+    validations:
+      required: true
+  - type: textarea
+    id: goldens
+    attributes:
+      label: Canonical goldens
+      description: Identify independently authored positive, negative and order-variant fixtures.
+    validations:
+      required: true
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance budget
+      description: Give representative size, operation-count bound and measured time budget.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance
+      description: Record fixture/code origin, licence compatibility and generated-data method.
+    validations:
+      required: true
+  - type: textarea
+    id: downstream
+    attributes:
+      label: Downstream capability decisions
+      description: |
+        For IR, DSL, generated code, drawing and completeness, choose supported, deferred,
+        not-applicable or unsupported. Link Draftwright evidence or tracking issues; do not infer
+        drafting semantics merely to fill a state.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and landing plan
+      description: Identify manifest/schema changes, package release, consumer range and rollback.
+    validations:
+      required: true
