@@ -15,11 +15,13 @@ from b123d_recognisers._record import Record
 
 @dataclass(frozen=True, order=True)
 class PolygonalBoss(Record):
-    """A regular even-sided prism attached to a support face.
+    """A regular hexagonal Z-axis prism attached to a support face.
 
-    ``flat_directions`` preserve the ordered outward evidence that established the regular
-    polygon. ``flat_centres`` are real points on the defining side faces, so rendering can
-    anchor a leader without reconstructing the polygon from A/F.
+    The current recogniser emits exactly ``axis="z"`` and ``side_count=6``. Other
+    axes and polygon classes require their own evidence before they become package
+    capability. ``flat_directions`` preserve the ordered outward evidence that
+    established the hexagon. ``flat_centres`` are real points on the defining side
+    faces, so rendering can anchor a leader without reconstructing it from A/F.
     """
 
     axis: str
@@ -40,6 +42,7 @@ class PolygonalBoss(Record):
 class PolygonalStock(Record):
     """A whole solid proved to be a regular hexagonal prism.
 
+    The current recogniser emits exactly ``axis="z"`` and ``side_count=6``.
     This is deliberately distinct from :class:`PolygonalBoss`: its two caps terminate the
     complete solid, rather than one cap being an attachment to supporting material.
     """

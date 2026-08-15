@@ -20,11 +20,13 @@ from b123d_recognisers._record import Record
 
 @dataclass(frozen=True)
 class DoubleDBore(Record):
-    """A geometrically proven through double-D bore.
+    """A geometrically proven principal-axis through double-D bore.
 
     ``major_diameter`` is the parent circle diameter; ``across_flats`` is the distance
     between its parallel chords. ``flat_direction`` is their canonical unit normal and
-    preserves the profile's in-plane orientation independently of the bore axis.
+    preserves the profile's in-plane orientation independently of the bore axis. The
+    current recogniser emits ``through=True`` only: blind double-D recesses need a
+    separate floor/depth proof and are deliberately unsupported.
     """
 
     axis: tuple[float, float, float]
