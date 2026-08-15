@@ -14,7 +14,8 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
     assert "workflow_dispatch:" in workflow and "release:" in workflow
-    assert "permissions:\n      id-token: write" in workflow
+    assert "\npermissions: {}\n" in workflow, "publishing must default the token to no permissions"
+    assert workflow.count("id-token: write") == 2
     assert "environment:\n      name: testpypi" in workflow
     assert "environment:\n      name: pypi" in workflow
     assert "repository-url: https://test.pypi.org/legacy/" in workflow
@@ -22,6 +23,7 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert workflow.count("pypa/gh-action-pypi-publish@") == 2
     assert "password:" not in workflow and "API_TOKEN" not in workflow
     assert "uv build" not in workflow, "publish must promote reviewed GitHub release assets"
+    assert "enable-cache: false" in workflow, "release workflows must not consume mutable caches"
 
 
 def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_tag(
