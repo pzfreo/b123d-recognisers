@@ -1,0 +1,387 @@
+{
+  "canonicalizer_version": 1,
+  "fixture": "polygonal_stock",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source": "Synthetic build123d geometry created for b123d-recognisers epic #1"
+  },
+  "recognition": {
+    "aggregate": {
+      "prismatic": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [
+          {
+            "_type": "PolygonalStock",
+            "across_flats": 34.641,
+            "axis": "z",
+            "base": 0.0,
+            "center": [
+              0.0,
+              0.0,
+              15.0
+            ],
+            "flat_centres": [
+              [
+                -11.813,
+                -12.667,
+                15.0
+              ],
+              [
+                5.064,
+                -16.564,
+                15.0
+              ],
+              [
+                16.877,
+                -3.896,
+                15.0
+              ],
+              [
+                11.813,
+                12.667,
+                15.0
+              ],
+              [
+                -5.064,
+                16.564,
+                15.0
+              ],
+              [
+                -16.877,
+                3.896,
+                15.0
+              ]
+            ],
+            "flat_directions": [
+              [
+                -0.682,
+                -0.731,
+                0.0
+              ],
+              [
+                0.292,
+                -0.956,
+                0.0
+              ],
+              [
+                0.974,
+                -0.225,
+                0.0
+              ],
+              [
+                0.682,
+                0.731,
+                0.0
+              ],
+              [
+                -0.292,
+                0.956,
+                0.0
+              ],
+              [
+                -0.974,
+                0.225,
+                0.0
+              ]
+            ],
+            "side_count": 6,
+            "top": 30.0
+          }
+        ],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": false,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [],
+        "turned_steps": []
+      },
+      "rotational": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [],
+        "cylinders": [
+          [],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [
+          {
+            "_type": "PolygonalStock",
+            "across_flats": 34.641,
+            "axis": "z",
+            "base": 0.0,
+            "center": [
+              0.0,
+              0.0,
+              15.0
+            ],
+            "flat_centres": [
+              [
+                -11.813,
+                -12.667,
+                15.0
+              ],
+              [
+                5.064,
+                -16.564,
+                15.0
+              ],
+              [
+                16.877,
+                -3.896,
+                15.0
+              ],
+              [
+                11.813,
+                12.667,
+                15.0
+              ],
+              [
+                -5.064,
+                16.564,
+                15.0
+              ],
+              [
+                -16.877,
+                3.896,
+                15.0
+              ]
+            ],
+            "flat_directions": [
+              [
+                -0.682,
+                -0.731,
+                0.0
+              ],
+              [
+                0.292,
+                -0.956,
+                0.0
+              ],
+              [
+                0.974,
+                -0.225,
+                0.0
+              ],
+              [
+                0.682,
+                0.731,
+                0.0
+              ],
+              [
+                -0.292,
+                0.956,
+                0.0
+              ],
+              [
+                -0.974,
+                0.225,
+                0.0
+              ]
+            ],
+            "side_count": 6,
+            "top": 30.0
+          }
+        ],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": true,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [],
+        "turned_steps": []
+      }
+    },
+    "feature_census": {
+      "boss": 0,
+      "chamfer": 0,
+      "channel": 0,
+      "countersink": 0,
+      "fillet": 0,
+      "flat": 0,
+      "groove": 0,
+      "hole": 0,
+      "hole_pattern": 0,
+      "plate": 0,
+      "pocket": 0,
+      "slot": 0,
+      "step": 0
+    },
+    "individual": {
+      "recognise_bosses": [],
+      "recognise_chamfers": [],
+      "recognise_channels": [],
+      "recognise_countersinks": [],
+      "recognise_double_d_bores": [],
+      "recognise_face_levels": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -19.12609512,
+            19.12609512
+          ],
+          "y_span": [
+            -19.4874013,
+            19.4874013
+          ],
+          "z": 0.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -19.12609512,
+            19.12609512
+          ],
+          "y_span": [
+            -19.4874013,
+            19.4874013
+          ],
+          "z": 30.0
+        }
+      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
+      "recognise_grooves": [],
+      "recognise_hole_patterns": [],
+      "recognise_holes": [],
+      "recognise_plates": [],
+      "recognise_pocket_patterns": [],
+      "recognise_pockets": [],
+      "recognise_polygonal_bosses": [],
+      "recognise_polygonal_stock": [
+        {
+          "_type": "PolygonalStock",
+          "across_flats": 34.641,
+          "axis": "z",
+          "base": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            15.0
+          ],
+          "flat_centres": [
+            [
+              -11.813,
+              -12.667,
+              15.0
+            ],
+            [
+              5.064,
+              -16.564,
+              15.0
+            ],
+            [
+              16.877,
+              -3.896,
+              15.0
+            ],
+            [
+              11.813,
+              12.667,
+              15.0
+            ],
+            [
+              -5.064,
+              16.564,
+              15.0
+            ],
+            [
+              -16.877,
+              3.896,
+              15.0
+            ]
+          ],
+          "flat_directions": [
+            [
+              -0.682,
+              -0.731,
+              0.0
+            ],
+            [
+              0.292,
+              -0.956,
+              0.0
+            ],
+            [
+              0.974,
+              -0.225,
+              0.0
+            ],
+            [
+              0.682,
+              0.731,
+              0.0
+            ],
+            [
+              -0.292,
+              0.956,
+              0.0
+            ],
+            [
+              -0.974,
+              0.225,
+              0.0
+            ]
+          ],
+          "side_count": 6,
+          "top": 30.0
+        }
+      ],
+      "recognise_rectangular_pads": [],
+      "recognise_repeating_radial_profiles": [],
+      "recognise_risers": [],
+      "recognise_slot_patterns": [],
+      "recognise_slots": [],
+      "recognise_turned_steps": []
+    },
+    "substrates": {
+      "analyse_cylinders": [
+        [],
+        []
+      ],
+      "feature_diameters": [],
+      "full_cylinders": [
+        [],
+        []
+      ],
+      "step_level_records": []
+    }
+  },
+  "source": {
+    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "repository": "https://github.com/pzfreo/draftwright.git"
+  }
+}

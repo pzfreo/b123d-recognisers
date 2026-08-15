@@ -1,0 +1,659 @@
+{
+  "canonicalizer_version": 1,
+  "fixture": "counterbored_and_countersunk_holes",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source": "Synthetic build123d geometry created for b123d-recognisers epic #1"
+  },
+  "recognition": {
+    "aggregate": {
+      "prismatic": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [
+          {
+            "_type": "CounterSink",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "depth": 6.0,
+            "drill_diameter": 6.0,
+            "included_angle": 67.38,
+            "location": [
+              22.0,
+              0.0,
+              10.0
+            ],
+            "major_diameter": 14.0
+          }
+        ],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -22.0,
+                0.0,
+                4.0
+              ],
+              "diameter": 16.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 10.0,
+              "s_lo": 4.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -22.0,
+                0.0,
+                -10.0
+              ],
+              "diameter": 8.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 4.0,
+              "s_lo": -10.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                22.0,
+                0.0,
+                -10.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 4.0,
+              "s_lo": -10.0,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": {
+              "_type": "CounterBore",
+              "depth": 6.0,
+              "diameter": 16.0
+            },
+            "csink": null,
+            "depth": 14.0,
+            "diameter": 8.0,
+            "location": [
+              -22.0,
+              0.0,
+              10.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": {
+              "_type": "CounterSink",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "depth": 6.0,
+              "drill_diameter": 6.0,
+              "included_angle": 67.38,
+              "location": [
+                22.0,
+                0.0,
+                10.0
+              ],
+              "major_diameter": 14.0
+            },
+            "depth": 14.0,
+            "diameter": 6.0,
+            "location": [
+              22.0,
+              0.0,
+              4.0
+            ],
+            "spotface": null
+          }
+        ],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": false,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -30.0,
+              -14.0
+            ],
+            "y_span": [
+              -8.0,
+              8.0
+            ],
+            "z": 4.0
+          }
+        ],
+        "turned_steps": []
+      },
+      "rotational": {
+        "_type": "RecognitionResult",
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "countersinks": [
+          {
+            "_type": "CounterSink",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "depth": 6.0,
+            "drill_diameter": 6.0,
+            "included_angle": 67.38,
+            "location": [
+              22.0,
+              0.0,
+              10.0
+            ],
+            "major_diameter": 14.0
+          }
+        ],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -22.0,
+                0.0,
+                4.0
+              ],
+              "diameter": 16.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 10.0,
+              "s_lo": 4.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -22.0,
+                0.0,
+                -10.0
+              ],
+              "diameter": 8.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 4.0,
+              "s_lo": -10.0,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                22.0,
+                0.0,
+                -10.0
+              ],
+              "diameter": 6.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": false,
+              "s_hi": 4.0,
+              "s_lo": -10.0,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": {
+              "_type": "CounterBore",
+              "depth": 6.0,
+              "diameter": 16.0
+            },
+            "csink": null,
+            "depth": 14.0,
+            "diameter": 8.0,
+            "location": [
+              -22.0,
+              0.0,
+              10.0
+            ],
+            "spotface": null
+          },
+          {
+            "_type": "HoleRecord",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": {
+              "_type": "CounterSink",
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "depth": 6.0,
+              "drill_diameter": 6.0,
+              "included_angle": 67.38,
+              "location": [
+                22.0,
+                0.0,
+                10.0
+              ],
+              "major_diameter": 14.0
+            },
+            "depth": 14.0,
+            "diameter": 6.0,
+            "location": [
+              22.0,
+              0.0,
+              4.0
+            ],
+            "spotface": null
+          }
+        ],
+        "pads": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": true,
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -30.0,
+              -14.0
+            ],
+            "y_span": [
+              -8.0,
+              8.0
+            ],
+            "z": 4.0
+          }
+        ],
+        "turned_steps": []
+      }
+    },
+    "feature_census": {
+      "boss": 0,
+      "chamfer": 0,
+      "channel": 0,
+      "countersink": 1,
+      "fillet": 0,
+      "flat": 0,
+      "groove": 0,
+      "hole": 2,
+      "hole_pattern": 0,
+      "plate": 0,
+      "pocket": 0,
+      "slot": 0,
+      "step": 0
+    },
+    "individual": {
+      "recognise_bosses": [],
+      "recognise_chamfers": [],
+      "recognise_channels": [],
+      "recognise_countersinks": [
+        {
+          "_type": "CounterSink",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "depth": 6.0,
+          "drill_diameter": 6.0,
+          "included_angle": 67.38,
+          "location": [
+            22.0,
+            0.0,
+            10.0
+          ],
+          "major_diameter": 14.0
+        }
+      ],
+      "recognise_double_d_bores": [],
+      "recognise_face_levels": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -45.0,
+            45.0
+          ],
+          "y_span": [
+            -25.0,
+            25.0
+          ],
+          "z": -10.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -30.0,
+            -14.0
+          ],
+          "y_span": [
+            -8.0,
+            8.0
+          ],
+          "z": 4.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -45.0,
+            45.0
+          ],
+          "y_span": [
+            -25.0,
+            25.0
+          ],
+          "z": 10.0
+        }
+      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
+      "recognise_grooves": [],
+      "recognise_hole_patterns": [],
+      "recognise_holes": [
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": {
+            "_type": "CounterBore",
+            "depth": 6.0,
+            "diameter": 16.0
+          },
+          "csink": null,
+          "depth": 14.0,
+          "diameter": 8.0,
+          "location": [
+            -22.0,
+            0.0,
+            10.0
+          ],
+          "spotface": null
+        },
+        {
+          "_type": "HoleRecord",
+          "axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "bottom": "through",
+          "cbore": null,
+          "csink": {
+            "_type": "CounterSink",
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "depth": 6.0,
+            "drill_diameter": 6.0,
+            "included_angle": 67.38,
+            "location": [
+              22.0,
+              0.0,
+              10.0
+            ],
+            "major_diameter": 14.0
+          },
+          "depth": 14.0,
+          "diameter": 6.0,
+          "location": [
+            22.0,
+            0.0,
+            4.0
+          ],
+          "spotface": null
+        }
+      ],
+      "recognise_plates": [],
+      "recognise_pocket_patterns": [],
+      "recognise_pockets": [],
+      "recognise_polygonal_bosses": [],
+      "recognise_polygonal_stock": [],
+      "recognise_rectangular_pads": [],
+      "recognise_repeating_radial_profiles": [],
+      "recognise_risers": [],
+      "recognise_slot_patterns": [],
+      "recognise_slots": [],
+      "recognise_turned_steps": []
+    },
+    "substrates": {
+      "analyse_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -22.0,
+              0.0,
+              4.0
+            ],
+            "diameter": 16.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 10.0,
+            "s_lo": 4.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -22.0,
+              0.0,
+              -10.0
+            ],
+            "diameter": 8.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 4.0,
+            "s_lo": -10.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              22.0,
+              0.0,
+              -10.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 4.0,
+            "s_lo": -10.0,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "feature_diameters": [
+        6.0,
+        8.0,
+        16.0
+      ],
+      "full_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -22.0,
+              0.0,
+              4.0
+            ],
+            "diameter": 16.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 10.0,
+            "s_lo": 4.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              -22.0,
+              0.0,
+              -10.0
+            ],
+            "diameter": 8.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 4.0,
+            "s_lo": -10.0,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              22.0,
+              0.0,
+              -10.0
+            ],
+            "diameter": 6.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": false,
+            "s_hi": 4.0,
+            "s_lo": -10.0,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "step_level_records": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -30.0,
+            -14.0
+          ],
+          "y_span": [
+            -8.0,
+            8.0
+          ],
+          "z": 4.0
+        }
+      ]
+    }
+  },
+  "source": {
+    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
+    "repository": "https://github.com/pzfreo/draftwright.git"
+  }
+}
