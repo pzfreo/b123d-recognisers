@@ -34,3 +34,10 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv sync --dev
       - run: uv run pytest
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: coverage-${{ matrix.os }}-${{ matrix.python }}
+          path: coverage.xml
+          if-no-files-found: error

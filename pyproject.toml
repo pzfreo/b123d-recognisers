@@ -57,7 +57,7 @@ include = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --cov=b123d_recognisers --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=91.4"
 testpaths = ["tests"]
 
 [tool.ruff]
