@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.1.0
+
+First stable release of the standalone Apache-2.0 recognition package.
+
+- Promotes `0.1.0a1` after the packaged cutover merged in Draftwright PR #1168
+  (`d659e7a6`), with the duplicate embedded recogniser implementation removed.
+- Retains the 17 pinned semantic golden fixtures, public-inventory/serialization contracts, and
+  cross-platform Python 3.10/3.12/3.14 matrix; this release contains no new recognition behaviour.
+- Uses the reviewed TestPyPI-first Trusted Publishing path to promote one exact wheel and sdist
+  to PyPI without rebuilding between indexes.
+
+The complete migration, provenance, and performance evidence remains in
+[`migration/PARITY.md`](migration/PARITY.md).
+
 ## 0.1.0a1
 
 First prerelease of the standalone Apache-2.0 recognition package extracted from Draftwright.
