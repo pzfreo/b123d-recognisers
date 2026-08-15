@@ -12,7 +12,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_version_is_available() -> None:
-    assert __version__
+    assert __version__ == "0.1.0a1"
 
 
 def test_wheel_contains_runtime_modules_typing_marker_and_licence_files(tmp_path) -> None:
