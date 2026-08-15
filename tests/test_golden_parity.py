@@ -26,6 +26,7 @@ def _load_fixture(path):
 
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
+TRAVERSAL_CASES = [path for path in CASES if path.parent.name == "traversal_order"]
 
 
 @pytest.mark.parametrize("fixture_path", CASES, ids=lambda path: path.parent.name)
@@ -38,12 +39,11 @@ def test_package_matches_pinned_draftwright_semantic_golden(fixture_path):
     assert canonicalize(actual) == expected["recognition"]
 
 
-@pytest.mark.parametrize("fixture_path", CASES, ids=lambda path: path.parent.name)
+@pytest.mark.parametrize("fixture_path", TRAVERSAL_CASES, ids=lambda path: path.parent.name)
 def test_equivalent_topology_traversals_produce_the_same_snapshot(fixture_path):
     fixture = _load_fixture(fixture_path)
     variants = getattr(fixture, "equivalent_fixtures", lambda: {})()
-    if not variants:
-        pytest.skip("fixture has no equivalent topology-order variants")
+    assert variants
 
     baseline = canonicalize(
         recognition_snapshot(recognition, feature_census, fixture.build_fixture())

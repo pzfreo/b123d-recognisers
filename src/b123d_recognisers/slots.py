@@ -397,7 +397,7 @@ def _candidate(fa, fb, part_ext):
     # break the tie towards the part's longer axis — a slot on a bar runs along
     # the bar.
     (ax0, ov0), (ax1, ov1) = sorted(
-        zip(others, ov, strict=True), key=lambda t: t[1], reverse=True
+        zip(others, ov, strict=False), key=lambda t: t[1], reverse=True
     )
     if (ov0 - ov1) <= _LENGTH_TIE_FRAC * ov0 and part_ext[ax1] > part_ext[ax0]:
         (long_axis, length), depth_axis = (ax1, ov1), ax0

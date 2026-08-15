@@ -18,7 +18,7 @@
     "seconds": [1.7326247069286183, 1.7016751130577177, 1.7609112829668447, 1.7056418189313263, 1.6557273709913716, 1.9897900400683284, 1.9219749490730464],
     "median_seconds": 1.7326247069286183
   },
-  "package_to_baseline_ratio": 0.870100770737697,
+  "package_to_baseline_ratio": 0.8700907189201177,
   "commands": [
     "uv run python tools/benchmark_recognition.py --implementation draftwright --baseline /tmp/draftwright-epic1-baseline --iterations 7",
     "uv run python tools/benchmark_recognition.py --implementation package --iterations 7"
