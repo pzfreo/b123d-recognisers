@@ -42,6 +42,19 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/b123d_recognisers"]
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/.github",
+    "/docs",
+    "/migration",
+    "/src",
+    "/tests",
+    "/tools",
+    "/CONTRIBUTING.md",
+    "/RELEASE_NOTES.md",
+    "/uv.lock",
+]
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["tests"]

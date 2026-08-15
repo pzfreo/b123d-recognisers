@@ -3,8 +3,10 @@
 
 import subprocess
 import sys
+import tarfile
 import zipfile
 from pathlib import Path
+from shutil import copytree, ignore_patterns
 
 from b123d_recognisers import __version__
 
@@ -39,6 +41,34 @@ def test_wheel_contains_runtime_modules_typing_marker_and_licence_files(tmp_path
     assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     assert any(name.endswith(".dist-info/licenses/NOTICE") for name in names)
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md") for name in names)
+
+
+def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
+    checkout = tmp_path / "checkout"
+    copytree(
+        ROOT,
+        checkout,
+        ignore=ignore_patterns(".git", ".venv", ".pytest_cache", "__pycache__", "dist"),
+    )
+    sentinel = checkout / "PRIVATE_BUILD_INPUT.txt"
+    sentinel.write_text("must not ship\n", encoding="utf-8")
+    output = tmp_path / "dist"
+
+    subprocess.run(
+        ["uv", "build", "--sdist", "--out-dir", str(output)],
+        cwd=checkout,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    sdist = next(output.glob("*.tar.gz"))
+    with tarfile.open(sdist, "r:gz") as archive:
+        names = set(archive.getnames())
+
+    assert not any(name.endswith("/PRIVATE_BUILD_INPUT.txt") for name in names)
+    assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
+    assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
 
 
 def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) -> None:
