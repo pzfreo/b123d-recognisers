@@ -60,6 +60,10 @@ include = [
 addopts = "-ra --strict-markers --cov=b123d_recognisers --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=91.4"
 testpaths = ["tests"]
 
+[tool.coverage.report]
+# coverage.py otherwise rounds to a whole percentage before applying a decimal threshold.
+precision = 2
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
