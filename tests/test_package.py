@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -45,9 +47,15 @@ def test_wheel_contains_runtime_modules_typing_marker_and_licence_files(tmp_path
     package_files = {
         path.relative_to(ROOT / "src").as_posix()
         for path in (ROOT / "src" / "b123d_recognisers").glob("*")
-        if path.is_file() and (path.suffix == ".py" or path.name == "py.typed")
+        if path.is_file() and (path.suffix in {".json", ".py"} or path.name == "py.typed")
     }
     assert package_files <= names
+    entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
+    with zipfile.ZipFile(wheels[0]) as archive:
+        scripts = archive.read(entry_points).decode("utf-8")
+    assert (
+        "b123d-recognisers-capabilities = b123d_recognisers.capabilities:main" in scripts
+    )
     assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     assert any(name.endswith(".dist-info/licenses/NOTICE") for name in names)
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md") for name in names)
@@ -78,7 +86,21 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
 
     assert not any(name.endswith("/PRIVATE_BUILD_INPUT.txt") for name in names)
     assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
+    assert any(name.endswith("/src/b123d_recognisers/capabilities.json") for name in names)
     assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
+    manifest = json.loads(
+        (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    references = {
+        reference.split("#", 1)[0]
+        for family in manifest["families"]
+        for key in ("documentation", "golden_evidence", "test_evidence")
+        for reference in family[key]
+    }
+    for reference in references:
+        assert any(name.endswith(f"/{reference}") for name in names), reference
 
 
 def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) -> None:
@@ -100,6 +122,12 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
         text=True,
         timeout=120,
     )
+    # Text mode normalises a checkout's platform newline convention. The public exporter is
+    # deliberately canonical JSON with LF newlines on every platform.
+    source_manifest = (
+        ROOT / "src" / "b123d_recognisers" / "capabilities.json"
+    ).read_text(encoding="utf-8")
+    manifest_digest = hashlib.sha256(source_manifest.encode()).hexdigest()
     completed = subprocess.run(
         [
             sys.executable,
@@ -109,7 +137,10 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import sys; "
                 f"sys.path.insert(0, {str(target)!r}); "
                 "import b123d_recognisers as r; "
-                "assert r.__version__; assert r.recognise_holes"
+                "import hashlib; "
+                "assert r.__version__; assert r.recognise_holes; "
+                "actual = hashlib.sha256(r.capability_manifest_json().encode()).hexdigest(); "
+                f"assert actual == {manifest_digest!r}"
             ),
         ],
         cwd=tmp_path,

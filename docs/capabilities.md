@@ -3,9 +3,18 @@
 This inventory states what the current recognisers prove, rather than what their
 records might someday be able to represent. It is the reviewed input to the
 machine-readable capability contract specified by
-[ADR 0005](adr/0005-versioned-cross-repository-capability-contract.md) and tracked for
-implementation in [issue 23](https://github.com/pzfreo/b123d-recognisers/issues/23). Until that
-lands, this page is the human capability boundary.
+[ADR 0005](adr/0005-versioned-cross-repository-capability-contract.md). The installed package
+exposes the implemented format-1 document without requiring access to package internals:
+
+```python
+from b123d_recognisers import capability_manifest
+
+manifest = capability_manifest(format_version=1)
+```
+
+Downstream CI can export the identical deterministic JSON with
+`b123d-recognisers-capabilities --format-version 1`. Unknown format versions fail closed. This
+page remains the human explanation of the machine-readable boundary.
 
 “Excluded” means that current recognition deliberately returns no record. It does not
 mean the geometry is invalid or that support is promised. Expanding an excluded class

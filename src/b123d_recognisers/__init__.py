@@ -134,10 +134,21 @@ except PackageNotFoundError:
     __version__ = "0.1.0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
+from b123d_recognisers.capabilities import (  # noqa: E402
+    CAPABILITY_FORMAT,
+    CAPABILITY_FORMAT_VERSION,
+    CapabilityManifestError,
+    capability_manifest,
+    capability_manifest_json,
+    validate_capability_manifest,
+)
 from b123d_recognisers.census import feature_census  # noqa: E402
 
 __all__ = [
     "__version__",
+    "CAPABILITY_FORMAT",
+    "CAPABILITY_FORMAT_VERSION",
+    "CapabilityManifestError",
     "BoltCircle",
     "Chamfer",
     "Channel",
@@ -184,6 +195,9 @@ __all__ = [
     "step_level_zs",
     "feature_diameters",
     "feature_census",
+    "capability_manifest",
+    "capability_manifest_json",
+    "validate_capability_manifest",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

@@ -1,0 +1,1737 @@
+{
+  "aliases": [],
+  "families": [
+    {
+      "census_name": "boss",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/simple_through_hole/expected.json",
+        "tests/golden/turned_steps_and_grooves/expected.json"
+      ],
+      "id": "bosses",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_bosses",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.bosses"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "height": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "location": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            }
+          },
+          "name": "BossRecord",
+          "qualified_name": "b123d_recognisers.BossRecord",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "chamfer",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/chamfers_fillets_and_flats/expected.json"
+      ],
+      "id": "chamfers",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_chamfers",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.chamfers"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "leg1": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "leg2": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "Chamfer",
+          "qualified_name": "b123d_recognisers.Chamfer",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "channel",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/open_channels/expected.json"
+      ],
+      "id": "channels",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_channels",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.channels"
+          ],
+          "fields": {
+            "d_hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "d_lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "long_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "open_sign": {
+              "required": false,
+              "type": "int",
+              "units": "none"
+            },
+            "w_center": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "Channel",
+          "qualified_name": "b123d_recognisers.Channel",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "countersink",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/counterbored_and_countersunk_holes/expected.json"
+      ],
+      "id": "countersinks",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_countersinks",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.countersinks",
+            "RecognitionResult.holes.csink"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "drill_diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "included_angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "location": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "major_diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "CounterSink",
+          "qualified_name": "b123d_recognisers.CounterSink",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/double_d_bore/expected.json"
+      ],
+      "id": "double-d-bores",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_double_d_bores",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.double_d_bores"
+          ],
+          "fields": {
+            "across_flats": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "flat_direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "location": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "major_diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "through": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            }
+          },
+          "name": "DoubleDBore",
+          "qualified_name": "b123d_recognisers.DoubleDBore",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/plates_pads_levels_and_slanted_steps/expected.json",
+        "tests/golden/slanted_steps/expected.json"
+      ],
+      "id": "face-levels",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_face_levels",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.step_levels"
+          ],
+          "fields": {
+            "x_span": {
+              "required": false,
+              "type": "tuple[float,2]|null",
+              "units": "mm"
+            },
+            "y_span": {
+              "required": false,
+              "type": "tuple[float,2]|null",
+              "units": "mm"
+            },
+            "z": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "FaceLevel",
+          "qualified_name": "b123d_recognisers.FaceLevel",
+          "role": "evidence",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "fillet",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/chamfers_fillets_and_flats/expected.json"
+      ],
+      "id": "fillets",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_fillets",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.fillets"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "Fillet",
+          "qualified_name": "b123d_recognisers.Fillet",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "flat",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/chamfers_fillets_and_flats/expected.json"
+      ],
+      "id": "flats",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_flats",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.flats"
+          ],
+          "fields": {
+            "across": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "axis_direction": {
+              "required": false,
+              "type": "tuple[float,3]|null",
+              "units": "unit-vector"
+            },
+            "axis_line": {
+              "required": false,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "stock_span": {
+              "required": false,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            }
+          },
+          "name": "Flat",
+          "qualified_name": "b123d_recognisers.Flat",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "groove",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/turned_steps_and_grooves/expected.json"
+      ],
+      "id": "grooves",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_grooves",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.grooves"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "Groove",
+          "qualified_name": "b123d_recognisers.Groove",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "hole_pattern",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/bolt_circle_and_rectangular_grid/expected.json"
+      ],
+      "id": "hole-patterns",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_hole_patterns",
+          "kind": "derived"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.hole_patterns"
+          ],
+          "fields": {
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "holes": {
+              "required": true,
+              "type": "list[record:HoleRecord]",
+              "units": "none"
+            }
+          },
+          "name": "BoltCircle",
+          "qualified_name": "b123d_recognisers.BoltCircle",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.hole_patterns"
+          ],
+          "fields": {
+            "direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "holes": {
+              "required": true,
+              "type": "list[record:HoleRecord]",
+              "units": "none"
+            },
+            "pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "LinearArray",
+          "qualified_name": "b123d_recognisers.LinearArray",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.hole_patterns"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "col_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "cols": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "holes": {
+              "required": true,
+              "type": "list[record:HoleRecord]",
+              "units": "none"
+            },
+            "row_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "rows": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "RectGrid",
+          "qualified_name": "b123d_recognisers.RectGrid",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "hole",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/counterbored_and_countersunk_holes/expected.json",
+        "tests/golden/simple_through_hole/expected.json"
+      ],
+      "id": "holes",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_holes",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.holes.cbore",
+            "RecognitionResult.holes.spotface"
+          ],
+          "fields": {
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "CounterBore",
+          "qualified_name": "b123d_recognisers.CounterBore",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.holes"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "bottom": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "cbore": {
+              "required": false,
+              "type": "record:CounterBore|null",
+              "units": "none"
+            },
+            "csink": {
+              "required": false,
+              "type": "record:CounterSink|null",
+              "units": "none"
+            },
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "location": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "spotface": {
+              "required": false,
+              "type": "record:CounterBore|null",
+              "units": "none"
+            }
+          },
+          "name": "HoleRecord",
+          "qualified_name": "b123d_recognisers.HoleRecord",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Derived grouping key; it is computed from HoleRecord and is not retained by RecognitionResult.",
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "bottom": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "cbore": {
+              "required": true,
+              "type": "record:CounterBore|null",
+              "units": "none"
+            },
+            "csink": {
+              "required": false,
+              "type": "tuple[float,2]|null",
+              "units": "none"
+            },
+            "depth": {
+              "required": true,
+              "type": "float|null",
+              "units": "mm"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "spotface": {
+              "required": true,
+              "type": "record:CounterBore|null",
+              "units": "none"
+            }
+          },
+          "name": "HoleSpec",
+          "qualified_name": "b123d_recognisers.HoleSpec",
+          "role": "evidence",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "plate",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/plates_pads_levels_and_slanted_steps/expected.json"
+      ],
+      "id": "plates",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_plates",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.plates"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "u": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "v": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "Plate",
+          "qualified_name": "b123d_recognisers.Plate",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/blind_pockets_and_pocket_patterns/expected.json"
+      ],
+      "id": "pocket-patterns",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_pocket_patterns",
+          "kind": "derived"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.pocket_patterns"
+          ],
+          "fields": {
+            "direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "pockets": {
+              "required": true,
+              "type": "list[record:Pocket]",
+              "units": "none"
+            }
+          },
+          "name": "PocketArray",
+          "qualified_name": "b123d_recognisers.PocketArray",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.pocket_patterns"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "col_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "cols": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "pockets": {
+              "required": true,
+              "type": "list[record:Pocket]",
+              "units": "none"
+            },
+            "row_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "rows": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "PocketGrid",
+          "qualified_name": "b123d_recognisers.PocketGrid",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "pocket",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/blind_pockets_and_pocket_patterns/expected.json"
+      ],
+      "id": "pockets",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_pockets",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.pockets"
+          ],
+          "fields": {
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
+            "d_hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "d_lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "edge_anchored": {
+              "required": false,
+              "type": "bool",
+              "units": "none"
+            },
+            "hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "long_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "open_sign": {
+              "required": false,
+              "type": "int",
+              "units": "none"
+            },
+            "w_center": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "Pocket",
+          "qualified_name": "b123d_recognisers.Pocket",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/polygonal_boss/expected.json"
+      ],
+      "id": "polygonal-bosses",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_polygonal_bosses",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.polygonal_bosses"
+          ],
+          "fields": {
+            "across_flats": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "base": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "flat_centres": {
+              "required": true,
+              "type": "list[tuple[float,3]]",
+              "units": "mm"
+            },
+            "flat_directions": {
+              "required": true,
+              "type": "list[tuple[float,3]]",
+              "units": "unit-vector"
+            },
+            "side_count": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "top": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "PolygonalBoss",
+          "qualified_name": "b123d_recognisers.PolygonalBoss",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/polygonal_stock/expected.json"
+      ],
+      "id": "polygonal-stock",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_polygonal_stock",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.polygonal_stock"
+          ],
+          "fields": {
+            "across_flats": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "base": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "flat_centres": {
+              "required": true,
+              "type": "list[tuple[float,3]]",
+              "units": "mm"
+            },
+            "flat_directions": {
+              "required": true,
+              "type": "list[tuple[float,3]]",
+              "units": "unit-vector"
+            },
+            "side_count": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "top": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "PolygonalStock",
+          "qualified_name": "b123d_recognisers.PolygonalStock",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/plates_pads_levels_and_slanted_steps/expected.json"
+      ],
+      "id": "rectangular-pads",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_rectangular_pads",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.pads"
+          ],
+          "fields": {
+            "x0": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "x1": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "y0": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "y1": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "z0": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "z1": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "RaisedPad",
+          "qualified_name": "b123d_recognisers.RaisedPad",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/repeating_radial_profile/expected.json",
+        "tests/golden/traversal_order/expected.json"
+      ],
+      "id": "repeating-radial-profiles",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_repeating_radial_profiles",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.repeating_radial_profiles"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "centre": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "edge_count": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "repeat_count": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "sector_signature": {
+              "required": true,
+              "type": "list[list[float|list[tuple[float,2]]|str]]",
+              "units": "none"
+            },
+            "span": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            }
+          },
+          "name": "RepeatingRadialProfile",
+          "qualified_name": "b123d_recognisers.RepeatingRadialProfile",
+          "role": "evidence",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/plates_pads_levels_and_slanted_steps/expected.json",
+        "tests/golden/slanted_steps/expected.json"
+      ],
+      "id": "risers",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_risers",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.risers"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "hi_at_envelope": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            },
+            "lo_at_envelope": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            },
+            "other_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "other_positions": {
+              "required": true,
+              "type": "list[float]",
+              "units": "mm"
+            },
+            "positions": {
+              "required": true,
+              "type": "list[float]",
+              "units": "mm"
+            },
+            "tol": {
+              "required": false,
+              "type": "float",
+              "units": "mm"
+            },
+            "vertical": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            },
+            "z_hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "z_lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "RiserEvidence",
+          "qualified_name": "b123d_recognisers.RiserEvidence",
+          "role": "evidence",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Pure consumer projection from RiserEvidence plus a caller-supplied level set.",
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "position": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "StepShoulder",
+          "qualified_name": "b123d_recognisers.StepShoulder",
+          "role": "projection",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/straight_and_obround_slots/expected.json"
+      ],
+      "id": "slot-patterns",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_slot_patterns",
+          "kind": "derived"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.slot_patterns"
+          ],
+          "fields": {
+            "direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "slots": {
+              "required": true,
+              "type": "list[record:Slot]",
+              "units": "none"
+            }
+          },
+          "name": "SlotArray",
+          "qualified_name": "b123d_recognisers.SlotArray",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.slot_patterns"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "col_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "cols": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "row_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "rows": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "slots": {
+              "required": true,
+              "type": "list[record:Slot]",
+              "units": "none"
+            }
+          },
+          "name": "SlotGrid",
+          "qualified_name": "b123d_recognisers.SlotGrid",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "slot",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/straight_and_obround_slots/expected.json"
+      ],
+      "id": "slots",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_slots",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.slots"
+          ],
+          "fields": {
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
+            "d_hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "d_lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "long_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "w_center": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "Slot",
+          "qualified_name": "b123d_recognisers.Slot",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "step",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/turned_steps_and_grooves/expected.json"
+      ],
+      "id": "turned-steps",
+      "introduced_in": "0.1.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_turned_steps",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Consumer aggregate built on demand from RecognitionResult.turned_steps.",
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "steps": {
+              "required": true,
+              "type": "list[record:TurnedStep]",
+              "units": "none"
+            }
+          },
+          "name": "TurnedProfile",
+          "qualified_name": "b123d_recognisers.TurnedProfile",
+          "role": "aggregate",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.turned_steps"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "diameter": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "hi": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "lo": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "TurnedStep",
+          "qualified_name": "b123d_recognisers.TurnedStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    }
+  ],
+  "format": "b123d-recognisers-capabilities",
+  "format_version": 1,
+  "package": {
+    "name": "b123d-recognisers",
+    "version": "0.1.0"
+  }
+}
