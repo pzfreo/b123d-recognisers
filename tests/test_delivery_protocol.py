@@ -112,6 +112,11 @@ def test_candidate_harness_reads_wheel_version_and_adapts_only_disposable_export
     contract = export / "src" / "draftwright" / "recogniser_contract.py"
     contract.parent.mkdir(parents=True)
     contract.write_text('_PACKAGE_VERSION = "0.2.0"\nUNCHANGED = True\n', encoding="utf-8")
+    tests = export / "tests" / "test_recogniser_capabilities.py"
+    tests.parent.mkdir()
+    tests.write_text(
+        'EXPECTED = r"does not satisfy ==0.2.0"\nUNCHANGED = True\n', encoding="utf-8"
+    )
 
     version = _wheel_version(wheel)
     _adapt_exported_draftwright_version(export, version)
@@ -119,6 +124,9 @@ def test_candidate_harness_reads_wheel_version_and_adapts_only_disposable_export
     assert version == "0.2.1"
     assert contract.read_text(encoding="utf-8") == (
         '_PACKAGE_VERSION = "0.2.1"\nUNCHANGED = True\n'
+    )
+    assert tests.read_text(encoding="utf-8") == (
+        'EXPECTED = r"does not satisfy ==0.2.1"\nUNCHANGED = True\n'
     )
 
 

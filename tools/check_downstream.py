@@ -31,6 +31,7 @@ DRAFTWRIGHT_TESTS = (
 _DRAFTWRIGHT_PACKAGE_VERSION = re.compile(
     r'^_PACKAGE_VERSION = "(?P<version>[^"]+)"$', re.MULTILINE
 )
+_DRAFTWRIGHT_VERSION_ERROR = re.compile(r"does not satisfy ==(?P<version>[0-9A-Za-z.!+-]+)")
 
 
 def _python(venv: Path) -> Path:
@@ -122,7 +123,7 @@ def _wheel_version(wheel: Path) -> str:
 
 
 def _adapt_exported_draftwright_version(export: Path, version: str) -> None:
-    """Adapt only the disposable consumer export to the exact candidate under test."""
+    """Adapt only exact version references in the disposable consumer export."""
     contract = export / "src" / "draftwright" / "recogniser_contract.py"
     source = contract.read_text(encoding="utf-8")
     updated, count = _DRAFTWRIGHT_PACKAGE_VERSION.subn(
@@ -131,6 +132,13 @@ def _adapt_exported_draftwright_version(export: Path, version: str) -> None:
     if count != 1:
         raise SystemExit("expected one Draftwright package-version declaration")
     contract.write_text(updated, encoding="utf-8")
+
+    tests = export / "tests" / "test_recogniser_capabilities.py"
+    source = tests.read_text(encoding="utf-8")
+    updated, count = _DRAFTWRIGHT_VERSION_ERROR.subn(f"does not satisfy =={version}", source)
+    if count != 1:
+        raise SystemExit("expected one Draftwright package-version error assertion")
+    tests.write_text(updated, encoding="utf-8")
 
 
 def _validate_checkout(path: Path, project_name: str) -> None:

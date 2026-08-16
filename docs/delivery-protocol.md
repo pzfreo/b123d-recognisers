@@ -109,8 +109,9 @@ The harness runs the package manifest/contract evidence, builds a wheel, exports
 Draftwright branch into a temporary directory, syncs its locked environment, installs the candidate
 wheel without changing dependencies, and runs Draftwright's capability/import contract tests. For
 a version-bump candidate, it reads the version from the built wheel metadata and changes the exact
-package-version declaration only inside that disposable export before validation. It never edits
-either checkout, its lock, or its release evidence, and never commits a path/Git dependency. The
+package-version declaration and its matching negative-test expectation only inside that disposable
+export before validation. Both replacements fail closed unless they occur exactly once. The harness
+never edits either checkout, its lock, or its release evidence, and never commits a path/Git dependency. The
 released-artifact-origin assertion is intentionally excluded only in this local candidate run;
 hosted Draftwright CI still proves the committed lock came from the registry.
 
