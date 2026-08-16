@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 import json
+import runpy
 import subprocess
 import sys
+import zipfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
+
+import pytest
 
 ROOT = Path(__file__).parents[1]
+_HARNESS = runpy.run_path(str(ROOT / "tools/check_downstream.py"))
+_wheel_version = cast(Callable[[Path], str], _HARNESS["_wheel_version"])
+_adapt_exported_draftwright_version = cast(
+    Callable[[Path, str], None], _HARNESS["_adapt_exported_draftwright_version"]
+)
 
 
 def test_recogniser_issue_template_requires_independent_delivery_evidence() -> None:
@@ -86,6 +97,40 @@ def test_two_checkout_harness_exposes_bounded_candidate_plan() -> None:
     assert "test_recogniser_capabilities.py" in joined
     assert "not installed_released_package_contract" in joined
     assert "--no-deps" in joined
+
+
+def test_candidate_harness_reads_wheel_version_and_adapts_only_disposable_export(
+    tmp_path: Path,
+) -> None:
+    wheel = tmp_path / "candidate.whl"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr(
+            "b123d_recognisers-0.2.1.dist-info/METADATA",
+            "Metadata-Version: 2.4\nName: b123d-recognisers\nVersion: 0.2.1\n",
+        )
+    export = tmp_path / "export"
+    contract = export / "src" / "draftwright" / "recogniser_contract.py"
+    contract.parent.mkdir(parents=True)
+    contract.write_text('_PACKAGE_VERSION = "0.2.0"\nUNCHANGED = True\n', encoding="utf-8")
+
+    version = _wheel_version(wheel)
+    _adapt_exported_draftwright_version(export, version)
+
+    assert version == "0.2.1"
+    assert contract.read_text(encoding="utf-8") == (
+        '_PACKAGE_VERSION = "0.2.1"\nUNCHANGED = True\n'
+    )
+
+
+def test_candidate_harness_fails_closed_on_ambiguous_consumer_declaration(tmp_path: Path) -> None:
+    contract = tmp_path / "src" / "draftwright" / "recogniser_contract.py"
+    contract.parent.mkdir(parents=True)
+    contract.write_text(
+        '_PACKAGE_VERSION = "0.2.0"\n_PACKAGE_VERSION = "0.2.0"\n', encoding="utf-8"
+    )
+
+    with pytest.raises(SystemExit, match="one Draftwright package-version declaration"):
+        _adapt_exported_draftwright_version(tmp_path, "0.2.1")
 
 
 def test_contributor_and_pr_surfaces_link_the_protocol() -> None:

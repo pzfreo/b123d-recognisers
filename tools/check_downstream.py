@@ -9,10 +9,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
+from email.parser import Parser
 from pathlib import Path
 
 PACKAGE_TESTS = (
@@ -24,6 +27,9 @@ PACKAGE_TESTS = (
 DRAFTWRIGHT_TESTS = (
     "tests/test_recogniser_capabilities.py",
     "tests/test_import_boundaries.py",
+)
+_DRAFTWRIGHT_PACKAGE_VERSION = re.compile(
+    r'^_PACKAGE_VERSION = "(?P<version>[^"]+)"$', re.MULTILINE
 )
 
 
@@ -97,6 +103,36 @@ def _run(command: list[str], cwd: Path) -> None:
     subprocess.run(command, cwd=cwd, check=True)
 
 
+def _candidate_wheel(dist: Path) -> Path:
+    wheels = sorted(dist.glob("*.whl"))
+    if len(wheels) != 1:
+        raise SystemExit(f"expected one candidate wheel, found {len(wheels)}")
+    return wheels[0]
+
+
+def _wheel_version(wheel: Path) -> str:
+    with zipfile.ZipFile(wheel) as archive:
+        metadata = [name for name in archive.namelist() if name.endswith(".dist-info/METADATA")]
+        if len(metadata) != 1:
+            raise SystemExit(f"expected one wheel METADATA file, found {len(metadata)}")
+        message = Parser().parsestr(archive.read(metadata[0]).decode("utf-8"))
+    if message.get("Name") != "b123d-recognisers" or not (version := message.get("Version")):
+        raise SystemExit("candidate wheel has unexpected or missing project metadata")
+    return version
+
+
+def _adapt_exported_draftwright_version(export: Path, version: str) -> None:
+    """Adapt only the disposable consumer export to the exact candidate under test."""
+    contract = export / "src" / "draftwright" / "recogniser_contract.py"
+    source = contract.read_text(encoding="utf-8")
+    updated, count = _DRAFTWRIGHT_PACKAGE_VERSION.subn(
+        f'_PACKAGE_VERSION = "{version}"', source
+    )
+    if count != 1:
+        raise SystemExit("expected one Draftwright package-version declaration")
+    contract.write_text(updated, encoding="utf-8")
+
+
 def _validate_checkout(path: Path, project_name: str) -> None:
     pyproject = path / "pyproject.toml"
     if not pyproject.is_file() or f'name = "{project_name}"' not in pyproject.read_text(
@@ -141,12 +177,11 @@ def main() -> int:
                 export = Path(str(step["extract_to"]))
                 export.mkdir()
                 shutil.unpack_archive(str(step["archive"]), export, format="tar")
+                wheel = _candidate_wheel(temporary / "dist")
+                _adapt_exported_draftwright_version(export, _wheel_version(wheel))
                 _run(["uv", "sync", "--locked"], export)
             elif name == "install-candidate-wheel":
-                wheels = sorted((temporary / "dist").glob("*.whl"))
-                if len(wheels) != 1:
-                    raise SystemExit(f"expected one candidate wheel, found {len(wheels)}")
-                command[-1] = str(wheels[0])
+                command[-1] = str(_candidate_wheel(temporary / "dist"))
                 _run(command, cwd)
             else:
                 _run(command, cwd)
