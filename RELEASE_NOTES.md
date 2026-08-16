@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Adds `RecognitionResult.step_ladder_for_z_span(z_min, z_max, *, boundary_margin=0.6)` as the
+  build123d-free aggregate projection boundary. The margin is in model length units and its strict
+  end behavior, validation, determinism, and JSON-safe output are tested. The old
+  `step_ladder(BoundBox)` call is deprecated since 0.2.1 but remains throughout 0.2.x and will be
+  removed no earlier than 1.0.0. Existing recognition semantics and goldens are unchanged.
 - Adds a single-job Draftwright downstream canary for package pull requests and weekly consumer-
   drift checks. It records the resolved consumer commit, package commit/version, capability digest,
   and wall time while reusing the candidate-wheel contract harness rather than duplicating either

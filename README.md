@@ -60,6 +60,25 @@ recognisers and record schemas they consume. See
 [`docs/adr/0002-uniform-deterministic-recogniser-contract.md`](docs/adr/0002-uniform-deterministic-recogniser-contract.md)
 for the complete contract.
 
+### Project an aggregate step ladder
+
+The aggregate owns the one geometry-only rule that chooses between Z-turned shoulders and already
+filtered prismatic levels. Pass only the Z envelope it needs; no build123d object crosses this
+projection boundary:
+
+```python
+z_min = part.bounding_box().min.Z
+z_max = part.bounding_box().max.Z
+step_zs = result.step_ladder_for_z_span(z_min, z_max)
+```
+
+The default `boundary_margin=0.6` is measured in model length units (normally millimetres) and
+strictly excludes turned end faces at both ends. It can be overridden explicitly. The former
+`result.step_ladder(bound_box)` call remains as a deprecated 0.2.x compatibility shim and will be
+removed no earlier than 1.0.0. See
+[`ADR 0006`](docs/adr/0006-explicit-step-ladder-z-span.md) for the caller inventory and boundary
+decision.
+
 ## Scope
 
 Feature recognition is deliberately separate from feature editing. This package reports geometric

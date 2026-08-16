@@ -10,6 +10,8 @@ belong to consumers and require their own independent evidence.
 
 from __future__ import annotations
 
+import math
+import warnings
 from dataclasses import dataclass
 from enum import Enum
 
@@ -30,7 +32,13 @@ from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
 from b123d_recognisers.fillets import Fillet, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
-from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
+from b123d_recognisers.levels import (
+    STEP_LADDER_BOUNDARY_MARGIN,
+    FaceLevel,
+    RiserEvidence,
+    recognise_risers,
+    step_level_records,
+)
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
 from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
@@ -72,10 +80,10 @@ MIGRATED: frozenset[str] = frozenset(
         "recognise_flats",
         "recognise_grooves",
         # Reached through `step_level_records`, the area-filtered gate over it. The aggregate
-        # retains those records because consumers need their support spans; `step_ladder()` gives
-        # sizing and critique their shared float projection. Previously deferred for lack of an
-        # independent consumer, it now supplies the geometry ladder to completeness checks without
-        # requiring a second scan.
+        # retains those records because consumers need their support spans;
+        # `step_ladder_for_z_span()` gives sizing and critique their shared float projection.
+        # Previously deferred for lack of an independent consumer, it now supplies the geometry
+        # ladder to completeness checks without requiring a second scan.
         "recognise_face_levels",
         "recognise_hole_patterns",
         "recognise_holes",
@@ -193,7 +201,7 @@ class RecognitionResult:
     turned_steps: tuple[TurnedStep, ...]
     #: Area-filtered interior prismatic levels. The support spans remain on each record so IR
     #: assembly can preserve level-to-face correspondence; sizing and critique project the Z
-    #: values through :meth:`step_ladder`.
+    #: values through :meth:`step_ladder_for_z_span`.
     step_levels: tuple[FaceLevel, ...]
     #: Whether the part classified as ROTATIONAL, carried so consumers can tell a gated-away
     #: inventory from an empty one. ``chamfers``/``fillets``/``plates`` are ``()`` on a
@@ -214,9 +222,23 @@ class RecognitionResult:
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
 
-    def step_ladder(self, bb: Bounds) -> list[float]:
-        """The effective step ladder for *bb*: turned shoulders for a Z-turned part, else the
-        prismatic face levels.
+    def step_ladder_for_z_span(
+        self,
+        z_min: float,
+        z_max: float,
+        *,
+        boundary_margin: float = STEP_LADDER_BOUNDARY_MARGIN,
+    ) -> list[float]:
+        """Return the effective step ladder within an explicit Z envelope.
+
+        ``z_min``, ``z_max``, and ``boundary_margin`` use model length units (millimetres in
+        conventional build123d/STEP workflows). For a Z-turned profile, only shoulders strictly
+        inside ``z_min + boundary_margin`` and ``z_max - boundary_margin`` are rungs; equality is
+        excluded. A span narrower than twice the margin therefore has no turned rungs.
+
+        Prismatic levels are already envelope-filtered by :func:`step_level_records` during the
+        recognition pass, so this projection returns them unchanged. The span is still validated
+        on every path so invalid geometry input cannot be hidden by part classification.
 
         One rule serves every consumer. Model construction and completeness checks need the
         same set, but deriving it separately could silently project over different ladders.
@@ -224,10 +246,34 @@ class RecognitionResult:
         Geometry-only, so it is a legitimate source for critique under the independent-evidence
         rule: it reads the aggregate's own recognition, never the model.
         """
+        if not math.isfinite(z_min) or not math.isfinite(z_max):
+            raise ValueError("z_min and z_max must be finite")
+        if z_min > z_max:
+            raise ValueError("z_min must not exceed z_max")
+        if not math.isfinite(boundary_margin) or boundary_margin < 0.0:
+            raise ValueError("boundary_margin must be finite and non-negative")
         prof = TurnedProfile.from_steps(list(self.turned_steps))
         if prof is not None and prof.axis == "z":
-            return [z for z in prof.shoulders if bb.min.Z + 0.6 < z < bb.max.Z - 0.6]
+            return [
+                float(z)
+                for z in prof.shoulders
+                if z_min + boundary_margin < z < z_max - boundary_margin
+            ]
         return [level.z for level in self.step_levels]
+
+    def step_ladder(self, bb: Bounds) -> list[float]:
+        """Compatibility shim for a build123d bounding box.
+
+        Deprecated since 0.2.1. Use :meth:`step_ladder_for_z_span` with the two scalar Z limits.
+        This shim remains for the 0.2.x compatibility line and is removed no earlier than 1.0.0.
+        """
+        warnings.warn(
+            "RecognitionResult.step_ladder(BoundBox) is deprecated since 0.2.1; use "
+            "step_ladder_for_z_span(z_min, z_max). It will be removed no earlier than 1.0.0.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.step_ladder_for_z_span(float(bb.min.Z), float(bb.max.Z))
 
 
 def build_recognition_result(

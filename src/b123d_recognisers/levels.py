@@ -154,8 +154,14 @@ def recognise_face_levels(
 # pad top) that would otherwise read as a phantom step rung.
 _STEP_MIN_AREA_FRAC = 0.01
 
+#: Default end exclusion for both prismatic level capture and Z-turned ladder projection, in
+#: model length units (normally mm). Equality at either inset boundary is excluded.
+STEP_LADDER_BOUNDARY_MARGIN: float = 0.6
 
-def step_level_records(part: Part, *, tol: float = 0.6) -> list[FaceLevel]:
+
+def step_level_records(
+    part: Part, *, tol: float = STEP_LADDER_BOUNDARY_MARGIN
+) -> list[FaceLevel]:
     """Area-filtered interior face-level records, retaining their support bounds."""
     bb = part.bounding_box()
     return [
@@ -165,7 +171,7 @@ def step_level_records(part: Part, *, tol: float = 0.6) -> list[FaceLevel]:
     ]
 
 
-def step_level_zs(part: Part, *, tol: float = 0.6) -> list[float]:
+def step_level_zs(part: Part, *, tol: float = STEP_LADDER_BOUNDARY_MARGIN) -> list[float]:
     """The interior prismatic step Z-levels: the area-filtered horizontal face levels strictly
     inside the part height (``base + tol < z < top - tol``). The single source of truth for the
     step-height ladder for every consumer. Using raw, unfiltered

@@ -89,6 +89,7 @@ from b123d_recognisers.fillets import Fillet, fillet_anchor, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.grooves import Groove, floor_face_anchor, recognise_grooves
 from b123d_recognisers.levels import (
+    STEP_LADDER_BOUNDARY_MARGIN,
     FaceLevel,
     RiserEvidence,
     StepShoulder,
@@ -149,6 +150,7 @@ __all__ = [
     "CAPABILITY_FORMAT",
     "CAPABILITY_FORMAT_VERSION",
     "CapabilityManifestError",
+    "STEP_LADDER_BOUNDARY_MARGIN",
     "BoltCircle",
     "Chamfer",
     "Channel",
