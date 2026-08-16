@@ -11,14 +11,14 @@ from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_S
 from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._cylinder_substrate import (
-    _STACK_GAP_TOL,
+    _STACK_GAP_FRAC,
     _cyl_group_key,
     _line_key,
     _merge_runs,
     analyse_cylinders,
     full_cylinders,
 )
-from b123d_recognisers._geometry import _unit
+from b123d_recognisers._geometry import _unit, length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
@@ -123,7 +123,10 @@ def _end_partners(seg, s_end, edge_faces, cache=None):
         if hit is not None and hit[0] is seg:
             return hit[1]
     dx, dy, dz = seg["dir_xyz"]
-    margin = max(_STACK_GAP_TOL, min(0.45 * (seg["s_hi"] - seg["s_lo"]), 0.5 * seg["diameter"]))
+    margin = max(
+        length_tol(seg["diameter"], rel=_STACK_GAP_FRAC),
+        min(0.45 * (seg["s_hi"] - seg["s_lo"]), 0.5 * seg["diameter"]),
+    )
     partners = []
     for face in seg["faces"]:
         for edge in face.edges():
@@ -288,9 +291,9 @@ def _merge_stacks(stacks, edge_faces, cache=None):
             ):
                 joined = dict(a, s_hi=b["s_hi"], faces=a["faces"] + b["faces"])
                 cur = [s for s in cur if s is not a] + [joined] + [s for s in nxt if s is not b]
-            elif b["s_lo"] - a["s_hi"] <= _STACK_GAP_TOL + abs(
-                a["diameter"] - b["diameter"]
-            ) and _shared_transition(a, b, edge_faces, cache):
+            elif b["s_lo"] - a["s_hi"] <= length_tol(
+                max(a["diameter"], b["diameter"]), rel=_STACK_GAP_FRAC
+            ) + abs(a["diameter"] - b["diameter"]) and _shared_transition(a, b, edge_faces, cache):
                 cur = cur + nxt
             else:
                 merged.append(cur)

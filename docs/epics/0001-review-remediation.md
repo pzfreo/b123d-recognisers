@@ -79,30 +79,40 @@ every site.
       determines the comparison; dimensionless gates and record rounding never scale; an absolute
       term is legal only when a comment names the physical constant it encodes
 - [x] `_geometry.length_tol(nominal, *, rel, floor)` and `_geometry.part_scale(bbox)`
-- [x] Every site classified in the ADR: 18 not lengths · 5 already scaled · 1 deliberately
-      absolute · 18 feature-relative to convert · 13 part-relative to convert
+- [x] Every site classified in the ADR: 18 not lengths · 5 already scaled · 2 deliberately
+      absolute · 17 feature-relative to convert · 13 part-relative to convert
 - [x] `_pattern_tol` and the three inline `part_scale` spellings adopt the helpers — goldens
       byte-identical
 
-### 2b — Feature-relative lengths · behaviour change
+### 2b — Feature-relative lengths · `agent/feature-relative-tolerances` · behaviour change
 
-The 18 sites that already hold a diameter, radius or width at the comparison: `flats`,
-`countersinks`, `grooves`, `_cylinder_substrate`, `_recess_core`'s cap tolerances, `turned`'s OD
-span pad.
+The 17 sites that already hold a diameter, radius or width at the comparison: `flats`,
+`countersinks`, `grooves`, `_cylinder_substrate`, `_recess_core`'s cap tolerances.
 
-- [ ] Convert each to `length_tol(nominal, rel=…, floor=…)`
-- [ ] Scale sweep: rebuild each fixture across 0.05×–100×, assert the census is invariant
-- [ ] Review every moved golden cell on its own evidence (ADR 0002)
+- [x] Convert each to `length_tol(nominal, rel=…)` over a documented reference size
+- [x] `tests/test_scale_invariance.py` rebuilds every fixture at 0.05×/5×/100× and asserts the
+      converted families are invariant, with the unconverted ones named in an exclusion list 2c
+      deletes from
+- [x] **Goldens byte-identical.** No cell moved, so there was nothing to review under ADR 0002 —
+      the conversion is a strict improvement off-scale and a no-op at reference scale
+- [x] `turned._OD_SPAN_PAD` reclassified as deliberately absolute — converting it bridged a
+      groove; see ADR 0008
 
 ### 2c — Part-relative lengths and the public surface · behaviour change
 
 The 13 sites with no local feature: the `tol=` keywords on the five public recognisers,
 `fillets.min_radius`, `STEP_LADDER_BOUNDARY_MARGIN`, `_MERGE_TOL`, `_FLOOR_TOL`.
 
+- [ ] **First, [#46](https://github.com/pzfreo/b123d-recognisers/issues/46): replace the
+      `round(z / tol) * tol` grouping in `levels` and `plates` with single-linkage clustering.**
+      It groups by grid phase rather than distance — faces 0.24 mm apart merge while faces
+      0.02 mm apart split. Deriving `tol` on top of a grid shifts its phase on every fixture, so
+      this must land first or 2c's golden churn is unattributable
 - [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
       meaning so a calibrated caller is not broken
 - [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly
 - [ ] Regenerate the capability manifest; these signatures and defaults are in it
+- [ ] Empty `NOT_YET_SCALE_FREE` in `tests/test_scale_invariance.py`
 - [ ] Release note stating the behaviour change; `0.3.0a1` for the Draftwright canary, then `0.3.0`
 
 ## 3 — Tests that pin prose and implementation detail

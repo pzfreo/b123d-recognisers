@@ -42,8 +42,15 @@ from b123d_recognisers._typing import CylinderInventory, Part
 # A face's axial position counts as on a band edge / its normal counts as
 # axis-aligned within these tolerances (mm / unit-vector component).
 _AXIS_NORMAL_TOL = 0.05
-# Pad a band's [s_lo, s_hi] when asking "what is the OD here", so a shoulder face
-# sitting exactly at a (chamfer-shortened) band edge still sees that band's OD.
+# Pad a band's [s_lo, s_hi] when asking "what is the OD here", so a shoulder face sitting
+# exactly at a (chamfer-shortened) band edge still sees that band's OD.
+#
+# DELIBERATELY ABSOLUTE, per ADR 0008. The pad spans an edge break, the same physical constant
+# as _CHAMFER_ALLOWANCE_ABS below, and a deburr does not grow with the shaft. Making it a
+# fraction of the band diameter was tried and reverted: at 8.75% it reaches 2.6 mm on a 30 mm
+# band, bridges the 5 mm groove in the turned-step golden, and reports the groove's step at its
+# neighbour's OD. It is capped at half the band's own width so it can never bridge the band it
+# pads, which is what keeps it safe on a part modelled small.
 _OD_SPAN_PAD = 0.7
 # A transverse face is a shoulder/end when its outer radius is within this of the
 # local OD. Constant + proportional terms cover both a fixed edge-break and a
@@ -157,11 +164,11 @@ def recognise_turned_steps(
         return []
 
     def local_od(pos: float) -> float:
-        radii = [
-            c["diameter"] / 2
-            for c in bands
-            if c["s_lo"] - _OD_SPAN_PAD <= pos <= c["s_hi"] + _OD_SPAN_PAD
-        ]
+        radii = []
+        for c in bands:
+            pad = min(_OD_SPAN_PAD, (c["s_hi"] - c["s_lo"]) / 2)
+            if c["s_lo"] - pad <= pos <= c["s_hi"] + pad:
+                radii.append(c["diameter"] / 2)
         return max(radii) if radii else 0.0
 
     shoulders: set[float] = set()

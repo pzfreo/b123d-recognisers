@@ -133,7 +133,15 @@ def part_scale(bbox) -> float:
     return max(float(bbox.size.X), float(bbox.size.Y), float(bbox.size.Z))
 
 
-def length_tol(nominal: float, *, rel: float, floor: float) -> float:
+#: The absolute band below which two coordinates are the same coordinate, and the default
+#: ``floor`` of a feature-relative gate. It models float and kernel noise only — OCCT settles
+#: boolean-cut coordinates to around 1e-7 — not any manufacturing allowance, so it is the same
+#: number everywhere and does not vary by recogniser. A gate whose floor needs to be larger than
+#: this is expressing something physical and must say what, per ADR 0008.
+COORD_FLOOR = 1e-6
+
+
+def length_tol(nominal: float, *, rel: float, floor: float = COORD_FLOOR) -> float:
     """Return a length tolerance proportional to *nominal* but never below *floor*.
 
     The package's one tolerance form, per ADR 0008. *rel* carries the part of the allowance
