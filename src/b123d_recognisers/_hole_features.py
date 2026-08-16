@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import cast
 
+from build123d import Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 from OCP.TopAbs import TopAbs_Orientation
@@ -21,8 +22,22 @@ from b123d_recognisers._cylinder_substrate import (
 )
 from b123d_recognisers._geometry import _unit, length_tol
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderInventory, Part, Vector3
+from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
+
+
+class SegmentEvidence(CylinderEvidence):
+    """One coaxial cylinder segment: a :class:`CylinderEvidence` plus the patches it merged.
+
+    Defined here rather than in ``_typing`` because it is internal — ``CylinderEvidence`` is
+    published for downstream compatibility, this is not. It exists because ``_segments`` widens
+    each cylinder record with the faces of every patch it absorbed, so annotating a segment
+    ``CylinderEvidence`` would be *wrong* rather than merely imprecise: the extra key is what
+    the end-classification walk reads.
+    """
+
+    faces: list[Face]
+
 
 _full_cyls = full_cylinders
 #: Two cylinder patches are the same diameter. NOT a machining allowance: analyse_cylinders
@@ -89,22 +104,28 @@ class BossRecord(Record):
     height: float
 
 
-def _segments(cyls) -> list[dict]:
+def _segments(cyls: list[CylinderEvidence]) -> list[SegmentEvidence]:
     """Collapse cylinder patches into segments: one per (axis line, diameter,
     contiguous axial range). Keyway-split patches of one bore merge; coaxial
     same-diameter holes from opposite faces stay separate."""
+    # cast rather than a TypedDict literal: `dict(run[0], ...)` carries the ten keys of the
+    # source record forwards, and respelling them here would be a second place to keep in step
+    # with `CylinderEvidence`.
     return [
-        dict(
-            run[0],
-            s_lo=min(p["s_lo"] for p in run),
-            s_hi=max(p["s_hi"] for p in run),
-            faces=[p["face"] for p in run],
+        cast(
+            SegmentEvidence,
+            dict(
+                run[0],
+                s_lo=min(p["s_lo"] for p in run),
+                s_hi=max(p["s_hi"] for p in run),
+                faces=[p["face"] for p in run],
+            ),
         )
         for run in _merge_runs(cyls, _cyl_group_key)
     ]
 
 
-def _axis_point(seg, s) -> tuple[float, float, float]:
+def _axis_point(seg: SegmentEvidence, s: float) -> tuple[float, float, float]:
     """The 3D point on *seg*'s axis at axial coordinate *s*."""
     ax, ay, az = seg["axis_xyz"]
     dx, dy, dz = seg["dir_xyz"]
@@ -113,7 +134,9 @@ def _axis_point(seg, s) -> tuple[float, float, float]:
     return (ax + t * dx, ay + t * dy, az + t * dz)
 
 
-def _end_partners(seg, s_end, edge_faces: dict, cache: dict | None = None) -> list:
+def _end_partners(
+    seg: SegmentEvidence, s_end: float, edge_faces: dict, cache: dict | None = None
+) -> list:
     """The faces beyond one axial end of *seg*: partners of edges that lie at
     that end. An opening edge on a slanted or curved surface dips away from
     the end plane (by the lip sagitta), so edges match within a margin — but
@@ -151,7 +174,13 @@ def _end_partners(seg, s_end, edge_faces: dict, cache: dict | None = None) -> li
     return partners
 
 
-def _classify_end(seg, s_end, hi_end, edge_faces: dict, cache: dict | None = None) -> str:
+def _classify_end(
+    seg: SegmentEvidence,
+    s_end: float,
+    hi_end: bool,
+    edge_faces: dict,
+    cache: dict | None = None,
+) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
     if cache is None:
         return _classify_end_uncached(seg, s_end, hi_end, edge_faces)
@@ -165,7 +194,11 @@ def _classify_end(seg, s_end, hi_end, edge_faces: dict, cache: dict | None = Non
 
 
 def _classify_end_uncached(
-    seg, s_end, hi_end, edge_faces: dict, cache: dict | None = None
+    seg: SegmentEvidence,
+    s_end: float,
+    hi_end: bool,
+    edge_faces: dict,
+    cache: dict | None = None,
 ) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
@@ -254,7 +287,9 @@ def _edge_face_map(part: Part) -> dict:
     return edge_faces
 
 
-def _shared_transition(a, b, edge_faces: dict, cache: dict | None = None) -> bool:
+def _shared_transition(
+    a: SegmentEvidence, b: SegmentEvidence, edge_faces: dict, cache: dict | None = None
+) -> bool:
     """True when a cone or torus face spans the gap between segment *a*'s
     high end and segment *b*'s low end — the shoulder chamfer or fillet that
     makes the two segments steps of one hole. The transition face touches
@@ -275,7 +310,9 @@ def _shared_transition(a, b, edge_faces: dict, cache: dict | None = None) -> boo
     return False
 
 
-def _merge_stacks(stacks, edge_faces: dict, cache: dict | None = None) -> list[list[dict]]:
+def _merge_stacks(
+    stacks: list[list[SegmentEvidence]], edge_faces: dict, cache: dict | None = None
+) -> list[list[SegmentEvidence]]:
     """Recombine coaxial stacks that are one hole:
 
     - same bore diameter on both sides of a crossing void, neither facing
@@ -285,10 +322,10 @@ def _merge_stacks(stacks, edge_faces: dict, cache: dict | None = None) -> list[l
       fillet face (the steps of a counterbored hole with a deburred
       shoulder).
     """
-    by_line: dict = {}
+    by_line: dict[tuple, list[list[SegmentEvidence]]] = {}
     for stack in stacks:
         by_line.setdefault(_line_key(stack[0]), []).append(stack)
-    merged = []
+    merged: list[list[SegmentEvidence]] = []
     for line_stacks in by_line.values():
         line_stacks.sort(key=lambda st: min(s["s_lo"] for s in st))
         cur = line_stacks[0]
@@ -301,7 +338,10 @@ def _merge_stacks(stacks, edge_faces: dict, cache: dict | None = None) -> list[l
                 and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
                 and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
             ):
-                joined = dict(a, s_hi=b["s_hi"], faces=a["faces"] + b["faces"])
+                joined = cast(
+                    SegmentEvidence,
+                    dict(a, s_hi=b["s_hi"], faces=a["faces"] + b["faces"]),
+                )
                 cur = [s for s in cur if s is not a] + [joined] + [s for s in nxt if s is not b]
             elif b["s_lo"] - a["s_hi"] <= length_tol(
                 max(a["diameter"], b["diameter"]), rel=_STACK_GAP_FRAC
@@ -328,7 +368,9 @@ def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink
     return None
 
 
-def _drilled_from(stack, edge_faces: dict, cache: dict) -> tuple[bool, dict, float, str]:
+def _drilled_from(
+    stack: list[SegmentEvidence], edge_faces: dict, cache: dict
+) -> tuple[bool, SegmentEvidence, float, str]:
     """Which end of a coaxial stack is the opening, and what closes the other.
 
     Returns ``(from_hi, opening_seg, opening_s, bottom)``. The opening is the open end; when
@@ -357,7 +399,7 @@ def _drilled_from(stack, edge_faces: dict, cache: dict) -> tuple[bool, dict, flo
     return from_hi, opening_seg, opening_s, {"open": "through"}.get(bottom_state, bottom_state)
 
 
-def _near_side_steps(steps) -> tuple[CounterBore | None, CounterBore | None]:
+def _near_side_steps(steps: list[SegmentEvidence]) -> tuple[CounterBore | None, CounterBore | None]:
     """Classify the segments between the opening and the bore as counterbore and spotface.
 
     *steps* is ordered from the opening inward. Diameters must narrow monotonically: a segment
@@ -395,7 +437,9 @@ def _near_side_steps(steps) -> tuple[CounterBore | None, CounterBore | None]:
     return cbore, spotface
 
 
-def _bore_depth(stack, bore, *, bottom: str, from_hi: bool) -> float:
+def _bore_depth(
+    stack: list[SegmentEvidence], bore: SegmentEvidence, *, bottom: str, from_hi: bool
+) -> float:
     """Depth from the top of the bore to the hole's deep end.
 
     The two ends are measured against different segment sets on purpose. The near end is the
