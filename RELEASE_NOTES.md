@@ -23,9 +23,14 @@ again. Anyone on 0.2.3 should take this.
 - Genuinely feature-relative tolerances from 0.2.3 are kept: diameter matching in `countersinks`,
   `grooves` and the cylinder stack, and the recess cap radii. Those compare two measurements of
   one feature and do scale with it.
+- The `flats` chord gates are absolute again too. They were missed on the first pass and caught
+  by the real parts: `ctc_05` reported four flats on 0.2.2, none on 0.2.3, and two on the partial
+  fix. Verified against all five NIST complex test cases, every reported count restored.
 - `tests/test_large_part_small_features.py` pins the property with parts larger than the fixture
   corpus carrying features smaller than it implies — the combination the 30–180 mm fixtures never
-  covered.
+  covered. `tests/test_nist_ctc_corpus.py` pins the reported baseline against the real parts, and
+  skips unless `B123D_NIST_STEP_DIR` points at them, since `migration/PARITY.md` commits the
+  project to comparing record projections rather than committing STEP bytes.
 
 ## 0.2.3
 

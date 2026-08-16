@@ -55,9 +55,11 @@ _ANTIPARALLEL_TOL = 0.05
 # 6 mm bar and the same flat on 600 mm bar are the same feature. Each fraction is the millimetre
 # constant it replaces over the corpus's 4 mm reference radius.
 #
-# The plane must sit strictly inside the OD to be a chord cut (off the axis / off the OD).
-_CHORD_MIN_FRAC = 0.0125
-_CHORD_MARGIN_FRAC = 0.0125
+# The plane must sit strictly inside the OD to be a chord cut (mm off the axis / off the OD).
+# Both are minimum-evidence thresholds, so absolute per ADR 0008. Scaled to the stock radius they
+# tightened on large bar and rejected genuine flats -- the NIST ctc_05 part lost two of four.
+_CHORD_MIN = 0.05
+_CHORD_MARGIN = 0.05
 # A flat must remove more than this depth of material (R − d); below it is a tangent sliver.
 # A minimum-evidence threshold, so absolute per ADR 0008: scaling it to the stock radius erased
 # shallow flats on large bar, which is a judgement about significance rather than about noise.
@@ -229,7 +231,7 @@ def recognise_flats(
             s = (pcv[0] - ax[0]) * nv[0] + (pcv[1] - ax[1]) * nv[1] + (pcv[2] - ax[2]) * nv[2]
             r = c["diameter"] / 2
             if not (
-                length_tol(r, rel=_CHORD_MIN_FRAC) < s < r - length_tol(r, rel=_CHORD_MARGIN_FRAC)
+                _CHORD_MIN < s < r - _CHORD_MARGIN
             ):
                 continue  # outward normal points toward the axis (a slot wall), or outside OD
             if r - s < _MIN_FLAT_DEPTH:
