@@ -78,7 +78,7 @@ class BevelReject(ValueError):
     shallow draft angle — a real face, not a chamfer), or ``"compound"`` (oblique on all
     three axes — a corner bevel, out of scope)."""
 
-    def __init__(self, reason: str):
+    def __init__(self, reason: str) -> None:
         self.reason = reason
         super().__init__(reason)
 

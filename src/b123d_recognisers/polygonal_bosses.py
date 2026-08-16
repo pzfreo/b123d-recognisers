@@ -79,7 +79,7 @@ class PolygonalStock(Record):
         return self.top - self.base
 
 
-def _normal(face):
+def _normal(face) -> tuple[float, float, float] | None:
     try:
         normal = face.normal_at(face.center())
     except Exception:  # noqa: BLE001 - a degenerate face cannot prove a boss
