@@ -239,7 +239,15 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
       the three headline numbers. All three worst offenders shrank a lot (231→94, 131→122,
       120→78) but each is still over 60 once its docstring is counted, and the other twenty were
       deliberately left. The epic asked for the three worst, not for the count
-- [ ] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`
+- [~] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`. **43 return
+      annotations and 231 unannotated parameters**, not the "38% of definitions" the epic
+      estimated — that figure is now 21% of definitions for returns, and the parameter count was
+      never stated. 18 returns done here; the remaining 25 are `_recess_core` (14) and
+      `_hole_features` (8) plus three stragglers
+- [ ] Each annotation is a claim the strict wheel check verifies, not a comment. Three so far
+      were false when written — `_bore_depth`, `_same_axis_line` and `_unit` all declared types
+      the code did not honour, because arithmetic on untyped parameters is `Any`. That is the
+      value of this half of the finding, and the reason it cannot be done mechanically
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 
 ## 7 — Stray docstring text

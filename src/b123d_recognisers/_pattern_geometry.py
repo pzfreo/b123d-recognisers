@@ -14,7 +14,7 @@ def _pattern_tol(nominal: float) -> float:
     return length_tol(nominal, rel=_PATTERN_REL_TOL, floor=_PATTERN_ABS_TOL)
 
 
-def _project_out(w, *directions):
+def _project_out(w, *directions) -> tuple[float, ...] | None:
     """Remove every orthogonal unit *direction* from *w*, then renormalise."""
     for d in directions:
         k = sum(p * q for p, q in zip(w, d, strict=True))
@@ -23,7 +23,7 @@ def _project_out(w, *directions):
     return tuple(c / n for c in w)
 
 
-def _plane_uv(axis):
+def _plane_uv(axis) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Two orthonormal vectors spanning the plane perpendicular to *axis*.
 
     Seeded from the shared :func:`b123d_recognisers._geometry.plane_axes` basis for *axis*'s
@@ -58,7 +58,10 @@ def _plane_uv(axis):
     # neither projection can collapse: `a`'s component along the third axis is the largest of
     # the three, hence at least 1/√3.
     u = _project_out(u0, a)
-    return u, _project_out(v0, a, u)
+    assert u is not None  # noqa: S101 - the collapse argument above, made executable
+    v = _project_out(v0, a, u)
+    assert v is not None  # noqa: S101
+    return u, v
 
 
 def _as_linear_array(members, pts, make):

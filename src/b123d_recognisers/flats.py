@@ -68,7 +68,7 @@ _OD_REACH_FRAC = 0.025
 _AXIS_LINE_FRAC = 0.025
 
 
-def _both_chord_ends_reach_od(verts, ax, dv, nv, r):
+def _both_chord_ends_reach_od(verts, ax, dv, nv, r) -> bool:
     """A genuine flat is a chord of the OD: both transverse ends of the face lie *on* the
     cylinder (radius ≈ R). A slot/pocket near-wall — outward-facing but offset to one side of
     the axis — has one end on the OD and the other on the slot floor (radius < R), so it is
@@ -96,7 +96,7 @@ def _both_chord_ends_reach_od(verts, ax, dv, nv, r):
     return lo_r is not None and lo_r >= r - reach and hi_r >= r - reach
 
 
-def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir, radius):
+def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir, radius) -> bool:
     """Two radial flats are opposed across one shaft only if their turning axes are the *same
     line* — the vector between the axis points has no component perpendicular to the shared
     direction. Guards against pairing lone flats on two distinct parallel shafts."""
@@ -105,7 +105,8 @@ def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir, radius):
     vx, vy, vz = b_ax[0] - a_ax[0], b_ax[1] - a_ax[1], b_ax[2] - a_ax[2]
     adot = vx * a_dir[0] + vy * a_dir[1] + vz * a_dir[2]
     px, py, pz = vx - adot * a_dir[0], vy - adot * a_dir[1], vz - adot * a_dir[2]
-    return (px * px + py * py + pz * pz) ** 0.5 <= length_tol(radius, rel=_AXIS_LINE_FRAC)
+    offset = float((px * px + py * py + pz * pz) ** 0.5)
+    return offset <= length_tol(radius, rel=_AXIS_LINE_FRAC)
 
 
 @dataclass(frozen=True)

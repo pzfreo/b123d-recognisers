@@ -49,9 +49,16 @@ AXIS_ZERO_COS = 0.01
 INTERIOR_PROBE_FRAC = 0.05
 
 
-def _unit(v):
-    """Normalise negative zeros out of a direction tuple."""
-    return tuple(0.0 if c == 0 else c for c in v)
+def _unit(v) -> tuple[float, float, float]:
+    """Normalise negative zeros out of a direction 3-vector.
+
+    Unpacked rather than built by comprehension so the return type is the three floats a record
+    axis actually requires. Every caller passes a direction, so a different length is a
+    programming error and the unpacking says so.
+    """
+
+    x, y, z = (0.0 if c == 0 else c for c in v)
+    return (x, y, z)
 
 
 def _axis_letter_of(axis) -> str:
@@ -78,7 +85,9 @@ def plane_axes(axis) -> tuple[tuple[float, float, float], tuple[float, float, fl
     return _PLANE_AXES[letter]
 
 
-def _axis_direction_components(axis: str, direction=None):
+def _axis_direction_components(
+    axis: str, direction=None
+) -> tuple[tuple[float, ...], float, int]:
     if axis not in "xyz" or len(axis) != 1:
         raise ValueError("axis must be 'x', 'y', or 'z'")
     if direction is None:

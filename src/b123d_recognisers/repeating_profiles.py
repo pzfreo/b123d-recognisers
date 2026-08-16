@@ -291,7 +291,9 @@ def _polar_signature(
 ) -> tuple[tuple[float, float], ...]:
     """Canonical sampled curve shape modulo phase, reflection and traversal direction."""
 
-    def one_direction(candidate: tuple[tuple[float, float], ...]):
+    def one_direction(
+        candidate: tuple[tuple[float, float], ...],
+    ) -> tuple[tuple[float, float], ...]:
         polar = [
             (_distance(point, centre), atan2(point[1] - centre[1], point[0] - centre[0]))
             for point in candidate

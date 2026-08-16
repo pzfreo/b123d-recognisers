@@ -85,7 +85,7 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
     return z_cyls, cross_cyls
 
 
-def _line_key(c):
+def _line_key(c) -> tuple:
     """Coaxial-stack key: the owning solid plus the axis letter and the axis
     point projected onto the plane perpendicular to the axis direction (so it is
     position-independent along the axis, and exact for slanted axes too). The
@@ -103,12 +103,12 @@ def _line_key(c):
     )
 
 
-def _cyl_group_key(c):
+def _cyl_group_key(c) -> tuple:
     """Cylinder patches of one hole/boss share an axis line and a diameter."""
     return (*_line_key(c), round(c["diameter"], 2))
 
 
-def _merge_runs(items, key_fn):
+def _merge_runs(items, key_fn) -> list[list[CylinderEvidence]]:
     """Group *items* by *key_fn*, then split each group into runs of
     contiguous axial ranges (a gap wider than the band's own ``_STACK_GAP_FRAC`` starts a new
     run)."""

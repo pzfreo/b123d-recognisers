@@ -128,11 +128,11 @@ class HoleSpec(Record):
         )
 
 
-def _spec_key(h):
+def _spec_key(h) -> HoleSpec:
     return HoleSpec.from_hole(h)
 
 
-def _as_bolt_circle(holes, pts):
+def _as_bolt_circle(holes, pts) -> BoltCircle | None:
     """BoltCircle when *pts* (2D) are equally spaced on a common circle."""
     n = len(pts)
     cx = sum(p[0] for p in pts) / n
@@ -151,7 +151,7 @@ def _as_bolt_circle(holes, pts):
     return BoltCircle(holes=tuple(holes), center=center, diameter=round(2 * r, 2))
 
 
-def _circumcircle(p0, p1, p2):
+def _circumcircle(p0, p1, p2) -> tuple[float, float, float] | None:
     """Centre and radius ``(cx, cy, r)`` of the circle through three 2D points,
     or ``None`` when they are collinear (so a collinear triple can never seed a
     bolt circle — collinearity must win, per :func:`recognise_hole_patterns`)."""
@@ -167,7 +167,7 @@ def _circumcircle(p0, p1, p2):
     return ux, uy, math.hypot(ax - ux, ay - uy)
 
 
-def _bolt_circle_candidates(members, pts):
+def _bolt_circle_candidates(members, pts) -> list[tuple[BoltCircle, frozenset[int]]]:
     """All bolt circles within a spec group: every triple seeds a candidate
     circle, the group's points lying on it are gathered, and the set is kept
     only if :func:`_as_bolt_circle` confirms it is fully, evenly populated.
@@ -201,11 +201,11 @@ def _bolt_circle_candidates(members, pts):
     return out
 
 
-def _mk_hole_linear(members, pitch, direction):
+def _mk_hole_linear(members, pitch, direction) -> LinearArray:
     return LinearArray(holes=tuple(members), pitch=pitch, direction=direction)
 
 
-def _mk_hole_grid(members, rows, cols, row_pitch, col_pitch, angle, center):
+def _mk_hole_grid(members, rows, cols, row_pitch, col_pitch, angle, center) -> RectGrid:
     return RectGrid(
         holes=tuple(members),
         rows=rows,
