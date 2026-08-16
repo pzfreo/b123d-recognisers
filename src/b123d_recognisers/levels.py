@@ -21,7 +21,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import cluster_coordinates
+from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -131,7 +131,9 @@ def recognise_face_levels(
 
     levels = []
     for cluster in cluster_coordinates(zs, tol=tol):
-        if min_area_frac > 0.0 and sum(face_areas[i] for i in cluster) < threshold:
+        if min_area_frac > 0.0 and not clears_threshold(
+            sum(face_areas[i] for i in cluster), threshold
+        ):
             continue
         spans = [face_bounds[i] for i in cluster]
         levels.append(

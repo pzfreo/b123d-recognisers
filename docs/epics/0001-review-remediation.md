@@ -106,14 +106,13 @@ The 13 sites with no local feature: the `tol=` keywords on the five public recog
 - [x] **[#46](https://github.com/pzfreo/b123d-recognisers/issues/46), landed first:** replaced
       the `round(coord / tol) * tol` grouping in `levels` and `plates` with bounded clustering
       by distance. Goldens byte-identical; `traversal_order` became scale-invariant
-- [ ] **Break the exact tie in `plates`' area gate.** `chamfers_fillets_and_flats` has a face
-      whose area is *exactly* `min_area_frac` (0.4) of the cross-section, so `a >= thresh` is
-      decided by floating-point rounding alone: `area - thresh` is `-1.7e-13` at 1x, exactly
-      `0.0` at 5x and 10x, and `-9.3e-10` at 100x. Hence a plate that appears at 5x and 10x and
-      nowhere else. Grid phase was **not** the cause and the clustering fix did not touch it.
-      This is a discrete classification decided by insignificant noise — the same defect class
-      `_geometry._axis_letter_of` already documents and resolves for the dominant-axis tie, and
-      it wants the same treatment: a relative epsilon on the comparison, not a scaled tolerance
+- [x] **Broke the exact tie in the area gates** (`agent/break-area-gate-tie`).
+      `chamfers_fillets_and_flats` has a face whose area is *exactly* `min_area_frac` (0.4) of
+      the cross-section, so `a >= thresh` was decided by rounding alone: `area - thresh` is
+      `-1.7e-13` at 1x, exactly `0.0` at 5x and 10x, and `-9.3e-10` at 100x. Grid phase was not
+      the cause. `_geometry.clears_threshold` resolves a tie against admitting a feature, the
+      same way at every scale — the area-gate counterpart of `_axis_letter_of`'s dominant-axis
+      tie break. Goldens byte-identical; the spurious plate is gone at every scale
 - [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
       meaning so a calibrated caller is not broken
 - [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly

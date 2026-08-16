@@ -122,6 +122,33 @@ def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bo
     )
 
 
+#: Relative band within which two independently-derived magnitudes are the same magnitude.
+#: An area is a product of coordinates, so the same nominal quantity computed two ways differs
+#: in its last bits — and by a *different* amount for the same part modelled at another scale.
+#: A discrete gate compared at exact equality then answers differently for the same geometry.
+_MAGNITUDE_TIE_EPS = 1e-9
+
+
+def clears_threshold(magnitude: float, threshold: float) -> bool:
+    """True when *magnitude* is above *threshold*, with an exact tie resolved as below it.
+
+    ``area >= min_area_frac * cross`` looks like a decision about the part and is really a
+    decision about the last few bits of two independently-computed products. In the chamfer
+    golden a face area is exactly 40% of the cross-section: the difference is ``-1.7e-13`` at
+    1x, exactly zero at 5x and 10x, and ``-9.3e-10`` at 100x, so a plate appeared at two scales
+    and nowhere else.
+
+    A magnitude sitting exactly on its threshold is not evidence of a feature, so the tie
+    resolves against admitting one. What matters more than the direction is that it resolves
+    the *same* way at every scale.
+
+    This is the area-gate counterpart of the dominant-axis tie break in :func:`_axis_letter_of`:
+    a discrete classification must not be selected by insignificant noise.
+    """
+
+    return magnitude >= threshold * (1.0 + _MAGNITUDE_TIE_EPS)
+
+
 def cluster_coordinates(coordinates: Sequence[float], *, tol: float) -> list[list[int]]:
     """Group *coordinates* into clusters no wider than *tol*, returned as index lists.
 
