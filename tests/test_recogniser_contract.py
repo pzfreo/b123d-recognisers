@@ -394,3 +394,33 @@ def test_derived_recogniser_takes_single_positional_inventory():
     params = list(inspect.signature(recognise_hole_patterns).parameters.values())
     assert params[0].name == "holes"
     assert params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+
+
+def test_riser_evidence_is_constructible_without_a_scan_tolerance():
+    """``RiserEvidence`` can be hand-built, which is what keeps this a patch release.
+
+    The field records the tolerance :func:`recognise_risers` resolved for a part, so ADR 0008
+    briefly made it required. That broke every direct construction to buy nothing: a record
+    built by hand was never scanned, so no value is more truthful than another, and the
+    recogniser never reads the default because it always passes its own.
+
+    The projection is included because it is the one consumer of the field — a default that
+    constructs but does not project would be no use.
+    """
+
+    from b123d_recognisers import RiserEvidence, project_step_shoulders
+
+    riser = RiserEvidence(
+        vertical=True,
+        axis="x",
+        positions=(10.0,),
+        other_axis="y",
+        other_positions=(),
+        z_lo=5.0,
+        z_hi=15.0,
+        lo_at_envelope=False,
+        hi_at_envelope=False,
+    )
+
+    assert riser.tol == 0.5
+    assert project_step_shoulders([riser], levels=[5.0]) == [StepShoulder("x", 10.0)]
