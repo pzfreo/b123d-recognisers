@@ -17,13 +17,14 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_version_is_available() -> None:
-    assert __version__ == "0.2.2"
+    assert __version__ == "0.2.3"
 
 
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:
     notes = (ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
 
     assert notes.startswith("# Release notes\n")
+    assert notes.count("\n## 0.2.3\n") == 1
     assert notes.count("\n## 0.2.2\n") == 1
     assert notes.count("\n## 0.2.1\n") == 1
     assert notes.count("\n## 0.2.0\n") == 1

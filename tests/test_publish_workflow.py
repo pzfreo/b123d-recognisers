@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from b123d_recognisers import __version__ as _PACKAGE_VERSION
+
 ROOT = Path(__file__).parents[1]
 README = ROOT / "README.md"
 WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
@@ -74,7 +76,7 @@ def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_ta
     )
 
     valid = subprocess.run(
-        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", "v0.2.2"],
+        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", f"v{_PACKAGE_VERSION}"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -88,4 +90,6 @@ def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_ta
         timeout=30,
     )
     assert wrong.returncode != 0
-    assert "tag version 9.9.9 does not match artifact version 0.2.2" in wrong.stderr
+    assert (
+        f"tag version 9.9.9 does not match artifact version {_PACKAGE_VERSION}" in wrong.stderr
+    )
