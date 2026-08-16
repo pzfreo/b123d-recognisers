@@ -242,12 +242,14 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
 - [~] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`. **43 return
       annotations and 231 unannotated parameters**, not the "38% of definitions" the epic
       estimated — that figure is now 21% of definitions for returns, and the parameter count was
-      never stated. 18 returns done here; the remaining 25 are `_recess_core` (14) and
-      `_hole_features` (8) plus three stragglers
-- [ ] Each annotation is a claim the strict wheel check verifies, not a comment. Three so far
-      were false when written — `_bore_depth`, `_same_axis_line` and `_unit` all declared types
-      the code did not honour, because arithmetic on untyped parameters is `Any`. That is the
-      value of this half of the finding, and the reason it cannot be done mechanically
+      never stated. **All 43 return annotations are now done — every function in the package
+      has one.** The 231 parameters remain, and `disallow_untyped_defs` needs both
+- [x] Each annotation is a claim the strict wheel check verifies, not a comment. **Eight were
+      false when written** and each needed a real fix rather than a better annotation: six
+      `Any` returns behind concrete declarations, one type-correct-but-wrong (`_unit` returning
+      a variable-length tuple where every caller needs three floats), and one union that was
+      really two overloads on a flag. That is the value of this half of the finding, and the
+      reason it cannot be done mechanically
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 
 ## 7 — Stray docstring text

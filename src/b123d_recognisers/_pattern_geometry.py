@@ -3,8 +3,16 @@
 """Record-agnostic deterministic 2-D pattern geometry."""
 
 import math
+from collections.abc import Callable
+from typing import TypeVar
 
 from b123d_recognisers._geometry import _unit, length_tol, plane_axes
+
+#: The record type a caller's ``make`` builds. This module owns the collinearity, pitch and
+#: lattice geometry and nothing about what a pattern record *is* — holes, pockets and slots each
+#: pass their own constructor — so the return type follows that constructor rather than being
+#: widened to a common base the module would then have to know about.
+_R = TypeVar("_R")
 
 _PATTERN_REL_TOL = 0.02
 _PATTERN_ABS_TOL = 0.1
@@ -64,7 +72,7 @@ def _plane_uv(axis) -> tuple[tuple[float, ...], tuple[float, ...]]:
     return u, v
 
 
-def _as_linear_array(members, pts, make):
+def _as_linear_array(members, pts, make: Callable[..., _R]) -> _R | None:
     """A linear-array record when *pts* (2D) are collinear at constant pitch.
 
     Record-generic: *make* ``(ordered_members, pitch, direction) -> Record`` builds the
@@ -113,7 +121,9 @@ def _as_linear_array(members, pts, make):
     )
 
 
-def _linear_array_candidates(members, pts, make):
+def _linear_array_candidates(
+    members, pts, make: Callable[..., _R]
+) -> list[tuple[_R, frozenset[int]]]:
     """All linear arrays within a spec group: every pair seeds a line, the
     group's collinear points are gathered and sorted, and each maximal
     constant-pitch run of ≥3 becomes a candidate. Returns
@@ -158,7 +168,7 @@ def _linear_array_candidates(members, pts, make):
     return out
 
 
-def _rect_grid(members, pts, make):
+def _rect_grid(members, pts, make: Callable[..., _R]) -> _R | None:
     """A rectangular-grid record when the whole spec group fills a regular N×M
     lattice, else ``None``. The two shortest near-orthogonal pairwise vectors
     define the lattice basis; every point must land on an integer cell and every
