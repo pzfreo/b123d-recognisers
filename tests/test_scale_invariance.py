@@ -8,9 +8,8 @@ modelled in metres, inches or on a micro-part. ADR 0008 replaces those gates wit
 ones family by family; this test pins the families already converted so a later absolute
 constant cannot quietly reintroduce the fault.
 
-The excluded kinds below are not passing by luck — they are the families whose gates are still
-absolute, tracked as epic 0001 finding 2c. Each one moves out of ``NOT_YET_SCALE_FREE`` when its
-recogniser is converted, and this file is the checklist for that work.
+Every fixture now recognises identically from 0.05x to 100x, across every family. The exclusion
+list that tracked the conversion is empty; the test below keeps it that way.
 """
 
 from __future__ import annotations
@@ -35,12 +34,11 @@ CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 #: which a test visiting only the extremes would have missed entirely.
 FACTORS = (0.05, 5.0, 100.0)
 
-#: Feature kinds whose recognisers still gate on absolute millimetres, per ADR 0008's
-#: part-relative list. Only the recess family is left: ``_recess_core``'s _MERGE_TOL and
-#: _FLOOR_TOL are module constants threaded through helpers that never see the part, so
-#: converting them is a refactor of a 987-line module and has its own PR. Delete the entry when
-#: it lands; do not add to it.
-NOT_YET_SCALE_FREE = frozenset({"pocket"})
+#: Empty, and meant to stay that way. It held the families whose gates were still absolute
+#: while ADR 0008 was applied one at a time; every one has now been converted. Re-adding a kind
+#: means a recogniser has regained a scale-dependent gate, which is the regression this file
+#: exists to catch — so it is a deliberate, reviewable act rather than a quiet exemption.
+NOT_YET_SCALE_FREE: frozenset[str] = frozenset()
 
 
 def _scale_free_census(part) -> dict[str, int]:
@@ -86,13 +84,12 @@ def test_a_magnitude_exactly_on_its_threshold_is_decided_the_same_way_at_every_s
     assert set(counts.values()) == {0}, counts
 
 
-def test_the_exclusion_list_is_a_debt_record_not_a_permanent_carve_out():
-    """Guard the guard: an excluded kind must still be a kind the census can report.
+def test_no_family_is_exempt_from_scale_invariance():
+    """The conversion is finished, so nothing should be excluded from the check above.
 
-    A typo here would silently excuse a family that is in fact tested, making the exclusion
-    list look smaller than the remaining work.
+    Kept rather than deleted with the last entry: an exemption added later would otherwise
+    shrink the test's coverage silently, which is exactly how the original absolute gates
+    survived so long.
     """
 
-    reported = set(feature_census(load_fixture(CASES[0]).build_fixture()))
-
-    assert reported.issuperset(NOT_YET_SCALE_FREE)
+    assert frozenset() == NOT_YET_SCALE_FREE

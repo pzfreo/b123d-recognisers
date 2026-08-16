@@ -253,8 +253,14 @@ appear in it — an earlier draft of this ADR claimed they did. The one manifest
 `RiserEvidence.tol` becoming required, because a field whose purpose is to report the scanned
 tolerance has no honest default.
 
-Conversion is three changes: this policy and its helpers with no behaviour change; the
-feature-relative group; then the part-relative group with the public surface and release note.
+Conversion landed as five changes rather than the three planned, each split off when the
+previous one's evidence showed it was a different defect: the policy and helpers; the
+feature-relative group; distance-based coplanar grouping; the area-gate tie break; then the
+part-relative group with the public surface, and `_recess_core` behind it.
+
+The outcome is that every golden fixture now recognises identically from 0.05x to 100x, in every
+family. `tests/test_scale_invariance.py` holds it, with an exclusion list that is empty and a
+test asserting it stays empty.
 
 Absolute constants remain **legal but justified**. A new one needs a comment naming the physical
 constant it encodes and a proportional term beside it. Anything else is a defect this ADR exists to

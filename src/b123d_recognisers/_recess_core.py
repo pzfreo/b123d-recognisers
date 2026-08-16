@@ -15,14 +15,26 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._geometry import length_tol
+from b123d_recognisers._geometry import length_tol, part_scale
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 
 _AXES = {"x": 0, "y": 1, "z": 2}
 _R = TypeVar("_R", Slot, Pocket)
 _AXIS_ALIGNED_TOL = 1e-3
-_MERGE_TOL = 0.5
-_FLOOR_TOL = 0.3
+# Coordinate-merge and floor-coincidence bands, as fractions of the solid's largest extent
+# (ADR 0008). Neither has a smaller feature to measure against — they ask whether two
+# coordinates are the same coordinate — so the reference is the solid. The fractions are the
+# 0.5 mm and 0.3 mm constants they replace over the corpus's 70 mm median extent.
+_MERGE_FRAC = 0.00714
+_FLOOR_FRAC = 0.00429
+
+
+def _merge_tol(scale: float) -> float:
+    return length_tol(scale, rel=_MERGE_FRAC)
+
+
+def _floor_tol(scale: float) -> float:
+    return length_tol(scale, rel=_FLOOR_FRAC)
 _FLOOR_COVER_FRAC = 0.5
 _VOID_INSET = 0.1
 _VOID_VOL_FRAC = 0.01
@@ -169,7 +181,7 @@ def _candidate(fa, fb, part_ext):
     )
 
 
-def _end_capped(faces, foot, foot_area, depth_axis, end, want) -> bool:
+def _end_capped(faces, foot, foot_area, depth_axis, end, want, scale) -> bool:
     """True when inward-facing planar faces at ``end`` on ``depth_axis`` together cover at
     least :data:`_FLOOR_COVER_FRAC` of the ``foot`` (width×length) footprint — one end's
     half of the floor test.
@@ -184,7 +196,7 @@ def _end_capped(faces, foot, foot_area, depth_axis, end, want) -> bool:
     dk = _AXES[depth_axis]
     covered = 0.0
     for f in faces:
-        if f.axis != depth_axis or abs(_center(f.bb, dk) - end) > _FLOOR_TOL:
+        if f.axis != depth_axis or abs(_center(f.bb, dk) - end) > _floor_tol(scale):
             continue
         if f.normal[dk] * want <= 0:
             continue
@@ -197,7 +209,7 @@ def _end_capped(faces, foot, foot_area, depth_axis, end, want) -> bool:
     return bool(covered >= _FLOOR_COVER_FRAC * foot_area)
 
 
-def _floor_ends(faces, s: Slot) -> int:
+def _floor_ends(faces, s: Slot, scale) -> int:
     """How many of *s*'s two depth ends a planar floor caps: ``0`` = through (open both ends),
     ``1`` = a blind recess (one floor + one opening — a real pocket), ``2`` = a sealed internal
     void (capped both ends, no opening — NOT a machinable recess). The obround end-cap recovery
@@ -207,12 +219,12 @@ def _floor_ends(faces, s: Slot) -> int:
         s.long_axis: (s.lo, s.hi),
     }
     foot_area = math.prod(hi - lo for lo, hi in foot.values())
-    return int(_end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0)) + int(
-        _end_capped(faces, foot, foot_area, s.depth_axis, s.d_hi, -1.0)
+    return int(_end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0, scale)) + int(
+        _end_capped(faces, foot, foot_area, s.depth_axis, s.d_hi, -1.0, scale)
     )
 
 
-def _open_sign(faces, s) -> int:
+def _open_sign(faces, s, scale) -> int:
     """Which depth end *s* opens toward: ``+1`` (floor at ``d_lo``, opens +depth) or ``-1``
     (floor at ``d_hi``, opens -depth). The capped end is the floor; the pocket opens the other
     way. Assumes *s* is a blind recess (exactly one floor); the caller has already checked."""
@@ -221,14 +233,14 @@ def _open_sign(faces, s) -> int:
         s.long_axis: (s.lo, s.hi),
     }
     foot_area = math.prod(hi - lo for lo, hi in foot.values())
-    return 1 if _end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0) else -1
+    return 1 if _end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0, scale) else -1
 
 
-def _has_floor(faces, s: Slot) -> bool:
+def _has_floor(faces, s: Slot, scale) -> bool:
     """True when a planar floor caps the slot at *either* depth end — i.e. it is not a through
     slot. The through/blind split for :func:`recognise_slots`'s flat-wall path; the obround end-cap
     path uses the finer :func:`_floor_ends` count (a pocket is capped on exactly one end)."""
-    return _floor_ends(faces, s) >= 1
+    return _floor_ends(faces, s, scale) >= 1
 
 
 # A radiused-end (obround) slot has semicircular end caps whose radius is the slot's
@@ -263,7 +275,7 @@ def _cylinder_faces(part) -> list[tuple]:
     return out
 
 
-def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
+def _end_cap_at(caps: list[tuple], s: _R, coord: float, scale: float) -> bool:
     """True when a semicircular obround end cap sits at ``coord`` along the long axis: a
     **concave** (void-bounding) cylinder of radius ≈ ``s.width/2`` about the depth axis, on the
     slot centreline, **spanning the slot's own depth extent** ``[d_lo, d_hi]``. Two clauses
@@ -277,10 +289,10 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
         concave
         and abs(rad - r) <= length_tol(r, rel=_END_RADIUS_FRAC)
         and ax == s.depth_axis
-        and abs(loc[li] - coord) <= _MERGE_TOL
-        and abs(loc[wi] - s.w_center) <= _MERGE_TOL
-        and abs(getattr(bb.min, dc) - s.d_lo) <= _MERGE_TOL
-        and abs(getattr(bb.max, dc) - s.d_hi) <= _MERGE_TOL
+        and abs(loc[li] - coord) <= _merge_tol(scale)
+        and abs(loc[wi] - s.w_center) <= _merge_tol(scale)
+        and abs(getattr(bb.min, dc) - s.d_lo) <= _merge_tol(scale)
+        and abs(getattr(bb.max, dc) - s.d_hi) <= _merge_tol(scale)
         for rad, ax, loc, bb, concave in caps
     )
 
@@ -296,13 +308,14 @@ def _extend_obround_ends(records: list[_R], part) -> list[_R]:
     cylinder shifting a flat-ended slot's centre, and matches explicit-object readers that
     derive overall length from the object bounding box. Rectangular slots have no caps
     and are returned unchanged."""
+    scale = part_scale(part.bounding_box())
     caps = _cylinder_faces(part)
     if not caps:
         return records
     out: list[_R] = []
     for s in records:
         r = s.width / 2
-        if _end_cap_at(caps, s, s.lo) and _end_cap_at(caps, s, s.hi):
+        if _end_cap_at(caps, s, s.lo, scale) and _end_cap_at(caps, s, s.hi, scale):
             out.append(
                 replace(
                     s,
@@ -375,7 +388,7 @@ def _obround_end(cap: tuple):
     )
 
 
-def _has_side_walls(faces, s: Slot) -> bool:
+def _has_side_walls(faces, s: Slot, scale) -> bool:
     """True when the two flat side walls of obround slot *s* are present: **inward-facing** wall
     faces on the width axis at ``w_center - width/2`` (material-outward normal toward
     +width) and ``w_center + width/2`` (normal toward -width), each overlapping the
@@ -396,9 +409,9 @@ def _has_side_walls(faces, s: Slot) -> bool:
         c = _center(f.bb, wk)
         # inward-facing: the low-side wall's outward normal points toward the centreline (+width),
         # the high-side wall's toward -width. The stock's exterior faces point the other way.
-        if abs(c - (s.w_center - s.width / 2)) <= _MERGE_TOL and f.normal[wk] > 0:
+        if abs(c - (s.w_center - s.width / 2)) <= _merge_tol(scale) and f.normal[wk] > 0:
             lo_wall = True
-        if abs(c - (s.w_center + s.width / 2)) <= _MERGE_TOL and f.normal[wk] < 0:
+        if abs(c - (s.w_center + s.width / 2)) <= _merge_tol(scale) and f.normal[wk] < 0:
             hi_wall = True
     return lo_wall and hi_wall
 
@@ -471,6 +484,7 @@ def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
     The two flats must be more than ``_MERGE_TOL`` apart to count as distinct ends — so a genuinely
     sub-millimetre obround (straight run < 0.5 mm) is not recovered; supporting that would need the
     module-wide absolute ``_MERGE_TOL`` to go relative, out of scope here."""
+    scale = part_scale(part.bounding_box())
     groups: dict[tuple, list[tuple]] = {}
     for e in _obround_ends(part):
         wa, la, da, rad, wc, flat, direction, dlo, dhi = e
@@ -484,7 +498,11 @@ def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
             lo_end, hi_end = run[i], run[i + 1]
             # A recess's two ends bulge APART (low end toward -long, high end toward +long), so the
             # void is between their flats. The reverse pair is solid stock between recesses — skip.
-            if not (lo_end[6] == -1 and hi_end[6] == 1 and hi_end[5] - lo_end[5] > _MERGE_TOL):
+            if not (
+                lo_end[6] == -1
+                and hi_end[6] == 1
+                and hi_end[5] - lo_end[5] > _merge_tol(scale)
+            ):
                 i += 1
                 continue
             lo_f, hi_f = round(lo_end[5], 2), round(hi_end[5], 2)
@@ -502,13 +520,13 @@ def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
             # Confirm a real channel (side walls) joins the ends, rather than two D-cutouts
             # bridging solid. On failure the caps may belong to a later valid pair, so advance
             # by one.
-            if not _has_side_walls(faces, s):
+            if not _has_side_walls(faces, s, scale):
                 i += 1
                 continue
             # Route on the EXACT floor count: a pocket is capped on ONE end (floor + opening); a
             # through-slot on neither; a sealed internal void (both ends capped) is neither — do not
             # emit it as a full-thickness-deep pocket.
-            n_floor = _floor_ends(faces, s)
+            n_floor = _floor_ends(faces, s, scale)
             if blind and n_floor == 1:
                 out.append(
                     Pocket(
@@ -522,7 +540,8 @@ def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
                         hi=hi_f,
                         d_lo=round(dlo, 2),
                         d_hi=round(dhi, 2),
-                        open_sign=_open_sign(faces, s),  # which face this obround pocket opens
+                        # which face this obround pocket opens through
+                        open_sign=_open_sign(faces, s, scale),
                     )
                 )
                 i += 2
@@ -539,6 +558,7 @@ def _recognise_slots_one(part) -> list[Slot]:
     faces = _planar_faces(part)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
+    scale = part_scale(pbb)
     # Only straight-walled faces can be slot walls; bucket them by axis so the
     # O(n^2) pairing runs within each axis instead of across all planar faces.
     by_axis: dict[str, list[_Face]] = {}
@@ -552,7 +572,7 @@ def _recognise_slots_one(part) -> list[Slot]:
                 s = _candidate(walls[i], walls[j], part_ext)
                 # Keep only through-slots: a blind pocket (or the floored gap
                 # between bosses) is capped by a floor and is out of scope.
-                if s is not None and not _has_floor(faces, s):
+                if s is not None and not _has_floor(faces, s, scale):
                     candidates.append(s)
     # Stubby obround through-slots (straight section < width) have no pairable flat walls, so
     # recover them from their end caps. Emitted at the straight-wall junctions like the
@@ -560,7 +580,7 @@ def _recognise_slots_one(part) -> list[Slot]:
     candidates.extend(_recognise_obround_from_ends(part, faces))
     # Recombine arms of a crossing channel split by the intersection, then extend any
     # radiused-end (obround) slot to its overall length.
-    return _extend_obround_ends(_collapse_collinear(_merge(candidates), part), part)
+    return _extend_obround_ends(_collapse_collinear(_merge(candidates, scale), part), part)
 
 
 def _body_signature(solid) -> tuple[float, ...]:
@@ -595,7 +615,7 @@ def _body_scoped_records(sources, recognise_one):
     ]
 
 
-def _same_channel_line(a: Slot, b: Slot):
+def _same_channel_line(a: Slot, b: Slot, scale):
     """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
     (width axis, centreline, width and depth extent) but disjoint along their run
     — return the gap ``(g_lo, g_hi)`` between them along ``long_axis``; else None.
@@ -605,9 +625,11 @@ def _same_channel_line(a: Slot, b: Slot):
     centrelines (``w_center``) and never reach here."""
     if a.width_axis != b.width_axis or a.long_axis != b.long_axis:
         return None
-    if abs(a.w_center - b.w_center) > _MERGE_TOL or abs(a.width - b.width) > _MERGE_TOL:
+    if abs(a.w_center - b.w_center) > _merge_tol(scale) or abs(a.width - b.width) > _merge_tol(
+        scale
+    ):
         return None
-    if abs(a.d_lo - b.d_lo) > _MERGE_TOL or abs(a.d_hi - b.d_hi) > _MERGE_TOL:
+    if abs(a.d_lo - b.d_lo) > _merge_tol(scale) or abs(a.d_hi - b.d_hi) > _merge_tol(scale):
         return None
     if a.hi <= b.lo:
         gap = (a.hi, b.lo)
@@ -674,6 +696,7 @@ def _collapse_collinear(slots: list[Slot], part) -> list[Slot]:
     between them), and span each group into a single slot running its full length.
     Arms separated by solid material — two genuinely distinct slots — are left as
     separate features."""
+    scale = part_scale(part.bounding_box())
     parent = list(range(len(slots)))
 
     def find(i: int) -> int:
@@ -684,7 +707,7 @@ def _collapse_collinear(slots: list[Slot], part) -> list[Slot]:
 
     for i in range(len(slots)):
         for j in range(i + 1, len(slots)):
-            gap = _same_channel_line(slots[i], slots[j])
+            gap = _same_channel_line(slots[i], slots[j], scale)
             if gap is not None and _gap_is_void(gap, slots[i], part):
                 parent[find(i)] = find(j)
 
@@ -726,7 +749,7 @@ def _region_center(s: Slot | Pocket):
     return (c["x"], c["y"], c["z"])
 
 
-def _merge(candidates: list[_R]) -> list[_R]:
+def _merge(candidates: list[_R], scale: float) -> list[_R]:
     """A rectangular slot is bounded by two orthogonal opposed-wall pairs (the
     width walls and the length end-caps), so the same feature is detected twice
     — once per pair.  Collapse candidates that occupy the same region, keeping
@@ -738,7 +761,7 @@ def _merge(candidates: list[_R]) -> list[_R]:
     kept: list[_R] = []
     for s in sorted(candidates, key=lambda c: (c.width, _region_center(c))):
         cs = _region_center(s)
-        if any(math.dist(cs, _region_center(k)) <= _MERGE_TOL for k in kept):
+        if any(math.dist(cs, _region_center(k)) <= _merge_tol(scale) for k in kept):
             continue
         kept.append(s)
     return kept
@@ -784,8 +807,9 @@ def _floored_candidate(
         l_lo, l_hi = ranges[long_axis]
         foot = {axis: w_range, long_axis: (l_lo, l_hi)}
         foot_area = width * (l_hi - l_lo)
-        cap_lo = _end_capped(faces, foot, foot_area, depth_axis, d_lo, 1.0)
-        cap_hi = _end_capped(faces, foot, foot_area, depth_axis, d_hi, -1.0)
+        scale = max(part_ext.values())
+        cap_lo = _end_capped(faces, foot, foot_area, depth_axis, d_lo, 1.0, scale)
+        cap_hi = _end_capped(faces, foot, foot_area, depth_axis, d_hi, -1.0, scale)
         if int(cap_lo) + int(cap_hi) != 1:
             continue  # 0 = through on this axis; 2 = an enclosed end-cap pair, not a floor
         length = l_hi - l_lo
@@ -808,7 +832,8 @@ def _floored_candidate(
                 open_sign=1 if cap_lo else -1,
             )
         part_lo, part_hi = channel_bounds[long_axis]
-        if abs(l_lo - part_lo) > _FLOOR_TOL or abs(l_hi - part_hi) > _FLOOR_TOL:
+        floor_tol = _floor_tol(scale)
+        if abs(l_lo - part_lo) > floor_tol or abs(l_hi - part_hi) > floor_tol:
             continue  # not open at both longitudinal envelope ends
         return Channel(
             width_axis=axis,
@@ -854,6 +879,7 @@ def _recognise_pockets_one(part) -> list[Pocket]:
     faces = _planar_faces(part)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
+    scale = part_scale(pbb)
     by_axis: dict[str, list[_Face]] = {}
     for f in faces:
         if f.wall:
@@ -869,7 +895,7 @@ def _recognise_pockets_one(part) -> list[Pocket]:
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path.
     candidates.extend(_recognise_obround_from_ends(part, faces, blind=True))
-    return _extend_obround_ends(_merge(candidates), part)
+    return _extend_obround_ends(_merge(candidates, scale), part)
 
 
 def _recognise_channels_one(part) -> list[Channel]:
@@ -901,7 +927,9 @@ def _recognise_channels_one(part) -> list[Channel]:
     )
 
 
-def _recognise_corner_notches(faces: list[_Face], pbb, tol: float = 0.5) -> list[Pocket]:
+def _recognise_corner_notches(
+    faces: list[_Face], pbb, tol: float | None = None
+) -> list[Pocket]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -912,6 +940,8 @@ def _recognise_corner_notches(faces: list[_Face], pbb, tol: float = 0.5) -> list
     rectangular-recess record so the existing W×L×D callout/coverage pipeline
     owns the dimensions; edge contact makes its X/Y location implicit.
     """
+    if tol is None:
+        tol = _merge_tol(part_scale(pbb))
 
     def limits(bb, axis):
         c = "XYZ"[_AXES[axis]]
