@@ -90,8 +90,15 @@ training. And synthetic-to-real domain adaptation is an *active research problem
 evidence that these labels do not transfer cleanly to real parts. They are better used as a
 false-negative detector than as ground truth about capability.
 
-Licensing: AAGNet's code is MIT. The dataset terms are not stated on its repository and need
-checking before anything is vendored.
+Licensing: AAGNet's code is MIT, and so is [MFCAD](https://github.com/hducg/MFCAD) — its STEP
+models and labels are in-repository under that licence, so a sample can be pulled without
+credentials. MFCAD++ and MFInstSeg are distributed through Baidu AI Studio and Google Drive and
+their terms are not stated alongside the code; check before vendoring either.
+
+The `.face_truth` labels are Python pickles. Disassemble with `pickletools.dis` rather than loading
+blind — the ones inspected contain only `EMPTY_LIST`/`BININT1`/`APPENDS`, with no `GLOBAL` or
+`REDUCE`, so there is no code-execution path, but that is worth confirming per file rather than
+assuming across 60k of them.
 
 ## What this implies here
 
@@ -107,9 +114,23 @@ class of failure that [#60](https://github.com/pzfreo/b123d-recognisers/issues/6
 which was found by hand-writing a single test.
 
 **Recall scoring needs face ownership, not the whole graph.** The labels are per-face; recognisers
-return records that do not say which faces they consumed. A per-run ownership map — kept alongside
-the result, never inside a record, per ADR 0002 and ADR 0004's own caution about face indices — is
-the minimum that makes scoring possible, and is a fraction of ADR 0004.
+return records that do not say which faces they consumed. That ownership is the minimum needed to
+score, and it is a fraction of ADR 0004.
+
+It can go *in* the records. An earlier draft of this page claimed it could not — that ADR 0002's
+serialisable-record rule and ADR 0004's caution about face indices forced a separate per-run map.
+Both reasons were wrong. A tuple of indices is serialisable, and face order is measurably stable:
+exporting each of the seventeen golden fixtures to STEP and re-importing returns every face at the
+same index, zero permutations. The `traversal_order` fixture exists precisely to prove equivalent
+topology built different ways yields identical output.
+
+Two caveats survive. Indices are valid for the toolchain that produced them — the MFCAD labels
+above do not align to a fresh `import_step`, which is the same effect seen from the other side — so
+their scope of validity has to be documented, and a geometry-derived key would be the alternative
+if cross-toolchain stability is ever needed. And two things stay run-level whatever the records
+carry: *residual* evidence is the complement against the whole face set, and *reconciliation* of
+two recognisers claiming one face is a cross-record question. Per-record ownership supplies the raw
+material for both without answering either.
 
 **The hard case is agreed.** Every source names *intersecting features* as where rule-based
 recognition breaks, which is why MFCAD++ packs 3–10 interacting features per model. The current
