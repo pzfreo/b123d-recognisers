@@ -36,21 +36,23 @@ from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 # calibrates against — 8 mm for a diameter, 10 mm for an axial width.
 #
 # Two bands are axially contiguous (one is the other's wall) when the gap between them is
-# within this fraction of the band diameter. A neighbour must be wider than the floor by more
-# than this fraction of its own diameter to count as a step up out of the groove — enough to
-# reject turning noise, far less than any real groove depth.
+# within this fraction of the band diameter — a tolerance, so it follows the band.
 _ADJ_FRAC = 0.0125
-_DIA_MARGIN_FRAC = 0.025
+# A neighbour must be wider than the floor by more than this (mm of diameter) to count as a step
+# up out of the groove. A **minimum-evidence threshold**, so absolute per ADR 0008: as a fraction
+# of the wall it demanded a proportionally deeper groove on bigger stock, and a 2 mm groove found
+# on a 15 mm shaft vanished on a 100 mm one.
+_DIA_MARGIN = 0.2
 # A groove is a *narrow channel* cut into UNIFORM stock. Two signatures separate it from a
 # segment of an alternating fine-step staircase:
 #  - its two walls step back to (nearly) the same OD — within this fraction of the wider wall.
 #    Unequal walls are a stepped profile (a shoulder), not a channel in round bar.
 _WALL_DIA_FRAC = 0.0625
-#  - it is narrower than the WIDER of its two walls, by more than this fraction of that wall's
-#    width. A band as wide as its walls is a staircase step; an end-adjacent groove keeps one
-#    wide wall (the shaft continues) even when the other is a thin retaining land, so the
-#    *wider* wall is the test.
-_WIDTH_MARGIN_FRAC = 0.005
+#  - it is narrower than the WIDER of its two walls, by more than this (mm). A band as wide as
+#    its walls is a staircase step; an end-adjacent groove keeps one wide wall (the shaft
+#    continues) even when the other is a thin retaining land, so the *wider* wall is the test.
+#    Also a minimum-evidence threshold, so also absolute.
+_WIDTH_MARGIN = 0.05
 
 
 def _shaft_key(c) -> tuple:
@@ -131,13 +133,9 @@ def recognise_grooves(
                 continue
             # A strict local OD minimum: the OD steps *down* into the band and *up* out of it.
             # A monotonic change (a plain step / shoulder) fails one side and is not a groove.
-            if cur["diameter"] > prev["diameter"] - length_tol(
-                prev["diameter"], rel=_DIA_MARGIN_FRAC
-            ):
+            if cur["diameter"] > prev["diameter"] - _DIA_MARGIN:
                 continue
-            if cur["diameter"] > nxt["diameter"] - length_tol(
-                nxt["diameter"], rel=_DIA_MARGIN_FRAC
-            ):
+            if cur["diameter"] > nxt["diameter"] - _DIA_MARGIN:
                 continue
             # Cut into uniform stock: the two walls step back to (nearly) the same OD. Unequal
             # walls are a shoulder / stepped profile, not an annular channel.
@@ -151,7 +149,7 @@ def recognise_grooves(
             # wall (the shaft) even when the other is a thin retaining land, so test the wider.
             cur_w = cur["s_hi"] - cur["s_lo"]
             wider_wall = max(prev["s_hi"] - prev["s_lo"], nxt["s_hi"] - nxt["s_lo"])
-            if cur_w >= wider_wall - length_tol(wider_wall, rel=_WIDTH_MARGIN_FRAC):
+            if cur_w >= wider_wall - _WIDTH_MARGIN:
                 continue
             cx, cy, cz = floor_face_anchor(cur["face"])
             at = (round(cx, 3), round(cy, 3), round(cz, 3))

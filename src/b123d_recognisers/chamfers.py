@@ -43,13 +43,15 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC, resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
 
-#: Coplanarity/leg band, as a fraction of the part's largest extent (ADR 0008). The fraction is
-#: the 0.5 mm default it replaces over the corpus's 70 mm median extent.
-_TOL_FRAC = 0.00714
+#: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
+#: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
+#: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
+#: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
+_MIN_LEG = 0.5
 
 #: A chamfer runs *along* one principal axis, so its normal has essentially no component on
 #: that axis. Looser than the package's AXIS_ZERO_COS because a chamfer face carries more
@@ -136,7 +138,7 @@ def recognise_chamfers(
     part has no chamfer. Only single-axis chamfers (running along one principal axis) are
     recovered; a compound corner bevel (oblique on all three axes) is skipped."""
     bb = part.bounding_box()
-    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
+    tol = _MIN_LEG if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
     # (face, its edges' wrapped shapes) once, for O(faces²) edge-adjacency.

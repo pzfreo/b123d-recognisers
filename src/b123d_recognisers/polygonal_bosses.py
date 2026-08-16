@@ -16,14 +16,16 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
 
-#: Face/bound coincidence band, as a fraction of the owning solid's largest extent (ADR 0008).
-#: Derived per solid, matching the per-solid recognition boundary. The fraction is the 0.2 mm
-#: default it replaces over the corpus's 70 mm median extent.
-_TOL_FRAC = 0.00286
+#: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
+#: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
+#: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
+#: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
+#: Also the minimum boss height and support span.
+_TOL = 0.2
 
 #: A boss side face is vertical: its normal has essentially no Z component. Looser than the
 #: package's AXIS_ZERO_COS because an extruded prism's walls carry the sketch's angular noise,
@@ -342,7 +344,7 @@ def _ring_profile(
 def _recognise_one(
     part: Part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
 ) -> list[PolygonalBoss | PolygonalStock]:
-    tol = resolved_tol(tol, part.bounding_box(), rel=_TOL_FRAC)
+    tol = _TOL if tol is None else tol
     faces = list(part.faces())
     edges = [[edge.wrapped for edge in face.edges()] for face in faces]
     adjacency: dict[tuple[int, int], bool] = {}

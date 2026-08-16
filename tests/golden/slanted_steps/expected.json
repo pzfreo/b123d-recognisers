@@ -96,7 +96,7 @@
               24.0,
               32.0
             ],
-            "tol": 0.357,
+            "tol": 0.5,
             "vertical": false,
             "z_hi": 25.0,
             "z_lo": 19.0
@@ -111,7 +111,7 @@
             "positions": [
               40.0
             ],
-            "tol": 0.357,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 19.0,
             "z_lo": 14.0
@@ -258,7 +258,7 @@
               24.0,
               32.0
             ],
-            "tol": 0.357,
+            "tol": 0.5,
             "vertical": false,
             "z_hi": 25.0,
             "z_lo": 19.0
@@ -273,7 +273,7 @@
             "positions": [
               40.0
             ],
-            "tol": 0.357,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 19.0,
             "z_lo": 14.0
@@ -505,7 +505,7 @@
             24.0,
             32.0
           ],
-          "tol": 0.357,
+          "tol": 0.5,
           "vertical": false,
           "z_hi": 25.0,
           "z_lo": 19.0
@@ -520,7 +520,7 @@
           "positions": [
             40.0
           ],
-          "tol": 0.357,
+          "tol": 0.5,
           "vertical": true,
           "z_hi": 19.0,
           "z_lo": 14.0

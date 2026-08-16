@@ -46,14 +46,16 @@ from b123d_recognisers._geometry import (
     AXIS_ALIGNED_COS,
     clears_threshold,
     cluster_coordinates,
-    resolved_tol,
 )
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
-#: Coplanar-face grouping band, as a fraction of the part's largest extent (ADR 0008). The
-#: fraction is the 0.5 mm default it replaces over the corpus's 70 mm median extent.
-_TOL_FRAC = 0.00714
+#: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
+#: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
+#: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
+#: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
+#: Also the slab-thickness minimum, which is why it cannot follow the part.
+_TOL = 0.5
 
 
 @dataclass(frozen=True)
@@ -93,7 +95,7 @@ def recognise_plates(
     thickness is the envelope) or a part with no thin slabs.
     """
     bb = part.bounding_box()
-    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
+    tol = _TOL if tol is None else tol
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     axidx = {"x": 0, "y": 1, "z": 2}
 

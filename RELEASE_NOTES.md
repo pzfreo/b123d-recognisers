@@ -1,5 +1,48 @@
 # Release notes
 
+## 0.2.4
+
+Corrects a regression in 0.2.3. Every pinned golden is byte-identical to the original Draftwright
+capture again, and every count 0.2.3 changed on real parts is restored — verified against the NIST
+MBE PMI complex test cases, not only the synthetic corpus. Anyone on 0.2.3 should take this.
+
+Output is **not** identical to 0.2.2 in every case, and the exception is deliberate. On
+`nist_ftc_09` the level recogniser reports fifteen levels where 0.2.2 reported sixteen, because
+0.2.2 split a pair of faces **0.475 mm apart under a 0.5 mm tolerance** into separate levels — a
+consequence of grouping by grid cell rather than by distance, fixed independently of the tolerance
+work. Two faces closer together than the tolerance are one level. A 0.635 mm gap on the same part
+is still correctly two.
+
+- **Minimum-evidence thresholds are absolute again.** 0.2.3 scaled them to the part, which made a
+  feature's existence depend on what surrounds it: the same 1 mm chamfer was recognised on an
+  80 mm plate and absent on a 200 mm one. Six NIST MBE PMI parts lost records in nineteen places
+  and gained in none. Affects the `chamfers` minimum leg, `fillets.min_radius`, `plates` slab
+  thickness, `pads` footprint, `polygonal_bosses` height and `flats` minimum depth.
+- **The recess merge band is absolute again.** Scaling it to the whole solid merged pockets and
+  slots that a smaller plate kept distinct, and simultaneously raised the minimum separation of
+  two slot ends — losing records in both directions at once.
+- **`RiserEvidence.tol` reports `0.5` again**, so the goldens match the capture.
+- [ADR 0008](docs/adr/0008-length-tolerance-policy.md) now distinguishes a **tolerance** ("are
+  these two things the same?", which scales with what it compares) from a **minimum-evidence
+  threshold** ("is this big enough to be a feature?", which must not). Whether a small feature on
+  a large part is worth dimensioning is consumer policy under ADR 0001, and recognition should not
+  answer it silently.
+- Genuinely feature-relative tolerances from 0.2.3 are kept: diameter matching in `countersinks`,
+  `grooves` and the cylinder stack, and the recess cap radii. Those compare two measurements of
+  one feature and do scale with it.
+- The `grooves` step-depth and width margins are absolute again. Found by auditing every
+  remaining proportional gate rather than from a report: the NIST parts are prismatic and have no
+  grooves, so nothing downstream would have surfaced it. A 2 mm groove was recognised on 15 mm bar
+  and lost on 100 mm.
+- The `flats` chord gates are absolute again too. They were missed on the first pass and caught
+  by the real parts: `ctc_05` reported four flats on 0.2.2, none on 0.2.3, and two on the partial
+  fix. Verified against all five NIST complex test cases, every reported count restored.
+- `tests/test_large_part_small_features.py` pins the property with parts larger than the fixture
+  corpus carrying features smaller than it implies — the combination the 30–180 mm fixtures never
+  covered. `tests/test_nist_ctc_corpus.py` pins the reported baseline against the real parts, and
+  skips unless `B123D_NIST_STEP_DIR` points at them, since `migration/PARITY.md` commits the
+  project to comparing record projections rather than committing STEP bytes.
+
 ## 0.2.3
 
 Recognition-behaviour release. Every gate that compares a length now scales with the geometry it
