@@ -187,3 +187,34 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         "RectGrid",
     ):
         assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
+
+
+def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() -> None:
+    core = ast.parse(
+        (PACKAGE / "_recess_core.py").read_text(encoding="utf-8"),
+        filename="_recess_core.py",
+    )
+    functions = {
+        node.name: node for node in core.body if isinstance(node, ast.FunctionDef)
+    }
+    for name in ("_recognise_slots_one", "_recognise_pockets_one", "_recognise_channels_one"):
+        scans = [
+            node
+            for node in ast.walk(functions[name])
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_planar_faces"
+        ]
+        assert len(scans) == 1, name
+
+    for module_name in ("_hole_patterns.py", "_pattern_geometry.py", "_recess_patterns.py"):
+        tree = ast.parse(
+            (PACKAGE / module_name).read_text(encoding="utf-8"), filename=module_name
+        )
+        topology_reads = [
+            node.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Attribute)
+            and node.attr in {"edges", "faces", "solids"}
+        ]
+        assert topology_reads == [], module_name
