@@ -233,7 +233,12 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
       six-line area gate into a single-caller function would chase the metric, not clarity
 - [x] Removed a dead guard it exposed: the oblique branch re-tested `abs(nv.Z) <= 0.01` inside
       a branch reached only when that is already false
-- [ ] `_hole_features.recognise_holes` (120) — own PR
+- [x] `_hole_features.recognise_holes` 120 → 78 lines (18 docstring), into `_drilled_from`,
+      `_near_side_steps` and `_bore_depth`
+- [ ] **The "23 functions over 60 lines" count is unchanged**, and saying so matters more than
+      the three headline numbers. All three worst offenders shrank a lot (231→94, 131→122,
+      120→78) but each is still over 60 once its docstring is counted, and the other twenty were
+      deliberately left. The epic asked for the three worst, not for the count
 - [ ] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 
