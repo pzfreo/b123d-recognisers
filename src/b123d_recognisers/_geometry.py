@@ -11,6 +11,8 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from b123d_recognisers._typing import Bounds, Span2, Vector3
+
 _PLANE_AXES = {
     "x": ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
     "y": ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0)),
@@ -49,7 +51,7 @@ AXIS_ZERO_COS = 0.01
 INTERIOR_PROBE_FRAC = 0.05
 
 
-def _unit(v) -> tuple[float, float, float]:
+def _unit(v: Sequence[float]) -> tuple[float, float, float]:
     """Normalise negative zeros out of a direction 3-vector.
 
     Unpacked rather than built by comprehension so the return type is the three floats a record
@@ -61,7 +63,7 @@ def _unit(v) -> tuple[float, float, float]:
     return (x, y, z)
 
 
-def _axis_letter_of(axis) -> str:
+def _axis_letter_of(axis: Sequence[float]) -> str:
     """Return a platform-stable dominant axis, preferring Z then Y for numerical ties."""
 
     components = tuple(abs(float(component)) for component in axis)
@@ -78,7 +80,7 @@ def _axis_letter_of(axis) -> str:
     )
 
 
-def plane_axes(axis) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+def plane_axes(axis: str | Sequence[float]) -> tuple[Vector3, Vector3]:
     """Return the stable right-handed in-plane basis for an axis letter or vector."""
 
     letter = axis if isinstance(axis, str) else _axis_letter_of(axis)
@@ -86,7 +88,7 @@ def plane_axes(axis) -> tuple[tuple[float, float, float], tuple[float, float, fl
 
 
 def _axis_direction_components(
-    axis: str, direction=None
+    axis: str, direction: Sequence[float] | None = None
 ) -> tuple[tuple[float, ...], float, int]:
     if axis not in "xyz" or len(axis) != 1:
         raise ValueError("axis must be 'x', 'y', or 'z'")
@@ -109,13 +111,17 @@ def _axis_direction_components(
     return raw, norm, index
 
 
-def _normalised_axis_direction(axis: str, direction=None) -> tuple[float, float, float]:
+def _normalised_axis_direction(
+    axis: str, direction: Sequence[float] | None = None
+) -> Vector3:
     raw, norm, index = _axis_direction_components(axis, direction)
     sign = -1.0 if raw[index] < 0 else 1.0
     return (sign * raw[0] / norm, sign * raw[1] / norm, sign * raw[2] / norm)
 
 
-def _canonical_axis_direction(axis: str, direction=None) -> tuple[float, float, float]:
+def _canonical_axis_direction(
+    axis: str, direction: Sequence[float] | None = None
+) -> Vector3:
     raw, norm, index = _axis_direction_components(axis, direction)
     sign = -1.0 if raw[index] < 0 else 1.0
     unit = (
@@ -129,7 +135,9 @@ def _canonical_axis_direction(axis: str, direction=None) -> tuple[float, float, 
     return (rounded[0], rounded[1], rounded[2])
 
 
-def _canonical_axis_span(axis: str, direction, span) -> tuple[float, float]:
+def _canonical_axis_span(
+    axis: str, direction: Sequence[float] | None, span: Sequence[float]
+) -> Span2:
     raw, _norm, index = _axis_direction_components(axis, direction)
     lo, hi = (float(value) for value in span)
     if raw[index] < 0:
@@ -137,7 +145,9 @@ def _canonical_axis_span(axis: str, direction, span) -> tuple[float, float]:
     return (round(lo, 3), round(hi, 3))
 
 
-def _axis_line_coordinates(axis: str, point, direction=None) -> tuple[float, float]:
+def _axis_line_coordinates(
+    axis: str, point: Sequence[float], direction: Sequence[float] | None = None
+) -> Span2:
     px, py, pz = (float(component) for component in point)
     vector = _normalised_axis_direction(axis, direction)
     along = px * vector[0] + py * vector[1] + pz * vector[2]
@@ -152,7 +162,9 @@ def _axis_line_coordinates(axis: str, point, direction=None) -> tuple[float, flo
     )
 
 
-def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bool:
+def _axis_direction_is_aligned(
+    axis: str, direction: Sequence[float] | None, *, tol: float = 1e-3
+) -> bool:
     vector = _canonical_axis_direction(axis, direction)
     index = "xyz".index(axis)
     return abs(vector[index] - 1.0) <= tol and all(
@@ -160,7 +172,7 @@ def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bo
     )
 
 
-def resolved_tol(tol: float | None, bbox, *, rel: float) -> float:
+def resolved_tol(tol: float | None, bbox: Bounds, *, rel: float) -> float:
     """Return the caller's *tol*, or derive one from the solid when they did not supply it.
 
     The public recognisers take ``tol=None`` and resolve it here, per ADR 0008. ``None`` means
@@ -230,7 +242,7 @@ def cluster_coordinates(coordinates: Sequence[float], *, tol: float) -> list[lis
     return clusters
 
 
-def part_scale(bbox) -> float:
+def part_scale(bbox: Bounds) -> float:
     """Return a solid's characteristic length: the largest extent of its bounding box.
 
     The reference length for tolerances that compare two coordinates with no smaller feature
