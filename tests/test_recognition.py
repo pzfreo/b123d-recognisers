@@ -750,7 +750,7 @@ class TestFindHolePatterns:
         historical implementation still enumerated O(n^3) circle seeds with an O(n)
         membership scan after finding the grid, then discarded every result.
         """
-        import b123d_recognisers._features as features
+        import b123d_recognisers._hole_patterns as features
         from b123d_recognisers import RectGrid, recognise_hole_patterns
 
         holes = [
