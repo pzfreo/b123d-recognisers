@@ -26,9 +26,9 @@ matches the pinned golden result and changes only that previously platform-depen
 | 0.2.3 | `RiserEvidence.tol` records the tolerance the scan actually resolved for that part, rather than the former fixed `0.5`. | 33 values across 5 fixtures. **No geometry field moves** — not one coordinate, span, diameter, count or classification differs from the capture. |
 
 That field exists to report how the evidence was produced, so it moves precisely because the
-production changed; a record still carrying `0.5` would now be misreporting. The rest of the corpus
-is bit-identical to the Draftwright capture, which is the claim worth keeping and the reason the
-divergence is stated as a table rather than a re-capture.
+production changed: a *recogniser-produced* record still carrying `0.5` would now be misreporting.
+The rest of the corpus is bit-identical to the Draftwright capture, which is the claim worth
+keeping and the reason the divergence is stated as a table rather than a re-capture.
 
 `RiserEvidence.tol` keeps its `0.5` default, so direct construction is unaffected. The default is
 never what a recogniser supplies — `recognise_risers` always passes the value it resolved — and a
