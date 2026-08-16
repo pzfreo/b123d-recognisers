@@ -111,12 +111,11 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
       `recognise_rectangular_pads`, `recognise_polygonal_bosses`, `recognise_polygonal_stock`,
       `recognise_face_levels`, `recognise_risers`, and `min_radius` on `recognise_fillets`.
       `None` resolves to `rel * part_scale`; an explicit float keeps its literal meaning
-- [x] `RiserEvidence.tol` reports the resolved value and loses its default — 33 golden values
-      across 5 fixtures move, **and no geometry field moves at all**. Recorded as the first
-      intentional divergence in `migration/PARITY.md`
-- [x] Capability manifest regenerated: one line, `RiserEvidence.tol` now required. The manifest
-      records record schemas, not signatures — the earlier claim that defaults were in it was
-      wrong
+- [x] `RiserEvidence.tol` reports the resolved value — 33 golden values across 5 fixtures move,
+      **and no geometry field moves at all**. Recorded as the first intentional divergence in
+      `migration/PARITY.md`. It keeps its `0.5` default, so direct construction is unaffected
+- [x] Capability manifest unchanged. The manifest records record schemas, not signatures — the
+      earlier claim that the `tol=` defaults were in it was wrong
 - [x] `STEP_LADDER_BOUNDARY_MARGIN` reclassified as deliberately absolute and capped at a
       quarter of the span; ADR 0006 amended. Deriving it broke that ADR's own regression
 - [x] `NOT_YET_SCALE_FREE` reduced from four kinds to one

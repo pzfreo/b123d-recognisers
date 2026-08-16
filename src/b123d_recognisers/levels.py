@@ -94,12 +94,9 @@ class RiserEvidence(Record):
     #: separately because a caller who has the evidence should not have to remember how it was
     #: produced.
     #:
-    #: The default is a constructor convenience for a hand-built record and is never what a
-    #: recogniser supplies — :func:`recognise_risers` always passes the value it resolved for
-    #: that part. Removing it was briefly considered on the grounds that a stale 0.5 misreports
-    #: how a record was made, and reinstated because a record built by hand was never scanned at
-    #: all, so no value is more truthful than another, and requiring one breaks every existing
-    #: direct construction for no gain.
+    #: The default is a constructor convenience only. A recogniser never uses it —
+    #: :func:`recognise_risers` always passes the value it resolved for that part — and a record
+    #: built by hand was never scanned, so no value would be more truthful than another.
     tol: float = 0.5
 
 
