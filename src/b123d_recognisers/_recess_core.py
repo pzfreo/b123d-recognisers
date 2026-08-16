@@ -572,7 +572,7 @@ def _recognise_obround_from_ends(
                 i += 2
             else:
                 i += 1  # not ours: a pocket in a slot scan, a slot in a pocket scan, or a void
-    return cast("list[Slot] | list[Pocket]", out)
+    return cast(list[Slot] | list[Pocket], out)
 
 
 def _recognise_slots_one(part: Part) -> list[Slot]:
