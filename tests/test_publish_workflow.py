@@ -74,7 +74,7 @@ def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_ta
     )
 
     valid = subprocess.run(
-        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", "v0.2.1"],
+        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", "v0.2.2"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -88,4 +88,4 @@ def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_ta
         timeout=30,
     )
     assert wrong.returncode != 0
-    assert "tag version 9.9.9 does not match artifact version 0.2.1" in wrong.stderr
+    assert "tag version 9.9.9 does not match artifact version 0.2.2" in wrong.stderr

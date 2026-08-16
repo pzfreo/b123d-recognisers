@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased
+## 0.2.2
 
 - Decomposes the cylinder, hole/boss, pattern, and recess implementations along private,
   architecture-tested seams. Existing public imports, object identities, record module paths,
