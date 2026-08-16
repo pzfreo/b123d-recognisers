@@ -2,6 +2,8 @@
 # Copyright 2024-2026 Paul Fremantle
 """Pure derived pattern recognition for slot and pocket records."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 from b123d_recognisers._pattern_geometry import (

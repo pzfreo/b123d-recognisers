@@ -165,6 +165,19 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         assert getattr(feature_facade, name) is getattr(implementation, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
 
+    expected_recess_annotations = {
+        "Channel": {"width_axis": "str", "open_sign": "int"},
+        "Pocket": {"width_axis": "str", "body_key": "tuple[float, ...] | None"},
+        "Slot": {"width_axis": "str", "body_key": "tuple[float, ...] | None"},
+    }
+    for name, expected in expected_recess_annotations.items():
+        annotations = getattr(recognition, name).__annotations__
+        assert {field: annotations[field] for field in expected} == expected
+    assert recognition.recognise_slots.__annotations__ == {
+        "part": "Part",
+        "return": "list[Slot]",
+    }
+
     recess_records = importlib.import_module("b123d_recognisers._recess_records")
     recess_features = importlib.import_module("b123d_recognisers._recess_features")
     recess_patterns = importlib.import_module("b123d_recognisers._recess_patterns")

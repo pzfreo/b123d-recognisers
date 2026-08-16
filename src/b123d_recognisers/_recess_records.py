@@ -2,6 +2,8 @@
 # Copyright 2024-2026 Paul Fremantle
 """Geometry-only records shared by recess recognition and patterns."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from b123d_recognisers._record import Record

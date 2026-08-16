@@ -2,6 +2,8 @@
 # Copyright 2024-2026 Paul Fremantle
 """Shared wall-and-floor geometry substrate for recess recognisers."""
 
+from __future__ import annotations
+
 import math
 from collections import Counter
 from dataclasses import dataclass, replace

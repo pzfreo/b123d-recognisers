@@ -2,6 +2,8 @@
 # Copyright 2024-2026 Paul Fremantle
 """Public slot, pocket, and channel recognisers over one shared recess core."""
 
+from __future__ import annotations
+
 from b123d_recognisers._recess_core import (
     _body_scoped_records,
     _channel_sort_key,
