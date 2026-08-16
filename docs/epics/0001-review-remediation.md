@@ -190,6 +190,8 @@ epsilons. Scaling any of these would be a defect, which is why they are separate
       literals at a dozen sites across `chamfers`, `fillets`, `plates`, `pads`, `levels` and
       `polygonal_bosses`. The same number appearing twice could not be told from the same
       *decision* appearing twice
+- [x] `polygonal_bosses._SIDE_VERTICAL_COS` (0.02) — found while reading that module for
+      finding 6, after the first sweep of this finding had missed it
 - [x] `INTERIOR_PROBE_FRAC` names the 0.05 probe shared by `chamfers` and `fillets`. In
       `chamfers` that value also meant something else entirely — the run-axis gate, now
       `_RUN_AXIS_COS` — so one file had one literal standing for two decisions

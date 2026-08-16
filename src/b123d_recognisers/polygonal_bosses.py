@@ -24,6 +24,11 @@ from b123d_recognisers._typing import Part
 #: default it replaces over the corpus's 70 mm median extent.
 _TOL_FRAC = 0.00286
 
+#: A boss side face is vertical: its normal has essentially no Z component. Looser than the
+#: package's AXIS_ZERO_COS because an extruded prism's walls carry the sketch's angular noise,
+#: and a side rejected here costs the whole ring.
+_SIDE_VERTICAL_COS = 0.02
+
 
 @dataclass(frozen=True, order=True)
 class PolygonalBoss(Record):
@@ -114,7 +119,7 @@ def _recognise_one(
         if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
             continue
         normal = _normal(face)
-        if normal is None or abs(normal[2]) > 0.02:
+        if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
             continue
         bb = _bbox_tuple(face)
         if bb[5] - bb[4] <= tol:
