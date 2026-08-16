@@ -14,6 +14,10 @@ Analysis Situs demonstrates a useful substrate: an attributed adjacency graph wh
 represent B-rep faces and whose arcs capture neighbourhood and transition properties. This ADR
 adopts the architectural pattern, not an Analysis Situs runtime dependency or copied algorithm.
 
+[Prior art: graph-based feature recognition](../prior-art-feature-recognition.md) records what that
+substrate is in detail, what the field built on it since, why the learned branch is closed to this
+package, and what the labelled corpora can and cannot evidence.
+
 ## Proposed decision
 
 Introduce an immutable per-run attributed geometry graph:
