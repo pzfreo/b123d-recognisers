@@ -115,7 +115,8 @@ def test_candidate_harness_reads_wheel_version_and_adapts_only_disposable_export
     tests = export / "tests" / "test_recogniser_capabilities.py"
     tests.parent.mkdir()
     tests.write_text(
-        'EXPECTED = r"does not satisfy ==0.2.0"\nUNCHANGED = True\n', encoding="utf-8"
+        'EXPECTED = f"does not satisfy =={PINNED_VERSION}"\nUNCHANGED = True\n',
+        encoding="utf-8",
     )
 
     version = _wheel_version(wheel)
@@ -126,7 +127,7 @@ def test_candidate_harness_reads_wheel_version_and_adapts_only_disposable_export
         '_PACKAGE_VERSION = "0.2.1"\nUNCHANGED = True\n'
     )
     assert tests.read_text(encoding="utf-8") == (
-        'EXPECTED = r"does not satisfy ==0.2.1"\nUNCHANGED = True\n'
+        'EXPECTED = "does not satisfy ==0.2.1"\nUNCHANGED = True\n'
     )
 
 

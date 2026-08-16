@@ -31,7 +31,7 @@ DRAFTWRIGHT_TESTS = (
 _DRAFTWRIGHT_PACKAGE_VERSION = re.compile(
     r'^_PACKAGE_VERSION = "(?P<version>[^"]+)"$', re.MULTILINE
 )
-_DRAFTWRIGHT_VERSION_ERROR = re.compile(r"does not satisfy ==(?P<version>[0-9A-Za-z.!+-]+)")
+_DRAFTWRIGHT_VERSION_ERROR = re.compile(r'f"does not satisfy ==\{PINNED_VERSION\}"')
 
 
 def _python(venv: Path) -> Path:
@@ -135,7 +135,9 @@ def _adapt_exported_draftwright_version(export: Path, version: str) -> None:
 
     tests = export / "tests" / "test_recogniser_capabilities.py"
     source = tests.read_text(encoding="utf-8")
-    updated, count = _DRAFTWRIGHT_VERSION_ERROR.subn(f"does not satisfy =={version}", source)
+    updated, count = _DRAFTWRIGHT_VERSION_ERROR.subn(
+        f'"does not satisfy =={version}"', source
+    )
     if count != 1:
         raise SystemExit("expected one Draftwright package-version error assertion")
     tests.write_text(updated, encoding="utf-8")
