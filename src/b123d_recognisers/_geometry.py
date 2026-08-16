@@ -122,6 +122,22 @@ def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bo
     )
 
 
+def resolved_tol(tol: float | None, bbox, *, rel: float) -> float:
+    """Return the caller's *tol*, or derive one from the solid when they did not supply it.
+
+    The public recognisers take ``tol=None`` and resolve it here, per ADR 0008. ``None`` means
+    "use the tolerance this part's size implies"; an explicit float keeps its literal millimetre
+    meaning, so a caller who has calibrated against their own geometry is never silently
+    re-tuned underneath.
+
+    *rel* is calibrated so a part at the golden corpus's median 70 mm extent resolves to the
+    absolute default this replaced. Each module states its own fraction and the constant it
+    came from.
+    """
+
+    return part_scale(bbox) * rel if tol is None else tol
+
+
 #: Relative band within which two independently-derived magnitudes are the same magnitude.
 #: An area is a product of coordinates, so the same nominal quantity computed two ways differs
 #: in its last bits — and by a *different* amount for the same part modelled at another scale.

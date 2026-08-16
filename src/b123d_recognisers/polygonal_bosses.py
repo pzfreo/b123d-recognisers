@@ -15,8 +15,14 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
+from b123d_recognisers._geometry import resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
+
+#: Face/bound coincidence band, as a fraction of the owning solid's largest extent (ADR 0008).
+#: Derived per solid, matching the per-solid recognition boundary. The fraction is the 0.2 mm
+#: default it replaces over the corpus's 70 mm median extent.
+_TOL_FRAC = 0.00286
 
 
 @dataclass(frozen=True, order=True)
@@ -88,8 +94,9 @@ def _bbox_tuple(face) -> tuple[float, float, float, float, float, float]:
 
 
 def _recognise_one(
-    part, *, tol: float, angle_tol: float, whole_stock: bool = False
+    part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
 ) -> list[PolygonalBoss | PolygonalStock]:
+    tol = resolved_tol(tol, part.bounding_box(), rel=_TOL_FRAC)
     faces = list(part.faces())
     edges = [[edge.wrapped for edge in face.edges()] for face in faces]
     adjacency: dict[tuple[int, int], bool] = {}
@@ -318,7 +325,7 @@ def _recognise_one(
 
 
 def recognise_polygonal_bosses(
-    part: Part, *, tol: float = 0.2, angle_tol: float = math.radians(2)
+    part: Part, *, tol: float | None = None, angle_tol: float = math.radians(2)
 ) -> list[PolygonalBoss]:
     """Return regular hexagonal Z-axis bosses independently per physical solid.
 
@@ -337,7 +344,7 @@ def recognise_polygonal_bosses(
 
 
 def recognise_polygonal_stock(
-    part: Part, *, tol: float = 0.2, angle_tol: float = math.radians(2)
+    part: Part, *, tol: float | None = None, angle_tol: float = math.radians(2)
 ) -> list[PolygonalStock]:
     """Return one record only when the complete part is a regular hexagonal prism.
 

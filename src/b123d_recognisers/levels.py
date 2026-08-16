@@ -21,7 +21,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
+from b123d_recognisers._geometry import clears_threshold, cluster_coordinates, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -86,12 +86,13 @@ class RiserEvidence(Record):
     #: tol=0.1)`` followed by a bare ``project_step_shoulders(...)`` mixed 0.1 with the
     #: projection's own default. Carried on the record rather than passed
     #: separately because a caller who has the evidence should not have to remember how it was
-    #: produced.
-    tol: float = 0.5
+    #: produced. There is no default: the value is whatever the scan resolved for that
+    #: part, and a record carrying a stale 0.5 would misreport how it was made.
+    tol: float
 
 
 def recognise_face_levels(
-    part: Part, *, tol: float = 0.5, min_area_frac: float = 0.0
+    part: Part, *, tol: float | None = None, min_area_frac: float = 0.0
 ) -> list[FaceLevel]:
     """Return the sorted unique horizontal (normal≈±Z) face levels as :class:`FaceLevel`
     records — one per distinct Z of a horizontal planar face.
@@ -108,6 +109,7 @@ def recognise_face_levels(
     engraved text/numbers — that are not real steps and would otherwise be
     dimensioned as phantom shoulders.
     """
+    tol = resolved_tol(tol, part.bounding_box(), rel=_TOL_FRAC)
     zs: list[float] = []
     face_bounds: list[tuple[float, float, float, float]] = []
     face_areas: list[float] = []
@@ -146,6 +148,10 @@ def recognise_face_levels(
     return sorted(levels)
 
 
+#: Coplanar-face grouping band, as a fraction of the part's largest extent (ADR 0008). The
+#: fraction is the 0.5 mm default it replaces over the corpus's 70 mm median extent.
+_TOL_FRAC = 0.00714
+
 # Minimum horizontal-face area (as a fraction of the plan footprint) for a Z level to count
 # as a genuine prismatic step — drops an incidental tiny face (a blind-pocket floor, a small
 # pad top) that would otherwise read as a phantom step rung.
@@ -153,14 +159,34 @@ _STEP_MIN_AREA_FRAC = 0.01
 
 #: Default end exclusion for both prismatic level capture and Z-turned ladder projection, in
 #: model length units (normally mm). Equality at either inset boundary is excluded.
+#:
+#: Retained for callers that pass an explicit margin, and as the documented ADR 0006 value.
+#: The *default* is now derived per part from the fraction below, per ADR 0008.
 STEP_LADDER_BOUNDARY_MARGIN: float = 0.6
 
+#: The largest fraction of a span the end exclusion may consume. The margin above is absolute
+#: because it excludes an end treatment, which does not grow with the part — but an unbounded
+#: absolute constant swallows a short span whole, so ADR 0008 requires the cap.
+_END_MARGIN_MAX_FRAC: float = 0.25
 
-def step_level_records(
-    part: Part, *, tol: float = STEP_LADDER_BOUNDARY_MARGIN
-) -> list[FaceLevel]:
+
+def bounded_end_margin(span: float) -> float:
+    """The end exclusion for a span: absolute, but never more than a quarter of it.
+
+    Deliberately not proportional. The inset exists to drop a shoulder produced by a chamfer or
+    edge break just inside an end face, and a deburr is the same size on a 20 mm dowel and a 2 m
+    shaft — the ADR 0006 regression pins exactly that, a 0.6 mm end step on a 10 mm part. The cap
+    is what keeps a legitimately absolute constant safe when the part is modelled small, the same
+    bound ``turned._OD_SPAN_PAD`` uses against its band width.
+    """
+
+    return min(STEP_LADDER_BOUNDARY_MARGIN, max(span, 0.0) * _END_MARGIN_MAX_FRAC)
+
+
+def step_level_records(part: Part, *, tol: float | None = None) -> list[FaceLevel]:
     """Area-filtered interior face-level records, retaining their support bounds."""
     bb = part.bounding_box()
+    tol = bounded_end_margin(bb.max.Z - bb.min.Z) if tol is None else tol
     return [
         fl
         for fl in recognise_face_levels(part, min_area_frac=_STEP_MIN_AREA_FRAC)
@@ -168,7 +194,7 @@ def step_level_records(
     ]
 
 
-def step_level_zs(part: Part, *, tol: float = STEP_LADDER_BOUNDARY_MARGIN) -> list[float]:
+def step_level_zs(part: Part, *, tol: float | None = None) -> list[float]:
     """The interior prismatic step Z-levels: the area-filtered horizontal face levels strictly
     inside the part height (``base + tol < z < top - tol``). The single source of truth for the
     step-height ladder for every consumer. Using raw, unfiltered
@@ -178,7 +204,7 @@ def step_level_zs(part: Part, *, tol: float = STEP_LADDER_BOUNDARY_MARGIN) -> li
 
 
 def recognise_risers(
-    part: Part, *, min_area_frac: float = 0.15, tol: float = 0.5
+    part: Part, *, min_area_frac: float = 0.15, tol: float | None = None
 ) -> list[RiserEvidence]:
     """Scan *part* once for candidate step risers, independent of any level set.
 
@@ -210,6 +236,7 @@ def recognise_risers(
     (partial/filleted-end steps are a future refinement).
     """
     bb = part.bounding_box()
+    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     lo = {"x": bb.min.X, "y": bb.min.Y}
     hi = {"x": bb.max.X, "y": bb.max.Y}

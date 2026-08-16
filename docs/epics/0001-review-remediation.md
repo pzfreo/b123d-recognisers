@@ -98,27 +98,35 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 - [x] `turned._OD_SPAN_PAD` reclassified as deliberately absolute — converting it bridged a
       groove; see ADR 0008
 
-### 2c — Part-relative lengths and the public surface · behaviour change
-
-The 13 sites with no local feature: the `tol=` keywords on the five public recognisers,
-`fillets.min_radius`, `STEP_LADDER_BOUNDARY_MARGIN`, `_MERGE_TOL`, `_FLOOR_TOL`.
+### 2c — Part-relative lengths and the public surface · behaviour change · target 0.3.0
 
 - [x] **[#46](https://github.com/pzfreo/b123d-recognisers/issues/46), landed first:** replaced
       the `round(coord / tol) * tol` grouping in `levels` and `plates` with bounded clustering
       by distance. Goldens byte-identical; `traversal_order` became scale-invariant
-- [x] **Broke the exact tie in the area gates** (`agent/break-area-gate-tie`).
-      `chamfers_fillets_and_flats` has a face whose area is *exactly* `min_area_frac` (0.4) of
-      the cross-section, so `a >= thresh` was decided by rounding alone: `area - thresh` is
-      `-1.7e-13` at 1x, exactly `0.0` at 5x and 10x, and `-9.3e-10` at 100x. Grid phase was not
-      the cause. `_geometry.clears_threshold` resolves a tie against admitting a feature, the
-      same way at every scale — the area-gate counterpart of `_axis_letter_of`'s dominant-axis
-      tie break. Goldens byte-identical; the spurious plate is gone at every scale
-- [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
-      meaning so a calibrated caller is not broken
-- [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly
-- [ ] Regenerate the capability manifest; these signatures and defaults are in it
-- [ ] Empty `NOT_YET_SCALE_FREE` in `tests/test_scale_invariance.py`
-- [ ] Release note stating the behaviour change; `0.3.0a1` for the Draftwright canary, then `0.3.0`
+- [x] **Broke the exact tie in the area gates.** `chamfers_fillets_and_flats` has a face whose
+      area is *exactly* `min_area_frac` of the cross-section, so `a >= thresh` was decided by
+      rounding: `-1.7e-13` at 1x, exactly `0.0` at 5x and 10x, `-9.3e-10` at 100x. Grid phase
+      was not the cause. `_geometry.clears_threshold` resolves it the same way at every scale
+- [x] `tol: float | None = None` on `recognise_plates`, `recognise_chamfers`,
+      `recognise_rectangular_pads`, `recognise_polygonal_bosses`, `recognise_polygonal_stock`,
+      `recognise_face_levels`, `recognise_risers`, and `min_radius` on `recognise_fillets`.
+      `None` resolves to `rel * part_scale`; an explicit float keeps its literal meaning
+- [x] `RiserEvidence.tol` reports the resolved value and loses its default — 33 golden values
+      across 5 fixtures move, **and no geometry field moves at all**. Recorded as the first
+      intentional divergence in `migration/PARITY.md`
+- [x] Capability manifest regenerated: one line, `RiserEvidence.tol` now required. The manifest
+      records record schemas, not signatures — the earlier claim that defaults were in it was
+      wrong
+- [x] `STEP_LADDER_BOUNDARY_MARGIN` reclassified as deliberately absolute and capped at a
+      quarter of the span; ADR 0006 amended. Deriving it broke that ADR's own regression
+- [x] `NOT_YET_SCALE_FREE` reduced from four kinds to one
+- [ ] **`_recess_core`'s `_MERGE_TOL`, `_FLOOR_TOL` and corner-notch `tol` — own PR.** They are
+      module constants read by helpers that never receive the part, so converting them means
+      threading a resolved tolerance through a 987-line module whose tolerances interact (merge
+      feeds collapse feeds obround extension). This is the split the epic reserved. `pocket` is
+      the last entry in `NOT_YET_SCALE_FREE` and `slanted_steps` the last fixture that drifts
+- [ ] Release note; `0.3.0a1` for the Draftwright canary, then `0.3.0` — **requires explicit
+      approval, publishing is outside the loop's remit**
 
 ## 3 — Tests that pin prose and implementation detail
 

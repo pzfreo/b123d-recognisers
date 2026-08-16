@@ -154,12 +154,13 @@ Several of these read as absolute because they are named `*_TOL`. Renaming them 
 The four `max(...)` sites keep that form. Rewriting them additively would change behaviour for no
 benefit; the policy above governs new and converted sites.
 
-### Deliberately absolute (2)
+### Deliberately absolute (3)
 
 | Site | Value | Physical constant |
 | --- | --- | --- |
 | `turned._CHAMFER_ALLOWANCE_ABS` | 0.5 | a fixed edge-break, paired with `_CHAMFER_ALLOWANCE_FRAC` |
 | `turned._OD_SPAN_PAD` | 0.7 | the same edge-break, spanning a chamfer-shortened band edge |
+| `levels.STEP_LADDER_BOUNDARY_MARGIN` | 0.6 | an end treatment just inside a turned end face |
 
 `_OD_SPAN_PAD` was classified feature-relative when this ADR was written, and **measurement moved
 it**. Converted to 8.75% of the band diameter it reaches 2.6 mm on a 30 mm band, bridges the 5 mm
@@ -170,6 +171,17 @@ deburr does not grow with the shaft.
 It is now capped at half the band's own width, so it cannot bridge the band it pads however small
 the part is modelled. That cap, not a proportional term, is what makes a legitimately absolute
 gate safe at small scale, and is the pattern to reach for when the next one appears.
+
+`STEP_LADDER_BOUNDARY_MARGIN` moved the same way, and for the same reason. Deriving it from the
+span broke the ADR 0006 regression, which pins a 0.6 mm end step on a 10 mm part as something the
+inset must exclude — that step is a chamfer or edge break, and a deburr is the same size on a 20 mm
+dowel and a 2 m shaft. It stays absolute, capped at a quarter of the span by
+`levels.bounded_end_margin`, shared by the prismatic capture and the turned projection as ADR 0006
+requires.
+
+**Three of the sites this ADR listed for conversion turned out to belong here instead**, each
+found by a test rather than by re-reading the code. That ratio is the argument for classifying
+per site: a uniform pass would have scaled all three.
 
 ### Feature-relative lengths to convert (17)
 
@@ -235,7 +247,11 @@ not byte-identical and each moved cell is reviewed on its own evidence, as ADR 0
 
 The public `tol=` keywords gain `None` as their default, resolving to the derived value; passing a
 float keeps today's meaning, so a caller who has calibrated for their own parts is not broken.
-Those signatures and defaults are in the ADR 0005 capability manifest and it is regenerated.
+
+The ADR 0005 manifest records record *schemas*, not function signatures, so those defaults do not
+appear in it — an earlier draft of this ADR claimed they did. The one manifest change is
+`RiserEvidence.tol` becoming required, because a field whose purpose is to report the scanned
+tolerance has no honest default.
 
 Conversion is three changes: this policy and its helpers with no behaviour change; the
 feature-relative group; then the part-relative group with the public surface and release note.

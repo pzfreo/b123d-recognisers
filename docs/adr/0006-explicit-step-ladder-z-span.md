@@ -46,3 +46,16 @@ since 0.2.1, remains for the full 0.2.x line, and is removed no earlier than 1.0
 - The result remains a deterministic `list[float]`, preserving caller behavior. Tests prove repeat
   equality and JSON serialization; `RecognitionResult` and every contained record remain frozen.
 - No recogniser, record schema, capability family, canonical golden, or recognition policy changes.
+
+## Amendment (0.3.0, ADR 0008)
+
+`boundary_margin` defaults to `None`, which resolves to `STEP_LADDER_BOUNDARY_MARGIN` capped at a
+quarter of the span. An explicit float is still honoured literally, so every caller inventory above
+is unaffected unless it relied on the default for a span shorter than 2.4 mm.
+
+ADR 0008 asked whether this inset should scale with the part. It should not: it excludes an end
+treatment, and a chamfer or edge break does not grow with the shaft. Deriving it proportionally
+broke this ADR's own regression, which pins a 0.6 mm end step on a 10 mm part as something the
+inset must drop. The cap is what an absolute constant needs to stay safe on a part modelled small,
+and it preserves the requirement above that the prismatic capture and the turned projection share
+one rule.

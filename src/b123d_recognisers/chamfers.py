@@ -43,8 +43,13 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
+from b123d_recognisers._geometry import resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
+
+#: Coplanarity/leg band, as a fraction of the part's largest extent (ADR 0008). The fraction is
+#: the 0.5 mm default it replaces over the corpus's 70 mm median extent.
+_TOL_FRAC = 0.00714
 
 
 @dataclass(frozen=True)
@@ -119,13 +124,14 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
 
 
 def recognise_chamfers(
-    part: Part, *, tol: float = 0.5, max_leg_frac: float = 0.45
+    part: Part, *, tol: float | None = None, max_leg_frac: float = 0.45
 ) -> list[Chamfer]:
     """Recognise the chamfers of *part* (see module docstring). Returns one
     :class:`Chamfer` per qualifying oblique face, sorted deterministically. Empty when the
     part has no chamfer. Only single-axis chamfers (running along one principal axis) are
     recovered; a compound corner bevel (oblique on all three axes) is skipped."""
     bb = part.bounding_box()
+    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
     # (face, its edges' wrapped shapes) once, for O(faces²) edge-adjacency.

@@ -38,8 +38,15 @@ from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
+from b123d_recognisers._geometry import resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
+
+#: Smallest dimension-worthy blend radius, as a fraction of the part's largest extent (ADR
+#: 0008). A 0.6 mm round is a real feature on a 30 mm bracket and a deburr on a 2 m weldment,
+#: so the gate has to follow the part. The fraction is the 0.6 mm default it replaces over the
+#: corpus's 70 mm median extent.
+_MIN_RADIUS_FRAC = 0.00857
 
 # A convex edge fillet is a quarter-turn (≈π/2); a real bore keeps more than half a turn.
 # Gate below this (the same threshold that keeps partial cylinders out of hole/boss
@@ -88,13 +95,14 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
 
 
 def recognise_fillets(
-    part: Part, *, min_radius: float = 0.6, max_radius_frac: float = 0.45
+    part: Part, *, min_radius: float | None = None, max_radius_frac: float = 0.45
 ) -> list[Fillet]:
     """Recognise the external edge fillets of *part* (see module docstring). Returns one
     :class:`Fillet` per qualifying cylindrical blend face, sorted deterministically. Empty
     when the part has no dimension-worthy fillet. Only single-axis fillets (running along
     one principal axis) are recovered; a compound corner round is skipped."""
     bb = part.bounding_box()
+    min_radius = resolved_tol(min_radius, bb, rel=_MIN_RADIUS_FRAC)
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     all_faces = list(part.faces())
     # Edge→faces adjacency, built once. build123d shape equality/hash is IsSame

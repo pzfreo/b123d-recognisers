@@ -11,8 +11,14 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._geometry import resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
+
+#: Face/bound coincidence band, as a fraction of the owning solid's largest extent (ADR 0008).
+#: Derived per solid, not per assembly, so a small component in a large assembly is judged by
+#: its own size. The fraction is the 0.2 mm default it replaces over the corpus's 70 mm median.
+_TOL_FRAC = 0.00286
 
 
 @dataclass(frozen=True, order=True)
@@ -27,9 +33,10 @@ class RaisedPad(Record):
     z1: float
 
 
-def _recognise_rectangular_pads_one(part, *, tol: float) -> list[RaisedPad]:
+def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[RaisedPad]:
     """Recognise pads using one solid's faces and bounds."""
     bb = part.bounding_box()
+    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
     raw_tops: list[tuple[float, float, float, float, float]] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
@@ -136,7 +143,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float) -> list[RaisedPad]:
     )
 
 
-def recognise_rectangular_pads(part: Part, *, tol: float = 0.2) -> list[RaisedPad]:
+def recognise_rectangular_pads(part: Part, *, tol: float | None = None) -> list[RaisedPad]:
     """Return bounded rectangular raised faces independently per solid.
 
     A candidate is a planar +Z face whose area fills its XY bounding rectangle
