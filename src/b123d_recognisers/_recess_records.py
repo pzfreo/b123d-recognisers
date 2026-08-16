@@ -215,19 +215,6 @@ class PocketGrid(Record):
     center: Vector3
 
 
-# When the two non-width slot extents are within this fraction of each other the
-# slot is near-square in that plane and "which is the length" is ambiguous; the
-# tie is then broken towards the part's longer bounding-box axis.
-_LENGTH_TIE_FRAC = 0.05
-# A slot is *enclosed* — bounded by material at its ends.  A facing-wall pair
-# spanning (almost) the whole part along its length is an OPEN feature instead:
-# the concave corner of an L, a U-channel face, or a through step, where the two
-# walls run flush to the part boundary rather than being capped. Those are not
-# slots, so a pair this long is rejected (this is the open-vs-enclosed cut the
-# recogniser is deliberately conservative about — a partial-span open corner
-# would still slip through, and belongs to a future step/pocket recogniser).
-_SLOT_MAX_SPAN_FRAC = 0.9
-
 # Keep the supported historical module path stable for repr and pickle consumers.
 for _record_type in (Slot, SlotArray, SlotGrid, Pocket, Channel, PocketArray, PocketGrid):
     _record_type.__module__ = "b123d_recognisers.slots"

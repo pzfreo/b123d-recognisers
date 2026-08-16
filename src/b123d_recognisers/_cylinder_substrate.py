@@ -19,11 +19,6 @@ _FULL_CYL_MIN_EXTENT = math.pi * 1.05
 # (see _merge_stacks).
 _STACK_GAP_TOL = 0.1
 
-# A counterbore-like step shallower than this fraction of its diameter is a
-# spotface (a facing cut, e.g. ø60×5), deeper is a counterbore (e.g. ø18×6).
-_SPOTFACE_MAX_RATIO = 0.2
-
-
 def analyse_cylinders(part: Part) -> CylinderInventory:
     """Return (z_cyls, cross_cyls) from OCP cylindrical face analysis.
 
@@ -156,8 +151,6 @@ def full_cylinders(cyls: list[CylinderEvidence]) -> list[CylinderEvidence]:
     return keep
 
 
-# Internal alias retained for the in-module call sites.
-_full_cyls = full_cylinders
 
 
 # ---------------------------------------------------------------------------

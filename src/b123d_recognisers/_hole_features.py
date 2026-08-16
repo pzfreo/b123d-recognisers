@@ -24,6 +24,7 @@ from b123d_recognisers._typing import CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
 _full_cyls = full_cylinders
+# A counterbore-like step shallower than this fraction of its diameter is a spotface.
 _SPOTFACE_MAX_RATIO = 0.2
 
 
