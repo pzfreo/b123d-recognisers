@@ -2,9 +2,16 @@
 
 ## 0.2.4
 
-Corrects a regression in 0.2.3. Recognition output returns to `0.2.2` behaviour at every scale the
-golden corpus covers, and every pinned golden is byte-identical to the original Draftwright capture
-again. Anyone on 0.2.3 should take this.
+Corrects a regression in 0.2.3. Every pinned golden is byte-identical to the original Draftwright
+capture again, and every count 0.2.3 changed on real parts is restored — verified against the NIST
+MBE PMI complex test cases, not only the synthetic corpus. Anyone on 0.2.3 should take this.
+
+Output is **not** identical to 0.2.2 in every case, and the exception is deliberate. On
+`nist_ftc_09` the level recogniser reports fifteen levels where 0.2.2 reported sixteen, because
+0.2.2 split a pair of faces **0.475 mm apart under a 0.5 mm tolerance** into separate levels — a
+consequence of grouping by grid cell rather than by distance, fixed independently of the tolerance
+work. Two faces closer together than the tolerance are one level. A 0.635 mm gap on the same part
+is still correctly two.
 
 - **Minimum-evidence thresholds are absolute again.** 0.2.3 scaled them to the part, which made a
   feature's existence depend on what surrounds it: the same 1 mm chamfer was recognised on an

@@ -27,7 +27,13 @@ holds without qualification.
 
 The withdrawal was not cosmetic. Scaling minimum-evidence thresholds to the part lost records on
 six real parts in nineteen places with no compensating gain; see ADR 0008 on why a threshold is
-not a tolerance. Recognition behaviour at reference scale is unchanged from `0.2.2` throughout.
+not a tolerance.
+
+The pinned corpus is bit-identical to the capture, which is what this page certifies. Behaviour on
+*arbitrary* geometry is not identical to `0.2.2`, and deliberately so: `0.2.x` also replaced
+grid-cell grouping of coplanar faces with grouping by distance, so a pair of faces closer together
+than the tolerance is now one level rather than two. That difference is visible on real parts
+outside the corpus and is a defect being fixed, not parity being lost.
 
 ## Evidence
 
