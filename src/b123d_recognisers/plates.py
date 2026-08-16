@@ -42,9 +42,13 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
+from b123d_recognisers._geometry import clears_threshold, cluster_coordinates, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
+
+#: Coplanar-face grouping band, as a fraction of the part's largest extent (ADR 0008). The
+#: fraction is the 0.5 mm default it replaces over the corpus's 70 mm median extent.
+_TOL_FRAC = 0.00714
 
 
 @dataclass(frozen=True)
@@ -75,7 +79,7 @@ def recognise_plates(
     *,
     min_area_frac: float = 0.4,
     max_thick_frac: float = 0.5,
-    tol: float = 0.5,
+    tol: float | None = None,
 ) -> list[Plate]:
     """Recognise the plate/wall thicknesses of a prismatic *part* (see module docstring).
 
@@ -84,6 +88,7 @@ def recognise_plates(
     thickness is the envelope) or a part with no thin slabs.
     """
     bb = part.bounding_box()
+    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     axidx = {"x": 0, "y": 1, "z": 2}
 

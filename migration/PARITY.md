@@ -1,14 +1,37 @@
 # Draftwright migration parity
 
 The initial standalone implementation is an atomic extraction from Draftwright commit
-`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). There are no intentional feature-policy
-differences.
+`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). Through the whole `0.2.x` line there were
+no intentional feature-policy differences.
+
+**From `0.3.0` there is one, and it is deliberate.** [ADR 0008](../docs/adr/0008-length-tolerance-policy.md)
+replaces the recognisers' absolute millimetre gates with gates proportional to the geometry they
+judge, because an absolute gate answers differently for the same feature modelled at another size.
+The pinned goldens are no longer a byte-for-byte capture of the Draftwright baseline; they are this
+package's own reviewed baseline, and the divergence from the capture is recorded below rather than
+left implicit.
 
 One compatibility normalization is explicit: when two or more direction components differ by no
 more than `1e-12`, dominant-axis routing deterministically prefers Z, then Y. OCCT perturbs an exact
 45° diagonal by a final bit in opposite directions on Windows and Unix, so Draftwright's prior
 unqualified `max()` could route equivalent geometry to different inventories. The stable tie-break
 matches the pinned golden result and changes only that previously platform-dependent case.
+
+## Intentional divergence from the capture
+
+| Release | What differs | Extent |
+| --- | --- | --- |
+| 0.3.0 | `RiserEvidence.tol` records the tolerance the scan actually resolved for that part, rather than the former fixed `0.5`. | 33 values across 5 fixtures. **No geometry field moves** — not one coordinate, span, diameter, count or classification differs from the capture. |
+
+That field exists to report how the evidence was produced, so it moves precisely because the
+production changed; a record still carrying `0.5` would now be misreporting. The rest of the corpus
+is bit-identical to the Draftwright capture, which is the claim worth keeping and the reason the
+divergence is stated as a table rather than a re-capture.
+
+`RiserEvidence.tol` also loses its default. Its whole purpose is to record a scanned value, so
+there is no honest default to fall back on; direct constructors must now pass it.
+
+The compatibility normalization below (dominant-axis tie-break) predates this and is unrelated.
 
 ## Evidence
 

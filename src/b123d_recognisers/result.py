@@ -33,9 +33,9 @@ from b123d_recognisers.fillets import Fillet, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import (
-    STEP_LADDER_BOUNDARY_MARGIN,
     FaceLevel,
     RiserEvidence,
+    bounded_end_margin,
     recognise_risers,
     step_level_records,
 )
@@ -227,14 +227,21 @@ class RecognitionResult:
         z_min: float,
         z_max: float,
         *,
-        boundary_margin: float = STEP_LADDER_BOUNDARY_MARGIN,
+        boundary_margin: float | None = None,
     ) -> list[float]:
         """Return the effective step ladder within an explicit Z envelope.
 
-        ``z_min``, ``z_max``, and ``boundary_margin`` use model length units (millimetres in
-        conventional build123d/STEP workflows). For a Z-turned profile, only shoulders strictly
-        inside ``z_min + boundary_margin`` and ``z_max - boundary_margin`` are rungs; equality is
-        excluded. A span narrower than twice the margin therefore has no turned rungs.
+        ``z_min``, ``z_max``, and an explicit ``boundary_margin`` use model length units
+        (millimetres in conventional build123d/STEP workflows). For a Z-turned profile, only
+        shoulders strictly inside ``z_min + boundary_margin`` and ``z_max - boundary_margin`` are
+        rungs; equality is excluded. A span narrower than twice the margin therefore has no
+        turned rungs.
+
+        ``boundary_margin=None`` uses :data:`STEP_LADDER_BOUNDARY_MARGIN`, capped so it can
+        never exceed a quarter of the span. The inset excludes an *end treatment* — a chamfer or
+        edge break just inside the face — which is a manufacturing constant that does not grow
+        with the shaft, so ADR 0008 keeps it absolute and bounds it instead. It stays the same
+        rule ``step_level_records`` applies, which ADR 0006 requires the two to share.
 
         Prismatic levels are already envelope-filtered by :func:`step_level_records` during the
         recognition pass, so this projection returns them unchanged. The span is still validated
@@ -250,6 +257,8 @@ class RecognitionResult:
             raise ValueError("z_min and z_max must be finite")
         if z_min > z_max:
             raise ValueError("z_min must not exceed z_max")
+        if boundary_margin is None:
+            boundary_margin = bounded_end_margin(z_max - z_min)
         if not math.isfinite(boundary_margin) or boundary_margin < 0.0:
             raise ValueError("boundary_margin must be finite and non-negative")
         prof = TurnedProfile.from_steps(list(self.turned_steps))

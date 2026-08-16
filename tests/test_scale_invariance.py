@@ -36,10 +36,11 @@ CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 FACTORS = (0.05, 5.0, 100.0)
 
 #: Feature kinds whose recognisers still gate on absolute millimetres, per ADR 0008's
-#: part-relative list. ``plate`` and ``pocket`` lose records on a part modelled 20x small;
-#: ``chamfer`` and ``fillet`` gate on absolute leg and radius sizes. Converting those is finding
-#: 2c — delete the entry, do not add to it.
-NOT_YET_SCALE_FREE = frozenset({"plate", "pocket", "chamfer", "fillet"})
+#: part-relative list. Only the recess family is left: ``_recess_core``'s _MERGE_TOL and
+#: _FLOOR_TOL are module constants threaded through helpers that never see the part, so
+#: converting them is a refactor of a 987-line module and has its own PR. Delete the entry when
+#: it lands; do not add to it.
+NOT_YET_SCALE_FREE = frozenset({"pocket"})
 
 
 def _scale_free_census(part) -> dict[str, int]:
