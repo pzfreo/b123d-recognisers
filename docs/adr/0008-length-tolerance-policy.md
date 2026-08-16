@@ -209,57 +209,52 @@ requires.
 found by a test rather than by re-reading the code. That ratio is the argument for classifying
 per site: a uniform pass would have scaled all three.
 
-### Feature-relative lengths to convert (17)
+### Proportional tolerances (12)
 
-Each has a diameter, radius or width in hand at the comparison.
+Each asks *are these two measurements of one feature the same?*, and each has that feature's own
+diameter, radius or width in hand at the comparison. These are what the policy is for.
 
-| Site | Value | Nominal |
+| Site | Nominal |
+| --- | --- |
+| `_cylinder_substrate._STACK_GAP_FRAC` | band diameter |
+| `countersinks._MINOR_MATCH_FRAC` | minor radius |
+| `countersinks._COAXIAL_FRAC` | drill diameter |
+| `countersinks._HOLE_DIA_FRAC` | hole diameter |
+| `countersinks._HOLE_AXIS_FRAC` | hole diameter |
+| `countersinks._HOLE_MOUTH_FRAC` | hole diameter |
+| `flats._OD_REACH_FRAC` | stock radius |
+| `flats._AXIS_LINE_FRAC` | stock radius |
+| `grooves._ADJ_FRAC` | band diameter |
+| `grooves._WALL_DIA_FRAC` | wider wall diameter |
+| `_recess_core._END_RADIUS_FRAC` | cap radius |
+| `_recess_core._CAP_CLUSTER_FRAC` | cap radius |
+
+### Minimum-evidence thresholds — absolute (13)
+
+Each asks *is this big enough to be a feature?* All thirteen were converted in 0.2.3 and reverted
+in 0.2.4; see the section above on why a threshold is not a tolerance. The values are the ones
+0.2.2 used.
+
+| Site | Value | What it gates |
 | --- | --- | --- |
-| `_cylinder_substrate._STACK_GAP_TOL` | 0.1 | band diameter |
-| `countersinks._TOL` | 0.05 | minor radius |
-| `countersinks._COAXIAL_TOL` | 0.1 | drill diameter |
-| `countersinks._HOLE_DIA_TOL` | 0.2 | hole diameter |
-| `countersinks._HOLE_AXIS_TOL` | 0.2 | hole diameter |
-| `countersinks._HOLE_MOUTH_TOL` | 0.5 | hole diameter |
-| `flats._CHORD_MIN` | 0.05 | stock radius |
-| `flats._CHORD_MARGIN` | 0.05 | stock radius |
-| `flats._MIN_FLAT_DEPTH` | 0.5 | stock radius |
-| `flats._OD_REACH_TOL` | 0.1 | stock radius |
-| `flats._AXIS_LINE_TOL` | 0.1 | stock radius |
-| `grooves._ADJ_TOL` | 0.1 | band diameter |
-| `grooves._DIA_MARGIN` | 0.2 | band diameter |
-| `grooves._WALL_DIA_TOL` | 0.5 | band diameter |
-| `grooves._WIDTH_MARGIN` | 0.05 | wider neighbouring wall width |
-| `_recess_core._END_RADIUS_TOL` | 0.15 | cap radius |
-| `_recess_core._CAP_CLUSTER_TOL` | 0.3 | cap radius |
+| `chamfers._MIN_LEG` | 0.5 | minimum chamfer leg |
+| `fillets._MIN_RADIUS` | 0.6 | minimum blend radius |
+| `plates._TOL` | 0.5 | minimum slab thickness |
+| `pads._TOL` | 0.2 | minimum pad footprint |
+| `polygonal_bosses._TOL` | 0.2 | minimum boss height and support span |
+| `levels._TOL` | 0.5 | level grouping and minimum riser height |
+| `flats._MIN_FLAT_DEPTH` | 0.5 | minimum material removed |
+| `flats._CHORD_MIN` | 0.05 | minimum offset from the axis |
+| `flats._CHORD_MARGIN` | 0.05 | minimum inset from the OD |
+| `grooves._DIA_MARGIN` | 0.2 | minimum step down into the band |
+| `grooves._WIDTH_MARGIN` | 0.05 | minimum narrowness against the wider wall |
+| `_recess_core._MERGE_TOL` | 0.5 | coordinate merge and minimum slot-end separation |
+| `_recess_core._FLOOR_TOL` | 0.3 | floor-plane coincidence |
 
-`_hole_features`' stack margin (`max(_STACK_GAP_TOL, min(0.45 * length, 0.5 * diameter))`) and
-`_recess_core._VOID_INSET` (`min(_VOID_INSET, (hi - lo) / 4)`) are already capped by a feature
-dimension; only their absolute term is converted.
+Three of the thirteen were found only after the first fix shipped — the `flats` chord gates by
+running real parts, the `grooves` margins by reading every remaining gate and asking which
+question it asks. Grep does not distinguish a threshold from a tolerance; only the comparison does.
 
-### Part-relative lengths to convert (13)
-
-No local feature determines the comparison, so the reference is `part_scale`.
-
-| Site | Value | Public |
-| --- | --- | --- |
-| `levels.recognise_face_levels(tol=)` | 0.5 | yes |
-| `levels.recognise_risers(tol=)` | 0.5 | yes |
-| `levels.RiserEvidence.tol` | 0.5 | **record field** |
-| `levels.STEP_LADDER_BOUNDARY_MARGIN` | 0.6 | yes |
-| `chamfers.recognise_chamfers(tol=)` | 0.5 | yes |
-| `plates.recognise_plates(tol=)` | 0.5 | yes |
-| `pads.recognise_rectangular_pads(tol=)` | 0.2 | yes |
-| `polygonal_bosses.recognise_polygonal_bosses(tol=)` | 0.2 | yes |
-| `polygonal_bosses.recognise_polygonal_stock(tol=)` | 0.2 | yes |
-| `fillets.recognise_fillets(min_radius=)` | 0.6 | yes |
-| `_recess_core._MERGE_TOL` | 0.5 | no |
-| `_recess_core._FLOOR_TOL` | 0.3 | no |
-| `_recess_core._recognise_corner_notches(tol=)` | 0.5 | no — parameter removed, no caller ever supplied one |
-
-`_pattern_geometry._PATTERN_ABS_TOL` also appears in three standalone degeneracy guards
-(`span < _PATTERN_ABS_TOL`) that ask "is this length essentially zero"; those are part-relative and
-convert with this group.
 
 `RiserEvidence.tol` is a **public record field** whose value appears in the pinned goldens. A
 derived tolerance changes that value for every fixture containing a riser. This is a visible record
@@ -285,9 +280,11 @@ previous one's evidence showed it was a different defect: the policy and helpers
 feature-relative group; distance-based coplanar grouping; the area-gate tie break; then the
 part-relative group with the public surface, and `_recess_core` behind it.
 
-The outcome is that every golden fixture now recognises identically from 0.05x to 100x, in every
-family. `tests/test_scale_invariance.py` holds it, with an exclusion list that is empty and a
-test asserting it stays empty.
+That conversion overreached, and 0.2.4 pulled thirteen of the sites back — see the threshold
+section above. The families that remain scale-invariant across 0.05x-100x are those gated only by
+proportional tolerances; `tests/test_scale_invariance.py` holds them, and names the rest in an
+exclusion list that is a statement of design rather than of debt. A family gated by an absolute
+minimum is *correctly* not scale-invariant: a 1 mm chamfer shrunk to 0.05 mm is a deburr.
 
 Absolute constants remain **legal but justified**. A new one needs a comment naming the physical
 constant it encodes and a proportional term beside it. Anything else is a defect this ADR exists to

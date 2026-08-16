@@ -80,7 +80,9 @@ every site.
       term is legal only when a comment names the physical constant it encodes
 - [x] `_geometry.length_tol(nominal, *, rel, floor)` and `_geometry.part_scale(bbox)`
 - [x] Every site classified in the ADR: 18 not lengths · 5 already scaled · 2 deliberately
-      absolute · 17 feature-relative to convert · 13 part-relative to convert
+      absolute · 17 feature-relative to convert · 13 part-relative to convert. **0.2.4 revised
+      this**: thirteen of the thirty were minimum-evidence thresholds rather than tolerances and
+      are absolute again — ADR 0008 carries the final classification
 - [x] `_pattern_tol` and the three inline `part_scale` spellings adopt the helpers — goldens
       byte-identical
 
@@ -123,8 +125,9 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 - [x] **`_recess_core`'s `_MERGE_TOL`, `_FLOOR_TOL` and corner-notch `tol`** — the split the
       epic reserved. A `scale` threaded through the eight helpers that never receive the part;
       the five that hold a part or `part_ext` derive it themselves. Goldens byte-identical
-- [x] **`NOT_YET_SCALE_FREE` is empty.** Every fixture recognises identically from 0.05x to
-      100x, across every family
+- [~] **`NOT_YET_SCALE_FREE` was emptied here and repopulated in 0.2.4.** Scale invariance holds
+      for the families gated only by proportional tolerances. Families gated by an absolute
+      minimum are excluded by design, not by debt — see issue #72 and ADR 0008
 - [ ] Release note; `0.2.3a1` for the Draftwright canary, then `0.2.3` — **requires explicit
       approval, publishing is outside the loop's remit**
 - [x] **Patch, not minor, by maintainer decision.** ADR 0008 and this epic both assumed 0.3.0
