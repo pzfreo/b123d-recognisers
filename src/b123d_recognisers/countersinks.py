@@ -39,7 +39,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, cast
+from typing import Protocol
 
 from build123d import GeomType
 
@@ -169,10 +169,15 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
 
     cyls = []
     for cy in part.faces().filter_by(GeomType.CYLINDER):
-        ax = BRepAdaptor_Surface(cy.wrapped).Cylinder().Axis()
+        # Radius from the same adaptor as the axis, not ``Face.radius``: that reports ``None``
+        # for a trimmed cylindrical surface, which a STEP import can carry in quantity — 30 of
+        # 58 cylinders on one NIST conformance part — and the ``None`` then reached the bore
+        # arithmetic below. The adaptor answers for every one of them, and agrees exactly
+        # wherever both are available.
+        cylinder = BRepAdaptor_Surface(cy.wrapped).Cylinder()
+        ax = cylinder.Axis()
         p, d = ax.Location(), ax.Direction()
-        radius = cast(float, cy.radius)
-        cyls.append((radius, (p.X(), p.Y(), p.Z()), (d.X(), d.Y(), d.Z())))
+        cyls.append((cylinder.Radius(), (p.X(), p.Y(), p.Z()), (d.X(), d.Y(), d.Z())))
 
     out: list[CounterSink] = []
     for f in cones:
