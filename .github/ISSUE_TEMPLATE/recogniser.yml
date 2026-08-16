@@ -29,9 +29,9 @@ body:
     validations:
       required: true
   - type: textarea
-    id: goldens
+    id: functional_tests
     attributes:
-      label: Canonical goldens
+      label: Canonical functional tests
       description: Identify independently authored positive, negative and order-variant fixtures.
     validations:
       required: true
