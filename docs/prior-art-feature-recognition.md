@@ -13,9 +13,29 @@ Assessed August 2026 — the learned-methods section is time-bound and will date
 
 Nodes are B-Rep **faces**. Arcs are **adjacency between faces**, one arc per face pair however many
 edges they share; the shared edges are cached as arc attributes. Arcs carry a **dihedral-angle
-classification** — convex, concave, smooth (G1), tangential — and a feature is then a *subgraph*,
-so recognition becomes subgraph matching plus connected-component analysis. Results are written back
-onto the graph as further attributes, so recognition accretes rather than returning in one shot.
+classification**, and a feature is then a *subgraph*, so recognition becomes subgraph matching plus
+connected-component analysis. Results are written back onto the graph as further attributes, so
+recognition accretes rather than returning in one shot.
+
+Read from `asiAlgo_AAG.h` rather than the documentation, three details matter here that the prose
+pages do not give:
+
+- **The angle taxonomy has seven values, not four**: `Undefined`, `Concave`, `Convex`, `Smooth`,
+  `SmoothConcave`, `SmoothConvex`, `NonManifold`. The smooth-but-still-sided pair is the useful
+  part — a tangential join still has a material side, and collapsing that distinction loses the
+  thing a recogniser needs. An earlier draft of this page said "tangential", which is not a value
+  the enum carries.
+- **Smoothness is opt-in and gated by an *angular* tolerance.** `allowSmooth` defaults to `false`
+  and `smoothAngularTol` to `1e-4`. That the gate is an angle rather than a length is significant
+  for this project: an angular tolerance is dimensionless, so it sidesteps the scaling trap that
+  issue #72 was about entirely.
+- **`Collapse()` is the blend-suppression primitive**, and it propagates dihedral attributes to the
+  newly inserted transition arcs *only where the angles are equal*. Its own header carries a
+  caution that those inserted attributes are not cleaned up by `PopSubgraph()`.
+
+The graph also keeps a **stack** of adjacency matrices (`PushSubgraph`/`PopSubgraph`), and offers
+edge-filtered neighbour queries (`GetNeighborsThru`, `GetNeighborsThruX`) — so "neighbours, but not
+through this edge" is a first-class operation rather than something a caller reconstructs.
 
 Analysis Situs implements this and is the only open-source graph-based feature-recognition
 framework. It is BSD 3-Clause, so Apache-2.0 compatible; ADR 0004's "pattern, not dependency or
@@ -135,7 +155,15 @@ in them.
 
 - [Analysis Situs — attributed adjacency graph](https://analysissitus.org/features/features_aag.html)
 - [Analysis Situs — feature recognition framework](https://analysissitus.org/features/features_feature-recognition-framework.html)
-- [Analysis Situs source (BSD 3-Clause)](https://gitlab.com/ssv/AnalysisSitus)
+- [Analysis Situs source (BSD 3-Clause)](https://gitlab.com/ssv/AnalysisSitus) — `asiAlgo_AAG.h`
+  is the graph; `asiAlgo_FeatureAngleType.h` is the arc taxonomy
+- Slyadnev, Malyshev, Voevodin, Turlapov, *On the Role of Graph Theory Apparatus in a CAD Modeling
+  Kernel*, GraphiCon 2020 — the heuristics that make subgraph isomorphism interactive
+- Malyshev, Slyadnev, Turlapov, *[Graph-based feature recognition and suppression on the solid
+  models](https://www.semanticscholar.org/paper/09b2b9e0adcb0157b611c8f1887165fe2807a290)*
+- Slyadnev, Voevodin, *[Automatic Detection of Manufacturing Issues in CAD Parts for DFM
+  Analysis](https://link.springer.com/chapter/10.1007/978-3-031-59652-0_6)*, 2024
+- [Analysis Situs references page](https://analysissitus.org/references.html) — the authors' own list
 - [AAGNet — GNN for multi-task machining feature recognition](https://www.sciencedirect.com/science/article/abs/pii/S0736584523001369)
   ([code and datasets](https://github.com/whjdark/AAGNet))
 - [MFCAD dataset](https://github.com/hducg/MFCAD)
