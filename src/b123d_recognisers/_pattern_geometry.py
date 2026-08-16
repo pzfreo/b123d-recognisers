@@ -4,15 +4,10 @@
 
 import math
 
-from b123d_recognisers._geometry import plane_axes
+from b123d_recognisers._geometry import _unit, plane_axes
 
 _PATTERN_REL_TOL = 0.02
 _PATTERN_ABS_TOL = 0.1
-
-
-def _unit(v):
-    """Normalise negative zeros out of a direction tuple."""
-    return tuple(0.0 if c == 0 else c for c in v)
 
 
 def _pattern_tol(nominal: float) -> float:

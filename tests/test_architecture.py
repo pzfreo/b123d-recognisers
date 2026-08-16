@@ -31,7 +31,13 @@ PUBLIC_MODULES = {
 
 MODULE_SEAM_EDGES = {
     "_cylinder_substrate": {"_geometry", "_typing"},
-    "_hole_features": {"_cylinder_substrate", "_record", "_typing", "countersinks"},
+    "_hole_features": {
+        "_cylinder_substrate",
+        "_geometry",
+        "_record",
+        "_typing",
+        "countersinks",
+    },
     "_pattern_geometry": {"_geometry"},
     "_hole_patterns": {"_hole_features", "_pattern_geometry", "_record", "_typing"},
     "_recess_records": {"_record", "_typing"},

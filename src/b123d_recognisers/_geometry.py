@@ -15,6 +15,11 @@ _PLANE_AXES = {
 _DOMINANT_TIE_TOL = 1e-12
 
 
+def _unit(v):
+    """Normalise negative zeros out of a direction tuple."""
+    return tuple(0.0 if c == 0 else c for c in v)
+
+
 def _axis_letter_of(axis) -> str:
     """Return a platform-stable dominant axis, preferring Z then Y for numerical ties."""
 

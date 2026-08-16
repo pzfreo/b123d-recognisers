@@ -18,6 +18,7 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
+from b123d_recognisers._geometry import _unit
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
@@ -78,11 +79,6 @@ class BossRecord(Record):
     location: Vector3
     diameter: float
     height: float
-
-
-def _unit(v):
-    """Normalise negative zeros out of a direction tuple."""
-    return tuple(0.0 if c == 0 else c for c in v)
 
 
 def _segments(cyls):

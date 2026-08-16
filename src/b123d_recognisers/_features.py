@@ -32,7 +32,11 @@ from b123d_recognisers._hole_patterns import (
 )
 from b123d_recognisers._pattern_geometry import (
     _linear_array_candidates as _linear_array_candidates,
+)
+from b123d_recognisers._pattern_geometry import (
     _plane_uv as _plane_uv,
+)
+from b123d_recognisers._pattern_geometry import (
     _rect_grid as _rect_grid,
 )
 
