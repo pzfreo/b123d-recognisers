@@ -229,7 +229,7 @@ No local feature determines the comparison, so the reference is `part_scale`.
 | `fillets.recognise_fillets(min_radius=)` | 0.6 | yes |
 | `_recess_core._MERGE_TOL` | 0.5 | no |
 | `_recess_core._FLOOR_TOL` | 0.3 | no |
-| `_recess_core._recognise_corner_notches(tol=)` | 0.5 | no |
+| `_recess_core._recognise_corner_notches(tol=)` | 0.5 | no — parameter removed, no caller ever supplied one |
 
 `_pattern_geometry._PATTERN_ABS_TOL` also appears in three standalone degeneracy guards
 (`span < _PATTERN_ABS_TOL`) that ask "is this length essentially zero"; those are part-relative and

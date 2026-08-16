@@ -927,9 +927,7 @@ def _recognise_channels_one(part) -> list[Channel]:
     )
 
 
-def _recognise_corner_notches(
-    faces: list[_Face], pbb, tol: float | None = None
-) -> list[Pocket]:
+def _recognise_corner_notches(faces: list[_Face], pbb) -> list[Pocket]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -940,8 +938,7 @@ def _recognise_corner_notches(
     rectangular-recess record so the existing W×L×D callout/coverage pipeline
     owns the dimensions; edge contact makes its X/Y location implicit.
     """
-    if tol is None:
-        tol = _merge_tol(part_scale(pbb))
+    tol = _merge_tol(part_scale(pbb))
 
     def limits(bb, axis):
         c = "XYZ"[_AXES[axis]]

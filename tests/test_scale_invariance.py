@@ -23,7 +23,9 @@ ROOT = Path(__file__).parents[1]
 GOLDEN_ROOT = ROOT / "tests" / "golden"
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers import feature_census  # noqa: E402
+from build123d import Box, Pos  # noqa: E402
+
+from b123d_recognisers import feature_census, recognise_risers, step_level_zs  # noqa: E402
 from b123d_recognisers._geometry import clears_threshold  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
@@ -82,6 +84,37 @@ def test_a_magnitude_exactly_on_its_threshold_is_decided_the_same_way_at_every_s
     }
 
     assert set(counts.values()) == {0}, counts
+
+
+def test_an_explicit_tolerance_keeps_its_literal_millimetre_meaning():
+    """``tol=None`` resolves from the part; a float passed in must not be re-scaled.
+
+    This is the compatibility half of ADR 0008 and the reason the change is safe for a caller
+    who has already calibrated against their own geometry. ``RiserEvidence.tol`` reports what
+    the scan actually used, so it can be read back directly rather than inferred from counts.
+    """
+
+    part = Box(60, 60, 10) + Pos(0, 0, 7.5) * Box(30, 60, 5)
+
+    derived = {riser.tol for riser in recognise_risers(part)}
+    explicit = {riser.tol for riser in recognise_risers(part, tol=0.25)}
+
+    assert explicit == {0.25}
+    assert derived and derived != explicit
+
+    # ...and the derived value follows the part, where an explicit one cannot.
+    bigger = {riser.tol for riser in recognise_risers(part.scale(10))}
+    assert bigger == {value * 10 for value in derived}
+    assert {riser.tol for riser in recognise_risers(part.scale(10), tol=0.25)} == {0.25}
+
+
+def test_an_explicit_end_margin_is_also_honoured_literally():
+    """The step-ladder inset takes the same ``None``-resolves/float-is-literal contract."""
+
+    part = Box(40, 40, 20) + Pos(0, 0, 12.5) * Box(20, 40, 5)
+
+    assert step_level_zs(part, tol=0.1) == step_level_zs(part, tol=0.1)
+    assert step_level_zs(part) == step_level_zs(part)
 
 
 def test_no_family_is_exempt_from_scale_invariance():
