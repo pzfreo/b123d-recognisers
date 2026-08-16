@@ -45,6 +45,11 @@ EXPECTED = {
     "nist_ctc_03": {"pockets": 5, "slots": 3, "step_levels": 3, "fillets": 17},
     "nist_ctc_04": {"fillets": 24, "chamfers": 8, "pockets": 9, "slots": 6, "step_levels": 6},
     "nist_ctc_05": {"flats": 4, "pockets": 12, "fillets": 5},
+    # ftc_06 is here for a different reason: it has no 0.2.2 baseline because it *crashed* on
+    # 0.2.2 and 0.2.4 alike (issue #74 — ``Face.radius`` is ``None`` on a trimmed surface, and
+    # a ``cast`` carried that ``None`` into the countersink bore search). These are the counts
+    # from the first run that completed, pinned so the crash cannot return unnoticed.
+    "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 5, "fillets": 3},
 }
 
 _DIR = os.environ.get("B123D_NIST_STEP_DIR")

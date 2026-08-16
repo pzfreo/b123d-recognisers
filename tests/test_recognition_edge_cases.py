@@ -4,7 +4,7 @@
 from dataclasses import replace
 
 import build123d.topology.shape_core as shape_core
-from build123d import Align, Axis, Box, Cylinder, Pos, fillet
+from build123d import Align, Axis, Box, Cylinder, GeomType, Pos, fillet
 
 from b123d_recognisers import (
     Pocket,
@@ -166,3 +166,24 @@ def test_a_chord_with_no_vertices_reaches_no_od():
     assert not _both_chord_ends_reach_od(
         [], (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), 10.0
     )
+
+
+def test_a_trimmed_cylinder_does_not_crash_the_countersink_bore_search():
+    """Issue #74. ``Face.radius`` is ``None`` for a ``Geom_RectangularTrimmedSurface``.
+
+    ``nist_ftc_06`` carries 30 such faces among its 58 cylinders and raised ``TypeError`` on
+    the bore-match subtraction. The angled cut below trims the boss the same way, and the cone
+    has no bore beneath it so the search exhausts every cylinder rather than short-circuiting
+    on an earlier match — which is what it takes to reach the ``None``.
+    """
+
+    from build123d import Cone, Rot
+
+    from b123d_recognisers import recognise_countersinks
+
+    part = Box(60, 40, 12) + Pos(20, 0, 16) * Cylinder(5, 20)
+    part -= Pos(20, 0, 30) * Rot(0, 45, 0) * Box(40, 40, 30)
+    part -= Pos(0, 0, 3) * Cone(6, 3, 6)
+
+    assert any(f.radius is None for f in part.faces().filter_by(GeomType.CYLINDER))
+    assert recognise_countersinks(part) == []
