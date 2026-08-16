@@ -213,5 +213,19 @@ def test_a_radiused_lead_in_is_still_outside_the_proven_scope():
     assert recognise_grooves(radiused) == []
 
 
+def test_a_chamfered_groove_reads_the_same_at_any_scale():
+    """The lead-in read is gated by a proportional tolerance, per ADR 0008.
+
+    ``tests/test_scale_invariance.py`` sweeps the golden corpus, and no golden carries a
+    chamfered lead-in, so this path would not be swept there. It is exactly the shape of fault
+    that erased small features on large parts once already: an absolute millimetre gap here
+    would find the groove on 30 mm bar and lose it on 3 m bar.
+    """
+
+    for factor in (0.05, 5.0, 100.0):
+        (groove,) = recognise_grooves(_chamfered_groove().scale(factor))
+        assert groove.diameter == round(24.0 * factor, 3), f"at {factor}x"
+
+
 def test_a_plain_cylinder_has_no_groove():
     assert recognise_grooves(Cylinder(15, 40)) == []

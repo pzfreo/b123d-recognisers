@@ -23,7 +23,8 @@ torus and is not read, so it remains outside the proven scope. ``width`` is the 
 either way — what an O-ring or circlip seat is dimensioned by — never the wider opening the
 chamfers cut. Bands are grouped by axis **line** (not merely the axis letter) so two lone
 grooves on distinct parallel shafts are never confused for one channel. Bottom of the
-recognition DAG: depends only on the owned ``analyse_cylinders`` primitive.
+recognition DAG: depends on no other recogniser — the owned ``analyse_cylinders`` primitive
+plus its own read of the part's conical faces.
 """
 
 from __future__ import annotations
