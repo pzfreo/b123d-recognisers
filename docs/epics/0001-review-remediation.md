@@ -216,7 +216,11 @@ PR #40 split modules along tested seams but left the functions intact.
 no return annotation, and mypy runs without `disallow_untyped_defs` — for a package that ships
 `py.typed`, the internal geometry helpers are the least typed part.
 
-- [ ] Decompose the three worst offenders only; leave the rest unless #4 makes a case
+- [~] `polygonal_bosses._recognise_one` **231 → 94 lines**, into `_vertical_side_faces`,
+      `_side_rings`, `_regular_ring_order`, `_ring_profile`, `_cap_z` and `_common_cap`. Goldens
+      byte-identical at every step, which is the only reason to trust a refactor this size
+- [ ] `levels.recognise_risers` (131) and `_hole_features.recognise_holes` (120) — same
+      treatment, own PRs
 - [ ] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 
