@@ -20,26 +20,17 @@ Two modules already do this correctly and are the template, not a new invention:
 - `profiled_bores` and `repeating_profiles` derive `max(tol, part_scale * 1e-5)` from the part
   envelope.
 
-## Scope — what "remove all magic numbers" means here
+## Scope
 
-The source contains ~189 non-trivial numeric literals. They are **not** one kind of thing, and
-treating them as one would introduce bugs. The epic classifies them into six kinds and applies a
-different rule to each:
+**Only the ~39 scale-dependent length tolerances.** Of the ~189 non-trivial numeric literals in
+the package, the rest are dimensionless ratios, unit-vector direction gates, angles, counts, tuple
+indices, machine epsilons and record rounding. Naming those is
+[issue #42](https://github.com/pzfreo/b123d-recognisers/issues/42); **scaling** any of them would
+be a defect, not a fix. This epic touches a literal only where it is a length that should track
+part size.
 
-| Kind | Example | Rule | Count |
-|---|---|---|---:|
-| **Length tolerance** | `_MERGE_TOL = 0.5`, `_HOLE_DIA_TOL = 0.2` | **Scale with the part.** The epic's real target. | ~39 |
-| Dimensionless ratio | `_FLOOR_COVER_FRAC = 0.5`, `max_leg_frac = 0.45` | Name it; never scale it. Already correct. | ~15 |
-| Direction gate | `0.99` normal component, `0.9` dot product, `_SQUARENESS_TOL = 0.15` | Name it; never scale it — these compare **unit vectors**. | ~20 |
-| Angle | `_MAX_INCLUDED_ANGLE = 160.0`, `math.radians(2)` | Name it; never scale it. | ~4 |
-| Count / index | `side_count != 6`, `_MIN_REPEAT_COUNT = 5`, `bb[4]` | Leave alone. Tuple indices are not magic numbers. | ~30 |
-| Machine epsilon / rounding | `1e-12`, `2e-6`, `round(x, 4)` | **Do not touch.** `round(x, 4)` is the record serialisation contract — changing it moves every golden and the capability schema. | ~80 |
-
-**Scaling a direction gate or a rounding precision would be a defect.** Only the first row moves.
-
-`_BC_SPACING_TOL = 0.04` is a worked example of why classification comes first: it reads as an
-absolute constant but is already applied relatively (`> _BC_SPACING_TOL * even`). It needs a
-rename, not a scaling change.
+The epic still has to *identify* which constants are lengths — that classification lives in
+ADR 0008 (PR 2) and is the only overlap with #42.
 
 ## Constraints this epic must respect
 
@@ -82,25 +73,25 @@ baseline*, so CI is green and the defect is documented rather than hidden.
 ### PR 2 — ADR 0008 and the classification
 `branch: agent/adr-tolerance-policy` · behaviour-neutral
 
-- [ ] `docs/adr/0008-tolerance-scaling-policy.md`: the six kinds, the relative-plus-floor form,
-      the reference-scale calibration rule, and why direction gates and rounding are excluded
-- [ ] Full literal inventory table (confirm the ~39 count)
-- [ ] Naming convention: `*_TOL`/`*_MARGIN`/`*_MIN_*` = length · `*_FRAC`/`*_RATIO` = dimensionless
-      · `*_ANGLE` = angle · `*_EPS` = machine
-- [ ] `tests/test_architecture.py`: assert every module-level tolerance constant matches the
-      convention, so the classification cannot rot
+- [ ] `docs/adr/0008-tolerance-scaling-policy.md`: the relative-plus-floor form, the
+      reference-scale calibration rule, and the boundary against #42 — why unit-vector gates,
+      angles, counts and record rounding are never scaled
+- [ ] The one inventory this epic needs: which module-level constants are **lengths** (confirm the
+      ~39 count). Everything else is classified in #42
+- [ ] `tests/test_architecture.py`: assert every constant the ADR lists as a length is consumed
+      through the scaling primitive once PR 4 exists, so a new raw millimetre constant cannot
+      reappear unnoticed
 
-### PR 3 — Hoist inline literals to named constants
+### PR 3 — Name the inline length tolerances
 `branch: agent/name-inline-tolerances` · behaviour-neutral · goldens byte-identical
 
-The honest "remove the magic numbers" PR, with no semantic risk.
+Narrow prerequisite for PRs 6–8: a tolerance cannot be scaled while it is an inline literal. Only
+literals that are **lengths** are touched here; the direction gates on adjacent lines are #42.
 
 - [ ] `_hole_features`: three inline `0.01` diameter comparisons → `_DIA_MATCH_TOL`
-- [ ] `chamfers`, `fillets`, `plates`, `pads`, `levels`, `polygonal_bosses`: `0.99` / `0.05` /
-      `0.02` / `0.01` direction gates → named `_AXIS_ALIGNED`, `_NORMAL_FLAT` etc.
-- [ ] `chamfers`/`fillets`: the `0.05` interior-probe fraction → `_PROBE_FRAC`
 - [ ] `_recess_core._recognise_corner_notches(tol=0.5)` → module constant
-- [ ] Rename `_BC_SPACING_TOL` → `_BC_SPACING_FRAC` (it is already relative)
+- [ ] `pads`: the `0.005 * dx * dy` area term → named constant (it is an area, not a length —
+      record in ADR 0008 how it scales)
 
 ### PR 4 — Shared scaling primitive
 `branch: agent/tolerance-primitive` · behaviour-neutral
@@ -163,8 +154,23 @@ The honest "remove the magic numbers" PR, with no semantic risk.
 
 ## Explicitly out of scope
 
+- Naming the non-length literals — direction gates, ratios, angles, counts, epsilons.
+  That is [#42](https://github.com/pzfreo/b123d-recognisers/issues/42)
 - Changing `round(x, 4)` record precision or any serialisation rounding
-- Scaling direction gates, ratios, angles or repeat counts
+- Scaling direction gates, ratios, angles or repeat counts — these are unitless by construction
 - Unit inference from the STEP file — the package receives build123d objects and has no unit
   metadata; the reference scale comes from the part envelope
 - Adding new recogniser families
+
+## Related, not included
+
+These came out of the same review and are **not** part of this epic:
+
+- **STEP round-trip goldens.** No test imports a STEP file; all 17 fixtures are build123d CSG
+  solids. Separate issue — but note the overlap: PR 1's harness rebuilds every fixture under a
+  transform, and a STEP round-trip harness rebuilds every fixture through an export/import. Build
+  the fixture-transform plumbing in PR 1 so the round-trip work can reuse it.
+- Prose and `__annotations__` assertions in `test_published_prose.py` / `test_architecture.py`
+- Coverage concentration: `_geometry.py` 73%, `grooves.py` 84%, `polygonal_bosses.py` 85%
+- Function length: `polygonal_bosses._recognise_one` at 227 lines and 21 others over 60
+- `census.py` line 10: a sentence starting "Progress" runs into the next line
