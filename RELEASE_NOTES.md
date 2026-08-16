@@ -1,5 +1,38 @@
 # Release notes
 
+## 0.2.3
+
+Recognition-behaviour release. Every gate that compares a length now scales with the geometry it
+judges, so the same feature is recognised the same way whatever size it is modelled at. Records,
+signatures and record schemas are unchanged; the capability manifest differs from 0.2.2 only by the
+package version it embeds.
+
+- **Length tolerances are proportional** ([ADR 0008](docs/adr/0008-length-tolerance-policy.md)).
+  Every golden fixture now recognises identically from 0.05x to 100x, across every recogniser
+  family; previously six of seventeen changed. Of the roughly 39 constants the review counted, 18
+  were not lengths at all — ratios, direction cosines, angles, counts, epsilons — and three model a
+  physical constant (an edge break does not grow with the shaft) and stay absolute, bounded so they
+  cannot swallow a small feature.
+- **`tol=` accepts `None`** on `recognise_plates`, `recognise_chamfers`,
+  `recognise_rectangular_pads`, `recognise_polygonal_bosses`, `recognise_polygonal_stock`,
+  `recognise_face_levels` and `recognise_risers`, as does `min_radius=` on `recognise_fillets` and
+  `boundary_margin=` on `step_ladder_for_z_span`. `None` derives the value from the part. **An
+  explicit float keeps its literal millimetre meaning**, so a caller who has calibrated against
+  their own geometry is unaffected.
+- **`RiserEvidence.tol` reports the tolerance its scan resolved** rather than a fixed `0.5`. This is
+  the only record value that moves — 33 values across 5 fixtures, and no geometry field moves at
+  all. The field keeps its default, so direct construction is unchanged. Recorded as the first
+  intentional divergence from the Draftwright capture in `migration/PARITY.md`.
+- **Coplanar faces group by distance, not by grid cell.** `round(coord / tol) * tol` merged faces
+  0.24 mm apart while splitting faces 0.02 mm apart, and put a multiple of `tol` into `Plate.lo`
+  and `.hi` — so a 3.7 mm slab reported a thickness of 3.5 mm. Both fixed.
+- **An area gate no longer turns on a floating-point tie.** A face whose area sat exactly on the
+  40% threshold was admitted or refused according to rounding, which made one fixture gain a plate
+  at 5x and 10x and nowhere else.
+- Proven across STEP export and re-import: all seventeen fixtures reproduce their pinned records
+  exactly. Geometry arriving as B-splines remains an explicit whole-package exclusion; see
+  [`docs/capabilities.md`](docs/capabilities.md).
+
 ## 0.2.2
 
 - Decomposes the cylinder, hole/boss, pattern, and recess implementations along private,

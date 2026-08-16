@@ -114,8 +114,9 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 - [x] `RiserEvidence.tol` reports the resolved value — 33 golden values across 5 fixtures move,
       **and no geometry field moves at all**. Recorded as the first intentional divergence in
       `migration/PARITY.md`. It keeps its `0.5` default, so direct construction is unaffected
-- [x] Capability manifest unchanged. The manifest records record schemas, not signatures — the
-      earlier claim that the `tol=` defaults were in it was wrong
+- [x] Capability manifest schema unchanged — it differs from 0.2.2 only by the package version
+      it embeds. The manifest records record schemas, not signatures; the earlier claim that the
+      `tol=` defaults were in it was wrong
 - [x] `STEP_LADDER_BOUNDARY_MARGIN` reclassified as deliberately absolute and capped at a
       quarter of the span; ADR 0006 amended. Deriving it broke that ADR's own regression
 - [x] `NOT_YET_SCALE_FREE` reduced from four kinds to one
@@ -130,7 +131,7 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
       because finding 2 changes recognition output. The one part that exceeded a patch under any
       reading — `RiserEvidence.tol` losing its default — is reinstated, so nothing in the release
       breaks an existing caller. The capability manifest reverts with it: that field is
-      `required: false` again, leaving the manifest byte-identical to 0.2.2
+      `required: false` again, so no record schema differs from 0.2.2
 
 ## 3 — Tests that pin prose and implementation detail
 
