@@ -3,10 +3,10 @@
 
 """Recognition of the golden corpus rebuilt at other scales.
 
-A recogniser that classifies by absolute millimetres answers differently for the same feature
-modelled in metres, inches or on a micro-part. ADR 0008 replaces those gates with proportional
-ones family by family; this test pins the families already converted so a later absolute
-constant cannot quietly reintroduce the fault.
+A recogniser that compares two measurements of one feature against an absolute millimetre band
+answers differently for the same feature modelled in metres, inches or on a micro-part. ADR 0008
+makes those *tolerances* proportional, and this test pins the families that depend only on them,
+so a later absolute constant cannot quietly reintroduce the fault.
 
 Coverage is partial and deliberately so. Families gated by a *minimum-evidence threshold* —
 "is this big enough to be a feature?" — are excluded, because 0.2.4 makes those thresholds
