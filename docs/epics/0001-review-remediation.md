@@ -19,8 +19,9 @@ first.
 | 6 | Long functions, partial return annotations | Low | no | M |
 | 7 | Stray text in `census.py` docstring | Trivial | no | XS |
 
-**One PR per finding.** They are independent and can land in any order, with one exception noted
-in #2. Only #2 changes recognition behaviour and needs a minor release; everything else is a patch.
+**One PR per finding**, except #2, which measurement split into three (see below). They are
+otherwise independent and can land in any order. Only #2 changes recognition behaviour and needs a
+minor release; everything else is a patch.
 
 ---
 
@@ -57,34 +58,52 @@ with its own evidence requirements, not part of this epic.
 
 ## 2 — Absolute millimetre tolerances
 
-`branch: agent/scale-tolerances` · **behaviour change** · target 0.3.0
+**behaviour change** · target 0.3.0 · policy in
+[ADR 0008](../adr/0008-length-tolerance-policy.md)
 
 ~39 length constants are fixed millimetres: `_MERGE_TOL = 0.5`, `_HOLE_DIA_TOL = 0.2`,
 `_CHORD_MIN = 0.05`, `STEP_LADDER_BOUNDARY_MARGIN = 0.6`. A 2 mm micro-part and a 2 m weldment get
 the same absolute gates, and a model authored in inches silently changes classification.
-`profiled_bores` and `repeating_profiles` already derive `max(tol, part_scale * 1e-5)`, and
-`_pattern_geometry._pattern_tol(nominal) = rel * nominal + floor` is the exact form to generalise —
-this is adopting an idiom the codebase already has, in one uniform pass.
 
-- [ ] `_geometry.length_tol(nominal, *, rel, floor)` and one `part_scale(part)` (currently spelled
-      three different ways)
-- [ ] Apply to all ~39 length constants. **Calibrate so that at the fixtures' envelope the
-      effective tolerance equals today's value** — goldens then stay byte-identical at reference
-      scale by construction, and only off-scale behaviour moves
-- [ ] Scale-invariance test: rebuild each fixture at 0.1×/1×/10×/100×, assert proportional records
-- [ ] `tol: float | None = None` on the five public recognisers that expose the keyword; `None`
-      resolves to the derived value. Regenerate the capability manifest — these signatures are in it
-- [ ] ADR 0008 recording the policy: lengths scale; unit-vector gates, angles, counts and record
-      rounding never do
-- [ ] Release note stating the behaviour change and the reference-scale guarantee
-- [ ] `0.3.0a1` prerelease for the Draftwright canary, then `0.3.0`
+**The plan below was rewritten after measurement.** Two of its premises were wrong. The fixtures'
+extents span 30–180 mm, so no reference scale reproduces today's behaviour everywhere and
+"goldens byte-identical by construction" is unachievable. And classifying the sites individually
+found **18 of the ~39 are not lengths at all** — ratios, unit-vector dot products, angles, counts,
+epsilons — while `turned`'s absolute edge-break allowance is physically correct and must *not*
+scale. This is per-site judgement, not one uniform pass. ADR 0008 records the classification of
+every site.
 
-**Do #1 first.** If STEP re-import perturbs geometry, the tolerances have to absorb that noise, and
-that changes the calibration. Sequencing these the other way risks calibrating twice.
+### 2a — Policy and helpers · `agent/tolerance-policy-foundation` · behaviour-neutral
 
-**Split only if it fails.** If the goldens move at 1×, split `_recess_core` into its own PR — it is
-987 lines and its tolerances interact (merge feeds collapse feeds obround extension). Do not
-pre-split on suspicion.
+- [x] ADR 0008: one tolerance form `rel * nominal + floor`; nominal is the smallest geometry that
+      determines the comparison; dimensionless gates and record rounding never scale; an absolute
+      term is legal only when a comment names the physical constant it encodes
+- [x] `_geometry.length_tol(nominal, *, rel, floor)` and `_geometry.part_scale(bbox)`
+- [x] Every site classified in the ADR: 18 not lengths · 5 already scaled · 1 deliberately
+      absolute · 18 feature-relative to convert · 13 part-relative to convert
+- [x] `_pattern_tol` and the three inline `part_scale` spellings adopt the helpers — goldens
+      byte-identical
+
+### 2b — Feature-relative lengths · behaviour change
+
+The 18 sites that already hold a diameter, radius or width at the comparison: `flats`,
+`countersinks`, `grooves`, `_cylinder_substrate`, `_recess_core`'s cap tolerances, `turned`'s OD
+span pad.
+
+- [ ] Convert each to `length_tol(nominal, rel=…, floor=…)`
+- [ ] Scale sweep: rebuild each fixture across 0.05×–100×, assert the census is invariant
+- [ ] Review every moved golden cell on its own evidence (ADR 0002)
+
+### 2c — Part-relative lengths and the public surface · behaviour change
+
+The 13 sites with no local feature: the `tol=` keywords on the five public recognisers,
+`fillets.min_radius`, `STEP_LADDER_BOUNDARY_MARGIN`, `_MERGE_TOL`, `_FLOOR_TOL`.
+
+- [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
+      meaning so a calibrated caller is not broken
+- [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly
+- [ ] Regenerate the capability manifest; these signatures and defaults are in it
+- [ ] Release note stating the behaviour change; `0.3.0a1` for the Draftwright canary, then `0.3.0`
 
 ## 3 — Tests that pin prose and implementation detail
 
@@ -154,9 +173,9 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
 
 ## 7 — Stray docstring text
 
-Fold into whichever PR lands first.
+Folded into 2a.
 
-- [ ] `census.py` line 10: a sentence begins "Progress" and runs into the next line
+- [x] `census.py` line 10: a sentence begins "Progress" and runs into the next line
 
 ---
 

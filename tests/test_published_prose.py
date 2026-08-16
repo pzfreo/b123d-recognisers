@@ -8,10 +8,22 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 RUNTIME = ROOT / "src" / "b123d_recognisers"
 README = ROOT / "README.md"
+ADR_DIR = ROOT / "docs" / "adr"
 
 
 def _runtime_sources() -> list[Path]:
     return sorted(RUNTIME.glob("*.py"))
+
+
+def _package_adr_numbers() -> set[str]:
+    """The ADR numbers this package publishes, read from the records themselves.
+
+    Draftwright's historical ADRs share this numbering, so a citation is only checkable against
+    what ``docs/adr`` actually contains. Deriving it keeps a new package ADR from being read as a
+    reference to a private consumer record.
+    """
+
+    return {path.name[:4] for path in ADR_DIR.glob("0*.md")}
 
 
 def test_runtime_prose_has_no_bare_issue_references() -> None:
@@ -24,15 +36,26 @@ def test_runtime_prose_has_no_bare_issue_references() -> None:
 
 
 def test_runtime_prose_only_uses_normative_package_adrs() -> None:
+    package_adrs = _package_adr_numbers()
+    assert package_adrs, "docs/adr must contain the records runtime prose is checked against"
+
     historical = {
-        path.relative_to(ROOT).as_posix(): sorted(
-            set(re.findall(r"\bADR(?:s)?\s+00(?:0[3-9]|1\d)\b", text))
-        )
+        path.relative_to(ROOT).as_posix(): cited
         for path in _runtime_sources()
         if (text := path.read_text(encoding="utf-8"))
-        and re.search(r"\bADR(?:s)?\s+00(?:0[3-9]|1\d)\b", text)
+        and (cited := sorted(set(re.findall(r"\bADRs?\s+(\d{4})\b", text)) - package_adrs))
     }
     assert historical == {}
+
+
+def test_the_normative_adr_check_still_rejects_a_consumer_record() -> None:
+    """Deriving the allowed set must not make the check above vacuous.
+
+    Draftwright ADRs 0013, 0015 and 0017 are historical inputs this package does not publish, so
+    they must stay unciteable from runtime prose however many records ``docs/adr`` gains.
+    """
+
+    assert _package_adr_numbers().isdisjoint({"0013", "0015", "0017"})
 
 
 def test_runtime_prose_has_no_consumer_internal_paths() -> None:
