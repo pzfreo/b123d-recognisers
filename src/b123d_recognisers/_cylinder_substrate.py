@@ -118,13 +118,14 @@ def _merge_runs(items: list[_E], key_fn) -> list[list[_E]]:
     """Group *items* by *key_fn*, then split each group into runs of
     contiguous axial ranges (a gap wider than the band's own ``_STACK_GAP_FRAC`` starts a new
     run)."""
-    by_key: dict = {}
+    by_key: dict[object, list[_E]] = {}
     for item in items:
         by_key.setdefault(key_fn(item), []).append(item)
-    runs = []
+    runs: list[list[_E]] = []
     for group in by_key.values():
         group.sort(key=lambda c: c["s_lo"])
-        run, hi = [group[0]], group[0]["s_hi"]
+        run: list[_E] = [group[0]]
+        hi = group[0]["s_hi"]
         for c in group[1:]:
             if c["s_lo"] <= hi + length_tol(c["diameter"], rel=_STACK_GAP_FRAC):
                 run.append(c)

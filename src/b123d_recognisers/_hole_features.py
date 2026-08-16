@@ -322,10 +322,10 @@ def _merge_stacks(
       fillet face (the steps of a counterbored hole with a deburred
       shoulder).
     """
-    by_line: dict = {}
+    by_line: dict[tuple, list[list[SegmentEvidence]]] = {}
     for stack in stacks:
         by_line.setdefault(_line_key(stack[0]), []).append(stack)
-    merged = []
+    merged: list[list[SegmentEvidence]] = []
     for line_stacks in by_line.values():
         line_stacks.sort(key=lambda st: min(s["s_lo"] for s in st))
         cur = line_stacks[0]
@@ -338,7 +338,10 @@ def _merge_stacks(
                 and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
                 and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
             ):
-                joined = dict(a, s_hi=b["s_hi"], faces=a["faces"] + b["faces"])
+                joined = cast(
+                    SegmentEvidence,
+                    dict(a, s_hi=b["s_hi"], faces=a["faces"] + b["faces"]),
+                )
                 cur = [s for s in cur if s is not a] + [joined] + [s for s in nxt if s is not b]
             elif b["s_lo"] - a["s_hi"] <= length_tol(
                 max(a["diameter"], b["diameter"]), rel=_STACK_GAP_FRAC

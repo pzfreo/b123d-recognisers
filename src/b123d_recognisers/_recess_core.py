@@ -8,7 +8,7 @@ import math
 from collections import Counter
 from dataclasses import dataclass, replace
 from types import SimpleNamespace
-from typing import Literal, TypeVar, overload
+from typing import Literal, TypeVar, cast, overload
 
 from build123d import Box, GeomType, Pos
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -509,7 +509,10 @@ def _recognise_obround_from_ends(
         wa, la, da, rad, wc, flat, direction, dlo, dhi = e
         key = (wa, la, da, round(rad, 2), round(wc, 2), round(dlo, 2), round(dhi, 2))
         groups.setdefault(key, []).append(e)
-    out: list = []
+    # The list is homogeneous per call -- `blind` decides which record kind is appended -- but
+    # that is a fact about the flag, not about this local, so the overloads above carry it and
+    # the local is typed as what it structurally is.
+    out: list[Slot | Pocket] = []
     for (wa, la, _da, rad, wc, dlo, dhi), grp in groups.items():
         run = sorted(grp, key=lambda e: e[5])  # by flat along the long axis
         i = 0
@@ -569,7 +572,7 @@ def _recognise_obround_from_ends(
                 i += 2
             else:
                 i += 1  # not ours: a pocket in a slot scan, a slot in a pocket scan, or a void
-    return out
+    return cast("list[Slot] | list[Pocket]", out)
 
 
 def _recognise_slots_one(part: Part) -> list[Slot]:
