@@ -160,11 +160,13 @@ that only those tests observed.
 Packaging and manifest scaffolding sits at 96–100% while the geometry it exists to protect is
 lower. The 92.31% aggregate is partly carried by the easy modules.
 
-- [ ] `_geometry.py` 73.4% — the axis/tie-break code, which is the one piece with a documented
-      cross-platform hazard, is the least covered file in the package
-- [ ] `grooves.py` 83.8%, `polygonal_bosses.py` 85.2%, `repeating_profiles.py` 87.6%
-- [ ] Prefer negative and boundary cases over happy-path additions — the excluded classes in
-      `docs/capabilities.md` are a ready-made list of what should return no record
+- [x] `_geometry.py` 73.4% → **100%**. The dominant-axis tie-break is the one deliberate
+      normalization in `migration/PARITY.md` and had no test of its own; it now has the tie
+      cases, the band edge, and every rejection path
+- [x] `grooves.py` 83.8% → **97.4%**, entirely from the excluded classes
+- [ ] `polygonal_bosses.py` 85.4%, `repeating_profiles.py` 87.6% — same treatment, next PR
+- [x] Prefer negative and boundary cases over happy-path additions — every test added is a
+      shape that must return no record
 - [ ] Raise the floor only after, not before
 
 ## 5 — Unnamed numeric literals
