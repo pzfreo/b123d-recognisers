@@ -11,7 +11,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, AXIS_ZERO_COS, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -46,7 +46,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[RaisedPa
             normal = face.normal_at()
         except Exception:  # noqa: BLE001 - degenerate faces are not pads
             continue
-        if normal.Z < 0.99:
+        if normal.Z < AXIS_ALIGNED_COS:
             continue
         fb = face.bounding_box()
         dx = fb.max.X - fb.min.X
@@ -83,7 +83,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[RaisedPa
             normal = face.normal_at()
         except Exception:  # noqa: BLE001 - degenerate faces cannot bound a pad
             continue
-        if abs(normal.Z) > 0.01:
+        if abs(normal.Z) > AXIS_ZERO_COS:
             continue
         fb = face.bounding_box()
         vertical_faces.append((fb, normal))
@@ -92,7 +92,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[RaisedPa
         bases = []
         for fb, normal in vertical_faces:
             n_axis = abs(normal.X) if axis == "x" else abs(normal.Y)
-            if n_axis < 0.99:
+            if n_axis < AXIS_ALIGNED_COS:
                 continue
             plane_pos = (fb.min.X + fb.max.X) / 2 if axis == "x" else (fb.min.Y + fb.max.Y) / 2
             cross_lo = fb.min.Y if axis == "x" else fb.min.X

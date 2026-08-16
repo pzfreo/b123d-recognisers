@@ -21,7 +21,13 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import clears_threshold, cluster_coordinates, resolved_tol
+from b123d_recognisers._geometry import (
+    AXIS_ALIGNED_COS,
+    AXIS_ZERO_COS,
+    clears_threshold,
+    cluster_coordinates,
+    resolved_tol,
+)
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -117,7 +123,7 @@ def recognise_face_levels(
         surf = BRepAdaptor_Surface(face.wrapped)
         if surf.GetType() == GeomAbs_Plane:
             ax = surf.Plane().Axis().Direction()
-            if abs(ax.Z()) > 0.99:
+            if abs(ax.Z()) > AXIS_ALIGNED_COS:
                 zs.append(surf.Plane().Location().Z())
                 bb = face.bounding_box()
                 face_bounds.append((bb.min.X, bb.min.Y, bb.max.X, bb.max.Y))
@@ -249,11 +255,11 @@ def recognise_risers(
             nv = f.normal_at()
         except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
             continue
-        vertical = abs(nv.Z) <= 0.01
+        vertical = abs(nv.Z) <= AXIS_ZERO_COS
         axis = (
             "x"
-            if abs(nv.X) > 0.01 and abs(nv.Y) <= 0.01
-            else ("y" if abs(nv.Y) > 0.01 and abs(nv.X) <= 0.01 else None)
+            if abs(nv.X) > AXIS_ZERO_COS and abs(nv.Y) <= AXIS_ZERO_COS
+            else ("y" if abs(nv.Y) > AXIS_ZERO_COS and abs(nv.X) <= AXIS_ZERO_COS else None)
         )
         if axis is None:
             continue

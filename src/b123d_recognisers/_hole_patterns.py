@@ -17,7 +17,7 @@ from b123d_recognisers._pattern_geometry import (
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Vector3
 
-_BC_SPACING_TOL = 0.04
+_BC_SPACING_FRAC = 0.04
 
 
 @dataclass(frozen=True)
@@ -145,7 +145,7 @@ def _as_bolt_circle(holes, pts):
     gaps = [angles[i + 1] - angles[i] for i in range(n - 1)]
     gaps.append(2 * math.pi - (angles[-1] - angles[0]))
     even = 2 * math.pi / n
-    if max(abs(g - even) for g in gaps) > _BC_SPACING_TOL * even:
+    if max(abs(g - even) for g in gaps) > _BC_SPACING_FRAC * even:
         return None
     center = tuple(sum(c) / n for c in zip(*(h.location for h in holes), strict=True))
     return BoltCircle(holes=tuple(holes), center=center, diameter=round(2 * r, 2))

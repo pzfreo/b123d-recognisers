@@ -38,7 +38,7 @@ from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._geometry import resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
 
@@ -87,7 +87,7 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
         return None
     d = s.Plane().Axis().Direction()
     comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
-    if max(comp) <= 0.99:
+    if max(comp) <= AXIS_ALIGNED_COS:
         return None
     ax = max(range(3), key=lambda i: comp[i])
     loc = s.Plane().Location()
@@ -129,7 +129,7 @@ def recognise_fillets(
             continue  # a deburr edge-break (too small) or a large cove (not an edge break)
         d = cyl.Axis().Direction()
         comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
-        if max(comp) <= 0.99:
+        if max(comp) <= AXIS_ALIGNED_COS:
             continue  # a compound corner round (axis not a principal direction) — out of scope
         edge_i = max(range(3), key=lambda i: comp[i])  # the edge the fillet runs along
         oi = [j for j in (0, 1, 2) if j != edge_i]  # the two in-plane axes it bridges
@@ -168,7 +168,9 @@ def recognise_fillets(
         corner[edge_i] = fc[edge_i]
         corner[oi[0]] = neigh_coord[oi[0]]
         corner[oi[1]] = neigh_coord[oi[1]]
-        probe = tuple(corner[i] + 0.05 * (fc[i] - corner[i]) for i in (0, 1, 2))
+        probe = tuple(
+            corner[i] + INTERIOR_PROBE_FRAC * (fc[i] - corner[i]) for i in (0, 1, 2)
+        )
         clsf = BRepClass3d_SolidClassifier(part.wrapped)
         clsf.Perform(gp_Pnt(*probe), 1e-6)
         if clsf.State() == TopAbs_IN:

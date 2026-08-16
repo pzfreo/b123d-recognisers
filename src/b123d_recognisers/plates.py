@@ -42,7 +42,12 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import clears_threshold, cluster_coordinates, resolved_tol
+from b123d_recognisers._geometry import (
+    AXIS_ALIGNED_COS,
+    clears_threshold,
+    cluster_coordinates,
+    resolved_tol,
+)
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -119,7 +124,7 @@ def recognise_plates(
             except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
                 continue
             comp = (nv.X, nv.Y, nv.Z)[i]
-            if abs(comp) < 0.99:
+            if abs(comp) < AXIS_ALIGNED_COS:
                 continue
             props = GProp_GProps()
             BRepGProp.SurfaceProperties_s(f.wrapped, props)
