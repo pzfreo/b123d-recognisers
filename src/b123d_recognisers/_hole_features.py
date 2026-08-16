@@ -322,6 +322,91 @@ def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink
     return None
 
 
+def _drilled_from(stack, edge_faces, cache) -> tuple[bool, dict, float, str]:
+    """Which end of a coaxial stack is the opening, and what closes the other.
+
+    Returns ``(from_hi, opening_seg, opening_s, bottom)``. The opening is the open end; when
+    both ends are open — a through hole — the wider segment's end wins, because counterbores sit
+    at the opening, and a tie falls to the high-coordinate end on the convention that a part is
+    drilled from the top.
+
+    Getting this backwards would not fail loudly: the hole would still be reported, with its
+    counterbore read as a far-side step and its depth measured from the wrong face.
+    """
+
+    lo_seg = min(stack, key=lambda s: s["s_lo"])
+    hi_seg = max(stack, key=lambda s: s["s_hi"])
+    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache)
+    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache)
+
+    if lo_state == "open" and hi_state != "open":
+        from_hi = False
+    elif hi_state == "open" and lo_state != "open":
+        from_hi = True
+    else:
+        from_hi = hi_seg["diameter"] >= lo_seg["diameter"]
+
+    opening_seg, opening_s = (hi_seg, hi_seg["s_hi"]) if from_hi else (lo_seg, lo_seg["s_lo"])
+    bottom_state = lo_state if from_hi else hi_state
+    return from_hi, opening_seg, opening_s, {"open": "through"}.get(bottom_state, bottom_state)
+
+
+def _near_side_steps(steps) -> tuple[CounterBore | None, CounterBore | None]:
+    """Classify the segments between the opening and the bore as counterbore and spotface.
+
+    *steps* is ordered from the opening inward. Diameters must narrow monotonically: a segment
+    wider than one already seen is a groove — an O-ring gland inside a counterbore — rather than
+    a step, and is skipped. Lands of one step are unioned so a groove between them does not
+    split the step into two shallower ones.
+
+    Depth relative to diameter then separates the two: a shallow step is a spotface, a deep one
+    a counterbore. The first of each kind wins, which is the one nearest the opening.
+    """
+
+    spans: dict = {}
+    step_order = []
+    min_d = math.inf
+    for step in steps:
+        if step["diameter"] > min_d + _SAME_DIAMETER_EPS:
+            continue
+        min_d = step["diameter"]
+        key = round(step["diameter"], 2)
+        if key not in spans:
+            spans[key] = [step["s_lo"], step["s_hi"]]
+            step_order.append(key)
+        else:
+            spans[key][0] = min(spans[key][0], step["s_lo"])
+            spans[key][1] = max(spans[key][1], step["s_hi"])
+
+    cbore = spotface = None
+    for key in step_order:
+        lo, hi = spans[key]
+        spec = CounterBore(key, round(hi - lo, 2))
+        if spec.depth < _SPOTFACE_MAX_RATIO * spec.diameter:
+            spotface = spotface or spec
+        else:
+            cbore = cbore or spec
+    return cbore, spotface
+
+
+def _bore_depth(stack, bore, *, bottom: str, from_hi: bool) -> float:
+    """Depth from the top of the bore to the hole's deep end.
+
+    The two ends are measured against different segment sets on purpose. The near end is the
+    bore's own top, so a counterbore above it is excluded. The deep end is the whole stack for a
+    blind hole — a bottom relief groove is part of the depth — but only the bore segments for a
+    through hole, where a far-side counterbore is a separate feature and must not extend it.
+    """
+
+    bore_segs = [s for s in stack if abs(s["diameter"] - bore["diameter"]) < _SAME_DIAMETER_EPS]
+    deep_segs = bore_segs if bottom == "through" else stack
+    # float() rather than a cast: the segment dicts are untyped, so the arithmetic is Any and
+    # the annotation would be a claim rather than a guarantee.
+    if from_hi:
+        return float(max(s["s_hi"] for s in bore_segs)) - float(min(s["s_lo"] for s in deep_segs))
+    return float(max(s["s_hi"] for s in deep_segs)) - float(min(s["s_lo"] for s in bore_segs))
+
+
 def recognise_holes(
     part: Part,
     *,
@@ -360,23 +445,7 @@ def recognise_holes(
     holes = []
     for stack in stacks:
         d = stack[0]["dir_xyz"]
-        lo_seg = min(stack, key=lambda s: s["s_lo"])
-        hi_seg = max(stack, key=lambda s: s["s_hi"])
-        lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache)
-        hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache)
-
-        # The opening is the open end; with both ends open (a through hole)
-        # prefer the wider segment's end (counterbores sit at the opening),
-        # falling back to the high-coordinate end (drilled from the top).
-        if lo_state == "open" and hi_state != "open":
-            from_hi = False
-        elif hi_state == "open" and lo_state != "open":
-            from_hi = True
-        else:
-            from_hi = hi_seg["diameter"] >= lo_seg["diameter"]
-        opening_seg, opening_s = (hi_seg, hi_seg["s_hi"]) if from_hi else (lo_seg, lo_seg["s_lo"])
-        bottom_state = lo_state if from_hi else hi_state
-        bottom = {"open": "through"}.get(bottom_state, bottom_state)
+        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache)
 
         # Order segments from the opening inward; the bore is the narrowest
         # (not the farthest — a through hole counterbored from both sides has
@@ -389,38 +458,12 @@ def recognise_holes(
         # segment between same-diameter lands is a groove (e.g. an O-ring
         # gland inside a counterbore), not a step. Lands of one step span
         # their groove.
-        spans: dict = {}
-        step_order = []
-        min_d = math.inf
-        for step in ordered[:bore_i]:
-            if step["diameter"] > min_d + _SAME_DIAMETER_EPS:
-                continue
-            min_d = step["diameter"]
-            key = round(step["diameter"], 2)
-            if key not in spans:
-                spans[key] = [step["s_lo"], step["s_hi"]]
-                step_order.append(key)
-            else:
-                spans[key][0] = min(spans[key][0], step["s_lo"])
-                spans[key][1] = max(spans[key][1], step["s_hi"])
-        cbore = spotface = None
-        for key in step_order:
-            lo, hi = spans[key]
-            spec = CounterBore(key, round(hi - lo, 2))
-            if spec.depth < _SPOTFACE_MAX_RATIO * spec.diameter:
-                spotface = spotface or spec
-            else:
-                cbore = cbore or spec
+        cbore, spotface = _near_side_steps(ordered[:bore_i])
 
         # The bore's depth runs from its top to the hole's deep end: bore
         # lands span a mid-bore groove, and a blind hole's depth includes a
         # bottom relief groove — but not a through hole's far-side steps.
-        bore_segs = [s for s in stack if abs(s["diameter"] - bore["diameter"]) < _SAME_DIAMETER_EPS]
-        deep_segs = bore_segs if bottom == "through" else stack
-        if from_hi:
-            depth = max(s["s_hi"] for s in bore_segs) - min(s["s_lo"] for s in deep_segs)
-        else:
-            depth = max(s["s_hi"] for s in deep_segs) - min(s["s_lo"] for s in bore_segs)
+        depth = _bore_depth(stack, bore, bottom=bottom, from_hi=from_hi)
         holes.append(
             HoleRecord(
                 axis=_unit(tuple(-c for c in d) if from_hi else d),
