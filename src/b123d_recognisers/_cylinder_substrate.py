@@ -8,16 +8,18 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._geometry import _axis_letter_of
+from b123d_recognisers._geometry import _axis_letter_of, length_tol
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
 
 _FULL_CYL_MIN_EXTENT = math.pi * 1.05
 
-# Coaxial segments whose axial ranges meet within this gap belong to the same
-# stack (a counterbore shoulder is an exact-touch); larger gaps are distinct
-# features unless bridged by a shoulder chamfer/fillet or a crossing void
-# (see _merge_stacks).
-_STACK_GAP_TOL = 0.1
+# Coaxial segments whose axial ranges meet within this gap belong to the same stack (a
+# counterbore shoulder is an exact-touch); larger gaps are distinct features unless bridged by a
+# shoulder chamfer/fillet or a crossing void (see _merge_stacks). Expressed as a fraction of the
+# band's own diameter per ADR 0008: the gap a sliver face or a tangent seam leaves scales with
+# the cylinder, so a fixed millimetre gap splits a small bore's stack and welds a large one's.
+_STACK_GAP_FRAC = 0.0125
+
 
 def analyse_cylinders(part: Part) -> CylinderInventory:
     """Return (z_cyls, cross_cyls) from OCP cylindrical face analysis.
@@ -108,7 +110,8 @@ def _cyl_group_key(c):
 
 def _merge_runs(items, key_fn):
     """Group *items* by *key_fn*, then split each group into runs of
-    contiguous axial ranges (gap > _STACK_GAP_TOL starts a new run)."""
+    contiguous axial ranges (a gap wider than the band's own ``_STACK_GAP_FRAC`` starts a new
+    run)."""
     by_key: dict = {}
     for item in items:
         by_key.setdefault(key_fn(item), []).append(item)
@@ -117,7 +120,7 @@ def _merge_runs(items, key_fn):
         group.sort(key=lambda c: c["s_lo"])
         run, hi = [group[0]], group[0]["s_hi"]
         for c in group[1:]:
-            if c["s_lo"] <= hi + _STACK_GAP_TOL:
+            if c["s_lo"] <= hi + length_tol(c["diameter"], rel=_STACK_GAP_FRAC):
                 run.append(c)
                 hi = max(hi, c["s_hi"])
             else:

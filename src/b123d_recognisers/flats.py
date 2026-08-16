@@ -41,6 +41,7 @@ from b123d_recognisers._geometry import (
     _axis_line_coordinates,
     _canonical_axis_direction,
     _canonical_axis_span,
+    length_tol,
 )
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, Part
@@ -49,16 +50,22 @@ from b123d_recognisers._typing import CylinderInventory, Part
 # these unit-vector tolerances.
 _RADIAL_TOL = 0.05
 _ANTIPARALLEL_TOL = 0.05
-# The plane must sit strictly inside the OD to be a chord cut (mm off the axis / off the OD).
-_CHORD_MIN = 0.05
-_CHORD_MARGIN = 0.05
-# A flat must remove more than this depth of material (R − d); below it is a tangent sliver.
-_MIN_FLAT_DEPTH = 0.5
+# Every length gate below is a fraction of the stock radius it judges, per ADR 0008: a flat on
+# 6 mm bar and the same flat on 600 mm bar are the same feature. Each fraction is the millimetre
+# constant it replaces over the corpus's 4 mm reference radius.
+#
+# The plane must sit strictly inside the OD to be a chord cut (off the axis / off the OD).
+_CHORD_MIN_FRAC = 0.0125
+_CHORD_MARGIN_FRAC = 0.0125
+# A flat must remove more than this fraction of the radius (R − d); below it is a tangent
+# sliver — a proportional gate, because a 0.5 mm cut is a sliver on 100 mm bar and a
+# half-diameter cut on 2 mm bar.
+_MIN_FLAT_DEPTH_FRAC = 0.125
 # A genuine flat's chord reaches the OD at *both* ends (radius R); a slot wall reaches it at
 # one end only (the other abuts the slot floor). Two flats are opposed across the *same* axis
-# line (not merely the same axis letter) within these mm tolerances.
-_OD_REACH_TOL = 0.1
-_AXIS_LINE_TOL = 0.1
+# line (not merely the same axis letter) within these fractions of the radius.
+_OD_REACH_FRAC = 0.025
+_AXIS_LINE_FRAC = 0.025
 
 
 def _both_chord_ends_reach_od(verts, ax, dv, nv, r):
@@ -85,10 +92,11 @@ def _both_chord_ends_reach_od(verts, ax, dv, nv, r):
             lo_t, lo_r = t, rad
         if hi_t is None or t > hi_t:
             hi_t, hi_r = t, rad
-    return lo_r is not None and lo_r >= r - _OD_REACH_TOL and hi_r >= r - _OD_REACH_TOL
+    reach = length_tol(r, rel=_OD_REACH_FRAC)
+    return lo_r is not None and lo_r >= r - reach and hi_r >= r - reach
 
 
-def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir):
+def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir, radius):
     """Two radial flats are opposed across one shaft only if their turning axes are the *same
     line* — the vector between the axis points has no component perpendicular to the shared
     direction. Guards against pairing lone flats on two distinct parallel shafts."""
@@ -97,7 +105,7 @@ def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir):
     vx, vy, vz = b_ax[0] - a_ax[0], b_ax[1] - a_ax[1], b_ax[2] - a_ax[2]
     adot = vx * a_dir[0] + vy * a_dir[1] + vz * a_dir[2]
     px, py, pz = vx - adot * a_dir[0], vy - adot * a_dir[1], vz - adot * a_dir[2]
-    return (px * px + py * py + pz * pz) ** 0.5 <= _AXIS_LINE_TOL
+    return (px * px + py * py + pz * pz) ** 0.5 <= length_tol(radius, rel=_AXIS_LINE_FRAC)
 
 
 @dataclass(frozen=True)
@@ -201,9 +209,11 @@ def recognise_flats(
             ax = c["axis_xyz"]
             s = (pcv[0] - ax[0]) * nv[0] + (pcv[1] - ax[1]) * nv[1] + (pcv[2] - ax[2]) * nv[2]
             r = c["diameter"] / 2
-            if not (_CHORD_MIN < s < r - _CHORD_MARGIN):
+            if not (
+                length_tol(r, rel=_CHORD_MIN_FRAC) < s < r - length_tol(r, rel=_CHORD_MARGIN_FRAC)
+            ):
                 continue  # outward normal points toward the axis (a slot wall), or outside OD
-            if r - s < _MIN_FLAT_DEPTH:
+            if r - s < length_tol(r, rel=_MIN_FLAT_DEPTH_FRAC):
                 continue  # a tangent sliver, not a machined flat
             verts = [(v.X, v.Y, v.Z) for v in f.vertices()]
             if not _both_chord_ends_reach_od(verts, ax, d, nv, r):
@@ -238,7 +248,7 @@ def recognise_flats(
             if j == i or other["axis"] != cand["axis"]:
                 continue
             if not _same_axis_line(
-                cand["axis"], cand["ax"], cand["dir"], other["ax"], other["dir"]
+                cand["axis"], cand["ax"], cand["dir"], other["ax"], other["dir"], cand["r"]
             ):
                 continue  # a lone flat on a *different* parallel shaft — not opposed
             if other["stock"] != cand["stock"]:

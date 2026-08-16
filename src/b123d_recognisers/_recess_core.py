@@ -15,6 +15,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.TopAbs import TopAbs_Orientation
 
+from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 
 _AXES = {"x": 0, "y": 1, "z": 2}
@@ -231,9 +232,11 @@ def _has_floor(faces, s: Slot) -> bool:
 
 
 # A radiused-end (obround) slot has semicircular end caps whose radius is the slot's
-# half-width; a cylindrical face counts as such a cap when its radius is within this (mm) of
-# width/2. Tight, so a filleted-corner rectangular slot (small corner radii) is not extended.
-_END_RADIUS_TOL = 0.15
+# half-width; a cylindrical face counts as such a cap when its radius is within this fraction
+# of width/2 (ADR 0008). Tight, so a filleted-corner rectangular slot (small corner radii) is
+# not extended. The fraction is the 0.15 mm constant it replaces over the corpus's 4 mm
+# reference radius.
+_END_RADIUS_FRAC = 0.0375
 
 
 def _cylinder_faces(part) -> list[tuple]:
@@ -272,7 +275,7 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
     dc = "XYZ"[di]
     return any(
         concave
-        and abs(rad - r) <= _END_RADIUS_TOL
+        and abs(rad - r) <= length_tol(r, rel=_END_RADIUS_FRAC)
         and ax == s.depth_axis
         and abs(loc[li] - coord) <= _MERGE_TOL
         and abs(loc[wi] - s.w_center) <= _MERGE_TOL
@@ -323,9 +326,10 @@ def _extend_obround_ends(records: list[_R], part) -> list[_R]:
 _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) / r (bulge) — match
 # by RATIO to the radius (2.0 / 1.0), so the discriminator holds at every scale, not just large r.
 # Coaxial cap faces (a semicircle a STEP importer split into two quarter-cylinders) are clustered
-# when their axis lines sit within this (mm); the ~0.02 mm split noise is well inside it, and a
-# real slot's two ends are separated by its straight run (≥ _MERGE_TOL), well outside.
-_CAP_CLUSTER_TOL = 0.3
+# when their axis lines sit within this fraction of the cap radius; importer split noise is a
+# fraction of the face, well inside it, and a real slot's two ends are separated by its straight
+# run, well outside. The fraction is the 0.3 mm constant it replaces over the 4 mm reference.
+_CAP_CLUSTER_FRAC = 0.075
 
 
 def _obround_end(cap: tuple):
@@ -415,7 +419,8 @@ def _obround_ends(part) -> list[tuple]:
     build123d emits it as a single half-cylinder face (in-plane bbox ``2r × r``), while a STEP
     importer commonly splits it into two quarter-cylinders (``r × r`` each) whose axis Locations
     differ by ~0.02 mm across the diameter. Faces are therefore **clustered by proximity** of their
-    axis line (same axis + radius + depth, in-plane position within ``_CAP_CLUSTER_TOL``) rather
+    axis line (same axis + radius + depth, in-plane position within ``_CAP_CLUSTER_FRAC`` of the
+    cap radius) rather
     than exact-key grouping, and the UNION in-plane bbox is classified via
     :func:`_obround_end` — the union of the two quarters is the same ``2r × r`` a single
     half-cylinder gives. (A round hole is a full cylinder, ``2r × 2r``, so its union still
@@ -432,10 +437,10 @@ def _obround_ends(part) -> list[tuple]:
         for cl in clusters:
             if (
                 cl["ax"] == ax
-                and abs(cl["rad"] - rad) <= _END_RADIUS_TOL
+                and abs(cl["rad"] - rad) <= length_tol(rad, rel=_END_RADIUS_FRAC)
                 and cl["dz"] == dz
-                and abs(cl["ip"][0] - ip[0]) <= _CAP_CLUSTER_TOL
-                and abs(cl["ip"][1] - ip[1]) <= _CAP_CLUSTER_TOL
+                and abs(cl["ip"][0] - ip[0]) <= length_tol(rad, rel=_CAP_CLUSTER_FRAC)
+                and abs(cl["ip"][1] - ip[1]) <= length_tol(rad, rel=_CAP_CLUSTER_FRAC)
             ):
                 cl["bb"] = _union_bb(cl["bb"], bb)
                 break

@@ -26,24 +26,31 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from b123d_recognisers._features import analyse_cylinders
+from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 
+# Every gate below is a fraction of the band it judges, per ADR 0008: a groove in 5 mm bar and
+# the same groove in 500 mm bar are the same feature, and only a proportional gate says so.
+# Each fraction is the millimetre constant it replaces divided by the reference size the corpus
+# calibrates against — 8 mm for a diameter, 10 mm for an axial width.
+#
 # Two bands are axially contiguous (one is the other's wall) when the gap between them is
-# within this (mm). A neighbour must be wider than the floor by more than this (mm of
-# diameter) to count as a step up out of the groove — enough to reject turning noise, far
-# less than any real groove depth.
-_ADJ_TOL = 0.1
-_DIA_MARGIN = 0.2
+# within this fraction of the band diameter. A neighbour must be wider than the floor by more
+# than this fraction of its own diameter to count as a step up out of the groove — enough to
+# reject turning noise, far less than any real groove depth.
+_ADJ_FRAC = 0.0125
+_DIA_MARGIN_FRAC = 0.025
 # A groove is a *narrow channel* cut into UNIFORM stock. Two signatures separate it from a
 # segment of an alternating fine-step staircase:
-#  - its two walls step back to (nearly) the same OD — within this (mm). Unequal walls are a
-#    stepped profile (a shoulder), not a channel in round bar.
-_WALL_DIA_TOL = 0.5
-#  - it is narrower than the WIDER of its two walls (by more than this, mm). A band as wide as
-#    its walls is a staircase step; an end-adjacent groove keeps one wide wall (the shaft
-#    continues) even when the other is a thin retaining land, so the *wider* wall is the test.
-_WIDTH_MARGIN = 0.05
+#  - its two walls step back to (nearly) the same OD — within this fraction of the wider wall.
+#    Unequal walls are a stepped profile (a shoulder), not a channel in round bar.
+_WALL_DIA_FRAC = 0.0625
+#  - it is narrower than the WIDER of its two walls, by more than this fraction of that wall's
+#    width. A band as wide as its walls is a staircase step; an end-adjacent groove keeps one
+#    wide wall (the shaft continues) even when the other is a thin retaining land, so the
+#    *wider* wall is the test.
+_WIDTH_MARGIN_FRAC = 0.005
 
 
 def _shaft_key(c) -> tuple:
@@ -117,26 +124,34 @@ def recognise_grooves(
         for i in range(1, len(bands) - 1):
             prev, cur, nxt = bands[i - 1], bands[i], bands[i + 1]
             # The neighbours must be the groove's own walls — contiguous with the floor band.
-            if abs(prev["s_hi"] - cur["s_lo"]) > _ADJ_TOL:
+            adj_tol = length_tol(cur["diameter"], rel=_ADJ_FRAC)
+            if abs(prev["s_hi"] - cur["s_lo"]) > adj_tol:
                 continue
-            if abs(cur["s_hi"] - nxt["s_lo"]) > _ADJ_TOL:
+            if abs(cur["s_hi"] - nxt["s_lo"]) > adj_tol:
                 continue
             # A strict local OD minimum: the OD steps *down* into the band and *up* out of it.
             # A monotonic change (a plain step / shoulder) fails one side and is not a groove.
-            if cur["diameter"] > prev["diameter"] - _DIA_MARGIN:
+            if cur["diameter"] > prev["diameter"] - length_tol(
+                prev["diameter"], rel=_DIA_MARGIN_FRAC
+            ):
                 continue
-            if cur["diameter"] > nxt["diameter"] - _DIA_MARGIN:
+            if cur["diameter"] > nxt["diameter"] - length_tol(
+                nxt["diameter"], rel=_DIA_MARGIN_FRAC
+            ):
                 continue
             # Cut into uniform stock: the two walls step back to (nearly) the same OD. Unequal
             # walls are a shoulder / stepped profile, not an annular channel.
-            if abs(prev["diameter"] - nxt["diameter"]) > _WALL_DIA_TOL:
+            wider_dia = max(prev["diameter"], nxt["diameter"])
+            if abs(prev["diameter"] - nxt["diameter"]) > length_tol(
+                wider_dia, rel=_WALL_DIA_FRAC
+            ):
                 continue
             # A narrow channel: narrower than the WIDER of its two walls. A band as wide as its
             # walls is a staircase step; an end-adjacent groove keeps one wide
             # wall (the shaft) even when the other is a thin retaining land, so test the wider.
             cur_w = cur["s_hi"] - cur["s_lo"]
             wider_wall = max(prev["s_hi"] - prev["s_lo"], nxt["s_hi"] - nxt["s_lo"])
-            if cur_w >= wider_wall - _WIDTH_MARGIN:
+            if cur_w >= wider_wall - length_tol(wider_wall, rel=_WIDTH_MARGIN_FRAC):
                 continue
             cx, cy, cz = floor_face_anchor(cur["face"])
             at = (round(cx, 3), round(cy, 3), round(cz, 3))

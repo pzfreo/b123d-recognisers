@@ -87,10 +87,19 @@ float-comparison epsilons. These are already scale-free and scaling them is a de
 
 ### What stays absolute on purpose
 
-A constant that models a physical process rather than a measurement — `turned`'s edge-break
-allowance is the only current instance — stays absolute, **paired with a proportional term** so it
-does not dominate at large scale. An absolute term is legitimate only when a comment says which
-physical constant it encodes.
+A constant that models a physical process rather than a measurement stays absolute. `turned`'s two
+edge-break constants are the current instances: a deburr is the same size on a 5 mm shaft and a
+500 mm one, so scaling it is the defect.
+
+An absolute constant is legitimate only when a comment says which physical constant it encodes,
+**and** it is bounded so it cannot swamp a small feature. Two bounds work:
+
+- pair it with a proportional term, as `_CHAMFER_ALLOWANCE_ABS + _CHAMFER_ALLOWANCE_FRAC * od`
+  does, when the quantity has both a fixed and a size-dependent part; or
+- cap it against the feature it is applied to, as `min(_OD_SPAN_PAD, band_width / 2)` does, when
+  the risk is that the constant bridges or swallows the feature.
+
+An unbounded absolute constant is a defect whether or not its physical justification is sound.
 
 ### Record rounding is out of scope
 
@@ -145,13 +154,24 @@ Several of these read as absolute because they are named `*_TOL`. Renaming them 
 The four `max(...)` sites keep that form. Rewriting them additively would change behaviour for no
 benefit; the policy above governs new and converted sites.
 
-### Deliberately absolute — no change (1)
+### Deliberately absolute (2)
 
 | Site | Value | Physical constant |
 | --- | --- | --- |
 | `turned._CHAMFER_ALLOWANCE_ABS` | 0.5 | a fixed edge-break, paired with `_CHAMFER_ALLOWANCE_FRAC` |
+| `turned._OD_SPAN_PAD` | 0.7 | the same edge-break, spanning a chamfer-shortened band edge |
 
-### Feature-relative lengths to convert (18)
+`_OD_SPAN_PAD` was classified feature-relative when this ADR was written, and **measurement moved
+it**. Converted to 8.75% of the band diameter it reaches 2.6 mm on a 30 mm band, bridges the 5 mm
+groove in the turned-step golden, and reports that groove's step at its neighbour's OD. It spans
+an edge break — the same physical constant as its sibling two lines below it in the source — and a
+deburr does not grow with the shaft.
+
+It is now capped at half the band's own width, so it cannot bridge the band it pads however small
+the part is modelled. That cap, not a proportional term, is what makes a legitimately absolute
+gate safe at small scale, and is the pattern to reach for when the next one appears.
+
+### Feature-relative lengths to convert (17)
 
 Each has a diameter, radius or width in hand at the comparison.
 
@@ -174,7 +194,6 @@ Each has a diameter, radius or width in hand at the comparison.
 | `grooves._WIDTH_MARGIN` | 0.05 | wider neighbouring wall width |
 | `_recess_core._END_RADIUS_TOL` | 0.15 | cap radius |
 | `_recess_core._CAP_CLUSTER_TOL` | 0.3 | cap radius |
-| `turned._OD_SPAN_PAD` | 0.7 | band OD |
 
 `_hole_features`' stack margin (`max(_STACK_GAP_TOL, min(0.45 * length, 0.5 * diameter))`) and
 `_recess_core._VOID_INSET` (`min(_VOID_INSET, (hi - lo) / 4)`) are already capped by a feature

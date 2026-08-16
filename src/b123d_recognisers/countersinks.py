@@ -42,11 +42,16 @@ from typing import Protocol, cast
 
 from build123d import GeomType
 
+from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import EdgeLike, FaceLike, Part
 
-_TOL = 0.05  # mm — dimension match tolerance (matches the other feature matchers)
-_COAXIAL_TOL = 0.1  # mm — how far the opening may sit off the drill's axis line
+# Every length gate here is a fraction of the bore it judges, per ADR 0008: an M3 countersink
+# and an M30 one are the same feature, and a fixed millimetre gate matches neither well. Each
+# fraction is the millimetre constant it replaces over the corpus's 6 mm reference bore
+# diameter (3 mm radius).
+_MINOR_MATCH_FRAC = 0.0167  # of the drill radius — does this cone sit on that bore?
+_COAXIAL_FRAC = 0.0167  # of the drill diameter — how far the opening may sit off its axis
 # Real countersinks are ≤120° included (60/82/90/100/120 standards); a near-flat cone is
 # a draft/relief/washer face, not a countersink. 160° keeps every real countersink with
 # margin while excluding drafts (~176–178° included).
@@ -56,9 +61,10 @@ _MAX_INCLUDED_ANGLE = 160.0
 # bore. Require the major to reach this multiple of the drill radius to exclude those —
 # else every chamfered hole mouth would be called out as a countersink.
 _MIN_MAJOR_RATIO = 1.5
-_HOLE_DIA_TOL = 0.2
-_HOLE_AXIS_TOL = 0.2
-_HOLE_MOUTH_TOL = 0.5
+# Fractions of the hole diameter, for associating a recognised cone with a recognised hole.
+_HOLE_DIA_FRAC = 0.0333
+_HOLE_AXIS_FRAC = 0.0333
+_HOLE_MOUTH_FRAC = 0.0833
 
 
 @dataclass(frozen=True)
@@ -109,13 +115,15 @@ def countersink_matches_hole(countersink: CounterSink, hole: _HoleLike) -> bool:
     axial = sum(offset[index] * hole.axis[index] for index in range(3))
     perpendicular = math.hypot(*(offset[index] - axial * hole.axis[index] for index in range(3)))
     if (
-        perpendicular > _HOLE_AXIS_TOL
-        or abs(countersink.drill_diameter - hole.diameter) > _HOLE_DIA_TOL
+        perpendicular > length_tol(hole.diameter, rel=_HOLE_AXIS_FRAC)
+        or abs(countersink.drill_diameter - hole.diameter)
+        > length_tol(hole.diameter, rel=_HOLE_DIA_FRAC)
     ):
         return False
+    mouth_tol = length_tol(hole.diameter, rel=_HOLE_MOUTH_FRAC)
     return bool(
-        abs(axial) <= _HOLE_MOUTH_TOL
-        or (hole.bottom == "through" and abs(axial - hole.depth) <= _HOLE_MOUTH_TOL)
+        abs(axial) <= mouth_tol
+        or (hole.bottom == "through" and abs(axial - hole.depth) <= mouth_tol)
     )
 
 
@@ -189,9 +197,9 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
         axis = (av[0] / alen, av[1] / alen, av[2] / alen)
         # A countersink sits on a drilled bore: a coaxial cylinder of the minor radius.
         if not any(
-            abs(r - minor_r) <= _TOL
+            abs(r - minor_r) <= length_tol(minor_r, rel=_MINOR_MATCH_FRAC)
             and _parallel(axis, ld)
-            and _dist_to_line(opening_pt, lp, ld) <= _COAXIAL_TOL
+            and _dist_to_line(opening_pt, lp, ld) <= length_tol(2 * minor_r, rel=_COAXIAL_FRAC)
             for r, lp, ld in cyls
         ):
             continue
