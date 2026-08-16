@@ -34,14 +34,26 @@ shells with split faces, seam edges, tolerant edges, and B-spline surfaces that 
 cylindrical but not typed as `Cylinder`. The README's opening claim — recovering features from
 imported STEP — is currently *unproven, not disproven*.
 
-- [ ] Round-trip harness: export each fixture to STEP, re-import, run recognition
-- [ ] Assert the re-imported part yields the same canonical records as the constructed part
-- [ ] Land the harness first with whatever subset passes, and record the failures as normal test
-      expectations — do not `xfail`
-- [ ] Fix what it exposes, or document the gap in `docs/capabilities.md` as an explicit exclusion
-- [ ] Keep the STEP files out of the wheel (`sdist` include list already scopes this)
+- [x] Round-trip harness: export each fixture to STEP, re-import, run recognition
+- [x] Assert the re-imported part yields the same canonical records as the constructed part
+- [x] Fix what it exposes, or document the gap in `docs/capabilities.md` as an explicit exclusion
+- [x] No STEP bytes committed — written to `tmp_path`, consistent with `migration/PARITY.md`
 
-**Highest value per hour in the epic.** It tests the sentence at the top of the README.
+**Resolved. The result was not what the review predicted, in both directions.**
+
+All seventeen fixtures round-trip through STEP with byte-identical canonical records. The review
+expected drift from split faces, seam edges and tolerant edges; passing through a STEP file turns
+out not to disturb analytic geometry at all. That half of the finding was overstated.
+
+The underlying hazard is real but sits elsewhere. When the same solid reaches recognition with its
+faces typed `GeomAbs_BSplineSurface` — geometrically identical, analytically untyped, which is what
+a NURBS-only export delivers — **every recogniser returns zero**. Not degraded: a hole, a boss, a
+plate and a chamfer all vanish together, because classification is by surface type throughout.
+
+That is now an explicit whole-package exclusion in `docs/capabilities.md`, held by a test written
+as a contrast against the analytic result so that adding support fails it. Supporting B-spline
+faces means fitting analytic surfaces and bounding the residual — a recognition-behaviour change
+with its own evidence requirements, not part of this epic.
 
 ## 2 — Absolute millimetre tolerances
 

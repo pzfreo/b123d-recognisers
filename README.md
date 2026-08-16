@@ -11,6 +11,11 @@ records for features such as holes and counterbores, bosses, slots, pockets, pad
 chamfers, grooves, hole and pocket patterns, and turned steps. The records contain ordinary,
 JSON-serialisable geometry values rather than build123d or OCP objects.
 
+Recognition classifies faces by analytic surface type, so imported geometry must arrive with its
+planes, cylinders and cones intact. STEP carries them, and every pinned fixture is proven to
+survive an export and re-import unchanged. Geometry delivered entirely as B-splines is outside the
+proven domain; see [`docs/capabilities.md`](docs/capabilities.md).
+
 That makes the library a useful foundation for systems which inspect, classify, annotate, compare,
 or modify imported CAD. For example, a STEP editor can recognise a hole, present its diameter and
 axis as editable intent, and use those values to drive its own topology-editing operation. The
