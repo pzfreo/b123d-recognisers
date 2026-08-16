@@ -138,15 +138,20 @@ README wording — `"STEP editor" in readme`. These fail on harmless refactors a
 shows the cost: four follow-up commits to restore facade globals, annotations and module identities
 that only those tests observed.
 
-- [ ] Drop the literal `__annotations__` string assertions; keep the `get_type_hints()` resolution
-      check, which tests the property that actually matters
-- [ ] Drop the README phrase matching in `test_published_prose.py`
-- [ ] **Keep** `test_module_graph_is_acyclic`, `test_runtime_package_does_not_import_draftwright`,
-      `test_no_accidental_public_modules` and the export-identity checks — those encode real
-      invariants
-- [ ] Relax `MODULE_SEAM_EDGES` from exact equality to "no edge outside the allowed set", so adding
-      a permitted import is not a test change
-- [ ] Round the coverage floor to `91` — two decimal places is the same instinct in miniature
+- [x] Dropped the literal `__annotations__` string assertions; the `get_type_hints()`
+      resolution check is what remains, extended to `recognise_slots`
+- [x] Replaced the README phrase matching with two checks that hold the property the wording
+      stood in for: every name a README example imports is really exported, and the example
+      still demonstrates `import_step` feeding a recogniser. The old assertions failed on copy
+      edits while passing on a README documenting a function that no longer existed
+- [x] **Kept** `test_module_graph_is_acyclic`, `test_runtime_package_does_not_import_draftwright`,
+      `test_no_accidental_public_modules` and the export-identity checks
+- [x] `MODULE_SEAM_EDGES` relaxed from exact equality to "no edge outside the allowed set"
+- [x] **Closed a hole found while verifying that relaxation.** `from b123d_recognisers import
+      chamfers` was invisible to `_package_import_graph`, which reads only `node.module` — so a
+      seam or cycle violation written that way passed every check in the file. Both forms are
+      now read
+- [x] Coverage floor rounded to `91`
 
 ## 4 — Coverage concentration
 
