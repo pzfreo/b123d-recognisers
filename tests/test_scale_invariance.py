@@ -29,8 +29,9 @@ from tests.golden._common import load_fixture  # noqa: E402
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 
-#: Both extremes plus one interior factor. The interior one matters: grid-quantised grouping
-#: (issue #46) drifts non-monotonically, so a test that only visits the extremes can miss it.
+#: Both extremes plus one interior factor. The interior one matters: ``plates`` gains a spurious
+#: record in ``chamfers_fillets_and_flats`` at 5x and 10x but not at 1x or 100x, so a test that
+#: only visits the extremes would call that family scale-free when it is not.
 FACTORS = (0.05, 5.0, 100.0)
 
 #: Feature kinds whose recognisers still gate on absolute millimetres, per ADR 0008's

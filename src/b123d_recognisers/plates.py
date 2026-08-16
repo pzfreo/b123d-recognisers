@@ -42,6 +42,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._geometry import cluster_coordinates
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -99,8 +100,12 @@ def recognise_plates(
                 cross *= ext[o]
         if cross <= 0:
             continue
-        neg: dict = {}  # coord bucket -> [total area, centre-u accum, centre-v accum]
-        pos: dict = {}
+        # Coplanar faces are gathered per outward-normal sign, then grouped by how far apart
+        # their planes are rather than by which tol-wide grid cell they round into. The group's
+        # coordinate is its lowest member's *actual* plane location: rounding to the grid put a
+        # multiple of tol into Plate.lo/hi, so a slab's reported thickness was quantised to half
+        # a millimetre by default.
+        sides: tuple[list[tuple[float, float, float, float]], ...] = ([], [])
         oi = [j for j in (0, 1, 2) if j != i]  # the two in-plane axis indices
         for f in faces:
             s = BRepAdaptor_Surface(f.wrapped)
@@ -117,12 +122,17 @@ def recognise_plates(
             c = props.CentreOfMass()
             cp = (c.X(), c.Y(), c.Z())
             loc = (s.Plane().Location().X(), s.Plane().Location().Y(), s.Plane().Location().Z())[i]
-            k = round(loc / tol) * tol
-            bucket = pos if comp > 0 else neg
-            acc = bucket.setdefault(k, [0.0, 0.0, 0.0])
-            acc[0] += area
-            acc[1] += cp[oi[0]] * area
-            acc[2] += cp[oi[1]] * area
+            sides[comp > 0].append((loc, area, cp[oi[0]] * area, cp[oi[1]] * area))
+
+        neg, pos = (
+            {
+                min(side[index][0] for index in group): [
+                    sum(side[index][field] for index in group) for field in (1, 2, 3)
+                ]
+                for group in cluster_coordinates([entry[0] for entry in side], tol=tol)
+            }
+            for side in sides
+        )
 
         thresh = min_area_frac * cross
         max_t = max_thick_frac * ext[axis]

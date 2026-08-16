@@ -9,6 +9,7 @@ dominant-axis convention, and the length-tolerance form of ADR 0008.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 
 _PLANE_AXES = {
     "x": ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
@@ -119,6 +120,33 @@ def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bo
     return abs(vector[index] - 1.0) <= tol and all(
         abs(vector[other]) <= tol for other in range(3) if other != index
     )
+
+
+def cluster_coordinates(coordinates: Sequence[float], *, tol: float) -> list[list[int]]:
+    """Group *coordinates* into clusters no wider than *tol*, returned as index lists.
+
+    The obvious alternative — ``round(x / tol) * tol`` as a dict key — groups by which grid
+    cell a coordinate lands in rather than by how far apart two coordinates are. That merges a
+    pair ``tol`` apart when they share a cell and splits a pair a thousandth apart when they
+    straddle a boundary, and shifts arbitrarily when the model is scaled.
+
+    Clusters are bounded rather than single-linkage: a coordinate opens a new cluster once it
+    is more than *tol* from the cluster's lowest member, so every member is within *tol* of
+    every other. Single linkage would chain — a fine staircase of 0.4 mm risers judged at
+    ``tol=0.5`` would collapse into one level spanning the whole part.
+
+    Index lists come back in ascending coordinate order, and ties keep their input order, so
+    the grouping does not depend on the order faces were traversed in.
+    """
+
+    order = sorted(range(len(coordinates)), key=lambda index: (coordinates[index], index))
+    clusters: list[list[int]] = []
+    for index in order:
+        if clusters and coordinates[index] - coordinates[clusters[-1][0]] <= tol:
+            clusters[-1].append(index)
+        else:
+            clusters.append([index])
+    return clusters
 
 
 def part_scale(bbox) -> float:

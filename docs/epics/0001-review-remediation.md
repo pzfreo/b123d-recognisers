@@ -103,11 +103,13 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 The 13 sites with no local feature: the `tol=` keywords on the five public recognisers,
 `fillets.min_radius`, `STEP_LADDER_BOUNDARY_MARGIN`, `_MERGE_TOL`, `_FLOOR_TOL`.
 
-- [ ] **First, [#46](https://github.com/pzfreo/b123d-recognisers/issues/46): replace the
-      `round(z / tol) * tol` grouping in `levels` and `plates` with single-linkage clustering.**
-      It groups by grid phase rather than distance — faces 0.24 mm apart merge while faces
-      0.02 mm apart split. Deriving `tol` on top of a grid shifts its phase on every fixture, so
-      this must land first or 2c's golden churn is unattributable
+- [x] **[#46](https://github.com/pzfreo/b123d-recognisers/issues/46), landed first:** replaced
+      the `round(coord / tol) * tol` grouping in `levels` and `plates` with bounded clustering
+      by distance. Goldens byte-identical; `traversal_order` became scale-invariant
+- [ ] `plates` still gains a spurious record in `chamfers_fillets_and_flats` at 5x and 10x but
+      not 1x or 100x. Grid phase was **not** the cause — the clustering fix did not remove it.
+      It is somewhere in the event pairing or the `t <= tol` gate, and taking `plate` out of
+      `NOT_YET_SCALE_FREE` is what will force it out
 - [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
       meaning so a calibrated caller is not broken
 - [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly
