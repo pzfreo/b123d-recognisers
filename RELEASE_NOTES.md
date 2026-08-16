@@ -1,6 +1,9 @@
 # Release notes
 
-## Unreleased
+## 0.2.1
+
+Compatibility-safe boundary and delivery-workflow patch release. Recognition output and canonical
+semantic goldens are unchanged.
 
 - Adds `RecognitionResult.step_ladder_for_z_span(z_min, z_max, *, boundary_margin=0.6)` as the
   build123d-free aggregate projection boundary. The margin is in model length units and its strict
