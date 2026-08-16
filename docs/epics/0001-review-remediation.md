@@ -186,15 +186,25 @@ lower. The 92.31% aggregate is partly carried by the easy modules.
 The ~150 literals that are **not** lengths: unit-vector direction gates, ratios, angles, counts,
 epsilons. Scaling any of these would be a defect, which is why they are separate from #2.
 
-- [ ] Hoist the `0.99` / `0.05` / `0.02` / `0.01` direction gates in `chamfers`, `fillets`,
-      `plates`, `pads`, `levels`, `polygonal_bosses`, `_hole_features` to named constants
-- [ ] Name the `0.05` interior-probe fraction shared by `chamfers` and `fillets`
-- [ ] Rename `_BC_SPACING_TOL` → `_BC_SPACING_FRAC` — it reads absolute but is already applied
-      relatively (`> _BC_SPACING_TOL * even`), which is exactly the confusion worth removing
-- [ ] Document the convention: `*_TOL`/`*_MARGIN` = length · `*_FRAC`/`*_RATIO` = dimensionless ·
-      `*_ANGLE` = angle · `*_EPS` = machine epsilon
-- [ ] Leave `round(x, 4)` and every other serialisation rounding alone — that is the public record
-      contract and the capability schema
+- [x] `AXIS_ALIGNED_COS` (0.99) and `AXIS_ZERO_COS` (0.01) in `_geometry`, replacing bare
+      literals at a dozen sites across `chamfers`, `fillets`, `plates`, `pads`, `levels` and
+      `polygonal_bosses`. The same number appearing twice could not be told from the same
+      *decision* appearing twice
+- [x] `polygonal_bosses._SIDE_VERTICAL_COS` (0.02) — found while reading that module for
+      finding 6, after the first sweep of this finding had missed it
+- [x] `INTERIOR_PROBE_FRAC` names the 0.05 probe shared by `chamfers` and `fillets`. In
+      `chamfers` that value also meant something else entirely — the run-axis gate, now
+      `_RUN_AXIS_COS` — so one file had one literal standing for two decisions
+- [x] `_SAME_DIAMETER_EPS` names the three bare `0.01` diameter comparisons in
+      `_hole_features`. Worth the comment it now carries: `analyse_cylinders` rounds every
+      diameter to 2 dp, so this is an *equality* test on rounded values, not a machining
+      allowance, and must not scale. It reads exactly like a length tolerance
+- [x] `_BC_SPACING_TOL` → `_BC_SPACING_FRAC` — it was already applied relatively
+- [x] Convention documented in `_geometry`: `*_TOL`/`*_MARGIN` length · `*_FRAC`/`*_RATIO`
+      dimensionless · `*_COS` direction cosine · `*_ANGLE` angle · `*_EPS` float epsilon.
+      `*_COS` is an addition: a direction cosine is dimensionless but forcing it into `*_FRAC`
+      loses that it is a unit-vector component and can never be anything else
+- [x] Serialisation rounding left alone — it is the ADR 0002 record contract
 
 ## 6 — Long functions and partial typing
 

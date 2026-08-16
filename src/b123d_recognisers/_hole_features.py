@@ -24,6 +24,12 @@ from b123d_recognisers._typing import CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
 _full_cyls = full_cylinders
+#: Two cylinder patches are the same diameter. NOT a machining allowance: analyse_cylinders
+#: already rounds every diameter to 2 dp, so this is an equality test on those rounded values
+#: and does not scale with the part. Named because a bare 0.01 reads as a length tolerance and
+#: would invite exactly that mistake.
+_SAME_DIAMETER_EPS = 0.01
+
 # A counterbore-like step shallower than this fraction of its diameter is a spotface.
 _SPOTFACE_MAX_RATIO = 0.2
 
@@ -285,7 +291,7 @@ def _merge_stacks(stacks, edge_faces, cache=None):
             b = min(nxt, key=lambda s: s["s_lo"])
             closed = ("flat", "drill_point")
             if (
-                abs(a["diameter"] - b["diameter"]) < 0.01
+                abs(a["diameter"] - b["diameter"]) < _SAME_DIAMETER_EPS
                 and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
                 and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
             ):
@@ -387,7 +393,7 @@ def recognise_holes(
         step_order = []
         min_d = math.inf
         for step in ordered[:bore_i]:
-            if step["diameter"] > min_d + 0.01:
+            if step["diameter"] > min_d + _SAME_DIAMETER_EPS:
                 continue
             min_d = step["diameter"]
             key = round(step["diameter"], 2)
@@ -409,7 +415,7 @@ def recognise_holes(
         # The bore's depth runs from its top to the hole's deep end: bore
         # lands span a mid-bore groove, and a blind hole's depth includes a
         # bottom relief groove — but not a through hole's far-side steps.
-        bore_segs = [s for s in stack if abs(s["diameter"] - bore["diameter"]) < 0.01]
+        bore_segs = [s for s in stack if abs(s["diameter"] - bore["diameter"]) < _SAME_DIAMETER_EPS]
         deep_segs = bore_segs if bottom == "through" else stack
         if from_hi:
             depth = max(s["s_hi"] for s in bore_segs) - min(s["s_lo"] for s in deep_segs)

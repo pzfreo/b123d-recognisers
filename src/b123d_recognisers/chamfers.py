@@ -9,7 +9,7 @@ with any principal axis (a 45° equal-leg chamfer on a Z edge has normal ≈ (0.
 0)) — that breaks a **convex** edge where two mutually-perpendicular axis-aligned faces
 meet. Four gates keep it to genuine chamfers and recover the right size:
 
-- **oblique** — the face's steepest normal component is < 0.99, excluding real
+- **oblique** — the face's steepest normal component is below ``AXIS_ALIGNED_COS``, excluding real
   axis-aligned faces and shallow draft angles; a turned part's conical chamfer is not
   planar (none found);
 - **bridges two axis-aligned faces** — the face is edge-adjacent to axis-aligned faces on
@@ -43,13 +43,18 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._geometry import resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
 
 #: Coplanarity/leg band, as a fraction of the part's largest extent (ADR 0008). The fraction is
 #: the 0.5 mm default it replaces over the corpus's 70 mm median extent.
 _TOL_FRAC = 0.00714
+
+#: A chamfer runs *along* one principal axis, so its normal has essentially no component on
+#: that axis. Looser than the package's AXIS_ZERO_COS because a chamfer face carries more
+#: angular noise than a plane that is nominally perpendicular to an axis.
+_RUN_AXIS_COS = 0.05
 
 
 @dataclass(frozen=True)
@@ -94,9 +99,9 @@ def classify_bevel(
     except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
         raise BevelReject("degenerate") from None
     nv = (nvec.X, nvec.Y, nvec.Z)
-    if max(abs(c) for c in nv) > 0.99:
+    if max(abs(c) for c in nv) > AXIS_ALIGNED_COS:
         raise BevelReject("aligned")
-    edge_i = next((i for i in (0, 1, 2) if abs(nv[i]) < 0.05), None)
+    edge_i = next((i for i in (0, 1, 2) if abs(nv[i]) < _RUN_AXIS_COS), None)
     if edge_i is None:
         raise BevelReject("compound")
     oi = [j for j in (0, 1, 2) if j != edge_i]
@@ -116,7 +121,7 @@ def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
         return None
     d = s.Plane().Axis().Direction()
     comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
-    if max(comp) <= 0.99:
+    if max(comp) <= AXIS_ALIGNED_COS:
         return None
     ax = max(range(3), key=lambda i: comp[i])
     loc = s.Plane().Location()
@@ -185,7 +190,9 @@ def recognise_chamfers(
         corner[edge_i] = fc[edge_i]
         corner[oi[0]] = neigh_coord[oi[0]]
         corner[oi[1]] = neigh_coord[oi[1]]
-        probe = tuple(corner[i] + 0.05 * (fc[i] - corner[i]) for i in (0, 1, 2))
+        probe = tuple(
+            corner[i] + INTERIOR_PROBE_FRAC * (fc[i] - corner[i]) for i in (0, 1, 2)
+        )
         clsf = BRepClass3d_SolidClassifier(part.wrapped)
         clsf.Perform(gp_Pnt(*probe), 1e-6)
         if clsf.State() == TopAbs_IN:

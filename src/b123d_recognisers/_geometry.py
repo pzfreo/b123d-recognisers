@@ -19,6 +19,35 @@ _PLANE_AXES = {
 
 _DOMINANT_TIE_TOL = 1e-12
 
+# Direction gates. A recogniser classifies a face by where its *unit* normal points, so these
+# are direction cosines: dimensionless, and never scaled with the part (ADR 0008). They were
+# spelled as bare 0.99 and 0.01 at a dozen sites across six modules, where the same number
+# appearing twice could not be told from the same *decision* appearing twice.
+#
+# Naming convention for numeric constants in this package:
+#
+#   ``*_TOL`` / ``*_MARGIN``   a length, in model units — must scale, per ADR 0008
+#   ``*_FRAC`` / ``*_RATIO``   dimensionless proportion of something named
+#   ``*_COS``                  a direction cosine — a unit-vector component
+#   ``*_ANGLE``                an angle, in the unit the name or comment states
+#   ``*_EPS``                  a float-comparison epsilon, not a physical allowance
+#
+# Record rounding (``round(x, 3)``, ``round(x, 4)``, ``FLOAT_DIGITS``) is none of these: it is
+# the public record contract of ADR 0002 and the schema of ADR 0005, and is left alone.
+
+#: A unit-vector component at or above this means the direction *is* that axis.
+AXIS_ALIGNED_COS = 0.99
+
+#: A unit-vector component at or below this means the direction has no part along that axis.
+#: Deliberately not ``1 - AXIS_ALIGNED_COS``: "points along" and "has no component along" are
+#: separate decisions, and a face may satisfy neither.
+AXIS_ZERO_COS = 0.01
+
+#: How far in from a corner to probe when asking which side of a face holds material. A
+#: fraction of the distance to the face centre, so it follows the face rather than the part.
+#: Shared by the chamfer and fillet recognisers, which ask the same question the same way.
+INTERIOR_PROBE_FRAC = 0.05
+
 
 def _unit(v):
     """Normalise negative zeros out of a direction tuple."""

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-from b123d_recognisers._geometry import resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, resolved_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -23,6 +23,11 @@ from b123d_recognisers._typing import Part
 #: Derived per solid, matching the per-solid recognition boundary. The fraction is the 0.2 mm
 #: default it replaces over the corpus's 70 mm median extent.
 _TOL_FRAC = 0.00286
+
+#: A boss side face is vertical: its normal has essentially no Z component. Looser than the
+#: package's AXIS_ZERO_COS because an extruded prism's walls carry the sketch's angular noise,
+#: and a side rejected here costs the whole ring.
+_SIDE_VERTICAL_COS = 0.02
 
 
 @dataclass(frozen=True, order=True)
@@ -114,7 +119,7 @@ def _recognise_one(
         if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
             continue
         normal = _normal(face)
-        if normal is None or abs(normal[2]) > 0.02:
+        if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
             continue
         bb = _bbox_tuple(face)
         if bb[5] - bb[4] <= tol:
@@ -160,7 +165,9 @@ def _recognise_one(
         if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
             return None
         normal = _normal(face)
-        if normal is None or (normal[2] < 0.99 if positive else normal[2] > -0.99):
+        if normal is None or (
+            normal[2] < AXIS_ALIGNED_COS if positive else normal[2] > -AXIS_ALIGNED_COS
+        ):
             return None
         bb = _bbox_tuple(face)
         if bb[5] - bb[4] > tol:
