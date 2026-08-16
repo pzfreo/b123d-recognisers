@@ -150,3 +150,19 @@ def test_pairs_and_mixed_sizes_are_not_patterns():
         for width, cy in [(10.0, -30), (14.0, 0), (10.0, 30)]
     ]
     assert recognise_pocket_patterns(pockets) == []
+
+
+def test_a_chord_with_no_vertices_reaches_no_od():
+    """``_both_chord_ends_reach_od`` is reachable only with vertices through the recogniser.
+
+    Its no-vertices guard used to be implicit — the function tested one end for ``None`` and
+    compared the other unguarded, which was correct only because both are assigned in the same
+    loop iterations. Stating the guard made it explicit and made it uncoverable from geometry,
+    so it is covered here directly, which is also the only place the answer is written down.
+    """
+
+    from b123d_recognisers.flats import _both_chord_ends_reach_od
+
+    assert not _both_chord_ends_reach_od(
+        [], (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), 10.0
+    )
