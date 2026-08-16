@@ -17,9 +17,6 @@ from b123d_recognisers._hole_features import (
     recognise_bosses,
     recognise_holes,
 )
-from b123d_recognisers._hole_features import (
-    _edge_face_map as _edge_face_map,
-)
 from b123d_recognisers._hole_patterns import (
     BoltCircle,
     HoleSpec,

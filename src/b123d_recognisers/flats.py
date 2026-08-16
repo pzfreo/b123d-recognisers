@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
+from b123d_recognisers._adjacency import edge_face_map, neighbours
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import (
     _axis_direction_is_aligned,
@@ -205,8 +206,7 @@ def recognise_flats(
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
         return []
-    # Edge shapes of each external OD face, for O(faces × stock) adjacency.
-    stock = [(c, [e.wrapped for e in c["face"].edges()]) for c in ext]
+    edge_faces = edge_face_map(part)
 
     # Phase 1 — collect candidate flat faces with the geometry the size needs.
     cands: list[dict] = []
@@ -220,9 +220,9 @@ def recognise_flats(
         nv = (nrm.X, nrm.Y, nrm.Z)
         pc = f.center()
         pcv = (pc.X, pc.Y, pc.Z)
-        my_edges = [e.wrapped for e in f.edges()]
-        for c, c_edges in stock:
-            if not any(a.IsSame(b) for a in my_edges for b in c_edges):
+        adjacent = set(neighbours(f, edge_faces))
+        for c in ext:
+            if c["face"] not in adjacent:
                 continue  # not adjacent to this OD
             d = c["dir_xyz"]
             if abs(nv[0] * d[0] + nv[1] * d[1] + nv[2] * d[2]) > _RADIAL_TOL:

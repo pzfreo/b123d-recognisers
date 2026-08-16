@@ -38,6 +38,7 @@ from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
+from b123d_recognisers._adjacency import edge_face_map, neighbours
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
@@ -105,15 +106,7 @@ def recognise_fillets(
     min_radius = _MIN_RADIUS if min_radius is None else min_radius
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     all_faces = list(part.faces())
-    # Edge→faces adjacency, built once. build123d shape equality/hash is IsSame
-    # (same TShape + Location, orientation-insensitive) — the identical predicate
-    # the old per-pair scan used — so one dict pass replaces the
-    # O(faces² × edges²) IsSame sweep: a measured 3.7M calls took about six seconds on
-    # 10.8 s fillet detection).
-    edge_faces: dict = {}
-    for g in all_faces:
-        for ge in g.edges():
-            edge_faces.setdefault(ge, []).append(g)
+    edge_faces = edge_face_map(part)
 
     out: list[Fillet] = []
     for f in all_faces:
@@ -143,18 +136,13 @@ def recognise_fillets(
         # itself so the pick is order-independent (the old strict-< kept whichever
         # face OCC iteration happened to yield first).
         neigh_best: dict[int, tuple[float, float]] = {}  # axis -> (distance, coord)
-        seen_neighbours: set[int] = set()
-        for e in f.edges():
-            for g in edge_faces.get(e, ()):
-                if g.wrapped.IsSame(fw) or id(g) in seen_neighbours:
-                    continue
-                seen_neighbours.add(id(g))
-                aa = _axis_aligned_axis(g.wrapped)
-                if aa is not None and aa[0] != edge_i:
-                    ax, coord = aa
-                    key = (abs(coord - fc[ax]), coord)
-                    if ax not in neigh_best or key < neigh_best[ax]:
-                        neigh_best[ax] = key
+        for g in neighbours(f, edge_faces):
+            aa = _axis_aligned_axis(g.wrapped)
+            if aa is not None and aa[0] != edge_i:
+                ax, coord = aa
+                key = (abs(coord - fc[ax]), coord)
+                if ax not in neigh_best or key < neigh_best[ax]:
+                    neigh_best[ax] = key
         neigh_coord = {ax: coord for ax, (_, coord) in neigh_best.items()}
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue

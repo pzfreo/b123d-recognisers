@@ -791,9 +791,9 @@ class TestEdgeFaceMap:
         # hashing/comparing equal across the faces meeting at it. A solid box has
         # edges shared by two faces; if Edge hashing ever regressed, each edge
         # would map to a single face and this would fail. (#150)
-        from b123d_recognisers._features import _edge_face_map
+        from b123d_recognisers._adjacency import edge_face_map
 
-        counts = [len(faces) for faces in _edge_face_map(Box(10, 10, 10)).values()]
+        counts = [len(faces) for faces in edge_face_map(Box(10, 10, 10)).values()]
         assert counts and max(counts) >= 2
 
 
