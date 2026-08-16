@@ -106,3 +106,11 @@ def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None
     assert "GITHUB_STEP_SUMMARY" in workflow
     assert "Wall time" in workflow
     assert "matrix:" not in workflow
+
+
+def test_package_branch_runs_one_full_matrix_not_push_and_pr_duplicates() -> None:
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "push:\n    branches: [main]" in workflow
+    assert "pull_request:" in workflow
+    assert "github.event.pull_request.number || github.run_id" in workflow
+    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in workflow
