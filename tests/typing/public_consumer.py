@@ -25,6 +25,7 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     assert_type(result, RecognitionResult)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
+    assert_type(result.step_ladder_for_z_span(0.0, 10.0), list[float])
     assert_type(result.step_ladder(bounds), list[float])
     assert_type(feature_census(part), dict[str, int])
     assert_type(

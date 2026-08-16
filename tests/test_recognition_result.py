@@ -1,13 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
-from dataclasses import FrozenInstanceError
-from types import SimpleNamespace
+import json
+import math
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
-from build123d import Box, Cylinder, Pos
+from build123d import Align, Box, Cylinder, Pos
 
-from b123d_recognisers import FaceLevel, RecognitionResult, build_recognition_result
+from b123d_recognisers import (
+    STEP_LADDER_BOUNDARY_MARGIN,
+    FaceLevel,
+    RecognitionResult,
+    TurnedStep,
+    build_recognition_result,
+)
 
 
 def _plate_with_holes():
@@ -138,8 +145,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     assert set(calls.values()) == {1}
     assert built.holes == tuple(holes)
     assert built.step_levels == tuple(levels)
-    bb = SimpleNamespace(min=SimpleNamespace(Z=0.0), max=SimpleNamespace(Z=10.0))
-    assert built.step_ladder(bb) == [4.0, 9.0]
+    assert built.step_ladder_for_z_span(0.0, 10.0) == [4.0, 9.0]
 
 
 def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
@@ -153,3 +159,83 @@ def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
     monkeypatch.setattr(result_module, "analyse_cylinders", forbidden)
     result = result_module.build_recognition_result(Box(10, 10, 10), cylinders=cylinders)
     assert result.cylinders == ((), ())
+
+
+def _ladder_result(
+    *, steps: tuple[TurnedStep, ...] = (), levels: tuple[FaceLevel, ...] = ()
+) -> RecognitionResult:
+    return replace(
+        build_recognition_result(Box(10, 10, 10)),
+        turned_steps=steps,
+        step_levels=levels,
+    )
+
+
+def test_explicit_z_span_filters_only_interior_z_shoulders_at_the_named_margin() -> None:
+    steps = tuple(
+        TurnedStep("z", lo, hi, diameter)
+        for lo, hi, diameter in (
+            (0.0, 0.6, 10.0),
+            (0.6, 1.2, 8.0),
+            (1.2, 9.4, 12.0),
+            (9.4, 10.0, 10.0),
+        )
+    )
+    result = _ladder_result(steps=steps)
+
+    assert STEP_LADDER_BOUNDARY_MARGIN == 0.6
+    first = result.step_ladder_for_z_span(0.0, 10.0)
+    second = result.step_ladder_for_z_span(0.0, 10.0)
+
+    assert first == second == [1.2]
+    assert all(type(value) is float for value in first)
+    assert json.loads(json.dumps(first)) == [1.2]
+
+
+def test_explicit_z_span_validates_bounds_margin_and_narrow_span_edges() -> None:
+    result = _ladder_result(
+        steps=(
+            TurnedStep("z", 0.0, 1.0, 10.0),
+            TurnedStep("z", 1.0, 2.0, 8.0),
+        )
+    )
+
+    assert result.step_ladder_for_z_span(0.0, 2.0, boundary_margin=1.0) == []
+    with pytest.raises(ValueError, match="z_min must not exceed z_max"):
+        result.step_ladder_for_z_span(2.0, 1.0)
+    for value in (math.nan, math.inf, -math.inf):
+        with pytest.raises(ValueError, match="finite"):
+            result.step_ladder_for_z_span(value, 2.0)
+    for margin in (-0.1, math.nan, math.inf):
+        with pytest.raises(ValueError, match="boundary_margin"):
+            result.step_ladder_for_z_span(0.0, 2.0, boundary_margin=margin)
+
+
+def test_non_z_or_prismatic_ladder_preserves_pre_filtered_face_levels() -> None:
+    levels = (FaceLevel(4.0), FaceLevel(9.0))
+    prismatic = _ladder_result(levels=levels)
+    x_turned = _ladder_result(
+        steps=(
+            TurnedStep("x", 0.0, 4.0, 10.0),
+            TurnedStep("x", 4.0, 10.0, 8.0),
+        ),
+        levels=levels,
+    )
+
+    assert prismatic.step_ladder_for_z_span(0.0, 10.0) == [4.0, 9.0]
+    assert x_turned.step_ladder_for_z_span(0.0, 10.0) == [4.0, 9.0]
+
+
+def test_build123d_bounds_call_is_compatible_but_deprecated_until_1_0() -> None:
+    result = _ladder_result(
+        steps=(
+            TurnedStep("z", 0.0, 4.0, 10.0),
+            TurnedStep("z", 4.0, 10.0, 8.0),
+        )
+    )
+    bounds = Box(10, 10, 10, align=Align.MIN).bounding_box()
+
+    with pytest.warns(DeprecationWarning, match=r"0\.2\.1.*no earlier than 1\.0\.0"):
+        legacy = result.step_ladder(bounds)
+
+    assert legacy == result.step_ladder_for_z_span(bounds.min.Z, bounds.max.Z) == [4.0]
