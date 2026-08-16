@@ -242,7 +242,7 @@ def recognise_hole_patterns(
     for h in holes:
         groups.setdefault(_spec_key(h), []).append(h)
 
-    patterns = []
+    patterns: list[BoltCircle | LinearArray | RectGrid] = []
     for spec, members in groups.items():
         if len(members) < 3:
             continue

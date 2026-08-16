@@ -8,7 +8,7 @@ import math
 from collections import Counter
 from dataclasses import dataclass, replace
 from types import SimpleNamespace
-from typing import TypeVar
+from typing import Literal, TypeVar, overload
 
 from build123d import Box, GeomType, Pos
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -42,7 +42,7 @@ _LENGTH_TIE_FRAC = 0.05
 _SLOT_MAX_SPAN_FRAC = 0.9
 
 
-def _outward_normal(face):
+def _outward_normal(face) -> tuple[float, float, float] | None:
     """Unit outward normal of a planar face as an (x, y, z) tuple, or None when
     the face is not planar.  Material-side convention matches helpers'
     ``analyse_cylinders``: FORWARD orientation agreeing with the plane frame's
@@ -57,7 +57,7 @@ def _outward_normal(face):
     return (sign * n.X(), sign * n.Y(), sign * n.Z())
 
 
-def _dominant_axis(nrm):
+def _dominant_axis(nrm) -> str | None:
     """Return the axis letter when ``nrm`` is axis-aligned, else None."""
     for axis, k in _AXES.items():
         if abs(abs(nrm[k]) - 1.0) <= _AXIS_ALIGNED_TOL:
@@ -96,7 +96,7 @@ def _is_wall(face) -> bool:
     return n_line >= 1 and n_circle <= 1
 
 
-def _planar_faces(part):
+def _planar_faces(part) -> list[_Face]:
     """All axis-aligned planar faces as :class:`_Face` records (computed once)."""
     faces = []
     for face in part.faces():
@@ -110,19 +110,19 @@ def _planar_faces(part):
     return faces
 
 
-def _center(bb, k):
-    return (getattr(bb.min, "XYZ"[k]) + getattr(bb.max, "XYZ"[k])) / 2
+def _center(bb, k) -> float:
+    return float(getattr(bb.min, "XYZ"[k]) + getattr(bb.max, "XYZ"[k])) / 2
 
 
-def _overlap_len(bb_a, bb_b, axis):
+def _overlap_len(bb_a, bb_b, axis) -> float:
     """Length of the overlap of two bboxes along ``axis`` (0 if disjoint)."""
     c = "XYZ"[_AXES[axis]]
     lo = max(getattr(bb_a.min, c), getattr(bb_b.min, c))
     hi = min(getattr(bb_a.max, c), getattr(bb_b.max, c))
-    return hi - lo
+    return float(hi - lo)
 
 
-def _candidate(fa, fb, part_ext):
+def _candidate(fa, fb, part_ext) -> Slot | None:
     """Build a :class:`Slot` from two facing rectangular walls, or None if the
     pair is not a slot (not facing, not overlapping, wider than long, or
     spanning the full part).  Geometry only — the through/blind test is applied
@@ -345,7 +345,7 @@ _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) /
 _CAP_CLUSTER_FRAC = 0.075
 
 
-def _obround_end(cap: tuple):
+def _obround_end(cap: tuple) -> tuple | None:
     """Classify a concave cylinder *cap* (from :func:`_cylinder_faces`) as a half-cylinder obround
     end, or None. A half-cylinder end's in-plane bounding box is ≈ 2r across (its width axis) by
     ≈ r along the bulge (its long axis) — a full cylinder (round hole) is 2r × 2r and is rejected.
@@ -416,7 +416,7 @@ def _has_side_walls(faces, s: Slot, scale) -> bool:
     return lo_wall and hi_wall
 
 
-def _union_bb(a, b):
+def _union_bb(a, b) -> SimpleNamespace:
     """Axis-aligned union of two bounding boxes, as a ``min``/``max`` namespace matching the
     build123d ``BoundBox`` interface (``.min.X`` …) the cap helpers read."""
     mn = SimpleNamespace(X=min(a.min.X, b.min.X), Y=min(a.min.Y, b.min.Y), Z=min(a.min.Z, b.min.Z))
@@ -467,7 +467,17 @@ def _obround_ends(part) -> list[tuple]:
     return ends
 
 
-def _recognise_obround_from_ends(part, faces, *, blind: bool = False):
+@overload
+def _recognise_obround_from_ends(part, faces, *, blind: Literal[False] = ...) -> list[Slot]: ...
+
+
+@overload
+def _recognise_obround_from_ends(part, faces, *, blind: Literal[True]) -> list[Pocket]: ...
+
+
+def _recognise_obround_from_ends(
+    part, faces, *, blind: bool = False
+) -> list[Slot] | list[Pocket]:
     """Recognise obround recesses from their semicircular end caps — the path for recesses whose
     flat walls are too short for :func:`_candidate`/:func:`_pocket_candidate` to pair.
     Merged ends (:func:`_obround_ends`, quarter/half-cylinder agnostic) are grouped by centreline/
@@ -604,7 +614,7 @@ def _body_signature(solid) -> tuple[float, ...]:
     )
 
 
-def _body_scoped_records(sources, recognise_one):
+def _body_scoped_records(sources, recognise_one) -> list:
     """Recognise each source and attach unambiguous body correspondence."""
     signatures = [_body_signature(solid) for solid in sources]
     counts = Counter(signatures)
@@ -615,7 +625,7 @@ def _body_scoped_records(sources, recognise_one):
     ]
 
 
-def _same_channel_line(a: Slot, b: Slot, scale):
+def _same_channel_line(a: Slot, b: Slot, scale) -> tuple[float, float] | None:
     """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
     (width axis, centreline, width and depth extent) but disjoint along their run
     — return the gap ``(g_lo, g_hi)`` between them along ``long_axis``; else None.
@@ -739,7 +749,7 @@ def _collapse_collinear(slots: list[Slot], part) -> list[Slot]:
     return sorted(out, key=lambda c: (c.width, _region_center(c)))
 
 
-def _region_center(s: Slot | Pocket):
+def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
     """The slot's mid-point in part coordinates (axis-ordered)."""
     c = {
         s.width_axis: s.w_center,
@@ -859,7 +869,7 @@ def _channel_candidate(fa, fb, faces, part_ext, part_bounds) -> Channel | None:
     return candidate if isinstance(candidate, Channel) else None
 
 
-def _channel_sort_key(channel: Channel):
+def _channel_sort_key(channel: Channel) -> tuple:
     """Geometry-only order, including depth to break cross-solid traversal ties."""
     return (
         channel.long_axis,
@@ -940,7 +950,7 @@ def _recognise_corner_notches(faces: list[_Face], pbb) -> list[Pocket]:
     """
     tol = _merge_tol(part_scale(pbb))
 
-    def limits(bb, axis):
+    def limits(bb, axis) -> tuple[float, float]:
         c = "XYZ"[_AXES[axis]]
         return getattr(bb.min, c), getattr(bb.max, c)
 

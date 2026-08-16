@@ -5,6 +5,7 @@
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from typing import cast
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
@@ -88,7 +89,7 @@ class BossRecord(Record):
     height: float
 
 
-def _segments(cyls):
+def _segments(cyls) -> list[dict]:
     """Collapse cylinder patches into segments: one per (axis line, diameter,
     contiguous axial range). Keyway-split patches of one bore merge; coaxial
     same-diameter holes from opposite faces stay separate."""
@@ -103,7 +104,7 @@ def _segments(cyls):
     ]
 
 
-def _axis_point(seg, s):
+def _axis_point(seg, s) -> tuple[float, float, float]:
     """The 3D point on *seg*'s axis at axial coordinate *s*."""
     ax, ay, az = seg["axis_xyz"]
     dx, dy, dz = seg["dir_xyz"]
@@ -112,7 +113,7 @@ def _axis_point(seg, s):
     return (ax + t * dx, ay + t * dy, az + t * dz)
 
 
-def _end_partners(seg, s_end, edge_faces, cache=None):
+def _end_partners(seg, s_end, edge_faces, cache=None) -> list:
     """The faces beyond one axial end of *seg*: partners of edges that lie at
     that end. An opening edge on a slanted or curved surface dips away from
     the end plane (by the lip sagitta), so edges match within a margin — but
@@ -127,7 +128,10 @@ def _end_partners(seg, s_end, edge_faces, cache=None):
         key = ("ep", id(seg), round(s_end, 9))
         hit = cache.get(key)
         if hit is not None and hit[0] is seg:
-            return hit[1]
+            # cast, not a copy: the cache exists to avoid re-walking every face's edges, and
+            # rebuilding the list on each hit would undo that. The value's type is fixed by
+            # where it is written, a few lines below.
+            return cast(list, hit[1])
     dx, dy, dz = seg["dir_xyz"]
     margin = max(
         length_tol(seg["diameter"], rel=_STACK_GAP_FRAC),
@@ -147,20 +151,20 @@ def _end_partners(seg, s_end, edge_faces, cache=None):
     return partners
 
 
-def _classify_end(seg, s_end, hi_end, edge_faces, cache=None):
+def _classify_end(seg, s_end, hi_end, edge_faces, cache=None) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
     if cache is None:
         return _classify_end_uncached(seg, s_end, hi_end, edge_faces)
     key = ("ce", id(seg), round(s_end, 9), hi_end)
     hit = cache.get(key)
     if hit is not None and hit[0] is seg:
-        return hit[1]
+        return cast(str, hit[1])
     result = _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache)
     cache[key] = (seg, result)
     return result
 
 
-def _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache=None):
+def _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache=None) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
     Returns ``"open"`` (the bore exits, or the boss's free end), ``"flat"``
@@ -239,7 +243,7 @@ def _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache=None):
     return weak or "unknown"
 
 
-def _edge_face_map(part):
+def _edge_face_map(part) -> dict:
     """Map every edge of *part* to the faces that share it."""
     edge_faces: dict = {}
     for f in part.faces():
@@ -248,7 +252,7 @@ def _edge_face_map(part):
     return edge_faces
 
 
-def _shared_transition(a, b, edge_faces, cache=None):
+def _shared_transition(a, b, edge_faces, cache=None) -> bool:
     """True when a cone or torus face spans the gap between segment *a*'s
     high end and segment *b*'s low end — the shoulder chamfer or fillet that
     makes the two segments steps of one hole. The transition face touches
@@ -269,7 +273,7 @@ def _shared_transition(a, b, edge_faces, cache=None):
     return False
 
 
-def _merge_stacks(stacks, edge_faces, cache=None):
+def _merge_stacks(stacks, edge_faces, cache=None) -> list[list[dict]]:
     """Recombine coaxial stacks that are one hole:
 
     - same bore diameter on both sides of a crossing void, neither facing
