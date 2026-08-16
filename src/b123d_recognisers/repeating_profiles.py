@@ -17,6 +17,7 @@ from math import atan2, cos, hypot, pi, sin
 
 from build123d import GeomType
 
+from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 from b123d_recognisers.profiled_bores import principal_boundary_plane
@@ -332,8 +333,7 @@ def _sector_signature(
 
 def _recognise_solid(solid, *, tol: float) -> list[RepeatingRadialProfile]:
     bbox = solid.bounding_box()
-    scale = max(float(bbox.size.X), float(bbox.size.Y), float(bbox.size.Z))
-    metric_tol = max(tol, scale * 1e-5)
+    metric_tol = max(tol, part_scale(bbox) * 1e-5)
     boundaries = []
     for face in solid.faces():
         try:

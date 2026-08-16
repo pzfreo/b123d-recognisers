@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Internal shared axis conventions used by recognition records and patterns."""
+"""Internal shared axis and length conventions used by recognition records and patterns.
+
+Two things live here because every recogniser needs them and none owns them: the stable
+dominant-axis convention, and the length-tolerance form of ADR 0008.
+"""
 
 from __future__ import annotations
 
@@ -115,3 +119,41 @@ def _axis_direction_is_aligned(axis: str, direction, *, tol: float = 1e-3) -> bo
     return abs(vector[index] - 1.0) <= tol and all(
         abs(vector[other]) <= tol for other in range(3) if other != index
     )
+
+
+def part_scale(bbox) -> float:
+    """Return a solid's characteristic length: the largest extent of its bounding box.
+
+    The reference length for tolerances that compare two coordinates with no smaller feature
+    to measure against — a level bucket, a floor-plane coincidence, a merge radius. Takes the
+    bounding box rather than the part because every caller already holds one, and asking for a
+    second is both a wasted traversal and a chance for the two to disagree.
+    """
+
+    return max(float(bbox.size.X), float(bbox.size.Y), float(bbox.size.Z))
+
+
+def length_tol(nominal: float, *, rel: float, floor: float) -> float:
+    """Return a length tolerance proportional to *nominal* but never below *floor*.
+
+    The package's one tolerance form, per ADR 0008. *rel* carries the part of the allowance
+    that grows with the thing being measured — machining and modelling error both scale with
+    size — and *floor* carries the part that does not: the absolute noise band below which two
+    coordinates are the same coordinate.
+
+    The terms add rather than taking a maximum. A maximum discards one term below
+    ``floor / rel``, so every feature smaller than that gets exactly the floor and its own size
+    stops mattering — the same scale-blindness, moved to the small end.
+
+    *nominal* is a diameter, radius, width or envelope extent, and is therefore non-negative.
+    A negative value would silently *tighten* the gate below its floor, which no caller can
+    mean, so it is a programming error and raises.
+
+    A NaN nominal is deliberately not rejected. It means the geometry that produced it is
+    malformed, and this package fails closed on malformed evidence rather than raising: the NaN
+    propagates, every comparison against it is false, and the candidate is refused.
+    """
+
+    if nominal < 0.0:
+        raise ValueError("nominal must be a non-negative length")
+    return rel * nominal + floor

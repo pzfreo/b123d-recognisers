@@ -6,9 +6,9 @@ A **measurement tool**, not a recogniser: it counts how completely the recogniti
 (:mod:`b123d_recognisers`) captures a part's machined features. It produces no consumer-domain
 feature or drawing policy.
 
-The metric is a **census**: the number of features each recogniser finds, per kind. Progress
-Across a representative corpus, changes in kinds and counts expose recognition changes directly;
-a single part's census states exactly what was recognised.
+The metric is a **census**: the number of features each recogniser finds, per kind. Across a
+representative corpus, changes in kinds and counts expose recognition changes directly; a single
+part's census states exactly what was recognised.
 
 *Why census-only, no completeness ratio.* A ratio needs an independent denominator, and there
 isn't a good one. The obvious substrate — :func:`b123d_recognisers.feature_diameters` —

@@ -17,6 +17,7 @@ from math import asin, sqrt
 
 from build123d import Face, GeomType, Solid, Vector
 
+from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -270,8 +271,7 @@ def double_d_bores_from_openings(
 def _recognise_double_d_bores_one(part, *, tol: float) -> list[DoubleDBore]:
     """Recognise double-D bores within one solid's own boundary."""
     bbox = part.bounding_box()
-    part_scale = max(float(bbox.size.X), float(bbox.size.Y), float(bbox.size.Z))
-    scan_tol = max(tol, part_scale * 1e-5)
+    scan_tol = max(tol, part_scale(bbox) * 1e-5)
     openings: list[tuple[str, float, DoubleDProfile, object]] = []
     for face in part.faces():
         boundary = principal_boundary_plane(face, bbox)
@@ -302,8 +302,7 @@ def recognise_double_d_bores(part: Part, *, tol: float = 1e-5) -> list[DoubleDBo
 def read_double_d_tool(obj, *, tol: float = 1e-5) -> tuple:
     """Read one constant double-D extrusion, rejecting merely matching end geometry."""
     bbox = obj.bounding_box()
-    part_scale = max(float(bbox.size.X), float(bbox.size.Y), float(bbox.size.Z))
-    scan_tol = max(tol, part_scale * 1e-5)
+    scan_tol = max(tol, part_scale(bbox) * 1e-5)
     ends: list[tuple[str, float, DoubleDProfile, object]] = []
     for face in obj.faces():
         boundary = principal_boundary_plane(face, bbox)

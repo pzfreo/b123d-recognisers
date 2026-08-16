@@ -4,14 +4,14 @@
 
 import math
 
-from b123d_recognisers._geometry import _unit, plane_axes
+from b123d_recognisers._geometry import _unit, length_tol, plane_axes
 
 _PATTERN_REL_TOL = 0.02
 _PATTERN_ABS_TOL = 0.1
 
 
 def _pattern_tol(nominal: float) -> float:
-    return _PATTERN_REL_TOL * nominal + _PATTERN_ABS_TOL
+    return length_tol(nominal, rel=_PATTERN_REL_TOL, floor=_PATTERN_ABS_TOL)
 
 
 def _project_out(w, *directions):
