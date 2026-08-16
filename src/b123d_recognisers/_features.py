@@ -39,6 +39,8 @@ from b123d_recognisers._pattern_geometry import (
 from b123d_recognisers._pattern_geometry import (
     _rect_grid as _rect_grid,
 )
+from b123d_recognisers._typing import Vector3 as Vector3
+from b123d_recognisers.countersinks import CounterSink as CounterSink
 
 __all__ = [
     "BoltCircle",

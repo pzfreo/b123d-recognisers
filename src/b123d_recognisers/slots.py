@@ -23,6 +23,7 @@ from b123d_recognisers._recess_records import (
     SlotArray,
     SlotGrid,
 )
+from b123d_recognisers._typing import Vector3 as Vector3
 
 __all__ = [
     "Channel",

@@ -3,6 +3,7 @@
 
 import ast
 import importlib
+import typing
 from pathlib import Path
 
 import b123d_recognisers as recognition
@@ -203,6 +204,25 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         "RectGrid",
     ):
         assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
+
+    moved_records = (
+        "BoltCircle",
+        "BossRecord",
+        "Channel",
+        "CounterBore",
+        "HoleRecord",
+        "HoleSpec",
+        "LinearArray",
+        "Pocket",
+        "PocketArray",
+        "PocketGrid",
+        "RectGrid",
+        "Slot",
+        "SlotArray",
+        "SlotGrid",
+    )
+    for name in moved_records:
+        assert typing.get_type_hints(getattr(recognition, name))
 
 
 def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() -> None:
