@@ -120,11 +120,11 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 - [x] `STEP_LADDER_BOUNDARY_MARGIN` reclassified as deliberately absolute and capped at a
       quarter of the span; ADR 0006 amended. Deriving it broke that ADR's own regression
 - [x] `NOT_YET_SCALE_FREE` reduced from four kinds to one
-- [ ] **`_recess_core`'s `_MERGE_TOL`, `_FLOOR_TOL` and corner-notch `tol` — own PR.** They are
-      module constants read by helpers that never receive the part, so converting them means
-      threading a resolved tolerance through a 987-line module whose tolerances interact (merge
-      feeds collapse feeds obround extension). This is the split the epic reserved. `pocket` is
-      the last entry in `NOT_YET_SCALE_FREE` and `slanted_steps` the last fixture that drifts
+- [x] **`_recess_core`'s `_MERGE_TOL`, `_FLOOR_TOL` and corner-notch `tol`** — the split the
+      epic reserved. A `scale` threaded through the eight helpers that never receive the part;
+      the five that hold a part or `part_ext` derive it themselves. Goldens byte-identical
+- [x] **`NOT_YET_SCALE_FREE` is empty.** Every fixture recognises identically from 0.05x to
+      100x, across every family
 - [ ] Release note; `0.3.0a1` for the Draftwright canary, then `0.3.0` — **requires explicit
       approval, publishing is outside the loop's remit**
 
