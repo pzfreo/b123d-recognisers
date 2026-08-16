@@ -249,9 +249,10 @@ The public `tol=` keywords gain `None` as their default, resolving to the derive
 float keeps today's meaning, so a caller who has calibrated for their own parts is not broken.
 
 The ADR 0005 manifest records record *schemas*, not function signatures, so those defaults do not
-appear in it — an earlier draft of this ADR claimed they did. The one manifest change is
-`RiserEvidence.tol` becoming required, because a field whose purpose is to report the scanned
-tolerance has no honest default.
+appear in it — an earlier draft of this ADR claimed they did. **The manifest does not change at
+all**: no record gains, loses or alters a field, so the published contract is byte-identical to
+0.2.2 and the only difference a consumer can observe is recognition output away from reference
+scale, which is the point.
 
 Conversion landed as five changes rather than the three planned, each split off when the
 previous one's evidence showed it was a different defect: the policy and helpers; the

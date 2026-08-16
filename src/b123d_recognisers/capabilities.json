@@ -1418,7 +1418,7 @@
               "units": "mm"
             },
             "tol": {
-              "required": true,
+              "required": false,
               "type": "float",
               "units": "mm"
             },
