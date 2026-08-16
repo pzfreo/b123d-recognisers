@@ -30,8 +30,11 @@ production changed; a record still carrying `0.5` would now be misreporting. The
 is bit-identical to the Draftwright capture, which is the claim worth keeping and the reason the
 divergence is stated as a table rather than a re-capture.
 
-`RiserEvidence.tol` also loses its default. Its whole purpose is to record a scanned value, so
-there is no honest default to fall back on; direct constructors must now pass it.
+`RiserEvidence.tol` keeps its `0.5` default, so direct construction is unaffected. The default is
+never what a recogniser supplies — `recognise_risers` always passes the value it resolved — and a
+record built by hand was never scanned at all, so no value is more truthful than another.
+Requiring one would have broken every existing direct construction for no gain, which is more than
+a patch release should do.
 
 The compatibility normalization below (dominant-axis tie-break) predates this and is unrelated.
 

@@ -127,11 +127,11 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
       100x, across every family
 - [ ] Release note; `0.2.3a1` for the Draftwright canary, then `0.2.3` — **requires explicit
       approval, publishing is outside the loop's remit**
-- [ ] **Patch, not minor, by maintainer decision.** ADR 0008 and this epic both assumed 0.3.0
-      because finding 2 changes recognition output. The one part that is more than a patch under
-      any reading is `RiserEvidence.tol` losing its default, which breaks direct construction;
-      restoring a default would cost nothing at runtime, since the recogniser always passes the
-      resolved value explicitly. Open question for the release
+- [x] **Patch, not minor, by maintainer decision.** ADR 0008 and this epic both assumed 0.3.0
+      because finding 2 changes recognition output. The one part that exceeded a patch under any
+      reading — `RiserEvidence.tol` losing its default — is reinstated, so nothing in the release
+      breaks an existing caller. The capability manifest reverts with it: that field is
+      `required: false` again, leaving the manifest byte-identical to 0.2.2
 
 ## 3 — Tests that pin prose and implementation detail
 

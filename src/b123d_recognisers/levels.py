@@ -92,9 +92,15 @@ class RiserEvidence(Record):
     #: tol=0.1)`` followed by a bare ``project_step_shoulders(...)`` mixed 0.1 with the
     #: projection's own default. Carried on the record rather than passed
     #: separately because a caller who has the evidence should not have to remember how it was
-    #: produced. There is no default: the value is whatever the scan resolved for that
-    #: part, and a record carrying a stale 0.5 would misreport how it was made.
-    tol: float
+    #: produced.
+    #:
+    #: The default is a constructor convenience for a hand-built record and is never what a
+    #: recogniser supplies — :func:`recognise_risers` always passes the value it resolved for
+    #: that part. Removing it was briefly considered on the grounds that a stale 0.5 misreports
+    #: how a record was made, and reinstated because a record built by hand was never scanned at
+    #: all, so no value is more truthful than another, and requiring one breaks every existing
+    #: direct construction for no gain.
+    tol: float = 0.5
 
 
 def recognise_face_levels(
