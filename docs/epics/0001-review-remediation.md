@@ -164,13 +164,13 @@ lower. The 92.31% aggregate is partly carried by the easy modules.
       normalization in `migration/PARITY.md` and had no test of its own; it now has the tie
       cases, the band edge, and every rejection path
 - [x] `grooves.py` 83.8% → **97.4%**, entirely from the excluded classes
-- [~] `polygonal_bosses.py` 85.4% → 86.2%. Nine exclusion tests landed and the *contract* is
-      now pinned — irregular polygon, incomplete ring, consumed cap, inward recess, cross-solid,
-      stock face-count. But the coverage gain is small and honestly reported: the remaining
-      uncovered lines are cap gates reached only by a candidate that passes the ring and
-      regularity checks and then fails specifically on its caps. Constructing that needs
-      deliberately malformed B-Rep rather than a plausible part, and a test whose shape no one
-      would model is worth less than the line it covers
+- [x] `polygonal_bosses.py` 85.4% → **88.3%**, in two steps. Nine exclusion tests pinned the
+      contract (irregular polygon, incomplete ring, consumed cap, inward recess, cross-solid,
+      stock face-count). I then reported the rest as reachable only through deliberately
+      malformed B-Rep — **and the finding 6 decomposition made that judgement obsolete.**
+      `_regular_ring_order` and `_ring_profile` are pure functions of normals and centres, so
+      the remaining cases are arithmetic rather than solids. The lesson generalises: a predicate
+      buried in a 231-line function can only be reached through everything in front of it
 - [ ] `repeating_profiles.py` 87.6% — untouched. Its uncovered lines are the sector-rotation
       correspondence failures, which have the same character: reachable, but only with
       geometry built to fail
