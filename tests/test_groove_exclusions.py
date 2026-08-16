@@ -15,7 +15,7 @@ stock, and each gate removes one way of failing that.
 
 from __future__ import annotations
 
-from build123d import Axis, Cone, Cylinder, GeomType, Pos, fillet
+from build123d import Axis, Cone, Cylinder, GeomType, Pos, Rot, chamfer, fillet
 
 from b123d_recognisers import recognise_grooves
 
@@ -159,6 +159,43 @@ def test_a_lead_in_cone_must_land_on_both_bands():
     shaft += Pos(0, 0, 31.0) * Cylinder(15, 20)
 
     assert recognise_grooves(shaft) == []
+
+
+def test_the_lead_in_at_the_far_end_must_land_on_both_bands_too():
+    """The mirror of the case above, with the bad taper on the *upper* join.
+
+    The two joins are separate reads of the neighbour — as with the two local-minimum gates —
+    so a copy-paste slip between them would leave one direction unchecked, and a groove would
+    be reported off a taper that only half fits.
+    """
+
+    shaft = Cylinder(15, 20)
+    shaft += Pos(0, 0, 11.5) * Cone(15, 12, 3)
+    shaft += Pos(0, 0, 15.5) * Cylinder(12, 5)
+    shaft += Pos(0, 0, 19.5) * Cone(9, 15, 3)  # starts undercut of the floor, at 18 mm
+    shaft += Pos(0, 0, 31.0) * Cylinder(15, 20)
+
+    assert recognise_grooves(shaft) == []
+
+
+def test_cones_elsewhere_on_the_part_are_not_lead_ins():
+    """A real part carries cones that have nothing to do with the groove.
+
+    Two of them here: a V-bottomed hole down the shaft axis, whose conical face runs to an apex
+    and so has a single rim to offer; and the end chamfer of a cross boss, which has two rims
+    but about the wrong axis. Neither may fuse a pair of bands, and the groove between the
+    genuine lead-ins must still read exactly once.
+    """
+
+    part = _chamfered_groove()
+    part -= Pos(0, 0, 37) * Cone(0, 4, 8)
+    part += Rot(0, 90, 0) * Cylinder(8, 60)
+    part = chamfer(part.edges().filter_by(GeomType.CIRCLE).group_by(Axis.X)[-1], 1.0)
+
+    grooves = recognise_grooves(part)
+
+    assert len(grooves) == 1
+    assert (grooves[0].diameter, grooves[0].width) == (24.0, 5.0)
 
 
 def test_a_radiused_lead_in_is_still_outside_the_proven_scope():
