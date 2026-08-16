@@ -80,6 +80,32 @@ comparison**, not from the part:
 Preferring the local nominal matters: a 0.5 mm merge tolerance is right for a 3 mm hole in a 500 mm
 plate, and scaling it to the plate would merge the hole into its neighbour.
 
+### A tolerance is not a threshold
+
+Added in 0.2.4 after this ADR's first application shipped a regression. The original rule —
+"lengths scale with the geometry they judge" — conflates two kinds of constant:
+
+**A tolerance** asks *are these two things the same?* — `abs(a - b) <= tol`, a coordinate merge, a
+plane coincidence. It scales with what it compares, because measurement and modelling error do.
+
+**A minimum-evidence threshold** asks *is this big enough to be a feature?* — `leg >= min`,
+`radius >= min`, `thickness > tol`, `depth >= min`. It **must not scale with the part**. Doing so
+makes a feature's existence depend on what surrounds it, so the same 1 mm chamfer is recognised on
+an 80 mm plate and absent on a 200 mm one. Nor can it usefully scale with the feature, because the
+gate *is* on the feature's own size.
+
+The deeper objection is ADR 0001. Whether a 1 mm fillet on a 200 mm part is worth dimensioning is
+consumer policy, and this package reports geometric facts rather than deciding significance.
+Scaling a threshold answers that question inside recognition, silently, on the consumer's behalf.
+
+0.2.3 scaled six thresholds to the part — `chamfers` minimum leg, `fillets.min_radius`, `plates`
+slab thickness, `pads` footprint, `polygonal_bosses` height, `flats` minimum depth — and scaled the
+recess merge band to the whole solid, which merged pockets a smaller plate kept distinct. Every
+one of nineteen observed deltas on real parts was a lost record and none was a gain, which is the
+signature of a one-directional change rather than of removing false positives.
+
+Thresholds are therefore absolute, and belong with the deliberately-absolute class below.
+
 ### What never scales
 
 Dimensionless quantities: ratios and fractions; dot products of unit vectors; angles; counts;

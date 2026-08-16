@@ -1,5 +1,32 @@
 # Release notes
 
+## 0.2.4
+
+Corrects a regression in 0.2.3. Recognition output returns to `0.2.2` behaviour at every scale the
+golden corpus covers, and every pinned golden is byte-identical to the original Draftwright capture
+again. Anyone on 0.2.3 should take this.
+
+- **Minimum-evidence thresholds are absolute again.** 0.2.3 scaled them to the part, which made a
+  feature's existence depend on what surrounds it: the same 1 mm chamfer was recognised on an
+  80 mm plate and absent on a 200 mm one. Six NIST MBE PMI parts lost records in nineteen places
+  and gained in none. Affects the `chamfers` minimum leg, `fillets.min_radius`, `plates` slab
+  thickness, `pads` footprint, `polygonal_bosses` height and `flats` minimum depth.
+- **The recess merge band is absolute again.** Scaling it to the whole solid merged pockets and
+  slots that a smaller plate kept distinct, and simultaneously raised the minimum separation of
+  two slot ends — losing records in both directions at once.
+- **`RiserEvidence.tol` reports `0.5` again**, so the goldens match the capture.
+- [ADR 0008](docs/adr/0008-length-tolerance-policy.md) now distinguishes a **tolerance** ("are
+  these two things the same?", which scales with what it compares) from a **minimum-evidence
+  threshold** ("is this big enough to be a feature?", which must not). Whether a small feature on
+  a large part is worth dimensioning is consumer policy under ADR 0001, and recognition should not
+  answer it silently.
+- Genuinely feature-relative tolerances from 0.2.3 are kept: diameter matching in `countersinks`,
+  `grooves` and the cylinder stack, and the recess cap radii. Those compare two measurements of
+  one feature and do scale with it.
+- `tests/test_large_part_small_features.py` pins the property with parts larger than the fixture
+  corpus carrying features smaller than it implies — the combination the 30–180 mm fixtures never
+  covered.
+
 ## 0.2.3
 
 Recognition-behaviour release. Every gate that compares a length now scales with the geometry it

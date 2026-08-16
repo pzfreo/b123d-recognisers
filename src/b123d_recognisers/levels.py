@@ -26,7 +26,6 @@ from b123d_recognisers._geometry import (
     AXIS_ZERO_COS,
     clears_threshold,
     cluster_coordinates,
-    resolved_tol,
 )
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
@@ -118,7 +117,7 @@ def recognise_face_levels(
     engraved text/numbers — that are not real steps and would otherwise be
     dimensioned as phantom shoulders.
     """
-    tol = resolved_tol(tol, part.bounding_box(), rel=_TOL_FRAC)
+    tol = _TOL if tol is None else tol
     zs: list[float] = []
     face_bounds: list[tuple[float, float, float, float]] = []
     face_areas: list[float] = []
@@ -157,9 +156,10 @@ def recognise_face_levels(
     return sorted(levels)
 
 
-#: Coplanar-face grouping band, as a fraction of the part's largest extent (ADR 0008). The
-#: fraction is the 0.5 mm default it replaces over the corpus's 70 mm median extent.
-_TOL_FRAC = 0.00714
+#: Band within which two horizontal faces are one level. **Absolute, per ADR 0008.** Scaling it
+#: to the part made a large plate merge levels a small one kept, and also served as a minimum
+#: riser height — so it lost records in both directions at once.
+_TOL = 0.5
 
 # Minimum horizontal-face area (as a fraction of the plan footprint) for a Z level to count
 # as a genuine prismatic step — drops an incidental tiny face (a blind-pocket floor, a small
@@ -304,7 +304,7 @@ def recognise_risers(
     (partial/filleted-end steps are a future refinement).
     """
     bb = part.bounding_box()
-    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
+    tol = _TOL if tol is None else tol
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     lo = {"x": bb.min.X, "y": bb.min.Y}
     hi = {"x": bb.max.X, "y": bb.max.Y}

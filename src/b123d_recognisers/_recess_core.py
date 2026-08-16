@@ -22,20 +22,27 @@ from b123d_recognisers._typing import Bounds, Part
 _AXES = {"x": 0, "y": 1, "z": 2}
 _R = TypeVar("_R", Slot, Pocket)
 _AXIS_ALIGNED_TOL = 1e-3
-# Coordinate-merge and floor-coincidence bands, as fractions of the solid's largest extent
-# (ADR 0008). Neither has a smaller feature to measure against — they ask whether two
-# coordinates are the same coordinate — so the reference is the solid. The fractions are the
-# 0.5 mm and 0.3 mm constants they replace over the corpus's 70 mm median extent.
-_MERGE_FRAC = 0.00714
-_FLOOR_FRAC = 0.00429
+# Coordinate-merge and floor-coincidence bands. **Absolute, per ADR 0008.**
+#
+# 0.2.3 scaled these to the solid's largest extent on the reasoning that they have no smaller
+# feature to measure against. That reference was too coarse: whether two pockets are one pocket
+# depends on the pockets, not on the plate they sit in, so a large plate merged recesses that a
+# small one kept. _MERGE_TOL also gates the minimum separation of two slot ends, so the same
+# change simultaneously raised a threshold. Both directions lose records, which is why the
+# downstream report that prompted this saw nineteen losses across six parts and no gains.
+_MERGE_TOL = 0.5
+_FLOOR_TOL = 0.3
 
 
 def _merge_tol(scale: float) -> float:
-    return length_tol(scale, rel=_MERGE_FRAC)
+    """Kept as a function so call sites still name the quantity rather than a bare literal."""
+    del scale
+    return _MERGE_TOL
 
 
 def _floor_tol(scale: float) -> float:
-    return length_tol(scale, rel=_FLOOR_FRAC)
+    del scale
+    return _FLOOR_TOL
 _FLOOR_COVER_FRAC = 0.5
 _VOID_INSET = 0.1
 _VOID_VOL_FRAC = 0.01

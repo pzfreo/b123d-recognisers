@@ -11,14 +11,16 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, AXIS_ZERO_COS, resolved_tol
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, AXIS_ZERO_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
-#: Face/bound coincidence band, as a fraction of the owning solid's largest extent (ADR 0008).
-#: Derived per solid, not per assembly, so a small component in a large assembly is judged by
-#: its own size. The fraction is the 0.2 mm default it replaces over the corpus's 70 mm median.
-_TOL_FRAC = 0.00286
+#: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
+#: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
+#: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
+#: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
+#: Also the pad-footprint minimum on both in-plane axes.
+_TOL = 0.2
 
 
 @dataclass(frozen=True, order=True)
@@ -36,7 +38,7 @@ class RaisedPad(Record):
 def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[RaisedPad]:
     """Recognise pads using one solid's faces and bounds."""
     bb = part.bounding_box()
-    tol = resolved_tol(tol, bb, rel=_TOL_FRAC)
+    tol = _TOL if tol is None else tol
     raw_tops: list[tuple[float, float, float, float, float]] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)

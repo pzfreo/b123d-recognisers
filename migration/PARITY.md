@@ -4,9 +4,8 @@ The initial standalone implementation is an atomic extraction from Draftwright c
 `3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). Through `0.2.0`–`0.2.2` there were no intentional
 feature-policy differences.
 
-**From `0.2.3` there is one, and it is deliberate.** It is carried on a patch release at the
-maintainer's direction rather than the minor release semver would imply; on a `0.x` line the
-distinction is a project convention, and this records which convention was chosen. [ADR 0008](../docs/adr/0008-length-tolerance-policy.md)
+**`0.2.3` introduced one and `0.2.4` withdrew it**; see below. The line remains free of
+intentional feature-policy differences. [ADR 0008](../docs/adr/0008-length-tolerance-policy.md)
 replaces the recognisers' absolute millimetre gates with gates proportional to the geometry they
 judge, because an absolute gate answers differently for the same feature modelled at another size.
 The pinned goldens are no longer a byte-for-byte capture of the Draftwright baseline; they are this
@@ -19,24 +18,16 @@ more than `1e-12`, dominant-axis routing deterministically prefers Z, then Y. OC
 unqualified `max()` could route equivalent geometry to different inventories. The stable tie-break
 matches the pinned golden result and changes only that previously platform-dependent case.
 
-## Intentional divergence from the capture
+## Divergence, and its withdrawal
 
-| Release | What differs | Extent |
-| --- | --- | --- |
-| 0.2.3 | `RiserEvidence.tol` records the tolerance the scan actually resolved for that part, rather than the former fixed `0.5`. | 33 values across 5 fixtures. **No geometry field moves** — not one coordinate, span, diameter, count or classification differs from the capture. |
+`0.2.3` diverged from the capture in one field: `RiserEvidence.tol` reported the tolerance its
+scan resolved rather than a fixed `0.5`. `0.2.4` withdrew the change that caused it, so **every
+`expected.json` is byte-identical to the Draftwright capture again** and the parity claim above
+holds without qualification.
 
-That field exists to report how the evidence was produced, so it moves precisely because the
-production changed: a *recogniser-produced* record still carrying `0.5` would now be misreporting.
-The rest of the corpus is bit-identical to the Draftwright capture, which is the claim worth
-keeping and the reason the divergence is stated as a table rather than a re-capture.
-
-`RiserEvidence.tol` keeps its `0.5` default, so direct construction is unaffected. The default is
-never what a recogniser supplies — `recognise_risers` always passes the value it resolved — and a
-record built by hand was never scanned at all, so no value is more truthful than another.
-Requiring one would have broken every existing direct construction for no gain, which is more than
-a patch release should do.
-
-The compatibility normalization below (dominant-axis tie-break) predates this and is unrelated.
+The withdrawal was not cosmetic. Scaling minimum-evidence thresholds to the part lost records on
+six real parts in nineteen places with no compensating gain; see ADR 0008 on why a threshold is
+not a tolerance. Recognition behaviour at reference scale is unchanged from `0.2.2` throughout.
 
 ## Evidence
 

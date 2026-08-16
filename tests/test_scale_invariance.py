@@ -8,8 +8,14 @@ modelled in metres, inches or on a micro-part. ADR 0008 replaces those gates wit
 ones family by family; this test pins the families already converted so a later absolute
 constant cannot quietly reintroduce the fault.
 
-Every fixture now recognises identically from 0.05x to 100x, across every family. The exclusion
-list that tracked the conversion is empty; the test below keeps it that way.
+Coverage is partial and deliberately so. Families gated by a *minimum-evidence threshold* —
+"is this big enough to be a feature?" — are excluded, because 0.2.4 makes those thresholds
+absolute again after 0.2.3 scaled them and erased small features on large parts (issue #72).
+
+That exclusion is not a defect being deferred. A 1 mm chamfer shrunk to 0.05 mm genuinely is a
+deburr, and whether it is worth reporting is consumer policy under ADR 0001. What must not happen
+is the *surrounding part* deciding it, which is what 0.2.3 did and what
+``tests/test_large_part_small_features.py`` now pins.
 """
 
 from __future__ import annotations
@@ -36,11 +42,10 @@ CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 #: which a test visiting only the extremes would have missed entirely.
 FACTORS = (0.05, 5.0, 100.0)
 
-#: Empty, and meant to stay that way. It held the families whose gates were still absolute
-#: while ADR 0008 was applied one at a time; every one has now been converted. Re-adding a kind
-#: means a recogniser has regained a scale-dependent gate, which is the regression this file
-#: exists to catch — so it is a deliberate, reviewable act rather than a quiet exemption.
-NOT_YET_SCALE_FREE: frozenset[str] = frozenset()
+#: Kinds whose recogniser applies an absolute *minimum-evidence threshold*, so shrinking a part
+#: far enough legitimately takes the feature below it. These are excluded by design, not pending
+#: conversion — see ADR 0008 on why a threshold must not scale with the part.
+NOT_YET_SCALE_FREE = frozenset({"chamfer", "fillet", "flat", "plate", "pocket", "channel"})
 
 
 def _scale_free_census(part) -> dict[str, int]:
@@ -96,16 +101,16 @@ def test_an_explicit_tolerance_keeps_its_literal_millimetre_meaning():
 
     part = Box(60, 60, 10) + Pos(0, 0, 7.5) * Box(30, 60, 5)
 
-    derived = {riser.tol for riser in recognise_risers(part)}
     explicit = {riser.tol for riser in recognise_risers(part, tol=0.25)}
 
     assert explicit == {0.25}
-    assert derived and derived != explicit
-
-    # ...and the derived value follows the part, where an explicit one cannot.
-    bigger = {riser.tol for riser in recognise_risers(part.scale(10))}
-    assert bigger == {value * 10 for value in derived}
     assert {riser.tol for riser in recognise_risers(part.scale(10), tol=0.25)} == {0.25}
+
+    # The default no longer follows the part, which is the 0.2.4 correction: a riser's existence
+    # must not depend on how large the plate around it is.
+    assert {riser.tol for riser in recognise_risers(part)} == {
+        riser.tol for riser in recognise_risers(part.scale(10))
+    }
 
 
 def test_an_explicit_end_margin_is_also_honoured_literally():
@@ -117,12 +122,3 @@ def test_an_explicit_end_margin_is_also_honoured_literally():
     assert step_level_zs(part) == step_level_zs(part)
 
 
-def test_no_family_is_exempt_from_scale_invariance():
-    """The conversion is finished, so nothing should be excluded from the check above.
-
-    Kept rather than deleted with the last entry: an exemption added later would otherwise
-    shrink the test's coverage silently, which is exactly how the original absolute gates
-    survived so long.
-    """
-
-    assert frozenset() == NOT_YET_SCALE_FREE

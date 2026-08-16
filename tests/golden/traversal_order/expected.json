@@ -93,7 +93,7 @@
             "positions": [
               15.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -108,7 +108,7 @@
             "positions": [
               45.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -123,7 +123,7 @@
             "positions": [
               75.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -138,7 +138,7 @@
             "positions": [
               105.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -251,7 +251,7 @@
             "positions": [
               15.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -266,7 +266,7 @@
             "positions": [
               45.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -281,7 +281,7 @@
             "positions": [
               75.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -296,7 +296,7 @@
             "positions": [
               105.0
             ],
-            "tol": 1.071,
+            "tol": 0.5,
             "vertical": true,
             "z_hi": 5.0,
             "z_lo": -5.0
@@ -495,7 +495,7 @@
           "positions": [
             15.0
           ],
-          "tol": 1.071,
+          "tol": 0.5,
           "vertical": true,
           "z_hi": 5.0,
           "z_lo": -5.0
@@ -510,7 +510,7 @@
           "positions": [
             45.0
           ],
-          "tol": 1.071,
+          "tol": 0.5,
           "vertical": true,
           "z_hi": 5.0,
           "z_lo": -5.0
@@ -525,7 +525,7 @@
           "positions": [
             75.0
           ],
-          "tol": 1.071,
+          "tol": 0.5,
           "vertical": true,
           "z_hi": 5.0,
           "z_lo": -5.0
@@ -540,7 +540,7 @@
           "positions": [
             105.0
           ],
-          "tol": 1.071,
+          "tol": 0.5,
           "vertical": true,
           "z_hi": 5.0,
           "z_lo": -5.0

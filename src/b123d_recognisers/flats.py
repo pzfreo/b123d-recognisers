@@ -58,10 +58,10 @@ _ANTIPARALLEL_TOL = 0.05
 # The plane must sit strictly inside the OD to be a chord cut (off the axis / off the OD).
 _CHORD_MIN_FRAC = 0.0125
 _CHORD_MARGIN_FRAC = 0.0125
-# A flat must remove more than this fraction of the radius (R − d); below it is a tangent
-# sliver — a proportional gate, because a 0.5 mm cut is a sliver on 100 mm bar and a
-# half-diameter cut on 2 mm bar.
-_MIN_FLAT_DEPTH_FRAC = 0.125
+# A flat must remove more than this depth of material (R − d); below it is a tangent sliver.
+# A minimum-evidence threshold, so absolute per ADR 0008: scaling it to the stock radius erased
+# shallow flats on large bar, which is a judgement about significance rather than about noise.
+_MIN_FLAT_DEPTH = 0.5
 # A genuine flat's chord reaches the OD at *both* ends (radius R); a slot wall reaches it at
 # one end only (the other abuts the slot floor). Two flats are opposed across the *same* axis
 # line (not merely the same axis letter) within these fractions of the radius.
@@ -232,7 +232,7 @@ def recognise_flats(
                 length_tol(r, rel=_CHORD_MIN_FRAC) < s < r - length_tol(r, rel=_CHORD_MARGIN_FRAC)
             ):
                 continue  # outward normal points toward the axis (a slot wall), or outside OD
-            if r - s < length_tol(r, rel=_MIN_FLAT_DEPTH_FRAC):
+            if r - s < _MIN_FLAT_DEPTH:
                 continue  # a tangent sliver, not a machined flat
             verts = [(v.X, v.Y, v.Z) for v in f.vertices()]
             if not _both_chord_ends_reach_od(verts, ax, d, nv, r):
