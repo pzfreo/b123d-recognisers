@@ -1,6 +1,10 @@
 # b123d-recognisers
 
+[![CI](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
+[![PyPI](https://img.shields.io/pypi/v/b123d-recognisers.svg)](https://pypi.org/project/b123d-recognisers/)
+[![Python versions](https://img.shields.io/pypi/pyversions/b123d-recognisers.svg)](https://pypi.org/project/b123d-recognisers/)
+[![License](https://img.shields.io/pypi/l/b123d-recognisers.svg)](LICENSE)
 
 Recover useful engineering features from imported STEP and boundary-representation (B-Rep)
 geometry.
