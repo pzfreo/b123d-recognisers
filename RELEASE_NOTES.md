@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased
+
+- Adds a single-job Draftwright downstream canary for package pull requests and weekly consumer-
+  drift checks. It records the resolved consumer commit, package commit/version, capability digest,
+  and wall time while reusing the candidate-wheel contract harness rather than duplicating either
+  repository's platform matrix. Package branches now launch that platform matrix only through the
+  pull request instead of duplicating it for both branch-push and PR events, and superseded PR runs
+  are cancelled. Recognition behavior and canonical goldens are unchanged.
+
 ## 0.2.0
 
 Additive production-hardening release with no recognition-policy changes.
