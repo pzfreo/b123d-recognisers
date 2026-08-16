@@ -10,6 +10,7 @@ closed until independent corpus evidence establishes their geometry contract.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -98,6 +99,246 @@ def _bbox_tuple(face) -> tuple[float, float, float, float, float, float]:
     )
 
 
+def _cap_z(
+    face,
+    tol: float,
+    *,
+    positive: bool,
+    lower_than: float | None,
+    higher_than: float | None,
+) -> float | None:
+    """The Z of *face* if it can serve as a terminal cap, else ``None``.
+
+    A cap is planar, faces squarely along Z in the required direction, sits at a single Z rather
+    than spanning a range, and lies on the correct side of the wall it terminates.
+    """
+
+    if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
+        return None
+    normal = _normal(face)
+    if normal is None or (
+        normal[2] < AXIS_ALIGNED_COS if positive else normal[2] > -AXIS_ALIGNED_COS
+    ):
+        return None
+    bb = _bbox_tuple(face)
+    if bb[5] - bb[4] > tol:
+        return None
+    z = (bb[4] + bb[5]) / 2
+    if lower_than is not None and z > lower_than + tol:
+        return None
+    if higher_than is not None and z < higher_than - tol:
+        return None
+    return z
+
+
+def _common_cap(
+    component: tuple[int, ...],
+    faces: list,
+    adjacent_to: Callable[[int], set[int]],
+    tol: float,
+    *,
+    upper: bool,
+    positive: bool,
+    wall_lo: float,
+    wall_hi: float,
+) -> float | None:
+    """The single cap Z shared by every side of the ring, or ``None``.
+
+    Each side must reach the end through exactly one neighbour — an ambiguous choice means the
+    ring is not cleanly terminated — and those neighbours must then meet at exactly one cap
+    face. Requiring exactly one at both steps is what makes this fail closed: a boss with two
+    candidate tops is not a boss whose top we can name.
+    """
+
+    boundary: list[int] = []
+    component_set = set(component)
+    for side in component:
+        choices = []
+        for other in adjacent_to(side) - component_set:
+            bb = _bbox_tuple(faces[other])
+            reaches_end = abs(bb[4] - wall_hi) <= tol if upper else abs(bb[5] - wall_lo) <= tol
+            if reaches_end:
+                choices.append(other)
+        if len(choices) != 1:
+            return None
+        boundary.append(choices[0])
+
+    boundary_set = set(boundary)
+    if len(boundary_set) == 1:
+        candidates = boundary_set
+    else:
+        candidates = set.intersection(*(adjacent_to(face) for face in boundary_set))
+        candidates -= component_set | boundary_set
+    cap_zs = [
+        cap
+        for index in candidates
+        if (
+            cap := _cap_z(
+                faces[index],
+                tol,
+                positive=positive,
+                lower_than=None if upper else wall_lo,
+                higher_than=wall_hi if upper else None,
+            )
+        )
+        is not None
+    ]
+    return cap_zs[0] if len(cap_zs) == 1 else None
+
+
+def _side_rings(
+    vertical: list[int],
+    bounds: dict[int, tuple[float, float, float, float, float, float]],
+    tol: float,
+    shares_edge: Callable[[int, int], bool],
+) -> list[tuple[int, ...]]:
+    """Group side faces into rings: connected, and spanning the same Z range.
+
+    Both conditions are needed. Sharing an edge alone would chain a boss into the plate it
+    stands on; sharing a Z span alone would merge two separate bosses of equal height into one
+    ring with twelve sides.
+    """
+
+    def same_span(i: int, j: int) -> bool:
+        return abs(bounds[i][4] - bounds[j][4]) <= tol and abs(bounds[i][5] - bounds[j][5]) <= tol
+
+    rings: list[tuple[int, ...]] = []
+    unseen = set(vertical)
+    while unseen:
+        connected = {unseen.pop()}
+        frontier = list(connected)
+        while frontier:
+            current = frontier.pop()
+            joined = {
+                other
+                for other in unseen
+                if same_span(current, other) and shares_edge(current, other)
+            }
+            unseen -= joined
+            connected |= joined
+            frontier.extend(joined)
+        rings.append(tuple(connected))
+    return rings
+
+
+def _vertical_side_faces(
+    faces: list,
+    tol: float,
+) -> tuple[
+    dict[int, tuple[float, float, float]],
+    dict[int, tuple[float, float, float, float, float, float]],
+    list[int],
+]:
+    """Index the planar faces that could be prism sides: vertical, and tall enough to be walls.
+
+    Returns their normals, bounding boxes and indices. Everything downstream works from these
+    three, so the scan is done once and the rest of recognition never touches a raw face again.
+    """
+
+    normals: dict[int, tuple[float, float, float]] = {}
+    bounds: dict[int, tuple[float, float, float, float, float, float]] = {}
+    vertical: list[int] = []
+    for index, face in enumerate(faces):
+        if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
+            continue
+        normal = _normal(face)
+        if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
+            continue
+        bb = _bbox_tuple(face)
+        if bb[5] - bb[4] <= tol:
+            continue
+        normals[index] = normal
+        bounds[index] = bb
+        vertical.append(index)
+    return normals, bounds, vertical
+
+
+def _regular_ring_order(
+    component: tuple[int, ...],
+    normals: dict[int, tuple[float, float, float]],
+    angle_tol: float,
+) -> tuple[int, ...] | None:
+    """Order a side ring by heading, or reject it as not a regular polygon.
+
+    Two independent proofs, both needed: the headings are evenly spaced, and each side faces
+    directly away from the one opposite it. Even spacing alone admits a ring that spirals; the
+    opposed test alone admits an irregular polygon whose pairs happen to be parallel.
+    """
+
+    side_count = len(component)
+    ordered = tuple(sorted(component, key=lambda i: math.atan2(normals[i][1], normals[i][0])))
+    angles = [math.atan2(normals[i][1], normals[i][0]) % (2 * math.pi) for i in ordered]
+    gaps = [(angles[(i + 1) % side_count] - angles[i]) % (2 * math.pi) for i in range(side_count)]
+    expected_gap = 2 * math.pi / side_count
+    if any(abs(gap - expected_gap) > angle_tol for gap in gaps):
+        return None
+    opposite = side_count // 2
+    if any(
+        normals[ordered[i]][0] * normals[ordered[i + opposite]][0]
+        + normals[ordered[i]][1] * normals[ordered[i + opposite]][1]
+        > -math.cos(angle_tol)
+        for i in range(opposite)
+    ):
+        return None
+    return ordered
+
+
+def _ring_profile(
+    ordered: tuple[int, ...],
+    normals: dict[int, tuple[float, float, float]],
+    centres: list,
+    tol: float,
+) -> tuple[float, float, float] | None:
+    """The ring's axis ``(x, y)`` and across-flats, or ``None`` if it is not one prism.
+
+    Each opposed pair of side planes defines a midplane containing the axis. Six such planes
+    over-determine a point, so the axis is the least-squares intersection rather than any one
+    pair's — which keeps a single noisy face from moving the reported centre.
+
+    The support distances then have to agree: every side the same distance out, and every
+    opposed pair the same distance apart. Disagreement means an irregular polygon, and a
+    non-positive support means the walls face inward, which is a recess rather than a boss.
+    """
+
+    side_count = len(ordered)
+    opposite = side_count // 2
+    plane_offsets = [
+        normals[index][0] * float(point.X) + normals[index][1] * float(point.Y)
+        for index, point in zip(ordered, centres, strict=True)
+    ]
+    midplanes = [
+        (
+            normals[ordered[i]][0],
+            normals[ordered[i]][1],
+            (plane_offsets[i] - plane_offsets[i + opposite]) / 2,
+        )
+        for i in range(opposite)
+    ]
+    sxx = sum(nx * nx for nx, _ny, _offset in midplanes)
+    sxy = sum(nx * ny for nx, ny, _offset in midplanes)
+    syy = sum(ny * ny for _nx, ny, _offset in midplanes)
+    bx = sum(nx * offset for nx, _ny, offset in midplanes)
+    by = sum(ny * offset for _nx, ny, offset in midplanes)
+    determinant = sxx * syy - sxy * sxy
+    # Six normals that passed the near-60-degree ring gate necessarily span the plane.
+    cx = (bx * syy - by * sxy) / determinant
+    cy = (sxx * by - sxy * bx) / determinant
+
+    supports = [
+        offset - normals[index][0] * cx - normals[index][1] * cy
+        for index, offset in zip(ordered, plane_offsets, strict=True)
+    ]
+    if min(supports) <= tol:
+        return None  # inward-facing walls describe a recess, not material projecting out
+    across_values = [supports[i] + supports[i + opposite] for i in range(opposite)]
+    across = sum(across_values) / len(across_values)
+    if max(abs(value - across) for value in across_values) > tol:
+        return None
+    if max(abs(value - across / 2) for value in supports) > tol:
+        return None
+    return cx, cy, across
+
+
 def _recognise_one(
     part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
 ) -> list[PolygonalBoss | PolygonalStock]:
@@ -112,114 +353,15 @@ def _recognise_one(
             adjacency[key] = any(a.IsSame(b) for a in edges[i] for b in edges[j])
         return adjacency[key]
 
-    normals: dict[int, tuple[float, float, float]] = {}
-    bounds: dict[int, tuple[float, float, float, float, float, float]] = {}
-    vertical: list[int] = []
-    for i, face in enumerate(faces):
-        if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
-            continue
-        normal = _normal(face)
-        if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
-            continue
-        bb = _bbox_tuple(face)
-        if bb[5] - bb[4] <= tol:
-            continue
-        normals[i] = normal
-        bounds[i] = bb
-        vertical.append(i)
+    normals, bounds, vertical = _vertical_side_faces(faces, tol)
 
-    def same_span(i: int, j: int) -> bool:
-        return abs(bounds[i][4] - bounds[j][4]) <= tol and abs(bounds[i][5] - bounds[j][5]) <= tol
-
-    components: list[tuple[int, ...]] = []
-    unseen = set(vertical)
-    while unseen:
-        seed = unseen.pop()
-        connected = {seed}
-        frontier = [seed]
-        while frontier:
-            current = frontier.pop()
-            joined = {
-                other
-                for other in unseen
-                if same_span(current, other) and shares_edge(current, other)
-            }
-            unseen -= joined
-            connected |= joined
-            frontier.extend(joined)
-        components.append(tuple(connected))
+    components = _side_rings(vertical, bounds, tol, shares_edge)
 
     def adjacent_to(index: int) -> set[int]:
         return {
             other for other in range(len(faces)) if other != index and shares_edge(index, other)
         }
 
-    def z_cap(
-        index: int,
-        *,
-        positive: bool,
-        lower_than: float | None,
-        higher_than: float | None,
-    ):
-        face = faces[index]
-        if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
-            return None
-        normal = _normal(face)
-        if normal is None or (
-            normal[2] < AXIS_ALIGNED_COS if positive else normal[2] > -AXIS_ALIGNED_COS
-        ):
-            return None
-        bb = _bbox_tuple(face)
-        if bb[5] - bb[4] > tol:
-            return None
-        z = (bb[4] + bb[5]) / 2
-        if lower_than is not None and z > lower_than + tol:
-            return None
-        if higher_than is not None and z < higher_than - tol:
-            return None
-        return z
-
-    def common_cap(
-        component: tuple[int, ...],
-        *,
-        upper: bool,
-        positive: bool,
-        wall_lo: float,
-        wall_hi: float,
-    ) -> float | None:
-        boundary: list[int] = []
-        component_set = set(component)
-        for side in component:
-            choices = []
-            for other in adjacent_to(side) - component_set:
-                bb = _bbox_tuple(faces[other])
-                reaches_end = abs(bb[4] - wall_hi) <= tol if upper else abs(bb[5] - wall_lo) <= tol
-                if reaches_end:
-                    choices.append(other)
-            if len(choices) != 1:
-                return None
-            boundary.append(choices[0])
-
-        boundary_set = set(boundary)
-        if len(boundary_set) == 1:
-            candidates = boundary_set
-        else:
-            candidates = set.intersection(*(adjacent_to(face) for face in boundary_set))
-            candidates -= component_set | boundary_set
-        cap_zs = [
-            cap
-            for index in candidates
-            if (
-                cap := z_cap(
-                    index,
-                    positive=positive,
-                    lower_than=None if upper else wall_lo,
-                    higher_than=wall_hi if upper else None,
-                )
-            )
-            is not None
-        ]
-        return cap_zs[0] if len(cap_zs) == 1 else None
 
     found: list[PolygonalBoss | PolygonalStock] = []
     for component in components:
@@ -241,69 +383,31 @@ def _recognise_one(
         ):
             continue
 
-        ordered = sorted(component, key=lambda i: math.atan2(normals[i][1], normals[i][0]))
-        angles = [math.atan2(normals[i][1], normals[i][0]) % (2 * math.pi) for i in ordered]
-        gaps = [
-            (angles[(i + 1) % side_count] - angles[i]) % (2 * math.pi) for i in range(side_count)
-        ]
-        expected_gap = 2 * math.pi / side_count
-        if any(abs(gap - expected_gap) > angle_tol for gap in gaps):
+        ordered = _regular_ring_order(component, normals, angle_tol)
+        if ordered is None:
             continue
-        if any(
-            normals[ordered[i]][0] * normals[ordered[i + side_count // 2]][0]
-            + normals[ordered[i]][1] * normals[ordered[i + side_count // 2]][1]
-            > -math.cos(angle_tol)
-            for i in range(side_count // 2)
-        ):
-            continue
-
         centres = [faces[i].center() for i in ordered]
-        plane_offsets = [
-            normals[index][0] * float(point.X) + normals[index][1] * float(point.Y)
-            for index, point in zip(ordered, centres, strict=True)
-        ]
-        midplanes = [
-            (
-                normals[ordered[i]][0],
-                normals[ordered[i]][1],
-                (plane_offsets[i] - plane_offsets[i + side_count // 2]) / 2,
-            )
-            for i in range(side_count // 2)
-        ]
-        sxx = sum(nx * nx for nx, _ny, _offset in midplanes)
-        sxy = sum(nx * ny for nx, ny, _offset in midplanes)
-        syy = sum(ny * ny for _nx, ny, _offset in midplanes)
-        bx = sum(nx * offset for nx, _ny, offset in midplanes)
-        by = sum(ny * offset for _nx, ny, offset in midplanes)
-        determinant = sxx * syy - sxy * sxy
-        # Six normals that passed the near-60-degree ring gate necessarily span the plane.
-        cx = (bx * syy - by * sxy) / determinant
-        cy = (sxx * by - sxy * bx) / determinant
-        supports = [
-            offset - normals[index][0] * cx - normals[index][1] * cy
-            for index, offset in zip(ordered, plane_offsets, strict=True)
-        ]
-        if min(supports) <= tol:
-            continue  # inward-facing walls describe a recess, not material projecting out
-        across_values = [
-            supports[i] + supports[i + side_count // 2] for i in range(side_count // 2)
-        ]
-        across = sum(across_values) / len(across_values)
-        if max(abs(value - across) for value in across_values) > tol:
+        profile = _ring_profile(ordered, normals, centres, tol)
+        if profile is None:
             continue
-        if max(abs(value - across / 2) for value in supports) > tol:
-            continue
+        cx, cy, across = profile
 
         wall_lo = sum(bounds[i][4] for i in component) / side_count
         wall_hi = sum(bounds[i][5] for i in component) / side_count
-        base = common_cap(
+        base = _common_cap(
             component,
+            faces,
+            adjacent_to,
+            tol,
             upper=False,
             positive=not whole_stock,
             wall_lo=wall_lo,
             wall_hi=wall_hi,
         )
-        top = common_cap(component, upper=True, positive=True, wall_lo=wall_lo, wall_hi=wall_hi)
+        top = _common_cap(
+            component, faces, adjacent_to, tol, upper=True, positive=True,
+            wall_lo=wall_lo, wall_hi=wall_hi,
+        )
         if base is None or top is None or top - base <= tol:
             continue
         if whole_stock and (abs(base - wall_lo) > tol or abs(top - wall_hi) > tol):
