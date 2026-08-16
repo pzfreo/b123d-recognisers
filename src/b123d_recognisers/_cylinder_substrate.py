@@ -3,6 +3,7 @@
 """Shared single-pass cylindrical-face substrate."""
 
 import math
+from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
@@ -10,6 +11,11 @@ from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._geometry import _axis_letter_of, length_tol
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
+
+#: Whatever record type the caller groups. _merge_runs cares only about ``s_lo``/``s_hi`` and the
+#: caller's key, so it preserves the element type instead of flattening a widened record -- a
+#: hole segment carries more than a raw cylinder patch and must come back out still carrying it.
+_E = TypeVar("_E", bound=CylinderEvidence)
 
 _FULL_CYL_MIN_EXTENT = math.pi * 1.05
 
@@ -108,7 +114,7 @@ def _cyl_group_key(c) -> tuple:
     return (*_line_key(c), round(c["diameter"], 2))
 
 
-def _merge_runs(items, key_fn) -> list[list[CylinderEvidence]]:
+def _merge_runs(items: list[_E], key_fn) -> list[list[_E]]:
     """Group *items* by *key_fn*, then split each group into runs of
     contiguous axial ranges (a gap wider than the band's own ``_STACK_GAP_FRAC`` starts a new
     run)."""
