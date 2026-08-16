@@ -30,6 +30,7 @@ from b123d_recognisers import (
     recognise_chamfers,
     recognise_fillets,
     recognise_flats,
+    recognise_grooves,
     recognise_plates,
     recognise_rectangular_pads,
 )
@@ -83,6 +84,23 @@ def test_a_shallow_flat_on_large_stock_is_still_a_flat():
     part = stock - Pos(24, 0, 0) * Box(4, 60, 100)
 
     assert recognise_flats(part)
+
+
+@pytest.mark.parametrize("od", [15.0, 100.0, 300.0])
+def test_a_shallow_groove_is_a_groove_on_stock_of_any_diameter(od):
+    """Found by audit, not by a bug report — the NIST parts are prismatic and have no grooves.
+
+    The step-depth and width margins are minimums, so scaling them to the wall diameter demanded
+    a proportionally deeper groove on bigger stock. A 2 mm groove was found on 15 mm bar and lost
+    on 100 mm.
+    """
+    from build123d import Cylinder
+
+    shaft = Cylinder(od / 2, 20)
+    shaft += Pos(0, 0, 12.5) * Cylinder(od / 2 - 1.0, 5)
+    shaft += Pos(0, 0, 22.5) * Cylinder(od / 2, 20)
+
+    assert len(recognise_grooves(shaft)) == 1
 
 
 @pytest.mark.parametrize("extent", [80.0, 200.0, 600.0])

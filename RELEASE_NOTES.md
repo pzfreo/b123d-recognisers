@@ -30,6 +30,10 @@ is still correctly two.
 - Genuinely feature-relative tolerances from 0.2.3 are kept: diameter matching in `countersinks`,
   `grooves` and the cylinder stack, and the recess cap radii. Those compare two measurements of
   one feature and do scale with it.
+- The `grooves` step-depth and width margins are absolute again. Found by auditing every
+  remaining proportional gate rather than from a report: the NIST parts are prismatic and have no
+  grooves, so nothing downstream would have surfaced it. A 2 mm groove was recognised on 15 mm bar
+  and lost on 100 mm.
 - The `flats` chord gates are absolute again too. They were missed on the first pass and caught
   by the real parts: `ctc_05` reported four flats on 0.2.2, none on 0.2.3, and two on the partial
   fix. Verified against all five NIST complex test cases, every reported count restored.
