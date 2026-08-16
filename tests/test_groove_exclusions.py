@@ -15,7 +15,7 @@ stock, and each gate removes one way of failing that.
 
 from __future__ import annotations
 
-from build123d import Cone, Cylinder, Pos
+from build123d import Axis, Cone, Cylinder, GeomType, Pos, fillet
 
 from b123d_recognisers import recognise_grooves
 
@@ -116,23 +116,64 @@ def test_a_band_wider_than_the_wall_before_it_is_not_a_local_minimum():
     assert recognise_grooves(shaft) == []
 
 
-def test_a_chamfered_groove_is_outside_the_proven_scope():
-    """Conical transitions break the band contiguity the recogniser requires.
-
-    This is a real shape — a ring groove with lead-in chamfers — and it is **not** recognised,
-    because the cone faces sit between the cylindrical bands so the walls are no longer the
-    band's immediate neighbours. Recorded as a test rather than left implicit: it is a false
-    negative, not a nonsense input, and anyone widening the recogniser should have to change
-    this expectation deliberately.
-    """
-
+def _chamfered_groove():
     shaft = Cylinder(15, 20)
     shaft += Pos(0, 0, 11.5) * Cone(15, 12, 3)
     shaft += Pos(0, 0, 15.5) * Cylinder(12, 5)
     shaft += Pos(0, 0, 19.5) * Cone(12, 15, 3)
     shaft += Pos(0, 0, 31.0) * Cylinder(15, 20)
+    return shaft
+
+
+def test_a_groove_with_lead_in_chamfers_is_recognised():
+    """A ring groove whose corners are chamfered rather than sharp.
+
+    This used to be excluded: the cone faces sit between the cylindrical bands, so the walls
+    were no longer the floor band's immediate neighbours and every such groove was dropped
+    silently. It is the common manufactured shape — the sharp-cornered groove is the textbook
+    drawing — so the cones are now read as the join they are.
+
+    ``width`` stays the **flat floor**, not the full opening including the lead-ins. That is
+    what an O-ring or circlip seat is dimensioned by, and it keeps the field meaning identical
+    for a groove that gained a chamfer.
+    """
+
+    grooves = recognise_grooves(_chamfered_groove())
+
+    assert len(grooves) == 1
+    assert (grooves[0].diameter, grooves[0].width) == (24.0, 5.0)
+
+
+def test_a_lead_in_cone_must_land_on_both_bands():
+    """The cone is the join only when it reaches both rims at their own diameters.
+
+    Without that, "allow a cone between the bands" would let any taper in the neighbourhood
+    fuse two unrelated bands into a groove. Here the taper runs from the shaft OD down to a
+    diameter the floor band does not have, so it joins nothing and there is no groove.
+    """
+
+    shaft = Cylinder(15, 20)
+    shaft += Pos(0, 0, 11.5) * Cone(15, 9, 3)  # tapers past the floor diameter, to 18 mm
+    shaft += Pos(0, 0, 15.5) * Cylinder(12, 5)
+    shaft += Pos(0, 0, 19.5) * Cone(12, 15, 3)
+    shaft += Pos(0, 0, 31.0) * Cylinder(15, 20)
 
     assert recognise_grooves(shaft) == []
+
+
+def test_a_radiused_lead_in_is_still_outside_the_proven_scope():
+    """Only a *conical* lead-in is read as a join. A radiused one is a torus, not a cone.
+
+    Recorded because ``docs/capabilities.md`` now claims this exclusion by name, and the
+    chamfer work above deliberately did not widen to it: a torus has no two circular rims at
+    band diameters to land on, so it would need its own evidence rather than the same read.
+    """
+
+    plain = Cylinder(15, 20) + Pos(0, 0, 12.5) * Cylinder(12, 5)
+    plain += Pos(0, 0, 22.5) * Cylinder(15, 20)
+    radiused = fillet(plain.edges().filter_by(GeomType.CIRCLE).group_by(Axis.Z)[1], 1.0)
+
+    assert recognise_grooves(radiused) == []
 
 
 def test_a_plain_cylinder_has_no_groove():

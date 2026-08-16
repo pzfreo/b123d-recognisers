@@ -16,19 +16,31 @@ The recognition is definitive from :func:`analyse_cylinders`. The two annular wa
 must have are implied by the band structure — a smaller band contiguous with a larger band
 on each side *is* a step-down then a step-up — so no separate wall-face search is needed, and
 the corner fillets/chamfers a real groove carries are tori / cones (never cylinders), so they
-never appear as spurious bands. Bands are grouped by axis **line** (not merely the axis
-letter) so two lone grooves on distinct parallel shafts are never confused for one channel.
-Bottom of the recognition DAG: depends only on the owned ``analyse_cylinders`` primitive.
+never appear as spurious bands. They do, however, sit *between* the bands: a **chamfered**
+lead-in is read as the join it is (see :func:`_joined`), because the manufactured groove
+usually has one where the textbook drawing shows a sharp corner. A **radiused** lead-in is a
+torus and is not read, so it remains outside the proven scope. ``width`` is the flat floor
+either way — what an O-ring or circlip seat is dimensioned by — never the wider opening the
+chamfers cut. Bands are grouped by axis **line** (not merely the axis letter) so two lone
+grooves on distinct parallel shafts are never confused for one channel. Bottom of the
+recognition DAG: depends only on the owned ``analyse_cylinders`` primitive.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from build123d import GeomType
+
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
+
+#: A conical face as ``(axis direction, ((rim centre, rim radius), ...))``.
+ConeJoin = tuple[
+    tuple[float, float, float], tuple[tuple[tuple[float, float, float], float], ...]
+]
 
 # Every gate below is a fraction of the band it judges, per ADR 0008: a groove in 5 mm bar and
 # the same groove in 500 mm bar are the same feature, and only a proportional gate says so.
@@ -53,6 +65,57 @@ _WALL_DIA_FRAC = 0.0625
 #    continues) even when the other is a thin retaining land, so the *wider* wall is the test.
 #    Also a minimum-evidence threshold, so also absolute.
 _WIDTH_MARGIN = 0.05
+
+
+def _cone_joins(part: Part) -> list[ConeJoin]:
+    """Every conical face as its axis direction plus its circular rims.
+
+    Read once per part so :func:`_joined` can test a lead-in chamfer rather than assume the
+    groove's bands touch."""
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
+
+    joins: list[ConeJoin] = []
+    for face in part.faces().filter_by(GeomType.CONE):
+        circles = face.edges().filter_by(GeomType.CIRCLE)
+        if len(circles) < 2:
+            continue  # a drill-point cone is one circle and an apex: it joins nothing
+        direction = BRepAdaptor_Surface(face.wrapped).Cone().Axis().Direction()
+        rims = tuple(
+            ((c.arc_center.X, c.arc_center.Y, c.arc_center.Z), c.radius) for c in circles
+        )
+        joins.append(((direction.X(), direction.Y(), direction.Z()), rims))
+    return joins
+
+
+def _joined(lower, upper, tol: float, cones: list[ConeJoin]) -> bool:
+    """Whether *upper* follows *lower* along the shaft.
+
+    Directly, when the two bands touch; or across a **conical lead-in** — the chamfer a
+    manufactured groove usually carries where the textbook drawing shows a sharp corner.
+
+    The cone has to land on both rims: its narrow end on one band's edge at that band's
+    diameter, its wide end on the other's. That makes the allowance self-limiting — a taper
+    that merely passes nearby, or that runs on to some third diameter, joins nothing — so
+    there is no separate "how much cone counts as a lead-in" gate to calibrate.
+    """
+    if abs(lower["s_hi"] - upper["s_lo"]) <= tol:
+        return True
+    axis = lower["dir_xyz"]
+    for direction, rims in cones:
+        if abs(sum(direction[i] * axis[i] for i in range(3))) < 1 - 1e-6:
+            continue  # not coaxial with this shaft
+        ends = sorted(
+            (sum(centre[i] * axis[i] for i in range(3)), radius) for centre, radius in rims
+        )
+        (s_lo, r_lo), (s_hi, r_hi) = ends[0], ends[-1]
+        if (
+            abs(s_lo - lower["s_hi"]) <= tol
+            and abs(s_hi - upper["s_lo"]) <= tol
+            and abs(2 * r_lo - lower["diameter"]) <= tol
+            and abs(2 * r_hi - upper["diameter"]) <= tol
+        ):
+            return True
+    return False
 
 
 def _shaft_key(c) -> tuple:
@@ -120,16 +183,18 @@ def recognise_grooves(
     for c in ext:
         shafts.setdefault(_shaft_key(c), []).append(c)
 
+    cones = _cone_joins(part)
     out: list[Groove] = []
     for bands in shafts.values():
         bands = sorted(bands, key=lambda c: c["s_lo"])
         for i in range(1, len(bands) - 1):
             prev, cur, nxt = bands[i - 1], bands[i], bands[i + 1]
-            # The neighbours must be the groove's own walls — contiguous with the floor band.
+            # The neighbours must be the groove's own walls — contiguous with the floor band,
+            # or reaching it across the lead-in chamfer a manufactured groove usually carries.
             adj_tol = length_tol(cur["diameter"], rel=_ADJ_FRAC)
-            if abs(prev["s_hi"] - cur["s_lo"]) > adj_tol:
+            if not _joined(prev, cur, adj_tol, cones):
                 continue
-            if abs(cur["s_hi"] - nxt["s_lo"]) > adj_tol:
+            if not _joined(cur, nxt, adj_tol, cones):
                 continue
             # A strict local OD minimum: the OD steps *down* into the band and *up* out of it.
             # A monotonic change (a plain step / shoulder) fails one side and is not a groove.
