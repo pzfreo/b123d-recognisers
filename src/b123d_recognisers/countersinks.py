@@ -37,6 +37,7 @@ Known limitations (edge geometries; the common one-face countersink is exact):
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, cast
 
@@ -143,11 +144,13 @@ def cone_rims(face: FaceLike) -> tuple[EdgeLike, EdgeLike, float] | None:
     return circles[0], circles[-1], included
 
 
-def _parallel(a, b) -> bool:
+def _parallel(a: Sequence[float], b: Sequence[float]) -> bool:
     return bool(abs(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) > 1 - 1e-3)
 
 
-def _dist_to_line(pt, line_pt, line_dir) -> float:
+def _dist_to_line(
+    pt: Sequence[float], line_pt: Sequence[float], line_dir: Sequence[float]
+) -> float:
     v = (pt[0] - line_pt[0], pt[1] - line_pt[1], pt[2] - line_pt[2])
     t = v[0] * line_dir[0] + v[1] * line_dir[1] + v[2] * line_dir[2]
     perp = (v[0] - t * line_dir[0], v[1] - t * line_dir[1], v[2] - t * line_dir[2])
