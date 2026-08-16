@@ -106,10 +106,14 @@ The 13 sites with no local feature: the `tol=` keywords on the five public recog
 - [x] **[#46](https://github.com/pzfreo/b123d-recognisers/issues/46), landed first:** replaced
       the `round(coord / tol) * tol` grouping in `levels` and `plates` with bounded clustering
       by distance. Goldens byte-identical; `traversal_order` became scale-invariant
-- [ ] `plates` still gains a spurious record in `chamfers_fillets_and_flats` at 5x and 10x but
-      not 1x or 100x. Grid phase was **not** the cause — the clustering fix did not remove it.
-      It is somewhere in the event pairing or the `t <= tol` gate, and taking `plate` out of
-      `NOT_YET_SCALE_FREE` is what will force it out
+- [ ] **Break the exact tie in `plates`' area gate.** `chamfers_fillets_and_flats` has a face
+      whose area is *exactly* `min_area_frac` (0.4) of the cross-section, so `a >= thresh` is
+      decided by floating-point rounding alone: `area - thresh` is `-1.7e-13` at 1x, exactly
+      `0.0` at 5x and 10x, and `-9.3e-10` at 100x. Hence a plate that appears at 5x and 10x and
+      nowhere else. Grid phase was **not** the cause and the clustering fix did not touch it.
+      This is a discrete classification decided by insignificant noise — the same defect class
+      `_geometry._axis_letter_of` already documents and resolves for the dominant-axis tie, and
+      it wants the same treatment: a relative epsilon on the comparison, not a scaled tolerance
 - [ ] `tol: float | None = None`; `None` resolves to the derived value, a float keeps today's
       meaning so a calibrated caller is not broken
 - [ ] `RiserEvidence.tol` is a **public record field** in the goldens — its value moves visibly
