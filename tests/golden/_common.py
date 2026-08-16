@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from math import cos, pi, sin
 
 from build123d import Box, Cylinder, Polygon, Pos, RegularPolygon, extrude
@@ -19,6 +20,16 @@ def provenance(source_path: str) -> dict[str, str]:
         "source_path": source_path,
         "license": "Apache-2.0",
     }
+
+
+def load_fixture(path):
+    """Import a golden ``fixture.py`` by path, without adding it to ``sys.modules``."""
+
+    spec = importlib.util.spec_from_file_location(f"golden_fixture_{path.parent.name}", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def obround_tool(length: float, width: float, height: float):

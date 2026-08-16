@@ -46,6 +46,30 @@ compatibility review, and release notes.
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. | Floored pockets, open-ended channels, merely narrow envelope sections, and cross-solid composites. | Straight/obround-slot golden and slot regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
 
+## Analytic surfaces are a precondition for every recogniser
+
+Every recogniser above classifies faces by their surface type. A face is a hole wall because it is
+a `GeomAbs_Cylinder`, a floor because it is a `GeomAbs_Plane`. Imported geometry therefore has to
+arrive with its analytic surfaces intact.
+
+STEP carries analytic surfaces, and `tests/test_step_round_trip.py` proves the file boundary does
+not disturb them: all seventeen golden fixtures exported to STEP and re-imported reproduce their
+pinned records exactly, with planes and cylinders still typed as such.
+
+That evidence covers geometry written by this project's own OCCT-based exporter. It shows that
+passing through a STEP file is not itself lossy; it does not measure any particular third-party
+CAD system's export, and no such corpus is checked in. The requirement is the same either way — a
+file whose faces arrive as analytic surfaces recognises, one whose faces arrive as B-splines does
+not — but the proven evidence is the round trip, not a survey of emitters.
+
+Geometry whose faces are B-splines is **excluded, in every family at once**. A NURBS-only export
+can describe a face that is exactly a cylinder while typing it `GeomAbs_BSplineSurface`; no
+recogniser here inspects the underlying geometry to discover that, so recognition returns nothing
+rather than degrading partially. This is a whole-package boundary rather than a per-row exclusion,
+and it is held by test as a contrast against the analytic result. Supporting it would mean fitting
+analytic surfaces to B-spline faces and bounding the residual — a recognition-behaviour change
+under the usual evidence requirements, not a tolerance adjustment.
+
 ## Public record contract audit
 
 The record audit below distinguishes recogniser output from helper/projection
