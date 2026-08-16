@@ -70,6 +70,42 @@ and it is held by test as a contrast against the analytic result. Supporting it 
 analytic surfaces to B-spline faces and bounding the residual — a recognition-behaviour change
 under the usual evidence requirements, not a tolerance adjustment.
 
+## Measured against third-party labelled corpora
+
+The exclusions above were written from this project's own fixtures. Two external per-face
+labelled corpora now test them against models nobody here authored — [MFCAD](https://github.com/hducg/MFCAD)
+(15,488 models) and [MFCAD++](https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823)
+(59,665 models, 24 feature classes, 3–10 *interacting* features per model). Neither is checked
+in, per `migration/PARITY.md`; both are freely downloadable.
+
+**The exclusions hold, and they are the dominant failure mode.** On MFCAD, per-class recognition
+tracks how axis-aligned a class's faces are: classes whose feature faces are 100% axis-aligned are
+recognised in every model, while the three mostly-oblique classes return nothing in 78% of theirs.
+On MFCAD++, fitting labelled faces to emitted records across 400 models reproduces it — every
+rectangular class recognises, and Triangular passage, 6-sided passage, Triangular pocket, Circular
+through slot, 2-sided through step, Horizontal circular end blind slot and Slanted through step
+produce essentially nothing. This is what "non-rectangular floors", "Slanted/curved faces" and
+"non-principal axes" above mean in practice, on parts written by someone else.
+
+**Curved families recognise.** MFCAD is planar-only in all 15 classes, so it cannot exercise
+holes, fillets, bosses, countersinks, grooves or turned steps at all. MFCAD++ can, and does:
+Through hole and Blind hole yield hole records, Circular blind step yields fillets, O-ring yields
+bosses and holes.
+
+Three limits on how far this evidence reaches:
+
+- **It is not a recall score.** These corpora use their own feature vocabulary, which this
+  package never adopted. Several classes are recognised under a *different* family than the
+  corpus names — O-ring as boss, Circular blind step as fillet — which is a taxonomy mismatch,
+  not a defect, and makes naive cross-corpus percentages meaningless.
+- **Attribution is statistical, not per-face.** Records do not say which faces they consumed, so
+  the MFCAD++ figures come from fitting record counts against labelled-face counts across models
+  rather than from observing ownership. The fit is strong for holes, fillets and bosses and weak
+  for plates and countersinks; only the former should be read.
+- **Synthetic parts, generated features.** Both corpora are procedurally built, and
+  synthetic-to-real transfer is an open research problem. They are sound as a false-negative
+  detector and unsound as ground truth about real drawings.
+
 ## Public record contract audit
 
 The record audit below distinguishes recogniser output from helper/projection
