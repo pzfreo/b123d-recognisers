@@ -30,6 +30,7 @@ size estimate is made. Bottom of the recognition DAG: depends only on build123d/
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -44,7 +45,7 @@ from b123d_recognisers._geometry import (
     length_tol,
 )
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderInventory, Part
+from b123d_recognisers._typing import CylinderInventory, Part, Span2, Vector3
 
 # A normal counts as radial (perpendicular to the axis) / antiparallel to another within
 # these unit-vector tolerances.
@@ -68,7 +69,13 @@ _OD_REACH_FRAC = 0.025
 _AXIS_LINE_FRAC = 0.025
 
 
-def _both_chord_ends_reach_od(verts, ax, dv, nv, r) -> bool:
+def _both_chord_ends_reach_od(
+    verts: Sequence[Vector3],
+    ax: Sequence[float],
+    dv: Sequence[float],
+    nv: Sequence[float],
+    r: float,
+) -> bool:
     """A genuine flat is a chord of the OD: both transverse ends of the face lie *on* the
     cylinder (radius ≈ R). A slot/pocket near-wall — outward-facing but offset to one side of
     the axis — has one end on the OD and the other on the slot floor (radius < R), so it is
@@ -93,10 +100,21 @@ def _both_chord_ends_reach_od(verts, ax, dv, nv, r) -> bool:
         if hi_t is None or t > hi_t:
             hi_t, hi_r = t, rad
     reach = length_tol(r, rel=_OD_REACH_FRAC)
-    return lo_r is not None and lo_r >= r - reach and hi_r >= r - reach
+    # Both are set in the same iterations, so testing only one was correct but relied on an
+    # invariant nothing stated. Testing both says it, and covers the no-vertices case directly.
+    if lo_r is None or hi_r is None:
+        return False
+    return bool(lo_r >= r - reach and hi_r >= r - reach)
 
 
-def _same_axis_line(axis, a_ax, a_dir, b_ax, b_dir, radius) -> bool:
+def _same_axis_line(
+    axis: str,
+    a_ax: Sequence[float],
+    a_dir: Sequence[float],
+    b_ax: Sequence[float],
+    b_dir: Sequence[float],
+    radius: float,
+) -> bool:
     """Two radial flats are opposed across one shaft only if their turning axes are the *same
     line* — the vector between the axis points has no component perpendicular to the shared
     direction. Guards against pairing lone flats on two distinct parallel shafts."""
@@ -277,7 +295,9 @@ def recognise_flats(
     return sorted(out, key=lambda fl: (fl.axis, fl.at))
 
 
-def _axis_line(axis: str, ax, direction=None) -> tuple[float, float]:
+def _axis_line(
+    axis: str, ax: Sequence[float], direction: Sequence[float] | None = None
+) -> Span2:
     """Canonical in-plane coordinates of the stock's axis line.
 
     Rounded to the same 3 dp as every other coordinate a record carries, so two faces on one

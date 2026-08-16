@@ -18,7 +18,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, resolved_tol
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 
 #: Face/bound coincidence band, as a fraction of the owning solid's largest extent (ADR 0008).
 #: Derived per solid, matching the per-solid recognition boundary. The fraction is the 0.2 mm
@@ -79,7 +79,7 @@ class PolygonalStock(Record):
         return self.top - self.base
 
 
-def _normal(face) -> tuple[float, float, float] | None:
+def _normal(face: FaceLike) -> tuple[float, float, float] | None:
     try:
         normal = face.normal_at(face.center())
     except Exception:  # noqa: BLE001 - a degenerate face cannot prove a boss
@@ -87,7 +87,7 @@ def _normal(face) -> tuple[float, float, float] | None:
     return (float(normal.X), float(normal.Y), float(normal.Z))
 
 
-def _bbox_tuple(face) -> tuple[float, float, float, float, float, float]:
+def _bbox_tuple(face: FaceLike) -> tuple[float, float, float, float, float, float]:
     bb = face.bounding_box()
     return (
         float(bb.min.X),
@@ -100,7 +100,7 @@ def _bbox_tuple(face) -> tuple[float, float, float, float, float, float]:
 
 
 def _cap_z(
-    face,
+    face: FaceLike,
     tol: float,
     *,
     positive: bool,
@@ -340,7 +340,7 @@ def _ring_profile(
 
 
 def _recognise_one(
-    part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
+    part: Part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
 ) -> list[PolygonalBoss | PolygonalStock]:
     tol = resolved_tol(tol, part.bounding_box(), rel=_TOL_FRAC)
     faces = list(part.faces())
