@@ -27,7 +27,7 @@ def test_recogniser_issue_template_requires_independent_delivery_evidence() -> N
         "Geometry scope",
         "Record contract",
         "Negative and ambiguous cases",
-        "Canonical goldens",
+        "Canonical functional tests",
         "Performance budget",
         "Provenance",
         "Downstream capability decisions",
@@ -39,7 +39,7 @@ def test_recogniser_issue_template_requires_independent_delivery_evidence() -> N
 def test_protocol_defines_every_ownership_and_compatibility_boundary() -> None:
     protocol = (ROOT / "docs/delivery-protocol.md").read_text(encoding="utf-8")
     for owned_evidence in (
-        "geometry contract and canonical goldens",
+        "geometry contract and canonical functional tests",
         "IR adapter",
         "DSL and generated-code round trip",
         "drawing regression",

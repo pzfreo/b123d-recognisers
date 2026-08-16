@@ -7,15 +7,16 @@ Each intermediate commit and release must leave both repositories green and inde
 releasable.
 
 Start from the recogniser issue template. Evidence is authored before behavior: define the B-Rep
-scope and tolerances, record schema, negative and ambiguous cases, canonical goldens, topology-order
-variants, operation-count and wall-time budget, and fixture/code provenance. A behavior change also
-needs its own approved issue and compatibility note; cleanup must not silently regenerate goldens.
+scope and tolerances, record schema, negative and ambiguous cases, canonical functional tests,
+topology-order variants, operation-count and wall-time budget, and fixture/code provenance. A
+behavior change also needs its own approved issue and compatibility note; cleanup must not silently
+weaken those tests.
 
 ## Ownership of tests
 
 | Evidence | Owner |
 | --- | --- |
-| geometry contract and canonical goldens, negative topology, determinism and performance | `b123d-recognisers` |
+| geometry contract and canonical functional tests, negative topology, determinism and performance | `b123d-recognisers` |
 | public record typing, serialization, manifest family and schema | `b123d-recognisers` |
 | IR adapter and parameter identity | Draftwright |
 | DSL and generated-code round trip | Draftwright |
@@ -37,7 +38,8 @@ unchanged.
 ### 2. Publish an additive package contract
 
 Implement and test geometry recognition in the package. Add the immutable record, public typing,
-schema version, manifest entry, documentation, goldens, provenance and performance bound together.
+schema version, manifest entry, documentation, functional tests, provenance and performance bound
+together.
 Before general availability, publish a package prerelease when Draftwright needs to validate a new
 public record. A prerelease is test evidence, never a production lock. **Both repositories green:**
 Draftwright still consumes its previous exact release; the package candidate validates on its own.
@@ -85,7 +87,7 @@ production range merely to make paired branches pass.
   schema, a major package version, a deprecation window, and consumer support before removal.
 - Roll back Draftwright by reverting its dependency/overlay commit to the last known registry hash.
   Roll back package behavior with a new patch release; never replace an existing PyPI file or tag.
-- A package geometry/golden/manifest failure belongs to `b123d-recognisers`. An IR, DSL, generated
+- A package geometry/fixture/manifest failure belongs to `b123d-recognisers`. An IR, DSL, generated
   code, drawing or completeness failure belongs to Draftwright. A join failure is triaged jointly,
   but the declaration remains Draftwright-owned and geometry truth remains package-owned.
 
