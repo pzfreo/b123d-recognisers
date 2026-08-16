@@ -21,6 +21,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._geometry import cluster_coordinates
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -95,8 +96,11 @@ def recognise_face_levels(
     """Return the sorted unique horizontal (normal≈±Z) face levels as :class:`FaceLevel`
     records — one per distinct Z of a horizontal planar face.
 
-    Uses tol-bucket deduplication but returns the actual face Z, not the rounded
-    bucket centre, so dimension labels match the true geometry.
+    Faces whose Z values lie within *tol* of each other are one level, grouped by distance
+    apart rather than by which ``tol``-wide grid cell they round into — see
+    :func:`~b123d_recognisers._geometry.cluster_coordinates`. The level reports the lowest
+    actual face Z in its group, not a rounded bucket centre, so dimension labels match the
+    true geometry, and the choice is independent of the order faces were traversed in.
 
     When *min_area_frac* > 0, a Z level is kept only if the total area of its
     horizontal faces is at least ``min_area_frac × (x_size × y_size)`` (the
@@ -104,49 +108,40 @@ def recognise_face_levels(
     engraved text/numbers — that are not real steps and would otherwise be
     dimensioned as phantom shoulders.
     """
-    buckets: dict = {}  # bucket key -> representative z
-    areas: dict = {}  # bucket key -> total horizontal-face area
-    bounds: dict = {}  # bucket key -> union (x0, y0, x1, y1) support bounds
+    zs: list[float] = []
+    face_bounds: list[tuple[float, float, float, float]] = []
+    face_areas: list[float] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
         if surf.GetType() == GeomAbs_Plane:
             ax = surf.Plane().Axis().Direction()
             if abs(ax.Z()) > 0.99:
-                z = surf.Plane().Location().Z()
-                key = round(z / tol) * tol
-                buckets.setdefault(key, z)
+                zs.append(surf.Plane().Location().Z())
                 bb = face.bounding_box()
-                current = bounds.get(key)
-                face_bounds = (bb.min.X, bb.min.Y, bb.max.X, bb.max.Y)
-                bounds[key] = (
-                    face_bounds
-                    if current is None
-                    else (
-                        min(current[0], face_bounds[0]),
-                        min(current[1], face_bounds[1]),
-                        max(current[2], face_bounds[2]),
-                        max(current[3], face_bounds[3]),
-                    )
-                )
+                face_bounds.append((bb.min.X, bb.min.Y, bb.max.X, bb.max.Y))
                 if min_area_frac > 0.0:
                     props = GProp_GProps()
                     BRepGProp.SurfaceProperties_s(face.wrapped, props)
-                    areas[key] = areas.get(key, 0.0) + props.Mass()
+                    face_areas.append(props.Mass())
+
+    threshold = 0.0
     if min_area_frac > 0.0:
         bb = part.bounding_box()
-        footprint = (bb.max.X - bb.min.X) * (bb.max.Y - bb.min.Y)
-        threshold = min_area_frac * footprint
-        accepted_keys = [key for key in buckets if areas.get(key, 0.0) >= threshold]
-    else:
-        accepted_keys = list(buckets)
-    return sorted(
-        FaceLevel(
-            buckets[key],
-            (bounds[key][0], bounds[key][2]),
-            (bounds[key][1], bounds[key][3]),
+        threshold = min_area_frac * (bb.max.X - bb.min.X) * (bb.max.Y - bb.min.Y)
+
+    levels = []
+    for cluster in cluster_coordinates(zs, tol=tol):
+        if min_area_frac > 0.0 and sum(face_areas[i] for i in cluster) < threshold:
+            continue
+        spans = [face_bounds[i] for i in cluster]
+        levels.append(
+            FaceLevel(
+                min(zs[i] for i in cluster),
+                (min(s[0] for s in spans), max(s[2] for s in spans)),
+                (min(s[1] for s in spans), max(s[3] for s in spans)),
+            )
         )
-        for key in accepted_keys
-    )
+    return sorted(levels)
 
 
 # Minimum horizontal-face area (as a fraction of the plan footprint) for a Z level to count
