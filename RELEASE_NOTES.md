@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased
+
+- Decomposes the cylinder, hole/boss, pattern, and recess implementations along private,
+  architecture-tested seams. Existing public imports, object identities, record module paths,
+  deterministic ordering, shared-inventory behavior, capability declarations, and canonical
+  semantic goldens are unchanged.
+
 ## 0.2.1
 
 Compatibility-safe boundary and delivery-workflow patch release. Recognition output and canonical
