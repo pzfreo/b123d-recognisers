@@ -17,6 +17,7 @@ from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._geometry import length_tol, part_scale
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
+from b123d_recognisers._typing import Bounds, Part
 
 _AXES = {"x": 0, "y": 1, "z": 2}
 _R = TypeVar("_R", Slot, Pocket)
@@ -71,7 +72,9 @@ class _Face:
 
     normal: tuple
     axis: str
-    bb: object
+    #: Typed rather than left as ``object``: every use reads ``.min``/``.max``, so the
+    #: placeholder silently disabled checking on the field this module touches most.
+    bb: Bounds
     wall: bool  # a valid slot wall: LINE/CIRCLE edges, at least one straight LINE
 
 
@@ -96,7 +99,7 @@ def _is_wall(face) -> bool:
     return n_line >= 1 and n_circle <= 1
 
 
-def _planar_faces(part) -> list[_Face]:
+def _planar_faces(part: Part) -> list[_Face]:
     """All axis-aligned planar faces as :class:`_Face` records (computed once)."""
     faces = []
     for face in part.faces():
@@ -122,7 +125,7 @@ def _overlap_len(bb_a, bb_b, axis) -> float:
     return float(hi - lo)
 
 
-def _candidate(fa, fb, part_ext) -> Slot | None:
+def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float]) -> Slot | None:
     """Build a :class:`Slot` from two facing rectangular walls, or None if the
     pair is not a slot (not facing, not overlapping, wider than long, or
     spanning the full part).  Geometry only — the through/blind test is applied
@@ -181,7 +184,9 @@ def _candidate(fa, fb, part_ext) -> Slot | None:
     )
 
 
-def _end_capped(faces, foot, foot_area, depth_axis, end, want, scale) -> bool:
+def _end_capped(
+    faces: list[_Face], foot, foot_area, depth_axis, end, want, scale: float
+) -> bool:
     """True when inward-facing planar faces at ``end`` on ``depth_axis`` together cover at
     least :data:`_FLOOR_COVER_FRAC` of the ``foot`` (width×length) footprint — one end's
     half of the floor test.
@@ -209,7 +214,7 @@ def _end_capped(faces, foot, foot_area, depth_axis, end, want, scale) -> bool:
     return bool(covered >= _FLOOR_COVER_FRAC * foot_area)
 
 
-def _floor_ends(faces, s: Slot, scale) -> int:
+def _floor_ends(faces: list[_Face], s: Slot, scale: float) -> int:
     """How many of *s*'s two depth ends a planar floor caps: ``0`` = through (open both ends),
     ``1`` = a blind recess (one floor + one opening — a real pocket), ``2`` = a sealed internal
     void (capped both ends, no opening — NOT a machinable recess). The obround end-cap recovery
@@ -224,7 +229,7 @@ def _floor_ends(faces, s: Slot, scale) -> int:
     )
 
 
-def _open_sign(faces, s, scale) -> int:
+def _open_sign(faces: list[_Face], s, scale: float) -> int:
     """Which depth end *s* opens toward: ``+1`` (floor at ``d_lo``, opens +depth) or ``-1``
     (floor at ``d_hi``, opens -depth). The capped end is the floor; the pocket opens the other
     way. Assumes *s* is a blind recess (exactly one floor); the caller has already checked."""
@@ -236,7 +241,7 @@ def _open_sign(faces, s, scale) -> int:
     return 1 if _end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0, scale) else -1
 
 
-def _has_floor(faces, s: Slot, scale) -> bool:
+def _has_floor(faces: list[_Face], s: Slot, scale: float) -> bool:
     """True when a planar floor caps the slot at *either* depth end — i.e. it is not a through
     slot. The through/blind split for :func:`recognise_slots`'s flat-wall path; the obround end-cap
     path uses the finer :func:`_floor_ends` count (a pocket is capped on exactly one end)."""
@@ -251,7 +256,7 @@ def _has_floor(faces, s: Slot, scale) -> bool:
 _END_RADIUS_FRAC = 0.0375
 
 
-def _cylinder_faces(part) -> list[tuple]:
+def _cylinder_faces(part: Part) -> list[tuple]:
     """``(radius, axis_letter, axis_location, bbox, concave)`` for each axis-aligned cylindrical
     face of *part* — the candidate obround end caps. ``axis_location`` is a point on the
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
@@ -297,7 +302,7 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float, scale: float) -> bool:
     )
 
 
-def _extend_obround_ends(records: list[_R], part) -> list[_R]:
+def _extend_obround_ends(records: list[_R], part: Part) -> list[_R]:
     """Extend radiused-end (obround) slots/pockets to their **overall** length.
 
     The recogniser pairs the two flat side walls, so the raw ``lo``/``hi`` stop at the straight
@@ -388,7 +393,7 @@ def _obround_end(cap: tuple) -> tuple | None:
     )
 
 
-def _has_side_walls(faces, s: Slot, scale) -> bool:
+def _has_side_walls(faces: list[_Face], s: Slot, scale: float) -> bool:
     """True when the two flat side walls of obround slot *s* are present: **inward-facing** wall
     faces on the width axis at ``w_center - width/2`` (material-outward normal toward
     +width) and ``w_center + width/2`` (normal toward -width), each overlapping the
@@ -424,7 +429,7 @@ def _union_bb(a, b) -> SimpleNamespace:
     return SimpleNamespace(min=mn, max=mx)
 
 
-def _obround_ends(part) -> list[tuple]:
+def _obround_ends(part: Part) -> list[tuple]:
     """The obround end caps of *part*, robust to the imported-STEP topology that splits a
     semicircular end into two quarter-cylinder faces.
 
@@ -468,15 +473,19 @@ def _obround_ends(part) -> list[tuple]:
 
 
 @overload
-def _recognise_obround_from_ends(part, faces, *, blind: Literal[False] = ...) -> list[Slot]: ...
+def _recognise_obround_from_ends(
+    part: Part, faces: list[_Face], *, blind: Literal[False] = ...
+) -> list[Slot]: ...
 
 
 @overload
-def _recognise_obround_from_ends(part, faces, *, blind: Literal[True]) -> list[Pocket]: ...
+def _recognise_obround_from_ends(
+    part: Part, faces: list[_Face], *, blind: Literal[True]
+) -> list[Pocket]: ...
 
 
 def _recognise_obround_from_ends(
-    part, faces, *, blind: bool = False
+    part: Part, faces: list[_Face], *, blind: bool = False
 ) -> list[Slot] | list[Pocket]:
     """Recognise obround recesses from their semicircular end caps — the path for recesses whose
     flat walls are too short for :func:`_candidate`/:func:`_pocket_candidate` to pair.
@@ -563,7 +572,7 @@ def _recognise_obround_from_ends(
     return out
 
 
-def _recognise_slots_one(part) -> list[Slot]:
+def _recognise_slots_one(part: Part) -> list[Slot]:
     """Recognise slots using one solid's faces and bounds."""
     faces = _planar_faces(part)
     pbb = part.bounding_box()
@@ -625,7 +634,7 @@ def _body_scoped_records(sources, recognise_one) -> list:
     ]
 
 
-def _same_channel_line(a: Slot, b: Slot, scale) -> tuple[float, float] | None:
+def _same_channel_line(a: Slot, b: Slot, scale: float) -> tuple[float, float] | None:
     """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
     (width axis, centreline, width and depth extent) but disjoint along their run
     — return the gap ``(g_lo, g_hi)`` between them along ``long_axis``; else None.
@@ -650,7 +659,7 @@ def _same_channel_line(a: Slot, b: Slot, scale) -> tuple[float, float] | None:
     return gap if gap[1] - gap[0] > 0 else None
 
 
-def _gap_is_void(gap, arm: Slot, part) -> bool:
+def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
     """True when the *whole* gap between two collinear arms is empty space — a
     crossing channel of matching cross-section runs through it — rather than solid
     stock or merely pierced by an incidental void.
@@ -696,7 +705,7 @@ def _gap_is_void(gap, arm: Slot, part) -> bool:
     return bool(inter_vol <= _VOID_VOL_FRAC * box_vol)
 
 
-def _collapse_collinear(slots: list[Slot], part) -> list[Slot]:
+def _collapse_collinear(slots: list[Slot], part: Part) -> list[Slot]:
     """Recombine slot arms split by a crossing channel into whole channels.
 
     A ``+`` of two intersecting through-channels is milled as one continuous slot
@@ -859,12 +868,16 @@ def _floored_candidate(
     return None
 
 
-def _pocket_candidate(fa, fb, faces, part_ext) -> Pocket | None:
+def _pocket_candidate(
+    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float]
+) -> Pocket | None:
     candidate = _floored_candidate(fa, fb, faces, part_ext)
     return candidate if isinstance(candidate, Pocket) else None
 
 
-def _channel_candidate(fa, fb, faces, part_ext, part_bounds) -> Channel | None:
+def _channel_candidate(
+    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], part_bounds
+) -> Channel | None:
     candidate = _floored_candidate(fa, fb, faces, part_ext, channel_bounds=part_bounds)
     return candidate if isinstance(candidate, Channel) else None
 
@@ -884,7 +897,7 @@ def _channel_sort_key(channel: Channel) -> tuple:
     )
 
 
-def _recognise_pockets_one(part) -> list[Pocket]:
+def _recognise_pockets_one(part: Part) -> list[Pocket]:
     """Recognise pockets using one solid's faces and bounds."""
     faces = _planar_faces(part)
     pbb = part.bounding_box()
@@ -908,7 +921,7 @@ def _recognise_pockets_one(part) -> list[Pocket]:
     return _extend_obround_ends(_merge(candidates, scale), part)
 
 
-def _recognise_channels_one(part) -> list[Channel]:
+def _recognise_channels_one(part: Part) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
     faces = _planar_faces(part)
     pbb = part.bounding_box()

@@ -244,9 +244,11 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
       estimated — that figure is now 21% of definitions for returns, and the parameter count was
       never stated. **All 43 return annotations are now done — every function in the package
       has one.** Parameters: the "231" first reported included 34 `self`/`cls`, which never need
-      annotating — the real figure was **197, now 163**. `_geometry`, `countersinks`, `flats` and
-      `polygonal_bosses` done, using the `_typing` aliases that already existed (`Vector3`,
-      `Span2`, `Bounds`, `FaceLike`, `Part`) rather than inventing new ones.
+      annotating — the real figure was **197, now 108**. Done in `_geometry`, `countersinks`,
+      `flats`, `polygonal_bosses`, `_recess_core`, `_hole_features` and the pattern modules,
+      using the `_typing` aliases that already existed (`Vector3`, `Span2`, `Bounds`,
+      `FaceLike`, `Part`) rather than inventing new ones. What is left is mostly the augmented
+      segment dicts, which need a `SegmentEvidence` TypedDict decision rather than an alias.
       `disallow_untyped_defs` needs both halves complete
 - [x] Each annotation is a claim the strict wheel check verifies, not a comment. **Eight were
       false when written** and each needed a real fix rather than a better annotation: six

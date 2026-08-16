@@ -3,7 +3,7 @@
 """Record-agnostic deterministic 2-D pattern geometry."""
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import TypeVar
 
 from b123d_recognisers._geometry import _unit, length_tol, plane_axes
@@ -72,7 +72,9 @@ def _plane_uv(axis) -> tuple[tuple[float, ...], tuple[float, ...]]:
     return u, v
 
 
-def _as_linear_array(members, pts, make: Callable[..., _R]) -> _R | None:
+def _as_linear_array(
+    members, pts: Sequence[tuple[float, float]], make: Callable[..., _R]
+) -> _R | None:
     """A linear-array record when *pts* (2D) are collinear at constant pitch.
 
     Record-generic: *make* ``(ordered_members, pitch, direction) -> Record`` builds the
@@ -122,7 +124,7 @@ def _as_linear_array(members, pts, make: Callable[..., _R]) -> _R | None:
 
 
 def _linear_array_candidates(
-    members, pts, make: Callable[..., _R]
+    members, pts: Sequence[tuple[float, float]], make: Callable[..., _R]
 ) -> list[tuple[_R, frozenset[int]]]:
     """All linear arrays within a spec group: every pair seeds a line, the
     group's collinear points are gathered and sorted, and each maximal
@@ -168,7 +170,9 @@ def _linear_array_candidates(
     return out
 
 
-def _rect_grid(members, pts, make: Callable[..., _R]) -> _R | None:
+def _rect_grid(
+    members, pts: Sequence[tuple[float, float]], make: Callable[..., _R]
+) -> _R | None:
     """A rectangular-grid record when the whole spec group fills a regular N×M
     lattice, else ``None``. The two shortest near-orthogonal pairwise vectors
     define the lattice basis; every point must land on an integer cell and every

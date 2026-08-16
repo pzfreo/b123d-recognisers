@@ -132,7 +132,7 @@ def _spec_key(h) -> HoleSpec:
     return HoleSpec.from_hole(h)
 
 
-def _as_bolt_circle(holes, pts) -> BoltCircle | None:
+def _as_bolt_circle(holes, pts: Sequence[tuple[float, float]]) -> BoltCircle | None:
     """BoltCircle when *pts* (2D) are equally spaced on a common circle."""
     n = len(pts)
     cx = sum(p[0] for p in pts) / n
@@ -167,7 +167,9 @@ def _circumcircle(p0, p1, p2) -> tuple[float, float, float] | None:
     return ux, uy, math.hypot(ax - ux, ay - uy)
 
 
-def _bolt_circle_candidates(members, pts) -> list[tuple[BoltCircle, frozenset[int]]]:
+def _bolt_circle_candidates(
+    members, pts: Sequence[tuple[float, float]]
+) -> list[tuple[BoltCircle, frozenset[int]]]:
     """All bolt circles within a spec group: every triple seeds a candidate
     circle, the group's points lying on it are gathered, and the set is kept
     only if :func:`_as_bolt_circle` confirms it is fully, evenly populated.

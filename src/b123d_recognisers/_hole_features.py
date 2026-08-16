@@ -113,7 +113,7 @@ def _axis_point(seg, s) -> tuple[float, float, float]:
     return (ax + t * dx, ay + t * dy, az + t * dz)
 
 
-def _end_partners(seg, s_end, edge_faces, cache=None) -> list:
+def _end_partners(seg, s_end, edge_faces: dict, cache: dict | None = None) -> list:
     """The faces beyond one axial end of *seg*: partners of edges that lie at
     that end. An opening edge on a slanted or curved surface dips away from
     the end plane (by the lip sagitta), so edges match within a margin — but
@@ -151,7 +151,7 @@ def _end_partners(seg, s_end, edge_faces, cache=None) -> list:
     return partners
 
 
-def _classify_end(seg, s_end, hi_end, edge_faces, cache=None) -> str:
+def _classify_end(seg, s_end, hi_end, edge_faces: dict, cache: dict | None = None) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
     if cache is None:
         return _classify_end_uncached(seg, s_end, hi_end, edge_faces)
@@ -164,7 +164,9 @@ def _classify_end(seg, s_end, hi_end, edge_faces, cache=None) -> str:
     return result
 
 
-def _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache=None) -> str:
+def _classify_end_uncached(
+    seg, s_end, hi_end, edge_faces: dict, cache: dict | None = None
+) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
     Returns ``"open"`` (the bore exits, or the boss's free end), ``"flat"``
@@ -243,7 +245,7 @@ def _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache=None) -> str:
     return weak or "unknown"
 
 
-def _edge_face_map(part) -> dict:
+def _edge_face_map(part: Part) -> dict:
     """Map every edge of *part* to the faces that share it."""
     edge_faces: dict = {}
     for f in part.faces():
@@ -252,7 +254,7 @@ def _edge_face_map(part) -> dict:
     return edge_faces
 
 
-def _shared_transition(a, b, edge_faces, cache=None) -> bool:
+def _shared_transition(a, b, edge_faces: dict, cache: dict | None = None) -> bool:
     """True when a cone or torus face spans the gap between segment *a*'s
     high end and segment *b*'s low end — the shoulder chamfer or fillet that
     makes the two segments steps of one hole. The transition face touches
@@ -273,7 +275,7 @@ def _shared_transition(a, b, edge_faces, cache=None) -> bool:
     return False
 
 
-def _merge_stacks(stacks, edge_faces, cache=None) -> list[list[dict]]:
+def _merge_stacks(stacks, edge_faces: dict, cache: dict | None = None) -> list[list[dict]]:
     """Recombine coaxial stacks that are one hole:
 
     - same bore diameter on both sides of a crossing void, neither facing
@@ -326,7 +328,7 @@ def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink
     return None
 
 
-def _drilled_from(stack, edge_faces, cache) -> tuple[bool, dict, float, str]:
+def _drilled_from(stack, edge_faces: dict, cache: dict) -> tuple[bool, dict, float, str]:
     """Which end of a coaxial stack is the opening, and what closes the other.
 
     Returns ``(from_hi, opening_seg, opening_s, bottom)``. The opening is the open end; when
