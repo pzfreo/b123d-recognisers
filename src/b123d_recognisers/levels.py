@@ -209,6 +209,65 @@ def step_level_zs(part: Part, *, tol: float | None = None) -> list[float]:
     return [fl.z for fl in step_level_records(part, tol=tol)]
 
 
+#: A bounded slanted face is a structural ramp only if it is this fraction of the part on every
+#: axis it spans. Below it the face is an edge-break chamfer, which is not a transition between
+#: levels and must not contribute shoulder stations.
+_STRUCTURAL_RAMP_MIN_FRAC = 0.1
+
+#: A bounded riser is judged against its own footprint rather than the part cross-section, and
+#: must fill this fraction of it. A full-span riser uses the caller's ``min_area_frac`` instead,
+#: because there the part cross-section is the meaningful denominator.
+_BOUNDED_RISER_AREA_FRAC = 0.5
+
+
+def _ramp_positions(
+    fb,
+    axis: str,
+    other: str,
+    ext: dict[str, float],
+    *,
+    full_span: bool,
+    flo: float,
+    fhi: float,
+) -> tuple[tuple[float, ...], tuple[float, ...]] | None:
+    """Transition stations for an oblique riser, or ``None`` if it is not a structural ramp.
+
+    A full-span slanted face contributes its two stations along the riser axis. A *bounded* one
+    also contributes its extrusion endpoints on the perpendicular axis, which is what defines
+    the ramp's width — but only once it is large enough on all three axes to be a deliberate
+    transition rather than an edge break, since a chamfer is bounded in exactly the same way.
+    """
+
+    axis_positions = (
+        fb.min.X if axis == "x" else fb.min.Y,
+        fb.max.X if axis == "x" else fb.max.Y,
+    )
+    if full_span:
+        return axis_positions, ()
+    if (
+        fhi - flo < _STRUCTURAL_RAMP_MIN_FRAC * ext[other]
+        or axis_positions[1] - axis_positions[0] < _STRUCTURAL_RAMP_MIN_FRAC * ext[axis]
+        or _STRUCTURAL_RAMP_MIN_FRAC * ext["z"] > fb.max.Z - fb.min.Z
+    ):
+        return None  # ordinary edge-break chamfer, not a structural ramp
+    return axis_positions, (flo, fhi)
+
+
+def _riser_orientation(normal) -> tuple[bool, str] | None:
+    """Classify a face normal as a riser candidate: ``(vertical, axis)``, or ``None``.
+
+    A riser faces along one in-plane axis and not the other — a normal with a foot in both is a
+    corner treatment, not a step. ``vertical`` distinguishes a square riser from an oblique
+    ramp, which contribute different transition stations further down.
+    """
+
+    on_x = abs(normal.X) > AXIS_ZERO_COS and abs(normal.Y) <= AXIS_ZERO_COS
+    on_y = abs(normal.Y) > AXIS_ZERO_COS and abs(normal.X) <= AXIS_ZERO_COS
+    if not (on_x or on_y):
+        return None
+    return abs(normal.Z) <= AXIS_ZERO_COS, "x" if on_x else "y"
+
+
 def recognise_risers(
     part: Part, *, min_area_frac: float = 0.15, tol: float | None = None
 ) -> list[RiserEvidence]:
@@ -255,14 +314,10 @@ def recognise_risers(
             nv = f.normal_at()
         except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
             continue
-        vertical = abs(nv.Z) <= AXIS_ZERO_COS
-        axis = (
-            "x"
-            if abs(nv.X) > AXIS_ZERO_COS and abs(nv.Y) <= AXIS_ZERO_COS
-            else ("y" if abs(nv.Y) > AXIS_ZERO_COS and abs(nv.X) <= AXIS_ZERO_COS else None)
-        )
-        if axis is None:
+        classified = _riser_orientation(nv)
+        if classified is None:
             continue
+        vertical, axis = classified
         fb = f.bounding_box()
         other = "y" if axis == "x" else "x"
         # A step/rebate shoulder crosses the WHOLE part edge-to-edge on the
@@ -292,28 +347,23 @@ def recognise_risers(
             # stations. A bounded slanted interruption also contributes its
             # extrusion endpoints on the perpendicular in-plane axis, defining
             # both the ramp and its width.
-            if abs(nv.Z) <= 0.01 or tol >= fb.max.Z - fb.min.Z:
+            # `vertical` is False here, so nv.Z is already outside AXIS_ZERO_COS; the height
+            # test is the only live half of what used to be a two-part guard.
+            if tol >= fb.max.Z - fb.min.Z:
                 continue
-            axis_positions = (
-                fb.min.X if axis == "x" else fb.min.Y,
-                fb.max.X if axis == "x" else fb.max.Y,
+            ramp = _ramp_positions(
+                fb, axis, other, ext, full_span=full_span, flo=flo, fhi=fhi
             )
-            if not full_span:
-                other_size = fhi - flo
-                axis_size = axis_positions[1] - axis_positions[0]
-                if (
-                    other_size < 0.1 * ext[other]
-                    or axis_size < 0.1 * ext[axis]
-                    or 0.1 * ext["z"] > fb.max.Z - fb.min.Z
-                ):
-                    continue  # ordinary edge-break chamfer, not a structural ramp
-                other_positions = (flo, fhi)
-            positions = axis_positions
+            if ramp is None:
+                continue
+            positions, other_positions = ramp
         cross = ext[other] * ext["z"]
         props = GProp_GProps()
         BRepGProp.SurfaceProperties_s(f.wrapped, props)
         area_floor = (
-            min_area_frac * cross if full_span else 0.5 * ((fhi - flo) * (fb.max.Z - fb.min.Z))
+            min_area_frac * cross
+            if full_span
+            else _BOUNDED_RISER_AREA_FRAC * ((fhi - flo) * (fb.max.Z - fb.min.Z))
         )
         if cross <= 0 or props.Mass() < area_floor:
             continue  # a large riser, not an incidental feature face

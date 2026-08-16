@@ -222,8 +222,13 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
 - [~] `polygonal_bosses._recognise_one` **231 → 94 lines**, into `_vertical_side_faces`,
       `_side_rings`, `_regular_ring_order`, `_ring_profile`, `_cap_z` and `_common_cap`. Goldens
       byte-identical at every step, which is the only reason to trust a refactor this size
-- [ ] `levels.recognise_risers` (131) and `_hole_features.recognise_holes` (120) — same
-      treatment, own PRs
+- [x] `levels.recognise_risers` 131 → 122 lines total, of which 29 are docstring: **93 lines
+      of code**, with `_riser_orientation` and `_ramp_positions` named out. Stopped there
+      deliberately — what is left is one coherent scan (classify, gate, emit), and splitting the
+      six-line area gate into a single-caller function would chase the metric, not clarity
+- [x] Removed a dead guard it exposed: the oblique branch re-tested `abs(nv.Z) <= 0.01` inside
+      a branch reached only when that is already false
+- [ ] `_hole_features.recognise_holes` (120) — own PR
 - [ ] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 
