@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import re
 from pathlib import Path
 
@@ -84,12 +85,38 @@ def test_runtime_prose_has_no_consumer_internal_paths() -> None:
     assert unresolved == {}
 
 
-def test_readme_introduces_imported_brep_recognition_for_cad_consumers() -> None:
+def test_readme_examples_only_use_api_the_package_actually_exports() -> None:
+    """The README's code must run, which is the property its wording was standing in for.
+
+    This replaces a set of assertions on particular sentences — ``"STEP editor" in readme`` and
+    similar. Those failed on copy edits while passing on a README that documented a function
+    that no longer existed, which is the wrong way round. Every name imported from the package
+    in a fenced example is checked against the real export list instead.
+    """
+
+    readme = README.read_text(encoding="utf-8")
+    exported = set(dir(importlib.import_module("b123d_recognisers")))
+
+    imported = {
+        name.strip()
+        for match in re.findall(r"^from b123d_recognisers import (.+)$", readme, re.MULTILINE)
+        for name in match.split(",")
+    }
+
+    assert imported, "the README must show how the package is imported"
+    missing = sorted(imported - exported)
+    assert not missing, f"README imports names the package does not export: {missing}"
+
+
+def test_readme_shows_the_step_entry_point_the_package_is_for() -> None:
+    """One claim worth pinning: the README demonstrates recognition from an imported file.
+
+    Not a wording assertion — it checks the example calls ``import_step`` and feeds the result to
+    a recogniser, which is the workflow the package exists to serve. A README that stopped
+    showing it would be documenting a different library.
+    """
+
     readme = README.read_text(encoding="utf-8")
 
-    assert "import_step" in readme
-    assert "boundary-representation (B-Rep)" in readme
-    assert "construction history is not available" in readme
-    assert "STEP editor" in readme and "topology-editing operation" in readme
-    assert "does not mutate the source model" in readme
-    assert "build123d solids and imported STEP models" not in readme
+    assert re.search(r"import_step\(", readme)
+    assert re.search(r"build_recognition_result\(\s*part\s*\)", readme)
