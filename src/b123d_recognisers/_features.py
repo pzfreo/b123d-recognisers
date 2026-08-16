@@ -55,3 +55,6 @@ __all__ = [
     "recognise_hole_patterns",
     "recognise_holes",
 ]
+
+for _exported_name in __all__:
+    globals()[_exported_name].__module__ = __name__

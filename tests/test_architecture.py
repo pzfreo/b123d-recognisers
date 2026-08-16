@@ -163,6 +163,7 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
     for name, implementation in implementations.items():
         assert getattr(recognition, name) is getattr(feature_facade, name)
         assert getattr(feature_facade, name) is getattr(implementation, name)
+        assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
 
     recess_records = importlib.import_module("b123d_recognisers._recess_records")
     recess_features = importlib.import_module("b123d_recognisers._recess_features")
@@ -174,9 +175,11 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
     for name in ("recognise_channels", "recognise_pockets", "recognise_slots"):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_features, name)
+        assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
     for name in ("recognise_pocket_patterns", "recognise_slot_patterns"):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_patterns, name)
+        assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
     for name in (
         "BoltCircle",
         "BossRecord",

@@ -38,3 +38,6 @@ __all__ = [
     "recognise_slot_patterns",
     "recognise_slots",
 ]
+
+for _exported_name in __all__:
+    globals()[_exported_name].__module__ = __name__
