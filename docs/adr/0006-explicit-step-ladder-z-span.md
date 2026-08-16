@@ -47,7 +47,7 @@ since 0.2.1, remains for the full 0.2.x line, and is removed no earlier than 1.0
   equality and JSON serialization; `RecognitionResult` and every contained record remain frozen.
 - No recogniser, record schema, capability family, canonical golden, or recognition policy changes.
 
-## Amendment (0.3.0, ADR 0008)
+## Amendment (0.2.3, ADR 0008)
 
 `boundary_margin` defaults to `None`, which resolves to `STEP_LADDER_BOUNDARY_MARGIN` capped at a
 quarter of the span. An explicit float is still honoured literally, so every caller inventory above
