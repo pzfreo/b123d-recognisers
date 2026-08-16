@@ -92,3 +92,17 @@ def test_contributor_and_pr_surfaces_link_the_protocol() -> None:
     for path in ("CONTRIBUTING.md", ".github/pull_request_template.md"):
         text = (ROOT / path).read_text(encoding="utf-8")
         assert "docs/delivery-protocol.md" in text
+
+
+def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None:
+    workflow = (ROOT / ".github/workflows/downstream-canary.yml").read_text(encoding="utf-8")
+    assert "pull_request:" in workflow and "schedule:" in workflow
+    assert workflow.count("runs-on:") == 1, "the canary is one job, not another platform matrix"
+    assert "repository: pzfreo/draftwright" in workflow
+    assert "ref: main" in workflow
+    assert "tools/check_downstream.py --draftwright ../draftwright" in workflow
+    assert "git -C ../draftwright rev-parse HEAD" in workflow
+    assert "capability_manifest(format_version=1)" in workflow
+    assert "GITHUB_STEP_SUMMARY" in workflow
+    assert "Wall time" in workflow
+    assert "matrix:" not in workflow

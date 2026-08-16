@@ -9,6 +9,12 @@ Changes to a recogniser or public record follow the tests-first
 declare every downstream capability state, and run its two-checkout compatibility command before
 either repository merges.
 
+Every package pull request also runs the single-job **Draftwright downstream canary**. It resolves
+Draftwright `main` to an exact commit, builds the candidate wheel, runs the same bounded contract
+harness, and records both commits, the manifest digest, and wall time in the job summary. A weekly
+run catches later consumer drift. This complements the package platform matrix; it does not copy or
+rerun Draftwright's full matrix.
+
 ## Architectural rules
 
 - Recognition is geometry-only: no drawing, editing-session, CAM-operation or UI policy.
