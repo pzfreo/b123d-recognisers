@@ -23,7 +23,8 @@ def test_version_is_available() -> None:
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:
     notes = (ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
 
-    assert notes.startswith("# Release notes\n\n## 0.2.0\n")
+    assert notes.startswith("# Release notes\n")
+    assert notes.count("\n## 0.2.0\n") == 1
     assert "capability manifest" in notes
     assert "Draftwright PR #1168" in notes
     assert "d659e7a6" in notes
