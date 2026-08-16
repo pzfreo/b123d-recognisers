@@ -171,12 +171,15 @@ lower. The 92.31% aggregate is partly carried by the easy modules.
       `_regular_ring_order` and `_ring_profile` are pure functions of normals and centres, so
       the remaining cases are arithmetic rather than solids. The lesson generalises: a predicate
       buried in a 231-line function can only be reached through everything in front of it
-- [ ] `repeating_profiles.py` 87.6% — untouched. Its uncovered lines are the sector-rotation
-      correspondence failures, which have the same character: reachable, but only with
-      geometry built to fail
+- [x] `repeating_profiles.py` 87.6% → **89.7%**. I twice called these lines reachable only
+      with geometry built to fail; wrong again, and for a plainer reason — the module was
+      *already* decomposed, and `_one_closed_cycle` and `_polar_signature` are functions of
+      edge endpoints and sampled points. I had read the coverage percentage without reading the
+      shape of the code behind it
 - [x] Prefer negative and boundary cases over happy-path additions — every test added is a
       shape that must return no record
-- [ ] Raise the floor only after, not before
+- [ ] Raise the floor only after, not before. Coverage is now 93.44% against a floor of 91;
+      raising it is the last step of this finding
 
 ## 5 — Unnamed numeric literals
 
