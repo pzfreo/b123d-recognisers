@@ -42,7 +42,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._geometry import cluster_coordinates
+from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -141,8 +141,8 @@ def recognise_plates(
         # (−a, +a) neighbours: a −a low / +a high pairing that skips an intervening face
         # crosses an air gap (two stacked plates on a common post) and must not be read
         # as one plate. Same-coord ties order −a first so a degenerate pair is t≈0.
-        events = [(c, -1, a, u, v) for c, (a, u, v) in neg.items() if a >= thresh]
-        events += [(c, 1, a, u, v) for c, (a, u, v) in pos.items() if a >= thresh]
+        events = [(c, -1, a, u, v) for c, (a, u, v) in neg.items() if clears_threshold(a, thresh)]
+        events += [(c, 1, a, u, v) for c, (a, u, v) in pos.items() if clears_threshold(a, thresh)]
         events.sort(key=lambda e: (e[0], e[1]))
         for (c0, s0, a0, u0, v0), (c1, s1, a1, u1, v1) in zip(
             events, events[1:], strict=False

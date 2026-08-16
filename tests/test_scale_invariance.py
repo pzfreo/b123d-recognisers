@@ -25,14 +25,14 @@ GOLDEN_ROOT = ROOT / "tests" / "golden"
 sys.path.insert(0, str(ROOT))
 
 from b123d_recognisers import feature_census  # noqa: E402
+from b123d_recognisers._geometry import clears_threshold  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 
-#: Both extremes plus one interior factor. The interior one matters: ``plates`` gains a spurious
-#: record in ``chamfers_fillets_and_flats`` at 5x and 10x but not at 1x or 100x, because that
-#: fixture has a face whose area is exactly the gate's 40% threshold and rounding decides it.
-#: A test that only visited the extremes would call that family scale-free when it is not.
+#: Both extremes plus one interior factor. The interior one earns its place: ``plates`` used to
+#: gain a spurious record in ``chamfers_fillets_and_flats`` at 5x and 10x but not at 1x or 100x,
+#: which a test visiting only the extremes would have missed entirely.
 FACTORS = (0.05, 5.0, 100.0)
 
 #: Feature kinds whose recognisers still gate on absolute millimetres, per ADR 0008's
@@ -61,6 +61,28 @@ def test_converted_families_recognise_the_same_features_at_any_scale(fixture_pat
     actual = _scale_free_census(fixture.build_fixture().scale(factor))
 
     assert actual == expected, f"{fixture_path.parent.name} at {factor}x"
+
+
+def test_a_magnitude_exactly_on_its_threshold_is_decided_the_same_way_at_every_scale():
+    """An area gate compared at exact equality is settled by rounding, not by the part.
+
+    ``chamfers_fillets_and_flats`` has a face whose area is exactly ``min_area_frac`` of the
+    cross-section. ``area - threshold`` came out ``-1.7e-13`` at 1x, exactly ``0.0`` at 5x and
+    10x, and ``-9.3e-10`` at 100x, so ``recognise_plates`` returned a record at two scales and
+    not the others — the same geometry classified two ways.
+    """
+
+    assert not clears_threshold(480.0, 480.0), "an exact tie must not admit a feature"
+    assert not clears_threshold(479.9999999999999, 480.00000000000006)
+    assert clears_threshold(480.1, 480.0), "a real margin must still clear it"
+
+    fixture = load_fixture(GOLDEN_ROOT / "chamfers_fillets_and_flats" / "fixture.py")
+    counts = {
+        factor: feature_census(fixture.build_fixture().scale(factor)).get("plate", 0)
+        for factor in (0.2, 5.0, 10.0, 100.0)
+    }
+
+    assert set(counts.values()) == {0}, counts
 
 
 def test_the_exclusion_list_is_a_debt_record_not_a_permanent_carve_out():
