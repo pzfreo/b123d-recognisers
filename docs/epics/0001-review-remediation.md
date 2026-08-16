@@ -58,7 +58,7 @@ with its own evidence requirements, not part of this epic.
 
 ## 2 — Absolute millimetre tolerances
 
-**behaviour change** · target 0.3.0 · policy in
+**behaviour change** · target 0.2.3 · policy in
 [ADR 0008](../adr/0008-length-tolerance-policy.md)
 
 ~39 length constants are fixed millimetres: `_MERGE_TOL = 0.5`, `_HOLE_DIA_TOL = 0.2`,
@@ -98,7 +98,7 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
 - [x] `turned._OD_SPAN_PAD` reclassified as deliberately absolute — converting it bridged a
       groove; see ADR 0008
 
-### 2c — Part-relative lengths and the public surface · behaviour change · target 0.3.0
+### 2c — Part-relative lengths and the public surface · behaviour change · target 0.2.3
 
 - [x] **[#46](https://github.com/pzfreo/b123d-recognisers/issues/46), landed first:** replaced
       the `round(coord / tol) * tol` grouping in `levels` and `plates` with bounded clustering
@@ -125,8 +125,13 @@ The 17 sites that already hold a diameter, radius or width at the comparison: `f
       the five that hold a part or `part_ext` derive it themselves. Goldens byte-identical
 - [x] **`NOT_YET_SCALE_FREE` is empty.** Every fixture recognises identically from 0.05x to
       100x, across every family
-- [ ] Release note; `0.3.0a1` for the Draftwright canary, then `0.3.0` — **requires explicit
+- [ ] Release note; `0.2.3a1` for the Draftwright canary, then `0.2.3` — **requires explicit
       approval, publishing is outside the loop's remit**
+- [ ] **Patch, not minor, by maintainer decision.** ADR 0008 and this epic both assumed 0.3.0
+      because finding 2 changes recognition output. The one part that is more than a patch under
+      any reading is `RiserEvidence.tol` losing its default, which breaks direct construction;
+      restoring a default would cost nothing at runtime, since the recogniser always passes the
+      resolved value explicitly. Open question for the release
 
 ## 3 — Tests that pin prose and implementation detail
 
@@ -222,8 +227,13 @@ no return annotation, and mypy runs without `disallow_untyped_defs` — for a pa
 - [~] `polygonal_bosses._recognise_one` **231 → 94 lines**, into `_vertical_side_faces`,
       `_side_rings`, `_regular_ring_order`, `_ring_profile`, `_cap_z` and `_common_cap`. Goldens
       byte-identical at every step, which is the only reason to trust a refactor this size
-- [ ] `levels.recognise_risers` (131) and `_hole_features.recognise_holes` (120) — same
-      treatment, own PRs
+- [x] `levels.recognise_risers` 131 → 122 lines total, of which 29 are docstring: **93 lines
+      of code**, with `_riser_orientation` and `_ramp_positions` named out. Stopped there
+      deliberately — what is left is one coherent scan (classify, gate, emit), and splitting the
+      six-line area gate into a single-caller function would chase the metric, not clarity
+- [x] Removed a dead guard it exposed: the oblique branch re-tested `abs(nv.Z) <= 0.01` inside
+      a branch reached only when that is already false
+- [ ] `_hole_features.recognise_holes` (120) — own PR
 - [ ] Annotate the internal geometry helpers, then enable `disallow_untyped_defs`
 - [ ] Goldens byte-identical throughout — this is the PR most likely to move behaviour by accident
 

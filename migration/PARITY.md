@@ -1,10 +1,12 @@
 # Draftwright migration parity
 
 The initial standalone implementation is an atomic extraction from Draftwright commit
-`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). Through the whole `0.2.x` line there were
-no intentional feature-policy differences.
+`3fe20b0f71a71deced06b310943dd44cc66e355e` (2026-08-15). Through `0.2.0`–`0.2.2` there were no intentional
+feature-policy differences.
 
-**From `0.3.0` there is one, and it is deliberate.** [ADR 0008](../docs/adr/0008-length-tolerance-policy.md)
+**From `0.2.3` there is one, and it is deliberate.** It is carried on a patch release at the
+maintainer's direction rather than the minor release semver would imply; on a `0.x` line the
+distinction is a project convention, and this records which convention was chosen. [ADR 0008](../docs/adr/0008-length-tolerance-policy.md)
 replaces the recognisers' absolute millimetre gates with gates proportional to the geometry they
 judge, because an absolute gate answers differently for the same feature modelled at another size.
 The pinned goldens are no longer a byte-for-byte capture of the Draftwright baseline; they are this
@@ -21,7 +23,7 @@ matches the pinned golden result and changes only that previously platform-depen
 
 | Release | What differs | Extent |
 | --- | --- | --- |
-| 0.3.0 | `RiserEvidence.tol` records the tolerance the scan actually resolved for that part, rather than the former fixed `0.5`. | 33 values across 5 fixtures. **No geometry field moves** — not one coordinate, span, diameter, count or classification differs from the capture. |
+| 0.2.3 | `RiserEvidence.tol` records the tolerance the scan actually resolved for that part, rather than the former fixed `0.5`. | 33 values across 5 fixtures. **No geometry field moves** — not one coordinate, span, diameter, count or classification differs from the capture. |
 
 That field exists to report how the evidence was produced, so it moves precisely because the
 production changed; a record still carrying `0.5` would now be misreporting. The rest of the corpus
