@@ -14,11 +14,13 @@ commit:
    (`v0.2.6` while `main` is on `0.2.6.dev0`). **Attach nothing.** The version is taken from
    the tag, so a prerelease is just `v0.2.6rc1` — see `docs/delivery-protocol.md`, which makes
    `0.2.NrcK` the paired prerelease Draftwright validates a new public record against.
-3. That is all. `build-release` checks out the tag, strips the `.dev` suffix, builds the
-   wheel and sdist, and verifies they match the tag. One artifact then goes to TestPyPI, is
+3. That is all. `build-release` checks out the tag, checks the tag's `X.Y.Z` against the
+   tagged commit's, sets the version from the tag, and builds the wheel and sdist. One artifact then goes to TestPyPI, is
    installed and imported from there, and only then reaches the protected `pypi` environment
    for approval.
-4. When PyPI accepts it, the workflow opens a PR moving `main` to the next `.devN`. It
+4. When PyPI accepts it, the workflow opens a PR moving `main` to the next `.devN` — unless
+   the tag was a prerelease, in which case `main` stays put, because `v0.2.6rc1` is a
+   candidate *for* 0.2.6 and that stable release still has to happen. It
    dispatches CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN`
    raises no events and would otherwise arrive with no checks.
 
@@ -38,9 +40,13 @@ old `.devN` until someone opens that PR by hand.
 ## Changing the minor or major version
 
 `bump-version` only ever does patch + 1. To release `0.3.0`, open a PR first that moves
-`main` to `0.3.0.dev0` using `scripts/update-recogniser-version`, then tag `v0.3.0`. Tagging
-`v0.3.0` while `main` is on `0.2.x.devN` does not mispublish — `verify_release_assets.py`
-rejects the mismatch before anything is uploaded — but it does fail the release.
+`main` to `0.3.0.dev0` using `scripts/update-recogniser-version`, then tag `v0.3.0`.
+
+Tagging `v0.3.0` while `main` is on `0.2.x.devN` fails the release rather than mispublishing,
+but the check that stops it is the explicit tag-versus-branch comparison in `build-release`,
+**not** `verify_release_assets.py`. Since the version is now taken from the tag, that verifier
+compares the tag against itself and can no longer disagree; what it still checks is that the
+build produced exactly one wheel and one sdist for the right project.
 
 ## Moving the version by hand
 

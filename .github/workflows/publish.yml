@@ -89,6 +89,24 @@ jobs:
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: false
+      - name: Check the tag agrees with the branch it points at
+        shell: bash
+        run: |
+          # Taking the version from the tag (below) means `verify_release_assets.py` compares
+          # the tag against a version derived from that same tag, which cannot disagree. The
+          # guard it used to provide is this one, made explicit: the tag's X.Y.Z must match
+          # the tagged commit's, so `v0.3.0` on a `0.2.6.dev0` tree fails here rather than
+          # publishing 0.3.0 and leaving `main` to bump itself to 0.2.7.dev0 -- a silent
+          # version regression on the next release.
+          tag_version="${RELEASE_TAG#v}"
+          tag_base="${tag_version%.dev*}"; tag_base="${tag_base%%rc*}"
+          current=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          current_base="${current%.dev*}"; current_base="${current_base%%rc*}"
+          if [[ "$tag_base" != "$current_base" ]]; then
+            echo "tag ${RELEASE_TAG} is ${tag_base}, but this commit is ${current_base}" >&2
+            echo "move main with scripts/update-recogniser-version before tagging" >&2
+            exit 1
+          fi
       - name: Set the release version from the tag
         run: |
           # From the tag rather than by stripping `.dev` off main's version. The tag is the
@@ -176,7 +194,9 @@ jobs:
   bump-version:
     name: Open the post-release version bump
     needs: publish-pypi
-    if: github.event_name == 'release'
+    # Not after a prerelease. `v0.2.6rc1` is a candidate *for* 0.2.6, so main must stay on
+    # 0.2.6.dev0 until the stable release actually ships.
+    if: github.event_name == 'release' && !contains(github.event.release.tag_name, 'rc')
     runs-on: ubuntu-latest
     permissions:
       actions: write # Dispatch CI against the pushed branch; see below.
@@ -192,8 +212,11 @@ jobs:
           enable-cache: false
       - name: Bump the patch version with a .dev0 suffix
         run: |
-          current=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          base="${current%.dev*}"
+          # From the tag, and from its stable base. Deriving this from main meant releasing
+          # v0.2.6rc1 moved main to 0.2.7.dev0 -- past the very version the candidate was a
+          # candidate for, making the stable 0.2.6 that `docs/delivery-protocol.md` requires
+          # unreachable from main's own version.
+          base="${RELEASE_TAG#v}"; base="${base%.dev*}"; base="${base%%rc*}"
           IFS='.' read -r major minor patch <<< "$base"
           scripts/update-recogniser-version "${major}.${minor}.$((patch + 1)).dev0"
       - name: Open the branch-protection-safe post-release bump

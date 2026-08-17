@@ -56,11 +56,20 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     # dispatching only ci.yml is how this was wrong the first time it was fixed.
     on_pull_request = {
         path.name
-        for path in (ROOT / ".github" / "workflows").glob("*.yml")
-        if re.search(r"^on:\n(?:.*\n)*?  pull_request:", path.read_text(encoding="utf-8"), re.M)
+        for path in (ROOT / ".github" / "workflows").iterdir()
+        if path.suffix in {".yml", ".yaml"}
+        and re.search(r"(?m)^on:\s*(\n(?:.*\n)*?  pull_request:|\[[^]]*\bpull_request\b)",
+                      path.read_text(encoding="utf-8"))
     }
-    for name in on_pull_request:
-        assert name in workflow, f"{name} runs on pull_request but is never dispatched"
+    dispatched = re.search(r"^\s*for workflow in (.+?); do$", workflow, re.M)
+    assert dispatched, "the dispatch loop is missing or has been reshaped"
+    # Parsed from the loop, not searched for in the file. `assert name in workflow` passed
+    # with ci.yml removed from the loop, because the comment above it says the words "ci.yml"
+    # -- so the test could not detect the exact defect it was written for.
+    assert set(dispatched.group(1).split()) == on_pull_request, (
+        f"dispatch loop runs {dispatched.group(1)}, but the workflows triggered by "
+        f"pull_request are {sorted(on_pull_request)}"
+    )
     assert "actions: write" in workflow, "dispatching CI needs actions: write"
     for name in on_pull_request:
         target = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
