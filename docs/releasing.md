@@ -32,13 +32,24 @@ Step 1 is therefore the whole safety story: move `main` first, with
 took the version from the tag instead and added a checker to compare the two; that inverted the
 dependency and produced a chain of defects, and it is not what the proven process does.
 
-## Prereleases
+## Prereleases are not supported by this path
 
 `docs/delivery-protocol.md` makes `0.2.NrcK` the paired prerelease Draftwright validates a new
-public record against. Move `main` to `0.2.6rc1`, tag `v0.2.6rc1`, and release as above.
+public record against, and this workflow **cannot produce one**.
 
-The post-release bump cannot follow a prerelease — `patch + 1` on `6rc1` is not arithmetic and
-the job fails loudly. Move `main` back to `0.2.6.dev0` by hand afterwards.
+The obstacle is not the workflow. `capabilities.py`'s version pattern requires any suffix to
+begin with `.`, `+` or `-`, so `0.2.6rc1` is not a version this package can describe itself as:
+a wheel built at it raises `CapabilityManifestError` from `capability_manifest()`, from
+`capability_manifest_json()`, and from the console script — the exact ADR 0005 contract a
+prerelease exists to let a consumer validate against.
+
+`scripts/update-recogniser-version` therefore refuses `rcN`, so the attempt fails before
+anything is published rather than after. An earlier draft of this branch accepted it and
+documented the flow, which would have shipped an artifact that fails its own contract.
+
+Resolving this means deciding whether `capabilities.py` should accept PEP 440 pre-release
+segments, or whether the delivery protocol should use a form it already accepts —
+`0.2.6-rc1` validates today. That is an ADR 0005 question and is not settled here.
 
 ## Minor and major versions
 

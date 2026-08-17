@@ -63,15 +63,9 @@ def _versions(root: Path) -> dict[str, str]:
     }
 
 
-@pytest.mark.parametrize("target", ["0.2.6", "0.2.6.dev0", "1.0.0.dev12", "0.2.6rc1"])
+@pytest.mark.parametrize("target", ["0.2.6", "0.2.6.dev0", "1.0.0.dev12"])
 def test_every_embedded_copy_moves_together(tmp_path, monkeypatch, target) -> None:
-    """A release, a dev snapshot and a prerelease all move the manifest and the fallback.
-
-    The prerelease case is not decoration. ``docs/delivery-protocol.md`` makes ``0.2.NrcK``
-    the paired prerelease Draftwright validates a new public record against, and an earlier
-    version of this script rejected it -- which made that protocol unusable through the
-    automated release path, silently, since the tag regex accepts ``v0.2.6rc1`` regardless.
-    """
+    """A release and a dev snapshot both move the manifest and the fallback."""
 
     module = _load()
     _project(tmp_path)
@@ -82,9 +76,16 @@ def test_every_embedded_copy_moves_together(tmp_path, monkeypatch, target) -> No
     assert _versions(tmp_path) == {"manifest": target, "fallback": target}
 
 
-@pytest.mark.parametrize("target", ["0.2", "0.2.6.dev", "v0.2.6", "0.2.6-rc1", "01.2.3"])
+@pytest.mark.parametrize(
+    "target", ["0.2", "0.2.6.dev", "v0.2.6", "0.2.6-rc1", "01.2.3", "0.2.6rc1"]
+)
 def test_a_version_that_is_not_a_release_or_a_snapshot_is_refused(tmp_path, target) -> None:
-    """Refused before anything is written, so a typo cannot half-apply."""
+    """Refused before anything is written, so a typo cannot half-apply.
+
+    ``0.2.6rc1`` is in this list rather than the accepted one: ``capabilities.py`` rejects it,
+    so a wheel built at that version raises from ``capability_manifest()``. Refusing it here
+    stops that before anything is published -- see the script's own note on the regex.
+    """
 
     module = _load()
     _project(tmp_path)

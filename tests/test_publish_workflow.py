@@ -4,18 +4,14 @@
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 import yaml
-
-from b123d_recognisers import __version__ as _PACKAGE_VERSION
 
 ROOT = Path(__file__).parents[1]
 README = ROOT / "README.md"
 WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
-VERIFY = ROOT / "tools" / "verify_release_assets.py"
 
 
 def _parsed(path: Path) -> dict:
@@ -24,8 +20,8 @@ def _parsed(path: Path) -> dict:
     Every workflow assertion here used to be a substring search, and five review rounds each
     found one that could be satisfied by something other than the thing it meant to check --
     a `uv build` in a different job, a `RELEASE_TAG#v` two steps away, and at the low point an
-    assertion that `verify_release_assets.py` appears in `build-release` satisfied by a
-    *comment about* `verify_release_assets.py`, so deleting the step that runs it stayed green.
+    assertion that a command appears in `build-release` satisfied by a *comment about* that
+    command, so deleting the step which ran it stayed green.
     Substring matching cannot express "this job needs that job" or "this step runs that
     command", which is what the assertions were always about.
 
@@ -50,22 +46,6 @@ def _triggers(workflow: dict) -> set[str]:
         return {on}
     return set(on)
 
-
-def _run_guard(script: str, **env: str) -> subprocess.CompletedProcess:
-    """Execute one workflow `run:` body, so a guard is tested by what it does.
-
-    Asserting a guard's *name* appears is not a test of it: `if [[ ... ]]` replaced by
-    `if false`, and the release-notes gate inverted from `if ! grep` to `if grep`, both left
-    the suite green.
-    """
-
-    return subprocess.run(
-        ["bash", "-euo", "pipefail", "-c", script],
-        capture_output=True,
-        text=True,
-        cwd=ROOT,
-        env={"PATH": os.environ["PATH"], **env},
-    )
 
 
 def _job(workflow: str, name: str) -> str:
@@ -101,11 +81,11 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     # dirty tree also satisfies.
     assert "gh release download" not in workflow, "nothing hand-attached may be promoted"
 
-    # One build feeds TestPyPI and PyPI, so the bytes installed from the first are the bytes
-    # promoted to the second: upload once, download in each publishing job. Pinned by digest,
-    # not by tag -- this is the workflow holding `id-token: write` against PyPI. An earlier
-    # version of this test replaced the digests with these bare counts, which would have let
-    # `actions/upload-artifact@v6` through; both belong here.
+    # The release builds once and hands that artifact to the separately protected PyPI job:
+    # one upload, one download, both in the release path. The snapshot leg builds and publishes
+    # on a single runner and needs neither. Pinned by digest, not by tag -- this is the workflow
+    # holding `id-token: write` against PyPI, and an earlier version of this test replaced the
+    # digests with bare counts, which would have let `actions/upload-artifact@v6` through.
     assert workflow.count("actions/upload-artifact@") == 1
     assert workflow.count("actions/download-artifact@") == 1
     assert workflow.count(
@@ -148,7 +128,7 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     for name in on_pull_request:
         target = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
         assert "workflow_dispatch:" in target, f"{name} is dispatched but declares no trigger"
-    # Three publish steps: the main-push snapshot, and the release's TestPyPI and PyPI legs.
+    # Two publish steps: the main-push snapshot to TestPyPI, and the release to PyPI.
     assert workflow.count("pypa/gh-action-pypi-publish@") == 2
     assert workflow.count(
         "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
@@ -178,39 +158,6 @@ def test_readme_links_the_codecov_badge_to_the_public_project() -> None:
     badge = "https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg"
     project = "https://codecov.io/gh/pzfreo/b123d-recognisers"
     assert f"[![codecov]({badge})]({project})" in readme
-
-
-def test_release_asset_verifier_accepts_the_built_version_and_rejects_a_wrong_tag(
-    tmp_path: Path,
-) -> None:
-    dist = tmp_path / "dist"
-    subprocess.run(
-        ["uv", "build", "--out-dir", str(dist)],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-
-    valid = subprocess.run(
-        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", f"v{_PACKAGE_VERSION}"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert valid.returncode == 0, valid.stderr
-
-    wrong = subprocess.run(
-        [sys.executable, str(VERIFY), "--dist", str(dist), "--tag", "v9.9.9"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert wrong.returncode != 0
-    assert (
-        f"tag version 9.9.9 does not match artifact version {_PACKAGE_VERSION}" in wrong.stderr
-    )
 
 
 def test_the_release_pipeline_is_the_ported_shape() -> None:
@@ -266,6 +213,8 @@ def test_the_bump_opens_a_pr_and_dispatches_every_pull_request_workflow() -> Non
 
     dispatched = re.search(r"^\s*for workflow in (.+?); do$", joined, re.M)
     assert dispatched, "the dispatch loop is missing or has been reshaped"
+    # The body, not just the list: replacing the dispatch with `echo "$workflow"` was green.
+    assert 'gh workflow run "$workflow" --ref "$branch"' in joined
     on_pull_request = {
         path.name
         for path in (ROOT / ".github" / "workflows").iterdir()
@@ -276,3 +225,71 @@ def test_the_bump_opens_a_pr_and_dispatches_every_pull_request_workflow() -> Non
     assert set(dispatched.group(1).split()) == on_pull_request
     for name in on_pull_request:
         assert "workflow_dispatch" in _triggers(_parsed(ROOT / ".github" / "workflows" / name))
+
+
+def test_the_version_arithmetic_each_leg_performs(tmp_path) -> None:
+    """The only logic deciding what version reaches an index, executed rather than named.
+
+    Nothing asserted it. Four single-line mutations each survived the whole suite: dropping
+    the `.dev` strip so `0.2.6.dev0` itself would go to production PyPI; bumping `minor`
+    instead of `patch`; dropping `.dev${RUN_NUMBER}` from the snapshot; and pointing the bump
+    at the tag rather than `main`. The one assertion covering that step only checked that
+    `scripts/update-recogniser-version` is mentioned, which cannot tell those apart.
+
+    """
+
+    jobs = _parsed(WORKFLOW)["jobs"]
+
+    def version_after(job: str, step_name: str, current: str, **env: str) -> str:
+        step = next(s["run"] for s in jobs[job]["steps"] if s.get("name") == step_name)
+        (tmp_path / "pyproject.toml").write_text(
+            f'[project]\nversion = "{current}"\n', encoding="utf-8"
+        )
+        # The script itself is stubbed: what is under test is the shell that decides its
+        # argument, not the file-moving it already has its own tests for.
+        stub = tmp_path / "scripts"
+        stub.mkdir(exist_ok=True)
+        (stub / "update-recogniser-version").write_text(
+            '#!/bin/sh\nprintf %s "$1" > "$(dirname "$0")/../called-with"\n', encoding="utf-8"
+        )
+        (stub / "update-recogniser-version").chmod(0o755)
+        result = subprocess.run(
+            ["bash", "-euo", "pipefail", "-c", step],
+            capture_output=True, text=True, cwd=tmp_path,
+            env={"PATH": os.environ["PATH"], **env},
+        )
+        assert result.returncode == 0, result.stderr
+        return (tmp_path / "called-with").read_text(encoding="utf-8")
+
+    # The release strips `.dev` and publishes the base version.
+    strip = "Strip dev suffix for real release"
+    assert version_after("build-release", strip, "0.2.6.dev0") == "0.2.6"
+    assert version_after("build-release", strip, "0.2.6") == "0.2.6"
+    # The snapshot never publishes a release version: it always carries a `.devN`.
+    assert version_after(
+        "publish-testpypi", "Set TestPyPI dev version", "0.2.6.dev0", RUN_NUMBER="57"
+    ) == "0.2.6.dev57"
+    # The bump moves the patch, from `main`'s version rather than from any tag.
+    bump = "Bump patch version with .dev0 suffix"
+    assert version_after("bump-version", bump, "0.2.6.dev0") == "0.2.7.dev0"
+    assert version_after("bump-version", bump, "0.2.9.dev0") == "0.2.10.dev0"
+
+
+def test_each_job_runs_only_on_its_own_event() -> None:
+    """Gating is what keeps a release from also firing a TestPyPI dev snapshot.
+
+    Deleting any of the three `if:` conditions left the suite green; the shape test reads the
+    job list and the `needs:` chain but never the conditions.
+    """
+
+    jobs = _parsed(WORKFLOW)["jobs"]
+
+    assert jobs["publish-testpypi"]["if"] == "github.event_name == 'push'"
+
+    # The bump reads `main`'s version, so it must check out `main`. Pointing it at the release
+    # tag computes the next version from the tag instead -- the inversion `docs/releasing.md`
+    # records as the source of an earlier chain of defects -- and was green.
+    checkout = next(s for s in jobs["bump-version"]["steps"] if "checkout" in s.get("uses", ""))
+    assert checkout["with"]["ref"] == "main"
+    for name in ("build-release", "publish-pypi", "bump-version"):
+        assert jobs[name]["if"] == "github.event_name == 'release'"
