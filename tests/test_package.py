@@ -94,6 +94,10 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
     assert any(name.endswith("/src/b123d_recognisers/capabilities.json") for name in names)
     assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
+    # The vendored STEP corpora are excluded: 9 MB of third-party geometry the tests read and
+    # no consumer of the sdist needs. Deleting that exclusion would otherwise pass silently
+    # while the sdist grew 5.4x and the corpus modules stopped skipping.
+    assert not [name for name in names if "/tests/corpus/" in name]
     manifest = json.loads(
         (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
             encoding="utf-8"

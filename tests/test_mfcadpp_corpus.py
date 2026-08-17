@@ -67,7 +67,9 @@ def corpus():
         # Attribution is by rounded centroid, so two faces sharing a key would silently
         # overwrite one label with another and quietly corrupt every result below. Measured
         # at zero collisions across all 40 models; pinned so it stays that way.
-        assert len(at_label) == len(faces), f"{path.name}: faces share a rounded centroid"
+        assert len(at_label) == min(len(faces), len(labels)), (
+            f"{path.name}: faces share a rounded centroid"
+        )
         models.append((path.name, part, labels, faces, at_label))
     assert models, "the vendored MFCAD++ subset is missing"
     return models
@@ -87,6 +89,20 @@ def test_the_selection_manifest_describes_what_is_actually_vendored():
     assert manifest["models"] == on_disk
     assert manifest["licence"] == "CC BY"
     assert rule["split"] == "test", "train/val models must never be vendored here"
+    # `source` is checked against `split` because otherwise the manifest can contradict
+    # itself in the one field that matters: `source: "MFCAD++ train split"` passed while
+    # `rule.split` still read "test".
+    assert rule["split"] in manifest["source"].lower()
+    assert rule["order"] == "filename, ascending"
+    assert rule["precondition"] == "STEP ADVANCED_FACE count equals part.faces() count"
+    assert rule["targets"] == {
+        "0": "Chamfer",
+        "4": "6-sided passage",
+        "9": "2-sided through step",
+        "13": "Triangular pocket",
+        "20": "Triangular blind step",
+    }
+    assert manifest["doi"].startswith("https://doi.org/10.17034/")
 
     # An earlier version stopped at the filename list, which meant the recorded rule could say
     # anything at all -- `per_label: 999`, an empty `by_label`, even `split: train` reworded --
@@ -117,6 +133,7 @@ def test_the_label_to_face_mapping_holds(corpus):
     """
 
     oblique = {True: [0, 0], False: [0, 0]}
+    triangular = {True: [0, 0], False: [0, 0]}
     for name, _part, labels, faces, _at in corpus:
         assert len(faces) == len(labels), f"{name}: {len(faces)} faces, {len(labels)} labels"
         for face, label in zip(faces, labels, strict=True):
@@ -126,19 +143,25 @@ def test_the_label_to_face_mapping_holds(corpus):
                 continue
             is_oblique = max(abs(normal.X), abs(normal.Y), abs(normal.Z)) < 0.99
             oblique[label == CHAMFER][is_oblique] += 1
+            triangular[label == TRIANGULAR_BLIND_STEP][len(face.edges()) == 3] += 1
 
     chamfer_oblique = oblique[True][1] / sum(oblique[True])
-    other_oblique = oblique[False][1] / sum(oblique[False])
 
-    # Only the first of these is a test. The second was `other_oblique < 0.40`, which cannot
-    # fail: 30.9% of all 1335 faces in this subset are oblique, so any label assignment at all
-    # satisfies it -- shuffling the labels 200 times never exceeded 0.312. It is kept as a
-    # ratio against the first, which does bite: a rotate-by-one mismatch drops chamfer_oblique
-    # to 0.208 and a shuffle to as low as 0.125.
+    # This one bites: a rotate-by-one mismatch drops it to 0.208, a shuffle to 0.125.
     assert chamfer_oblique > 0.75, "faces labelled Chamfer are not mostly oblique planes"
-    assert chamfer_oblique > 2 * other_oblique, (
-        f"obliqueness does not distinguish the Chamfer label: {chamfer_oblique:.3f} of "
-        f"chamfer faces against {other_oblique:.3f} of the rest"
+
+    # And this is the genuinely second check, on a different label and a different property.
+    # Two previous attempts were not: `other_oblique < 0.40` cannot fail, since 30.9% of all
+    # 1335 faces are oblique and only 24 carry label 0, so no relabelling can push the rest
+    # past 0.315. Nor could `chamfer_oblique > 2 * other_oblique` -- bounded that way, twice
+    # `other_oblique` never reaches 0.63, so the 0.75 line above already implies it. A
+    # redundancy replacing a tautology. Blind spot both shared: swapping labels 0 and 4
+    # wholesale left the whole test green.
+    tri_step = triangular[True][1] / sum(triangular[True])
+    tri_rest = triangular[False][1] / sum(triangular[False])
+    assert tri_step > 4 * tri_rest, (
+        f"the Triangular blind step label does not concentrate three-edged faces: "
+        f"{tri_step:.3f} against {tri_rest:.3f} elsewhere"
     )
 
 
@@ -184,6 +207,25 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
     # regression guard" a silent no-op. All 14 chamfer records resolve today.
     assert resolved, "no chamfer record resolved to a labelled face; attribution is broken"
     assert stolen == [], f"chamfer records on faces labelled a blind step: {stolen}"
+
+
+#: Record counts as of vendoring, over the 40 models. **Not a correctness baseline** -- a
+#: change detector, exactly as ``_OBSERVED`` is on the NIST side. Without it this module was
+#: blind to volume: truncating `recognise_angled_steps` to one record for the entire run, a
+#: 91% silent loss, left all five tests green, because every other assertion here is either a
+#: >= 1 gate or a ratio.
+_OBSERVED_RECORDS = {"angled_steps": 11, "chamfers": 14}
+
+
+def test_the_number_of_records_has_not_moved(corpus):
+    """Volume, which precision and the >=1 gates are both blind to by construction."""
+
+    counts = {"angled_steps": 0, "chamfers": 0}
+    for _name, part, _labels, _faces, _at in corpus:
+        counts["angled_steps"] += len(recognise_angled_steps(part))
+        counts["chamfers"] += len(recognise_chamfers(part))
+
+    assert counts == _OBSERVED_RECORDS
 
 
 def test_chamfer_precision_does_not_regress(corpus):

@@ -69,7 +69,13 @@ pytestmark = pytest.mark.skipif(
 def _step_for(stem: str) -> Path:
     matches = sorted(Path(_DIR).glob(f"{stem}_*.stp"))
     if not matches:
-        pytest.fail(f"no STEP file matching {stem}_*.stp in {_DIR}")
+        # A gap in the vendored corpus is this repository's bug and must fail. A gap in a
+        # directory the caller pointed `B123D_NIST_STEP_DIR` at is not -- a partial download
+        # is exactly what the override is for, and failing it was the same skip-versus-fail
+        # mistake as shipping a corpus-less sdist that could not skip.
+        if os.environ.get("B123D_NIST_STEP_DIR"):
+            pytest.skip(f"no STEP file matching {stem}_*.stp in {_DIR}")
+        pytest.fail(f"no STEP file matching {stem}_*.stp in the vendored corpus")
     return matches[0]
 
 
