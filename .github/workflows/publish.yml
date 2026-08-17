@@ -1,17 +1,22 @@
 name: Publish distributions
 
-# Modelled on Draftwright's publish workflow, which this package's release process was
-# diverging from for no reason it could justify. The substantive change is where the
-# artifact comes from: it is now built here, from the tagged commit, rather than built on a
-# maintainer's machine and attached to the GitHub release for this workflow to promote.
+# Draftwright's publish workflow, ported. This package was relicensed from that repository and
+# its release process had drifted into something else: distributions were built on a
+# maintainer's machine, attached to the GitHub release, and promoted from there. The published
+# wheel was therefore not a function of the tag -- the old workflow could only check that an
+# attached artifact's *version* matched, which a wheel built from a dirty tree also satisfies.
 #
-# What that buys is that the published wheel is a function of the tag and nothing else. The
-# old shape could not say that -- it verified that the attached artifact's version matched
-# the tag, which a wheel built from a dirty tree also satisfies.
+# An earlier attempt at this port kept this package's TestPyPI-then-verify chain and added a
+# release-notes gate, a tag-versus-branch check and an artifact verifier on top of
+# Draftwright's four jobs. That superset, not the port, is where five rounds of review findings
+# came from: a verifier comparing the tag against a version derived from that same tag, a guard
+# added to compensate for it, and a PyPI leg that could be rewired to bypass the TestPyPI one.
+# The extra chain was also buying something already bought -- every push to main publishes a
+# dev snapshot to TestPyPI, so the publish path is exercised continuously rather than once per
+# release.
 #
-# Retained from the old shape, because Draftwright has no equivalent and it is worth having:
-# a release goes to TestPyPI first and is installed and imported from there before PyPI is
-# touched.
+# The one adaptation the port needs: this package keeps its version in four files rather than
+# three, which is what `scripts/update-recogniser-version` exists to move atomically.
 
 on:
   push:
@@ -20,16 +25,14 @@ on:
     types: [published]
 
 concurrency:
-  group: publish-${{ github.event.release.tag_name || github.ref }}
+  group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 permissions: {}
 
 jobs:
-  # Every main commit publishes a dev snapshot. Build and publication share one runner, so
-  # no artifact hand-off is needed for something that never reaches PyPI.
-  snapshot-testpypi:
-    name: Publish main snapshot to TestPyPI
+  # Main snapshots need no artifact hand-off: build and trusted publication share one runner.
+  publish-testpypi:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
@@ -45,138 +48,46 @@ jobs:
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: false
-      - name: Set the snapshot version
+      - name: Set TestPyPI dev version
         env:
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          current=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          scripts/update-recogniser-version "${current%.dev*}.dev${RUN_NUMBER}"
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          base="${current%.dev*}"
+          scripts/update-recogniser-version "${base}.dev${RUN_NUMBER}"
       - run: uv build
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
 
-  # A real release keeps the built artifact across the separately protected PyPI job, so the
-  # bytes installed from TestPyPI are the bytes promoted to PyPI.
+  # A real release retains the built artifact across the separately protected PyPI job.
   build-release:
-    name: Build release distributions
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Validate release tag
-        shell: bash
-        run: |
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9][0-9A-Za-z.!+-]*$ ]]; then
-            echo "invalid release tag: $RELEASE_TAG" >&2
-            exit 1
-          fi
-      - name: Require release notes for the tag
-        shell: bash
-        run: |
-          version="${RELEASE_TAG#v}"
-          if ! grep -qx "## ${version}" RELEASE_NOTES.md; then
-            echo "RELEASE_NOTES.md has no '## ${version}' section" >&2
-            exit 1
-          fi
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: false
-      - name: Check the tag agrees with the branch it points at
-        shell: bash
+      - name: Strip dev suffix for real release
         run: |
-          # Taking the version from the tag (below) means `verify_release_assets.py` compares
-          # the tag against a version derived from that same tag, which cannot disagree. The
-          # guard it used to provide is this one, made explicit: the tag's X.Y.Z must match
-          # the tagged commit's, so `v0.3.0` on a `0.2.6.dev0` tree fails here rather than
-          # publishing 0.3.0 and leaving `main` to bump itself to 0.2.7.dev0 -- a silent
-          # version regression on the next release.
-          tag_version="${RELEASE_TAG#v}"
-          tag_base="${tag_version%.dev*}"; tag_base="${tag_base%%rc*}"
-          current=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          current_base="${current%.dev*}"; current_base="${current_base%%rc*}"
-          if [[ "$tag_base" != "$current_base" ]]; then
-            echo "tag ${RELEASE_TAG} is ${tag_base}, but this commit is ${current_base}" >&2
-            echo "move main with scripts/update-recogniser-version before tagging" >&2
-            exit 1
-          fi
-      - name: Set the release version from the tag
-        run: |
-          # From the tag rather than by stripping `.dev` off main's version. The tag is the
-          # only input that can express a prerelease, and `docs/delivery-protocol.md` requires
-          # them: "A paired prerelease is 0.2.NrcK". Deriving it from main made every
-          # prerelease unreleasable, silently, because the tag regex accepts `v0.2.6rc1` while
-          # the version script rejected `0.2.6rc1`.
-          scripts/update-recogniser-version "${RELEASE_TAG#v}"
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          base="${current%.dev*}"
+          scripts/update-recogniser-version "$base"
       - run: uv build
-      - name: Verify the built artifact matches the tag
-        run: python tools/verify_release_assets.py --dist dist --tag "$RELEASE_TAG"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
           if-no-files-found: error
-          retention-days: 7
-
-  publish-testpypi:
-    name: Publish to TestPyPI
-    needs: build-release
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/b123d-recognisers
-    permissions:
-      id-token: write # Trusted Publishing exchanges OIDC for a short-lived index token.
-    steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
-        with:
-          name: python-package-distributions
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-
-  verify-testpypi:
-    name: Install from TestPyPI
-    needs: publish-testpypi
-    runs-on: ubuntu-latest
-    env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
-    steps:
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
-        with:
-          enable-cache: false
-          ignore-empty-workdir: true
-      - name: Install published wheel and import public API
-        shell: bash
-        run: |
-          version="${RELEASE_TAG#v}"
-          uv venv
-          uv pip install "build123d>=0.9,<0.12"
-          for attempt in {1..12}; do
-            if uv pip install --no-deps --refresh-package b123d-recognisers \
-              --index-url https://test.pypi.org/simple/ \
-              "b123d-recognisers==$version"; then
-              break
-            fi
-            if [[ "$attempt" == 12 ]]; then exit 1; fi
-            sleep 10
-          done
-          uv run --no-sync python -c \
-            "import b123d_recognisers as r; assert r.__version__ == '$version'; assert r.recognise_holes"
 
   publish-pypi:
-    name: Publish to PyPI
-    needs: verify-testpypi
+    needs: build-release
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
@@ -187,26 +98,18 @@ jobs:
     steps:
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
 
   bump-version:
-    name: Open the post-release version bump
     needs: publish-pypi
-    # Not after a prerelease. `v0.2.6rc1` is a candidate *for* 0.2.6, so main must stay on
-    # 0.2.6.dev0 until the stable release actually ships.
-    if: github.event_name == 'release' && !contains(github.event.release.tag_name, 'rc')
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       actions: write # Dispatch CI against the pushed branch; see below.
       contents: write # Push only the generated post-release branch.
       pull-requests: write # Open a PR rather than pushing to main directly.
-    env:
-      # Job level, not step level. The bump step below reads this too, and having it only on
-      # the PR step meant `base` came out empty and the version script was handed `..1.dev0`
-      # -- so the job failed on every release, after PyPI had already accepted the artifact.
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         # zizmor: ignore[artipacked] -- this job pushes; it uploads no artifacts.
@@ -215,35 +118,30 @@ jobs:
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: false
-      - name: Bump the patch version with a .dev0 suffix
+      - name: Bump patch version with .dev0 suffix
         run: |
-          # From the tag, and from its stable base. Deriving this from main meant releasing
-          # v0.2.6rc1 moved main to 0.2.7.dev0 -- past the very version the candidate was a
-          # candidate for, making the stable 0.2.6 that `docs/delivery-protocol.md` requires
-          # unreachable from main's own version.
-          base="${RELEASE_TAG#v}"; base="${base%.dev*}"; base="${base%%rc*}"
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          base="${current%.dev*}"
           IFS='.' read -r major minor patch <<< "$base"
           scripts/update-recogniser-version "${major}.${minor}.$((patch + 1)).dev0"
       - name: Open the branch-protection-safe post-release bump
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          new_version=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          # Run-scoped, so a retry after a partial failure pushes a new branch instead of
-          # being rejected non-fast-forward against the one the previous attempt left.
-          branch="post-release/${RELEASE_TAG}-${GITHUB_RUN_ID}"
-          git checkout -b "$branch"
+          new_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          branch="automation/post-release-${RELEASE_TAG}-${GITHUB_RUN_ID}"
+          git switch -c "$branch"
           git commit -am "Bump version to ${new_version} after ${RELEASE_TAG}"
-          git push origin "$branch"
+          git push origin HEAD:"$branch"
           gh pr create --base main --head "$branch" \
             --title "Bump version to ${new_version} after ${RELEASE_TAG}" \
-            --body "Generated by the publish workflow after ${RELEASE_TAG} reached PyPI. Moves every copy of the version together via \`scripts/update-recogniser-version\`."
-          # Without these the PR carries no checks: a GITHUB_TOKEN push raises no events, so
-          # *every* workflow that would normally run on `pull_request` has to be dispatched by
-          # name. Dispatching only ci.yml left the downstream canary missing, which is the
-          # same hole one file over.
+            --body "Post-release development-version bump. Publication already succeeded for \`${RELEASE_TAG}\`; this changes only build and lock identity."
+          # A branch pushed with GITHUB_TOKEN raises no events, so every workflow that would
+          # normally run on `pull_request` must be dispatched by name or the PR arrives with no
+          # checks at all. Dispatching only ci.yml left the downstream canary missing.
           for workflow in ci.yml downstream-canary.yml; do
             gh workflow run "$workflow" --ref "$branch"
           done

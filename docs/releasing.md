@@ -1,65 +1,59 @@
 # Releasing
 
-Between releases `main` carries a `.devN` version — `0.2.6.dev0` after 0.2.5 shipped. Every
-push to `main` publishes a snapshot of it to TestPyPI, so the published path is exercised
+This is Draftwright's release process, which this package's had drifted away from. Between
+releases `main` carries a `.devN` version — `0.2.6.dev0` after 0.2.5 shipped — and every push
+to `main` publishes a snapshot of it to TestPyPI, so the publish path is exercised
 continuously rather than only at a release.
 
-A release is one GitHub release. The workflow builds the artifact itself, from the tagged
-commit:
+A release is one GitHub release:
 
-1. Make sure `RELEASE_NOTES.md` has a `## X.Y.Z` section for the version about to ship. The
-   workflow refuses a tag without one, and it checks the *tag's* tree — so add it before
-   tagging, not after.
-2. Create a GitHub release whose tag is `v` followed by the version, with no `.dev` suffix
-   (`v0.2.6` while `main` is on `0.2.6.dev0`). **Attach nothing.** The version is taken from
-   the tag, so a prerelease is just `v0.2.6rc1` — see `docs/delivery-protocol.md`, which makes
-   `0.2.NrcK` the paired prerelease Draftwright validates a new public record against.
-3. That is all. `build-release` checks out the tag, checks the tag's `X.Y.Z` against the
-   tagged commit's, sets the version from the tag, and builds the wheel and sdist. One artifact then goes to TestPyPI, is
-   installed and imported from there, and only then reaches the protected `pypi` environment
-   for approval.
-4. When PyPI accepts it, the workflow opens a PR moving `main` to the next `.devN` — unless
-   the tag was a prerelease, in which case `main` stays put, because `v0.2.6rc1` is a
-   candidate *for* 0.2.6 and that stable release still has to happen. It
-   dispatches CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN`
-   raises no events and would otherwise arrive with no checks.
+1. Make sure `main` is on the version you intend to ship (`0.2.6.dev0` to release `0.2.6`) and
+   that `RELEASE_NOTES.md` has a `## 0.2.6` section.
+2. Create a GitHub release whose tag is `v` followed by that version, with no `.dev` suffix.
+   **Attach nothing.**
+3. `build-release` checks out the tag, strips the `.dev` suffix, builds the wheel and sdist,
+   and hands them to the protected `pypi` environment for approval.
+4. When PyPI accepts, the workflow opens a PR moving `main` to the next `.dev0`. It dispatches
+   CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN` raises no
+   events and would otherwise arrive with no checks.
 
-The published wheel is therefore a function of the tag and nothing else. It used to be built
-on a maintainer's machine and attached to the release for the workflow to promote, which
-could only check that the attached artifact's *version* matched the tag — something a wheel
-built from a dirty tree also satisfies.
+The published wheel is a function of the tagged commit. It used to be built on a maintainer's
+machine and attached to the release, which could only check that the attached artifact's
+*version* matched the tag — something a wheel built from a dirty tree also satisfies.
+
+## The version comes from `main`, not from the tag
+
+The tag selects the commit; the version is whatever that commit's `pyproject.toml` says, minus
+`.dev`. So tagging `v0.3.0` on a commit whose version is `0.2.6.dev0` publishes **0.2.6**, and
+the tag is simply a misleading label on it. Nothing rejects that, here or upstream.
+
+Step 1 is therefore the whole safety story: move `main` first, with
+`scripts/update-recogniser-version`, then tag what it says. An earlier version of this workflow
+took the version from the tag instead and added a checker to compare the two; that inverted the
+dependency and produced a chain of defects, and it is not what the proven process does.
+
+## Prereleases
+
+`docs/delivery-protocol.md` makes `0.2.NrcK` the paired prerelease Draftwright validates a new
+public record against. Move `main` to `0.2.6rc1`, tag `v0.2.6rc1`, and release as above.
+
+The post-release bump cannot follow a prerelease — `patch + 1` on `6rc1` is not arithmetic and
+the job fails loudly. Move `main` back to `0.2.6.dev0` by hand afterwards.
+
+## Minor and major versions
+
+`bump-version` only ever does patch + 1. To release `0.3.0`, open a PR moving `main` to
+`0.3.0.dev0` first, then tag `v0.3.0`.
 
 ## One-time repository settings
 
-Besides the Trusted Publishing records below, **Settings → Actions → General → Workflow
-permissions → "Allow GitHub Actions to create and approve pull requests"** must be enabled.
-It defaults to disabled, and without it the post-release bump fails at `gh pr create` — after
-PyPI has already accepted the release, so the release itself is fine but `main` is left on the
-old `.devN` until someone opens that PR by hand.
+**Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and
+approve pull requests"** must be enabled. It defaults to disabled, and without it the
+post-release bump fails at `gh pr create` — after PyPI has accepted the release, so the release
+itself is fine but `main` stays on the old `.devN` until someone opens that PR by hand.
 
-## Changing the minor or major version
-
-`bump-version` only ever does patch + 1. To release `0.3.0`, open a PR first that moves
-`main` to `0.3.0.dev0` using `scripts/update-recogniser-version`, then tag `v0.3.0`.
-
-Tagging `v0.3.0` while `main` is on `0.2.x.devN` fails the release rather than mispublishing,
-but the check that stops it is the explicit tag-versus-branch comparison in `build-release`,
-**not** `verify_release_assets.py`. Since the version is now taken from the tag, that verifier
-compares the tag against itself and can no longer disagree; what it still checks is that the
-build produced exactly one wheel and one sdist for the right project.
-
-## Moving the version by hand
-
-`scripts/update-recogniser-version X.Y.Z[.devN]` is the only supported way. Four files hold
-the version — `pyproject.toml`, `uv.lock`, `capabilities.json`'s `package.version`, and the
-`PackageNotFoundError` fallback in `__init__.py` — and the script moves all four or restores
-all four. Editing any of them by hand is how the fallback came to sit at 0.2.2 through both
-the 0.2.3 and 0.2.4 releases.
-
-## Trusted Publishing
-
-Publishing uses PyPI Trusted Publishing (GitHub OIDC), never repository API-token secrets.
-The one-time pending-publisher records on the two indexes must be:
+Publishing uses PyPI Trusted Publishing (GitHub OIDC), never repository API-token secrets. The
+one-time pending-publisher records on the two indexes must be:
 
 | Index | Project | Owner | Repository | Workflow | Environment |
 | --- | --- | --- | --- | --- | --- |
@@ -68,3 +62,11 @@ The one-time pending-publisher records on the two indexes must be:
 
 TestPyPI and PyPI accounts and publisher registrations are independent. Protect the GitHub
 `pypi` environment with required reviewer approval; `testpypi` does not need approval.
+
+## Moving the version by hand
+
+`scripts/update-recogniser-version X.Y.Z[rcN][.devN]` is the only supported way. Four files
+hold the version — `pyproject.toml`, `uv.lock`, `capabilities.json`'s `package.version`, and
+the `PackageNotFoundError` fallback in `__init__.py` — and the script moves all four or
+restores all four. Editing any of them by hand is how the fallback came to sit at 0.2.2 through
+both the 0.2.3 and 0.2.4 releases.
