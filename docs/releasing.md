@@ -1,16 +1,46 @@
 # Releasing
 
-Release distributions move through one promotion path:
+Between releases `main` carries a `.devN` version — `0.2.6.dev0` after 0.2.5 shipped. Every
+push to `main` publishes a snapshot of it to TestPyPI, so the published path is exercised
+continuously rather than only at a release.
 
-1. Build and test the wheel and sdist locally.
-2. Create a GitHub release whose tag is `v` followed by the package version and attach exactly
-   one wheel and one sdist.
-3. Run **Publish distributions** with that tag and target `testpypi`. The workflow verifies
-   the embedded versions, publishes the attached artifacts to TestPyPI, and installs/imports
-   the package from TestPyPI.
-4. Rerun the workflow with target `both`. TestPyPI safely skips the already-published files,
-   repeats the install check, and the protected `pypi` environment then requires approval
-   before those same workflow artifacts reach PyPI.
+A release is one GitHub release. The workflow builds the artifact itself, from the tagged
+commit:
+
+1. Make sure `RELEASE_NOTES.md` has a `## X.Y.Z` section for the version about to ship. The
+   workflow refuses a tag without one, and it checks the *tag's* tree — so add it before
+   tagging, not after.
+2. Create a GitHub release whose tag is `v` followed by the version, with no `.dev` suffix
+   (`v0.2.6` while `main` is on `0.2.6.dev0`). **Attach nothing.**
+3. That is all. `build-release` checks out the tag, strips the `.dev` suffix, builds the
+   wheel and sdist, and verifies they match the tag. One artifact then goes to TestPyPI, is
+   installed and imported from there, and only then reaches the protected `pypi` environment
+   for approval.
+4. When PyPI accepts it, the workflow opens a PR moving `main` to the next `.devN`. It
+   dispatches CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN`
+   raises no events and would otherwise arrive with no checks.
+
+The published wheel is therefore a function of the tag and nothing else. It used to be built
+on a maintainer's machine and attached to the release for the workflow to promote, which
+could only check that the attached artifact's *version* matched the tag — something a wheel
+built from a dirty tree also satisfies.
+
+## Changing the minor or major version
+
+`bump-version` only ever does patch + 1. To release `0.3.0`, open a PR first that moves
+`main` to `0.3.0.dev0` using `scripts/update-recogniser-version`, then tag `v0.3.0`. Tagging
+`v0.3.0` while `main` is on `0.2.x.devN` does not mispublish — `verify_release_assets.py`
+rejects the mismatch before anything is uploaded — but it does fail the release.
+
+## Moving the version by hand
+
+`scripts/update-recogniser-version X.Y.Z[.devN]` is the only supported way. Four files hold
+the version — `pyproject.toml`, `uv.lock`, `capabilities.json`'s `package.version`, and the
+`PackageNotFoundError` fallback in `__init__.py` — and the script moves all four or restores
+all four. Editing any of them by hand is how the fallback came to sit at 0.2.2 through both
+the 0.2.3 and 0.2.4 releases.
+
+## Trusted Publishing
 
 Publishing uses PyPI Trusted Publishing (GitHub OIDC), never repository API-token secrets.
 The one-time pending-publisher records on the two indexes must be:
@@ -21,10 +51,4 @@ The one-time pending-publisher records on the two indexes must be:
 | PyPI | `b123d-recognisers` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `pypi` |
 
 TestPyPI and PyPI accounts and publisher registrations are independent. Protect the GitHub
-`pypi` environment with required reviewer approval; `testpypi` does not need approval. A
-normal future GitHub release automatically follows the same TestPyPI-first path and pauses at
-the production environment gate.
-
-GitHub release assets are the reviewed artifacts and are promoted without rebuilding. The
-workflow rejects missing, duplicate, malformed, wrong-project, and tag/version-mismatched
-distributions before requesting either index credential.
+`pypi` environment with required reviewer approval; `testpypi` does not need approval.
