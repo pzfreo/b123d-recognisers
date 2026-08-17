@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Atomically update this package's build version and every copy of it.
+
+Modelled on Draftwright's ``scripts/update-draftwright-version``, for the reason that
+process exists: the version lives in more than one file, and a release that moves some of
+them and not others fails silently. It did -- ``__init__``'s ``PackageNotFoundError``
+fallback sat at 0.2.2 through both the 0.2.3 and 0.2.4 releases, because nothing exercises
+it outside a bare source tree and nothing compared it to anything.
+
+Four places hold it here:
+
+* ``pyproject.toml`` and ``uv.lock`` -- both moved by ``uv version --no-sync``;
+* ``capabilities.json``'s ``package.version``, which ADR 0005 validates against the
+  installed distribution, and which refuses a family introduced after it;
+* ``__init__``'s fallback literal.
+
+Either all four move or none do: the originals are restored if any step raises.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+_VERSION = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.dev(0|[1-9]\d*))?$")
+_FALLBACK = re.compile(r'^(    __version__ = ")([^"]+)(")$', re.MULTILINE)
+
+
+def update(root: Path, target: str) -> None:
+    """Move the build version and both embedded copies of it together."""
+
+    if not _VERSION.fullmatch(target):
+        raise ValueError("version must be X.Y.Z or X.Y.Z.devN")
+    project = root / "pyproject.toml"
+    lock = root / "uv.lock"
+    manifest = root / "src/b123d_recognisers/capabilities.json"
+    init = root / "src/b123d_recognisers/__init__.py"
+
+    project_text = project.read_text(encoding="utf-8")
+    current_match = re.search(r'^version = "([^"]+)"$', project_text, re.MULTILINE)
+    if not current_match:
+        raise RuntimeError("pyproject.toml has no single project version")
+    current = current_match.group(1)
+
+    init_text = init.read_text(encoding="utf-8")
+    if len(_FALLBACK.findall(init_text)) != 1:
+        raise RuntimeError("__init__ has no single fallback version to move")
+
+    snapshots = {path: path.read_bytes() for path in (project, lock, manifest, init)}
+    try:
+        subprocess.run(["uv", "version", "--no-sync", target], cwd=root, check=True)
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+        payload["package"]["version"] = target
+        manifest.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        init.write_text(_FALLBACK.sub(rf"\g<1>{target}\g<3>", init_text), encoding="utf-8")
+    except BaseException:
+        for path, content in snapshots.items():
+            path.write_bytes(content)
+        raise
+    print(f"prepared b123d-recognisers {current} -> {target}")
+
+
+def main() -> int:
+    root = Path(__file__).resolve().parents[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("version")
+    args = parser.parse_args()
+    try:
+        update(root, args.version)
+    except ValueError as error:
+        parser.error(str(error))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

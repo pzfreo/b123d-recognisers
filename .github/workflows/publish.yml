@@ -1,37 +1,72 @@
 name: Publish distributions
 
+# Modelled on Draftwright's publish workflow, which this package's release process was
+# diverging from for no reason it could justify. The substantive change is where the
+# artifact comes from: it is now built here, from the tagged commit, rather than built on a
+# maintainer's machine and attached to the GitHub release for this workflow to promote.
+#
+# What that buys is that the published wheel is a function of the tag and nothing else. The
+# old shape could not say that -- it verified that the attached artifact's version matched
+# the tag, which a wheel built from a dirty tree also satisfies.
+#
+# Retained from the old shape, because Draftwright has no equivalent and it is worth having:
+# a release goes to TestPyPI first and is installed and imported from there before PyPI is
+# touched.
+
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Existing GitHub release tag whose assets will be promoted
-        required: true
-        type: string
-      target:
-        description: Stop after TestPyPI, or promote the same artifact to both indexes
-        required: true
-        default: testpypi
-        type: choice
-        options:
-          - testpypi
-          - both
 
 concurrency:
-  group: publish-${{ github.event.release.tag_name || inputs.tag }}
+  group: publish-${{ github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 
 permissions: {}
 
 jobs:
-  prepare:
-    name: Verify GitHub release assets
+  # Every main commit publishes a dev snapshot. Build and publication share one runner, so
+  # no artifact hand-off is needed for something that never reaches PyPI.
+  snapshot-testpypi:
+    name: Publish main snapshot to TestPyPI
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/b123d-recognisers
+    permissions:
+      contents: read
+      id-token: write # Trusted Publishing exchanges OIDC for a short-lived index token.
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Set the snapshot version
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          scripts/update-recogniser-version "${current%.dev*}.dev${RUN_NUMBER}"
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  # A real release keeps the built artifact across the separately protected PyPI job, so the
+  # bytes installed from TestPyPI are the bytes promoted to PyPI.
+  build-release:
+    name: Build release distributions
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -43,11 +78,23 @@ jobs:
             echo "invalid release tag: $RELEASE_TAG" >&2
             exit 1
           fi
-      - name: Download reviewed release distributions
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release download "$RELEASE_TAG" --pattern "*.whl" --pattern "*.tar.gz" --dir dist
-      - name: Verify tag and artifact identity
+      - name: Require release notes for the tag
+        shell: bash
+        run: |
+          version="${RELEASE_TAG#v}"
+          if ! grep -qx "## ${version}" RELEASE_NOTES.md; then
+            echo "RELEASE_NOTES.md has no '## ${version}' section" >&2
+            exit 1
+          fi
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Strip the dev suffix for a real release
+        run: |
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          scripts/update-recogniser-version "${current%.dev*}"
+      - run: uv build
+      - name: Verify the built artifact matches the tag
         run: python tools/verify_release_assets.py --dist dist --tag "$RELEASE_TAG"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
@@ -58,7 +105,8 @@ jobs:
 
   publish-testpypi:
     name: Publish to TestPyPI
-    needs: prepare
+    needs: build-release
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
       name: testpypi
@@ -80,7 +128,7 @@ jobs:
     needs: publish-testpypi
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -106,8 +154,8 @@ jobs:
 
   publish-pypi:
     name: Publish to PyPI
-    if: github.event_name == 'release' || inputs.target == 'both'
     needs: verify-testpypi
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -120,3 +168,42 @@ jobs:
           name: python-package-distributions
           path: dist/
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+
+  bump-version:
+    name: Open the post-release version bump
+    needs: publish-pypi
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Push only the generated post-release branch.
+      pull-requests: write # Open the bump PR; main is protected.
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        # zizmor: ignore[artipacked] -- this job pushes; it uploads no artifacts.
+        with:
+          ref: main
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Bump the patch version with a .dev0 suffix
+        run: |
+          current=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          base="${current%.dev*}"
+          IFS='.' read -r major minor patch <<< "$base"
+          scripts/update-recogniser-version "${major}.${minor}.$((patch + 1)).dev0"
+      - name: Open the branch-protection-safe post-release bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          new_version=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          branch="post-release/${new_version}"
+          git checkout -b "$branch"
+          git commit -am "Bump version to ${new_version} after ${RELEASE_TAG}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Bump version to ${new_version} after ${RELEASE_TAG}" \
+            --body "Generated by the publish workflow after ${RELEASE_TAG} reached PyPI. Moves \
+          every copy of the version together via \`scripts/update-recogniser-version\`."

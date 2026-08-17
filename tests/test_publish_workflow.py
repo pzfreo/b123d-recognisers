@@ -17,25 +17,31 @@ VERIFY = ROOT / "tools" / "verify_release_assets.py"
 def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "workflow_dispatch:" in workflow and "release:" in workflow
+    assert "push:" in workflow and "release:" in workflow
     assert "\npermissions: {}\n" in workflow, "publishing must default the token to no permissions"
-    assert workflow.count("id-token: write") == 2
     assert "environment:\n      name: testpypi" in workflow
     assert "environment:\n      name: pypi" in workflow
     assert "repository-url: https://test.pypi.org/legacy/" in workflow
-    assert workflow.count("actions/download-artifact@") == 2
-    assert workflow.count("pypa/gh-action-pypi-publish@") == 2
     assert "password:" not in workflow and "API_TOKEN" not in workflow
-    assert "uv build" not in workflow, "publish must promote reviewed GitHub release assets"
     assert "enable-cache: false" in workflow, "release workflows must not consume mutable caches"
-    assert workflow.count(
-        "actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f"
-    ) == 1
-    assert workflow.count(
-        "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131"
-    ) == 2
     assert "ignore-empty-workdir: true" in workflow
     assert "--refresh-package b123d-recognisers" in workflow
+
+    # The artifact is built here, from the tagged commit, and never uploaded from a
+    # maintainer's machine. The previous shape asserted the opposite -- `"uv build" not in
+    # workflow` -- because it promoted a hand-built asset attached to the GitHub release.
+    # That could only check the asset's version against the tag, which a wheel built from a
+    # dirty tree also satisfies.
+    assert "uv build" in workflow, "the published artifact must be built from the tag"
+    assert "gh release download" not in workflow, "nothing hand-attached may be promoted"
+
+    # One build feeds TestPyPI and PyPI, so the bytes installed from the first are the bytes
+    # promoted to the second: upload once, download in each publishing job.
+    assert workflow.count("actions/upload-artifact@") == 1
+    assert workflow.count("actions/download-artifact@") == 2
+    # Three publish steps: the main-push snapshot, and the release's TestPyPI and PyPI legs.
+    assert workflow.count("pypa/gh-action-pypi-publish@") == 3
+    assert workflow.count("id-token: write") == 3
 
 
 def test_ci_workflow_pins_node24_actions() -> None:
