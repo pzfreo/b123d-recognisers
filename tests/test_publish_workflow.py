@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -36,9 +37,34 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert "gh release download" not in workflow, "nothing hand-attached may be promoted"
 
     # One build feeds TestPyPI and PyPI, so the bytes installed from the first are the bytes
-    # promoted to the second: upload once, download in each publishing job.
+    # promoted to the second: upload once, download in each publishing job. Pinned by digest,
+    # not by tag -- this is the workflow holding `id-token: write` against PyPI. An earlier
+    # version of this test replaced the digests with these bare counts, which would have let
+    # `actions/upload-artifact@v6` through; both belong here.
     assert workflow.count("actions/upload-artifact@") == 1
     assert workflow.count("actions/download-artifact@") == 2
+    assert workflow.count(
+        "actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f"
+    ) == 1
+    assert workflow.count(
+        "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131"
+    ) == 2
+
+    # Every workflow that runs on `pull_request` must be dispatched by name for the
+    # post-release bump PR, because a branch pushed with GITHUB_TOKEN raises no events and
+    # would otherwise arrive with no checks at all. Asserting the *set* rather than one name:
+    # dispatching only ci.yml is how this was wrong the first time it was fixed.
+    on_pull_request = {
+        path.name
+        for path in (ROOT / ".github" / "workflows").glob("*.yml")
+        if re.search(r"^on:\n(?:.*\n)*?  pull_request:", path.read_text(encoding="utf-8"), re.M)
+    }
+    for name in on_pull_request:
+        assert name in workflow, f"{name} runs on pull_request but is never dispatched"
+    assert "actions: write" in workflow, "dispatching CI needs actions: write"
+    for name in on_pull_request:
+        target = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        assert "workflow_dispatch:" in target, f"{name} is dispatched but declares no trigger"
     # Three publish steps: the main-push snapshot, and the release's TestPyPI and PyPI legs.
     assert workflow.count("pypa/gh-action-pypi-publish@") == 3
     assert workflow.count("id-token: write") == 3

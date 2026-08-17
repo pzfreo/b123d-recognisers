@@ -11,7 +11,9 @@ commit:
    workflow refuses a tag without one, and it checks the *tag's* tree — so add it before
    tagging, not after.
 2. Create a GitHub release whose tag is `v` followed by the version, with no `.dev` suffix
-   (`v0.2.6` while `main` is on `0.2.6.dev0`). **Attach nothing.**
+   (`v0.2.6` while `main` is on `0.2.6.dev0`). **Attach nothing.** The version is taken from
+   the tag, so a prerelease is just `v0.2.6rc1` — see `docs/delivery-protocol.md`, which makes
+   `0.2.NrcK` the paired prerelease Draftwright validates a new public record against.
 3. That is all. `build-release` checks out the tag, strips the `.dev` suffix, builds the
    wheel and sdist, and verifies they match the tag. One artifact then goes to TestPyPI, is
    installed and imported from there, and only then reaches the protected `pypi` environment
@@ -24,6 +26,14 @@ The published wheel is therefore a function of the tag and nothing else. It used
 on a maintainer's machine and attached to the release for the workflow to promote, which
 could only check that the attached artifact's *version* matched the tag — something a wheel
 built from a dirty tree also satisfies.
+
+## One-time repository settings
+
+Besides the Trusted Publishing records below, **Settings → Actions → General → Workflow
+permissions → "Allow GitHub Actions to create and approve pull requests"** must be enabled.
+It defaults to disabled, and without it the post-release bump fails at `gh pr create` — after
+PyPI has already accepted the release, so the release itself is fine but `main` is left on the
+old `.devN` until someone opens that PR by hand.
 
 ## Changing the minor or major version
 

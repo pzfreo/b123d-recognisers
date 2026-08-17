@@ -26,7 +26,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-_VERSION = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.dev(0|[1-9]\d*))?$")
+#: ``X.Y.Z``, a ``.devN`` snapshot, or an ``rcN`` prerelease. The last is not decoration:
+#: ``docs/delivery-protocol.md`` makes ``0.2.NrcK`` the paired prerelease Draftwright
+#: validates a new public record against, so refusing it here makes that protocol unusable.
+_VERSION = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:rc(0|[1-9]\d*))?(?:\.dev(0|[1-9]\d*))?$"
+)
 _FALLBACK = re.compile(r'^(    __version__ = ")([^"]+)(")$', re.MULTILINE)
 
 

@@ -62,9 +62,15 @@ def _versions(root: Path) -> dict[str, str]:
     }
 
 
-@pytest.mark.parametrize("target", ["0.2.6", "0.2.6.dev0", "1.0.0.dev12"])
+@pytest.mark.parametrize("target", ["0.2.6", "0.2.6.dev0", "1.0.0.dev12", "0.2.6rc1"])
 def test_every_embedded_copy_moves_together(tmp_path, monkeypatch, target) -> None:
-    """A release and a dev snapshot both move the manifest and the fallback."""
+    """A release, a dev snapshot and a prerelease all move the manifest and the fallback.
+
+    The prerelease case is not decoration. ``docs/delivery-protocol.md`` makes ``0.2.NrcK``
+    the paired prerelease Draftwright validates a new public record against, and an earlier
+    version of this script rejected it -- which made that protocol unusable through the
+    automated release path, silently, since the tag regex accepts ``v0.2.6rc1`` regardless.
+    """
 
     module = _load()
     _project(tmp_path)
