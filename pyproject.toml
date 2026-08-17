@@ -58,6 +58,12 @@ include = [
     "/RELEASE_NOTES.md",
     "/uv.lock",
 ]
+# Vendored third-party STEP corpora: 9 MB of NIST and MFCAD++ models that the tests read but
+# that no consumer of the sdist needs. Measured, the sdist is 376 KB with this exclusion and
+# 2.0 MB without -- 5.4x, not the twentyfold an earlier version of this comment claimed by
+# comparing a gzipped artefact against uncompressed bytes. The tests themselves still ship,
+# and skip when the corpus is absent.
+exclude = ["/tests/corpus"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --cov=b123d_recognisers --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=91"

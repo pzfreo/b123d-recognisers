@@ -94,6 +94,23 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
     assert any(name.endswith("/src/b123d_recognisers/capabilities.json") for name in names)
     assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
+    # The vendored STEP corpora are excluded: 9 MB of third-party geometry the tests read and
+    # no consumer of the sdist needs. Deleting that exclusion would otherwise pass silently
+    # while the sdist grew 5.4x and the corpus modules stopped skipping.
+    assert not [name for name in names if "/tests/corpus/" in name]
+    # THIRD_PARTY_NOTICES.md claims the vendored corpora are byte-identical to upstream, which
+    # only holds if git is told not to rewrite their line endings -- Windows runners default
+    # to core.autocrlf=true. Nothing else pins these two lines.
+    # Asked of git, not of the file: `*.stp -text` being present does not mean it is in
+    # effect. A later `* text=auto` line wins, and so does a nested tests/corpus/.gitattributes
+    # -- either restores CRLF rewriting on Windows while the string assertion still passes.
+    probes = ["tests/corpus/nist/nist_ctc_01_asme1_rd.stp", "tests/corpus/mfcadpp/1000.step"]
+    attrs = subprocess.run(
+        ["git", "check-attr", "text", "--", *probes],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    ).stdout
+    for line in attrs.splitlines():
+        assert line.endswith(": text: unset"), f"line endings are not pinned: {line}"
     manifest = json.loads(
         (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
             encoding="utf-8"

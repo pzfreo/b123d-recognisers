@@ -11,16 +11,17 @@ records in nineteen places across six parts, gaining in none.
 The counts below are 0.2.2 behaviour as reported from downstream, and they are the reason the
 gates in ADR 0008 are split into tolerances (which scale) and thresholds (which do not).
 
-**Opt-in.** ``migration/PARITY.md`` commits the project to comparing semantic record projections
-rather than file bytes, so these STEP files are not vendored. Point ``B123D_NIST_STEP_DIR`` at a
-directory holding the AP203 geometry-only files to run them:
+**Vendored.** These ten AP203 geometry-only files live in ``tests/corpus/nist``, so
+this module runs by default instead of skipping. It previously skipped unless
+``B123D_NIST_STEP_DIR`` pointed at a local download, which meant the only tests in this project
+running on real mechanical parts were off unless someone remembered to switch them on.
 
-    curl -L -o nist.zip https://www.nist.gov/document/nist-pmi-step-files
-    unzip -j nist.zip '*AP203 geometry only*' -d nist-step
-    B123D_NIST_STEP_DIR=$PWD/nist-step uv run pytest tests/test_nist_ctc_corpus.py
-
-NIST states the models "can be used without any restrictions"; they are not redistributed here
-only because of the byte-comparison convention, not licensing.
+The reason recorded for not vendoring them does not survive reading it: ``migration/PARITY.md``
+commits *the goldens* to comparing semantic record projections rather than STEP bytes, which is a
+statement about what assertions may examine, not about where input geometry comes from. Nothing
+here compares bytes; it compares record counts, from a file that now happens to be checked in.
+NIST states the models "can be used without any restrictions", so there was never a licensing
+obstacle either. ``B123D_NIST_STEP_DIR`` still overrides, for anyone testing a fuller download.
 """
 
 from __future__ import annotations
@@ -52,17 +53,32 @@ EXPECTED = {
     "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 5, "fillets": 3},
 }
 
-_DIR = os.environ.get("B123D_NIST_STEP_DIR")
+_VENDORED = Path(__file__).parent / "corpus" / "nist"
+_DIR = os.environ.get("B123D_NIST_STEP_DIR") or str(_VENDORED)
 
+#: The sdist ships these tests but not the corpus they read -- 9 MB of third-party STEP that
+#: no consumer of the package needs. So absence must skip, not fail: a packager running the
+#: sdist's suite is in a legitimate situation, not a broken one. Failing here was a real
+#: regression from the previous behaviour, which skipped cleanly when the files were missing.
 pytestmark = pytest.mark.skipif(
-    not _DIR, reason="set B123D_NIST_STEP_DIR to the NIST AP203 geometry-only STEP directory"
+    not sorted(Path(_DIR).glob("*.stp")),
+    reason=f"no NIST STEP files in {_DIR}; the vendored corpus is excluded from the sdist",
 )
 
 
 def _step_for(stem: str) -> Path:
-    matches = sorted(Path(_DIR or ".").glob(f"{stem}_*.stp"))
+    matches = sorted(Path(_DIR).glob(f"{stem}_*.stp"))
     if not matches:
-        pytest.skip(f"no STEP file matching {stem}_*.stp in {_DIR}")
+        # A gap in the vendored corpus is this repository's bug and must fail. A gap in a
+        # directory the caller pointed `B123D_NIST_STEP_DIR` at is not -- a partial download
+        # is exactly what the override is for, and failing it was the same skip-versus-fail
+        # mistake as shipping a corpus-less sdist that could not skip.
+        # Compared by path, not by whether the variable is set: pointing the override at the
+        # vendored corpus itself is a plausible habit, and keying on set-ness meant a genuine
+        # gap in that corpus skipped instead of failing.
+        if Path(_DIR).resolve() != _VENDORED.resolve():
+            pytest.skip(f"no STEP file matching {stem}_*.stp in {_DIR}")
+        pytest.fail(f"no STEP file matching {stem}_*.stp in the vendored corpus")
     return matches[0]
 
 
@@ -79,3 +95,66 @@ def test_recognition_counts_match_the_reported_baseline(stem):
     actual = {family: len(getattr(result, family)) for family in EXPECTED[stem]}
 
     assert actual == EXPECTED[stem]
+
+
+#: Counts as of vendoring. **Not a correctness baseline** -- unlike ``EXPECTED``, no
+#: downstream report says these are right, so they pin only what this package does today.
+#: They are a change detector on real geometry, labelled as one so nobody later mistakes them
+#: for evidence that these numbers were ever reviewed.
+#:
+#: Every non-empty family, not a chosen few. An earlier version pinned three per part, and
+#: zeroing ``pockets``, ``slots``, ``plates``, ``hole_patterns`` and ``cylinders`` on exactly
+#: these four parts -- 47 records vanishing from the geometry the test was vendored to watch
+#: -- left all four green. ``actual`` is built from these keys, so a family absent here can
+#: never be noticed by observation.
+_OBSERVED = {
+    "nist_ftc_07": {
+        "cylinders": 2,
+        "fillets": 16,
+        "hole_patterns": 2,
+        "holes": 23,
+        "plates": 5,
+        "slots": 5,
+        "step_levels": 10
+    },
+    "nist_ftc_08": {
+        "cylinders": 2,
+        "fillets": 13,
+        "hole_patterns": 2,
+        "holes": 21,
+        "plates": 5,
+        "pockets": 10,
+        "slots": 4,
+        "step_levels": 3
+    },
+    "nist_ftc_09": {
+        "chamfers": 8,
+        "cylinders": 2,
+        "fillets": 1,
+        "hole_patterns": 3,
+        "holes": 30,
+        "pockets": 9,
+        "slots": 3,
+        "step_levels": 15
+    },
+    "nist_ftc_10": {
+        "cylinders": 2,
+        "fillets": 22,
+        "hole_patterns": 6,
+        "holes": 30,
+        "pockets": 5,
+        "slots": 2,
+        "step_levels": 10
+    }
+}
+
+
+@pytest.mark.parametrize("stem", sorted(_OBSERVED), ids=lambda s: s.removeprefix("nist_"))
+def test_recognition_on_the_remaining_vendored_parts_has_not_moved(stem):
+    """A change detector, not a baseline. A moved count here needs review, not a re-pin."""
+
+    result = build_recognition_result(import_step(str(_step_for(stem))))
+
+    actual = {family: len(getattr(result, family)) for family in _OBSERVED[stem]}
+
+    assert actual == _OBSERVED[stem]

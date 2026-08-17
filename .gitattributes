@@ -1,0 +1,5 @@
+# Vendored third-party STEP corpora are byte-identical to their upstream distributions,
+# and THIRD_PARTY_NOTICES.md says so. Windows runners default to core.autocrlf=true, which
+# would rewrite these ASCII files on checkout and make that claim false.
+*.stp -text
+*.step -text
