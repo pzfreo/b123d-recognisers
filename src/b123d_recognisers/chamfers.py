@@ -43,6 +43,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
+from b123d_recognisers._adjacency import edge_face_map, neighbours
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
@@ -141,12 +142,10 @@ def recognise_chamfers(
     tol = _MIN_LEG if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
-    # (face, its edges' wrapped shapes) once, for O(faces²) edge-adjacency.
-    face_edges = [(g, [e.wrapped for e in g.edges()]) for g in all_faces]
+    edge_faces = edge_face_map(all_faces)
 
     out: list[Chamfer] = []
     for f in all_faces:
-        fw = f.wrapped
         # The shared single-face read (classification thresholds + legs = the face's OWN
         # in-plane bbox extents, not measured against a possibly distant outermost wall).
         # (The old extra skew gate on the in-plane normal components was unreachable — a
@@ -165,21 +164,20 @@ def recognise_chamfers(
         # Must bridge two axis-aligned faces on distinct in-plane axes (a chamfer replaces
         # a sharp 90° edge). A hex side abuts oblique faces. Record each neighbour plane's
         # coordinate so the convex-corner test below can reconstruct the virtual corner.
-        my_edges = [e.wrapped for e in f.edges()]
-        neigh_coord: dict[int, float] = {}
-        for g, g_edges in face_edges:
-            if g.wrapped.IsSame(fw):
-                continue
-            if any(a.IsSame(b) for a in my_edges for b in g_edges):
-                aa = _axis_aligned_axis(g.wrapped)
-                if aa is not None and aa[0] != edge_i:
-                    ax, coord = aa
-                    # If two neighbours share an axis, keep the one nearest the chamfer —
-                    # it forms this local corner.
-                    if ax not in neigh_coord or abs(coord - fc[ax]) < abs(
-                        neigh_coord[ax] - fc[ax]
-                    ):
-                        neigh_coord[ax] = coord
+        # Per axis, keep the neighbour plane nearest the chamfer — it forms this local
+        # corner. Ties break on the coordinate itself so the pick cannot depend on the
+        # order neighbours are visited in: `slanted_steps` has a chamfer equidistant from
+        # two distinct Z planes, and a strict `<` there kept whichever the traversal
+        # happened to yield first. Same tie break, same reason, as `recognise_fillets`.
+        neigh_best: dict[int, tuple[float, float]] = {}  # axis -> (distance, coord)
+        for g in neighbours(f, edge_faces):
+            aa = _axis_aligned_axis(g.wrapped)
+            if aa is not None and aa[0] != edge_i:
+                ax, coord = aa
+                key = (abs(coord - fc[ax]), coord)
+                if ax not in neigh_best or key < neigh_best[ax]:
+                    neigh_best[ax] = key
+        neigh_coord = {ax: coord for ax, (_, coord) in neigh_best.items()}
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
         # Convex-edge test: the virtual sharp corner the bevel replaces sits where the two

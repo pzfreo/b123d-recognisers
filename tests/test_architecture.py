@@ -31,8 +31,11 @@ PUBLIC_MODULES = {
 }
 
 MODULE_SEAM_EDGES = {
+    # Base layer: depends on the kernel and the shared type aliases, nothing else.
+    "_adjacency": {"_typing"},
     "_cylinder_substrate": {"_geometry", "_typing"},
     "_hole_features": {
+        "_adjacency",
         "_cylinder_substrate",
         "_geometry",
         "_record",

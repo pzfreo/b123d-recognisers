@@ -12,6 +12,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 from OCP.TopAbs import TopAbs_Orientation
 
+from b123d_recognisers._adjacency import edge_face_map
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
@@ -278,15 +279,6 @@ def _classify_end_uncached(
     return weak or "unknown"
 
 
-def _edge_face_map(part: Part) -> dict:
-    """Map every edge of *part* to the faces that share it."""
-    edge_faces: dict = {}
-    for f in part.faces():
-        for e in f.edges():
-            edge_faces.setdefault(e, []).append(f)
-    return edge_faces
-
-
 def _shared_transition(
     a: SegmentEvidence, b: SegmentEvidence, edge_faces: dict, cache: dict | None = None
 ) -> bool:
@@ -485,7 +477,7 @@ def recognise_holes(
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
         return []
-    edge_faces = _edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
     # one end-classification cache for the whole call: the same (seg, end) is
     # classified by _merge_stacks and again in the loop below, each scan walking
     # every face's edges.
@@ -551,7 +543,7 @@ def recognise_bosses(part: Part, *, cyls: CylinderInventory | None = None) -> li
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
         return []
-    edge_faces = _edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
     cache: dict = {}
 
     bosses = []

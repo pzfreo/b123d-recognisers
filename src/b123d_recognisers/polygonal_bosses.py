@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
+from b123d_recognisers._adjacency import edge_face_map, neighbours
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -346,23 +347,33 @@ def _recognise_one(
 ) -> list[PolygonalBoss | PolygonalStock]:
     tol = _TOL if tol is None else tol
     faces = list(part.faces())
-    edges = [[edge.wrapped for edge in face.edges()] for face in faces]
-    adjacency: dict[tuple[int, int], bool] = {}
+    # This module works in face *indices*, so the shared edge→faces map is resolved back to
+    # them once here; the ring and boundary helpers keep their index-based signatures.
+    edge_faces = edge_face_map(faces)
+    index_of = {face: index for index, face in enumerate(faces)}
+    # Resolved per face on demand and cached, not for the whole part up front: only the
+    # vertical sides and the few faces bounding a ring are ever asked about, and computing
+    # the rest measured at more than half of this recogniser's total time on the corpus.
+    neighbour_indices: dict[int, set[int]] = {}
+
+    def _neighbours_of(index: int) -> set[int]:
+        cached = neighbour_indices.get(index)
+        if cached is None:
+            cached = {index_of[other] for other in neighbours(faces[index], edge_faces)}
+            neighbour_indices[index] = cached
+        return cached
 
     def shares_edge(i: int, j: int) -> bool:
-        key = (min(i, j), max(i, j))
-        if key not in adjacency:
-            adjacency[key] = any(a.IsSame(b) for a in edges[i] for b in edges[j])
-        return adjacency[key]
+        return j in _neighbours_of(i)
 
     normals, bounds, vertical = _vertical_side_faces(faces, tol)
 
     components = _side_rings(vertical, bounds, tol, shares_edge)
 
     def adjacent_to(index: int) -> set[int]:
-        return {
-            other for other in range(len(faces)) if other != index and shares_edge(index, other)
-        }
+        # A copy, as before: `_common_cap` subtracts from what it gets back, and handing out
+        # the cached set would let one ring's bookkeeping corrupt the next one's.
+        return set(_neighbours_of(index))
 
 
     found: list[PolygonalBoss | PolygonalStock] = []
