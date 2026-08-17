@@ -11,16 +11,17 @@ records in nineteen places across six parts, gaining in none.
 The counts below are 0.2.2 behaviour as reported from downstream, and they are the reason the
 gates in ADR 0008 are split into tolerances (which scale) and thresholds (which do not).
 
-**Opt-in.** ``migration/PARITY.md`` commits the project to comparing semantic record projections
-rather than file bytes, so these STEP files are not vendored. Point ``B123D_NIST_STEP_DIR`` at a
-directory holding the AP203 geometry-only files to run them:
+**Vendored, since 0.2.6.** These ten AP203 geometry-only files live in ``tests/corpus/nist``, so
+this module runs by default instead of skipping. It previously skipped unless
+``B123D_NIST_STEP_DIR`` pointed at a local download, which meant the only tests in this project
+running on real mechanical parts were off unless someone remembered to switch them on.
 
-    curl -L -o nist.zip https://www.nist.gov/document/nist-pmi-step-files
-    unzip -j nist.zip '*AP203 geometry only*' -d nist-step
-    B123D_NIST_STEP_DIR=$PWD/nist-step uv run pytest tests/test_nist_ctc_corpus.py
-
-NIST states the models "can be used without any restrictions"; they are not redistributed here
-only because of the byte-comparison convention, not licensing.
+The reason recorded for not vendoring them does not survive reading it: ``migration/PARITY.md``
+commits *the goldens* to comparing semantic record projections rather than STEP bytes, which is a
+statement about what assertions may examine, not about where input geometry comes from. Nothing
+here compares bytes; it compares record counts, from a file that now happens to be checked in.
+NIST states the models "can be used without any restrictions", so there was never a licensing
+obstacle either. ``B123D_NIST_STEP_DIR`` still overrides, for anyone testing a fuller download.
 """
 
 from __future__ import annotations
@@ -52,17 +53,14 @@ EXPECTED = {
     "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 5, "fillets": 3},
 }
 
-_DIR = os.environ.get("B123D_NIST_STEP_DIR")
-
-pytestmark = pytest.mark.skipif(
-    not _DIR, reason="set B123D_NIST_STEP_DIR to the NIST AP203 geometry-only STEP directory"
-)
+_VENDORED = Path(__file__).parent / "corpus" / "nist"
+_DIR = os.environ.get("B123D_NIST_STEP_DIR") or str(_VENDORED)
 
 
 def _step_for(stem: str) -> Path:
-    matches = sorted(Path(_DIR or ".").glob(f"{stem}_*.stp"))
+    matches = sorted(Path(_DIR).glob(f"{stem}_*.stp"))
     if not matches:
-        pytest.skip(f"no STEP file matching {stem}_*.stp in {_DIR}")
+        pytest.fail(f"no STEP file matching {stem}_*.stp in {_DIR}")
     return matches[0]
 
 
@@ -79,3 +77,28 @@ def test_recognition_counts_match_the_reported_baseline(stem):
     actual = {family: len(getattr(result, family)) for family in EXPECTED[stem]}
 
     assert actual == EXPECTED[stem]
+
+
+#: The four remaining vendored parts. They have no downstream-reported baseline, so pinning
+#: counts for them would be inventing a golden out of today's behaviour and calling it
+#: evidence. What can be asserted honestly is weaker and still worth having: recognition
+#: completes on a real 550-1170 mm part and returns records, which is the failure mode a
+#: large part with millimetre features actually produces.
+_UNBASELINED = ("nist_ftc_07", "nist_ftc_08", "nist_ftc_09", "nist_ftc_10")
+
+
+@pytest.mark.parametrize("stem", _UNBASELINED, ids=lambda s: s.removeprefix("nist_"))
+def test_recognition_completes_on_the_remaining_vendored_parts(stem):
+    """Recognition runs to completion and finds features, without a pinned expectation.
+
+    Deliberately not count assertions. The six above are pinned because a downstream report
+    gave them a value to be pinned *to*; these four would only be pinned to whatever this
+    package happens to do today, which tells a future reader nothing about whether that was
+    ever right. If a baseline for them appears, it belongs in ``EXPECTED`` with the others.
+    """
+
+    result = build_recognition_result(import_step(str(_step_for(stem))))
+
+    assert result.holes, f"{stem}: a NIST test case with no holes means recognition fell over"
+    assert result.step_levels
+    assert result.fillets or result.chamfers
