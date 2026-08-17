@@ -11,7 +11,7 @@ records in nineteen places across six parts, gaining in none.
 The counts below are 0.2.2 behaviour as reported from downstream, and they are the reason the
 gates in ADR 0008 are split into tolerances (which scale) and thresholds (which do not).
 
-**Vendored, since 0.2.6.** These ten AP203 geometry-only files live in ``tests/corpus/nist``, so
+**Vendored.** These ten AP203 geometry-only files live in ``tests/corpus/nist``, so
 this module runs by default instead of skipping. It previously skipped unless
 ``B123D_NIST_STEP_DIR`` pointed at a local download, which meant the only tests in this project
 running on real mechanical parts were off unless someone remembered to switch them on.
@@ -56,6 +56,15 @@ EXPECTED = {
 _VENDORED = Path(__file__).parent / "corpus" / "nist"
 _DIR = os.environ.get("B123D_NIST_STEP_DIR") or str(_VENDORED)
 
+#: The sdist ships these tests but not the corpus they read -- 9 MB of third-party STEP that
+#: no consumer of the package needs. So absence must skip, not fail: a packager running the
+#: sdist's suite is in a legitimate situation, not a broken one. Failing here was a real
+#: regression from the previous behaviour, which skipped cleanly when the files were missing.
+pytestmark = pytest.mark.skipif(
+    not sorted(Path(_DIR).glob("*.stp")),
+    reason=f"no NIST STEP files in {_DIR}; the vendored corpus is excluded from the sdist",
+)
+
 
 def _step_for(stem: str) -> Path:
     matches = sorted(Path(_DIR).glob(f"{stem}_*.stp"))
@@ -79,26 +88,29 @@ def test_recognition_counts_match_the_reported_baseline(stem):
     assert actual == EXPECTED[stem]
 
 
-#: The four remaining vendored parts. They have no downstream-reported baseline, so pinning
-#: counts for them would be inventing a golden out of today's behaviour and calling it
-#: evidence. What can be asserted honestly is weaker and still worth having: recognition
-#: completes on a real 550-1170 mm part and returns records, which is the failure mode a
-#: large part with millimetre features actually produces.
-_UNBASELINED = ("nist_ftc_07", "nist_ftc_08", "nist_ftc_09", "nist_ftc_10")
+#: Counts as of vendoring. **Not a correctness baseline** -- unlike ``EXPECTED``, no
+#: downstream report says these are right, so they pin only what this package does today.
+#: They are a change detector on real geometry, and are labelled as one so nobody later
+#: mistakes them for evidence that these numbers were ever reviewed.
+#:
+#: The first version of this asserted only "some holes, some levels, some blend". That is
+#: what it looks like when a test is written to avoid making a claim: truncating every hole
+#: list to one record -- a 95% silent loss, exactly the #72 failure mode this module exists
+#: for -- left all four passing.
+_OBSERVED = {
+    "nist_ftc_07": {"holes": 23, "step_levels": 10, "fillets": 16},
+    "nist_ftc_08": {"holes": 21, "step_levels": 3, "fillets": 13},
+    "nist_ftc_09": {"holes": 30, "step_levels": 15, "chamfers": 8},
+    "nist_ftc_10": {"holes": 30, "step_levels": 10, "fillets": 22},
+}
 
 
-@pytest.mark.parametrize("stem", _UNBASELINED, ids=lambda s: s.removeprefix("nist_"))
-def test_recognition_completes_on_the_remaining_vendored_parts(stem):
-    """Recognition runs to completion and finds features, without a pinned expectation.
-
-    Deliberately not count assertions. The six above are pinned because a downstream report
-    gave them a value to be pinned *to*; these four would only be pinned to whatever this
-    package happens to do today, which tells a future reader nothing about whether that was
-    ever right. If a baseline for them appears, it belongs in ``EXPECTED`` with the others.
-    """
+@pytest.mark.parametrize("stem", sorted(_OBSERVED), ids=lambda s: s.removeprefix("nist_"))
+def test_recognition_on_the_remaining_vendored_parts_has_not_moved(stem):
+    """A change detector, not a baseline. A moved count here needs review, not a re-pin."""
 
     result = build_recognition_result(import_step(str(_step_for(stem))))
 
-    assert result.holes, f"{stem}: a NIST test case with no holes means recognition fell over"
-    assert result.step_levels
-    assert result.fillets or result.chamfers
+    actual = {family: len(getattr(result, family)) for family in _OBSERVED[stem]}
+
+    assert actual == _OBSERVED[stem]

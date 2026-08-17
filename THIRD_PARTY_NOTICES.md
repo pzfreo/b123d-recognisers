@@ -39,14 +39,18 @@ Apache-2.0 licence of this project does not alter.
 
 ### NIST MBE PMI test cases (`tests/corpus/nist`)
 
-- Source: <https://www.nist.gov/el/systems-integration-division-73400/mbe-pmi-validation-and-conformance-testing-project>
-- Files: the AP203 geometry-only variants of the CTC and FTC test cases
-- Terms: NIST states the models "can be used without any restrictions"
+- Source: <https://www.nist.gov/ctl/mbe-pmi-validation-and-conformance-testing-project/mbe-pmi-0>
+- Files: ten of the eleven AP203 geometry-only variants — `ctc_01`–`ctc_05` and `ftc_06`–`ftc_10`.
+  `ftc_11` is not vendored because no test reads it.
+- Terms: NIST states the models "can be used without any restrictions" and requests
+  acknowledgement, which this notice provides. NIST further states that such use "does not
+  imply a recommendation or endorsement by NIST".
 
 ### MFCAD++ (`tests/corpus/mfcadpp`)
 
 - Source: <https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823>
-- Licence: Creative Commons Attribution (CC BY 4.0)
+- Licence: Creative Commons Attribution (**CC BY** — the source record states no version)
+- Modifications: none. The files are byte-identical to the upstream distribution.
 - Copyright: Queen's University Belfast and the dataset's authors
 - Contents: a forty-model subset of the *test* split; `tests/corpus/mfcadpp/MANIFEST.json`
   records the rule that selected it

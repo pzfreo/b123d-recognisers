@@ -34,6 +34,12 @@ from build123d import import_step
 from b123d_recognisers import recognise_angled_steps, recognise_chamfers
 
 CORPUS = Path(__file__).parent / "corpus" / "mfcadpp"
+#: The sdist ships this module but not the 4.8 MB of STEP it reads, so absence must skip. A
+#: packager running the sdist's suite is in a legitimate situation, not a broken one.
+pytestmark = pytest.mark.skipif(
+    not (CORPUS / "MANIFEST.json").is_file(),
+    reason="the vendored MFCAD++ subset is excluded from the sdist",
+)
 #: MFCAD++ stores its per-face label as the name of each ``ADVANCED_FACE`` entity, in the
 #: same order the kernel yields faces. ``test_the_label_to_face_mapping_holds`` is what makes
 #: relying on that legitimate rather than hopeful.
@@ -58,6 +64,10 @@ def corpus():
         for face, label in zip(faces, labels, strict=False):
             centre = face.center()
             at_label[(round(centre.X, 3), round(centre.Y, 3), round(centre.Z, 3))] = label
+        # Attribution is by rounded centroid, so two faces sharing a key would silently
+        # overwrite one label with another and quietly corrupt every result below. Measured
+        # at zero collisions across all 40 models; pinned so it stays that way.
+        assert len(at_label) == len(faces), f"{path.name}: faces share a rounded centroid"
         models.append((path.name, part, labels, faces, at_label))
     assert models, "the vendored MFCAD++ subset is missing"
     return models
@@ -72,12 +82,29 @@ def test_the_selection_manifest_describes_what_is_actually_vendored():
 
     manifest = json.loads((CORPUS / "MANIFEST.json").read_text(encoding="utf-8"))
     on_disk = sorted(path.name for path in CORPUS.glob("*.step"))
+    rule = manifest["rule"]
 
     assert manifest["models"] == on_disk
-    assert manifest["licence"] == "CC BY 4.0"
-    assert manifest["rule"]["split"] == "test", "train/val models must never be vendored here"
-    for models in manifest["by_label"].values():
+    assert manifest["licence"] == "CC BY"
+    assert rule["split"] == "test", "train/val models must never be vendored here"
+
+    # An earlier version stopped at the filename list, which meant the recorded rule could say
+    # anything at all -- `per_label: 999`, an empty `by_label`, even `split: train` reworded --
+    # and still pass. What is checkable offline is checked: the per-label counts, the stated
+    # ordering, that the labelled sets account for every vendored file, and that each model
+    # really does carry the label it is listed under. What is not checkable offline is that
+    # these are the *first* N by filename in the upstream split, which needs the 1.5 GB
+    # original; the rule records it so a future maintainer can re-derive it.
+    labelled = set()
+    for label, models in manifest["by_label"].items():
+        assert models == sorted(models), f"label {label} is not in the recorded order"
+        assert len(models) == rule["per_label"], f"label {label} has {len(models)} models"
         assert set(models) <= set(on_disk)
+        labelled |= set(models)
+        for name in models:
+            tags = {int(v) for v in _LABEL.findall((CORPUS / name).read_bytes())}
+            assert int(label) in tags, f"{name} is listed under {label} but does not carry it"
+    assert labelled == set(on_disk), "vendored files that no target label accounts for"
 
 
 def test_the_label_to_face_mapping_holds(corpus):
@@ -102,8 +129,17 @@ def test_the_label_to_face_mapping_holds(corpus):
 
     chamfer_oblique = oblique[True][1] / sum(oblique[True])
     other_oblique = oblique[False][1] / sum(oblique[False])
+
+    # Only the first of these is a test. The second was `other_oblique < 0.40`, which cannot
+    # fail: 30.9% of all 1335 faces in this subset are oblique, so any label assignment at all
+    # satisfies it -- shuffling the labels 200 times never exceeded 0.312. It is kept as a
+    # ratio against the first, which does bite: a rotate-by-one mismatch drops chamfer_oblique
+    # to 0.208 and a shuffle to as low as 0.125.
     assert chamfer_oblique > 0.75, "faces labelled Chamfer are not mostly oblique planes"
-    assert other_oblique < 0.40, "oblique faces are not concentrated in the Chamfer label"
+    assert chamfer_oblique > 2 * other_oblique, (
+        f"obliqueness does not distinguish the Chamfer label: {chamfer_oblique:.3f} of "
+        f"chamfer faces against {other_oblique:.3f} of the rest"
+    )
 
 
 def test_every_angled_step_record_lands_on_a_labelled_triangular_blind_step(corpus):
@@ -135,13 +171,18 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
     `recognise_chamfers` reintroduces exactly that, and this is what says so.
     """
 
-    stolen = [
-        (name, record.at)
-        for name, part, _labels, _faces, at_label in corpus
-        for record in recognise_chamfers(part)
-        if at_label.get(record.at) == TRIANGULAR_BLIND_STEP
-    ]
+    stolen, resolved = [], 0
+    for name, part, _labels, _faces, at_label in corpus:
+        for record in recognise_chamfers(part):
+            label = at_label.get(record.at)
+            resolved += label is not None
+            if label == TRIANGULAR_BLIND_STEP:
+                stolen.append((name, record.at))
 
+    # Without this the test passes when attribution stops resolving entirely: replacing the
+    # lookup key with one that can never match left it green, which would make "the direct
+    # regression guard" a silent no-op. All 14 chamfer records resolve today.
+    assert resolved, "no chamfer record resolved to a labelled face; attribution is broken"
     assert stolen == [], f"chamfer records on faces labelled a blind step: {stolen}"
 
 

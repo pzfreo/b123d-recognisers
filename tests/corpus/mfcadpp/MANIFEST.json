@@ -72,7 +72,7 @@
     ]
   },
   "doi": "https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
-  "licence": "CC BY 4.0",
+  "licence": "CC BY",
   "models": [
     "1000.step",
     "10000.step",
