@@ -14,6 +14,11 @@ def recognition_snapshot(recognition, feature_census, part):
     pockets = recognition.recognise_pockets(part)
 
     individual = {
+        # Originated in this package rather than relicensed from Draftwright, so the pinned
+        # baseline has no counterpart to be at parity with. Captured through the same
+        # canonicaliser as the rest and compared the same way; it is only the *provenance* of
+        # this one entry that differs, and `capture_draftwright_goldens` cannot supply it.
+        "recognise_angled_steps": recognition.recognise_angled_steps(part),
         "recognise_bosses": bosses,
         "recognise_chamfers": recognition.recognise_chamfers(part),
         "recognise_channels": recognition.recognise_channels(part),

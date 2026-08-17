@@ -29,6 +29,7 @@ from collections.abc import Sequence
 
 from b123d_recognisers import (
     analyse_cylinders,
+    recognise_angled_steps,
     recognise_bosses,
     recognise_chamfers,
     recognise_channels,
@@ -76,6 +77,7 @@ def feature_census(part: Part) -> dict[str, int]:
         "channel": recognise_channels(part, face_edges=face_edges),
         "pocket": recognise_pockets(part, face_edges=face_edges),
         "chamfer": recognise_chamfers(part, face_edges=face_edges),
+        "angled_step": recognise_angled_steps(part, face_edges=face_edges),
         "fillet": recognise_fillets(part, face_edges=face_edges),
         "countersink": recognise_countersinks(part),
         "plate": recognise_plates(part),

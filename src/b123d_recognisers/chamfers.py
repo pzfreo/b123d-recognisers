@@ -46,6 +46,7 @@ from OCP.TopAbs import TopAbs_IN
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
+    has_triangular_companion,
     nearest_axis_aligned_planes,
 )
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
@@ -119,6 +120,34 @@ def classify_bevel(
     return edge_i, nv, span, max(leg_u, leg_v), min(leg_u, leg_v)
 
 
+def convex_bevel(
+    part: Part, centre: dict[int, float], edge_i: int, neigh_coord: dict[int, float]
+) -> bool:
+    """Does the virtual sharp corner *face* replaces lie outside the solid?
+
+    The virtual corner sits where the two neighbour planes cross, at the bevel's own edge
+    position. Nudged a little toward the bevel face it lands in the removed-wedge *vacuum*
+    for a real (convex) bevel, but in filled *material* for a gusset/rib/web bevelling a
+    concave re-entrant corner. The nudge clears the on-boundary knife-edge at the raw
+    corner; this is the discriminator adjacency alone cannot make, since a gusset's
+    hypotenuse is also edge-adjacent to two perpendicular walls.
+
+    Shared with :func:`b123d_recognisers.recognise_angled_steps`, which needs the same
+    convex/concave call to tell a step's slant from a pocket or passage wall.
+    """
+
+    oi = [j for j in (0, 1, 2) if j != edge_i]
+    corner = [0.0, 0.0, 0.0]
+    corner[edge_i] = centre[edge_i]
+    corner[oi[0]] = neigh_coord[oi[0]]
+    corner[oi[1]] = neigh_coord[oi[1]]
+    probe = tuple(corner[i] + INTERIOR_PROBE_FRAC * (centre[i] - corner[i]) for i in (0, 1, 2))
+    clsf = BRepClass3d_SolidClassifier(part.wrapped)
+    clsf.Perform(gp_Pnt(*probe), 1e-6)
+    # `State()` is untyped in OCP, so the comparison is Any until it is narrowed here.
+    return bool(clsf.State() != TopAbs_IN)
+
+
 def recognise_chamfers(
     part: Part,
     *,
@@ -161,23 +190,15 @@ def recognise_chamfers(
         )
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
-        # Convex-edge test: the virtual sharp corner the bevel replaces sits where the two
-        # neighbour planes cross, at the chamfer's own edge position. Nudged a little toward
-        # the chamfer face it lands in the removed-wedge *vacuum* for a real (convex)
-        # chamfer (OUT), but in filled *material* for a gusset/rib/web bevelling a concave
-        # re-entrant corner (IN). The nudge clears the on-boundary knife-edge at the raw
-        # corner; this is the discriminator adjacency alone can't make.
-        corner = [0.0, 0.0, 0.0]
-        corner[edge_i] = fc[edge_i]
-        corner[oi[0]] = neigh_coord[oi[0]]
-        corner[oi[1]] = neigh_coord[oi[1]]
-        probe = tuple(
-            corner[i] + INTERIOR_PROBE_FRAC * (fc[i] - corner[i]) for i in (0, 1, 2)
-        )
-        clsf = BRepClass3d_SolidClassifier(part.wrapped)
-        clsf.Perform(gp_Pnt(*probe), 1e-6)
-        if clsf.State() == TopAbs_IN:
+        if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave corner — a gusset / rib / web, not a chamfer
+        # A chamfer runs the full length of the edge it breaks; a bevel closed by a
+        # triangular flat is the slant of an angled blind step, and `recognise_angled_steps`
+        # owns it. Declining it here is what keeps the two from both reporting the same face.
+        # Last of the gates deliberately: it only has to run on bevels that would otherwise
+        # be accepted, so it costs a neighbour walk on a handful of faces rather than all.
+        if has_triangular_companion(f, edge_faces, face_edges=face_edges):
+            continue
         # Anchor the leader on the bevel FACE (its centroid), not the supporting plane's
         # parametric origin: that origin is arbitrary (OCC parameterisation) and can project to
         # a chamfer endpoint/corner rather than the middle of the diagonal. The centroid

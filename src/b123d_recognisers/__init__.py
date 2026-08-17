@@ -80,6 +80,10 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
     recognise_holes,
 )
+from b123d_recognisers.angled_steps import (
+    AngledStep,
+    recognise_angled_steps,
+)
 from b123d_recognisers.chamfers import (
     BevelReject,
     Chamfer,
@@ -158,6 +162,7 @@ __all__ = [
     "CAPABILITY_FORMAT_VERSION",
     "CapabilityManifestError",
     "STEP_LADDER_BOUNDARY_MARGIN",
+    "AngledStep",
     "BoltCircle",
     "Chamfer",
     "Channel",
@@ -208,6 +213,7 @@ __all__ = [
     "capability_manifest",
     "capability_manifest_json",
     "validate_capability_manifest",
+    "recognise_angled_steps",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

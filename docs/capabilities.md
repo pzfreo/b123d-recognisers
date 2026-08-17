@@ -23,8 +23,9 @@ compatibility review, and release notes.
 
 | Recogniser | Proven current scope | Explicitly excluded or deferred | Primary evidence |
 | --- | --- | --- | --- |
+| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned triangular flat. | Steps closed by a non-triangular end, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; 100% precision over 120 MFCAD++ models. |
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
-| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis. | Compound three-axis corner bevels and faces outside leg/size gates. | Chamfer/fillet/flat golden and negative bevel tests. |
+| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis, running the full length of the edge they break. | Compound three-axis corner bevels, faces outside leg/size gates, and slants with a triangular blind end (an angled step). | Chamfer/fillet/flat golden and negative bevel tests. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid. | Bounded blind pockets, through slots, and cross-solid face combinations. | Open-channel golden and per-solid regressions. |
 | `recognise_countersinks` | Conical hole-mouth seats with a proven circular major rim, bore rim, and included angle. | General conical faces, decorative bevels, and unmatched cones. | Counterbore/countersink golden and cone rejection tests. |
 | `recognise_double_d_bores` | Constant, principal-axis, through double-D voids with two opposed common-circle profiles and a material-free connecting prism. | Blind recesses, obrounds, lenses, arbitrary line/arc loops, non-principal axes, mismatched ends, and cross-solid pairing. | Double-D golden plus capability-negative tests. |
@@ -114,6 +115,7 @@ invitation to construct values outside that evidence and call them recognized.
 
 | Public record | Implemented contract boundary |
 | --- | --- |
+| `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar bevel. |

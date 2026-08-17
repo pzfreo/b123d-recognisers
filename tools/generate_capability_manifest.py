@@ -23,6 +23,16 @@ ROOT = Path(__file__).parents[1]
 TARGET = ROOT / "src" / "b123d_recognisers" / "capabilities.json"
 
 FAMILIES = {
+    # `introduced` defaults to 0.1.0 -- every family relicensed from Draftwright arrived
+    # together in that release, so only a family originated here needs to state its own.
+    "angled-steps": {
+        "recognisers": [("recognise_angled_steps", "part")],
+        "records": [("AngledStep", "output", ["RecognitionResult.angled_steps"])],
+        "census": "angled_step",
+        "goldens": ["angled_blind_step"],
+        "introduced": "0.2.5",
+        "tests": ["tests/test_angled_steps.py"],
+    },
     "bosses": {
         "recognisers": [("recognise_bosses", "part")],
         "records": [("BossRecord", "output", ["RecognitionResult.bosses"])],
@@ -293,7 +303,7 @@ def build_manifest() -> dict[str, object]:
                 f"tests/golden/{name}/expected.json" for name in spec["goldens"]
             ),
             "id": family_id,
-            "introduced_in": "0.1.0",
+            "introduced_in": spec.get("introduced", "0.1.0"),
             "recognisers": [
                 {
                     "entry_point": f"b123d_recognisers.{name}",
@@ -303,10 +313,13 @@ def build_manifest() -> dict[str, object]:
             ],
             "records": [_record(*record) for record in spec["records"]],
             "status": "supported",
-            "test_evidence": [
-                "tests/test_capability_claims.py",
-                "tests/test_recogniser_contract.py",
-            ],
+            "test_evidence": sorted(
+                [
+                    "tests/test_capability_claims.py",
+                    "tests/test_recogniser_contract.py",
+                    *spec.get("tests", []),
+                ]
+            ),
         }
         if census is None:
             family["census_rationale"] = (
