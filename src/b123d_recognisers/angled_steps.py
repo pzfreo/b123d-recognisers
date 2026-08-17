@@ -127,6 +127,12 @@ def recognise_angled_steps(
             continue
         if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave — a pocket or passage wall, not a step
+        # Last, mirroring `recognise_chamfers`, though it is the gate this family is named
+        # for. Hoisting it ahead of the solid classifier is the obvious optimisation and
+        # measures as nothing (850.0 ms against 848.0 ms over the golden corpus, interleaved):
+        # `convex_bevel` is reached by so few faces that it is 1% of this function, while the
+        # companion walk costs a `.edges()` per axis-aligned neighbour. The cost lives in the
+        # unavoidable scan above — `edge_face_map` and `classify_bevel` are two thirds of it.
         if not has_triangular_companion(f, edge_faces, face_edges=face_edges):
             continue  # runs edge to edge — a chamfer, and `recognise_chamfers` owns it
         fctr = f.center()

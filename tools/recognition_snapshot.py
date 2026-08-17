@@ -14,11 +14,6 @@ def recognition_snapshot(recognition, feature_census, part):
     pockets = recognition.recognise_pockets(part)
 
     individual = {
-        # Originated in this package rather than relicensed from Draftwright, so the pinned
-        # baseline has no counterpart to be at parity with. Captured through the same
-        # canonicaliser as the rest and compared the same way; it is only the *provenance* of
-        # this one entry that differs, and `capture_draftwright_goldens` cannot supply it.
-        "recognise_angled_steps": recognition.recognise_angled_steps(part),
         "recognise_bosses": bosses,
         "recognise_chamfers": recognition.recognise_chamfers(part),
         "recognise_channels": recognition.recognise_channels(part),
@@ -44,6 +39,18 @@ def recognition_snapshot(recognition, feature_census, part):
         "recognise_slots": slots,
         "recognise_turned_steps": recognition.recognise_turned_steps(part, cyls=cylinders),
     }
+    # Families originated in this package have no counterpart in the pinned Draftwright
+    # baseline, so asking that module for them raises rather than returning nothing. Adding
+    # them unconditionally broke `capture_draftwright_goldens` for the whole corpus, not only
+    # for the new family — it snapshots `draftwright.recognition`, which has no such
+    # attribute. Keying off the module being snapshotted keeps both callers working, and the
+    # inventory check below still fails closed: a name present in `__all__` but skipped here
+    # is a mismatch, so this cannot quietly drop a family from a package that does have it.
+    for name in ("recognise_angled_steps",):
+        recognise = getattr(recognition, name, None)
+        if recognise is not None:
+            individual[name] = recognise(part)
+
     public_recognisers = {name for name in recognition.__all__ if name.startswith("recognise_")}
     if set(individual) != public_recognisers:
         missing = sorted(public_recognisers - set(individual))
