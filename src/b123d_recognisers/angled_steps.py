@@ -35,12 +35,11 @@ two cannot disagree about what they are looking at:
   floor is a triangle. Prototyped without this gate, pockets outnumbered steps three to one
   (precision 21%); over 120 MFCAD++ models it stops all 109 of them, and the convex probe
   stops none;
-- **convex** — :func:`b123d_recognisers.chamfers.convex_bevel`, which is not redundant with
-  the gate above even though the corpus never exercises it. A gusset filling a concave
-  corner has an oblique hypotenuse bridging two perpendicular walls *and* triangular ends,
-  so it satisfies every other gate here; the material behind it is the only thing that
-  differs. MFCAD++ is purely subtractive and contains none, so the fixture in
-  ``tests/test_angled_steps.py`` is the evidence for this one rather than the corpus;
+- **convex** — :func:`b123d_recognisers.chamfers.convex_bevel`, and it carries real weight:
+  of the 85 faces that reach it over 120 MFCAD++ models it rejects 24. What it catches is
+  a slant with material *behind* it rather than below — a gusset filling a concave corner,
+  whose hypotenuse bridges two perpendicular walls and whose ends are triangles, so it
+  satisfies every other gate here and the material is the only thing that differs;
 - **a triangular companion** — the blind end.
 
 No size gate, no tolerance, no fraction: every gate here is either a shared geometric

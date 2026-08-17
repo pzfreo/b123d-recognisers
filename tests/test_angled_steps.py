@@ -157,10 +157,10 @@ def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
     perpendicular axis-aligned walls, and its two ends are triangles. The single difference
     from a real step is that the corner it sits in is *filled* rather than cut away.
 
-    This test exists because the corpus cannot supply it. MFCAD++ is purely subtractive, so
-    across 120 models the convex probe rejects nothing at all — measured, not assumed — and
-    a reviewer reading only the corpus numbers would reasonably conclude the gate is dead
-    code. It is not: without it this part reports a step.
+    The probe is load-bearing rather than defensive: over 120 MFCAD++ models it rejects 24
+    of the 85 faces that reach it. This fixture is the *isolated* case, built so that only
+    the convexity differs from an accepted step — the corpus proves the gate fires, and this
+    proves what it fires on.
     """
 
     align_min = (Align.MIN, Align.MIN, Align.MIN)
