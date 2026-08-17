@@ -53,11 +53,11 @@ def _block() -> Box:
     return Box(60, 40, 12)
 
 
-def _blind(length: float = 30.0, at_x: float = -20.0):
+def _blind():
     """The wedge stopped inside the part: open where it runs off the -X end, closed by a
     triangular flat at its +X end."""
 
-    return _block() - Pos(at_x, 20, 6) * Rot(45, 0, 0) * Box(length, _WEDGE, _WEDGE)
+    return _block() - Pos(-20, 20, 6) * Rot(45, 0, 0) * Box(30, _WEDGE, _WEDGE)
 
 
 def _through():
