@@ -1,5 +1,45 @@
 # Release notes
 
+## 0.2.5
+
+Adds a recogniser family, and with it corrects a defect that family's absence was causing.
+`recognise_chamfers` was reporting the slanted walls of steps and passages as chamfers: measured
+per face over 120 MFCAD++ models its precision was 44%, and on nine of the ten models carrying an
+angled step, the step's slant was the **only** chamfer reported while the genuine chamfers on the
+same part were rejected. Anyone consuming chamfer records on prismatic parts should take this.
+
+The distinction between the two is deliberately **not** size. Every part-relative and
+neighbour-relative ratio measured — leg against part extent, truncation of each neighbour, strip
+aspect, area against neighbour — overlaps between the two populations, so any threshold would have
+been fitted to one corpus. A chamfer runs the full length of the edge it breaks; an angled step
+stops, and a triangular flat closes the blind end. That test is topological and mentions nothing
+outside the feature, so it holds at any scale — `tests/test_scale_invariance.py` proves it across
+0.05x-100x.
+
+- **New family: `recognise_angled_steps` / `AngledStep`.** A wedge taken out of an edge — one
+  oblique planar wall stopping part-way along it, closed by an axis-aligned triangular flat.
+  100% precision and 70% instance recall over 120 MFCAD++ models. `length` is the field a
+  `Chamfer` has no analogue for: a chamfer spans its whole edge, so its extent is not a chosen
+  dimension. Ends whose triangle is subdivided into four or more edges by a neighbouring feature
+  are not recognised, which accounts for about half the recall gap and is documented rather than
+  worked around.
+- **`recognise_chamfers` declines a bevel with a triangular blind end.** Precision 44% to 78% with
+  every real chamfer kept. This is a recognition-behaviour change: a part with an angled step
+  loses a chamfer record and gains an angled-step record. No pinned golden moved.
+- **Chamfered grooves are read as one groove.** A conical lead-in between two cylindrical bands is
+  matched by its rims rather than split into separate features (#60).
+- **Countersink radii are read from the surface adaptor**, not `Face.radius`, correcting sizes on
+  interrupted and cross-bored geometry (#74).
+- **A census is about 14% faster.** `Face.edges()` is the suite's most expensive derived query and
+  every recogniser was asking it of the same faces; one `FaceEdges` memo is now shared across a
+  run. The new family costs roughly 11% of a census back, so the net gain is smaller than 14% —
+  both figures are measured against their own baselines rather than combined into one.
+
+`FaceEdges`, `AngledStep` and `recognise_angled_steps` are new public names.
+Strict semver would make that a minor version; this project ships 0.2.x patches and says so here
+instead. No existing record gains, loses or alters a field.
+
+
 ## 0.2.4
 
 Corrects a regression in 0.2.3. Every pinned golden is byte-identical to the original Draftwright
