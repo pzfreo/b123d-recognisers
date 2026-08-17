@@ -43,7 +43,11 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._adjacency import edge_face_map, nearest_axis_aligned_planes
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    edge_face_map,
+    nearest_axis_aligned_planes,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
@@ -116,7 +120,11 @@ def classify_bevel(
 
 
 def recognise_chamfers(
-    part: Part, *, tol: float | None = None, max_leg_frac: float = 0.45
+    part: Part,
+    *,
+    tol: float | None = None,
+    max_leg_frac: float = 0.45,
+    face_edges: FaceEdges | None = None,
 ) -> list[Chamfer]:
     """Recognise the chamfers of *part* (see module docstring). Returns one
     :class:`Chamfer` per qualifying oblique face, sorted deterministically. Empty when the
@@ -126,7 +134,7 @@ def recognise_chamfers(
     tol = _MIN_LEG if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
-    edge_faces = edge_face_map(all_faces)
+    edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
     out: list[Chamfer] = []
     for f in all_faces:
@@ -148,7 +156,9 @@ def recognise_chamfers(
         # Must bridge two axis-aligned faces on distinct in-plane axes (a chamfer replaces
         # a sharp 90° edge). A hex side abuts oblique faces. Each neighbour plane's
         # coordinate lets the convex-corner test below reconstruct the virtual corner.
-        neigh_coord = nearest_axis_aligned_planes(f, edge_faces, fc, exclude_axis=edge_i)
+        neigh_coord = nearest_axis_aligned_planes(
+            f, edge_faces, fc, exclude_axis=edge_i, face_edges=face_edges
+        )
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
         # Convex-edge test: the virtual sharp corner the bevel replaces sits where the two

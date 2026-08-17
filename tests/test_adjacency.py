@@ -20,9 +20,16 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-from build123d import Box, Cylinder, Rot, SortBy
+from build123d import Axis, Box, Cylinder, Pos, Rot, SortBy, chamfer, fillet
 
+from b123d_recognisers import (
+    recognise_chamfers,
+    recognise_fillets,
+    recognise_holes,
+    recognise_slots,
+)
 from b123d_recognisers._adjacency import (
+    FaceEdges,
     axis_aligned_axis,
     edge_face_map,
     nearest_axis_aligned_planes,
@@ -216,6 +223,75 @@ def test_nearest_axis_aligned_planes_keeps_the_closer_of_two_walls():
 
     assert biased[1] == 5.0
     assert biased[2] == -5.0  # still tied on Z, so still the lower coordinate
+
+
+def test_face_edges_reuses_one_list_across_separate_face_wrappers():
+    """The property the whole memo rests on, and the one that could silently fail.
+
+    Two ``part.faces()`` calls yield *different Python objects* for the same face. If the
+    memo missed on those, it would never share anything between recognisers — which is the
+    only place it pays — while still costing a dict insert per face, so it would be a pure
+    loss that no result-based test could detect. Keying on build123d shape equality is what
+    makes the second wrapper hit; the corpus-wide equality/``IsSame`` test above is the proof
+    that equality means ``IsSame``.
+    """
+
+    part = Box(10, 10, 10)
+    first, second = part.faces()[0], part.faces()[0]
+    memo = FaceEdges()
+
+    assert first is not second, "the premise: a fresh walk yields fresh wrappers"
+    assert memo.of(first) is memo.of(second)
+    assert len(memo.of(first)) == 4
+
+
+def test_face_edges_returns_what_the_kernel_returns():
+    """Memoising must not change the answer, only how often it is computed."""
+
+    face = Box(10, 10, 10).faces()[0]
+
+    assert list(FaceEdges().of(face)) == list(face.edges())
+
+
+def test_a_shared_memo_does_not_change_the_adjacency_map_or_neighbours():
+    """The map and its neighbour queries are identical whether or not a memo is threaded.
+
+    ``edge_face_map`` builds a private memo when none is passed, so these two paths are
+    different code; this pins that the ``face_edges=`` parameter is an optimisation and
+    never a behaviour switch.
+    """
+
+    part = Box(10, 10, 10)
+    memo = FaceEdges()
+
+    plain = edge_face_map(part.faces())
+    shared = edge_face_map(part.faces(), face_edges=memo)
+
+    assert plain == shared
+    for face in part.faces():
+        assert neighbours(face, plain) == neighbours(face, shared, face_edges=memo)
+
+
+def test_sharing_one_memo_across_recognisers_leaves_every_result_unchanged():
+    """The contract the census depends on, checked on a part that exercises the sharers.
+
+    The memo is threaded through recognisers that each walk the same faces, so a stale or
+    mis-keyed entry would show up as a changed feature count rather than as an exception.
+    Run against a part carrying a hole, a slot, a chamfer and a fillet so the blend
+    recognisers, the hole recogniser and the recess core all consult the same memo — and
+    assert each one actually finds something first, because comparing two empty lists would
+    pass no matter how badly the memo behaved.
+    """
+
+    part = Box(60, 40, 12) - Pos(-18, 0, 0) * Cylinder(4, 12) - Pos(15, 0, 0) * Box(24, 8, 12)
+    part = chamfer(part.edges().filter_by(Axis.Z).group_by(Axis.X)[0], 1.5)
+    part = fillet(part.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], 2.0)
+
+    memo = FaceEdges()
+    for recognise in (recognise_chamfers, recognise_fillets, recognise_holes, recognise_slots):
+        plain = recognise(part)
+        assert plain, f"{recognise.__name__} found nothing; this part cannot pin the memo"
+        assert plain == recognise(part, face_edges=memo)
 
 
 def test_neighbours_is_empty_when_the_map_does_not_cover_the_face():

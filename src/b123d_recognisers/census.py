@@ -43,6 +43,7 @@ from b123d_recognisers import (
     recognise_slots,
     recognise_turned_steps,
 )
+from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -58,19 +59,24 @@ def feature_census(part: Part) -> dict[str, int]:
     recognisers rather than being distinct machined features, and their level-derivation belongs
     to the model layer, not a metric."""
     cyls = analyse_cylinders(part)
-    holes = recognise_holes(part, cyls=cyls)
+    # One face-edge memo for the whole census. `Face.edges()` is the suite's most expensive
+    # derived query and the recognisers below ask it of the same faces over and over; sharing
+    # it here is worth about a fifth of this function's runtime. It must not outlive the call
+    # -- see `FaceEdges`.
+    face_edges = FaceEdges()
+    holes = recognise_holes(part, cyls=cyls, face_edges=face_edges)
     records: dict[str, Sequence[Record]] = {
         "hole": holes,
         "hole_pattern": recognise_hole_patterns(holes),
-        "boss": recognise_bosses(part, cyls=cyls),
+        "boss": recognise_bosses(part, cyls=cyls, face_edges=face_edges),
         "step": recognise_turned_steps(part, cyls=cyls),
         "groove": recognise_grooves(part, cyls=cyls),
-        "flat": recognise_flats(part, cyls=cyls),
-        "slot": recognise_slots(part),
-        "channel": recognise_channels(part),
-        "pocket": recognise_pockets(part),
-        "chamfer": recognise_chamfers(part),
-        "fillet": recognise_fillets(part),
+        "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
+        "slot": recognise_slots(part, face_edges=face_edges),
+        "channel": recognise_channels(part, face_edges=face_edges),
+        "pocket": recognise_pockets(part, face_edges=face_edges),
+        "chamfer": recognise_chamfers(part, face_edges=face_edges),
+        "fillet": recognise_fillets(part, face_edges=face_edges),
         "countersink": recognise_countersinks(part),
         "plate": recognise_plates(part),
     }

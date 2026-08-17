@@ -45,8 +45,8 @@ MODULE_SEAM_EDGES = {
     "_pattern_geometry": {"_geometry"},
     "_hole_patterns": {"_hole_features", "_pattern_geometry", "_record", "_typing"},
     "_recess_records": {"_record", "_typing"},
-    "_recess_core": {"_geometry", "_recess_records", "_typing"},
-    "_recess_features": {"_recess_core", "_recess_records", "_typing"},
+    "_recess_core": {"_adjacency", "_geometry", "_recess_records", "_typing"},
+    "_recess_features": {"_adjacency", "_recess_core", "_recess_records", "_typing"},
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
 }
 

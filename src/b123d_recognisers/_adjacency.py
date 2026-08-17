@@ -27,10 +27,50 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
-from b123d_recognisers._typing import FaceLike
+from b123d_recognisers._typing import EdgeLike, FaceLike
 
 
-def edge_face_map(faces: Iterable[FaceLike]) -> dict:
+class FaceEdges:
+    """Per-face edge lists, computed once and shared for the length of one recognition run.
+
+    ``Face.edges()`` is the single most expensive derived query the suite makes — measured at
+    24% of a full :func:`b123d_recognisers.census.feature_census` over the pinned corpus, at
+    ~107 µs a call — and every recogniser asks it of the same faces of the same part.
+
+    **The sharing has to cross recogniser boundaries to pay.** Memoising within one
+    recogniser call is worth about 2% and is a net loss for several of them; sharing one memo
+    across a whole census is worth about 20%. That asymmetry is the whole reason this is a
+    threaded parameter rather than a detail each recogniser could keep to itself, and it is
+    why ``part.faces()`` sharing — the obvious candidate — is not the answer: re-walking the
+    part's faces is only 1.9% of a census, because the walk is cheap and the *derivation*
+    hanging off each face is not.
+
+    Keyed on the face itself. build123d shape equality is ``TShape`` + ``Location``, i.e.
+    ``IsSame``, proven over every fixture in :mod:`tests.test_adjacency` — so two wrappers for
+    the same face, from two different ``part.faces()`` calls in two different recognisers, hit
+    the same entry. That proof is what makes this safe; without it the memo would silently
+    miss and quietly cost more than it saved.
+
+    Scope it to a single run over a single part. It holds its faces alive, and it must not
+    outlive geometry that could be rebuilt.
+
+    The returned list is the memo's own, not a copy: **callers must not mutate it.** Every
+    call site either iterates it or derives a new list with ``filter_by``/``sorted``.
+    """
+
+    def __init__(self) -> None:
+        self._of: dict = {}
+
+    def of(self, face: FaceLike) -> list[EdgeLike]:
+        """The edges of *face*, computed on first ask and reused thereafter."""
+
+        edges = self._of.get(face)
+        if edges is None:
+            self._of[face] = edges = face.edges()
+        return edges
+
+
+def edge_face_map(faces: Iterable[FaceLike], *, face_edges: FaceEdges | None = None) -> dict:
     """Map every edge of *faces* to the faces that meet along it.
 
     One pass. The pairwise alternative — asking every face pair whether any of their edges
@@ -42,29 +82,36 @@ def edge_face_map(faces: Iterable[FaceLike]) -> dict:
     on the pinned corpus — the same reason :func:`~b123d_recognisers._geometry.part_scale`
     takes a bounding box rather than a solid.
 
+    Pass *face_edges* to reuse a :class:`FaceEdges` memo across recognisers; omitted, the map
+    is built from a private one, so a lone recogniser call behaves exactly as before.
+
     An edge normally maps to two faces. A seam edge on a closed surface maps to one, and
     a non-manifold edge to more, so callers must not assume the length.
     """
 
+    memo = face_edges if face_edges is not None else FaceEdges()
     edge_faces: dict = {}
     for face in faces:
-        for edge in face.edges():
+        for edge in memo.of(face):
             edge_faces.setdefault(edge, []).append(face)
     return edge_faces
 
 
-def neighbours(face: FaceLike, edge_faces: dict) -> list:
+def neighbours(face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None) -> list:
     """The distinct faces sharing an edge with *face*, excluding *face* itself.
 
     Order follows *face*'s own edge order, so it inherits the part's traversal order and
     nothing more — a caller that needs a deterministic result must sort or reduce it, as
     :func:`b123d_recognisers.recognise_chamfers` does by keeping the nearest neighbour per
     axis rather than the first one seen.
+
+    *face_edges* reuses a shared :class:`FaceEdges` memo; this is the hottest caller of it,
+    since the blend recognisers ask for the neighbours of every face of the part.
     """
 
     seen = {face}
     out = []
-    for edge in face.edges():
+    for edge in (face_edges.of(face) if face_edges is not None else face.edges()):
         for other in edge_faces.get(edge, ()):
             if other in seen:
                 continue
@@ -91,7 +138,12 @@ def axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
 
 
 def nearest_axis_aligned_planes(
-    face: FaceLike, edge_faces: dict, centre: dict[int, float], *, exclude_axis: int
+    face: FaceLike,
+    edge_faces: dict,
+    centre: dict[int, float],
+    *,
+    exclude_axis: int,
+    face_edges: FaceEdges | None = None,
 ) -> dict[int, float]:
     """Per axis, the coordinate of *face*'s nearest axis-aligned neighbour plane.
 
@@ -112,7 +164,7 @@ def nearest_axis_aligned_planes(
     """
 
     best: dict[int, tuple[float, float]] = {}  # axis -> (distance, coordinate)
-    for other in neighbours(face, edge_faces):
+    for other in neighbours(face, edge_faces, face_edges=face_edges):
         aligned = axis_aligned_axis(other.wrapped)
         if aligned is None or aligned[0] == exclude_axis:
             continue

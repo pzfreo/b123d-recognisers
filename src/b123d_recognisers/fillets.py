@@ -38,7 +38,11 @@ from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._adjacency import edge_face_map, nearest_axis_aligned_planes
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    edge_face_map,
+    nearest_axis_aligned_planes,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
@@ -80,7 +84,11 @@ def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
 
 
 def recognise_fillets(
-    part: Part, *, min_radius: float | None = None, max_radius_frac: float = 0.45
+    part: Part,
+    *,
+    min_radius: float | None = None,
+    max_radius_frac: float = 0.45,
+    face_edges: FaceEdges | None = None,
 ) -> list[Fillet]:
     """Recognise the external edge fillets of *part* (see module docstring). Returns one
     :class:`Fillet` per qualifying cylindrical blend face, sorted deterministically. Empty
@@ -90,7 +98,7 @@ def recognise_fillets(
     min_radius = _MIN_RADIUS if min_radius is None else min_radius
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     all_faces = list(part.faces())
-    edge_faces = edge_face_map(all_faces)
+    edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
     out: list[Fillet] = []
     for f in all_faces:
@@ -116,7 +124,9 @@ def recognise_fillets(
 
         # Must bridge two axis-aligned faces on distinct in-plane axes (rounds a 90° edge).
         # Each neighbour plane's coordinate lets the convex test rebuild the virtual corner.
-        neigh_coord = nearest_axis_aligned_planes(f, edge_faces, fc, exclude_axis=edge_i)
+        neigh_coord = nearest_axis_aligned_planes(
+            f, edge_faces, fc, exclude_axis=edge_i, face_edges=face_edges
+        )
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
 

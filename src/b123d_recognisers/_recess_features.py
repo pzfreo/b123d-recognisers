@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from functools import partial
+
+from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._recess_core import (
     _body_scoped_records,
     _channel_sort_key,
@@ -16,7 +19,7 @@ from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._typing import Part
 
 
-def recognise_slots(part: Part) -> list[Slot]:
+def recognise_slots(part: Part, *, face_edges: FaceEdges | None = None) -> list[Slot]:
     """Recognise enclosed through-slots independently within each solid in *part*.
 
     Returns a list of :class:`Slot`, one per physical feature, in a
@@ -30,11 +33,11 @@ def recognise_slots(part: Part) -> list[Slot]:
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    slots = _body_scoped_records(sources, _recognise_slots_one)
+    slots = _body_scoped_records(sources, partial(_recognise_slots_one, face_edges=face_edges))
     return sorted(slots, key=lambda slot: (slot.width, _region_center(slot)))
 
 
-def recognise_pockets(part: Part) -> list[Pocket]:
+def recognise_pockets(part: Part, *, face_edges: FaceEdges | None = None) -> list[Pocket]:
     """Recognise blind rectangular recesses independently within each solid.
 
     The blind counterpart of :func:`recognise_slots`: the same facing-rectangular-wall
@@ -46,11 +49,13 @@ def recognise_pockets(part: Part) -> list[Pocket]:
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    pockets = _body_scoped_records(sources, _recognise_pockets_one)
+    pockets = _body_scoped_records(
+        sources, partial(_recognise_pockets_one, face_edges=face_edges)
+    )
     return sorted(pockets, key=lambda pocket: (pocket.width, _region_center(pocket)))
 
 
-def recognise_channels(part: Part) -> list[Channel]:
+def recognise_channels(part: Part, *, face_edges: FaceEdges | None = None) -> list[Channel]:
     """Recognise full-span floored channels independently within each solid.
 
     This is deliberately separate from :func:`recognise_pockets`: a channel's length
@@ -60,5 +65,9 @@ def recognise_channels(part: Part) -> list[Channel]:
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    channels = [channel for solid in sources for channel in _recognise_channels_one(solid)]
+    channels = [
+        channel
+        for solid in sources
+        for channel in _recognise_channels_one(solid, face_edges)
+    ]
     return sorted(channels, key=_channel_sort_key)
