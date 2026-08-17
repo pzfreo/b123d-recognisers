@@ -20,9 +20,14 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-from build123d import Box, Cylinder
+from build123d import Box, Cylinder, Rot, SortBy
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import (
+    axis_aligned_axis,
+    edge_face_map,
+    nearest_axis_aligned_planes,
+    neighbours,
+)
 
 GOLDEN_ROOT = Path(__file__).parent / "golden"
 
@@ -118,6 +123,98 @@ def test_neighbours_excludes_the_face_itself_and_never_repeats_one():
     assert len(found) == 4
     assert face not in found
     assert len(set(found)) == len(found)
+
+
+def test_axis_aligned_axis_reads_the_axis_and_where_the_plane_sits():
+    """Both halves matter: the axis says which wall this is, the coordinate says where.
+
+    ``recognise_chamfers`` and ``recognise_fillets`` rebuild the virtual sharp corner a blend
+    replaces by crossing two of these planes, so a right axis with a wrong coordinate would
+    put the corner somewhere else entirely and silently flip the convex test.
+    """
+
+    read = {axis_aligned_axis(face.wrapped) for face in Box(10, 10, 10).faces()}
+
+    assert read == {(0, -5.0), (0, 5.0), (1, -5.0), (1, 5.0), (2, -5.0), (2, 5.0)}
+
+
+def test_axis_aligned_axis_rejects_an_oblique_plane_and_a_curved_face():
+    """The two ways a face fails to be a wall — angled, or not a plane at all.
+
+    A chamfer face is itself an oblique plane and a fillet face is a cylinder, so without
+    both rejections a blend would be offered as its own neighbour's supporting wall.
+    """
+
+    oblique = Rot(0, 0, 30) * Box(10, 10, 10)
+    sides = [f for f in oblique.faces() if abs(f.normal_at().Z) < 0.5]
+
+    assert sides and all(axis_aligned_axis(f.wrapped) is None for f in sides)
+    assert axis_aligned_axis(Cylinder(5, 20).faces().sort_by(SortBy.AREA)[-1].wrapped) is None
+
+
+def test_nearest_axis_aligned_planes_breaks_a_tie_on_the_coordinate_not_arrival():
+    """A cube's side face is equidistant from all four faces around it — a real tie.
+
+    This is the order-dependence that was live in ``recognise_chamfers`` before the shared
+    query: with a strict ``<`` the winner was whichever face the kernel happened to yield
+    first, so the reconstructed corner — and with it the convex test — depended on traversal
+    order. Ties now resolve to the lower coordinate, which is a property of the geometry.
+    """
+
+    part = Box(10, 10, 10)
+    face = next(f for f in part.faces() if f.normal_at().X > 0.9)
+    edge_faces = edge_face_map(part.faces())
+    centre = {0: 5.0, 1: 0.0, 2: 0.0}
+
+    # The tie is genuine, not an artefact of this cube's numbering: both candidate planes on
+    # each axis sit the same distance away, so only the tie break decides.
+    candidates = [axis_aligned_axis(n.wrapped) for n in neighbours(face, edge_faces)]
+    assert sorted(c for c in candidates if c is not None) == [
+        (1, -5.0),
+        (1, 5.0),
+        (2, -5.0),
+        (2, 5.0),
+    ]
+
+    assert nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=0) == {
+        1: -5.0,
+        2: -5.0,
+    }
+
+
+def test_nearest_axis_aligned_planes_drops_the_axis_the_feature_runs_along():
+    """A plane facing along the run axis is an end cap, not a wall the blend bridges.
+
+    Excluding it is what stops a slot end cap or a part's outer face from standing in for a
+    missing neighbour and letting the corner be rebuilt from a plane the blend never touches.
+    """
+
+    part = Box(10, 10, 10)
+    face = next(f for f in part.faces() if f.normal_at().X > 0.9)
+    edge_faces = edge_face_map(part.faces())
+    centre = {0: 5.0, 1: 0.0, 2: 0.0}
+
+    assert nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=1) == {2: -5.0}
+
+
+def test_nearest_axis_aligned_planes_keeps_the_closer_of_two_walls():
+    """With no tie the nearest plane wins outright — the one forming this local corner.
+
+    A stepped part puts two parallel walls on the same axis at different distances; picking
+    the far one would rebuild a corner outside the material the blend actually sits in.
+    """
+
+    part = Box(10, 10, 10)
+    face = next(f for f in part.faces() if f.normal_at().X > 0.9)
+    edge_faces = edge_face_map(part.faces())
+
+    # Bias the centre toward +Y so the +5 wall is unambiguously nearer than the -5 one.
+    biased = nearest_axis_aligned_planes(
+        face, edge_faces, {0: 5.0, 1: 4.0, 2: 0.0}, exclude_axis=0
+    )
+
+    assert biased[1] == 5.0
+    assert biased[2] == -5.0  # still tied on Z, so still the lower coordinate
 
 
 def test_neighbours_is_empty_when_the_map_does_not_cover_the_face():
