@@ -99,18 +99,53 @@ def test_recognition_counts_match_the_reported_baseline(stem):
 
 #: Counts as of vendoring. **Not a correctness baseline** -- unlike ``EXPECTED``, no
 #: downstream report says these are right, so they pin only what this package does today.
-#: They are a change detector on real geometry, and are labelled as one so nobody later
-#: mistakes them for evidence that these numbers were ever reviewed.
+#: They are a change detector on real geometry, labelled as one so nobody later mistakes them
+#: for evidence that these numbers were ever reviewed.
 #:
-#: The first version of this asserted only "some holes, some levels, some blend". That is
-#: what it looks like when a test is written to avoid making a claim: truncating every hole
-#: list to one record -- a 95% silent loss, exactly the #72 failure mode this module exists
-#: for -- left all four passing.
+#: Every non-empty family, not a chosen few. An earlier version pinned three per part, and
+#: zeroing ``pockets``, ``slots``, ``plates``, ``hole_patterns`` and ``cylinders`` on exactly
+#: these four parts -- 47 records vanishing from the geometry the test was vendored to watch
+#: -- left all four green. ``actual`` is built from these keys, so a family absent here can
+#: never be noticed by observation.
 _OBSERVED = {
-    "nist_ftc_07": {"holes": 23, "step_levels": 10, "fillets": 16},
-    "nist_ftc_08": {"holes": 21, "step_levels": 3, "fillets": 13},
-    "nist_ftc_09": {"holes": 30, "step_levels": 15, "chamfers": 8},
-    "nist_ftc_10": {"holes": 30, "step_levels": 10, "fillets": 22},
+    "nist_ftc_07": {
+        "cylinders": 2,
+        "fillets": 16,
+        "hole_patterns": 2,
+        "holes": 23,
+        "plates": 5,
+        "slots": 5,
+        "step_levels": 10
+    },
+    "nist_ftc_08": {
+        "cylinders": 2,
+        "fillets": 13,
+        "hole_patterns": 2,
+        "holes": 21,
+        "plates": 5,
+        "pockets": 10,
+        "slots": 4,
+        "step_levels": 3
+    },
+    "nist_ftc_09": {
+        "chamfers": 8,
+        "cylinders": 2,
+        "fillets": 1,
+        "hole_patterns": 3,
+        "holes": 30,
+        "pockets": 9,
+        "slots": 3,
+        "step_levels": 15
+    },
+    "nist_ftc_10": {
+        "cylinders": 2,
+        "fillets": 22,
+        "hole_patterns": 6,
+        "holes": 30,
+        "pockets": 5,
+        "slots": 2,
+        "step_levels": 10
+    }
 }
 
 

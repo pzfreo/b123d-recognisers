@@ -44,7 +44,17 @@ pytestmark = pytest.mark.skipif(
 #: same order the kernel yields faces. ``test_the_label_to_face_mapping_holds`` is what makes
 #: relying on that legitimate rather than hopeful.
 _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
-CHAMFER, TRIANGULAR_BLIND_STEP = 0, 20
+CHAMFER, TRIANGULAR_BLIND_STEP, STOCK = 0, 20, 24
+
+
+def _is_oblique(face) -> bool:
+    """A planar face aligned with no principal axis -- what a chamfer face is."""
+
+    try:
+        normal = face.normal_at()
+    except Exception:  # noqa: BLE001 - a degenerate face has no normal to read
+        return False
+    return max(abs(normal.X), abs(normal.Y), abs(normal.Z)) < 0.99
 
 
 @pytest.fixture(scope="module")
@@ -136,6 +146,8 @@ def test_the_label_to_face_mapping_holds(corpus):
 
     oblique = {True: [0, 0], False: [0, 0]}
     triangular = {True: [0, 0], False: [0, 0]}
+    per_model_chamfers_all_oblique = []
+    per_model_stock_all_axis_aligned = []
     for name, _part, labels, faces, _at in corpus:
         assert len(faces) == len(labels), f"{name}: {len(faces)} faces, {len(labels)} labels"
         for face, label in zip(faces, labels, strict=True):
@@ -147,10 +159,38 @@ def test_the_label_to_face_mapping_holds(corpus):
             oblique[label == CHAMFER][is_oblique] += 1
             triangular[label == TRIANGULAR_BLIND_STEP][len(face.edges()) == 3] += 1
 
+        # Per model, because the sums above cannot see corruption confined to a subset. Every
+        # face MFCAD++ labels Chamfer in a given model is an oblique plane -- true of all 40
+        # today, and the property that breaks first if face order stops matching label order
+        # for some models and not others.
+        # Stock, because every model has it and the chamfer label covers only 14 of 40 --
+        # rotating the labels of a model with no chamfer faces was undetectable without this.
+        # Every face MFCAD++ labels Stock is axis-aligned, in all 40 models, so a rotation
+        # moves an oblique face under that label and fails here.
+        stock = [f for f, label in zip(faces, labels, strict=True) if label == STOCK]
+        assert stock, f"{name}: no Stock faces; the per-model check would be vacuous"
+        if any(_is_oblique(f) for f in stock):
+            per_model_stock_all_axis_aligned.append(name)
+
+        chamfers = [f for f, label in zip(faces, labels, strict=True) if label == CHAMFER]
+        if chamfers and not all(_is_oblique(f) for f in chamfers):
+            per_model_chamfers_all_oblique.append(name)
+
     chamfer_oblique = oblique[True][1] / sum(oblique[True])
 
-    # This one bites: a rotate-by-one mismatch drops it to 0.208, a shuffle to 0.125.
+    # Corpus-wide, this bites only for corpus-wide corruption: a rotate-by-one across all 40
+    # models drops it to 0.208. Rotating the 19 models that yield no records left it at 0.917
+    # and the whole module green -- and a kernel upgrade reordering faces for one topology is
+    # exactly that partial shape. So the per-model check below is the one that matters, and
+    # this is the aggregate summary.
     assert chamfer_oblique > 0.75, "faces labelled Chamfer are not mostly oblique planes"
+    assert per_model_stock_all_axis_aligned == [], (
+        f"models with an oblique face labelled Stock: {per_model_stock_all_axis_aligned}"
+    )
+    assert per_model_chamfers_all_oblique == [], (
+        f"models whose Chamfer-labelled faces are not all oblique planes: "
+        f"{per_model_chamfers_all_oblique}"
+    )
 
     # And this is the genuinely second check, on a different label and a different property.
     # Two previous attempts were not: `other_oblique < 0.40` cannot fail, since 30.9% of all

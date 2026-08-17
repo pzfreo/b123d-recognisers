@@ -101,8 +101,16 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     # THIRD_PARTY_NOTICES.md claims the vendored corpora are byte-identical to upstream, which
     # only holds if git is told not to rewrite their line endings -- Windows runners default
     # to core.autocrlf=true. Nothing else pins these two lines.
-    attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
-    assert "*.stp -text" in attributes and "*.step -text" in attributes
+    # Asked of git, not of the file: `*.stp -text` being present does not mean it is in
+    # effect. A later `* text=auto` line wins, and so does a nested tests/corpus/.gitattributes
+    # -- either restores CRLF rewriting on Windows while the string assertion still passes.
+    probes = ["tests/corpus/nist/nist_ctc_01_asme1_rd.stp", "tests/corpus/mfcadpp/1000.step"]
+    attrs = subprocess.run(
+        ["git", "check-attr", "text", "--", *probes],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    ).stdout
+    for line in attrs.splitlines():
+        assert line.endswith(": text: unset"), f"line endings are not pinned: {line}"
     manifest = json.loads(
         (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
             encoding="utf-8"
