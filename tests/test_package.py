@@ -98,6 +98,11 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     # no consumer of the sdist needs. Deleting that exclusion would otherwise pass silently
     # while the sdist grew 5.4x and the corpus modules stopped skipping.
     assert not [name for name in names if "/tests/corpus/" in name]
+    # THIRD_PARTY_NOTICES.md claims the vendored corpora are byte-identical to upstream, which
+    # only holds if git is told not to rewrite their line endings -- Windows runners default
+    # to core.autocrlf=true. Nothing else pins these two lines.
+    attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+    assert "*.stp -text" in attributes and "*.step -text" in attributes
     manifest = json.loads(
         (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
             encoding="utf-8"

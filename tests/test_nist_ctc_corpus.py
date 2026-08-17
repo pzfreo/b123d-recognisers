@@ -73,7 +73,10 @@ def _step_for(stem: str) -> Path:
         # directory the caller pointed `B123D_NIST_STEP_DIR` at is not -- a partial download
         # is exactly what the override is for, and failing it was the same skip-versus-fail
         # mistake as shipping a corpus-less sdist that could not skip.
-        if os.environ.get("B123D_NIST_STEP_DIR"):
+        # Compared by path, not by whether the variable is set: pointing the override at the
+        # vendored corpus itself is a plausible habit, and keying on set-ness meant a genuine
+        # gap in that corpus skipped instead of failing.
+        if Path(_DIR).resolve() != _VENDORED.resolve():
             pytest.skip(f"no STEP file matching {stem}_*.stp in {_DIR}")
         pytest.fail(f"no STEP file matching {stem}_*.stp in the vendored corpus")
     return matches[0]

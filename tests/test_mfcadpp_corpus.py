@@ -89,10 +89,10 @@ def test_the_selection_manifest_describes_what_is_actually_vendored():
     assert manifest["models"] == on_disk
     assert manifest["licence"] == "CC BY"
     assert rule["split"] == "test", "train/val models must never be vendored here"
-    # `source` is checked against `split` because otherwise the manifest can contradict
-    # itself in the one field that matters: `source: "MFCAD++ train split"` passed while
-    # `rule.split` still read "test".
-    assert rule["split"] in manifest["source"].lower()
+    # Exact, not `in`: `rule["split"] in source.lower()` was satisfied by the word "latest",
+    # so `source: "MFCAD++ train split, latest revision"` passed with `split: test` -- the
+    # exact contradiction the check was added to catch.
+    assert manifest["source"] == f"MFCAD++ {rule['split']} split"
     assert rule["order"] == "filename, ascending"
     assert rule["precondition"] == "STEP ADVANCED_FACE count equals part.faces() count"
     assert rule["targets"] == {
@@ -102,7 +102,9 @@ def test_the_selection_manifest_describes_what_is_actually_vendored():
         "13": "Triangular pocket",
         "20": "Triangular blind step",
     }
-    assert manifest["doi"].startswith("https://doi.org/10.17034/")
+    assert manifest["doi"] == (
+        "https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
+    ), "the DOI is what locates this dataset upstream; a prefix match pins nothing"
 
     # An earlier version stopped at the filename list, which meant the recorded rule could say
     # anything at all -- `per_label: 999`, an empty `by_label`, even `split: train` reworded --
@@ -155,8 +157,9 @@ def test_the_label_to_face_mapping_holds(corpus):
     # 1335 faces are oblique and only 24 carry label 0, so no relabelling can push the rest
     # past 0.315. Nor could `chamfer_oblique > 2 * other_oblique` -- bounded that way, twice
     # `other_oblique` never reaches 0.63, so the 0.75 line above already implies it. A
-    # redundancy replacing a tautology. Blind spot both shared: swapping labels 0 and 4
-    # wholesale left the whole test green.
+    # redundancy replacing a tautology. Note the blind spot both shared is NOT closed by this
+    # one either -- swapping labels 0 and 4 leaves label 20 untouched, so this test still
+    # passes and only `test_chamfer_precision_does_not_regress` catches it.
     tri_step = triangular[True][1] / sum(triangular[True])
     tri_rest = triangular[False][1] / sum(triangular[False])
     assert tri_step > 4 * tri_rest, (
@@ -209,23 +212,93 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
     assert stolen == [], f"chamfer records on faces labelled a blind step: {stolen}"
 
 
-#: Record counts as of vendoring, over the 40 models. **Not a correctness baseline** -- a
-#: change detector, exactly as ``_OBSERVED`` is on the NIST side. Without it this module was
-#: blind to volume: truncating `recognise_angled_steps` to one record for the entire run, a
-#: 91% silent loss, left all five tests green, because every other assertion here is either a
-#: >= 1 gate or a ratio.
-_OBSERVED_RECORDS = {"angled_steps": 11, "chamfers": 14}
+#: Record counts as of vendoring, **per model**. Not a correctness baseline -- a change
+#: detector, as ``_OBSERVED`` is on the NIST side. Per model rather than per corpus because
+#: two grand totals cannot see a redistribution: moving one angled step from the model that
+#: owns it to a model that owns none leaves both sums intact, and that is a real behaviour
+#: change on two of forty models. The NIST sibling was already per model; this was not, which
+#: is the same asymmetry as the volume blindness it replaced.
+_OBSERVED_RECORDS = {
+    "10000.step": {
+        "angled_steps": 1
+    },
+    "10007.step": {
+        "angled_steps": 1
+    },
+    "10020.step": {
+        "chamfers": 1
+    },
+    "10033.step": {
+        "chamfers": 2
+    },
+    "10049.step": {
+        "angled_steps": 1
+    },
+    "10063.step": {
+        "angled_steps": 1
+    },
+    "10077.step": {
+        "chamfers": 2
+    },
+    "1008.step": {
+        "chamfers": 1
+    },
+    "10092.step": {
+        "chamfers": 1
+    },
+    "10101.step": {
+        "angled_steps": 1
+    },
+    "10103.step": {
+        "chamfers": 1
+    },
+    "10119.step": {
+        "angled_steps": 1
+    },
+    "10131.step": {
+        "chamfers": 1
+    },
+    "10138.step": {
+        "angled_steps": 2
+    },
+    "10146.step": {
+        "chamfers": 1
+    },
+    "10163.step": {
+        "chamfers": 1
+    },
+    "1017.step": {
+        "chamfers": 2
+    },
+    "10170.step": {
+        "chamfers": 1
+    },
+    "10224.step": {
+        "angled_steps": 1
+    },
+    "10245.step": {
+        "angled_steps": 1
+    },
+    "10247.step": {
+        "angled_steps": 1
+    }
+}
 
 
-def test_the_number_of_records_has_not_moved(corpus):
-    """Volume, which precision and the >=1 gates are both blind to by construction."""
+def test_the_records_each_model_yields_have_not_moved(corpus):
+    """Volume and distribution. Precision and the >=1 gates are blind to both."""
 
-    counts = {"angled_steps": 0, "chamfers": 0}
-    for _name, part, _labels, _faces, _at in corpus:
-        counts["angled_steps"] += len(recognise_angled_steps(part))
-        counts["chamfers"] += len(recognise_chamfers(part))
+    actual = {}
+    for name, part, _labels, _faces, _at in corpus:
+        counts = {
+            "angled_steps": len(recognise_angled_steps(part)),
+            "chamfers": len(recognise_chamfers(part)),
+        }
+        found = {k: v for k, v in counts.items() if v}
+        if found:
+            actual[name] = found
 
-    assert counts == _OBSERVED_RECORDS
+    assert actual == _OBSERVED_RECORDS
 
 
 def test_chamfer_precision_does_not_regress(corpus):
