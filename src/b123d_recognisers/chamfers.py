@@ -123,17 +123,21 @@ def classify_bevel(
 def convex_bevel(
     part: Part, centre: dict[int, float], edge_i: int, neigh_coord: dict[int, float]
 ) -> bool:
-    """Does the virtual sharp corner *face* replaces lie outside the solid?
+    """Does the virtual sharp corner the bevel replaces lie outside the solid?
 
-    The virtual corner sits where the two neighbour planes cross, at the bevel's own edge
-    position. Nudged a little toward the bevel face it lands in the removed-wedge *vacuum*
-    for a real (convex) bevel, but in filled *material* for a gusset/rib/web bevelling a
-    concave re-entrant corner. The nudge clears the on-boundary knife-edge at the raw
-    corner; this is the discriminator adjacency alone cannot make, since a gusset's
-    hypotenuse is also edge-adjacent to two perpendicular walls.
+    *centre* is the bevel face's own centre per axis and *neigh_coord* the coordinates of
+    the two neighbour planes it bridges, as :func:`nearest_axis_aligned_planes` returns them.
 
-    Shared with :func:`b123d_recognisers.recognise_angled_steps`, which needs the same
-    convex/concave call to tell a step's slant from a pocket or passage wall.
+    The virtual corner sits where those two planes cross, at the bevel's own edge position.
+    Nudged a little toward the bevel face it lands in the removed-wedge *vacuum* for a real
+    (convex) bevel, but in filled *material* for a gusset/rib/web bevelling a concave
+    re-entrant corner. The nudge clears the on-boundary knife-edge at the raw corner; this
+    is the discriminator adjacency alone cannot make, since a gusset's hypotenuse is also
+    edge-adjacent to two perpendicular walls.
+
+    Shared with :func:`b123d_recognisers.recognise_angled_steps`, which admits larger slants
+    than a chamfer and so needs this call for exactly the same reason: a gusset satisfies
+    every other gate either recogniser applies.
     """
 
     oi = [j for j in (0, 1, 2) if j != edge_i]

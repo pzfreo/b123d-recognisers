@@ -23,7 +23,7 @@ compatibility review, and release notes.
 
 | Recogniser | Proven current scope | Explicitly excluded or deferred | Primary evidence |
 | --- | --- | --- | --- |
-| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned triangular flat. | Steps closed by a non-triangular end, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; 100% precision over 120 MFCAD++ models. |
+| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned flat bounded by exactly three edges. | Ends whose triangle is subdivided into four or more edges by a neighbouring feature, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; over 120 MFCAD++ models, 100% precision and 70% instance recall. |
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
 | `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis, running the full length of the edge they break. | Compound three-axis corner bevels, faces outside leg/size gates, and slants with a triangular blind end (an angled step). | Chamfer/fillet/flat golden and negative bevel tests. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid. | Bounded blind pockets, through slots, and cross-solid face combinations. | Open-channel golden and per-solid regressions. |

@@ -46,6 +46,17 @@ two cannot disagree about what they are looking at:
 No size gate, no tolerance, no fraction: every gate here is either a shared geometric
 classification or a count of edges.
 
+**What that costs is recall, and the edge count is where about half of it goes.** The
+companion test asks for exactly three edges, so a blind end whose triangle is *subdivided* —
+its side split by a neighbouring feature — reads as four or five edges and the step is
+missed. Across 120 MFCAD++ models carrying the feature, instance recall is 70% (114 of 163),
+and 24 of the 49 misses have no bare triangular face anywhere on them.
+
+Relaxing the count is not the fix. A chamfer strip's own end caps are axis-aligned faces
+too, so admitting four-edge companions would hand every chamfer straight back to this
+family. Recovering those instances needs the companion recognised as *geometrically*
+triangular rather than topologically so, which is a different and larger change.
+
 Depends on ``chamfers`` for the bevel read and the convexity probe rather than copying
 either, so a change to what counts as a bevel reaches both recognisers at once.
 """
