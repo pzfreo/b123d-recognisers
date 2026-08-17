@@ -28,6 +28,7 @@ from b123d_recognisers import (
     Channel,
     CounterSink,
     DoubleDBore,
+    FaceEdges,
     FaceLevel,
     Fillet,
     Flat,
@@ -387,6 +388,62 @@ def test_cylinder_substrate_is_injectable():
         records = fn(part)
         assert records, f"{fn.__name__}: fixture no longer triggers the recogniser"
         assert fn(part, cyls=analyse_cylinders(part)) == records
+
+
+def test_every_recogniser_taking_face_edges_actually_consults_it():
+    """ADR 0002: an injected dependency must be *used*, not merely accepted.
+
+    ``face_edges=`` is a performance memo, so a recogniser that accepted it and dropped it on
+    the floor would return byte-identical records and pass every equivalence test in this
+    file — while quietly giving back the ~14% the shared memo buys a census. Nothing else
+    here can catch that, so this spies on the memo and demands each recogniser ask it
+    something.
+
+    Each recogniser gets geometry it actually engages with. That matters more than it looks:
+    ``recognise_bosses`` returns before touching a face when the part has no external
+    cylinder, so pointing this test at a convenient prismatic block would have it read zero
+    asks and "fail" against correct code — or, with the assertion inverted, pass against a
+    dropped parameter.
+    """
+
+    prismatic = Box(60, 40, 12) - Pos(-18, 0, 0) * Cylinder(4, 12) - Pos(15, 0, 0) * Box(24, 8, 12)
+    prismatic = chamfer(prismatic.edges().filter_by(Axis.Z).group_by(Axis.X)[0], 1.5)
+    prismatic = fillet(prismatic.edges().filter_by(Axis.Z).group_by(Axis.X)[-1], 2.0)
+    round_stock = Cylinder(10, 30) - Pos(10, 0, 0) * Box(10, 40, 40)
+    bossed = Box(40, 40, 10) + Pos(0, 0, 10) * Cylinder(6, 10)
+
+    class _Spy(FaceEdges):
+        def __init__(self) -> None:
+            super().__init__()
+            self.asked = 0
+
+        def of(self, face):
+            self.asked += 1
+            return super().of(face)
+
+    # The flag marks the recognisers gated on a cylinder substrate: they return before
+    # touching a face when the scan comes back empty, so for them "found nothing" and
+    # "ignored the memo" look identical from here. Requiring a record separates the two, and
+    # keeps a drifting fixture reporting as a drifting fixture rather than as broken source.
+    # The rest legitimately consult the memo while finding nothing -- `recognise_pockets` and
+    # `recognise_channels` walk every planar face of this part and report zero recesses --
+    # so demanding a record of them would be wrong, not merely stricter.
+    cases = (
+        (recognise_chamfers, prismatic, False),
+        (recognise_fillets, prismatic, False),
+        (recognise_holes, prismatic, True),
+        (recognise_slots, prismatic, False),
+        (recognise_pockets, prismatic, False),
+        (recognise_channels, prismatic, False),
+        (recognise_bosses, bossed, True),
+        (recognise_flats, round_stock, True),
+    )
+    for recognise, part, substrate_gated in cases:
+        spy = _Spy()
+        records = recognise(part, face_edges=spy)
+        if substrate_gated:
+            assert records, f"{recognise.__name__}: fixture no longer reaches the face scan"
+        assert spy.asked, f"{recognise.__name__} accepts face_edges= but never consults it"
 
 
 def test_derived_recogniser_takes_single_positional_inventory():
