@@ -34,11 +34,11 @@ from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
-from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
+from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import edge_face_map, nearest_axis_aligned_planes
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
@@ -79,22 +79,6 @@ def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
     return (p.X(), p.Y(), p.Z())
 
 
-def _axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
-    """``(axis_index, coordinate)`` of a planar axis-aligned face — the plane's axis and
-    where it sits — or None if the face is not planar or not axis-aligned. Sign-agnostic
-    (only alignment matters); the coordinate locates the plane for the convex-corner test."""
-    s = BRepAdaptor_Surface(face_wrapped)
-    if s.GetType() != GeomAbs_Plane:
-        return None
-    d = s.Plane().Axis().Direction()
-    comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
-    if max(comp) <= AXIS_ALIGNED_COS:
-        return None
-    ax = max(range(3), key=lambda i: comp[i])
-    loc = s.Plane().Location()
-    return ax, (loc.X(), loc.Y(), loc.Z())[ax]
-
-
 def recognise_fillets(
     part: Part, *, min_radius: float | None = None, max_radius_frac: float = 0.45
 ) -> list[Fillet]:
@@ -131,19 +115,8 @@ def recognise_fillets(
         fc = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}  # face centre
 
         # Must bridge two axis-aligned faces on distinct in-plane axes (rounds a 90° edge).
-        # Record each neighbour plane's coordinate so the convex test can rebuild the corner.
-        # Per axis, keep the closest neighbour plane; ties break on the coordinate
-        # itself so the pick is order-independent (the old strict-< kept whichever
-        # face OCC iteration happened to yield first).
-        neigh_best: dict[int, tuple[float, float]] = {}  # axis -> (distance, coord)
-        for g in neighbours(f, edge_faces):
-            aa = _axis_aligned_axis(g.wrapped)
-            if aa is not None and aa[0] != edge_i:
-                ax, coord = aa
-                key = (abs(coord - fc[ax]), coord)
-                if ax not in neigh_best or key < neigh_best[ax]:
-                    neigh_best[ax] = key
-        neigh_coord = {ax: coord for ax, (_, coord) in neigh_best.items()}
+        # Each neighbour plane's coordinate lets the convex test rebuild the virtual corner.
+        neigh_coord = nearest_axis_aligned_planes(f, edge_faces, fc, exclude_axis=edge_i)
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
 

@@ -12,7 +12,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._adjacency import edge_face_map
+from b123d_recognisers._adjacency import edge_face_map, neighbours
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
@@ -296,8 +296,7 @@ def _shared_transition(
                 continue
             if any(t.is_same(o) for o in other):
                 return True
-            neighbours = [f for e in t.edges() for f in edge_faces.get(e, ())]
-            if any(n.is_same(o) for n in neighbours for o in other):
+            if any(n.is_same(o) for n in neighbours(t, edge_faces) for o in other):
                 return True
     return False
 
