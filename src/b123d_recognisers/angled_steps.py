@@ -24,15 +24,23 @@ something is a triangular flat, and :func:`b123d_recognisers._adjacency.has_tria
 is the whole discriminator. It says nothing about the part around the face, so a step is a
 step at any scale, which a size gate could never promise.
 
-Three gates, all shared with :func:`b123d_recognisers.recognise_chamfers` so the two cannot
-disagree about what they are looking at:
+Four gates, the first three shared with :func:`b123d_recognisers.recognise_chamfers` so the
+two cannot disagree about what they are looking at:
 
 - **an oblique bevel** — :func:`b123d_recognisers.classify_bevel`, so the slant is a planar
   face running along exactly one principal axis;
-- **convex** — :func:`b123d_recognisers.chamfers.convex_bevel`. Without it a triangular
-  *pocket* whose plan is not axis-aligned matches perfectly: its walls are oblique planes
-  and its floor is a triangle. Prototyped without this gate, 70% of what the signature
-  caught were pockets; with it, precision over 120 models is 100%;
+- **bridges two axis-aligned faces on distinct in-plane axes** — this is what excludes a
+  *pocket* wall, and it does nearly all the work. A triangular pocket whose plan is not
+  axis-aligned otherwise matches the signature exactly: its walls are oblique planes and its
+  floor is a triangle. Prototyped without this gate, pockets outnumbered steps three to one
+  (precision 21%); over 120 MFCAD++ models it stops all 109 of them, and the convex probe
+  stops none;
+- **convex** — :func:`b123d_recognisers.chamfers.convex_bevel`, which is not redundant with
+  the gate above even though the corpus never exercises it. A gusset filling a concave
+  corner has an oblique hypotenuse bridging two perpendicular walls *and* triangular ends,
+  so it satisfies every other gate here; the material behind it is the only thing that
+  differs. MFCAD++ is purely subtractive and contains none, so the fixture in
+  ``tests/test_angled_steps.py`` is the evidence for this one rather than the corpus;
 - **a triangular companion** — the blind end.
 
 No size gate, no tolerance, no fraction: every gate here is either a shared geometric

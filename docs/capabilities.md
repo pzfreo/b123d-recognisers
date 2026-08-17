@@ -103,6 +103,12 @@ Three limits on how far this evidence reaches:
   the MFCAD++ figures come from fitting record counts against labelled-face counts across models
   rather than from observing ownership. The fit is strong for holes, fillets and bosses and weak
   for plates and countersinks; only the former should be read.
+
+  Two families are the exception. `recognise_chamfers` and `recognise_angled_steps` each anchor
+  a record on a face centre, so their records *can* be matched back to the labelled face that
+  produced them, and their figures — 100% precision for angled steps, 44% → 78% for chamfers
+  over 120 models — are counted per face rather than fitted. That is why they are quoted as
+  precision, which the caveat above forbids for the rest.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.

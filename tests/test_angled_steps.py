@@ -17,14 +17,32 @@ two on size, the equal-legs assertions here would keep passing and
 
 from __future__ import annotations
 
-from build123d import Axis, Box, Cylinder, Pos, Rot, chamfer
+from build123d import (
+    Align,
+    Axis,
+    Box,
+    BuildPart,
+    BuildSketch,
+    Cylinder,
+    Plane,
+    Polygon,
+    Pos,
+    Rot,
+    chamfer,
+    extrude,
+)
 
 from b123d_recognisers import (
     AngledStep,
     recognise_angled_steps,
     recognise_chamfers,
 )
-from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    edge_face_map,
+    nearest_axis_aligned_planes,
+)
+from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
 #: on each axis, so a side of 4·√2 cuts 4 mm into each of the two faces meeting at the edge.
@@ -118,17 +136,66 @@ def test_length_alone_does_not_decide_which_family_claims_a_slant():
 
 
 def test_a_pocket_wall_is_not_an_angled_step_though_it_has_a_triangular_floor():
-    """The gate that a triangular companion alone cannot supply.
+    """A pocket whose plan is not axis-aligned has oblique walls over a triangular floor.
 
-    A pocket whose plan is not axis-aligned has oblique planar walls over a triangular floor
-    — the angled step's exact signature, minus convexity. Prototyped without the convex
-    probe, triangular pockets outnumbered real steps three to one on the MFCAD++ corpus,
-    so this is the difference between a 100%-precision recogniser and a 21% one.
+    That is the angled step's signature minus one thing, and prototyped without the
+    "bridges two axis-aligned faces" gate such pockets outnumbered real steps three to one
+    on the MFCAD++ corpus — 21% precision against 100%. A pocket wall's only axis-aligned
+    neighbours are its floor and the top face, both normal to the same axis, so it never
+    supplies the two distinct in-plane walls a bevel must bridge.
     """
 
     pocket = _block() - Pos(0, 0, 6) * Rot(0, 0, 30) * Box(20, 14, 6)
 
     assert recognise_angled_steps(pocket) == []
+
+
+def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
+    """The convex probe, on the only geometry that actually reaches it.
+
+    A gusset satisfies every other gate: its hypotenuse is an oblique plane bridging two
+    perpendicular axis-aligned walls, and its two ends are triangles. The single difference
+    from a real step is that the corner it sits in is *filled* rather than cut away.
+
+    This test exists because the corpus cannot supply it. MFCAD++ is purely subtractive, so
+    across 120 models the convex probe rejects nothing at all — measured, not assumed — and
+    a reviewer reading only the corpus numbers would reasonably conclude the gate is dead
+    code. It is not: without it this part reports a step.
+    """
+
+    align_min = (Align.MIN, Align.MIN, Align.MIN)
+    base = Box(40, 40, 5, align=align_min)
+    wall = Box(5, 40, 30, align=align_min)
+    with BuildPart() as web:
+        with BuildSketch(Plane.XZ):
+            Polygon((5, 5), (18, 5), (5, 18))
+        extrude(amount=10)
+    gusseted = base + wall + Pos(0, 15, 0) * web.part
+
+    # The premise: the hypotenuse really does clear the gates before the convex one, so this
+    # part exercises that probe rather than being rejected earlier for some other reason.
+    faces = list(gusseted.faces())
+    edge_faces = edge_face_map(faces)
+    reached = 0
+    for face in faces:
+        try:
+            edge_i, _nv, span, _hi, _lo = classify_bevel(face)
+        except BevelReject:
+            continue
+        oi = [j for j in (0, 1, 2) if j != edge_i]
+        centre = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}
+        neigh = nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=edge_i)
+        if oi[0] in neigh and oi[1] in neigh and not convex_bevel(
+            gusseted, centre, edge_i, neigh
+        ):
+            reached += 1
+    assert reached == 1, "this fixture must reject exactly at the convex probe"
+
+    assert recognise_angled_steps(gusseted) == []
+    # Sized to clear `max_leg_frac` too, so the hypotenuse reaches `recognise_chamfers`' own
+    # convex probe rather than being turned away earlier as an oversized bevel. Both
+    # recognisers must refuse a gusset, and for the same reason.
+    assert recognise_chamfers(gusseted) == []
 
 
 def test_a_step_is_a_step_at_any_scale():
