@@ -200,8 +200,9 @@ def test_nearest_axis_aligned_planes_drops_the_axis_the_feature_runs_along():
 def test_nearest_axis_aligned_planes_keeps_the_closer_of_two_walls():
     """With no tie the nearest plane wins outright — the one forming this local corner.
 
-    A stepped part puts two parallel walls on the same axis at different distances; picking
-    the far one would rebuild a corner outside the material the blend actually sits in.
+    Driven by moving *centre* rather than by building a stepped solid: the distance ranking
+    is what the query is contracted on, and a cube whose four walls are equidistant is the
+    only shape that isolates it from the tie break tested above.
     """
 
     part = Box(10, 10, 10)
