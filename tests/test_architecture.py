@@ -12,6 +12,7 @@ ROOT = Path(__file__).parents[1]
 PACKAGE = ROOT / "src" / "b123d_recognisers"
 
 PUBLIC_MODULES = {
+    "angled_steps",
     "capabilities",
     "census",
     "chamfers",

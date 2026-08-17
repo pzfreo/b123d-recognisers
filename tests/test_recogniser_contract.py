@@ -51,6 +51,7 @@ from b123d_recognisers import (
     TurnedStep,
     analyse_cylinders,
     project_step_shoulders,
+    recognise_angled_steps,
     recognise_bosses,
     recognise_chamfers,
     recognise_channels,
@@ -190,6 +191,11 @@ def _bolt_circle_plate(n=6, r=30):
     return part
 
 
+def _angled_stepped_box():
+    """A 45 degrees wedge stopped inside the block, so a triangular flat closes its blind end."""
+    return Box(60, 40, 12) - Pos(-20, 20, 6) * Rot(45, 0, 0) * Box(30, 5.657, 5.657)
+
+
 def _chamfered_box():
     box = Box(30, 30, 30)
     edge = box.edges().filter_by(Axis.Z).sort_by(Axis.X)[-1]
@@ -259,6 +265,7 @@ def _records_from_recognisers():
         ("hole_patterns:bolt", recognise_hole_patterns(recognise_holes(_bolt_circle_plate()))),
         ("hole_patterns:linear", recognise_hole_patterns(recognise_holes(_linear_array_plate()))),
         ("hole_patterns:grid", recognise_hole_patterns(recognise_holes(_grid_plate()))),
+        ("recognise_angled_steps", recognise_angled_steps(_angled_stepped_box())),
         ("recognise_chamfers", recognise_chamfers(_chamfered_box())),
         ("recognise_channels", recognise_channels(channel)),
         ("recognise_fillets", recognise_fillets(_filleted_box())),
@@ -348,6 +355,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_rectangular_pads,
         recognise_countersinks,
         recognise_double_d_bores,
+        recognise_angled_steps,
         recognise_chamfers,
         recognise_channels,
         recognise_fillets,
@@ -429,6 +437,7 @@ def test_every_recogniser_taking_face_edges_actually_consults_it():
     # `recognise_channels` walk every planar face of this part and report zero recesses --
     # so demanding a record of them would be wrong, not merely stricter.
     cases = (
+        (recognise_angled_steps, _angled_stepped_box(), False),
         (recognise_chamfers, prismatic, False),
         (recognise_fillets, prismatic, False),
         (recognise_holes, prismatic, True),

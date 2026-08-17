@@ -2,6 +2,72 @@
   "aliases": [],
   "families": [
     {
+      "census_name": "angled_step",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/angled_blind_step/expected.json"
+      ],
+      "id": "angled-steps",
+      "introduced_in": "0.2.5",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_angled_steps",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.angled_steps"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "leg1": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "leg2": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "AngledStep",
+          "qualified_name": "b123d_recognisers.AngledStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_angled_steps.py",
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "boss",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1732,6 +1798,6 @@
   "format_version": 1,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.2.4"
+    "version": "0.2.5"
   }
 }

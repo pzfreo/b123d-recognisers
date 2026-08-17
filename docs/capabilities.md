@@ -23,8 +23,9 @@ compatibility review, and release notes.
 
 | Recogniser | Proven current scope | Explicitly excluded or deferred | Primary evidence |
 | --- | --- | --- | --- |
+| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned flat bounded by exactly three edges. | Ends whose triangle is subdivided into four or more edges by a neighbouring feature, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; over 120 MFCAD++ models, 100% precision and 70% instance recall. |
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
-| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis. | Compound three-axis corner bevels and faces outside leg/size gates. | Chamfer/fillet/flat golden and negative bevel tests. |
+| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis, running the full length of the edge they break. | Compound three-axis corner bevels, faces outside leg/size gates, and slants with a triangular blind end (an angled step). | Chamfer/fillet/flat golden and negative bevel tests. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid. | Bounded blind pockets, through slots, and cross-solid face combinations. | Open-channel golden and per-solid regressions. |
 | `recognise_countersinks` | Conical hole-mouth seats with a proven circular major rim, bore rim, and included angle. | General conical faces, decorative bevels, and unmatched cones. | Counterbore/countersink golden and cone rejection tests. |
 | `recognise_double_d_bores` | Constant, principal-axis, through double-D voids with two opposed common-circle profiles and a material-free connecting prism. | Blind recesses, obrounds, lenses, arbitrary line/arc loops, non-principal axes, mismatched ends, and cross-solid pairing. | Double-D golden plus capability-negative tests. |
@@ -102,6 +103,12 @@ Three limits on how far this evidence reaches:
   the MFCAD++ figures come from fitting record counts against labelled-face counts across models
   rather than from observing ownership. The fit is strong for holes, fillets and bosses and weak
   for plates and countersinks; only the former should be read.
+
+  Two families are the exception. `recognise_chamfers` and `recognise_angled_steps` each anchor
+  a record on a face centre, so their records *can* be matched back to the labelled face that
+  produced them, and their figures — 100% precision for angled steps, 44% → 78% for chamfers
+  over 120 models — are counted per face rather than fitted. That is why they are quoted as
+  precision, which the caveat above forbids for the rest.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.
@@ -114,6 +121,7 @@ invitation to construct values outside that evidence and call them recognized.
 
 | Public record | Implemented contract boundary |
 | --- | --- |
+| `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar bevel. |

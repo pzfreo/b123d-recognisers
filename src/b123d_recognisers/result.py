@@ -27,6 +27,7 @@ from b123d_recognisers._features import (
     recognise_holes,
 )
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
+from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
 from b123d_recognisers.fillets import Fillet, recognise_fillets
@@ -71,6 +72,7 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
     {
+        "recognise_angled_steps",
         "recognise_bosses",
         "recognise_chamfers",
         "recognise_channels",
@@ -219,6 +221,9 @@ class RecognitionResult:
     #: site — which is the distinction that let these migrate at all: owning a family and
     #: always running it are different things.
     chamfers: tuple[Chamfer, ...]
+    #: Gated with the blends, and for the same reason: an angled blind step is the same
+    #: oblique-bevel read as a chamfer, so a rotational part yields none either way.
+    angled_steps: tuple[AngledStep, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
 
@@ -352,6 +357,7 @@ def build_recognition_result(
         step_levels=tuple(step_level_records(part)),
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(recognise_chamfers(part)) if prismatic else (),
+        angled_steps=tuple(recognise_angled_steps(part)) if prismatic else (),
         fillets=tuple(recognise_fillets(part)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

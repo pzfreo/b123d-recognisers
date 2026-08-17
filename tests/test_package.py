@@ -17,7 +17,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_version_is_available() -> None:
-    assert __version__ == "0.2.4"
+    assert __version__ == "0.2.5"
 
 
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:

@@ -9,6 +9,7 @@ GOLDEN_ROOT = ROOT / "tests" / "golden"
 sys.path.insert(0, str(ROOT))
 
 EXPECTED_CASES = {
+    "angled_blind_step",
     "blind_pockets_and_pocket_patterns",
     "bolt_circle_and_rectangular_grid",
     "chamfers_fillets_and_flats",

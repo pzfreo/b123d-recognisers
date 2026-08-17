@@ -12,6 +12,7 @@
     "aggregate": {
       "prismatic": {
         "_type": "RecognitionResult",
+        "angled_steps": [],
         "bosses": [
           {
             "_type": "BossRecord",
@@ -202,6 +203,7 @@
       },
       "rotational": {
         "_type": "RecognitionResult",
+        "angled_steps": [],
         "bosses": [
           {
             "_type": "BossRecord",
@@ -392,6 +394,7 @@
       }
     },
     "feature_census": {
+      "angled_step": 0,
       "boss": 3,
       "chamfer": 0,
       "channel": 0,
@@ -407,6 +410,7 @@
       "step": 3
     },
     "individual": {
+      "recognise_angled_steps": [],
       "recognise_bosses": [
         {
           "_type": "BossRecord",
