@@ -36,7 +36,7 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import (
     _axis_direction_is_aligned,
@@ -194,7 +194,7 @@ class Flat(Record):
 
 
 def recognise_flats(
-    part: Part, *, cyls: CylinderInventory | None = None
+    part: Part, *, cyls: CylinderInventory | None = None, face_edges: FaceEdges | None = None
 ) -> list[Flat]:
     """Recognise the machined flats of *part* (see module docstring). Returns one
     :class:`Flat` per qualifying planar face truncating round stock, sorted
@@ -206,7 +206,7 @@ def recognise_flats(
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
         return []
-    edge_faces = edge_face_map(part.faces())
+    edge_faces = edge_face_map(part.faces(), face_edges=face_edges)
 
     # Phase 1 — collect candidate flat faces with the geometry the size needs.
     cands: list[dict] = []

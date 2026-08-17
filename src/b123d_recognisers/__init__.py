@@ -47,6 +47,12 @@ query), and deliberately keep their names. Likewise the **shared single-face rea
 front-end, not recognisers — they traffic in build123d/OCP objects and are exposed only where
 existing downstream compatibility requires them.
 
+``FaceEdges`` is neither a recogniser nor substrate but a **shared memo**: pass one instance to
+several recognisers running over the same part and they stop re-deriving each face's edges,
+which is about a fifth of a full census. It is exported only because it appears in those
+recognisers' signatures — a ``face_edges=`` parameter no public API could construct would be
+useless. Omit it and every recogniser behaves exactly as before.
+
 ``project_step_shoulders`` is likewise not a recogniser but its mirror image: a **pure
 projection** over :func:`recognise_risers`' records, with no ``part`` and no geometry access
 at all. It carries the ``project_`` verb rather than ``recognise_`` because the aggregate owns
@@ -58,6 +64,7 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
+from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
@@ -184,6 +191,7 @@ __all__ = [
     "TurnedStep",
     "RecognitionResult",
     "BevelReject",
+    "FaceEdges",
     "analyse_cylinders",
     "classify_bevel",
     "cone_rims",

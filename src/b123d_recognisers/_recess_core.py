@@ -15,6 +15,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.TopAbs import TopAbs_Orientation
 
+from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._typing import Bounds, Part
@@ -76,7 +77,7 @@ class _Face:
     wall: bool  # a valid slot wall: LINE/CIRCLE edges, at least one straight LINE
 
 
-def _is_wall(face) -> bool:
+def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
     """True when *face* can be a slot wall: bounded only by straight (LINE) or circular-arc
     (CIRCLE) edges, with **at least one** straight edge and **at most one** arc. A fully
     rectangular wall qualifies (all LINE); a slot cut into round stock has a wall the OD clips
@@ -89,7 +90,8 @@ def _is_wall(face) -> bool:
     "all edges must be straight" test: the
     two concentric arcs survive, so a keyed groove never reads as a slot. A freeform
     (spline/ellipse) face is rejected outright."""
-    types = [e.geom_type for e in face.edges()]
+    edges = face_edges.of(face) if face_edges is not None else face.edges()
+    types = [e.geom_type for e in edges]
     if not types or any(t not in (GeomType.LINE, GeomType.CIRCLE) for t in types):
         return False
     n_line = sum(1 for t in types if t == GeomType.LINE)
@@ -97,7 +99,7 @@ def _is_wall(face) -> bool:
     return n_line >= 1 and n_circle <= 1
 
 
-def _planar_faces(part: Part) -> list[_Face]:
+def _planar_faces(part: Part, face_edges: FaceEdges | None = None) -> list[_Face]:
     """All axis-aligned planar faces as :class:`_Face` records (computed once)."""
     faces = []
     for face in part.faces():
@@ -107,7 +109,7 @@ def _planar_faces(part: Part) -> list[_Face]:
         axis = _dominant_axis(nrm)
         if axis is None:
             continue
-        faces.append(_Face(nrm, axis, face.bounding_box(), _is_wall(face)))
+        faces.append(_Face(nrm, axis, face.bounding_box(), _is_wall(face, face_edges)))
     return faces
 
 
@@ -571,9 +573,9 @@ def _recognise_obround_from_ends(
     return cast(list[Slot] | list[Pocket], out)
 
 
-def _recognise_slots_one(part: Part) -> list[Slot]:
+def _recognise_slots_one(part: Part, face_edges: FaceEdges | None = None) -> list[Slot]:
     """Recognise slots using one solid's faces and bounds."""
-    faces = _planar_faces(part)
+    faces = _planar_faces(part, face_edges)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     # Only straight-walled faces can be slot walls; bucket them by axis so the
@@ -890,9 +892,9 @@ def _channel_sort_key(channel: Channel) -> tuple:
     )
 
 
-def _recognise_pockets_one(part: Part) -> list[Pocket]:
+def _recognise_pockets_one(part: Part, face_edges: FaceEdges | None = None) -> list[Pocket]:
     """Recognise pockets using one solid's faces and bounds."""
-    faces = _planar_faces(part)
+    faces = _planar_faces(part, face_edges)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     by_axis: dict[str, list[_Face]] = {}
@@ -913,9 +915,9 @@ def _recognise_pockets_one(part: Part) -> list[Pocket]:
     return _extend_obround_ends(_merge(candidates), part)
 
 
-def _recognise_channels_one(part: Part) -> list[Channel]:
+def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
-    faces = _planar_faces(part)
+    faces = _planar_faces(part, face_edges)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     part_bounds = {

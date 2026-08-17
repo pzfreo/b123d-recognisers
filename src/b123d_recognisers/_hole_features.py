@@ -12,7 +12,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
@@ -453,6 +453,7 @@ def recognise_holes(
     *,
     cyls: CylinderInventory | None = None,
     csinks: Sequence[CounterSink] | None = None,
+    face_edges: FaceEdges | None = None,
 ) -> list[HoleRecord]:
     """Recognise drilled holes on *part* (see :class:`HoleRecord`).
 
@@ -476,7 +477,7 @@ def recognise_holes(
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
         return []
-    edge_faces = edge_face_map(part.faces())
+    edge_faces = edge_face_map(part.faces(), face_edges=face_edges)
     # one end-classification cache for the whole call: the same (seg, end) is
     # classified by _merge_stacks and again in the loop below, each scan walking
     # every face's edges.
@@ -528,7 +529,9 @@ def recognise_holes(
     return holes
 
 
-def recognise_bosses(part: Part, *, cyls: CylinderInventory | None = None) -> list[BossRecord]:
+def recognise_bosses(
+    part: Part, *, cyls: CylinderInventory | None = None, face_edges: FaceEdges | None = None
+) -> list[BossRecord]:
     """Recognise external cylindrical bosses on *part* (one
     :class:`BossRecord` per coaxial external cylinder segment, including a
     turned part's OD — callers wanting only local bosses can filter on
@@ -542,7 +545,7 @@ def recognise_bosses(part: Part, *, cyls: CylinderInventory | None = None) -> li
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
         return []
-    edge_faces = edge_face_map(part.faces())
+    edge_faces = edge_face_map(part.faces(), face_edges=face_edges)
     cache: dict = {}
 
     bosses = []
