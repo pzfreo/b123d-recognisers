@@ -477,7 +477,7 @@ def recognise_holes(
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
         return []
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
     # one end-classification cache for the whole call: the same (seg, end) is
     # classified by _merge_stacks and again in the loop below, each scan walking
     # every face's edges.
@@ -543,7 +543,7 @@ def recognise_bosses(part: Part, *, cyls: CylinderInventory | None = None) -> li
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
         return []
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
     cache: dict = {}
 
     bosses = []

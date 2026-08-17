@@ -106,7 +106,7 @@ def recognise_fillets(
     min_radius = _MIN_RADIUS if min_radius is None else min_radius
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     all_faces = list(part.faces())
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(all_faces)
 
     out: list[Fillet] = []
     for f in all_faces:

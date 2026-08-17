@@ -349,14 +349,22 @@ def _recognise_one(
     faces = list(part.faces())
     # This module works in face *indices*, so the shared edge→faces map is resolved back to
     # them once here; the ring and boundary helpers keep their index-based signatures.
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(faces)
     index_of = {face: index for index, face in enumerate(faces)}
-    neighbour_indices = [
-        {index_of[other] for other in neighbours(face, edge_faces)} for face in faces
-    ]
+    # Resolved per face on demand and cached, not for the whole part up front: only the
+    # vertical sides and the few faces bounding a ring are ever asked about, and computing
+    # the rest measured at more than half of this recogniser's total time on the corpus.
+    neighbour_indices: dict[int, set[int]] = {}
+
+    def _neighbours_of(index: int) -> set[int]:
+        cached = neighbour_indices.get(index)
+        if cached is None:
+            cached = {index_of[other] for other in neighbours(faces[index], edge_faces)}
+            neighbour_indices[index] = cached
+        return cached
 
     def shares_edge(i: int, j: int) -> bool:
-        return j in neighbour_indices[i]
+        return j in _neighbours_of(i)
 
     normals, bounds, vertical = _vertical_side_faces(faces, tol)
 
@@ -365,7 +373,7 @@ def _recognise_one(
     def adjacent_to(index: int) -> set[int]:
         # A copy, as before: `_common_cap` subtracts from what it gets back, and handing out
         # the cached set would let one ring's bookkeeping corrupt the next one's.
-        return set(neighbour_indices[index])
+        return set(_neighbours_of(index))
 
 
     found: list[PolygonalBoss | PolygonalStock] = []

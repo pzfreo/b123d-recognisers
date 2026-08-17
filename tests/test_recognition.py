@@ -793,7 +793,7 @@ class TestEdgeFaceMap:
         # would map to a single face and this would fail. (#150)
         from b123d_recognisers._adjacency import edge_face_map
 
-        counts = [len(faces) for faces in edge_face_map(Box(10, 10, 10)).values()]
+        counts = [len(faces) for faces in edge_face_map(Box(10, 10, 10).faces()).values()]
         assert counts and max(counts) >= 2
 
 

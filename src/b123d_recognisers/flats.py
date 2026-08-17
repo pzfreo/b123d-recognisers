@@ -206,7 +206,7 @@ def recognise_flats(
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
         return []
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
 
     # Phase 1 — collect candidate flat faces with the geometry the size needs.
     cands: list[dict] = []

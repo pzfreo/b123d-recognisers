@@ -82,7 +82,7 @@ def test_shape_equality_and_is_same_agree_across_the_whole_corpus():
 def test_a_manifold_edge_maps_to_the_two_faces_that_meet_along_it():
     """A box has twelve edges, each shared by exactly two of its six faces."""
 
-    edge_faces = edge_face_map(Box(10, 10, 10))
+    edge_faces = edge_face_map(Box(10, 10, 10).faces())
 
     assert len(edge_faces) == 12
     assert {len(faces) for faces in edge_faces.values()} == {2}
@@ -96,7 +96,7 @@ def test_a_seam_edge_maps_to_a_single_face():
     than a defect.
     """
 
-    edge_faces = edge_face_map(Cylinder(5, 20))
+    edge_faces = edge_face_map(Cylinder(5, 20).faces())
 
     assert sorted({len(faces) for faces in edge_faces.values()}) == [1, 2]
 
@@ -110,7 +110,7 @@ def test_neighbours_excludes_the_face_itself_and_never_repeats_one():
     """
 
     part = Box(10, 10, 10)
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(part.faces())
     face = part.faces()[0]
 
     found = neighbours(face, edge_faces)

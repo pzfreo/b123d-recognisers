@@ -142,7 +142,7 @@ def recognise_chamfers(
     tol = _MIN_LEG if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
-    edge_faces = edge_face_map(part)
+    edge_faces = edge_face_map(all_faces)
 
     out: list[Chamfer] = []
     for f in all_faces:

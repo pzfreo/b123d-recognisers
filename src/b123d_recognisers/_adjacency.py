@@ -21,22 +21,29 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 
 from __future__ import annotations
 
-from b123d_recognisers._typing import FaceLike, Part
+from collections.abc import Iterable
+
+from b123d_recognisers._typing import FaceLike
 
 
-def edge_face_map(part: Part) -> dict:
-    """Map every edge of *part* to the faces that meet along it.
+def edge_face_map(faces: Iterable[FaceLike]) -> dict:
+    """Map every edge of *faces* to the faces that meet along it.
 
-    One pass over the faces. The pairwise alternative — asking every face pair whether any
-    of their edges match — is ``O(faces² × edges²)``; ``fillets`` measured that at 3.7M
-    ``IsSame`` calls and about six seconds before replacing it.
+    One pass. The pairwise alternative — asking every face pair whether any of their edges
+    match — is ``O(faces² × edges²)``; ``fillets`` measured that at 3.7M ``IsSame`` calls
+    and about six seconds before replacing it.
+
+    Takes the faces rather than the part because every caller already holds them, and
+    walking ``part.faces()`` a second time here measured at a tenth of ``recognise_fillets``
+    on the pinned corpus — the same reason :func:`~b123d_recognisers._geometry.part_scale`
+    takes a bounding box rather than a solid.
 
     An edge normally maps to two faces. A seam edge on a closed surface maps to one, and
     a non-manifold edge to more, so callers must not assume the length.
     """
 
     edge_faces: dict = {}
-    for face in part.faces():
+    for face in faces:
         for edge in face.edges():
             edge_faces.setdefault(edge, []).append(face)
     return edge_faces
