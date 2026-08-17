@@ -421,19 +421,28 @@ def test_every_recogniser_taking_face_edges_actually_consults_it():
             self.asked += 1
             return super().of(face)
 
+    # The flag marks the recognisers gated on a cylinder substrate: they return before
+    # touching a face when the scan comes back empty, so for them "found nothing" and
+    # "ignored the memo" look identical from here. Requiring a record separates the two, and
+    # keeps a drifting fixture reporting as a drifting fixture rather than as broken source.
+    # The rest legitimately consult the memo while finding nothing -- `recognise_pockets` and
+    # `recognise_channels` walk every planar face of this part and report zero recesses --
+    # so demanding a record of them would be wrong, not merely stricter.
     cases = (
-        (recognise_chamfers, prismatic),
-        (recognise_fillets, prismatic),
-        (recognise_holes, prismatic),
-        (recognise_slots, prismatic),
-        (recognise_pockets, prismatic),
-        (recognise_channels, prismatic),
-        (recognise_bosses, bossed),
-        (recognise_flats, round_stock),
+        (recognise_chamfers, prismatic, False),
+        (recognise_fillets, prismatic, False),
+        (recognise_holes, prismatic, True),
+        (recognise_slots, prismatic, False),
+        (recognise_pockets, prismatic, False),
+        (recognise_channels, prismatic, False),
+        (recognise_bosses, bossed, True),
+        (recognise_flats, round_stock, True),
     )
-    for recognise, part in cases:
+    for recognise, part, substrate_gated in cases:
         spy = _Spy()
-        recognise(part, face_edges=spy)
+        records = recognise(part, face_edges=spy)
+        if substrate_gated:
+            assert records, f"{recognise.__name__}: fixture no longer reaches the face scan"
         assert spy.asked, f"{recognise.__name__} accepts face_edges= but never consults it"
 
 
