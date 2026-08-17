@@ -202,6 +202,11 @@ jobs:
       actions: write # Dispatch CI against the pushed branch; see below.
       contents: write # Push only the generated post-release branch.
       pull-requests: write # Open a PR rather than pushing to main directly.
+    env:
+      # Job level, not step level. The bump step below reads this too, and having it only on
+      # the PR step meant `base` came out empty and the version script was handed `..1.dev0`
+      # -- so the job failed on every release, after PyPI had already accepted the artifact.
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         # zizmor: ignore[artipacked] -- this job pushes; it uploads no artifacts.
@@ -222,7 +227,6 @@ jobs:
       - name: Open the branch-protection-safe post-release bump
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

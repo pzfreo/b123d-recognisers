@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import pathlib
 from pathlib import Path
 
 import pytest
@@ -118,6 +119,33 @@ def test_a_failure_part_way_through_restores_every_file(tmp_path, monkeypatch) -
     assert _versions(tmp_path) == {"manifest": "0.2.5", "fallback": "0.2.5"}
     assert 'version = "0.2.5"' in (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
     assert 'version = "0.2.5"' in (tmp_path / "uv.lock").read_text(encoding="utf-8")
+
+
+def test_a_failure_after_the_manifest_is_written_still_restores_it(tmp_path, monkeypatch) -> None:
+    """The rollback's real worst case, which the test above does not reach.
+
+    That one raises inside the `uv version` stub, i.e. before the manifest and fallback are
+    touched -- so a rollback restoring only `pyproject.toml` and `uv.lock` passed it. Failing
+    at the *last* write is what actually requires all four snapshots to be honoured.
+    """
+
+    module = _load()
+    _project(tmp_path)
+    monkeypatch.setattr(module.subprocess, "run", lambda *a, **k: None)
+    real_write = pathlib.Path.write_text
+
+    def fail_on_the_fallback(self, data, **kwargs):
+        if self.name == "__init__.py":
+            raise RuntimeError("disk full")
+        return real_write(self, data, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "write_text", fail_on_the_fallback)
+
+    with pytest.raises(RuntimeError):
+        module.update(tmp_path, "0.2.6")
+
+    monkeypatch.undo()
+    assert _versions(tmp_path) == {"manifest": "0.2.5", "fallback": "0.2.5"}
 
 
 def test_a_source_tree_missing_the_fallback_is_refused_before_writing(tmp_path) -> None:

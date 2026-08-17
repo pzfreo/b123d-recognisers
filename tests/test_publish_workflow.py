@@ -15,6 +15,21 @@ CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 VERIFY = ROOT / "tools" / "verify_release_assets.py"
 
 
+def _job(workflow: str, name: str) -> str:
+    """The body of one job, so an assertion cannot be satisfied by a different job.
+
+    Several checks here were whole-file substring searches, and the snapshot job happens to
+    contain `uv build` and the TestPyPI `repository-url` too. So deleting `uv build` from
+    `build-release` passed, and redirecting the release's first leg at production PyPI --
+    bypassing the `pypi` environment's approval -- passed as well.
+    """
+
+    start = workflow.index(f"\n  {name}:\n")
+    rest = workflow[start + 1 :]
+    following = re.search(r"^  [a-z][\w-]*:$", rest[len(f"  {name}:") :], re.M)
+    return rest if following is None else rest[: len(f"  {name}:") + following.start()]
+
+
 def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
@@ -22,7 +37,8 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert "\npermissions: {}\n" in workflow, "publishing must default the token to no permissions"
     assert "environment:\n      name: testpypi" in workflow
     assert "environment:\n      name: pypi" in workflow
-    assert "repository-url: https://test.pypi.org/legacy/" in workflow
+    assert "repository-url: https://test.pypi.org/legacy/" in _job(workflow, "publish-testpypi")
+    assert "repository-url" not in _job(workflow, "publish-pypi"), "PyPI is the default index"
     assert "password:" not in workflow and "API_TOKEN" not in workflow
     assert "enable-cache: false" in workflow, "release workflows must not consume mutable caches"
     assert "ignore-empty-workdir: true" in workflow
@@ -33,8 +49,16 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     # workflow` -- because it promoted a hand-built asset attached to the GitHub release.
     # That could only check the asset's version against the tag, which a wheel built from a
     # dirty tree also satisfies.
-    assert "uv build" in workflow, "the published artifact must be built from the tag"
+    build = _job(workflow, "build-release")
+    assert "uv build" in build, "the released artifact must be built from the tag"
     assert "gh release download" not in workflow, "nothing hand-attached may be promoted"
+    # The guards inside build-release. Each was added because a prior review found the hole it
+    # closes, and none of them had a test until one was found reverted-and-green.
+    assert "Check the tag agrees with the branch it points at" in build
+    assert 'RELEASE_TAG#v' in build, "the release version must come from the tag"
+    assert "RELEASE_NOTES.md" in build, "a release must carry notes for its own version"
+    assert "^v[0-9]" in build, "the tag must be validated before it reaches a shell"
+    assert "verify_release_assets.py" in build
 
     # One build feeds TestPyPI and PyPI, so the bytes installed from the first are the bytes
     # promoted to the second: upload once, download in each publishing job. Pinned by digest,
@@ -58,8 +82,13 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
         path.name
         for path in (ROOT / ".github" / "workflows").iterdir()
         if path.suffix in {".yml", ".yaml"}
-        and re.search(r"(?m)^on:\s*(\n(?:.*\n)*?  pull_request:|\[[^]]*\bpull_request\b)",
-                      path.read_text(encoding="utf-8"))
+        and re.search(
+            r"""(?mx) ^["']?on["']?:\s*
+                ( \n(?:.*\n)*?\ \ -?\ ?pull_request:?\s*$   # block map or sequence
+                | \[[^]]*\bpull_request\b                      # flow list
+                | \ *pull_request\s*$ )                         # bare scalar""",
+            path.read_text(encoding="utf-8"),
+        )
     }
     dispatched = re.search(r"^\s*for workflow in (.+?); do$", workflow, re.M)
     assert dispatched, "the dispatch loop is missing or has been reshaped"
@@ -70,12 +99,27 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
         f"dispatch loop runs {dispatched.group(1)}, but the workflows triggered by "
         f"pull_request are {sorted(on_pull_request)}"
     )
-    assert "actions: write" in workflow, "dispatching CI needs actions: write"
+    bump = _job(workflow, "bump-version")
+    assert "actions: write" in bump, "dispatching CI needs actions: write"
+    assert 'gh workflow run "$workflow" --ref "$branch"' in bump, "the loop body must dispatch"
+    assert "RELEASE_TAG#v" in bump, "the next version must come from the tag, not from main"
+    assert "!contains(github.event.release.tag_name, 'rc')" in bump, (
+        "a prerelease must not bump main past the version it is a candidate for"
+    )
+    assert re.search(
+        r"^    env:\n      (?:#.*\n      )*RELEASE_TAG: "
+        r"\$\{\{ github\.event\.release\.tag_name \}\}$",
+        bump.split("steps:")[0],
+        re.M,
+    ), "RELEASE_TAG must be job-level; step-level left the bump step reading an empty value"
     for name in on_pull_request:
         target = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
         assert "workflow_dispatch:" in target, f"{name} is dispatched but declares no trigger"
     # Three publish steps: the main-push snapshot, and the release's TestPyPI and PyPI legs.
     assert workflow.count("pypa/gh-action-pypi-publish@") == 3
+    assert workflow.count(
+        "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
+    ) == 3, "the action holding id-token against PyPI must be pinned by digest"
     assert workflow.count("id-token: write") == 3
 
 
