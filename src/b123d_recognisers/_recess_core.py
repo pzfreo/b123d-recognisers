@@ -160,14 +160,17 @@ def _planar_faces(
         axis = _dominant_axis(nrm)
         if axis is None:
             continue
+        bb = face.bounding_box()
         node = None
         if graph is not None:
             node = graph.node_of(face)
             if node is None:
+                # Located, not `repr`d: a build123d face reprs as its memory address, which
+                # tells the caller nothing about which part they actually handed in.
                 raise ValueError(
-                    f"{face!r} is not a face of the graph this part was scanned against"
+                    f"the claim ledger's graph was built from a different part: it has no {bb}"
                 )
-        faces.append(_Face(nrm, axis, face.bounding_box(), _is_wall(face, face_edges), node))
+        faces.append(_Face(nrm, axis, bb, _is_wall(face, face_edges), node))
     return faces
 
 

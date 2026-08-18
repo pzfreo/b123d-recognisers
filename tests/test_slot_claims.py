@@ -153,7 +153,7 @@ def test_a_ledger_built_from_another_part_is_refused_rather_than_left_empty():
     twin = Box(120, 60, 20) - Box(30, 10, 20)
     assert r.recognise_slots(twin) == r.recognise_slots(part), "the twin is this part by value"
 
-    with pytest.raises(ValueError, match="not a face of the graph"):
+    with pytest.raises(ValueError, match="built from a different part"):
         r.recognise_slots(part, ledger=ClaimLedger(FaceGraph(twin)))
 
 
