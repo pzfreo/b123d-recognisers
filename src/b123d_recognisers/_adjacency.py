@@ -173,6 +173,29 @@ class FaceGraph:
         at = self._index.get(face)
         return None if at is None else self._nodes[at]
 
+    def require_node(self, face: FaceLike) -> FaceNode:
+        """This graph's node for *face*, or a refusal that names the mistake.
+
+        The counterpart to :meth:`node_of`, for the callers that cannot do anything useful with
+        ``None``. A recogniser resolving faces against a graph built from a different part
+        would claim nothing and hand back an empty ledger, which reads downstream as "these
+        families claim nothing" rather than as "you paired the wrong graph" -- and a reconciler
+        reading that concludes there is no overlap and reports the duplicate it exists to
+        suppress.
+
+        Here rather than in each caller: `_recess_core` and `grooves` had grown the same three
+        lines and the same message independently, and sharing them through either module would
+        have made one recogniser import another for no reason a reader could justify.
+        """
+
+        node = self.node_of(face)
+        if node is None:
+            raise ValueError(
+                "the claim ledger's graph was built from a different part: it has no "
+                f"{face.bounding_box()}"
+            )
+        return node
+
     def edges(self, node: FaceNode) -> tuple[EdgeLike, ...]:
         """The edges of *node*, computed on first ask.
 

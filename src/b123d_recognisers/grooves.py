@@ -33,6 +33,7 @@ from dataclasses import dataclass
 
 from build123d import GeomType
 
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
@@ -165,7 +166,10 @@ def floor_face_anchor(face: FaceLike) -> tuple[float, float, float]:
 
 
 def recognise_grooves(
-    part: Part, *, cyls: CylinderInventory | None = None
+    part: Part,
+    *,
+    cyls: CylinderInventory | None = None,
+    ledger: ClaimLedger | None = None,
 ) -> list[Groove]:
     """Recognise the turned grooves of *part* (see module docstring). Returns one
     :class:`Groove` per external band whose OD is a strict local minimum between two
@@ -174,7 +178,17 @@ def recognise_grooves(
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
     re-scanning the solid, matching the dependency-injection contract of
-    :func:`recognise_holes`."""
+    :func:`recognise_holes`.
+
+    *ledger* records the face a groove was **established by**: its floor band, and only that.
+    The two larger neighbours are what make the band a local minimum rather than a shoulder,
+    but a groove is not bounded by them -- they are the shaft either side of it, and each
+    belongs to whatever feature owns it. Treating consultation as consumption would have every
+    groove contest its own neighbours.
+
+    The same band is also a rung of the turned-step ladder, and both records are real; see
+    :mod:`b123d_recognisers._reconcile` for why neither is dropped and why the census still
+    counts the band once."""
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
@@ -185,7 +199,7 @@ def recognise_grooves(
         shafts.setdefault(_shaft_key(c), []).append(c)
 
     cones = _cone_joins(part)
-    out: list[Groove] = []
+    out: list[tuple[Groove, FaceLike]] = []
     for bands in shafts.values():
         bands = sorted(bands, key=lambda c: c["s_lo"])
         for i in range(1, len(bands) - 1):
@@ -220,11 +234,18 @@ def recognise_grooves(
             cx, cy, cz = floor_face_anchor(cur["face"])
             at = (round(cx, 3), round(cy, 3), round(cz, 3))
             out.append(
-                Groove(
-                    axis=cur["axis"],
-                    width=round(cur["s_hi"] - cur["s_lo"], 3),
-                    diameter=round(cur["diameter"], 3),
-                    at=at,
+                (
+                    Groove(
+                        axis=cur["axis"],
+                        width=round(cur["s_hi"] - cur["s_lo"], 3),
+                        diameter=round(cur["diameter"], 3),
+                        at=at,
+                    ),
+                    cur["face"],
                 )
             )
-    return sorted(out, key=lambda g: (g.axis, g.at))
+    out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
+    if ledger is not None:
+        for groove, face in out:
+            ledger.add_defining(groove, [ledger.graph.require_node(face)])
+    return [groove for groove, _ in out]

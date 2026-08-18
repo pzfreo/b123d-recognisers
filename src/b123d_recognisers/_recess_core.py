@@ -161,15 +161,7 @@ def _planar_faces(
         if axis is None:
             continue
         bb = face.bounding_box()
-        node = None
-        if graph is not None:
-            node = graph.node_of(face)
-            if node is None:
-                # Located, not `repr`d: a build123d face reprs as its memory address, which
-                # tells the caller nothing about which part they actually handed in.
-                raise ValueError(
-                    f"the claim ledger's graph was built from a different part: it has no {bb}"
-                )
+        node = None if graph is None else graph.require_node(face)
         faces.append(_Face(nrm, axis, bb, _is_wall(face, face_edges), node))
     return faces
 

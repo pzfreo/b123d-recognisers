@@ -35,9 +35,10 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderInventory, Part
+from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
 
 # A face's axial position counts as on a band edge / its normal counts as
 # axis-aligned within these tolerances (mm / unit-vector component).
@@ -125,7 +126,10 @@ class TurnedProfile(Record):
 
 
 def recognise_turned_steps(
-    part: Part, *, cyls: CylinderInventory | None = None
+    part: Part,
+    *,
+    cyls: CylinderInventory | None = None,
+    ledger: ClaimLedger | None = None,
 ) -> list[TurnedStep]:
     """Recognise the axial steps of a stepped turned ``part``.
 
@@ -136,6 +140,14 @@ def recognise_turned_steps(
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
     re-scanning the solid, matching :func:`recognise_holes`'s dependency-injection contract.
+
+    *ledger* records the bands a step was **established by**: the widest external bands lying
+    over its span, which are what set its diameter. The shoulder planes that set ``lo`` and
+    ``hi`` are read from transverse faces belonging to the neighbouring steps, and claiming
+    those would have every rung of the ladder contest the ones either side of it.
+
+    A rung whose band is also a groove is not dropped -- the ladder is a profile, and a profile
+    with a hole in it describes a different shaft. See :mod:`b123d_recognisers._reconcile`.
     """
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
@@ -163,13 +175,24 @@ def recognise_turned_steps(
     ):
         return []
 
-    def local_od(pos: float) -> float:
-        radii = []
+    def bands_over(pos: float) -> list[CylinderEvidence]:
+        """The widest external bands covering *pos* -- what sets the OD there, and therefore
+        what a step at *pos* is established by. Split out of `local_od` so the diameter and the
+        faces behind it come from one selection rather than two that could drift apart."""
+
+        over: list[CylinderEvidence] = []
         for c in bands:
             pad = min(_OD_SPAN_PAD, (c["s_hi"] - c["s_lo"]) / 2)
             if c["s_lo"] - pad <= pos <= c["s_hi"] + pad:
-                radii.append(c["diameter"] / 2)
-        return max(radii) if radii else 0.0
+                over.append(c)
+        if not over:
+            return []
+        widest = max(c["diameter"] for c in over)
+        return [c for c in over if c["diameter"] == widest]
+
+    def local_od(pos: float) -> float:
+        over = bands_over(pos)
+        return over[0]["diameter"] / 2 if over else 0.0
 
     shoulders: set[float] = set()
     for face in part.faces():
@@ -196,19 +219,17 @@ def recognise_turned_steps(
     # A segment whose midpoint has no external band over it (`local_od` → 0) is a
     # gap between disconnected bands, not a real step — drop it so it never renders
     # as a phantom ø0 diameter.
-    steps = [
-        s
-        for i in range(len(planes) - 1)
-        if (
-            s := TurnedStep(
-                axis=axis,
-                lo=planes[i],
-                hi=planes[i + 1],
-                diameter=2 * local_od((planes[i] + planes[i + 1]) / 2),
-            )
-        ).diameter
-        > 0
-    ]
-    if len(steps) < 2:  # fewer than two real steps → nothing to dimension axially
+    found = []
+    for i in range(len(planes) - 1):
+        middle = (planes[i] + planes[i + 1]) / 2
+        step = TurnedStep(
+            axis=axis, lo=planes[i], hi=planes[i + 1], diameter=2 * local_od(middle)
+        )
+        if step.diameter > 0:
+            found.append((step, bands_over(middle)))
+    if len(found) < 2:  # fewer than two real steps → nothing to dimension axially
         return []
-    return steps
+    if ledger is not None:
+        for step, over in found:
+            ledger.add_defining(step, [ledger.graph.require_node(c["face"]) for c in over])
+    return [step for step, _ in found]

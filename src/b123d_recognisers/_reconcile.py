@@ -8,8 +8,15 @@ here accept, combine or reject. They live outside every recogniser on purpose: o
 a face because another family had already claimed it would make the census depend on which
 family ran first, which ADR 0003 forbids and ADR 0002 forbids again by ruling out sibling calls.
 
-One rule so far. It is deliberately not a constraint solver -- ADR 0003 allows family-specific
-rules to migrate behind this protocol one at a time, and this is the first to have had to.
+Two rules so far, and they are deliberately different in kind, because ADR 0003 says a
+reconciler "accepts, combines or rejects":
+
+- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more;
+- **compatibility** -- a turned step whose band is a groove keeps its record, because both
+  descriptions are needed, and only the *count* is corrected.
+
+Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
+one at a time, and these are the two that have had to.
 """
 
 from __future__ import annotations
@@ -17,7 +24,9 @@ from __future__ import annotations
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_records import Slot
 from b123d_recognisers._typing import Part
+from b123d_recognisers.grooves import Groove
 from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.turned import TurnedStep
 
 
 def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage]:
@@ -54,4 +63,56 @@ def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage
         passage
         for passage, ring in zip(passages, rings, strict=True)
         if not any(walls <= ring for walls in slot_walls)
+    ]
+
+
+def steps_that_are_not_grooves(
+    steps: list[TurnedStep], ledger: ClaimLedger
+) -> list[TurnedStep]:
+    """The turned steps that are a distinct machined feature, for counting purposes only.
+
+    A groove *is* a rung of the step ladder: an external band whose OD is a local minimum is
+    both "the band between these two shoulders" and "the annular channel cut into the shaft".
+    Measured on the pinned `turned_steps_and_grooves` golden, the O24 band from 15.5 to 20.5 is
+    reported by both families, and `feature_census` counted it once under each -- one machined
+    feature, two features in the metric.
+
+    **Both records survive**, unlike the passage a slot already describes. That is not
+    inconsistency, it is the difference ADR 0003 draws between rejecting and combining:
+
+    - The two are not competing descriptions of one void, one of which says more. They are a
+      *feature* and a *profile*, and a consumer dimensioning the shaft needs both -- the groove
+      to call out a width that excludes the lead-in chamfers, the ladder to place every
+      shoulder.
+    - Deleting the rung would not simplify the ladder, it would falsify it.
+      `TurnedProfile.from_steps` takes contiguity as a caller precondition, and `shoulders`
+      treats an interior `hi` with no following `lo` as "a real end face, not a shared
+      shoulder". A ladder with the groove removed therefore describes a shaft with two end
+      faces where the groove is -- a different shaft.
+
+    So `build_recognition_result` carries both, and this belongs to `feature_census` alone --
+    the one place that claims to count *distinct machined features* rather than to describe
+    them. That the two deliberately disagree is the point, and is why this is a named function
+    rather than a subtraction written inline at the call site.
+
+    **Not yet wired into the census.** Writing the claims uncovered a defect upstream of the
+    count: at 0.05x the pinned `turned_steps_and_grooves` fixture, `recognise_turned_steps`
+    reports every rung at the shaft OD, so there is no groove rung to reconcile and the count
+    would stop being scale-free. One wrong count is better than a scale-dependent one, so this
+    waits for that fix.
+    """
+
+    # Takes the records where `passages_that_are_not_slots` takes the part and runs the
+    # recogniser itself. Not an oversight: that one owns the call so the pairing below cannot
+    # be wrong, but the full ladder is needed by `build_recognition_result` as well, and owning
+    # the call here would mean scanning the shaft twice to throw one of the results away.
+    floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
+    # Paired by position, as above: *steps* must be what `recognise_turned_steps` returned
+    # against this ledger, which writes one claim per step in return order. `strict=True` says
+    # so loudly if a caller ever passes a filtered list.
+    rungs = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, TurnedStep)]
+    return [
+        step
+        for step, band in zip(steps, rungs, strict=True)
+        if not any(floor <= band for floor in floors)
     ]
