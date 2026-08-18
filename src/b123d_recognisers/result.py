@@ -15,6 +15,8 @@ import warnings
 from dataclasses import dataclass
 from enum import Enum
 
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
@@ -26,6 +28,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
     recognise_holes,
 )
+from b123d_recognisers._reconcile import passages_that_are_not_slots
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
@@ -41,7 +44,7 @@ from b123d_recognisers.levels import (
     step_level_records,
 )
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
-from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.passages import Passage
 from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -329,7 +332,11 @@ def build_recognition_result(
     double_d_bores = recognise_double_d_bores(part)
     channels = recognise_channels(part)
     pockets = recognise_pockets(part)
-    slots = recognise_slots(part)
+    # The two families that describe a void by the faces bounding it both write into one
+    # ledger, so the reconciliation below is a question about faces rather than about
+    # coordinates each of them derived its own way.
+    ledger = ClaimLedger(FaceGraph(part))
+    slots = recognise_slots(part, ledger=ledger)
     turned_steps = recognise_turned_steps(part, cyls=cyls)
     # ONE place decides, from the classification the result then carries. Per-family
     # conditionals at each call site are what the aggregate single-scan design removes; this
@@ -362,7 +369,7 @@ def build_recognition_result(
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(recognise_chamfers(part)) if prismatic else (),
         angled_steps=tuple(recognise_angled_steps(part)) if prismatic else (),
-        passages=tuple(recognise_passages(part, slots=slots)) if prismatic else (),
+        passages=tuple(passages_that_are_not_slots(part, ledger)) if prismatic else (),
         fillets=tuple(recognise_fillets(part)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

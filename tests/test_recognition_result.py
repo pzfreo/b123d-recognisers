@@ -112,11 +112,26 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_risers", counted("risers", []))
     monkeypatch.setattr(result_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(result_module, "recognise_angled_steps", counted("angled_steps", []))
-    monkeypatch.setattr(result_module, "recognise_passages", counted("passages", []))
+    # The orchestrator no longer calls `recognise_passages` itself: a through slot is also a
+    # passage, and the rule that decides between them belongs outside both recognisers, so what
+    # this layer injects is the reconciler and the ledger the slots were written into.
+    def fake_passages(part, ledger):
+        calls["passages"] = calls.get("passages", 0) + 1
+        assert ledger is not None
+        return []
+
+    monkeypatch.setattr(result_module, "passages_that_are_not_slots", fake_passages)
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
     monkeypatch.setattr(result_module, "recognise_plates", counted("plates", []))
 
-    built = result_module.build_recognition_result(object())
+    # A part rather than a bare object: the orchestrator now builds one face graph for the
+    # families that record which faces they were built from, and an empty inventory is all this
+    # test needs -- every recogniser that would read it is replaced above.
+    class _Part:
+        def faces(self):
+            return []
+
+    built = result_module.build_recognition_result(_Part())
 
     expected = {
         "angled_steps",

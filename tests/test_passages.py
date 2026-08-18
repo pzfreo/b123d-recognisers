@@ -15,6 +15,7 @@ from build123d import (
     Box,
     BuildPart,
     BuildSketch,
+    Compound,
     Locations,
     Plane,
     Polygon,
@@ -24,9 +25,19 @@ from build123d import (
     extrude,
     fillet,
 )
+from OCP.BRepClass3d import BRepClass3d_SolidClassifier
+from OCP.gp import gp_Pnt
+from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers import Passage, recognise_passages, recognise_slots
-from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers import (
+    Passage,
+    build_recognition_result,
+    recognise_passages,
+    recognise_slots,
+)
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers.passages import _canonical, _centroid, _interior_point
 
 
 def _block() -> Box:
@@ -53,34 +64,46 @@ def test_a_void_open_at_both_ends_is_a_passage():
     assert passage.length == 20.0
 
 
-def test_a_void_a_slot_already_reports_is_not_reported_twice():
-    """The reconciliation, and it asks the slot recogniser rather than guessing.
+def test_a_through_slot_is_reported_here_too_and_the_aggregate_resolves_it():
+    """The reconciliation is the aggregate's, and it compares faces rather than coordinates.
 
-    A through slot *is* a closed uncapped ring, so this family sees it too, and two pinned
-    goldens caught the double count. An earlier fix declined every four-walled ring on the
-    reasoning that a rectangular through void is simply what this package calls a slot.
-    Measured, that was false -- of fifteen such rings across 120 MFCAD++ models, seven are in
-    models where `recognise_slots` reports nothing at all -- so it dropped coverage rather than
-    reconciling. What it claimed is now what is asked.
+    A through slot *is* a closed uncapped ring, so this family sees it. An earlier draft
+    suppressed it inside the recogniser by asking `recognise_slots` what it had found, which
+    ADR 0002 forbids -- recognisers do not call siblings -- and ADR 0003 forbids by name. So
+    the recogniser now reports the ring, and `build_recognition_result` drops it because the
+    slot's two walls sit inside the passage's ring.
     """
 
     slotted = Box(130, 150, 16) - Box(30, 8, 60)
     assert recognise_slots(slotted), "the fixture must be a recognisable slot"
-    assert recognise_passages(slotted) == []
+    assert [p.sides for p in recognise_passages(slotted)] == [4], "the candidate is reported"
+
+    result = build_recognition_result(slotted)
+    assert result.slots, "the slot is what survives, because it dimensions the void"
+    assert result.passages == (), "and the passage it also is, does not"
 
     # A four-walled void no slot claims is still a passage: the side count was never the point.
     square = Box(60, 40, 20) - Box(10, 10, 60)
     assert recognise_slots(square) == []
-    assert [p.sides for p in recognise_passages(square)] == [4]
+    assert [p.sides for p in build_recognition_result(square).passages] == [4]
 
 
-def test_the_slot_inventory_can_be_injected():
-    """`slots=` is the `cyls=` idiom: the census pays for one slot scan, not two."""
+def test_a_passage_crossing_a_slot_only_in_projection_survives():
+    """The regression for the heuristic that was replaced.
 
-    slotted = Box(130, 150, 16) - Box(30, 8, 60)
+    The old rule compared a ring's averaged centre with a slot record's centre in X and Y
+    within 1e-6, ignoring the run axis and Z entirely. Two solids, one carrying a Z-through
+    slot and one an X-through passage at the same XY, are therefore the same feature to it and
+    share not one face. Reconciling on claimed faces cannot make this mistake.
+    """
 
-    assert recognise_passages(slotted, slots=recognise_slots(slotted)) == []
-    assert recognise_passages(slotted, slots=[]), "an empty inventory claims nothing"
+    slotted = Box(120, 60, 20) - Box(10, 30, 60)
+    bored = Pos(0, 0, 100) * (Box(120, 60, 20) - Box(200, 8, 8))
+    part = Compound(children=[slotted, bored])
+
+    result = build_recognition_result(part)
+    assert result.slots, "the Z slot"
+    assert [p.axis for p in result.passages] == ["x"], "the X passage, at the same XY, survives"
 
 
 def test_the_same_void_with_a_floor_is_a_pocket_and_not_a_passage():
@@ -201,3 +224,134 @@ def test_a_blind_void_stays_a_pocket_when_its_floor_edge_is_blended():
     assert recognise_passages(blind) == []
     assert recognise_passages(fillet(floor_edges, 2.0)) == []
     assert recognise_passages(chamfer(floor_edges, 1.5)) == []
+
+
+def _twice_area(section) -> float:
+    count = len(section)
+    return sum(
+        section[at][0] * section[(at + 1) % count][1]
+        - section[(at + 1) % count][0] * section[at][1]
+        for at in range(count)
+    )
+
+
+def _is_material(part, point, along) -> bool:
+    probe = BRepClass3d_SolidClassifier(part.wrapped)
+    probe.Perform(gp_Pnt(point[0], point[1], along), 1e-6)
+    return probe.State() == TopAbs_IN
+
+
+def test_the_cross_section_is_the_corners_a_consumer_can_dimension_from():
+    """`sides` names the shape; `section` measures it.
+
+    A record carrying only a side count cannot distinguish passages of different size, aspect
+    or rotation, which is what made the first version a taxonomy label rather than a dimension.
+    The corners are pinned against the sketch they were cut from, in part coordinates.
+    """
+
+    with BuildPart() as tri:
+        with BuildSketch(Plane.XZ):
+            Polygon((-8, -6), (8, -6), (0, 8))
+        extrude(amount=60, both=True)
+    (passage,) = recognise_passages(Box(120, 60, 40) - tri.part)
+
+    assert passage.axis == "y"
+    assert passage.sides == 3
+    assert passage.section == ((-8.0, -6.0), (8.0, -6.0), (0.0, 8.0))
+    # Canonical, so the kernel's traversal cannot reach the record: anticlockwise, from the
+    # lexicographically smallest corner.
+    assert passage.section[0] == min(passage.section)
+    assert _twice_area(passage.section) > 0
+
+
+def test_a_concave_cross_section_is_probed_from_a_point_inside_it():
+    """The material test needs a point in the void, and an average is not one.
+
+    A U-shaped passage's own area centroid falls in the material between its arms. Probing
+    there answers "material inside the ring" and calls the void a prism -- so the fixture is
+    built to prove the construction rather than to exercise it: the centroid is asserted to be
+    in material while the passage is still reported.
+    """
+
+    with BuildPart() as slot_u:
+        with BuildSketch(Plane.XY):
+            Polygon(
+                (-15, -15), (15, -15), (15, 15), (9, 15), (9, -9), (-9, -9), (-9, 15), (-15, 15)
+            )
+        extrude(amount=40, both=True)
+    part = Box(60, 60, 20) - slot_u.part
+
+    (passage,) = recognise_passages(part)
+    assert passage.sides == 8
+    assert _is_material(part, _centroid(passage.section), passage.at[2]), (
+        "the fixture must be one the centroid gets wrong"
+    )
+    assert not _is_material(part, _interior_point(passage.section), passage.at[2])
+
+
+def test_a_passage_records_the_ring_it_was_built_from():
+    """The claim is the ring, and nothing it merely touched.
+
+    Reconciliation reads these, so a claim over the end faces a passage opens onto would have
+    it contest every feature at its mouth.
+    """
+
+    part = _hexagonal_passage()
+    ledger = ClaimLedger(FaceGraph(part))
+    (passage,) = recognise_passages(part, ledger=ledger)
+
+    (claim,) = ledger.claims
+    assert claim.claimant is passage
+    assert len(claim.defining) == passage.sides
+    for node in claim.defining:
+        assert ledger.graph.is_planar(node)
+        normal = ledger.graph.normal(node)
+        assert abs(normal[2]) <= 0.01, "a wall runs along the passage, not across it"
+
+
+def test_a_cross_section_that_is_not_a_simple_polygon_is_refused():
+    """The corners are read from the kernel, so the walk must not assume they form a shape.
+
+    Declining is what a decline looks like here: `_canonical` returns None and the ring is
+    dropped, rather than a record being emitted with an area of zero or a corner counted twice.
+    """
+
+    assert _canonical([(0.0, 0.0), (1.0, 0.0), (0.0, 0.0)]) is None, "a repeated corner"
+    assert _canonical([(0.0, 0.0), (1.0, 0.0), (2.0, 0.0)]) is None, "collinear corners"
+    assert _canonical([(1.0, 1.0), (0.0, 0.0), (1.0, 0.0)]) == (
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (1.0, 1.0),
+    ), "and a real triangle comes back anticlockwise from its smallest corner"
+
+
+def test_an_interior_point_is_inside_the_polygon_and_not_merely_near_it():
+    """Checked against the polygon itself, so the construction stands without a solid.
+
+    The two branches are the ones that matter: a convex shape, where the ear is empty, and a
+    concave one, where another corner intrudes into it and the diagonal is used instead.
+    """
+
+    triangle = ((-8.0, -6.0), (8.0, -6.0), (0.0, 8.0))
+    u_shape = (
+        (-15.0, -15.0), (15.0, -15.0), (15.0, 15.0), (9.0, 15.0),
+        (9.0, -9.0), (-9.0, -9.0), (-9.0, 15.0), (-15.0, 15.0),
+    )
+    for polygon in (triangle, u_shape):
+        assert _winds_around(polygon, _interior_point(polygon)), polygon
+    # The centroid is the thing this replaces, and the U is where it fails.
+    assert not _winds_around(u_shape, _centroid(u_shape))
+
+
+def _winds_around(polygon, point) -> bool:
+    """Crossing-number point-in-polygon, written out rather than reusing the module's own."""
+
+    inside = False
+    count = len(polygon)
+    for at in range(count):
+        (ux, uy), (vx, vy) = polygon[at], polygon[(at + 1) % count]
+        if (uy > point[1]) != (vy > point[1]):
+            crossing = ux + (point[1] - uy) * (vx - ux) / (vy - uy)
+            if point[0] < crossing:
+                inside = not inside
+    return inside

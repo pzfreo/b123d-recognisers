@@ -924,6 +924,11 @@
               "type": "float",
               "units": "mm"
             },
+            "section": {
+              "required": true,
+              "type": "list[tuple[float,2]]",
+              "units": "mm"
+            },
             "sides": {
               "required": true,
               "type": "int",

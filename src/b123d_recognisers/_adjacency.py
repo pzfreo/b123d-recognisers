@@ -356,12 +356,16 @@ def connected_components(
 ) -> list[tuple[_T, ...]]:
     """Group *items* into connected components under the *joined* predicate.
 
-    The other half of the "answer face adjacency once" finding. Lifting the edge->faces map out
-    of five modules left the components walk beside it private to `polygonal_bosses`, and that
-    was deliberate: one consumer does not justify a shared primitive.
+    An ordinary private utility with two consumers, and deliberately not more than that. It was
+    private to `polygonal_bosses` until `passages` wanted the same walk -- finding from inside a
+    void the ring `polygonal_bosses` finds from outside a prism -- and one consumer does not
+    justify a shared primitive.
 
-    The second consumer is `passages`, which finds the same ring from inside a void that
-    `polygonal_bosses` finds from outside a prism.
+    It is **not** shared face-adjacency semantics, and an earlier version of this docstring
+    called it "the other half of the answer-face-adjacency-once finding", which overstated it:
+    every caller still supplies the entire relation, so what they share is the breadth-first
+    mechanism and not a domain model. The face adjacency they genuinely share is
+    :class:`FaceGraph`, which both of them read their nodes' attributes from.
 
     **`joined` must be symmetric.** The walk only ever asks `joined(current, other)` with
     *current* already in the component, so an asymmetric predicate makes the answer depend on

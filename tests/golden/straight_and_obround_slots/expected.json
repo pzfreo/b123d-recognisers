@@ -626,7 +626,124 @@
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
       "recognise_holes": [],
-      "recognise_passages": [],
+      "recognise_passages": [
+        {
+          "_type": "Passage",
+          "at": [
+            -32.0,
+            -48.0,
+            0.0
+          ],
+          "axis": "z",
+          "length": 16.0,
+          "section": [
+            [
+              -47.0,
+              -52.0
+            ],
+            [
+              -17.0,
+              -52.0
+            ],
+            [
+              -17.0,
+              -44.0
+            ],
+            [
+              -47.0,
+              -44.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "Passage",
+          "at": [
+            -32.0,
+            -16.0,
+            0.0
+          ],
+          "axis": "z",
+          "length": 16.0,
+          "section": [
+            [
+              -47.0,
+              -20.0
+            ],
+            [
+              -17.0,
+              -20.0
+            ],
+            [
+              -17.0,
+              -12.0
+            ],
+            [
+              -47.0,
+              -12.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "Passage",
+          "at": [
+            -32.0,
+            16.0,
+            0.0
+          ],
+          "axis": "z",
+          "length": 16.0,
+          "section": [
+            [
+              -47.0,
+              12.0
+            ],
+            [
+              -17.0,
+              12.0
+            ],
+            [
+              -17.0,
+              20.0
+            ],
+            [
+              -47.0,
+              20.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "Passage",
+          "at": [
+            -32.0,
+            48.0,
+            0.0
+          ],
+          "axis": "z",
+          "length": 16.0,
+          "section": [
+            [
+              -47.0,
+              44.0
+            ],
+            [
+              -17.0,
+              44.0
+            ],
+            [
+              -17.0,
+              52.0
+            ],
+            [
+              -47.0,
+              52.0
+            ]
+          ],
+          "sides": 4
+        }
+      ],
       "recognise_plates": [],
       "recognise_pocket_patterns": [],
       "recognise_pockets": [],

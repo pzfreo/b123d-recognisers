@@ -17,38 +17,51 @@ What separates a passage from its neighbours is what is *not* there:
   passage mouth the outer face is perpendicular and edge-adjacent too, so the test is whether
   it *fills* the ring or the ring is a hole punched through it.
 - **from a polygonal boss, the material.** The same ring bounds a prism when the material is
-  inside it and a void when the material is outside, which one solid-classifier probe answers.
+  inside it and a void when the material is outside, which one solid-classifier probe answers --
+  at a point proved to lie inside the cross-section, not at an average that may not.
+
+**A through slot is also a passage, and this module says so.** The two families describe the
+same void from different directions, and reconciling them is not this recogniser's job: a
+recogniser that dropped a ring because `recognise_slots` had claimed it would be consulting
+another family's result during discovery, which ADR 0002 forbids outright ("recognisers do not
+call sibling recognisers") and ADR 0003 forbids by name. An earlier draft did exactly that,
+comparing a ring's averaged centre against a slot record's XY centre within 1e-6. So this module
+reports every ring it finds and records which faces each was built from;
+:func:`b123d_recognisers.build_recognition_result` holds the one named rule that resolves the
+overlap. `recognise_passages` alone therefore reports *candidates*, and the aggregate reports
+the reconciled set -- the two differ by exactly the through slots.
 
 Over 120 MFCAD++ models: 100% precision, 51% instance recall (65 of 128) and 49% of
-labelled faces. What is missed is one thing rather than many -- walls whose spans differ,
-because a passage running through a stepped region has one wall shorter than the rest, so the
-ring never forms.
+labelled faces, measured against that corpus's own labels. The corpus is synthetic and the
+recall gap is one thing rather than many -- walls whose spans differ, because a passage running
+through a stepped region has one wall shorter than the rest, so the ring never forms.
 
 Every gate is topological or a direction comparison. There is no size gate and no tolerance on
 a length, so a passage is a passage at any scale -- ``tests/test_scale_invariance.py`` carries
 the family with no exclusion.
 
-Ring-finding is :func:`b123d_recognisers._adjacency.connected_components`, shared with
-``polygonal_bosses``, which finds the same ring from outside. Two implementations of one walk
-is the defect the adjacency work exists to remove.
+The face attributes come from :class:`b123d_recognisers._adjacency.FaceGraph`. An earlier draft
+built its own index map, neighbour map, planar-normal map and bounding-box map inside this
+function -- an ad hoc face graph private to one recogniser, which is what the substrate exists
+to stop. Ring-finding is :func:`b123d_recognisers._adjacency.connected_components`, shared with
+``polygonal_bosses``, which finds the same ring from outside.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
-from OCP.GeomAbs import GeomAbs_Plane
 from OCP.gp import gp_Pnt
-from OCP.TopAbs import TopAbs_IN
+from OCP.TopAbs import TopAbs_OUT
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
+    FaceGraph,
+    FaceNode,
     connected_components,
-    edge_face_map,
-    neighbours,
 )
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._geometry import AXIS_ZERO_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
@@ -59,138 +72,284 @@ from b123d_recognisers._typing import Part
 #: differ only by kernel noise, so it is a float epsilon and not a length at all.
 _SPAN_EPS = 1e-6
 
-#: How close a ring centre must sit to a slot's centre to be the same feature. A comparison
-#: between two derivations of one void, so it is a tolerance rather than a minimum-evidence
-#: threshold under ADR 0008 -- and both come from the same bounding boxes, so it is a float
-#: epsilon rather than a length.
-_SAME_FEATURE_EPS = 1e-6
-
 
 @dataclass(frozen=True, order=True)
 class Passage(Record):
-    """A recognised passage. ``axis`` is the direction it runs ("x"/"y"/"z"); ``sides`` is the
-    number of walls, so a triangular passage reports 3 and a hexagonal one 6; ``length`` is how
-    far it runs; ``at`` is the centre of the void in part space."""
+    """A recognised passage.
+
+    ``axis`` is the direction it runs ("x"/"y"/"z"); ``sides`` is the number of walls, so a
+    triangular passage reports 3 and a hexagonal one 6; ``length`` is how far it runs; ``at`` is
+    the centre of the void in part space.
+
+    ``section`` is the cross-section: its corners in part coordinates, in the two axes other
+    than ``axis`` and in that axis order, walked around the ring. Without it the record could
+    not describe the feature it names -- two passages of radically different size, aspect ratio
+    and rotation produced the same record apart from centre and length, which is a taxonomy
+    label rather than a dimension a consumer can draw from. From the corners a consumer can
+    take across-flats, area, aspect and orientation; a single scalar could not, because 63% of
+    the corpus's passages are not regular polygons.
+
+    The walk is canonical, not the kernel's: corners run anticlockwise in the two section axes,
+    starting at the lexicographically smallest, so equivalent geometry gives an equal record
+    however the part was traversed.
+    """
 
     axis: str
     sides: int
     length: float
     at: tuple[float, float, float]
+    section: tuple[tuple[float, float], ...]
 
 
 def recognise_passages(
     part: Part,
     *,
-    slots: list | None = None,
     face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | None = None,
 ) -> list[Passage]:
-    """Recognise the prismatic passages of *part* (see module docstring). Returns one
-    :class:`Passage` per closed uncapped ring, sorted deterministically. Empty when the part has
-    none. Only passages whose walls all run parallel to one principal axis and share one span
-    are recovered; a passage whose walls step or taper along its length is not one."""
+    """Recognise the prismatic passages of *part* (see module docstring).
 
-    claimed = _slot_centres(part if slots is None else None, slots)
-    faces = list(part.faces())
-    edge_faces = edge_face_map(faces, face_edges=face_edges)
-    index = {face: i for i, face in enumerate(faces)}
-    adjacent = {
-        i: {index[other] for other in neighbours(face, edge_faces, face_edges=face_edges)
-            if other in index}
-        for i, face in enumerate(faces)
-    }
+    Returns one :class:`Passage` per closed uncapped ring, sorted deterministically. Empty when
+    the part has none. Only passages whose walls all run parallel to one principal axis, share
+    one span, and meet their neighbours along a single edge parallel to that axis are recovered;
+    a passage whose walls step or taper along its length is not one.
 
-    normal: dict[int, tuple[float, float, float]] = {}
-    box: dict[int, tuple] = {}
-    for i, face in enumerate(faces):
-        if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
-            continue
-        try:
-            unit = face.normal_at()
-        except Exception:  # noqa: BLE001 - a degenerate face has no normal to read
-            continue
-        normal[i] = (unit.X, unit.Y, unit.Z)
-        bb = face.bounding_box()
-        box[i] = ((bb.min.X, bb.max.X), (bb.min.Y, bb.max.Y), (bb.min.Z, bb.max.Z))
+    **A through slot is reported here too** -- it is a closed uncapped ring. The families are
+    reconciled in :func:`b123d_recognisers.build_recognition_result` and not here; see the
+    module docstring for why that separation is not optional.
 
-    out: list[Passage] = []
+    *ledger* records which faces each returned passage was built from: its ring, and nothing
+    else. When it is given, its graph is used as the face inventory, so *face_edges* is then the
+    memo that graph was built with rather than one taken here.
+    """
+
+    graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
+    planar = [node for node in graph.nodes if graph.is_planar(node)]
+    normal = {node: graph.normal(node) for node in planar}
+
+    found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
     for axis in (0, 1, 2):
-        walls = [i for i in normal if abs(normal[i][axis]) <= AXIS_ZERO_COS]
+        walls = [
+            node
+            for node in planar
+            if normal[node] is not None and abs(normal[node][axis]) <= AXIS_ZERO_COS  # type: ignore[index]
+        ]
+        adjacent = {node: set(graph.neighbours(node)) for node in walls}
 
-        def shares_a_span(a: int, b: int, axis: int = axis) -> bool:
+        def shares_a_span(
+            a: FaceNode, b: FaceNode, axis: int = axis, adjacent: dict = adjacent
+        ) -> bool:
             return (
                 b in adjacent[a]
-                and abs(box[a][axis][0] - box[b][axis][0]) <= _SPAN_EPS
-                and abs(box[a][axis][1] - box[b][axis][1]) <= _SPAN_EPS
+                and abs(graph.bounds(a)[axis][0] - graph.bounds(b)[axis][0]) <= _SPAN_EPS
+                and abs(graph.bounds(a)[axis][1] - graph.bounds(b)[axis][1]) <= _SPAN_EPS
             )
 
         for ring in connected_components(walls, shares_a_span):
             members = set(ring)
-            if len(ring) < 3 or any(len(adjacent[i] & members) != 2 for i in ring):
+            if len(ring) < 3 or any(len(adjacent[node] & members) != 2 for node in ring):
                 continue  # a ring closes; a chain of walls does not
-            spans = [box[i][axis] for i in ring]
+            section = _cross_section(graph, ring, members, axis)
+            if section is None:
+                continue  # the walls do not meet in a simple prismatic polygon
+            spans = [graph.bounds(node)[axis] for node in ring]
             low, high = min(a for a, _ in spans), max(b for _, b in spans)
-            if _capped(ring, members, axis, low, high, adjacent, normal, box, faces):
+            if _capped(graph, ring, members, axis, low, high):
                 continue  # a floor fills the ring: this is a pocket
-            middles = [
-                sum(getattr(faces[i].center(), "XYZ"[k]) for i in ring) / len(ring)
-                for k in (0, 1, 2)
-            ]
-            centre = (middles[0], middles[1], middles[2])
-            if any(
-                abs(centre[0] - c[0]) <= _SAME_FEATURE_EPS
-                and abs(centre[1] - c[1]) <= _SAME_FEATURE_EPS
-                for c in claimed
-            ):
-                continue  # `recognise_slots` already reports this void, and says more
-            probe = BRepClass3d_SolidClassifier(part.wrapped)
-            probe.Perform(gp_Pnt(*centre), 1e-6)
-            if probe.State() == TopAbs_IN:
-                continue  # material inside the ring: a prism, not a void
-            out.append(
-                Passage(
-                    axis="xyz"[axis],
-                    sides=len(ring),
-                    length=round(high - low, 3),
-                    at=(round(centre[0], 3), round(centre[1], 3), round(centre[2], 3)),
+            if not _is_void(part, section, axis, low, high):
+                continue
+            others = [a for a in (0, 1, 2) if a != axis]
+            middle = _centroid(section)
+            at = [0.0, 0.0, 0.0]
+            at[axis] = 0.5 * (low + high)
+            at[others[0]], at[others[1]] = middle
+            found.append(
+                (
+                    Passage(
+                        axis="xyz"[axis],
+                        sides=len(ring),
+                        length=round(high - low, 3),
+                        at=(round(at[0], 3), round(at[1], 3), round(at[2], 3)),
+                        section=tuple((round(u, 3), round(v, 3)) for u, v in section),
+                    ),
+                    tuple(ring),
                 )
             )
-    return sorted(out, key=lambda p: (p.axis, p.at))
+
+    found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
+    if ledger is not None:
+        for passage, ring in found:
+            ledger.add_defining(passage, ring)
+    return [passage for passage, _ in found]
 
 
-def _slot_centres(part, slots) -> list[tuple[float, float]]:
-    """Where `recognise_slots` has already reported a void, in the two in-plane axes.
+def _cross_section(
+    graph: FaceGraph, ring: tuple[FaceNode, ...], members: set[FaceNode], axis: int
+) -> tuple[tuple[float, float], ...] | None:
+    """The ring's corners, walked around it, or None when it is not a prismatic polygon.
 
-    A through slot *is* a closed uncapped ring, so this family sees it too. Reporting both is a
-    double count, and two pinned goldens caught it: `straight_and_obround_slots` produced four
-    slots and four passages at the same places, `traversal_order` three of each.
-
-    An earlier attempt declined every four-walled ring instead, on the reasoning that a
-    rectangular through void is simply what this package calls a slot. Measured, that is false:
-    of fifteen such rings across 120 MFCAD++ models, seven are in models where
-    `recognise_slots` reports nothing at all. It was not a reconciliation, it was a silent
-    coverage drop. Asking the slot recogniser what it actually claimed is the reconciliation.
-
-    *slots* is injected the way `cyls=` is elsewhere, so the census pays for one slot scan
-    rather than two.
+    Each corner is where two consecutive walls meet, so it is read from the edge they share
+    rather than from an average of anything. That edge must be a single one parallel to the run
+    axis: two walls meeting along two edges, or along an edge that is not straight down the
+    passage, are not the prismatic ring this family recognises, and returning None is how they
+    are declined rather than silently mis-measured.
     """
 
-    if slots is None:
-        if part is None:
-            return []
-        from b123d_recognisers.slots import recognise_slots
+    others = [a for a in (0, 1, 2) if a != axis]
+    order = [ring[0]]
+    seen = {ring[0]}
+    while len(order) < len(ring):
+        onward = (n for n in graph.neighbours(order[-1]) if n in members and n not in seen)
+        step = next(onward, None)
+        if step is None:
+            return None
+        seen.add(step)
+        order.append(step)
 
-        slots = recognise_slots(part)
-    centres = []
-    for slot in slots:
-        long_mid = 0.5 * (slot.lo + slot.hi)
-        if slot.long_axis == "x":
-            centres.append((long_mid, slot.w_center))
-        else:
-            centres.append((slot.w_center, long_mid))
-    return centres
+    corners: list[tuple[float, float]] = []
+    for at, node in enumerate(order):
+        shared = graph.shared_edges(node, order[(at + 1) % len(order)])
+        if len(shared) != 1:
+            return None
+        box = shared[0].bounding_box()
+        lo = (box.min.X, box.min.Y, box.min.Z)
+        hi = (box.max.X, box.max.Y, box.max.Z)
+        if any(hi[a] - lo[a] > _SPAN_EPS for a in others):
+            return None  # the junction is not one line running down the passage
+        corners.append(
+            (0.5 * (lo[others[0]] + hi[others[0]]), 0.5 * (lo[others[1]] + hi[others[1]]))
+        )
+    return _canonical(corners)
 
 
-def _capped(ring, members, axis, low, high, adjacent, normal, box, faces) -> bool:
+def _canonical(corners: list[tuple[float, float]]) -> tuple[tuple[float, float], ...] | None:
+    """One walk per shape, whatever order the kernel handed the faces over in.
+
+    Anticlockwise from the lexicographically smallest corner. Without this the record would
+    carry the traversal, and `tests/golden/traversal_order` exists because that is exactly the
+    kind of thing that leaks into a record unnoticed.
+    """
+
+    count = len(corners)
+    if len(set(corners)) != count:
+        return None  # two walls meeting at one point is not a simple polygon
+    twice_area = sum(
+        corners[at][0] * corners[(at + 1) % count][1]
+        - corners[(at + 1) % count][0] * corners[at][1]
+        for at in range(count)
+    )
+    if abs(twice_area) <= _SPAN_EPS:
+        return None  # degenerate: the corners are collinear
+    if twice_area < 0:
+        corners = corners[::-1]
+    start = min(range(count), key=lambda at: corners[at])
+    return tuple(corners[start:] + corners[:start])
+
+
+def _centroid(section: tuple[tuple[float, float], ...]) -> tuple[float, float]:
+    """The polygon's area centroid, which is what ``at`` means.
+
+    Not the average of the wall-face centres the first draft used: that is the centroid of the
+    *walls*, which for an irregular polygon is a different point, and one nothing downstream
+    could reproduce from the record.
+    """
+
+    count = len(section)
+    twice_area = 0.0
+    across = 0.0
+    along = 0.0
+    for at in range(count):
+        u0, v0 = section[at]
+        u1, v1 = section[(at + 1) % count]
+        cross = u0 * v1 - u1 * v0
+        twice_area += cross
+        across += (u0 + u1) * cross
+        along += (v0 + v1) * cross
+    return (across / (3 * twice_area), along / (3 * twice_area))
+
+
+def _interior_point(section: tuple[tuple[float, float], ...]) -> tuple[float, float]:
+    """A point proved to lie inside the cross-section, for the material probe.
+
+    The centroid will not do. It is inside a convex polygon and can be outside a concave one, and
+    an L-shaped or star-shaped passage is exactly the case where "is the material inside this
+    ring" must still be answered correctly. Probing a point that is not in the cross-section can
+    read an unrelated cavity, the material beside the void, or nothing at all.
+
+    The construction is the standard one for a simple polygon: the lowest corner is convex, so
+    the triangle it makes with its two neighbours lies wholly inside unless another corner
+    intrudes into it, and that triangle's centroid is then interior. When one does intrude, the
+    segment from the lowest corner to the intruder farthest from the chord is a diagonal, and
+    its midpoint is interior.
+
+    The centroid of the ear and not the midpoint of the chord: for a triangular passage the
+    chord *is* the opposite edge, so its midpoint lies on the boundary and the classifier
+    answers ``ON`` -- which is how this was caught, the three-sided fixture going missing.
+    """
+
+    count = len(section)
+    at = min(range(count), key=lambda k: (section[k][1], section[k][0]))
+    before, corner, after = section[at - 1], section[at], section[(at + 1) % count]
+    intruders = [
+        point
+        for k, point in enumerate(section)
+        if k not in {(at - 1) % count, at, (at + 1) % count}
+        and _within(point, before, corner, after)
+    ]
+    if not intruders:
+        return (
+            (before[0] + corner[0] + after[0]) / 3,
+            (before[1] + corner[1] + after[1]) / 3,
+        )
+    deepest = max(intruders, key=lambda point: abs(_turn(before, after, point)))
+    return (0.5 * (corner[0] + deepest[0]), 0.5 * (corner[1] + deepest[1]))
+
+
+def _turn(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]) -> float:
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+
+def _within(
+    point: tuple[float, float],
+    a: tuple[float, float],
+    b: tuple[float, float],
+    c: tuple[float, float],
+) -> bool:
+    """Is *point* inside or on triangle *a*, *b*, *c*?"""
+
+    turns = (_turn(a, b, point), _turn(b, c, point), _turn(c, a, point))
+    return all(turn >= 0 for turn in turns) or all(turn <= 0 for turn in turns)
+
+
+def _is_void(
+    part: Part, section: tuple[tuple[float, float], ...], axis: int, low: float, high: float
+) -> bool:
+    """Is the ring's interior empty, rather than a prism of material?
+
+    Only ``OUT`` is a passage. The first draft rejected only ``IN``, which let ``ON`` and
+    ``UNKNOWN`` through as though they were evidence of a void: ``ON`` says the probe landed on
+    a face and ``UNKNOWN`` says the classifier could not decide, and neither is a reason to
+    report a through feature. With a point proved interior, both mean something is wrong with
+    the ring rather than with the probe, so they fail closed.
+    """
+
+    others = [a for a in (0, 1, 2) if a != axis]
+    point = [0.0, 0.0, 0.0]
+    point[axis] = 0.5 * (low + high)
+    point[others[0]], point[others[1]] = _interior_point(section)
+    probe = BRepClass3d_SolidClassifier(part.wrapped)
+    probe.Perform(gp_Pnt(*point), _SPAN_EPS)
+    return bool(probe.State() == TopAbs_OUT)
+
+
+def _capped(
+    graph: FaceGraph,
+    ring: tuple[FaceNode, ...],
+    members: set[FaceNode],
+    axis: int,
+    low: float,
+    high: float,
+) -> bool:
     """Does a face perpendicular to the run axis close either end of *ring*?
 
     Not merely "is there a perpendicular neighbour at the end" -- at a passage mouth the part's
@@ -200,11 +359,11 @@ def _capped(ring, members, axis, low, high, adjacent, normal, box, faces) -> boo
     """
 
     others = [a for a in (0, 1, 2) if a != axis]
-    ring_low = [min(box[i][a][0] for i in ring) for a in others]
-    ring_high = [max(box[i][a][1] for i in ring) for a in others]
-    for i in ring:
-        for j in adjacent[i]:
-            if j in members:
+    ring_low = [min(graph.bounds(node)[a][0] for node in ring) for a in others]
+    ring_high = [max(graph.bounds(node)[a][1] for node in ring) for a in others]
+    for node in ring:
+        for other in graph.neighbours(node):
+            if other in members:
                 continue
             # Any neighbour, not only a planar axis-aligned one. Requiring that let an
             # ordinary filleted or chamfered pocket floor read as a passage: breaking the
@@ -212,9 +371,7 @@ def _capped(ring, members, axis, low, high, adjacent, normal, box, faces) -> boo
             # cap candidate disappeared. A blend at the bottom of a blind void still closes
             # it, so what matters is whether something sits across the end of the span
             # inside the ring, not what surface type it happens to be.
-            end = box.get(j)
-            if end is None:
-                end = _extent(faces[j])
+            end = graph.bounds(other)
             if end[axis][1] < low - _SPAN_EPS or end[axis][0] > high + _SPAN_EPS:
                 continue
             near_low = abs(end[axis][0] - low) <= _SPAN_EPS or abs(end[axis][1] - low) <= _SPAN_EPS
@@ -229,8 +386,3 @@ def _capped(ring, members, axis, low, high, adjacent, normal, box, faces) -> boo
             ):
                 return True
     return False
-
-
-def _extent(face) -> tuple:
-    bb = face.bounding_box()
-    return ((bb.min.X, bb.max.X), (bb.min.Y, bb.max.Y), (bb.min.Z, bb.max.Z))
