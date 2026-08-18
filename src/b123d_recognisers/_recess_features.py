@@ -12,6 +12,7 @@ from b123d_recognisers._recess_core import (
     _body_scoped_pairs,
     _body_scoped_records,
     _channel_sort_key,
+    _Claims,
     _recognise_channels_one,
     _recognise_pockets_one,
     _recognise_slots_one,
@@ -36,10 +37,15 @@ def recognise_slots(
     combine into a fictitious slot across the gap between them.
 
     *ledger* is injected the way *face_edges* is, and records which faces each returned slot was
-    built from -- its two walls, plus the walls of any candidate merged into it. It changes
+    built from -- its two walls, plus the walls of every candidate folded into it: the same void
+    seen through its other wall pair, and the arms a crossing channel split it into. It changes
     nothing about what is returned: claims are written and never read here, so no slot's
     existence can depend on another family having run. It exists so a second family can ask
     whether it is describing the same void, instead of comparing record coordinates.
+
+    *ledger*'s graph must have been built from *part*; a face that does not resolve against it
+    is refused rather than silently claiming nothing, because an empty ledger would otherwise
+    read as "no overlap" to the reconciler it exists to serve.
 
     A slot recovered from its end caps rather than from paired flat walls claims nothing, and is
     absent from the ledger. Its evidence is two cylindrical caps, which are not walls, and no
@@ -48,7 +54,7 @@ def recognise_slots(
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    claims: dict | None = {} if ledger is not None else None
+    claims: _Claims | None = {} if ledger is not None else None
     pairs = _body_scoped_pairs(
         sources,
         partial(

@@ -29,23 +29,11 @@ _R = TypeVar("_R", Slot, Pocket)
 #: two value-equal candidates are, by the pipeline's own definition, the same slot. The ledger
 #: the values end up in keys by claim identity instead, because there two equal-valued *records*
 #: really can be two features.
-_Claims = dict  # dict[Slot | Pocket, set[FaceNode]]
-
-
-def _absorb(claims: _Claims | None, into, *from_) -> None:
-    """Give *into* the nodes of every record in *from_*, which the pipeline is replacing it by.
-
-    Every transform below rebuilds records rather than mutating them -- `_merge` keeps one of a
-    group, `_collapse_collinear` spans several into one, `_extend_obround_ends` and
-    `_body_scoped_records` `replace` fields -- so without this the claim would be attached to a
-    record that never reaches the caller.
-    """
-
-    if claims is None:
-        return
-    nodes = claims.setdefault(into, set())
-    for record in from_:
-        nodes |= claims.get(record, set())
+#:
+#: Spelled out rather than left as a bare ``dict``: the alias is the only description this map
+#: has, and an unparameterised one type-checks ``setdefault(<anything>, 1).no_such_method()``
+#: clean. `_Face.bb` below records what that costs on a field this module touches constantly.
+_Claims = dict[Slot | Pocket, set[FaceNode]]
 _AXIS_ALIGNED_TOL = 1e-3
 # Coordinate-merge and floor-coincidence bands. **Absolute, per ADR 0008.**
 #
@@ -64,6 +52,23 @@ _VOID_INSET = 0.1
 _VOID_VOL_FRAC = 0.01
 _LENGTH_TIE_FRAC = 0.05
 _SLOT_MAX_SPAN_FRAC = 0.9
+
+
+def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) -> None:
+    """Give *into* the nodes of every record in *from_*, the records the pipeline replaces by it.
+
+    Every transform below rebuilds records rather than mutating them -- `_merge` keeps one of a
+    group, `_collapse_collinear` spans several into one, `_extend_obround_ends` `replace`s
+    fields -- so without this the claim would be attached to a record that never reaches the
+    caller. `_body_scoped_pairs` `replace`s a field too, but reads the map before it does rather
+    than going through here, because that is also where the map is scoped to one solid.
+    """
+
+    if claims is None:
+        return
+    nodes = claims.setdefault(into, set())
+    for record in from_:
+        nodes |= claims.get(record, set())
 
 
 def _outward_normal(face) -> tuple[float, float, float] | None:
@@ -138,9 +143,13 @@ def _planar_faces(
     solid by three families.
 
     A compound is scanned per solid while the graph covers the whole part, and the faces of a
-    solid are the same shapes the part yields, so they resolve against it. A face that does
-    not is left unresolved rather than raising: it can only mean the caller paired a graph
-    with a different part, and the claim is then simply not made rather than made wrongly.
+    solid are the same shapes the part yields, so they resolve against it. A face that does not
+    resolve is refused: it can only mean the caller paired a graph with a different part, and
+    while no *wrong* claim would then be made, no claim would be made either -- leaving the
+    caller unable to tell "this part has no claimable slots" from "you handed me the wrong
+    graph". A reconciler reading that empty ledger concludes there is no overlap and reports
+    the duplicate feature it exists to suppress. `ClaimLedger.claims_of` refuses a foreign node
+    for the same reason rather than answering "no claims"; this is that check one layer up.
     """
 
     faces = []
@@ -151,7 +160,13 @@ def _planar_faces(
         axis = _dominant_axis(nrm)
         if axis is None:
             continue
-        node = None if graph is None else graph.node_of(face)
+        node = None
+        if graph is not None:
+            node = graph.node_of(face)
+            if node is None:
+                raise ValueError(
+                    f"{face!r} is not a face of the graph this part was scanned against"
+                )
         faces.append(_Face(nrm, axis, face.bounding_box(), _is_wall(face, face_edges), node))
     return faces
 
@@ -859,11 +874,11 @@ def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
     kept: list[_R] = []
     for s in sorted(candidates, key=lambda c: (c.width, _region_center(c))):
         cs = _region_center(s)
-        absorbed = next((k for k in kept if math.dist(cs, _region_center(k)) <= _MERGE_TOL), None)
-        if absorbed is not None:
+        keeper = next((k for k in kept if math.dist(cs, _region_center(k)) <= _MERGE_TOL), None)
+        if keeper is not None:
             # The dropped candidate is the *same* feature seen through its other wall pair, so
             # its walls are as much this slot's evidence as the ones that survived.
-            _absorb(claims, absorbed, s)
+            _absorb(claims, keeper, s)
             continue
         kept.append(s)
     return kept

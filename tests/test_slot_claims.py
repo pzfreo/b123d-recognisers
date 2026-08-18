@@ -141,6 +141,22 @@ def test_a_compound_does_not_pool_claims_across_its_solids():
         assert near or far, "a claim named faces of both solids"
 
 
+def test_a_ledger_built_from_another_part_is_refused_rather_than_left_empty():
+    """Silence here would read downstream as "no overlap", not as "wrong graph".
+
+    The twin is the same part by value, so this is a provenance check and not a geometry one:
+    the graph's nodes describe *its* faces, and answering with an empty ledger would let a
+    reconciler conclude the two families describe different voids and report both.
+    """
+
+    part = Box(120, 60, 20) - Box(30, 10, 20)
+    twin = Box(120, 60, 20) - Box(30, 10, 20)
+    assert r.recognise_slots(twin) == r.recognise_slots(part), "the twin is this part by value"
+
+    with pytest.raises(ValueError, match="not a face of the graph"):
+        r.recognise_slots(part, ledger=ClaimLedger(FaceGraph(twin)))
+
+
 def test_the_ledger_is_written_and_never_read():
     """Slot recognition is identical with a ledger, an empty ledger, and none at all.
 
