@@ -91,10 +91,10 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     assert workflow.count("actions/upload-artifact@") == 1
     assert workflow.count("actions/download-artifact@") == 1
     assert workflow.count(
-        "actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f"
+        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
     ) == 1
     assert workflow.count(
-        "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131"
+        "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
     ) == 1
 
     # Every workflow that runs on `pull_request` must be dispatched by name for the
@@ -142,8 +142,8 @@ def test_ci_workflow_pins_node24_actions() -> None:
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
 
     assert workflow.count("actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803") == 2
-    assert workflow.count("astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78") == 2
-    assert workflow.count("actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f") == 1
+    assert workflow.count("astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39") == 2
+    assert workflow.count("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a") == 1
     assert workflow.count("codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f") == 1
     assert "actions/checkout@v" not in workflow
     assert "astral-sh/setup-uv@v" not in workflow
