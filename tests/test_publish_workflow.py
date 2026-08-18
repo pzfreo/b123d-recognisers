@@ -4,8 +4,10 @@
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).parents[1]
@@ -227,6 +229,10 @@ def test_the_bump_opens_a_pr_and_dispatches_every_pull_request_workflow() -> Non
         assert "workflow_dispatch" in _triggers(_parsed(ROOT / ".github" / "workflows" / name))
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="executes the workflow's bash; every publish job runs on ubuntu-latest",
+)
 def test_the_version_arithmetic_each_leg_performs(tmp_path) -> None:
     """The only logic deciding what version reaches an index, executed rather than named.
 
