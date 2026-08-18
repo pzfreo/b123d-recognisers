@@ -21,14 +21,17 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._typing import EdgeLike, FaceLike
+
+_T = TypeVar("_T")
 
 
 class FaceEdges:
@@ -348,25 +351,37 @@ def axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
     return ax, (loc.X(), loc.Y(), loc.Z())[ax]
 
 
-def connected_components(items: Iterable, joined) -> list[tuple]:
+def connected_components(
+    items: Iterable[_T], joined: Callable[[_T, _T], bool]
+) -> list[tuple[_T, ...]]:
     """Group *items* into connected components under the *joined* predicate.
 
     The other half of the "answer face adjacency once" finding. Lifting the edge->faces map out
     of five modules left the components walk beside it private to `polygonal_bosses`, and that
-    was deliberate: one consumer does not justify a shared primitive. A second consumer makes
-    the judgement wrong rather than merely cautious -- a passage is the same ring of side faces
-    as a polygonal boss, seen from inside.
+    was deliberate: one consumer does not justify a shared primitive.
 
-    *joined* decides adjacency, so callers keep their own notion of it. `polygonal_bosses`
-    requires a shared edge **and** a shared span -- sharing an edge alone chains a boss into
-    the plate it stands on, and sharing a span alone merges two equal-height bosses into one
-    twelve-sided ring -- while a caller grouping labelled faces wants edge sharing only.
+    It is still one consumer here. This is lifted *ahead* of the passage recogniser that will
+    be the second, so the move can be reviewed as the behaviour-neutral change it is rather
+    than buried in a new family -- but on its own it is anticipatory, and by the test above it
+    is not yet justified. It belongs with that recogniser, not before it.
 
-    Components come back as tuples in the order the walk closed them, and each tuple in set
-    iteration order, which is what `polygonal_bosses` has always produced and its goldens pin.
+    **`joined` must be symmetric.** The walk only ever asks `joined(current, other)` with
+    *current* already in the component, so an asymmetric predicate makes the answer depend on
+    set iteration order: over ``0..4``, ``j == i + 1`` yields one component and ``i == j + 1``
+    yields five singletons for the same relation.
+
+    **Component and member order are unspecified.** Reversing either passes the whole suite, so
+    nothing pins them -- `polygonal_bosses` sorts its rings by heading downstream and the record
+    emitters canonicalise. They are also only deterministic for items whose hash is stable
+    across runs, which today means the small ints the one caller passes. Do not rely on either.
+
+    *joined* is supplied by the caller because the two intended consumers do not share one.
+    `polygonal_bosses` requires a shared edge **and** a shared span: span alone merges two
+    equal-height bosses standing on one plate into a single twelve-sided ring, which is
+    reproducible and is why that half is there. A passage needs edge sharing only.
     """
 
-    components: list[tuple] = []
+    components: list[tuple[_T, ...]] = []
     unseen = set(items)
     while unseen:
         connected = {unseen.pop()}
