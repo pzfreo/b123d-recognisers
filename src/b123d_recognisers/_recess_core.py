@@ -642,7 +642,14 @@ def _recognise_slots_one(
     graph: FaceGraph | None = None,
     claims: _Claims | None = None,
 ) -> list[Slot]:
-    """Recognise slots using one solid's faces and bounds."""
+    """Recognise slots using one solid's faces and bounds.
+
+    *graph* and *claims* travel together: without the graph no face resolves to a node, so a
+    caller passing only *claims* would silently claim nothing. Nothing enforces that here
+    because the family's own claim tests do -- they assert the walls a slot names, which an
+    unpaired call cannot produce.
+    """
+
     faces = _planar_faces(part, face_edges, graph)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
@@ -666,6 +673,8 @@ def _recognise_slots_one(
                     # them, and treating consultation as consumption would have this slot
                     # contest every feature it merely looked at.
                     if claims is not None:
+                        # `is not None` narrows the field's type; it is not tolerance. With a
+                        # graph every face resolves or `_planar_faces` has already raised.
                         claims.setdefault(s, set()).update(
                             node for node in (walls[i].node, walls[j].node) if node is not None
                         )
