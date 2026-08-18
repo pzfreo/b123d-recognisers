@@ -76,6 +76,12 @@ def feature_census(part: Part) -> dict[str, int]:
         "hole": holes,
         "hole_pattern": recognise_hole_patterns(holes),
         "boss": recognise_bosses(part, cyls=cyls, face_edges=face_edges),
+        # One band is both the annular channel cut into a shaft and a rung of that shaft's
+        # step ladder, so this counts one machined feature twice.
+        # `_reconcile.steps_that_are_not_grooves` is the rule that fixes it and is deliberately
+        # not wired in yet: at small scale `recognise_turned_steps` reports the groove's rung at
+        # the shaft's OD, so the rule finds nothing to reconcile and the count stops being
+        # scale-free. That defect is upstream of this one and is fixed first.
         "step": recognise_turned_steps(part, cyls=cyls),
         "groove": recognise_grooves(part, cyls=cyls),
         "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
