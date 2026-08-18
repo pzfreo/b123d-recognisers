@@ -43,22 +43,26 @@ both legitimately do — is the reconciler's policy under ADR 0003, and is not d
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 
 
+@dataclass(frozen=True, eq=False, repr=False, slots=True)
 class Claim:
     """What one recogniser believes established one candidate.
 
     Compared by identity, deliberately. Two candidates whose records are equal are still two
     candidates, and a reconciler has to be able to tell them apart.
+
+    Frozen, because the ledger indexes each claim under the nodes it named. A writable
+    ``defining`` would let a claim say it owns one face while ``claims_of`` still answered for
+    another, so the two views of one ledger could contradict each other -- append-only in name
+    only.
     """
 
-    __slots__ = ("claimant", "defining")
-
-    def __init__(self, claimant: object, defining: frozenset[FaceNode]) -> None:
-        self.claimant = claimant
-        self.defining = defining
+    claimant: object
+    defining: frozenset[FaceNode]
 
     def __repr__(self) -> str:
         return f"Claim({self.claimant!r}, defining={len(self.defining)} faces)"
@@ -113,10 +117,17 @@ class ClaimLedger:
     def claims_of(self, node: FaceNode) -> tuple[Claim, ...]:
         """Every claim naming *node* as defining, in claim order; empty for an unclaimed node.
 
+        A foreign node raises rather than reporting nothing. Answering ``()`` would let a
+        reconciler read "belongs to another graph" as "this face is unclaimed" -- a silent false
+        negative in exactly the ownership logic this layer exists to protect, and the one shape
+        of error a read-side check can catch that the write-side one cannot.
+
         This is the direction both consumers read. A reconciler asks it of a candidate's own
         nodes to find what else claims them, and per-face corpus scoring asks it of every node
         -- which ``docs/capabilities.md`` records as impossible today, attribution there being
         statistical rather than per-face.
         """
 
+        if not self._graph.owns(node):
+            raise ValueError(f"{node!r} is not this graph's node")
         return tuple(self._by_node.get(node, ()))

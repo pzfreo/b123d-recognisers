@@ -17,6 +17,8 @@ claimed which face is an interpretation, and lives in the separate ledger tested
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, chamfer, fillet
 
@@ -72,6 +74,22 @@ def test_a_node_of_another_graph_is_refused_by_every_accessor():
     for ask in (mine.face, mine.edges, mine.surface, mine.normal, mine.bounds, mine.neighbours):
         with pytest.raises(ValueError, match="not issued by this graph"):
             ask(foreign)
+
+
+def test_a_node_handle_cannot_be_invalidated():
+    """A writable index would let a caller break a handle the graph itself issued.
+
+    ``owns`` would then refuse a node that genuinely came from this graph, which is the same
+    class of silent wrongness as accepting one that did not.
+    """
+
+    graph = FaceGraph(Box(10, 10, 10))
+    node = graph.nodes[0]
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        node.index = 1
+
+    assert graph.owns(node)
+    assert graph.face(node) is graph.face(graph.nodes[0])
 
 
 def test_the_edges_handed_out_cannot_be_mutated():

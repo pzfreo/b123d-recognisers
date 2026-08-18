@@ -22,6 +22,7 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
@@ -70,6 +71,7 @@ class FaceEdges:
         return edges
 
 
+@dataclass(frozen=True, eq=False, slots=True)
 class FaceNode:
     """A node of one :class:`FaceGraph`, and of no other.
 
@@ -79,18 +81,16 @@ class FaceNode:
     are created only by the graph that owns them and compared by identity, so a foreign node is
     rejected rather than misread.
 
+    Frozen, because a writable ``index`` would let a caller invalidate a handle the graph had
+    issued -- ``owns`` would then refuse a node that genuinely came from this graph. ``eq=False``
+    keeps comparison by identity, which is the whole mechanism.
+
     Opaque by design. ``index`` is a position in one part's face list, exposed because the graph
     itself needs it; nothing outside this module should read it, and it means nothing once the
     part changes.
     """
 
-    __slots__ = ("index",)
-
-    def __init__(self, index: int) -> None:
-        self.index = index
-
-    def __repr__(self) -> str:
-        return f"FaceNode({self.index})"
+    index: int
 
 
 class FaceGraph:

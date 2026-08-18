@@ -15,6 +15,7 @@ writes can be read back in a way that changes what another recogniser sees.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 
 import pytest
@@ -81,6 +82,46 @@ def test_a_node_of_another_graph_is_refused():
 
     assert len(ledger) == 0, "a refused claim must not be half-recorded"
     assert ledger.claims_of(graph.nodes[0]) == ()
+
+
+def test_reading_claims_for_a_foreign_node_is_refused_rather_than_answered():
+    """The one error shape the write-side check cannot catch.
+
+    Answering ``()`` would let a reconciler read "this node belongs to another graph" as "this
+    face is unclaimed" — a silent false negative in the ownership logic this layer exists to
+    protect. The foreign node here is in range locally, and the local node at that index is
+    genuinely claimed, so a bounds check would have answered wrongly rather than not at all.
+    """
+
+    graph = FaceGraph(Box(10, 10, 10))
+    other = FaceGraph(Box(4, 4, 4))
+    ledger = ClaimLedger(graph)
+    ledger.add_defining(Candidate("slot"), [graph.nodes[1]])
+
+    assert ledger.claims_of(graph.nodes[1]), "the local node at this index must be claimed"
+    with pytest.raises(ValueError, match="not this graph's node"):
+        ledger.claims_of(other.nodes[1])
+
+
+def test_a_registered_claim_cannot_be_rewritten():
+    """Append-only in fact, not in name.
+
+    The ledger indexes each claim under the nodes it named, so a writable ``defining`` would
+    let the claim and ``claims_of`` contradict each other about the same ledger.
+    """
+
+    graph = FaceGraph(Box(10, 10, 10))
+    ledger = ClaimLedger(graph)
+    claim = ledger.add_defining(Candidate("slot"), [graph.nodes[0]])
+
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        claim.defining = frozenset({graph.nodes[1]})
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        claim.claimant = Candidate("pocket")
+
+    assert claim.defining == frozenset({graph.nodes[0]})
+    assert ledger.claims_of(graph.nodes[0]) == (claim,)
+    assert ledger.claims_of(graph.nodes[1]) == ()
 
 
 def test_a_claim_with_no_defining_face_is_refused():
