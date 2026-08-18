@@ -7,9 +7,12 @@ from __future__ import annotations
 from functools import partial
 
 from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_core import (
+    _body_scoped_pairs,
     _body_scoped_records,
     _channel_sort_key,
+    _Claims,
     _recognise_channels_one,
     _recognise_pockets_one,
     _recognise_slots_one,
@@ -19,7 +22,9 @@ from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._typing import Part
 
 
-def recognise_slots(part: Part, *, face_edges: FaceEdges | None = None) -> list[Slot]:
+def recognise_slots(
+    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+) -> list[Slot]:
     """Recognise enclosed through-slots independently within each solid in *part*.
 
     Returns a list of :class:`Slot`, one per physical feature, in a
@@ -30,11 +35,42 @@ def recognise_slots(part: Part, *, face_edges: FaceEdges | None = None) -> list[
 
     A compound is scanned per solid so faces from separate components cannot
     combine into a fictitious slot across the gap between them.
+
+    *ledger* is injected the way *face_edges* is, and records which faces each returned slot was
+    built from -- its two walls, plus the walls of every candidate folded into it: the same void
+    seen through its other wall pair, and the arms a crossing channel split it into. It changes
+    nothing about what is returned: claims are written and never read here, so no slot's
+    existence can depend on another family having run. It exists so a second family can ask
+    whether it is describing the same void, instead of comparing record coordinates.
+
+    *ledger*'s graph must have been built from *part*; a face that does not resolve against it
+    is refused rather than silently claiming nothing, because an empty ledger would otherwise
+    read as "no overlap" to the reconciler it exists to serve.
+
+    A slot recovered from its end caps rather than from paired flat walls claims nothing, and is
+    absent from the ledger. Its evidence is two cylindrical caps, which are not walls, and no
+    consumer needs it: a caller reconciling against a ring of planar faces cannot be looking at
+    a slot whose ends are round.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    slots = _body_scoped_records(sources, partial(_recognise_slots_one, face_edges=face_edges))
-    return sorted(slots, key=lambda slot: (slot.width, _region_center(slot)))
+    claims: _Claims | None = {} if ledger is not None else None
+    pairs = _body_scoped_pairs(
+        sources,
+        partial(
+            _recognise_slots_one,
+            face_edges=face_edges,
+            graph=None if ledger is None else ledger.graph,
+            claims=claims,
+        ),
+        claims,
+    )
+    pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+    if ledger is not None:
+        for slot, nodes in pairs:
+            if nodes:
+                ledger.add_defining(slot, nodes)
+    return [slot for slot, _ in pairs]
 
 
 def recognise_pockets(part: Part, *, face_edges: FaceEdges | None = None) -> list[Pocket]:

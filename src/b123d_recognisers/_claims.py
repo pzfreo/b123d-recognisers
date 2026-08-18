@@ -84,6 +84,16 @@ class ClaimLedger:
     def __len__(self) -> int:
         return len(self._claims)
 
+    @property
+    def graph(self) -> FaceGraph:
+        """The graph whose nodes this ledger accepts.
+
+        Exposed because a recogniser handed a ledger needs the graph to turn its faces into
+        nodes, and passing both would let a caller pair the wrong two.
+        """
+
+        return self._graph
+
     def add_defining(self, claimant: object, nodes: Iterable[FaceNode]) -> Claim:
         """Record that *nodes* are what established *claimant*, and return the claim.
 

@@ -15,13 +15,25 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._typing import Bounds, Part
 
 _AXES = {"x": 0, "y": 1, "z": 2}
 _R = TypeVar("_R", Slot, Pocket)
+
+#: Which faces a record was built from, while it is being built. Keyed by the record's *value*,
+#: which is safe here and nowhere else: this map lives inside one recognition of one part, and
+#: `_merge` already treats two candidates within `_MERGE_TOL` of each other as one feature -- so
+#: two value-equal candidates are, by the pipeline's own definition, the same slot. The ledger
+#: the values end up in keys by claim identity instead, because there two equal-valued *records*
+#: really can be two features.
+#:
+#: Spelled out rather than left as a bare ``dict``: the alias is the only description this map
+#: has, and an unparameterised one type-checks ``setdefault(<anything>, 1).no_such_method()``
+#: clean. `_Face.bb` below records what that costs on a field this module touches constantly.
+_Claims = dict[Slot | Pocket, set[FaceNode]]
 _AXIS_ALIGNED_TOL = 1e-3
 # Coordinate-merge and floor-coincidence bands. **Absolute, per ADR 0008.**
 #
@@ -40,6 +52,23 @@ _VOID_INSET = 0.1
 _VOID_VOL_FRAC = 0.01
 _LENGTH_TIE_FRAC = 0.05
 _SLOT_MAX_SPAN_FRAC = 0.9
+
+
+def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) -> None:
+    """Give *into* the nodes of every record in *from_*, the records the pipeline replaces by it.
+
+    Every transform below rebuilds records rather than mutating them -- `_merge` keeps one of a
+    group, `_collapse_collinear` spans several into one, `_extend_obround_ends` `replace`s
+    fields -- so without this the claim would be attached to a record that never reaches the
+    caller. `_body_scoped_pairs` `replace`s a field too, but reads the map before it does rather
+    than going through here, because that is also where the map is scoped to one solid.
+    """
+
+    if claims is None:
+        return
+    nodes = claims.setdefault(into, set())
+    for record in from_:
+        nodes |= claims.get(record, set())
 
 
 def _outward_normal(face) -> tuple[float, float, float] | None:
@@ -75,6 +104,11 @@ class _Face:
     #: placeholder silently disabled checking on the field this module touches most.
     bb: Bounds
     wall: bool  # a valid slot wall: LINE/CIRCLE edges, at least one straight LINE
+    #: The graph node for this face, when the caller asked for claims; None otherwise. The
+    #: reduction above is what the recogniser needs to *decide*, and it deliberately drops the
+    #: face -- so before this field there was no way to say which faces a slot was built from,
+    #: and passage/slot reconciliation compared record coordinates instead.
+    node: FaceNode | None = None
 
 
 def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
@@ -99,8 +133,25 @@ def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
     return n_line >= 1 and n_circle <= 1
 
 
-def _planar_faces(part: Part, face_edges: FaceEdges | None = None) -> list[_Face]:
-    """All axis-aligned planar faces as :class:`_Face` records (computed once)."""
+def _planar_faces(
+    part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
+) -> list[_Face]:
+    """All axis-aligned planar faces as :class:`_Face` records (computed once).
+
+    *graph* is threaded only when the caller wants claims. Without it no node is resolved, so
+    a run that claims nothing pays nothing -- which matters because this is called once per
+    solid by three families.
+
+    A compound is scanned per solid while the graph covers the whole part, and the faces of a
+    solid are the same shapes the part yields, so they resolve against it. A face that does not
+    resolve is refused: it can only mean the caller paired a graph with a different part, and
+    while no *wrong* claim would then be made, no claim would be made either -- leaving the
+    caller unable to tell "this part has no claimable slots" from "you handed me the wrong
+    graph". A reconciler reading that empty ledger concludes there is no overlap and reports
+    the duplicate feature it exists to suppress. `ClaimLedger.claims_of` refuses a foreign node
+    for the same reason rather than answering "no claims"; this is that check one layer up.
+    """
+
     faces = []
     for face in part.faces():
         nrm = _outward_normal(face)
@@ -109,7 +160,17 @@ def _planar_faces(part: Part, face_edges: FaceEdges | None = None) -> list[_Face
         axis = _dominant_axis(nrm)
         if axis is None:
             continue
-        faces.append(_Face(nrm, axis, face.bounding_box(), _is_wall(face, face_edges)))
+        bb = face.bounding_box()
+        node = None
+        if graph is not None:
+            node = graph.node_of(face)
+            if node is None:
+                # Located, not `repr`d: a build123d face reprs as its memory address, which
+                # tells the caller nothing about which part they actually handed in.
+                raise ValueError(
+                    f"the claim ledger's graph was built from a different part: it has no {bb}"
+                )
+        faces.append(_Face(nrm, axis, bb, _is_wall(face, face_edges), node))
     return faces
 
 
@@ -302,7 +363,9 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
     )
 
 
-def _extend_obround_ends(records: list[_R], part: Part) -> list[_R]:
+def _extend_obround_ends(
+    records: list[_R], part: Part, claims: _Claims | None = None
+) -> list[_R]:
     """Extend radiused-end (obround) slots/pockets to their **overall** length.
 
     The recogniser pairs the two flat side walls, so the raw ``lo``/``hi`` stop at the straight
@@ -320,14 +383,14 @@ def _extend_obround_ends(records: list[_R], part: Part) -> list[_R]:
     for s in records:
         r = s.width / 2
         if _end_cap_at(caps, s, s.lo) and _end_cap_at(caps, s, s.hi):
-            out.append(
-                replace(
-                    s,
-                    lo=round(s.lo - r, 2),
-                    hi=round(s.hi + r, 2),
-                    length=round(s.hi - s.lo + 2 * r, 2),
-                )
+            extended = replace(
+                s,
+                lo=round(s.lo - r, 2),
+                hi=round(s.hi + r, 2),
+                length=round(s.hi - s.lo + 2 * r, 2),
             )
+            _absorb(claims, extended, s)
+            out.append(extended)
         else:
             out.append(s)
     return out
@@ -573,9 +636,21 @@ def _recognise_obround_from_ends(
     return cast(list[Slot] | list[Pocket], out)
 
 
-def _recognise_slots_one(part: Part, face_edges: FaceEdges | None = None) -> list[Slot]:
-    """Recognise slots using one solid's faces and bounds."""
-    faces = _planar_faces(part, face_edges)
+def _recognise_slots_one(
+    part: Part,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    claims: _Claims | None = None,
+) -> list[Slot]:
+    """Recognise slots using one solid's faces and bounds.
+
+    *graph* and *claims* travel together: without the graph no face resolves to a node, so a
+    caller passing only *claims* would silently claim nothing. Nothing enforces that here
+    because the family's own claim tests do -- they assert the walls a slot names, which an
+    unpaired call cannot produce.
+    """
+
+    faces = _planar_faces(part, face_edges, graph)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     # Only straight-walled faces can be slot walls; bucket them by axis so the
@@ -593,13 +668,25 @@ def _recognise_slots_one(part: Part, face_edges: FaceEdges | None = None) -> lis
                 # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
                     candidates.append(s)
+                    # The two walls are what established this slot. Nothing else here is
+                    # defining: the floor test consults other faces without being bounded by
+                    # them, and treating consultation as consumption would have this slot
+                    # contest every feature it merely looked at.
+                    if claims is not None:
+                        # `is not None` narrows the field's type; it is not tolerance. With a
+                        # graph every face resolves or `_planar_faces` has already raised.
+                        claims.setdefault(s, set()).update(
+                            node for node in (walls[i].node, walls[j].node) if node is not None
+                        )
     # Stubby obround through-slots (straight section < width) have no pairable flat walls, so
     # recover them from their end caps. Emitted at the straight-wall junctions like the
     # flat-wall path, so `_merge` folds any duplicate an elongated obround also produced.
     candidates.extend(_recognise_obround_from_ends(part, faces))
     # Recombine arms of a crossing channel split by the intersection, then extend any
     # radiused-end (obround) slot to its overall length.
-    return _extend_obround_ends(_collapse_collinear(_merge(candidates), part), part)
+    return _extend_obround_ends(
+        _collapse_collinear(_merge(candidates, claims), part, claims), part, claims
+    )
 
 
 def _body_signature(solid) -> tuple[float, ...]:
@@ -625,13 +712,31 @@ def _body_signature(solid) -> tuple[float, ...]:
 
 def _body_scoped_records(sources, recognise_one) -> list:
     """Recognise each source and attach unambiguous body correspondence."""
+    return [record for record, _ in _body_scoped_pairs(sources, recognise_one)]
+
+
+def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:
+    """The same, paired with the nodes each record was built from.
+
+    The claim is read **per solid**, before the next one runs, and the map is cleared between
+    them. Reading it afterwards would have been wrong for a compound: the map is keyed by record
+    value, and two solids occupying the same space produce value-equal slots *and* duplicate body
+    signatures -- so both records would have come back carrying the union of both solids' faces.
+    That is precisely the cross-solid confusion `body_key` fails closed on, and it would have
+    reappeared in the claims.
+    """
+
     signatures = [_body_signature(solid) for solid in sources]
     counts = Counter(signatures)
-    return [
-        replace(record, body_key=signature if counts[signature] == 1 else None)
-        for solid, signature in zip(sources, signatures, strict=True)
-        for record in recognise_one(solid)
-    ]
+    out: list[tuple] = []
+    for solid, signature in zip(sources, signatures, strict=True):
+        if claims is not None:
+            claims.clear()
+        for record in recognise_one(solid):
+            keyed = replace(record, body_key=signature if counts[signature] == 1 else None)
+            nodes = frozenset() if claims is None else frozenset(claims.get(record, ()))
+            out.append((keyed, nodes))
+    return out
 
 
 def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
@@ -703,7 +808,9 @@ def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
     return bool(inter_vol <= _VOID_VOL_FRAC * box_vol)
 
 
-def _collapse_collinear(slots: list[Slot], part: Part) -> list[Slot]:
+def _collapse_collinear(
+    slots: list[Slot], part: Part, claims: _Claims | None = None
+) -> list[Slot]:
     """Recombine slot arms split by a crossing channel into whole channels.
 
     A ``+`` of two intersecting through-channels is milled as one continuous slot
@@ -739,19 +846,21 @@ def _collapse_collinear(slots: list[Slot], part: Part) -> list[Slot]:
         base = members[0]
         lo = min(m.lo for m in members)
         hi = max(m.hi for m in members)
-        out.append(
-            Slot(
-                width_axis=base.width_axis,
-                long_axis=base.long_axis,
-                width=base.width,
-                length=round(hi - lo, 2),
-                w_center=base.w_center,
-                lo=round(lo, 2),
-                hi=round(hi, 2),
-                d_lo=base.d_lo,
-                d_hi=base.d_hi,
-            )
+        spanned = Slot(
+            width_axis=base.width_axis,
+            long_axis=base.long_axis,
+            width=base.width,
+            length=round(hi - lo, 2),
+            w_center=base.w_center,
+            lo=round(lo, 2),
+            hi=round(hi, 2),
+            d_lo=base.d_lo,
+            d_hi=base.d_hi,
         )
+        # One channel milled through, split into arms by a crossing channel: every arm's walls
+        # bound the whole feature.
+        _absorb(claims, spanned, *members)
+        out.append(spanned)
     return sorted(out, key=lambda c: (c.width, _region_center(c)))
 
 
@@ -765,7 +874,7 @@ def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
     return (c["x"], c["y"], c["z"])
 
 
-def _merge(candidates: list[_R]) -> list[_R]:
+def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
     """A rectangular slot is bounded by two orthogonal opposed-wall pairs (the
     width walls and the length end-caps), so the same feature is detected twice
     — once per pair.  Collapse candidates that occupy the same region, keeping
@@ -777,7 +886,11 @@ def _merge(candidates: list[_R]) -> list[_R]:
     kept: list[_R] = []
     for s in sorted(candidates, key=lambda c: (c.width, _region_center(c))):
         cs = _region_center(s)
-        if any(math.dist(cs, _region_center(k)) <= _MERGE_TOL for k in kept):
+        keeper = next((k for k in kept if math.dist(cs, _region_center(k)) <= _MERGE_TOL), None)
+        if keeper is not None:
+            # The dropped candidate is the *same* feature seen through its other wall pair, so
+            # its walls are as much this slot's evidence as the ones that survived.
+            _absorb(claims, keeper, s)
             continue
         kept.append(s)
     return kept
