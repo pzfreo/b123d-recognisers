@@ -31,11 +31,17 @@ bundles dependency binaries must review and satisfy the corresponding binary-dis
 
 ## Vendored test corpora
 
-The STEP models under `tests/corpus` are third-party geometry redistributed here so that this
-project's tests run against parts it did not author. They are **not** part of the published
-wheel or source distribution — `pyproject.toml` excludes `/tests/corpus` from the sdist and the
-wheel packages only `src/b123d_recognisers` — and they carry their own terms, which the
-Apache-2.0 licence of this project does not alter.
+Most of the STEP models under `tests/corpus` are third-party geometry redistributed here so
+that this project's tests run against parts it did not author. They are **not** part of the
+published wheel or source distribution — `pyproject.toml` excludes `/tests/corpus` from the
+sdist and the wheel packages only `src/b123d_recognisers` — and they carry their own terms,
+which the Apache-2.0 licence of this project does not alter.
+
+`tests/corpus/gramel` is the exception and is listed here only so this section stays true of
+the whole directory: it is the author's own part, under this project's own licence, and needs
+no third-party notice. It is vendored for the same reason the others are — the two third-party
+corpora are milled prismatic parts and contain no turned geometry at all, so the turned
+families had no real part behind them.
 
 ### NIST MBE PMI test cases (`tests/corpus/nist`)
 

@@ -1,5 +1,7 @@
-# Vendored third-party STEP corpora are byte-identical to their upstream distributions,
-# and THIRD_PARTY_NOTICES.md says so. Windows runners default to core.autocrlf=true, which
-# would rewrite these ASCII files on checkout and make that claim false.
+# Vendored STEP corpora are byte-identical to the distributions they came from, and
+# THIRD_PARTY_NOTICES.md says so for the third-party ones. Windows runners default to
+# core.autocrlf=true, which would rewrite these ASCII files on checkout and make that claim
+# false. It applies to the first-party fixture under tests/corpus/gramel too, which is pinned
+# by exact rung diameters rather than by counts.
 *.stp -text
 *.step -text
