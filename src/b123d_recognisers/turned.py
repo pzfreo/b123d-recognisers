@@ -39,7 +39,6 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
-from b123d_recognisers.grooves import _node
 
 # A face's axial position counts as on a band edge / its normal counts as
 # axis-aligned within these tolerances (mm / unit-vector component).
@@ -232,5 +231,5 @@ def recognise_turned_steps(
         return []
     if ledger is not None:
         for step, over in found:
-            ledger.add_defining(step, [_node(ledger, c["face"]) for c in over])
+            ledger.add_defining(step, [ledger.graph.require_node(c["face"]) for c in over])
     return [step for step, _ in found]

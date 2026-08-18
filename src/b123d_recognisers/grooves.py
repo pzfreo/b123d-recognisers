@@ -33,7 +33,6 @@ from dataclasses import dataclass
 
 from build123d import GeomType
 
-from b123d_recognisers._adjacency import FaceNode
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
@@ -248,24 +247,5 @@ def recognise_grooves(
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for groove, face in out:
-            ledger.add_defining(groove, [_node(ledger, face)])
+            ledger.add_defining(groove, [ledger.graph.require_node(face)])
     return [groove for groove, _ in out]
-
-
-def _node(ledger: ClaimLedger, face: FaceLike) -> FaceNode:
-    """The ledger graph's node for *face*, or a refusal that names the mistake.
-
-    The cylinder substrate carries the face on every band it reports, so no plumbing is needed
-    to get here -- unlike the recess families, whose reduced face record had dropped it. What
-    is still needed is the check: a graph built from a different part resolves nothing, and an
-    empty ledger reads downstream as "these families claim nothing" rather than as "you paired
-    the wrong graph".
-    """
-
-    node = ledger.graph.node_of(face)
-    if node is None:
-        raise ValueError(
-            "the claim ledger's graph was built from a different part: it has no "
-            f"{face.bounding_box()}"
-        )
-    return node

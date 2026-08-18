@@ -136,3 +136,26 @@ def test_the_rule_refuses_a_step_list_that_is_not_the_one_that_was_claimed():
     except ValueError:
         return
     raise AssertionError("a short list must not be reconciled against another list's claims")
+
+
+def test_a_ledger_built_from_another_shaft_is_refused_rather_than_left_empty():
+    """The provenance check, on both families, with a twin that is equal by value.
+
+    A graph built from a different part resolves nothing, so the ledger comes back empty — and
+    empty reads downstream as "these families claim nothing" rather than as "you paired the
+    wrong graph", which is the reading a reconciler turns into a duplicate feature. The twin is
+    the same shaft by value, so this proves provenance rather than geometry.
+    """
+
+    part = _grooved_shaft()
+    twin = _grooved_shaft()
+    assert r.recognise_grooves(twin) == r.recognise_grooves(part), "the twin is this shaft"
+
+    for recognise in (r.recognise_grooves, r.recognise_turned_steps):
+        foreign = ClaimLedger(FaceGraph(twin))
+        try:
+            recognise(part, ledger=foreign)
+        except ValueError as refusal:
+            assert "built from a different part" in str(refusal)
+        else:
+            raise AssertionError(f"{recognise.__name__} accepted another part's graph")

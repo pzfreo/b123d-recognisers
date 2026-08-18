@@ -102,6 +102,10 @@ def steps_that_are_not_grooves(
     waits for that fix.
     """
 
+    # Takes the records where `passages_that_are_not_slots` takes the part and runs the
+    # recogniser itself. Not an oversight: that one owns the call so the pairing below cannot
+    # be wrong, but the full ladder is needed by `build_recognition_result` as well, and owning
+    # the call here would mean scanning the shaft twice to throw one of the results away.
     floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
     # Paired by position, as above: *steps* must be what `recognise_turned_steps` returned
     # against this ledger, which writes one claim per step in return order. `strict=True` says
