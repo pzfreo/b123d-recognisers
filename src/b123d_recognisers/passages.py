@@ -28,8 +28,11 @@ call sibling recognisers") and ADR 0003 forbids by name. An earlier draft did ex
 comparing a ring's averaged centre against a slot record's XY centre within 1e-6. So this module
 reports every ring it finds and records which faces each was built from;
 :func:`b123d_recognisers.build_recognition_result` holds the one named rule that resolves the
-overlap. `recognise_passages` alone therefore reports *candidates*, and the aggregate reports
-the reconciled set -- the two differ by exactly the through slots.
+overlap. `recognise_passages` therefore reports *candidates* and the aggregate reports the
+reconciled set, differing by exactly the through slots. That is not this family being special:
+every base recogniser proposes under ADR 0003, and this is simply the first pair the reconciler
+has had a rule for. `recognise_grooves` and `recognise_turned_steps` describe one band twice
+today and nothing decides between them yet.
 
 Over 120 MFCAD++ models: 100% precision, 51% instance recall (65 of 128) and 49% of
 labelled faces, measured against that corpus's own labels. The corpus is synthetic and the
