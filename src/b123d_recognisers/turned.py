@@ -198,10 +198,11 @@ def recognise_turned_steps(
         # and depends on a float comparison landing the right way. Containment has no such
         # edge, and needs no constant.
         over: list[CylinderEvidence] = [c for c in bands if c["s_lo"] <= pos <= c["s_hi"]]
-        for c in bands if not over else ():
-            pad = min(_OD_SPAN_PAD, (c["s_hi"] - c["s_lo"]) / 2)
-            if c["s_lo"] - pad <= pos <= c["s_hi"] + pad:
-                over.append(c)
+        if not over:
+            for c in bands:
+                pad = min(_OD_SPAN_PAD, (c["s_hi"] - c["s_lo"]) / 2)
+                if c["s_lo"] - pad <= pos <= c["s_hi"] + pad:
+                    over.append(c)
         if not over:
             return []
         widest = max(c["diameter"] for c in over)
@@ -238,12 +239,17 @@ def recognise_turned_steps(
     # as a phantom ø0 diameter.
     found = []
     for i in range(len(planes) - 1):
-        middle = (planes[i] + planes[i + 1]) / 2
+        # One selection, read twice: the diameter and the faces behind it must be the same
+        # bands, and calling `bands_over` again would only invite them to stop being.
+        over = bands_over((planes[i] + planes[i + 1]) / 2)
         step = TurnedStep(
-            axis=axis, lo=planes[i], hi=planes[i + 1], diameter=2 * local_od(middle)
+            axis=axis,
+            lo=planes[i],
+            hi=planes[i + 1],
+            diameter=over[0]["diameter"] if over else 0.0,
         )
         if step.diameter > 0:
-            found.append((step, bands_over(middle)))
+            found.append((step, over))
     if len(found) < 2:  # fewer than two real steps → nothing to dimension axially
         return []
     if ledger is not None:
