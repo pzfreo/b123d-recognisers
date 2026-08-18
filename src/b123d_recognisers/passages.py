@@ -199,26 +199,36 @@ def _cross_section(
     order = [ring[0]]
     seen = {ring[0]}
     while len(order) < len(ring):
-        onward = (n for n in graph.neighbours(order[-1]) if n in members and n not in seen)
-        step = next(onward, None)
-        if step is None:
-            return None
+        # Every member has exactly two in-ring neighbours and the component is connected, so
+        # the members form one cycle and there is always exactly one unvisited step. A bare
+        # `next` rather than a decline: were that invariant ever to break, raising is the
+        # honest answer, and a `return None` here would be an untestable branch pretending to
+        # handle a case its caller has already ruled out.
+        step = next(n for n in graph.neighbours(order[-1]) if n in members and n not in seen)
         seen.add(step)
         order.append(step)
 
     corners: list[tuple[float, float]] = []
     for at, node in enumerate(order):
-        shared = graph.shared_edges(node, order[(at + 1) % len(order)])
-        if len(shared) != 1:
-            return None
-        box = shared[0].bounding_box()
-        lo = (box.min.X, box.min.Y, box.min.Z)
-        hi = (box.max.X, box.max.Y, box.max.Z)
-        if any(hi[a] - lo[a] > _SPAN_EPS for a in others):
-            return None  # the junction is not one line running down the passage
-        corners.append(
-            (0.5 * (lo[others[0]] + hi[others[0]]), 0.5 * (lo[others[1]] + hi[others[1]]))
+        # Two planes both parallel to the run axis meet in one line parallel to it, so every
+        # edge two consecutive walls share lies on that line and the whole junction is a single
+        # point across the section -- however many segments the kernel split it into, and
+        # without needing to check, because the wall filter above is what guarantees it. What
+        # is *not* guaranteed is that the corners then form a polygon, and `_canonical` is
+        # where that is decided.
+        boxes = [
+            edge.bounding_box()
+            for edge in graph.shared_edges(node, order[(at + 1) % len(order)])
+        ]
+        across, along = (
+            0.5
+            * (
+                min(getattr(box.min, "XYZ"[a]) for box in boxes)
+                + max(getattr(box.max, "XYZ"[a]) for box in boxes)
+            )
+            for a in others
         )
+        corners.append((across, along))
     return _canonical(corners)
 
 
@@ -371,9 +381,10 @@ def _capped(
             # cap candidate disappeared. A blend at the bottom of a blind void still closes
             # it, so what matters is whether something sits across the end of the span
             # inside the ring, not what surface type it happens to be.
+            # Every ring member's span *is* `low`..`high` -- that is what put them in one ring
+            # -- and a neighbour shares an edge with one, so its own span always overlaps.
+            # There is nothing to reject on that count, only on where within the span it sits.
             end = graph.bounds(other)
-            if end[axis][1] < low - _SPAN_EPS or end[axis][0] > high + _SPAN_EPS:
-                continue
             near_low = abs(end[axis][0] - low) <= _SPAN_EPS or abs(end[axis][1] - low) <= _SPAN_EPS
             near_high = (
                 abs(end[axis][0] - high) <= _SPAN_EPS or abs(end[axis][1] - high) <= _SPAN_EPS

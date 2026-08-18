@@ -355,3 +355,19 @@ def _winds_around(polygon, point) -> bool:
             if point[0] < crossing:
                 inside = not inside
     return inside
+
+
+def test_a_feature_cut_into_a_wall_partway_along_does_not_cap_the_passage():
+    """A neighbour inside the run, touching neither end, is not a floor.
+
+    The cap test asks whether something sits *across* an end of the span. A notch milled into
+    one wall halfway along overlaps the span and reaches neither end, and rejecting it on
+    proximity alone would lose the passage. This is the branch that says so.
+    """
+
+    part = Box(60, 40, 20) - Box(10, 10, 60) - Pos(7, 0, 0) * Box(6, 6, 4)
+    (passage,) = recognise_passages(part)
+
+    assert passage.axis == "z"
+    assert passage.length == 20.0
+    assert passage.section == ((-5.0, -5.0), (5.0, -5.0), (5.0, 5.0), (-5.0, 5.0))
