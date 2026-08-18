@@ -30,6 +30,35 @@ interpretation; a named reconciler accepts, combines or rejects conflicting clai
 reason. No universal constraint solver is required: family-specific rules may migrate behind the
 one reconciliation protocol incrementally.
 
+**Claims are written during discovery and read only afterwards** (#92). A recogniser records the
+faces a candidate was established by, into a run-local append-only claim ledger; nothing consults
+those claims while recognisers run. The ledger is deliberately *not* the face graph: the graph
+holds geometric fact, a claim is an interpretation of that fact, and separating them keeps the
+graph immutable and reusable while each run gets its own ledger. A claim also names a **role** —
+`defining` today — because a feature does not relate to every face it touched the same way, and
+treating consultation as consumption would manufacture conflicts. This is what makes "every
+claimed region is traceable" achievable at all —
+without it, whether two records describe one feature can only be answered by comparing coordinates
+each family derived by its own procedure, which is how passage/slot reconciliation was first
+written and is the defect that prompted this amendment.
+
+Writing claims during discovery does **not** merge the two stages, because the separation this ADR
+protects is against *order dependence*: a recogniser that declined a face because another family
+had already claimed it would make the census depend on which family ran first. That remains
+forbidden. Recording what a recogniser used cannot change what any recogniser returns.
+
+Overlapping claims are evidence, not a verdict. The reconciler applies an explicit compatibility
+or precedence rule; two candidates sharing a defining face may both survive, as a pattern and its
+members do.
+
+This is close to what the prior art does. Analysis Situs marks feature candidate faces on its
+attributed adjacency graph and writes recognition results back as further attributes, so
+recognition accretes rather than returning in one shot; see
+[`docs/prior-art-feature-recognition.md`](../prior-art-feature-recognition.md). It corroborates
+the decision rather than settling it — the local evidence is what settles it, and the sidecar
+ledger is a deliberate divergence taken to keep the graph immutable. An earlier reading of this
+ADR treated it as forbidding claims outright, which it never did.
+
 Identity is derived from geometry under documented tolerance. It must not use Python identity,
 kernel traversal order, display labels, page coordinates or a bare solid enumeration index.
 

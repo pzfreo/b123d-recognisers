@@ -1,0 +1,149 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+
+"""What a recogniser built a candidate from, so overlap stops being answered by coordinates.
+
+The defect this exists for is concrete: `recognise_passages` suppressed a passage whose XY
+centre matched a slot's, comparing two numbers derived by different procedures and ignoring
+the passage's own axis. The last test here builds the geometry that defeats that answer — a
+bore and a channel whose XY centres are *identical* to the last bit, sharing no face at all.
+
+The rest pin the three properties the design rests on: claims are separable from the graph's
+geometric facts, two equal-valued records stay distinguishable, and nothing a recogniser
+writes can be read back in a way that changes what another recogniser sees.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pytest
+from build123d import Box, Cylinder, Pos
+
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._claims import ClaimLedger
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """A stand-in with record semantics: frozen, hashable, and equal by value."""
+
+    kind: str
+
+
+def test_two_equal_valued_claimants_stay_distinguishable():
+    """The reason claims are keyed by id and not by the record itself.
+
+    Records compare by value, so a dict keyed on the claimant would have merged two
+    equal-valued candidates into one claim covering the union of their faces — and a
+    reconciler asked which of them to keep would have found a single entry naming both sets.
+    """
+
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    first = ledger.add_defining(Candidate("slot"), [0, 1])
+    second = ledger.add_defining(Candidate("slot"), [2, 3])
+
+    assert ledger.claimant(first) == ledger.claimant(second)
+    assert first != second
+    assert ledger.defining(first) == frozenset({0, 1})
+    assert ledger.defining(second) == frozenset({2, 3})
+    assert len(ledger) == 2
+    assert list(ledger.claims) == [first, second]
+
+
+def test_a_node_reports_every_claim_naming_it():
+    """Both consumers read this direction: reconciliation, and per-face corpus scoring."""
+
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    passage = ledger.add_defining(Candidate("passage"), [0, 1, 2])
+    slot = ledger.add_defining(Candidate("slot"), [2, 3])
+
+    assert ledger.claims_of(0) == (passage,)
+    assert ledger.claims_of(2) == (passage, slot)
+    assert ledger.claims_of(5) == ()
+
+
+def test_a_node_of_another_graph_is_refused():
+    """A ledger paired with the wrong graph would report overlaps between different solids.
+
+    Node ids are positions in one part's face list and mean nothing elsewhere, so the mistake
+    is silent unless it is checked: node 20 is a perfectly good id in a part with more faces.
+    """
+
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    with pytest.raises(ValueError, match=r"\[20\]"):
+        ledger.add_defining(Candidate("slot"), [0, 20])
+
+    assert len(ledger) == 0, "a refused claim must not be half-recorded"
+    assert ledger.claims_of(0) == ()
+
+
+def test_claiming_changes_nothing_the_graph_answers():
+    """Write-only, stated as a property of the pair rather than asserted in prose.
+
+    If any geometric answer moved once a claim was made, a recogniser running second would see
+    a different graph from one running first — precisely the order dependence that keeping
+    claims out of the graph avoids.
+    """
+
+    graph = FaceGraph(featured_part())
+    ledger = ClaimLedger(graph)
+    snapshot = [
+        (graph.neighbours(node), graph.bounds(node), graph.normal(node), graph.is_planar(node))
+        for node in graph.nodes
+    ]
+
+    for node in graph.nodes:
+        ledger.add_defining(Candidate(f"candidate-{node}"), [node])
+
+    assert snapshot == [
+        (graph.neighbours(node), graph.bounds(node), graph.normal(node), graph.is_planar(node))
+        for node in graph.nodes
+    ]
+    assert not hasattr(graph, "_claims"), "ownership must not have leaked back onto the graph"
+
+
+def featured_part():
+    return Box(60, 40, 12) - Pos(-18, 0, 0) * Cylinder(4, 12) - Pos(15, 0, 0) * Box(24, 8, 12)
+
+
+def test_claimed_faces_separate_features_that_share_an_xy_centre():
+    """The case the coordinate heuristic gets wrong, on real geometry.
+
+    A Z bore and an X-running channel through the same part have *exactly* the same XY centre,
+    so suppressing one because the other's centre matched within a tolerance would delete a
+    genuine feature. They share no defining face, and the ledger says so.
+    """
+
+    part = Box(60, 40, 20) - Cylinder(3, 20) - Pos(0, 0, 6) * Box(60, 8, 4)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+
+    bore = [node for node in graph.nodes if not graph.is_planar(node)]
+    channel = [
+        node
+        for node in graph.nodes
+        if graph.is_planar(node)
+        and abs((graph.normal(node) or (0, 0, 0))[1]) > 0.99
+        and max(abs(edge) for edge in graph.bounds(node)[1]) < 10.0
+    ]
+    # Pinned so a fixture change cannot quietly reduce either side to nothing and leave the
+    # disjointness assertion below passing for the wrong reason: the channel splits the bore
+    # into two cylindrical bands, and the channel contributes its two side walls.
+    assert (len(bore), len(channel)) == (2, 2)
+
+    bore_claim = ledger.add_defining(Candidate("bore"), bore)
+    channel_claim = ledger.add_defining(Candidate("channel"), channel)
+
+    assert _xy_centre(graph, bore) == pytest.approx(_xy_centre(graph, channel), abs=1e-9)
+    assert ledger.defining(bore_claim) & ledger.defining(channel_claim) == frozenset()
+    assert all(ledger.claims_of(node) == (bore_claim,) for node in bore)
+    assert all(ledger.claims_of(node) == (channel_claim,) for node in channel)
+
+
+def _xy_centre(graph, nodes):
+    spans = [graph.bounds(node) for node in nodes]
+    return (
+        sum(lo + hi for (lo, hi), _, _ in spans) / (2 * len(spans)),
+        sum(lo + hi for _, (lo, hi), _ in spans) / (2 * len(spans)),
+    )
