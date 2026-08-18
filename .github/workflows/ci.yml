@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A branch pushed by a workflow using GITHUB_TOKEN raises no `push` or `pull_request`
+  # event, so the post-release bump PR would carry no checks at all. `publish.yml`
+  # dispatches this workflow against that branch instead.
+  workflow_dispatch:
 
 # A package branch is tested once through its PR. Main-push runs remain independent evidence,
 # while a newer commit supersedes the older PR head and should stop its expensive platform matrix.
@@ -21,11 +25,13 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
       - run: uv sync --dev
-      - run: uv run ruff check .
+      # `scripts/update-recogniser-version` is named explicitly: ruff discovers *.py,
+      # and an extensionless executable would otherwise be linted by nothing.
+      - run: uv run ruff check . scripts/update-recogniser-version
       - run: uv run mypy
 
   test:
@@ -42,7 +48,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
           python-version: ${{ matrix.python }}
@@ -50,7 +56,7 @@ jobs:
       - run: uv run pytest
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6
         with:
           fail_ci_if_error: true
           files: coverage.xml
@@ -58,7 +64,7 @@ jobs:
           use_oidc: true
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-${{ matrix.os }}-${{ matrix.python }}
           path: coverage.xml

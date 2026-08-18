@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "b123d-recognisers"
-version = "0.2.5"
+version = "0.2.6.dev0"
 description = "Deterministic, geometry-only feature recognition for build123d solids"
 readme = "README.md"
 license = "Apache-2.0"
@@ -36,6 +36,11 @@ b123d-recognisers-capabilities = "b123d_recognisers.capabilities:main"
 
 [dependency-groups]
 dev = [
+    # Test-only. The release workflow is validated by parsing it, not by matching substrings:
+    # five review rounds of substring assertions each shipped a check that could be satisfied
+    # by a comment or by another job, including one satisfied by a comment explaining an
+    # earlier defect. Structure is what the assertions are actually about.
+    "pyyaml>=6",
     "mypy>=1.15,<2",
     "pytest>=8",
     "pytest-cov>=5",

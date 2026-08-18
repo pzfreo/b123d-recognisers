@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -16,14 +17,37 @@ from b123d_recognisers import __version__
 ROOT = Path(__file__).parents[1]
 
 
-def test_version_is_available() -> None:
-    assert __version__ == "0.2.5"
+def test_every_copy_of_the_version_agrees() -> None:
+    """The build version, the embedded fallback and the capability manifest are one value.
+
+    Derived rather than pinned to a literal, because a literal is what let the fallback go
+    stale: it read 0.2.2 through both the 0.2.3 and 0.2.4 releases. Nothing exercises it
+    outside a bare source tree, so only a comparison like this one can catch it, and
+    ``scripts/update-recogniser-version`` is what keeps them together.
+    """
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    declared = re.search(r'^version = "([^"]+)"$', pyproject, re.MULTILINE)
+    assert declared, "pyproject.toml has no single project version"
+    version = declared.group(1)
+
+    assert __version__ == version
+    init = (ROOT / "src" / "b123d_recognisers" / "__init__.py").read_text(encoding="utf-8")
+    assert f'__version__ = "{version}"' in init, "the PackageNotFoundError fallback is stale"
+    manifest = json.loads(
+        (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text(encoding="utf-8")
+    )
+    assert manifest["package"]["version"] == version
 
 
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:
     notes = (ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
 
+    # Past releases keep their notes. That the version *being released* has a section is a
+    # different question, and asking it here was wrong: under the .devN scheme main always
+    # carries an unreleased version, so this would have demanded speculative notes and failed
+    # every post-release bump. The publish workflow asks it against the tag instead.
     assert notes.startswith("# Release notes\n")
+    assert notes.count("\n## 0.2.5\n") == 1
     assert notes.count("\n## 0.2.4\n") == 1
     assert notes.count("\n## 0.2.3\n") == 1
     assert notes.count("\n## 0.2.2\n") == 1
