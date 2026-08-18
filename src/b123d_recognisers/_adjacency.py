@@ -348,6 +348,39 @@ def axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
     return ax, (loc.X(), loc.Y(), loc.Z())[ax]
 
 
+def connected_components(items: Iterable, joined) -> list[tuple]:
+    """Group *items* into connected components under the *joined* predicate.
+
+    The other half of the "answer face adjacency once" finding. Lifting the edge->faces map out
+    of five modules left the components walk beside it private to `polygonal_bosses`, and that
+    was deliberate: one consumer does not justify a shared primitive. A second consumer makes
+    the judgement wrong rather than merely cautious -- a passage is the same ring of side faces
+    as a polygonal boss, seen from inside.
+
+    *joined* decides adjacency, so callers keep their own notion of it. `polygonal_bosses`
+    requires a shared edge **and** a shared span -- sharing an edge alone chains a boss into
+    the plate it stands on, and sharing a span alone merges two equal-height bosses into one
+    twelve-sided ring -- while a caller grouping labelled faces wants edge sharing only.
+
+    Components come back as tuples in the order the walk closed them, and each tuple in set
+    iteration order, which is what `polygonal_bosses` has always produced and its goldens pin.
+    """
+
+    components: list[tuple] = []
+    unseen = set(items)
+    while unseen:
+        connected = {unseen.pop()}
+        frontier = list(connected)
+        while frontier:
+            current = frontier.pop()
+            attached = {other for other in unseen if joined(current, other)}
+            unseen -= attached
+            connected |= attached
+            frontier.extend(attached)
+        components.append(tuple(connected))
+    return components
+
+
 def has_triangular_companion(
     face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
 ) -> bool:
