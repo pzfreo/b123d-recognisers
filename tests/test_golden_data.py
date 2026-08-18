@@ -10,6 +10,7 @@ from golden_support import CANONICALIZER_VERSION, canonical_json  # noqa: E402
 
 PUBLIC_RECOGNISERS = {
     "recognise_angled_steps",
+    "recognise_passages",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

@@ -44,7 +44,9 @@ from b123d_recognisers import (
     recognise_slots,
     recognise_turned_steps,
 )
-from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._reconcile import passages_that_are_not_slots
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -65,6 +67,10 @@ def feature_census(part: Part) -> dict[str, int]:
     # it here is worth about a fifth of this function's runtime. It must not outlive the call
     # -- see `FaceEdges`.
     face_edges = FaceEdges()
+    # A through slot is also a passage, so the two families would count one void twice. The
+    # rule that resolves it reads the faces each claimed, so both write into one ledger --
+    # and the metric agrees with `build_recognition_result` because it is the same rule.
+    ledger = ClaimLedger(FaceGraph(part, face_edges=face_edges))
     holes = recognise_holes(part, cyls=cyls, face_edges=face_edges)
     records: dict[str, Sequence[Record]] = {
         "hole": holes,
@@ -73,9 +79,10 @@ def feature_census(part: Part) -> dict[str, int]:
         "step": recognise_turned_steps(part, cyls=cyls),
         "groove": recognise_grooves(part, cyls=cyls),
         "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
-        "slot": recognise_slots(part, face_edges=face_edges),
+        "slot": recognise_slots(part, ledger=ledger, face_edges=face_edges),
         "channel": recognise_channels(part, face_edges=face_edges),
         "pocket": recognise_pockets(part, face_edges=face_edges),
+        "passage": passages_that_are_not_slots(part, ledger),
         "chamfer": recognise_chamfers(part, face_edges=face_edges),
         "angled_step": recognise_angled_steps(part, face_edges=face_edges),
         "fillet": recognise_fillets(part, face_edges=face_edges),

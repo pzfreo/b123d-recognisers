@@ -28,6 +28,7 @@
         "hole_patterns": [],
         "holes": [],
         "pads": [],
+        "passages": [],
         "plates": [],
         "pocket_patterns": [],
         "pockets": [
@@ -191,6 +192,7 @@
         "hole_patterns": [],
         "holes": [],
         "pads": [],
+        "passages": [],
         "plates": [],
         "pocket_patterns": [],
         "pockets": [
@@ -348,6 +350,7 @@
       "groove": 0,
       "hole": 0,
       "hole_pattern": 0,
+      "passage": 0,
       "plate": 0,
       "pocket": 2,
       "slot": 0,
@@ -439,6 +442,7 @@
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
       "recognise_holes": [],
+      "recognise_passages": [],
       "recognise_plates": [],
       "recognise_pocket_patterns": [],
       "recognise_pockets": [

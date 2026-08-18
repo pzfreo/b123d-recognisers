@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import connected_components, edge_face_map, neighbours
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -205,23 +205,9 @@ def _side_rings(
     def same_span(i: int, j: int) -> bool:
         return abs(bounds[i][4] - bounds[j][4]) <= tol and abs(bounds[i][5] - bounds[j][5]) <= tol
 
-    rings: list[tuple[int, ...]] = []
-    unseen = set(vertical)
-    while unseen:
-        connected = {unseen.pop()}
-        frontier = list(connected)
-        while frontier:
-            current = frontier.pop()
-            joined = {
-                other
-                for other in unseen
-                if same_span(current, other) and shares_edge(current, other)
-            }
-            unseen -= joined
-            connected |= joined
-            frontier.extend(joined)
-        rings.append(tuple(connected))
-    return rings
+    return connected_components(
+        vertical, lambda i, j: same_span(i, j) and shares_edge(i, j)
+    )
 
 
 def _vertical_side_faces(

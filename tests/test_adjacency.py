@@ -31,6 +31,7 @@ from b123d_recognisers import (
 from b123d_recognisers._adjacency import (
     FaceEdges,
     axis_aligned_axis,
+    connected_components,
     edge_face_map,
     nearest_axis_aligned_planes,
     neighbours,
@@ -88,7 +89,7 @@ def test_shape_equality_and_is_same_agree_across_the_whole_corpus():
         assert _partition_by_equality(faces) == _partition_by_is_same(faces), f"faces of {name}"
         checked += 1
 
-    assert checked == 18, "the corpus moved; this test must still sweep all of it"
+    assert checked == 19, "the corpus moved; this test must still sweep all of it"
 
 
 def test_a_manifold_edge_maps_to_the_two_faces_that_meet_along_it():
@@ -303,3 +304,81 @@ def test_neighbours_is_empty_when_the_map_does_not_cover_the_face():
     """
 
     assert neighbours(Box(10, 10, 10).faces()[0], {}) == []
+
+
+def test_connected_components_groups_transitively_not_pairwise():
+    """Items reachable through a chain land in one component, not several.
+
+    The property the walk exists for: `polygonal_bosses` groups a hexagon's six side faces
+    into one ring although no face touches more than two others.
+    """
+
+    chain = connected_components([0, 1, 2, 3, 4], lambda i, j: abs(i - j) == 1)
+
+    assert [sorted(part) for part in chain] == [[0, 1, 2, 3, 4]]
+
+
+def test_connected_components_keeps_unrelated_items_apart():
+    """Two rings on one part stay two rings, and a lone face stays alone."""
+
+    parts = connected_components(
+        [0, 1, 10, 11, 99], lambda i, j: abs(i - j) == 1
+    )
+
+    assert sorted(sorted(p) for p in parts) == [[0, 1], [10, 11], [99]]
+    assert connected_components([], lambda i, j: True) == []
+    assert connected_components([7], lambda i, j: True) == [(7,)]
+
+
+def test_connected_components_needs_a_symmetric_predicate():
+    """The precondition the docstring states, pinned rather than trusted.
+
+    The walk only ever asks ``joined(current, other)`` with *current* already inside the
+    component, so an asymmetric predicate makes the answer depend on set iteration order. The
+    same relation written both ways must therefore agree; a caller whose predicate is not
+    symmetric gets an answer that is not a function of its input.
+    """
+
+    forward = connected_components([0, 1, 2, 3, 4], lambda i, j: j == i + 1)
+    backward = connected_components([0, 1, 2, 3, 4], lambda i, j: i == j + 1)
+
+    assert [sorted(p) for p in forward] == [[0, 1, 2, 3, 4]]
+    assert sorted(sorted(p) for p in backward) == [[0], [1], [2], [3], [4]]
+    assert forward != backward, (
+        "an asymmetric predicate gives two answers for one relation, which is why "
+        "connected_components requires a symmetric one"
+    )
+
+
+def test_connected_components_matches_what_polygonal_bosses_used_to_do():
+    """The lift is behaviour-neutral on shapes the corpus does not contain.
+
+    Byte-identical goldens prove the grouping was preserved for the fixtures that exist. They
+    say nothing about an empty input, a fully connected set, or singletons, so those are
+    compared against the walk this replaced.
+    """
+
+    def previous(vertical, joined):
+        rings = []
+        unseen = set(vertical)
+        while unseen:
+            connected = {unseen.pop()}
+            frontier = list(connected)
+            while frontier:
+                current = frontier.pop()
+                attached = {o for o in unseen if joined(current, o)}
+                unseen -= attached
+                connected |= attached
+                frontier.extend(attached)
+            rings.append(tuple(connected))
+        return rings
+
+    for items, predicate in (
+        ([], lambda i, j: True),
+        ([3], lambda i, j: True),
+        (list(range(8)), lambda i, j: True),
+        (list(range(8)), lambda i, j: False),
+        (list(range(12)), lambda i, j: abs(i - j) == 1),
+        (list(range(12)), lambda i, j: i % 3 == j % 3),
+    ):
+        assert connected_components(items, predicate) == previous(items, predicate)

@@ -21,14 +21,17 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._typing import EdgeLike, FaceLike
+
+_T = TypeVar("_T")
 
 
 class FaceEdges:
@@ -346,6 +349,54 @@ def axis_aligned_axis(face_wrapped) -> tuple[int, float] | None:
     ax = max(range(3), key=lambda i: comp[i])
     loc = s.Plane().Location()
     return ax, (loc.X(), loc.Y(), loc.Z())[ax]
+
+
+def connected_components(
+    items: Iterable[_T], joined: Callable[[_T, _T], bool]
+) -> list[tuple[_T, ...]]:
+    """Group *items* into connected components under the *joined* predicate.
+
+    An ordinary private utility with two consumers, and deliberately not more than that. It was
+    private to `polygonal_bosses` until `passages` wanted the same walk -- finding from inside a
+    void the ring `polygonal_bosses` finds from outside a prism -- and one consumer does not
+    justify a shared primitive.
+
+    It is **not** shared face-adjacency semantics, and an earlier version of this docstring
+    called it "the other half of the answer-face-adjacency-once finding", which overstated it:
+    every caller still supplies the entire relation, so what they share is the breadth-first
+    mechanism and not a domain model. The face adjacency they genuinely share is
+    :class:`FaceGraph`, which both of them read their nodes' attributes from.
+
+    **`joined` must be symmetric.** The walk only ever asks `joined(current, other)` with
+    *current* already in the component, so an asymmetric predicate makes the answer depend on
+    set iteration order: over ``0..4``, ``j == i + 1`` yields one component and ``i == j + 1``
+    yields five singletons for the same relation.
+
+    **Component and member order are unspecified.** Reversing either passes the whole suite, so
+    nothing pins them -- `polygonal_bosses` sorts its rings by heading downstream and the record
+    emitters canonicalise. They are also only deterministic for items whose hash is stable
+    across runs, which today means the small ints the one caller passes. Do not rely on either.
+
+    *joined* is supplied by the caller rather than fixed here. Both consumers happen to want
+    the same conjunction today -- a shared edge and a shared span -- but they compute the span
+    differently, along a caller-chosen axis for passages and along Z for bosses, and neither
+    could use the other's. The span half is not decoration: without it, two equal-height bosses
+    standing on one plate merge into a single twelve-sided ring.
+    """
+
+    components: list[tuple[_T, ...]] = []
+    unseen = set(items)
+    while unseen:
+        connected = {unseen.pop()}
+        frontier = list(connected)
+        while frontier:
+            current = frontier.pop()
+            attached = {other for other in unseen if joined(current, other)}
+            unseen -= attached
+            connected |= attached
+            frontier.extend(attached)
+        components.append(tuple(connected))
+    return components
 
 
 def has_triangular_companion(

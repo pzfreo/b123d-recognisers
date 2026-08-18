@@ -22,6 +22,7 @@ PUBLIC_MODULES = {
     "grooves",
     "levels",
     "pads",
+    "passages",
     "plates",
     "polygonal_bosses",
     "profiled_bores",
@@ -51,6 +52,9 @@ MODULE_SEAM_EDGES = {
     "_recess_records": {"_record", "_typing"},
     "_recess_core": {"_adjacency", "_geometry", "_recess_records", "_typing"},
     "_recess_features": {"_adjacency", "_claims", "_recess_core", "_recess_records", "_typing"},
+    # The reconciler names both families it decides between, so it sits above them and neither
+    # sits above it -- a recogniser importing this is the order dependence ADR 0003 forbids.
+    "_reconcile": {"_claims", "_recess_records", "_typing", "passages"},
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
 }
 

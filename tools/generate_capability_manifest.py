@@ -33,6 +33,14 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "passages": {
+        "recognisers": [("recognise_passages", "part")],
+        "records": [("Passage", "output", ["RecognitionResult.passages"])],
+        "census": "passage",
+        "goldens": ["hexagonal_passage"],
+        "introduced": "0.2.6",
+        "tests": ["tests/test_passages.py"],
+    },
     "bosses": {
         "recognisers": [("recognise_bosses", "part")],
         "records": [("BossRecord", "output", ["RecognitionResult.bosses"])],
