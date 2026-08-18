@@ -360,10 +360,8 @@ def connected_components(
     of five modules left the components walk beside it private to `polygonal_bosses`, and that
     was deliberate: one consumer does not justify a shared primitive.
 
-    It is still one consumer here. This is lifted *ahead* of the passage recogniser that will
-    be the second, so the move can be reviewed as the behaviour-neutral change it is rather
-    than buried in a new family -- but on its own it is anticipatory, and by the test above it
-    is not yet justified. It belongs with that recogniser, not before it.
+    The second consumer is `passages`, which finds the same ring from inside a void that
+    `polygonal_bosses` finds from outside a prism.
 
     **`joined` must be symmetric.** The walk only ever asks `joined(current, other)` with
     *current* already in the component, so an asymmetric predicate makes the answer depend on
@@ -375,10 +373,11 @@ def connected_components(
     emitters canonicalise. They are also only deterministic for items whose hash is stable
     across runs, which today means the small ints the one caller passes. Do not rely on either.
 
-    *joined* is supplied by the caller because the two intended consumers do not share one.
-    `polygonal_bosses` requires a shared edge **and** a shared span: span alone merges two
-    equal-height bosses standing on one plate into a single twelve-sided ring, which is
-    reproducible and is why that half is there. A passage needs edge sharing only.
+    *joined* is supplied by the caller rather than fixed here. Both consumers happen to want
+    the same conjunction today -- a shared edge and a shared span -- but they compute the span
+    differently, along a caller-chosen axis for passages and along Z for bosses, and neither
+    could use the other's. The span half is not decoration: without it, two equal-height bosses
+    standing on one plate merge into a single twelve-sided ring.
     """
 
     components: list[tuple[_T, ...]] = []

@@ -20,7 +20,9 @@ from build123d import (
     Polygon,
     Pos,
     RegularPolygon,
+    chamfer,
     extrude,
+    fillet,
 )
 
 from b123d_recognisers import Passage, recognise_passages, recognise_slots
@@ -51,19 +53,34 @@ def test_a_void_open_at_both_ends_is_a_passage():
     assert passage.length == 20.0
 
 
-def test_a_four_walled_through_void_is_left_to_the_slot_recogniser():
-    """The reconciliation, on the geometry that forced it.
+def test_a_void_a_slot_already_reports_is_not_reported_twice():
+    """The reconciliation, and it asks the slot recogniser rather than guessing.
 
-    A rectangular through void satisfies every gate here, and `recognise_slots` already reports
-    it with more to say -- width, length, and which axis is which. Reporting both was a double
-    count that two pinned goldens caught: `straight_and_obround_slots` produced four slots and
-    four passages at the same places.
+    A through slot *is* a closed uncapped ring, so this family sees it too, and two pinned
+    goldens caught the double count. An earlier fix declined every four-walled ring on the
+    reasoning that a rectangular through void is simply what this package calls a slot.
+    Measured, that was false -- of fifteen such rings across 120 MFCAD++ models, seven are in
+    models where `recognise_slots` reports nothing at all -- so it dropped coverage rather than
+    reconciling. What it claimed is now what is asked.
     """
 
-    rectangular = Box(130, 150, 16) - Box(30, 8, 60)
+    slotted = Box(130, 150, 16) - Box(30, 8, 60)
+    assert recognise_slots(slotted), "the fixture must be a recognisable slot"
+    assert recognise_passages(slotted) == []
 
-    assert recognise_passages(rectangular) == [], "a four-walled void belongs to slots"
-    assert recognise_slots(rectangular), "the fixture must be a recognisable slot"
+    # A four-walled void no slot claims is still a passage: the side count was never the point.
+    square = Box(60, 40, 20) - Box(10, 10, 60)
+    assert recognise_slots(square) == []
+    assert [p.sides for p in recognise_passages(square)] == [4]
+
+
+def test_the_slot_inventory_can_be_injected():
+    """`slots=` is the `cyls=` idiom: the census pays for one slot scan, not two."""
+
+    slotted = Box(130, 150, 16) - Box(30, 8, 60)
+
+    assert recognise_passages(slotted, slots=recognise_slots(slotted)) == []
+    assert recognise_passages(slotted, slots=[]), "an empty inventory claims nothing"
 
 
 def test_the_same_void_with_a_floor_is_a_pocket_and_not_a_passage():
@@ -84,20 +101,23 @@ def test_the_same_void_with_a_floor_is_a_pocket_and_not_a_passage():
     assert recognise_passages(blind) == []
 
 
-def test_a_prism_of_material_is_not_a_passage():
+def test_a_column_of_material_is_not_a_passage():
     """The same ring of walls, with the material inside it rather than outside.
 
-    A polygonal boss is bounded by the identical closed ring; only the solid-classifier probe
-    at its centre separates the two, which is why that gate exists.
+    A hexagonal column joining two plates is bounded by an identical closed uncapped ring, and
+    only the solid-classifier probe separates it from a void. The fixture matters: a boss
+    standing *on* a plate is rejected by the cap test instead, so a test written around one
+    passes with the probe deleted and proves nothing about it. This one does not -- without the
+    probe it reports a passage.
     """
 
-    with BuildPart() as prism:
+    with BuildPart() as column:
         with BuildSketch(Plane.XY):
             RegularPolygon(10, 6)
-        extrude(amount=8)
-    boss = _block() + Pos(0, 0, 10) * prism.part
+        extrude(amount=30)
+    joined = _block() + Pos(0, 0, 26) * _block() + Pos(0, 0, -4) * column.part
 
-    assert recognise_passages(boss) == []
+    assert recognise_passages(joined) == []
 
 
 def test_the_side_count_is_the_polygon_and_not_a_class():
@@ -159,3 +179,25 @@ def test_a_shared_face_edge_memo_does_not_change_the_result():
 
     assert plain, "the fixture must reach the scan for this comparison to mean anything"
     assert plain == recognise_passages(part, face_edges=FaceEdges())
+
+
+def test_a_blind_void_stays_a_pocket_when_its_floor_edge_is_blended():
+    """A fillet or chamfer at the bottom of a pocket does not open it into a passage.
+
+    The cap test originally looked only at planar axis-aligned neighbours, so breaking the
+    floor edge removed the only candidate and an ordinary blind pocket came back as a through
+    passage. `docs/capabilities.md` publishes capped voids as an exclusion; this is what makes
+    that true for manufactured geometry rather than only for sharp corners.
+    """
+
+    with BuildPart() as bore:
+        with BuildSketch(Plane.XY):
+            RegularPolygon(9, 6)
+        extrude(amount=14)
+    blind = _block() - Pos(0, 0, -4) * bore.part
+    floor_edges = [e for e in blind.edges() if abs(e.center().Z - (-4)) < 1e-6]
+    assert floor_edges, "the fixture must have a floor edge to blend"
+
+    assert recognise_passages(blind) == []
+    assert recognise_passages(fillet(floor_edges, 2.0)) == []
+    assert recognise_passages(chamfer(floor_edges, 1.5)) == []

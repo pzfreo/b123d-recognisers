@@ -362,7 +362,7 @@ def build_recognition_result(
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(recognise_chamfers(part)) if prismatic else (),
         angled_steps=tuple(recognise_angled_steps(part)) if prismatic else (),
-        passages=tuple(recognise_passages(part)) if prismatic else (),
+        passages=tuple(recognise_passages(part, slots=slots)) if prismatic else (),
         fillets=tuple(recognise_fillets(part)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

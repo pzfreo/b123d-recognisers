@@ -19,6 +19,11 @@ What separates a passage from its neighbours is what is *not* there:
 - **from a polygonal boss, the material.** The same ring bounds a prism when the material is
   inside it and a void when the material is outside, which one solid-classifier probe answers.
 
+Over 120 MFCAD++ models: 100% precision, 51% instance recall (65 of 128) and 49% of
+labelled faces. What is missed is one thing rather than many -- walls whose spans differ,
+because a passage running through a stepped region has one wall shorter than the rest, so the
+ring never forms.
+
 Every gate is topological or a direction comparison. There is no size gate and no tolerance on
 a length, so a passage is a passage at any scale -- ``tests/test_scale_invariance.py`` carries
 the family with no exclusion.
@@ -54,17 +59,11 @@ from b123d_recognisers._typing import Part
 #: differ only by kernel noise, so it is a float epsilon and not a length at all.
 _SPAN_EPS = 1e-6
 
-#: A four-walled through void is what this package already calls a **slot**, and
-#: ``recognise_slots`` says more about one than a passage record could -- width, length, and
-#: which axis is which. Reporting it here as well would be a double count, and it was: before
-#: this exclusion, `straight_and_obround_slots` reported four slots *and* four passages at the
-#: same places, and `traversal_order` three of each.
-#:
-#: So this family covers the cross-sections slots do not. Over 120 MFCAD++ models that is 57
-#: records at 3, 6 and 8 sides against 15 at four, and every pinned golden stays byte-identical.
-#: MFCAD++ draws the line differently -- it has a "Rectangular passage" class distinct from
-#: "Rectangular through slot" -- but this package's vocabulary is the one its consumers read.
-_SLOT_SIDES = 4
+#: How close a ring centre must sit to a slot's centre to be the same feature. A comparison
+#: between two derivations of one void, so it is a tolerance rather than a minimum-evidence
+#: threshold under ADR 0008 -- and both come from the same bounding boxes, so it is a float
+#: epsilon rather than a length.
+_SAME_FEATURE_EPS = 1e-6
 
 
 @dataclass(frozen=True, order=True)
@@ -82,6 +81,7 @@ class Passage(Record):
 def recognise_passages(
     part: Part,
     *,
+    slots: list | None = None,
     face_edges: FaceEdges | None = None,
 ) -> list[Passage]:
     """Recognise the prismatic passages of *part* (see module docstring). Returns one
@@ -89,6 +89,7 @@ def recognise_passages(
     none. Only passages whose walls all run parallel to one principal axis and share one span
     are recovered; a passage whose walls step or taper along its length is not one."""
 
+    claimed = _slot_centres(part if slots is None else None, slots)
     faces = list(part.faces())
     edge_faces = edge_face_map(faces, face_edges=face_edges)
     index = {face: i for i, face in enumerate(faces)}
@@ -126,16 +127,21 @@ def recognise_passages(
             members = set(ring)
             if len(ring) < 3 or any(len(adjacent[i] & members) != 2 for i in ring):
                 continue  # a ring closes; a chain of walls does not
-            if len(ring) == _SLOT_SIDES:
-                continue  # already a slot; see `_SLOT_SIDES`
-            low, high = box[ring[0]][axis]
-            if _capped(ring, members, axis, low, high, adjacent, normal, box):
+            spans = [box[i][axis] for i in ring]
+            low, high = min(a for a, _ in spans), max(b for _, b in spans)
+            if _capped(ring, members, axis, low, high, adjacent, normal, box, faces):
                 continue  # a floor fills the ring: this is a pocket
             middles = [
                 sum(getattr(faces[i].center(), "XYZ"[k]) for i in ring) / len(ring)
                 for k in (0, 1, 2)
             ]
             centre = (middles[0], middles[1], middles[2])
+            if any(
+                abs(centre[0] - c[0]) <= _SAME_FEATURE_EPS
+                and abs(centre[1] - c[1]) <= _SAME_FEATURE_EPS
+                for c in claimed
+            ):
+                continue  # `recognise_slots` already reports this void, and says more
             probe = BRepClass3d_SolidClassifier(part.wrapped)
             probe.Perform(gp_Pnt(*centre), 1e-6)
             if probe.State() == TopAbs_IN:
@@ -151,7 +157,40 @@ def recognise_passages(
     return sorted(out, key=lambda p: (p.axis, p.at))
 
 
-def _capped(ring, members, axis, low, high, adjacent, normal, box) -> bool:
+def _slot_centres(part, slots) -> list[tuple[float, float]]:
+    """Where `recognise_slots` has already reported a void, in the two in-plane axes.
+
+    A through slot *is* a closed uncapped ring, so this family sees it too. Reporting both is a
+    double count, and two pinned goldens caught it: `straight_and_obround_slots` produced four
+    slots and four passages at the same places, `traversal_order` three of each.
+
+    An earlier attempt declined every four-walled ring instead, on the reasoning that a
+    rectangular through void is simply what this package calls a slot. Measured, that is false:
+    of fifteen such rings across 120 MFCAD++ models, seven are in models where
+    `recognise_slots` reports nothing at all. It was not a reconciliation, it was a silent
+    coverage drop. Asking the slot recogniser what it actually claimed is the reconciliation.
+
+    *slots* is injected the way `cyls=` is elsewhere, so the census pays for one slot scan
+    rather than two.
+    """
+
+    if slots is None:
+        if part is None:
+            return []
+        from b123d_recognisers.slots import recognise_slots
+
+        slots = recognise_slots(part)
+    centres = []
+    for slot in slots:
+        long_mid = 0.5 * (slot.lo + slot.hi)
+        if slot.long_axis == "x":
+            centres.append((long_mid, slot.w_center))
+        else:
+            centres.append((slot.w_center, long_mid))
+    return centres
+
+
+def _capped(ring, members, axis, low, high, adjacent, normal, box, faces) -> bool:
     """Does a face perpendicular to the run axis close either end of *ring*?
 
     Not merely "is there a perpendicular neighbour at the end" -- at a passage mouth the part's
@@ -165,17 +204,33 @@ def _capped(ring, members, axis, low, high, adjacent, normal, box) -> bool:
     ring_high = [max(box[i][a][1] for i in ring) for a in others]
     for i in ring:
         for j in adjacent[i]:
-            if j in members or j not in normal:
+            if j in members:
                 continue
-            if abs(abs(normal[j][axis]) - 1.0) > AXIS_ZERO_COS:
+            # Any neighbour, not only a planar axis-aligned one. Requiring that let an
+            # ordinary filleted or chamfered pocket floor read as a passage: breaking the
+            # bottom edge replaces the flat floor's contact with a blend face, and the only
+            # cap candidate disappeared. A blend at the bottom of a blind void still closes
+            # it, so what matters is whether something sits across the end of the span
+            # inside the ring, not what surface type it happens to be.
+            end = box.get(j)
+            if end is None:
+                end = _extent(faces[j])
+            if end[axis][1] < low - _SPAN_EPS or end[axis][0] > high + _SPAN_EPS:
                 continue
-            at = box[j][axis][0]
-            if abs(at - low) > _SPAN_EPS and abs(at - high) > _SPAN_EPS:
+            near_low = abs(end[axis][0] - low) <= _SPAN_EPS or abs(end[axis][1] - low) <= _SPAN_EPS
+            near_high = (
+                abs(end[axis][0] - high) <= _SPAN_EPS or abs(end[axis][1] - high) <= _SPAN_EPS
+            )
+            if not (near_low or near_high):
                 continue
             if all(
-                box[j][a][0] >= ring_low[k] - _SPAN_EPS
-                and box[j][a][1] <= ring_high[k] + _SPAN_EPS
+                end[a][0] >= ring_low[k] - _SPAN_EPS and end[a][1] <= ring_high[k] + _SPAN_EPS
                 for k, a in enumerate(others)
             ):
                 return True
     return False
+
+
+def _extent(face) -> tuple:
+    bb = face.bounding_box()
+    return ((bb.min.X, bb.max.X), (bb.min.Y, bb.max.Y), (bb.min.Z, bb.max.Z))
