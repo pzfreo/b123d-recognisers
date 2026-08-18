@@ -31,7 +31,12 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Box, Pos  # noqa: E402
 
-from b123d_recognisers import feature_census, recognise_risers, step_level_zs  # noqa: E402
+from b123d_recognisers import (  # noqa: E402
+    feature_census,
+    recognise_risers,
+    recognise_turned_steps,
+    step_level_zs,
+)
 from b123d_recognisers._geometry import clears_threshold  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
@@ -54,6 +59,40 @@ def _scale_free_census(part) -> dict[str, int]:
         for kind, count in feature_census(part).items()
         if count and kind not in NOT_YET_SCALE_FREE
     }
+
+
+@pytest.mark.parametrize("factor", FACTORS)
+@pytest.mark.parametrize("fixture_path", CASES, ids=lambda path: path.parent.name)
+def test_the_turned_profile_measures_the_same_shaft_at_any_scale(fixture_path, factor):
+    """Not the count of rungs -- what each rung says the diameter is.
+
+    The census check below compares how many features there are. That is not enough, and this
+    test exists because it was not: `recognise_turned_steps` reported *every* rung of the
+    pinned turned-step-and-groove shaft at the shaft's OD when the part was modelled at 0.05x,
+    describing a plain shaft where there is a groove. Three rungs at 1x and three rungs at
+    0.05x agree, so counting saw nothing while every diameter was wrong.
+
+    Diameters are compared as ratios to the largest, which is scale-free by construction and
+    needs no tolerance on a length.
+    """
+
+    fixture = load_fixture(fixture_path)
+
+    def profile(part) -> list[tuple[float, float]]:
+        steps = recognise_turned_steps(part)
+        if not steps:
+            return []
+        widest = max(step.diameter for step in steps)
+        length = max(step.hi for step in steps) - min(step.lo for step in steps)
+        return [
+            (round(step.diameter / widest, 6), round((step.hi - step.lo) / length, 6))
+            for step in sorted(steps, key=lambda step: step.lo)
+        ]
+
+    expected = profile(fixture.build_fixture())
+    actual = profile(fixture.build_fixture().scale(factor))
+
+    assert actual == expected, f"{fixture_path.parent.name} at {factor}x"
 
 
 @pytest.mark.parametrize("factor", FACTORS)

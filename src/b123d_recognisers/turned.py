@@ -50,8 +50,14 @@ _AXIS_NORMAL_TOL = 0.05
 # as _CHAMFER_ALLOWANCE_ABS below, and a deburr does not grow with the shaft. Making it a
 # fraction of the band diameter was tried and reverted: at 8.75% it reaches 2.6 mm on a 30 mm
 # band, bridges the 5 mm groove in the turned-step golden, and reports the groove's step at its
-# neighbour's OD. It is capped at half the band's own width so it can never bridge the band it
-# pads, which is what keeps it safe on a part modelled small.
+# neighbour's OD.
+#
+# It is also capped at half the band's own width. That cap used to carry the whole safety
+# argument -- "it can never bridge the band it pads, which is what keeps it safe on a part
+# modelled small" -- which is true and is not the property that matters: what bridges a groove
+# is the pad on the wide band *beside* it, which its own half-width does not restrain at all.
+# What keeps this safe is that the pad is now consulted only when no band contains the position,
+# so it can never override a band that does. See `bands_over`.
 _OD_SPAN_PAD = 0.7
 # A transverse face is a shoulder/end when its outer radius is within this of the
 # local OD. Constant + proportional terms cover both a fixed edge-break and a
@@ -180,8 +186,19 @@ def recognise_turned_steps(
         what a step at *pos* is established by. Split out of `local_od` so the diameter and the
         faces behind it come from one selection rather than two that could drift apart."""
 
-        over: list[CylinderEvidence] = []
-        for c in bands:
+        # A band that actually contains *pos* wins outright, and the pad is only consulted when
+        # none does. That is what the pad was introduced for -- a position landing in the edge
+        # break between two bands -- and letting it also override a band that genuinely covers
+        # the point is what made this scale-dependent: on the pinned turned-step fixture at
+        # 0.05x, the 2.525-wide neighbour padded 0.7 straight across the 0.25-wide groove, so
+        # every rung reported the shaft OD and the profile described a plain shaft.
+        #
+        # Capping the pad at half the narrowest band was tried instead and ties exactly on that
+        # band's midpoint, which is the position a step's OD is read at -- so it fixes nothing
+        # and depends on a float comparison landing the right way. Containment has no such
+        # edge, and needs no constant.
+        over: list[CylinderEvidence] = [c for c in bands if c["s_lo"] <= pos <= c["s_hi"]]
+        for c in bands if not over else ():
             pad = min(_OD_SPAN_PAD, (c["s_hi"] - c["s_lo"]) / 2)
             if c["s_lo"] - pad <= pos <= c["s_hi"] + pad:
                 over.append(c)
