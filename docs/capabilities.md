@@ -35,6 +35,7 @@ compatibility review, and release notes.
 | `recognise_grooves` | External reduced-OD bands between two larger coaxial shaft bands, reached directly or across a lead-in chamfer; `width` is the flat floor, excluding the chamfers. | Internal grooves, end reliefs without two larger neighbours, non-turned recesses, and radiused (rather than chamfered) lead-ins. | Turned-step/groove golden; chamfered-lead-in tests. |
 | `recognise_hole_patterns` | Same-spec hole bolt circles, constant-pitch linear arrays, and complete rectangular grids; greedy largest-first ownership. | Pairs, incomplete lattices as grids, uneven circles/rows, mixed specs, and a hole belonging to multiple returned patterns. | Bolt-circle/grid golden, pattern regressions, and scaling sentinel. |
 | `recognise_holes` | Coaxial internal full-cylinder stacks with through/flat/drill-point/unknown bottoms and injected countersink composition. | Slot end caps, partial cylinders, far-side counterbores, and automatic countersink rediscovery when none is injected. | Hole/counterbore/cross-bore goldens and edge regressions. |
+| `recognise_passages` | Closed rings of planar walls running through the material, uncapped at both ends, with three, six or more sides. | Four-walled through voids, which `recognise_slots` already reports with more to say; capped voids (a pocket); walls that step or taper along the run. | Passage functional tests; 100% precision and 52% instance recall over 120 MFCAD++ models. |
 | `recognise_plates` | Thin prismatic slabs supported by opposed planar faces and configured area/thickness gates. | The single envelope plate, curved/non-prismatic shells, and slabs below the evidence gates. | Plate/level golden and plate tests. |
 | `recognise_pocket_patterns` | Constant-pitch linear and complete rectangular arrays of identical, coplanar, equally oriented `Pocket` records. | Bolt circles, pairs, mixed sizes/opening faces/depth planes, and incomplete grids. | Blind-pocket golden and pattern-negative tests. |
 | `recognise_pockets` | Floored rectangular recesses bounded within one solid; elongated blind slots are the same record class. | Through slots, open-ended channels, non-rectangular floors, and cross-solid composites. | Blind-pocket golden and floor/opening regressions. |
@@ -136,6 +137,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `HoleRecord` | One internal full-cylinder stack with optional near-side hole treatments and one classified bottom. |
 | `HoleSpec` | A normalized grouping key derived from `HoleRecord`; through depth is intentionally absent. |
 | `LinearArray` | At least three same-spec holes on one constant-pitch line, ordered along `direction`. |
+| `Passage` | One closed uncapped ring of walls; `sides` is the polygon, so a triangular passage reports 3. |
 | `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. |
 | `Pocket` | One floored bounded rectangular recess; elongated blind slots intentionally use this same class. |
 | `PocketArray` | At least three identical compatible pockets on one constant-pitch line. |

@@ -112,6 +112,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_risers", counted("risers", []))
     monkeypatch.setattr(result_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(result_module, "recognise_angled_steps", counted("angled_steps", []))
+    monkeypatch.setattr(result_module, "recognise_passages", counted("passages", []))
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
     monkeypatch.setattr(result_module, "recognise_plates", counted("plates", []))
 
@@ -119,6 +120,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
     expected = {
         "angled_steps",
+        "passages",
         "cylinders",
         "countersinks",
         "holes",

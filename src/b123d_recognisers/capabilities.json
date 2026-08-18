@@ -888,6 +888,62 @@
       ]
     },
     {
+      "census_name": "passage",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/hexagonal_passage/expected.json"
+      ],
+      "id": "passages",
+      "introduced_in": "0.2.6",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_passages",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.passages"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "sides": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "Passage",
+          "qualified_name": "b123d_recognisers.Passage",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_passages.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "plate",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"

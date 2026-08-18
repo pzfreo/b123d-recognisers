@@ -111,6 +111,10 @@ from b123d_recognisers.levels import (
     step_level_zs,
 )
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
+from b123d_recognisers.passages import (
+    Passage,
+    recognise_passages,
+)
 from b123d_recognisers.plates import Plate, has_multi_axis_plates, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -163,6 +167,7 @@ __all__ = [
     "CapabilityManifestError",
     "STEP_LADDER_BOUNDARY_MARGIN",
     "AngledStep",
+    "Passage",
     "BoltCircle",
     "Chamfer",
     "Channel",
@@ -214,6 +219,7 @@ __all__ = [
     "capability_manifest_json",
     "validate_capability_manifest",
     "recognise_angled_steps",
+    "recognise_passages",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

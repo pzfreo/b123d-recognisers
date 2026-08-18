@@ -160,6 +160,7 @@
           }
         ],
         "pads": [],
+        "passages": [],
         "plates": [],
         "pocket_patterns": [],
         "pockets": [],
@@ -336,6 +337,7 @@
           }
         ],
         "pads": [],
+        "passages": [],
         "plates": [],
         "pocket_patterns": [],
         "pockets": [],
@@ -374,6 +376,7 @@
       "groove": 0,
       "hole": 2,
       "hole_pattern": 0,
+      "passage": 0,
       "plate": 0,
       "pocket": 0,
       "slot": 0,
@@ -506,6 +509,7 @@
           "spotface": null
         }
       ],
+      "recognise_passages": [],
       "recognise_plates": [],
       "recognise_pocket_patterns": [],
       "recognise_pockets": [],

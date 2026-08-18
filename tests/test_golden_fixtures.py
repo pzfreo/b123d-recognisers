@@ -15,6 +15,7 @@ EXPECTED_CASES = {
     "chamfers_fillets_and_flats",
     "counterbored_and_countersunk_holes",
     "double_d_bore",
+    "hexagonal_passage",
     "interrupted_and_cross_bores",
     "open_channels",
     "plates_pads_levels_and_slanted_steps",

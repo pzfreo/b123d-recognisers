@@ -22,6 +22,7 @@ PUBLIC_MODULES = {
     "grooves",
     "levels",
     "pads",
+    "passages",
     "plates",
     "polygonal_bosses",
     "profiled_bores",

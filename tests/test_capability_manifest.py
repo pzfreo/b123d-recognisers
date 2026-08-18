@@ -339,7 +339,7 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             "introduced after",
         ),
         (
-            lambda value: value["families"][5].pop("census_rationale"),
+            lambda value: value["families"][6].pop("census_rationale"),
             "needs census_rationale",
         ),
         (
