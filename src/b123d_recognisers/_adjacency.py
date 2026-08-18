@@ -22,6 +22,7 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
@@ -68,6 +69,216 @@ class FaceEdges:
         if edges is None:
             self._of[face] = edges = face.edges()
         return edges
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class FaceNode:
+    """A node of one :class:`FaceGraph`, and of no other.
+
+    A bare integer would have carried no provenance: node 0 of one part is a perfectly valid
+    index into another, so a node from the wrong graph would have been accepted and silently
+    addressed the wrong face -- the accidental identity this substrate exists to remove. These
+    are created only by the graph that owns them and compared by identity, so a foreign node is
+    rejected rather than misread.
+
+    Frozen, because a writable ``index`` would let a caller invalidate a handle the graph had
+    issued -- ``owns`` would then refuse a node that genuinely came from this graph. ``eq=False``
+    keeps comparison by identity, which is the whole mechanism.
+
+    Opaque by design. ``index`` is a position in one part's face list, exposed because the graph
+    itself needs it; nothing outside this module should read it, and it means nothing once the
+    part changes.
+    """
+
+    index: int
+
+
+class FaceGraph:
+    """One node per face of one part, for the length of one recognition run.
+
+    Seven modules privately re-derive the same handful of things about a face: its bounding
+    box (six of them), its surface type (five), its normal (three), its edges, and which faces
+    it meets. The derivations are duplicated, the caches are not shared, and two recognisers
+    that disagree about a face have no way to say so except by comparing coordinates. This is
+    the node half of that: one place where a face's attributes are derived, once.
+
+    **What it deliberately is not.** Not a persistent identity -- node ids are positions in
+    this part's face list and mean nothing outside this object. Not a public schema: no record
+    gains a field. Not sampled UV geometry or anything a learned recogniser would want. Not a
+    subgraph-matching engine; the recognisers stay procedural.
+
+    **It carries no ownership.** Which recogniser claimed which face is an interpretation of
+    these facts, not one of them, and it lives in :class:`b123d_recognisers._claims.ClaimLedger`
+    instead -- an append-only sidecar built against one graph. Keeping them apart is what lets
+    this object stay immutable after construction and be reused across a whole census while
+    each run, or a rerun of one recogniser, keeps its own ledger. Analysis Situs writes
+    recognition results back onto the AAG itself as attributes; the separation here is the one
+    deliberate divergence, and it buys immutability at the cost of a second object.
+
+    **Every attribute is lazy**, because measurement says eagerness does not
+    pay: sharing the walk over ``part.faces()`` was worth 1.9% of a census, while sharing the
+    ``Face.edges()`` derivation hanging off it was worth about a fifth. Attributes are derived
+    on first ask and kept; a consumer that never asks for normals never pays for them.
+
+    Scope it to one run over one part, as :class:`FaceEdges` is scoped -- it holds the part's
+    faces alive, and its node ids stop meaning anything the moment the part changes.
+    """
+
+    def __init__(self, part, *, face_edges: FaceEdges | None = None) -> None:
+        self._faces: list[FaceLike] = list(part.faces())
+        self._nodes = tuple(FaceNode(at) for at in range(len(self._faces)))
+        self._index = {face: at for at, face in enumerate(self._faces)}
+        self._face_edges = face_edges
+        self._edges: dict[int, tuple[EdgeLike, ...]] = {}
+        self._surface: dict[int, int] = {}
+        self._normal: dict[int, tuple[float, float, float] | None] = {}
+        self._bounds: dict[int, tuple] = {}
+        self._edge_faces: dict | None = None
+        self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
+
+    def __len__(self) -> int:
+        return len(self._faces)
+
+    @property
+    def nodes(self) -> tuple[FaceNode, ...]:
+        """Every node, in the order the kernel yielded the faces."""
+
+        return self._nodes
+
+    def owns(self, node: FaceNode) -> bool:
+        """Whether *node* was issued by this graph, checked by identity rather than by value."""
+
+        at = node.index
+        return 0 <= at < len(self._nodes) and self._nodes[at] is node
+
+    def _at(self, node: FaceNode) -> int:
+        if not self.owns(node):
+            raise ValueError(f"{node!r} was not issued by this graph")
+        return node.index
+
+    def face(self, node: FaceNode) -> FaceLike:
+        return self._faces[self._at(node)]
+
+    def node_of(self, face: FaceLike) -> FaceNode | None:
+        """The node for *face*, or None when it belongs to another part.
+
+        Keyed on build123d shape equality, so a face from a second ``part.faces()`` walk
+        resolves to the same node -- the property the whole graph rests on, and the one proved
+        over every pinned fixture in :mod:`tests.test_adjacency`.
+        """
+
+        at = self._index.get(face)
+        return None if at is None else self._nodes[at]
+
+    def edges(self, node: FaceNode) -> tuple[EdgeLike, ...]:
+        """The edges of *node*, computed on first ask.
+
+        A tuple, not the memo's own list. A returned list would have made the graph mutable
+        through its own API -- clearing it would change adjacency and every later answer -- and
+        a "do not mutate" comment is weaker than a type that cannot be. The lazy caches behind
+        this do mutate; the answers handed out do not.
+        """
+
+        at = self._at(node)
+        got = self._edges.get(at)
+        if got is None:
+            face = self._faces[at]
+            self._edges[at] = got = tuple(
+                face.edges() if self._face_edges is None else self._face_edges.of(face)
+            )
+        return got
+
+    def surface(self, node: FaceNode) -> int:
+        """The ``GeomAbs`` surface type, so callers stop constructing their own adaptor."""
+
+        at = self._at(node)
+        got = self._surface.get(at)
+        if got is None:
+            self._surface[at] = got = BRepAdaptor_Surface(self._faces[at].wrapped).GetType()
+        return got
+
+    def is_planar(self, node: FaceNode) -> bool:
+        return bool(self.surface(node) == GeomAbs_Plane)
+
+    def normal(self, node: FaceNode) -> tuple[float, float, float] | None:
+        """The unit normal, or None for a face too degenerate to have one.
+
+        None rather than an exception because every caller today wraps the kernel call in a
+        ``try`` and skips the face; returning the skip makes that one decision instead of
+        seven.
+        """
+
+        at = self._at(node)
+        if at not in self._normal:
+            try:
+                unit = self._faces[at].normal_at()
+            except Exception:  # noqa: BLE001 - a degenerate face has no normal to read
+                self._normal[at] = None
+            else:
+                self._normal[at] = (unit.X, unit.Y, unit.Z)
+        return self._normal[at]
+
+    def bounds(
+        self, node: FaceNode
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+        """``((x_lo, x_hi), (y_lo, y_hi), (z_lo, z_hi))``, indexable by axis number.
+
+        By axis rather than as a build123d box because every caller indexes it by an axis it
+        computed, and each was unpacking the box by hand to do so.
+        """
+
+        at = self._at(node)
+        got = self._bounds.get(at)
+        if got is None:
+            bb = self._faces[at].bounding_box()
+            self._bounds[at] = got = (
+                (bb.min.X, bb.max.X),
+                (bb.min.Y, bb.max.Y),
+                (bb.min.Z, bb.max.Z),
+            )
+        return got
+
+    def neighbours(self, node: FaceNode) -> tuple[FaceNode, ...]:
+        """The nodes sharing an edge with *node*, excluding itself, each once.
+
+        Order follows the face's own edge order, so it inherits the part's traversal order and
+        nothing more: a caller needing determinism must sort or reduce, as the blend
+        recognisers do by keeping the nearest neighbour per axis.
+        """
+
+        at = self._at(node)
+        got = self._neighbours.get(at)
+        if got is None:
+            found: list[FaceNode] = []
+            seen = {at}
+            for edge in self.edges(node):
+                for other in self._edge_face_map().get(edge, ()):
+                    neighbour = self._index.get(other)
+                    if neighbour is None or neighbour in seen:
+                        continue
+                    seen.add(neighbour)
+                    found.append(self._nodes[neighbour])
+            self._neighbours[at] = got = tuple(found)
+        return got
+
+    def shared_edges(self, a: FaceNode, b: FaceNode) -> tuple[EdgeLike, ...]:
+        """The edges along which two faces meet, which an arc's classification will need.
+
+        Retained rather than discarded because "is this arc convex" is a question about the
+        edge, and answering it later without re-deriving the adjacency requires keeping it.
+        """
+
+        other = set(self.edges(b))
+        return tuple(edge for edge in self.edges(a) if edge in other)
+
+    def _edge_face_map(self) -> dict:
+        if self._edge_faces is None:
+            built: dict = {}
+            for node in self._nodes:
+                for edge in self.edges(node):
+                    built.setdefault(edge, []).append(self._faces[node.index])
+            self._edge_faces = built
+        return self._edge_faces
 
 
 def edge_face_map(faces: Iterable[FaceLike], *, face_edges: FaceEdges | None = None) -> dict:

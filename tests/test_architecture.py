@@ -34,6 +34,9 @@ PUBLIC_MODULES = {
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
     "_adjacency": {"_geometry", "_typing"},
+    # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
+    # immutable, so it must stay absent.
+    "_claims": {"_adjacency"},
     "_cylinder_substrate": {"_geometry", "_typing"},
     "_hole_features": {
         "_adjacency",
