@@ -62,6 +62,15 @@ ADR treated it as forbidding claims outright, which it never did.
 Identity is derived from geometry under documented tolerance. It must not use Python identity,
 kernel traversal order, display labels, page coordinates or a bare solid enumeration index.
 
+**That rule governs persistent semantic identity — what a record is, and what a consumer may
+store, serialise or compare across runs.** It does not govern a *run-local handle*, which exists
+only to let two stages of one run refer to the same face, is never serialised, and stops meaning
+anything the moment the part changes. `FaceNode` is such a handle: it carries a kernel traversal
+position and is compared by Python identity, both of which are forbidden to a record and both of
+which are correct here, because identity by construction is exactly what makes a foreign node
+impossible to mistake for a local one. The two must not be conflated in either direction — a
+handle must never leak into a record, and a record's identity must never be derived from one.
+
 Consumer lifecycle caches are outside the result. A consumer may cache a result, but cannot make
 its cache semantics part of this package's aggregate value.
 

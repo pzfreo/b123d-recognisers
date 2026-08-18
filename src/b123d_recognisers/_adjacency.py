@@ -70,6 +70,29 @@ class FaceEdges:
         return edges
 
 
+class FaceNode:
+    """A node of one :class:`FaceGraph`, and of no other.
+
+    A bare integer would have carried no provenance: node 0 of one part is a perfectly valid
+    index into another, so a node from the wrong graph would have been accepted and silently
+    addressed the wrong face -- the accidental identity this substrate exists to remove. These
+    are created only by the graph that owns them and compared by identity, so a foreign node is
+    rejected rather than misread.
+
+    Opaque by design. ``index`` is a position in one part's face list, exposed because the graph
+    itself needs it; nothing outside this module should read it, and it means nothing once the
+    part changes.
+    """
+
+    __slots__ = ("index",)
+
+    def __init__(self, index: int) -> None:
+        self.index = index
+
+    def __repr__(self) -> str:
+        return f"FaceNode({self.index})"
+
+
 class FaceGraph:
     """One node per face of one part, for the length of one recognition run.
 
@@ -92,7 +115,7 @@ class FaceGraph:
     recognition results back onto the AAG itself as attributes; the separation here is the one
     deliberate divergence, and it buys immutability at the cost of a second object.
 
-    **Everything except the face list is lazy**, because measurement says eagerness does not
+    **Every attribute is lazy**, because measurement says eagerness does not
     pay: sharing the walk over ``part.faces()`` was worth 1.9% of a census, while sharing the
     ``Face.edges()`` derivation hanging off it was worth about a fifth. Attributes are derived
     on first ask and kept; a consumer that never asks for normals never pays for them.
@@ -103,28 +126,40 @@ class FaceGraph:
 
     def __init__(self, part, *, face_edges: FaceEdges | None = None) -> None:
         self._faces: list[FaceLike] = list(part.faces())
-        self._index = {face: node for node, face in enumerate(self._faces)}
+        self._nodes = tuple(FaceNode(at) for at in range(len(self._faces)))
+        self._index = {face: at for at, face in enumerate(self._faces)}
         self._face_edges = face_edges
-        self._edges: dict[int, list[EdgeLike]] = {}
+        self._edges: dict[int, tuple[EdgeLike, ...]] = {}
         self._surface: dict[int, int] = {}
         self._normal: dict[int, tuple[float, float, float] | None] = {}
         self._bounds: dict[int, tuple] = {}
         self._edge_faces: dict | None = None
-        self._neighbours: dict[int, tuple[int, ...]] = {}
+        self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
 
     def __len__(self) -> int:
         return len(self._faces)
 
     @property
-    def nodes(self) -> range:
-        """Every node id, in the order the kernel yielded the faces."""
+    def nodes(self) -> tuple[FaceNode, ...]:
+        """Every node, in the order the kernel yielded the faces."""
 
-        return range(len(self._faces))
+        return self._nodes
 
-    def face(self, node: int) -> FaceLike:
-        return self._faces[node]
+    def owns(self, node: FaceNode) -> bool:
+        """Whether *node* was issued by this graph, checked by identity rather than by value."""
 
-    def node_of(self, face: FaceLike) -> int | None:
+        at = node.index
+        return 0 <= at < len(self._nodes) and self._nodes[at] is node
+
+    def _at(self, node: FaceNode) -> int:
+        if not self.owns(node):
+            raise ValueError(f"{node!r} was not issued by this graph")
+        return node.index
+
+    def face(self, node: FaceNode) -> FaceLike:
+        return self._faces[self._at(node)]
+
+    def node_of(self, face: FaceLike) -> FaceNode | None:
         """The node for *face*, or None when it belongs to another part.
 
         Keyed on build123d shape equality, so a face from a second ``part.faces()`` walk
@@ -132,31 +167,40 @@ class FaceGraph:
         over every pinned fixture in :mod:`tests.test_adjacency`.
         """
 
-        return self._index.get(face)
+        at = self._index.get(face)
+        return None if at is None else self._nodes[at]
 
-    def edges(self, node: int) -> list[EdgeLike]:
-        """The edges of *node*, computed on first ask. The memo's own list: do not mutate."""
+    def edges(self, node: FaceNode) -> tuple[EdgeLike, ...]:
+        """The edges of *node*, computed on first ask.
 
-        got = self._edges.get(node)
+        A tuple, not the memo's own list. A returned list would have made the graph mutable
+        through its own API -- clearing it would change adjacency and every later answer -- and
+        a "do not mutate" comment is weaker than a type that cannot be. The lazy caches behind
+        this do mutate; the answers handed out do not.
+        """
+
+        at = self._at(node)
+        got = self._edges.get(at)
         if got is None:
-            face = self._faces[node]
-            self._edges[node] = got = (
+            face = self._faces[at]
+            self._edges[at] = got = tuple(
                 face.edges() if self._face_edges is None else self._face_edges.of(face)
             )
         return got
 
-    def surface(self, node: int) -> int:
+    def surface(self, node: FaceNode) -> int:
         """The ``GeomAbs`` surface type, so callers stop constructing their own adaptor."""
 
-        got = self._surface.get(node)
+        at = self._at(node)
+        got = self._surface.get(at)
         if got is None:
-            self._surface[node] = got = BRepAdaptor_Surface(self._faces[node].wrapped).GetType()
+            self._surface[at] = got = BRepAdaptor_Surface(self._faces[at].wrapped).GetType()
         return got
 
-    def is_planar(self, node: int) -> bool:
+    def is_planar(self, node: FaceNode) -> bool:
         return bool(self.surface(node) == GeomAbs_Plane)
 
-    def normal(self, node: int) -> tuple[float, float, float] | None:
+    def normal(self, node: FaceNode) -> tuple[float, float, float] | None:
         """The unit normal, or None for a face too degenerate to have one.
 
         None rather than an exception because every caller today wraps the kernel call in a
@@ -164,17 +208,18 @@ class FaceGraph:
         seven.
         """
 
-        if node not in self._normal:
+        at = self._at(node)
+        if at not in self._normal:
             try:
-                unit = self._faces[node].normal_at()
+                unit = self._faces[at].normal_at()
             except Exception:  # noqa: BLE001 - a degenerate face has no normal to read
-                self._normal[node] = None
+                self._normal[at] = None
             else:
-                self._normal[node] = (unit.X, unit.Y, unit.Z)
-        return self._normal[node]
+                self._normal[at] = (unit.X, unit.Y, unit.Z)
+        return self._normal[at]
 
     def bounds(
-        self, node: int
+        self, node: FaceNode
     ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         """``((x_lo, x_hi), (y_lo, y_hi), (z_lo, z_hi))``, indexable by axis number.
 
@@ -182,17 +227,18 @@ class FaceGraph:
         computed, and each was unpacking the box by hand to do so.
         """
 
-        got = self._bounds.get(node)
+        at = self._at(node)
+        got = self._bounds.get(at)
         if got is None:
-            bb = self._faces[node].bounding_box()
-            self._bounds[node] = got = (
+            bb = self._faces[at].bounding_box()
+            self._bounds[at] = got = (
                 (bb.min.X, bb.max.X),
                 (bb.min.Y, bb.max.Y),
                 (bb.min.Z, bb.max.Z),
             )
         return got
 
-    def neighbours(self, node: int) -> tuple[int, ...]:
+    def neighbours(self, node: FaceNode) -> tuple[FaceNode, ...]:
         """The nodes sharing an edge with *node*, excluding itself, each once.
 
         Order follows the face's own edge order, so it inherits the part's traversal order and
@@ -200,21 +246,22 @@ class FaceGraph:
         recognisers do by keeping the nearest neighbour per axis.
         """
 
-        got = self._neighbours.get(node)
+        at = self._at(node)
+        got = self._neighbours.get(at)
         if got is None:
-            found: list[int] = []
-            seen = {node}
+            found: list[FaceNode] = []
+            seen = {at}
             for edge in self.edges(node):
                 for other in self._edge_face_map().get(edge, ()):
-                    at = self._index.get(other)
-                    if at is None or at in seen:
+                    neighbour = self._index.get(other)
+                    if neighbour is None or neighbour in seen:
                         continue
-                    seen.add(at)
-                    found.append(at)
-            self._neighbours[node] = got = tuple(found)
+                    seen.add(neighbour)
+                    found.append(self._nodes[neighbour])
+            self._neighbours[at] = got = tuple(found)
         return got
 
-    def shared_edges(self, a: int, b: int) -> tuple[EdgeLike, ...]:
+    def shared_edges(self, a: FaceNode, b: FaceNode) -> tuple[EdgeLike, ...]:
         """The edges along which two faces meet, which an arc's classification will need.
 
         Retained rather than discarded because "is this arc convex" is a question about the
@@ -227,9 +274,9 @@ class FaceGraph:
     def _edge_face_map(self) -> dict:
         if self._edge_faces is None:
             built: dict = {}
-            for node in self.nodes:
+            for node in self._nodes:
                 for edge in self.edges(node):
-                    built.setdefault(edge, []).append(self._faces[node])
+                    built.setdefault(edge, []).append(self._faces[node.index])
             self._edge_faces = built
         return self._edge_faces
 

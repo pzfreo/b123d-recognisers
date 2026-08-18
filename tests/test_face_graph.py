@@ -17,6 +17,7 @@ claimed which face is an interpretation, and lives in the separate ledger tested
 
 from __future__ import annotations
 
+import pytest
 from build123d import Axis, Box, Cylinder, Pos, chamfer, fillet
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map, neighbours
@@ -44,13 +45,46 @@ def test_a_face_from_a_second_walk_resolves_to_the_same_node():
     second = part.faces()
 
     assert len(second) == len(graph) > 10
-    assert sorted(graph.node_of(face) for face in second) == list(graph.nodes)
+    assert {graph.node_of(face) for face in second} == set(graph.nodes)
 
 
 def test_a_face_of_another_part_has_no_node():
     """None rather than KeyError, so a caller reconciling across parts gets an answer."""
 
     assert FaceGraph(Box(10, 10, 10)).node_of(Box(4, 4, 4).faces()[0]) is None
+
+
+def test_a_node_of_another_graph_is_refused_by_every_accessor():
+    """Provenance, which a bare integer index could not carry.
+
+    Node 0 of one part is a perfectly valid index into another, so a foreign node would have
+    been accepted and would have silently answered about the wrong face -- the accidental
+    identity this substrate exists to remove. The node is genuinely valid; it just belongs
+    somewhere else, which is the case a bounds check cannot see.
+    """
+
+    mine = FaceGraph(Box(10, 10, 10))
+    theirs = FaceGraph(Box(60, 40, 12) - Pos(15, 0, 0) * Box(24, 8, 12))
+    foreign = theirs.nodes[0]
+
+    assert 0 <= foreign.index < len(mine), "the foreign node must be in range to prove anything"
+    assert not mine.owns(foreign)
+    for ask in (mine.face, mine.edges, mine.surface, mine.normal, mine.bounds, mine.neighbours):
+        with pytest.raises(ValueError, match="not issued by this graph"):
+            ask(foreign)
+
+
+def test_the_edges_handed_out_cannot_be_mutated():
+    """The graph is immutable through its own API, not by request in a docstring.
+
+    A returned list was the memo's own, so clearing it would have changed adjacency,
+    ``shared_edges`` and every later answer about that face.
+    """
+
+    graph = FaceGraph(featured_part())
+    node = graph.nodes[0]
+    assert isinstance(graph.edges(node), tuple)
+    assert isinstance(graph.neighbours(node), tuple)
 
 
 def test_attributes_agree_with_the_derivations_they_replace():
@@ -123,7 +157,7 @@ def test_attributes_are_not_derived_until_asked():
     graph = FaceGraph(featured_part())
     assert (graph._normal, graph._surface, graph._bounds, graph._edges) == ({}, {}, {}, {})
 
-    graph.normal(0)
+    graph.normal(graph.nodes[0])
     assert graph._normal and not graph._surface and not graph._bounds
 
 
@@ -140,7 +174,8 @@ def test_an_injected_face_edges_memo_is_the_one_actually_used():
             return super().of(face)[:1]
 
     part = featured_part()
-    assert all(len(FaceGraph(part).edges(node)) > 1 for node in FaceGraph(part).nodes)
+    plain = FaceGraph(part)
+    assert all(len(plain.edges(node)) > 1 for node in plain.nodes)
 
     injected = FaceGraph(part, face_edges=Truncating())
     assert all(len(injected.edges(node)) == 1 for node in injected.nodes)

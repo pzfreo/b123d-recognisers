@@ -32,50 +32,69 @@ class Candidate:
 
 
 def test_two_equal_valued_claimants_stay_distinguishable():
-    """The reason claims are keyed by id and not by the record itself.
+    """The reason a claim is an object compared by identity, not a lookup keyed on the record.
 
-    Records compare by value, so a dict keyed on the claimant would have merged two
-    equal-valued candidates into one claim covering the union of their faces — and a
-    reconciler asked which of them to keep would have found a single entry naming both sets.
+    Records compare by value, so a table keyed on the claimant would have merged two
+    equal-valued candidates into one entry covering the union of their faces — and a
+    reconciler asked which of them to keep would have found a single claim naming both sets.
     """
 
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    first = ledger.add_defining(Candidate("slot"), [0, 1])
-    second = ledger.add_defining(Candidate("slot"), [2, 3])
+    graph = FaceGraph(Box(10, 10, 10))
+    ledger = ClaimLedger(graph)
+    first = ledger.add_defining(Candidate("slot"), graph.nodes[:2])
+    second = ledger.add_defining(Candidate("slot"), graph.nodes[2:4])
 
-    assert ledger.claimant(first) == ledger.claimant(second)
-    assert first != second
-    assert ledger.defining(first) == frozenset({0, 1})
-    assert ledger.defining(second) == frozenset({2, 3})
+    assert first.claimant == second.claimant
+    assert first is not second and first != second
+    assert first.defining == frozenset(graph.nodes[:2])
+    assert second.defining == frozenset(graph.nodes[2:4])
     assert len(ledger) == 2
-    assert list(ledger.claims) == [first, second]
+    assert ledger.claims == (first, second)
 
 
 def test_a_node_reports_every_claim_naming_it():
     """Both consumers read this direction: reconciliation, and per-face corpus scoring."""
 
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    passage = ledger.add_defining(Candidate("passage"), [0, 1, 2])
-    slot = ledger.add_defining(Candidate("slot"), [2, 3])
+    graph = FaceGraph(Box(10, 10, 10))
+    ledger = ClaimLedger(graph)
+    passage = ledger.add_defining(Candidate("passage"), graph.nodes[:3])
+    slot = ledger.add_defining(Candidate("slot"), graph.nodes[2:4])
 
-    assert ledger.claims_of(0) == (passage,)
-    assert ledger.claims_of(2) == (passage, slot)
-    assert ledger.claims_of(5) == ()
+    assert ledger.claims_of(graph.nodes[0]) == (passage,)
+    assert ledger.claims_of(graph.nodes[2]) == (passage, slot)
+    assert ledger.claims_of(graph.nodes[5]) == ()
 
 
 def test_a_node_of_another_graph_is_refused():
     """A ledger paired with the wrong graph would report overlaps between different solids.
 
-    Node ids are positions in one part's face list and mean nothing elsewhere, so the mistake
-    is silent unless it is checked: node 20 is a perfectly good id in a part with more faces.
+    The foreign node here is genuinely valid — it is in range for the local graph too — which
+    is exactly the case a bounds check cannot distinguish and identity can.
+    """
+
+    graph = FaceGraph(Box(10, 10, 10))
+    other = FaceGraph(Box(4, 4, 4))
+    ledger = ClaimLedger(graph)
+
+    with pytest.raises(ValueError, match=r"\[1\]"):
+        ledger.add_defining(Candidate("slot"), [graph.nodes[0], other.nodes[1]])
+
+    assert len(ledger) == 0, "a refused claim must not be half-recorded"
+    assert ledger.claims_of(graph.nodes[0]) == ()
+
+
+def test_a_claim_with_no_defining_face_is_refused():
+    """It could never appear in ``claims_of``, so it can take part in neither consumer.
+
+    Rejecting it keeps absence from being expressed by accident: a family that means something
+    by "no defining face" has to say so deliberately.
     """
 
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    with pytest.raises(ValueError, match=r"\[20\]"):
-        ledger.add_defining(Candidate("slot"), [0, 20])
+    with pytest.raises(ValueError, match="claims no defining face"):
+        ledger.add_defining(Candidate("slot"), [])
 
-    assert len(ledger) == 0, "a refused claim must not be half-recorded"
-    assert ledger.claims_of(0) == ()
+    assert len(ledger) == 0
 
 
 def test_claiming_changes_nothing_the_graph_answers():
@@ -94,7 +113,7 @@ def test_claiming_changes_nothing_the_graph_answers():
     ]
 
     for node in graph.nodes:
-        ledger.add_defining(Candidate(f"candidate-{node}"), [node])
+        ledger.add_defining(Candidate(f"candidate-{node.index}"), [node])
 
     assert snapshot == [
         (graph.neighbours(node), graph.bounds(node), graph.normal(node), graph.is_planar(node))
@@ -136,7 +155,7 @@ def test_claimed_faces_separate_features_that_share_an_xy_centre():
     channel_claim = ledger.add_defining(Candidate("channel"), channel)
 
     assert _xy_centre(graph, bore) == pytest.approx(_xy_centre(graph, channel), abs=1e-9)
-    assert ledger.defining(bore_claim) & ledger.defining(channel_claim) == frozenset()
+    assert bore_claim.defining & channel_claim.defining == frozenset()
     assert all(ledger.claims_of(node) == (bore_claim,) for node in bore)
     assert all(ledger.claims_of(node) == (channel_claim,) for node in channel)
 

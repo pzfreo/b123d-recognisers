@@ -28,6 +28,13 @@ would manufacture conflicts between features that legitimately share context. On
 `defining` role exists today, and it is named rather than implied so that adding `boundary` or
 `consulted` later is a new method rather than a reinterpretation of this one.
 
+**A claim is an object, not an index into a table.** `add_defining` hands back the claim
+itself, so it carries its own claimant and its own defining faces and there is no id to look up
+in the wrong ledger. Claims compare by identity, which is what keeps two equal-valued candidates
+apart: records compare by value, so a table keyed on the record would have merged them into one
+entry covering both their faces, and a reconciler asked which to keep would have found one claim
+naming both sets.
+
 **Overlap is not exclusion.** Two claims sharing a defining face is evidence for a reconciler to
 weigh, not a verdict. Which of them survives — or whether both do, as a pattern and its members
 both legitimately do — is the reconciler's policy under ADR 0003, and is not decided here.
@@ -37,72 +44,78 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceGraph, FaceNode
+
+
+class Claim:
+    """What one recogniser believes established one candidate.
+
+    Compared by identity, deliberately. Two candidates whose records are equal are still two
+    candidates, and a reconciler has to be able to tell them apart.
+    """
+
+    __slots__ = ("claimant", "defining")
+
+    def __init__(self, claimant: object, defining: frozenset[FaceNode]) -> None:
+        self.claimant = claimant
+        self.defining = defining
+
+    def __repr__(self) -> str:
+        return f"Claim({self.claimant!r}, defining={len(self.defining)} faces)"
 
 
 class ClaimLedger:
     """Append-only claims against the nodes of one :class:`FaceGraph`.
 
-    Bound to a graph so that a node id from a different part cannot be recorded silently. Node
-    ids mean nothing outside the graph that issued them, and a mis-paired ledger would otherwise
-    produce overlaps between faces of different solids.
+    Bound to a graph, and the binding is enforced rather than assumed: a node the graph did not
+    issue is refused, so a ledger paired with the wrong graph cannot report overlaps between the
+    faces of different solids.
     """
 
     def __init__(self, graph: FaceGraph) -> None:
         self._graph = graph
-        self._claimants: list[object] = []
-        self._defining: list[frozenset[int]] = []
-        self._by_node: dict[int, list[int]] = {}
+        self._claims: list[Claim] = []
+        self._by_node: dict[FaceNode, list[Claim]] = {}
 
     def __len__(self) -> int:
-        return len(self._claimants)
+        return len(self._claims)
 
-    def add_defining(self, claimant: object, nodes: Iterable[int]) -> int:
-        """Record that *nodes* are what established *claimant*, and return the claim's id.
-
-        **An id rather than the claimant as the key**, because records compare by value: two
-        equal-valued candidates are distinguishable to a reconciler only if the ledger keeps
-        them apart, and a dict keyed on the record would have merged them into one claim
-        covering both their faces.
+    def add_defining(self, claimant: object, nodes: Iterable[FaceNode]) -> Claim:
+        """Record that *nodes* are what established *claimant*, and return the claim.
 
         *claimant* is normally the record itself; nothing here interprets it.
+
+        Refuses an empty set. A claim naming no face can never appear in :meth:`claims_of`, so
+        it can take no part in reconciliation or in per-face scoring -- the only two things
+        claims exist for. A candidate with no defining face belongs outside this ledger until a
+        family gives absence an explicit meaning.
         """
 
-        valid = self._graph.nodes
-        claimed = frozenset(nodes)
-        outside = sorted(node for node in claimed if node not in valid)
-        if outside:
-            raise ValueError(f"nodes {outside} are not in this ledger's graph")
+        defining = frozenset(nodes)
+        if not defining:
+            raise ValueError(f"{claimant!r} claims no defining face")
+        foreign = [node for node in defining if not self._graph.owns(node)]
+        if foreign:
+            raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
 
-        claim = len(self._claimants)
-        self._claimants.append(claimant)
-        self._defining.append(claimed)
-        for node in claimed:
+        claim = Claim(claimant, defining)
+        self._claims.append(claim)
+        for node in defining:
             self._by_node.setdefault(node, []).append(claim)
         return claim
 
     @property
-    def claims(self) -> range:
-        """Every claim id, in the order they were made."""
+    def claims(self) -> tuple[Claim, ...]:
+        """Every claim, in the order it was made."""
 
-        return range(len(self._claimants))
+        return tuple(self._claims)
 
-    def claimant(self, claim: int) -> object:
-        """What the claim was made on behalf of."""
-
-        return self._claimants[claim]
-
-    def defining(self, claim: int) -> frozenset[int]:
-        """The nodes that established *claim*."""
-
-        return self._defining[claim]
-
-    def claims_of(self, node: int) -> tuple[int, ...]:
+    def claims_of(self, node: FaceNode) -> tuple[Claim, ...]:
         """Every claim naming *node* as defining, in claim order; empty for an unclaimed node.
 
         This is the direction both consumers read. A reconciler asks it of a candidate's own
         nodes to find what else claims them, and per-face corpus scoring asks it of every node
-        — which `docs/capabilities.md` records as impossible today, attribution there being
+        -- which ``docs/capabilities.md`` records as impossible today, attribution there being
         statistical rather than per-face.
         """
 
