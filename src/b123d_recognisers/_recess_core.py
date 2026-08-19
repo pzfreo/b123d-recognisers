@@ -13,9 +13,8 @@ from typing import Literal, TypeVar, cast, overload
 from build123d import Box, GeomType, Pos
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
-from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode, frame_points_outward
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._typing import Bounds, Part
@@ -72,17 +71,18 @@ def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) 
 
 
 def _outward_normal(face) -> tuple[float, float, float] | None:
-    """Unit outward normal of a planar face as an (x, y, z) tuple, or None when
-    the face is not planar.  Material-side convention matches helpers'
-    ``analyse_cylinders``: FORWARD orientation agreeing with the plane frame's
-    handedness means the stored normal already points out of the solid."""
+    """Unit outward normal of a planar face as an (x, y, z) tuple, or None when the face is
+    not planar.
+
+    The plane's own frame direction, signed by
+    :func:`b123d_recognisers._adjacency.frame_points_outward` -- which is the material-side
+    convention this used to spell out for itself, and which three other sites spelled out
+    separately."""
     surf = BRepAdaptor_Surface(face.wrapped)
     if surf.GetType() != GeomAbs_Plane:
         return None
-    pl = surf.Plane()
-    n = pl.Axis().Direction()
-    fwd = face.wrapped.Orientation() == TopAbs_Orientation.TopAbs_FORWARD
-    sign = 1.0 if (fwd == pl.Position().Direct()) else -1.0
+    n = surf.Plane().Axis().Direction()
+    sign = 1.0 if frame_points_outward(face) else -1.0
     return (sign * n.X(), sign * n.Y(), sign * n.Z())
 
 
@@ -323,7 +323,9 @@ def _cylinder_faces(part: Part) -> list[tuple]:
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
     some unrelated cylinder at a different depth); ``concave`` is True when the face bounds a
     *void* (its material-outward normal points inward, toward the axis) — a recess wall — rather
-    than added material (a boss/post). Mirrors ``_outward_normal``'s FORWARD/handedness test."""
+    than added material (a boss/post). Shares `_outward_normal`'s material-side convention rather
+    than restating it -- both now ask `frame_points_outward`, which is where the convention
+    lives."""
     out = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
@@ -335,8 +337,7 @@ def _cylinder_faces(part: Part) -> list[tuple]:
         if axis is None:
             continue
         loc = cyl.Axis().Location()
-        fwd = face.wrapped.Orientation() == TopAbs_Orientation.TopAbs_FORWARD
-        concave = fwd != cyl.Position().Direct()
+        concave = not frame_points_outward(face)
         out.append((cyl.Radius(), axis, (loc.X(), loc.Y(), loc.Z()), face.bounding_box(), concave))
     return out
 

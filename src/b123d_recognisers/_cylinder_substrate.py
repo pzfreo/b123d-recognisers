@@ -7,8 +7,8 @@ from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
-from OCP.TopAbs import TopAbs_Orientation
 
+from b123d_recognisers._adjacency import frame_points_outward
 from b123d_recognisers._geometry import _axis_letter_of, length_tol, quantise
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
 
@@ -80,12 +80,9 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
             s_lo=min(s0, s1),
             s_hi=max(s0, s1),
             face=face,
-            # Outward material (boss/OD) vs bore: a right-handed cylinder's
-            # natural normal points away from the axis, so FORWARD means
-            # external — but mirroring makes the frame left-handed and flips
-            # both, so compare against the frame handedness
-            external=(face.wrapped.Orientation() == TopAbs_Orientation.TopAbs_FORWARD)
-            == cyl.Position().Direct(),
+            # Outward material (boss/OD) vs bore: a right-handed cylinder's natural normal
+            # points away from the axis, so a frame pointing outward is an external surface.
+            external=bool(frame_points_outward(face)),
         )
         (z_cyls if ax == "z" else cross_cyls).append(rec)
     return z_cyls, cross_cyls
