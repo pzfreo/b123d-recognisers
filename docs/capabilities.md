@@ -109,7 +109,10 @@ Three limits on how far this evidence reaches:
   a record on a face centre, so their records *can* be matched back to the labelled face that
   produced them, and their figures — 100% precision for angled steps, 44% → 78% for chamfers
   over 120 models — are counted per face rather than fitted. That is why they are quoted as
-  precision, which the caveat above forbids for the rest.
+  precision, which the caveat above forbids for the rest. The chamfer figure is the
+  *reconciled* answer, which is what the aggregate and the census report; called directly the
+  recogniser proposes a blind step's slant as well and scores lower — 50% against 79% over the
+  40 vendored models — for the reason the row above gives.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.
