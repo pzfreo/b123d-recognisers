@@ -37,7 +37,7 @@ from b123d_recognisers import (  # noqa: E402
     recognise_turned_steps,
     step_level_zs,
 )
-from b123d_recognisers._geometry import clears_threshold  # noqa: E402
+from b123d_recognisers._geometry import clears_threshold, quantise  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
@@ -161,3 +161,38 @@ def test_an_explicit_end_margin_is_also_honoured_literally():
     assert step_level_zs(part) == step_level_zs(part)
 
 
+
+
+def test_the_precision_floor_follows_the_value_and_not_the_millimetre():
+    """`quantise` is the scale-free `round`, and the reason the substrate needed one.
+
+    A decimal quantum is a length: `round(x, 2)` is 0.16% of a 6.25 mm band and 8% of the same
+    band on a part modelled at a twentieth, which is how `analyse_cylinders` came to report a
+    Ø6.25 band as Ø0.31. Significant figures keep the quantum proportional, and — unlike a
+    relative *tolerance* — still form a grid, so a quantised value can be a grouping key.
+    """
+
+    assert quantise(6.25) == 6.25
+    assert quantise(0.3125) == 0.3125, "the case the decimal quantum lost"
+    assert quantise(6.000000000000001) == 6.0, "kernel noise still goes"
+
+    # The guarantee is a relative error bound at any scale — checked over a spread of values
+    # rather than a few, because the first version of this test asserted commutativity with
+    # scaling on three hand-picked values and that property is false for about a fifth of them.
+    # Derived, not picked: rounding to N significant figures moves a value by at most half a
+    # unit in the Nth digit, and the mantissa is at least 1, so the relative error is bounded by
+    # 0.5 * 10**(1-N). Writing 1e-6 here instead failed at a mantissa near 1.0, which is exactly
+    # where the bound is tightest.
+    figures = 6
+    bound = 0.5 * 10 ** (1 - figures)
+    step = 0.0007
+    value = 0.001
+    while value < 1000:
+        for factor in (1.0, 0.05, 5.0, 100.0):
+            scaled = value * factor
+            assert abs(quantise(scaled) - scaled) <= bound * abs(scaled), (value, factor)
+        value += step
+        step *= 1.05
+
+    # Still a grid, so it can key a dict — two values a millionth apart land together.
+    assert quantise(6.25, figures=4) == quantise(6.2500004, figures=4)

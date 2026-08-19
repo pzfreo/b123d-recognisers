@@ -9,7 +9,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._geometry import _axis_letter_of, length_tol
+from b123d_recognisers._geometry import _axis_letter_of, length_tol, quantise
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
 
 #: Whatever record type the caller groups. _merge_runs cares only about ``s_lo``/``s_hi`` and the
@@ -71,7 +71,7 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
         s_ap = ap.X() * dir_xyz[0] + ap.Y() * dir_xyz[1] + ap.Z() * dir_xyz[2]
         s0, s1 = s_ap + sign * v0, s_ap + sign * v1
         rec: CylinderEvidence = dict(
-            diameter=round(r * 2, 2),
+            diameter=quantise(r * 2),
             axis=ax,
             solid_idx=solid_idx,
             u_extent=surf.LastUParameter() - surf.FirstUParameter(),
@@ -111,7 +111,7 @@ def _line_key(c) -> tuple:
 
 def _cyl_group_key(c) -> tuple:
     """Cylinder patches of one hole/boss share an axis line and a diameter."""
-    return (*_line_key(c), round(c["diameter"], 2))
+    return (*_line_key(c), quantise(c["diameter"], figures=4))
 
 
 def _merge_runs(items: list[_E], key_fn) -> list[list[_E]]:
