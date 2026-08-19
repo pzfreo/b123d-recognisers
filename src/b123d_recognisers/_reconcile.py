@@ -98,8 +98,10 @@ def steps_that_are_not_grooves(
     It waited on a defect upstream of the count. While it was unwired, `recognise_turned_steps`
     reported the groove's rung at the shaft's OD on a part modelled small, so there was no
     groove rung to reconcile and the count stopped being scale-free -- one wrong count being
-    better than a scale-dependent one. That is fixed, and the census applies this at every scale
-    the corpus is checked at.
+    better than a scale-dependent one. That is fixed, and `test_scale_invariance` now runs the
+    census over the turned-step golden at a twentieth and a hundred times size. Not over the
+    vendored corpus, which cannot check it: all 50 NIST and MFCAD++ parts are milled prismatic
+    and report no turned steps at all.
     """
 
     # Takes the records where `passages_that_are_not_slots` takes the part and runs the
