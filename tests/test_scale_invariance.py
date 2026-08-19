@@ -29,7 +29,7 @@ ROOT = Path(__file__).parents[1]
 GOLDEN_ROOT = ROOT / "tests" / "golden"
 sys.path.insert(0, str(ROOT))
 
-from build123d import Box, Pos  # noqa: E402
+from build123d import Box, Pos, import_step  # noqa: E402
 
 from b123d_recognisers import (  # noqa: E402
     feature_census,
@@ -196,3 +196,26 @@ def test_the_precision_floor_follows_the_value_and_not_the_millimetre():
 
     # Still a grid, so it can key a dict — two values a millionth apart land together.
     assert quantise(6.25, figures=4) == quantise(6.2500004, figures=4)
+
+
+TURNED_CASES = sorted((ROOT / "tests" / "corpus" / "gramel").glob("*.step"))
+
+
+@pytest.mark.parametrize("factor", FACTORS)
+@pytest.mark.parametrize("path", TURNED_CASES, ids=lambda path: path.stem)
+def test_the_census_of_a_real_turned_part_is_the_same_at_any_scale(path, factor):
+    """The check the golden fixtures cannot make, on parts that were actually turned.
+
+    Every scale test above runs on the golden corpus, and the two vendored third-party corpora
+    are milled prismatic — measured, all 50 NIST and MFCAD++ models report zero turned steps.
+    So the families whose gates this suite exists to police had, until these three parts, no
+    real geometry checking them at any scale but 1×.
+
+    That gap is not hypothetical. It is where the rung that reported its neighbour's diameter
+    lived, and the shoulder that split a rung in two, and the diameter quantised to a hundredth
+    of a millimetre — three defects, none of which the golden corpus could see.
+    """
+
+    part = import_step(str(path))
+
+    assert _scale_free_census(part.scale(factor)) == _scale_free_census(part)
