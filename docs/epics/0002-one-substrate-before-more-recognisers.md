@@ -1,0 +1,250 @@
+# Epic 0002 — One substrate before more recognisers
+
+**Status:** proposed
+**Owner:** @pzfreo
+**Opened:** 2026-08-19
+**Baseline:** `c638120` (0.2.6.dev0) — 657 tests, 95.65% branch coverage, ruff and mypy clean
+
+MFCAD++ carries 25 labelled classes and this package recognises roughly half of them. The
+temptation is to work through the other half. This epic argues for consolidating what is already
+here first — not because the substrate blocks the missing classes (it does not; see item 5) but
+because every concept currently implemented several times privately will be implemented once more
+by each recogniser added on top of it.
+
+The evidence for that is [#92](https://github.com/pzfreo/b123d-recognisers/issues/92)'s: the
+concepts do not stay uncopied. They get rebuilt locally, and the copies drift where nobody is
+looking.
+
+| # | Item | Value | Behaviour change | Effort |
+|---|---|---|---|---|
+| 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | S |
+| 1 | Material-side as a named node attribute | High | **likely** | M |
+| 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
+| 3 | Smooth arcs, for seeing through a blend | Medium | **yes** | M |
+| 4 | One adjacency API instead of two | Medium | no | M |
+| 5 | Oblique features: implement or exclude | High | n/a (docs) | S |
+
+Item 0 first, and it is the only ordering constraint. Items 1–4 are independent. Item 5 is a scope
+decision that does not depend on any of them and could be taken today.
+
+---
+
+## The method this epic is committing to
+
+**Measure the disagreement before migrating.** Every consolidation in the previous epic that was
+undertaken on an assumption of equivalence found something: phase 1 consolidated five adjacency
+implementations and [#82](https://github.com/pzfreo/b123d-recognisers/issues/82) then found a
+sixth, written as a list comprehension with no dedupe and no self-exclusion. `_recess_core._Face`
+looked like the obvious next migration and turned out to be the one that must not happen, because
+its normal convention and `FaceGraph`'s differ by a sign that the recess families depend on.
+
+So each item below starts with a count, not a patch: run the existing implementations over the
+72 corpus parts and record where they disagree. That converts "is this mechanical?" from a
+judgement into a number, before any code moves.
+
+**Goldens are refactor safety, not correctness.** Where the copies agree, byte-identical goldens
+are the right check and the migration is mechanical. Where they disagree, one of them is wrong,
+the golden **must** move, and the change needs the evidence standard
+[#104](https://github.com/pzfreo/b123d-recognisers/pull/104) used: establish which answer is right
+first, regenerate second, and say in the PR what moved and why.
+
+These two are in tension by construction. A consolidation of implementations that *agree* is
+cosmetic; the debt is precisely where they do not. "Capture the current results and replicate them
+underneath" is therefore the correct plan for part of this work and a way of freezing a bug for
+the rest, and the count in each item is what tells the two apart.
+
+**The corpus is a false-negative detector, not ground truth.** Three defects lived in code the
+golden corpus exercised on every run and none was visible to it; they appeared only when real
+turned parts were vendored. Byte-identity over 72 parts proves the new code agrees with the old
+code on those parts. Where half the classes are unrecognised, capturing current output as golden
+also encodes that absence as correct.
+
+## The gate this epic replaces
+
+Every phase of [#75](https://github.com/pzfreo/b123d-recognisers/issues/75) was declined or
+narrowed on **recall or runtime**, and each decision was defensible alone. Five of them were
+reversed within days — the components extraction, run-local ownership, coordinate-based
+passage/slot reconciliation, and the shared triangular-companion predicate. The declines that
+stand are the ones about performance and machinery: the shared edge→faces map at a 1.9% ceiling,
+subgraph matching, gAAG, public serialised ownership.
+
+The split has a cause. Identity, ownership and classification produce no recall and no runtime, so
+a regime measuring only those two could return "no consumer" indefinitely, and did. The
+architecture was not avoided; it was made implicit and inconsistent.
+
+**Replacement gate: does this concept already exist privately in more than one place?** It is a
+duplication-and-drift question, answerable by grep, and it does not require the value to show up
+in a metric that structurally cannot carry it. Applied today it selects items 1, 2 and 4, would
+have selected the components walk at two copies and ownership at two, and still correctly declines
+subgraph matching, gAAG and serialised ownership — which exist zero times.
+
+---
+
+## 0 — Per-face recall, measured rather than fitted
+
+`behaviour-neutral` · no source change
+
+Every recall figure quoted for this package outside chamfers and angled steps comes from
+non-negative least squares fitting record counts against labelled-face counts across models. That
+is correlational: it infers attribution rather than observing it, R² is weak for several families,
+and it cannot distinguish "not recognised" from "recognised under a different family name".
+
+[#75](https://github.com/pzfreo/b123d-recognisers/issues/75) identified the fix and named it a
+prerequisite: *"recall scoring needs face ownership, not the whole graph"*, and *"the MFCAD++
+evaluation should be re-run per-face once 5a exists, before any further architectural conclusion is
+drawn from it"*.
+
+**It exists now and has never been used.** Six families write defining claims into the ledger —
+slots, passages, grooves, turned steps, chamfers, angled steps — and MFCAD++ labels live on the
+`ADVANCED_FACE` name, so claimed node → face → label is a direct join.
+
+- [ ] Per-face precision and recall for the six claiming families over the vendored 40, then over
+      a larger MFCAD++ draw
+- [ ] Classify each miss: orientation gate, minimum-evidence threshold, taxonomy mismatch, or
+      genuinely unhandled geometry
+- [ ] Record which of items 1–5 each miss category actually depends on
+
+This is what sizes the rest of the epic. Right now the split between orientation-blocked,
+threshold-blocked and substrate-blocked is a well-supported guess drawn from one family.
+
+## 1 — Material-side as a named node attribute
+
+`behaviour-neutral where the copies agree`
+
+"Which side of this face is the material" is answered privately in four places, by one convention
+specialised to three surface types:
+
+| site | surface | shape |
+|---|---|---|
+| `_recess_core._outward_normal:74` | plane | orientation `FORWARD` × plane frame handedness |
+| `_recess_core:330` | cylinder | *"mirrors `_outward_normal`'s FORWARD/handedness test"* |
+| `_cylinder_substrate.py:87` | cylinder | orientation × `Position().Direct()` |
+| `_hole_features.py:287` | sphere | orientation × `Position().Direct()` |
+
+**A correction worth recording**: an earlier reading of this called it three mutually incompatible
+styles. It is not. These four agree in method and differ only in surface type, which is duplication
+rather than drift. The genuine incompatibility is between this family and `FaceGraph.normal`, which
+is *geometric* (`normal_at`) and differs by a sign on `REVERSED` faces. Both conventions are live,
+both are correct for their own question, and nothing in the package says so — the distinction
+currently survives as a note explaining why `_recess_core._Face` must not be migrated.
+
+- [ ] Count where the four disagree with each other over the 72 corpus parts, per surface type
+- [ ] Add material-side as its own lazy node attribute, **named distinctly from** `normal`, so the
+      two conventions are visible rather than latent
+- [ ] Migrate the four call sites; goldens byte-identical where the count above says they agree
+- [ ] `_recess_core._Face` keeps its own reader if and only if the count says it must
+
+The prize is not the four lines. It is that the next recogniser needing material side finds one
+attribute with a name that says which convention it is.
+
+## 2 — Pair convexity as an arc — it already exists twice
+
+`behaviour-neutral where the copies agree`
+
+This is the AAG's defining attribute, the one [#75](https://github.com/pzfreo/b123d-recognisers/issues/75)
+phase 2 called *"this is the actual AAG"* and declined for want of a consumer. **It has two, and it
+is already implemented for both:**
+
+- `chamfers.convex_bevel:142` — reconstruct the virtual sharp corner where the two neighbour
+  planes cross, nudge toward the bevel face, and classify the point against the solid
+- `fillets.py:138–147` — the same construction, inline, with the sense inverted
+
+That is a convex/concave classification of the dihedral between two faces, computed at the point of
+use, twice, and reachable from nothing else. Both are `O(1)` solid classifications, and neither
+carries a tolerance to calibrate.
+
+Two design facts this item must carry forward:
+
+- **The probe is better than the angle where it applies.** It classifies actual material at a
+  point rather than inferring from a normal difference, which is why the chamfer recall analysis
+  found nothing for an angle-based attribute to improve on. Adopting Analysis Situs's dihedral
+  taxonomy wholesale would be a downgrade for this case.
+- **It does not generalise as written.** It needs a *virtual corner*, which needs two axis-aligned
+  neighbour planes. An arc between two arbitrary faces cannot be classified this way, so the
+  general case needs the angle as well and the arc attribute is a union of the two, not a
+  replacement of one by the other.
+
+- [ ] Count where the two implementations disagree over the 72 parts (they should not; assert it)
+- [ ] Lift onto `FaceGraph` as a lazy arc attribute over `shared_edges`, retaining the probe for
+      the axis-aligned-corner case
+- [ ] Decide the general case: angular classification per ADR 0008, dimensionless, or refuse to
+      answer for arcs the probe cannot reach
+- [ ] Migrate `chamfers` and `fillets`; goldens byte-identical
+
+## 3 — Smooth arcs, for seeing through a blend
+
+`behaviour-changing` · blocked on item 2
+
+ADR 0004's amendment (PR [#105](https://github.com/pzfreo/b123d-recognisers/pull/105)) adds the
+criterion this needs: a blend is a **bridge** as well as noise, and traversing through one deserves
+its own acceptance evidence. Two live consumers, both already costing recall:
+
+- `grooves._joined` matches a conical lead-in to both band rims by hand, because a manufactured
+  groove's bands never touch (issue #60). Without it the groove is absent, not mis-measured.
+- `recognise_angled_steps` finds a blind end by an exactly-three-edge neighbour, so a triangle a
+  neighbouring feature subdivides reads as four or five. 24 of its 49 misses over 120 MFCAD++
+  models have no bare triangular face on them.
+
+The Analysis Situs taxonomy's useful part is the *sided* smooth pair — `SmoothConcave` and
+`SmoothConvex` — since a tangential join still has a material side. Its `Collapse()` primitive is
+explicitly not the shape to copy: it mutates the graph, propagates attributes to inserted arcs only
+where angles are equal, and its header warns `PopSubgraph()` does not clean them up.
+
+- [ ] Angular smoothness gate, dimensionless per ADR 0008, defaulting off
+- [ ] A **named** traversal query — not a widened `neighbours()`, which would move every existing
+      recogniser's answer at once
+- [ ] `grooves._joined` reimplemented on it, or the item is not done
+- [ ] Measure what it recovers of the 24 subdivided-triangle misses
+
+## 4 — One adjacency API instead of two
+
+`behaviour-neutral`
+
+Phase 1 consolidated five implementations into `edge_face_map`. #92 then built `FaceGraph` beside
+it. Both are live and the split is by module, not by need:
+
+- **graph** — `passages`, `polygonal_bosses`, `_recess_core`
+- **dict map** — `_hole_features`, `angled_steps`, `chamfers`, `fillets`, `flats`
+
+Claiming is much wider than reading: six families write claims, but only `passages` and
+`polygonal_bosses` read node attributes at all. `chamfers` and `angled_steps` claim a node and then
+derive their own normals and bounds by hand three lines later.
+
+Lower value than items 1–3 and mostly genuinely mechanical — worth doing *after* them, because a
+migration whose only benefit is API uniformity is the kind this project has correctly declined
+before. It becomes worth doing when the migrated modules would read attributes too.
+
+- [ ] Migrate the five dict-map modules, one PR each, goldens byte-identical
+- [ ] Retire the free-function adjacency helpers, or document why they stay
+- [ ] `connected_components` stays a free function taking a caller-supplied relation unless a
+      third consumer wants face adjacency specifically
+
+## 5 — Oblique features: implement or exclude
+
+`docs, or a large behaviour change` · independent of items 0–4
+
+The classes MFCAD++ labels and this package does not recognise are the **triangular, slanted,
+6-sided and 2-sided** variants, and their rectangular counterparts all recognise. They die at
+`AXIS_ALIGNED_COS`, one face at a time, before adjacency is consulted. Established on MFCAD and
+replicated independently on MFCAD++.
+
+**No item above unblocks them.** This is a scope decision for
+[`capabilities.md`](../capabilities.md), and the honest options are to implement oblique support
+with its own evidence, or to document the exclusion so the corpus figures stop reading as a defect.
+Taking it explicitly is what stops it being re-answered by accident inside the next recogniser.
+
+- [ ] Decide, and write it into `capabilities.md` either way
+- [ ] If excluded, a test that fails when support is added, as the B-spline exclusion has
+
+---
+
+## Not in this epic
+
+- **Subgraph isomorphism.** Replacing golden-pinned procedural recognisers with pattern matching is
+  a rewrite with no evidence behind it, and the declared position since #75. Unchanged.
+- **gAAG, UV sampling, learned recognition.** Closed by ADR 0002's determinism contract.
+- **Public serialised face ownership.** Zero consumers, and it needs a stable identity scheme that
+  fixture-stable face order cannot provide.
+- **Migrating `_recess_core._Face` to `FaceGraph` nodes.** Investigated and rejected: the
+  conventions differ by a sign the recess families depend on. Item 1 makes that difference
+  explicit; it does not remove it.
