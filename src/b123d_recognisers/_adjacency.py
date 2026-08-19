@@ -422,35 +422,6 @@ def connected_components(
     return components
 
 
-def has_triangular_companion(
-    face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
-) -> bool:
-    """Is *face* edge-adjacent to an axis-aligned planar face bounded by exactly three edges?
-
-    The single question that separates an angled blind step from a chamfer. A chamfer strip
-    runs the whole length of the edge it breaks, so its neighbours are the two walls it
-    bridges. An angled step stops part-way into the part, and a triangular flat is what
-    closes the blind end.
-
-    It lives here, rather than in either recogniser, because *both* consult it and they must
-    agree: ``recognise_chamfers`` declines a bevel that has such a companion and
-    ``recognise_angled_steps`` requires one. Two separate copies that drifted would not
-    produce a double-count — they would make the feature disappear from the census, claimed
-    by neither, which is far harder to notice.
-
-    Note this asks a purely topological question. Unlike a size gate it says nothing about
-    the part around the face, so a step is a step at any scale.
-    """
-
-    for other in neighbours(face, edge_faces, face_edges=face_edges):
-        if axis_aligned_axis(other.wrapped) is None:
-            continue
-        edges = face_edges.of(other) if face_edges is not None else other.edges()
-        if len(edges) == 3:
-            return True
-    return False
-
-
 def nearest_axis_aligned_planes(
     face: FaceLike,
     edge_faces: dict,

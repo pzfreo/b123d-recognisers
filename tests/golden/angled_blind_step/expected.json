@@ -214,6 +214,18 @@
           "axis": "x",
           "leg1": 3.0,
           "leg2": 3.0
+        },
+        {
+          "_type": "Chamfer",
+          "angle": 33.69,
+          "at": [
+            7.5,
+            6.0,
+            20.0
+          ],
+          "axis": "y",
+          "leg1": 15.0,
+          "leg2": 10.0
         }
       ],
       "recognise_channels": [],

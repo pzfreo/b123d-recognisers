@@ -58,6 +58,8 @@ MODULE_SEAM_EDGES = {
         "_claims",
         "_recess_records",
         "_typing",
+        "angled_steps",
+        "chamfers",
         "grooves",
         "passages",
         "turned",

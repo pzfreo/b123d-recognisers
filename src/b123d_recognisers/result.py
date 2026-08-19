@@ -28,7 +28,10 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
     recognise_holes,
 )
-from b123d_recognisers._reconcile import passages_that_are_not_slots
+from b123d_recognisers._reconcile import (
+    chamfers_that_are_not_angled_steps,
+    passages_that_are_not_slots,
+)
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
@@ -342,6 +345,12 @@ def build_recognition_result(
     # conditionals at each call site are what the aggregate single-scan design removes; this
     # decides once for every consumer rather than each consumer deciding again.
     prismatic = not rotational
+    # Both bevel families write into the same ledger, and both run before the result is built:
+    # the rule below needs the step claims, and the field order of `RecognitionResult` puts
+    # `chamfers` first. Gated together because they are the same oblique-face read, so a
+    # rotational part yields neither and there is nothing to reconcile.
+    chamfers = recognise_chamfers(part, ledger=ledger) if prismatic else []
+    angled_steps = recognise_angled_steps(part, ledger=ledger) if prismatic else []
     prof = TurnedProfile.from_steps(list(turned_steps))
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -367,8 +376,8 @@ def build_recognition_result(
         rotational=rotational,
         step_levels=tuple(step_level_records(part)),
         risers=tuple(recognise_risers(part)),
-        chamfers=tuple(recognise_chamfers(part)) if prismatic else (),
-        angled_steps=tuple(recognise_angled_steps(part)) if prismatic else (),
+        chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
+        angled_steps=tuple(angled_steps),
         passages=tuple(passages_that_are_not_slots(part, ledger)) if prismatic else (),
         fillets=tuple(recognise_fillets(part)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),

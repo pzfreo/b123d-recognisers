@@ -1,5 +1,34 @@
 # Release notes
 
+## 0.2.6
+
+- **The chamfer/angled-step split moved from the recognisers to the reconciler.** Both families
+  read the same oblique bevel, and until now each carried a gate phrased in terms of the *other*
+  one: `recognise_chamfers` declined a bevel edge-adjacent to a triangular flat, and
+  `recognise_angled_steps` required one, through a predicate they shared in
+  `_adjacency`. That is an ownership decision, and ADR 0003 puts ownership after
+  discovery. Both families now write a claim naming the one face they were established by — the
+  bevel, and the slant — and `_reconcile.chamfers_that_are_not_angled_steps` drops a chamfer
+  whose face a step already has.
+
+  **Reconciled output is unchanged.** `build_recognition_result` and `feature_census` apply the
+  rule and were verified byte-identical over all 72 corpus parts: 19 synthetic goldens, 40
+  labelled MFCAD++ models, 10 NIST CTC models and 3 real turned parts.
+
+  **What changes is `recognise_chamfers` called on its own**, which now reports a blind step's
+  slant, as it did before `recognise_angled_steps` existed. Over the 40 MFCAD++ models that is 8
+  extra records on 8 models — 8 of the 11 angled steps there; the other 3 are turned away as
+  spanning wedges, which is the chamfer family's own gate. Every one of the 8 lands on a face
+  the corpus labels *Triangular blind step*, and the rule takes back all 8. A caller who
+  wants the reconciled answer should use the
+  aggregate or the census, which is the same posture `recognise_passages` takes towards a slot's
+  void and `recognise_turned_steps` towards a groove's rung. One pinned golden moved: the
+  `recognise_chamfers` entry of `angled_blind_step` gained the ramp's slant.
+
+  `recognise_chamfers` and `recognise_angled_steps` gain an optional `ledger=` parameter, in the
+  shape `recognise_slots` and `recognise_grooves` already have. No record gains, loses or alters
+  a field.
+
 ## 0.2.5
 
 Adds a recogniser family, and with it corrects a defect that family's absence was causing.

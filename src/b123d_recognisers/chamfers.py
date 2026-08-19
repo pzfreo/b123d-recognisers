@@ -30,6 +30,25 @@ meet. Four gates keep it to genuine chamfers and recover the right size:
 The two legs are the chamfer face's in-plane bbox extents, so an equal-leg and an
 asymmetric chamfer are distinguished from the geometry, not estimated from the rendered
 view. Bottom of the recognition DAG: depends only on build123d/OCP.
+
+**A fifth gate used to live here, and it was not a chamfer test.** A bevel edge-adjacent to a
+triangular flat is the slant of an angled blind step, and this recogniser declined it — by
+consulting the *other* family's signature through a helper the two shared, so that neither
+would report the face and both would agree about which. That is the hand-rolled ownership
+device the run-local face graph and its claim ledger were built to remove. Nothing on the face
+itself says a chamfer is not a step: the question is which of two families owns it, and ADR 0003
+puts that question after discovery, not inside it. So this recogniser proposes every bevel that
+clears its own four gates, and
+:func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps` drops the ones
+``recognise_angled_steps`` claimed.
+
+**What that means for a caller.** Run through :func:`b123d_recognisers.build_recognition_result`
+or :func:`b123d_recognisers.feature_census` and the answer is what it always was — the
+reconciliation is inside both. Call this function *directly* and a blind step's slant now comes
+back as a chamfer, as it did before ``recognise_angled_steps`` existed. That is the same
+posture ``recognise_passages`` takes towards a slot's void and ``recognise_turned_steps``
+towards a groove's rung: a recogniser reports what its own evidence supports, and a rule that
+can see both families decides.
 """
 
 from __future__ import annotations
@@ -46,9 +65,9 @@ from OCP.TopAbs import TopAbs_IN
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
-    has_triangular_companion,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part, Vector3
@@ -158,18 +177,28 @@ def recognise_chamfers(
     tol: float | None = None,
     max_leg_frac: float = 0.45,
     face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | None = None,
 ) -> list[Chamfer]:
     """Recognise the chamfers of *part* (see module docstring). Returns one
     :class:`Chamfer` per qualifying oblique face, sorted deterministically. Empty when the
     part has no chamfer. Only single-axis chamfers (running along one principal axis) are
-    recovered; a compound corner bevel (oblique on all three axes) is skipped."""
+    recovered; a compound corner bevel (oblique on all three axes) is skipped.
+
+    *ledger* records the face a chamfer was **established by**: the bevel, and only that. The
+    two axis-aligned planes it bridges are *consulted* — they locate the virtual sharp corner
+    the convexity probe tests — and each belongs to whatever feature owns it, which is exactly
+    the fillet case :mod:`b123d_recognisers._claims` draws the line on.
+
+    A blind step's slant clears every gate here, because on the face alone it is a bevel; pass
+    the ledger ``recognise_angled_steps`` wrote into and
+    :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps` removes it."""
     bb = part.bounding_box()
     tol = _MIN_LEG if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
-    out: list[Chamfer] = []
+    out: list[tuple[Chamfer, FaceLike]] = []
     for f in all_faces:
         # The shared single-face read (classification thresholds + legs = the face's OWN
         # in-plane bbox extents, not measured against a possibly distant outermost wall).
@@ -196,13 +225,6 @@ def recognise_chamfers(
             continue
         if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave corner — a gusset / rib / web, not a chamfer
-        # A chamfer runs the full length of the edge it breaks; a bevel closed by a
-        # triangular flat is the slant of an angled blind step, and `recognise_angled_steps`
-        # owns it. Declining it here is what keeps the two from both reporting the same face.
-        # Last of the gates deliberately: it only has to run on bevels that would otherwise
-        # be accepted, so it costs a neighbour walk on a handful of faces rather than all.
-        if has_triangular_companion(f, edge_faces, face_edges=face_edges):
-            continue
         # Anchor the leader on the bevel FACE (its centroid), not the supporting plane's
         # parametric origin: that origin is arbitrary (OCC parameterisation) and can project to
         # a chamfer endpoint/corner rather than the middle of the diagonal. The centroid
@@ -211,12 +233,19 @@ def recognise_chamfers(
         fctr = f.center()
         angle = math.degrees(math.atan2(leg_lo, leg_hi))
         out.append(
-            Chamfer(
-                axis="xyz"[edge_i],
-                leg1=round(leg_hi, 3),
-                leg2=round(leg_lo, 3),
-                angle=round(angle, 2),
-                at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+            (
+                Chamfer(
+                    axis="xyz"[edge_i],
+                    leg1=round(leg_hi, 3),
+                    leg2=round(leg_lo, 3),
+                    angle=round(angle, 2),
+                    at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+                ),
+                f,
             )
         )
-    return sorted(out, key=lambda c: (c.axis, c.at))
+    out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
+    if ledger is not None:
+        for chamfer, face in out:
+            ledger.add_defining(chamfer, [ledger.graph.require_node(face)])
+    return [chamfer for chamfer, _ in out]

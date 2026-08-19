@@ -34,14 +34,18 @@ from build123d import (
 
 from b123d_recognisers import (
     AngledStep,
+    build_recognition_result,
     recognise_angled_steps,
     recognise_chamfers,
 )
 from b123d_recognisers._adjacency import (
     FaceEdges,
+    FaceGraph,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
@@ -96,24 +100,55 @@ def test_the_same_wedge_run_through_is_a_chamfer_and_not_a_step():
 
 
 def test_the_two_families_never_claim_the_same_face():
-    """The reconciliation the shared companion test exists to guarantee.
+    """The reconciliation, read off the aggregate that applies it.
 
-    ``recognise_chamfers`` declines a bevel with a triangular companion and
-    ``recognise_angled_steps`` requires one. If those two ever disagreed the face would be
-    reported twice, or — worse and quieter — by neither. Checked in both directions on the
-    pair, and on a part carrying one of each so the exclusion is not an artefact of there
-    being only one bevel to argue over.
+    Every recognised face must belong to exactly one of the two families. If they ever
+    disagreed the face would be reported twice, or — worse and quieter — by neither. Checked
+    in both directions on the pair, and on a part carrying one of each so the exclusion is not
+    an artefact of there being only one bevel to argue over.
+
+    Asked of :func:`build_recognition_result` rather than of the two recognisers, because that
+    is where the decision now lives. ``recognise_chamfers`` proposes the blind wedge, correctly
+    on its own evidence — see
+    ``test_the_chamfer_family_proposes_a_slant_and_the_reconciler_takes_it_back``.
     """
 
-    assert recognise_chamfers(_blind()) == []
+    assert build_recognition_result(_blind()).chamfers == ()
     assert recognise_angled_steps(_through()) == []
 
     both = _blind() - Pos(0, -20, 6) * Rot(45, 0, 0) * Box(70, _WEDGE, _WEDGE)
-    steps, chamfers = recognise_angled_steps(both), recognise_chamfers(both)
+    result = build_recognition_result(both)
+    steps, chamfers = result.angled_steps, result.chamfers
 
     assert len(steps) == 1, "the blind wedge must survive alongside a through one"
     assert len(chamfers) == 1, "the through wedge must survive alongside a blind one"
     assert steps[0].at != chamfers[0].at
+
+
+def test_the_chamfer_family_proposes_a_slant_and_the_reconciler_takes_it_back():
+    """What moved, stated on the pair the whole module is built around.
+
+    The blind wedge and the through wedge are one 45° cut in one block, differing only in
+    whether a triangular flat closes the end. ``recognise_chamfers`` reports *both* now: on the
+    face alone a slant is a bevel bridging two perpendicular walls at a convex corner, which is
+    a chamfer's entire signature, and the flat that says otherwise belongs to the other family's
+    evidence. The rule reads the claims and drops the one the step already has.
+
+    This is the assertion that fails if ``recognise_chamfers`` ever grows a private opinion
+    about angled steps again — the hand-rolled ownership device #92 removed.
+    """
+
+    blind, through = _blind(), _through()
+
+    assert len(recognise_chamfers(blind)) == 1, "the slant is a bevel on its own evidence"
+    assert len(recognise_chamfers(through)) == 1
+
+    for part, kept in ((blind, 0), (through, 1)):
+        ledger = ClaimLedger(FaceGraph(part))
+        chamfers = recognise_chamfers(part, ledger=ledger)
+        steps = recognise_angled_steps(part, ledger=ledger)
+        assert chamfers_that_are_not_angled_steps(chamfers, ledger) == chamfers[:kept]
+        assert len(steps) == 1 - kept
 
 
 def test_length_alone_does_not_decide_which_family_claims_a_slant():
@@ -129,7 +164,7 @@ def test_length_alone_does_not_decide_which_family_claims_a_slant():
 
     steps = recognise_angled_steps(long_blind)
     assert len(steps) == 1 and steps[0].leg1 == 8.0
-    assert recognise_chamfers(long_blind) == []
+    assert build_recognition_result(long_blind).chamfers == ()
 
     assert recognise_angled_steps(small_through) == []
     assert len(recognise_chamfers(small_through)) == 1
