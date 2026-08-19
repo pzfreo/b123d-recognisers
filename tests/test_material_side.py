@@ -29,7 +29,7 @@ correct, which is what these establish.
 from __future__ import annotations
 
 import pytest
-from build123d import Box, Cylinder, Plane, Pos, mirror
+from build123d import Box, Cylinder, Plane, Pos, Torus, mirror
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
@@ -40,6 +40,7 @@ from OCP.TopAbs import TopAbs_IN, TopAbs_Orientation, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
 
 import b123d_recognisers as r
+from b123d_recognisers._adjacency import frame_points_outward
 from b123d_recognisers._recess_core import _outward_normal
 
 #: How far off the face to probe. Small against every fixture's thinnest wall (3 mm), so a
@@ -226,3 +227,25 @@ def test_a_cylinder_knows_which_side_its_material_is_on_when_mirrored(build, exp
     assert [c["external"] for c in flipped] == [expected] * len(flipped), (
         "mirroring inverted the material side"
     )
+
+
+def test_a_surface_with_no_readable_frame_answers_none_rather_than_guessing():
+    """The third answer, and it has to be a distinct one.
+
+    `frame_points_outward` reads a frame off a plane, a cylinder or a sphere. A torus has one
+    too, but not one this convention is defined against, and a spline has none at all. Returning
+    a bool there would be a guess dressed as a fact, and every caller would inherit it: the
+    recess families would silently place material on one side of a blend, and nothing downstream
+    could tell that from a real answer.
+
+    None is what makes absence a caller's decision. `_outward_normal` turns it into "not a
+    planar face"; `_cylinder_substrate` never asks, because it has already filtered to
+    cylinders.
+    """
+
+    (torus,) = Torus(12, 3).faces()
+    assert frame_points_outward(torus) is None
+
+    # And the readable ones do not answer None, or the assertion above is about nothing.
+    for face in Box(10, 10, 10).faces():
+        assert frame_points_outward(face) is not None
