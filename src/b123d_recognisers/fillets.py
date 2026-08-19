@@ -33,19 +33,17 @@ import math
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.GeomAbs import GeomAbs_Cylinder
-from OCP.gp import gp_Pnt
-from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
+from b123d_recognisers.chamfers import convex_bevel
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -130,21 +128,13 @@ def recognise_fillets(
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
 
-        # Convex-edge test (mirrors the chamfer's): the virtual sharp corner the round
-        # replaces sits where the two neighbour planes cross, at the fillet's own edge
-        # position. Nudged toward the fillet face it lands in the removed-round *vacuum* for
-        # a real (convex) fillet (OUT), but in filled *material* for an internal round
-        # bevelling a concave re-entrant corner (IN).
-        corner = [0.0, 0.0, 0.0]
-        corner[edge_i] = fc[edge_i]
-        corner[oi[0]] = neigh_coord[oi[0]]
-        corner[oi[1]] = neigh_coord[oi[1]]
-        probe = tuple(
-            corner[i] + INTERIOR_PROBE_FRAC * (fc[i] - corner[i]) for i in (0, 1, 2)
-        )
-        clsf = BRepClass3d_SolidClassifier(part.wrapped)
-        clsf.Perform(gp_Pnt(*probe), 1e-6)
-        if clsf.State() == TopAbs_IN:
+        # The convex-edge test, shared with the two bevel families rather than restated: the
+        # virtual sharp corner this round replaces sits where the two neighbour planes cross,
+        # and a nudge toward the blend lands in the removed *vacuum* for a real fillet but in
+        # filled *material* for an internal round bevelling a re-entrant corner. This was a
+        # line-for-line copy of `convex_bevel` down to the probe fraction and the classifier
+        # tolerance, and the copies could have drifted with nothing to notice.
+        if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave corner — an internal round / slot-wall blend, not an edge fillet
 
         # Anchor the leader on the curved radius surface itself via the shared
