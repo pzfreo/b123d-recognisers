@@ -448,14 +448,22 @@ def _per_face(corpus):
 
 
 def test_no_claim_lands_on_a_stock_face(corpus):
-    """The negative control, and the strongest assertion this corpus supports.
+    """A change detector on this subset, and not the invariant it first claimed to be.
 
-    ``Stock`` is the label for a face belonging to no machining feature at all -- the raw
-    billet the features were cut into, and 271 of the corpus's faces. A claim on one is a
-    recogniser asserting that unmachined material established a feature, which is wrong under
-    every taxonomy and needs no judgement about vocabulary to say so. It is also the assertion
-    a precision figure cannot make: a family could claim stock and still score well if it
-    claimed enough real faces alongside.
+    ``Stock`` labels 271 of these models' faces, and no family claims one. That is worth
+    pinning: a family could start claiming unmachined billet and still score well on precision
+    if it claimed enough real faces alongside, so this catches something a rate cannot.
+
+    **It is not a universal law, and an earlier version of this docstring said it was.** Over
+    2,000 models four claims do land on *Stock*, and the clearest of them is not a defect:
+    `recognise_passages` reports a genuine 6-sided passage on `11251.step` whose six walls
+    carry *five different labels*, two of them ``Stock``. MFCAD++ assigns each face to exactly
+    one feature, so where features intersect, a passage wall that is also chamfered is labelled
+    *Chamfer* and one bounded by raw billet is labelled *Stock*. ``Stock`` means "assigned to
+    no feature", which is weaker and corpus-specific.
+
+    So a failure here is a prompt to look, not a proof of a bug -- and fitting a recogniser to
+    this corpus's label assignment would cost more than it bought.
     """
 
     claimed = _per_face(corpus)
