@@ -14,11 +14,13 @@ the recogniser's absolute constants are comparable to their features — the ord
 turned part, not an edge case, and precisely where reading an OD by proximity rather than by
 containment goes wrong.
 
-``GRM-03`` is a 23.5 mm thumbwheel drive screw turned about **X**. ``GRM-05`` is a 32 mm depth
-lock bolt turned about **Z**, and it is here for coverage rather than as a regression: its
-profile at 1:1 is the same before and after the containment fix. What it adds is a second real
-profile, on the other axis, with a 0.25 mm diameter change between two of its rungs — a step
-finer than anything the synthetic fixtures contain.
+``GRM-03`` is a 23.5 mm thumbwheel drive screw turned about **X**; ``GRM-05`` a 32 mm depth
+lock bolt turned about **Z**; ``string_post`` a 14.8 mm instrument tuner post, also Z.
+
+Two of the three had a rung misreported at 1:1 before the containment fix, which is the ratio
+that matters: this is ordinary turned geometry, not a contrived case. GRM-05 passes on either
+side of it and is kept for coverage — a 0.25 mm diameter change between two rungs, finer than
+anything the synthetic fixtures contain.
 """
 
 from __future__ import annotations
@@ -47,6 +49,10 @@ EXPECTED = {
         (3.0, 5.5, 23.5),
     ],
     "GRM-05_depth_lock_bolt": [(10.0, 0.0, 14.0), (6.25, 14.0, 19.0), (6.0, 19.0, 32.0)],
+    # The post's second rung is 1.1 mm wide at Ø5, and the Ø6 band butts against it at 8.3.
+    # A 0.7 mm pad reached back to 7.6, past the rung's midpoint, and Ø6 outvoted the Ø5 the
+    # rung sits inside.
+    "string_post": [(3.4, 0.0, 7.2), (5.0, 7.2, 8.3), (6.0, 8.3, 13.8), (7.5, 13.8, 14.8)],
 }
 
 
@@ -61,14 +67,19 @@ def _profile(part):
 def test_every_rung_reports_the_band_that_covers_it(name):
     """Each rung, at the size the part is actually made.
 
-    GRM-03 is the regression: before the containment fix its first rung reported Ø10, the
-    widest band on the screw, which does not reach that rung at all. The Ø10 span starts at 0.8
-    and the rung is 0 to 0.5, so a 0.7 mm proximity pad bridged the 0.3 mm gap and outvoted the
-    Ø6 band the rung sits inside. That is not a small-scale artefact, which is how it was first
-    described — the part is 23.5 mm and modelled 1:1.
+    Two of these three are regressions, and both failed at 1:1 rather than at any reduced
+    scale — which is how the defect was first described and was wrong.
 
-    GRM-05 passes on either side of that fix and is pinned for coverage: a second real profile,
-    turned about Z rather than X, whose middle rung differs from its neighbour by 0.25 mm.
+    GRM-03's first rung reported Ø10, the widest band on the screw, whose span starts at 0.8
+    while the rung is 0 to 0.5: a 0.7 mm proximity pad bridged the 0.3 mm gap and outvoted the
+    Ø6 the rung sits inside. ``string_post``'s second rung reported Ø6 where the band is Ø5,
+    the same mechanism with the bands touching rather than gapped.
+
+    Both recogniser versions also disagree with *themselves* across scales on those rungs —
+    wrong at 1×, right at 5× and 100× — which is the signature of an absolute reach applied to
+    a part whose features are the same order of size as it.
+
+    GRM-05 passes on either side of the fix and is pinned for coverage.
     """
 
     assert _profile(import_step(str(CORPUS / f"{name}.step"))) == EXPECTED[name]
