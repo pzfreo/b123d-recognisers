@@ -17,17 +17,83 @@ looking.
 
 | # | Item | Value | Behaviour change | Effort |
 |---|---|---|---|---|
-| 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | S — started |
+| 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | **done for four families** |
+| 5 | Oblique recesses: migrate, not a scope decision | **Highest** | **yes** | L |
+| 4 | One adjacency API instead of two | **High** | no | M |
 | 1 | Material-side as a named node attribute | High | **likely** | M |
 | 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
 | 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
-| 4 | One adjacency API instead of two | Medium | no | M |
-| 5 | Oblique features: implement or exclude | High | n/a (docs) | S |
 
-Item 0 first, and it is the only ordering constraint. Items 1–4 are independent. Item 5 is a scope
-decision that does not depend on any of them and could be taken today.
+**Re-ranked by item 0's sweep, and the numbering is kept so the history stays readable.** The
+first version ordered the work by duplication count, which is what the replacement gate below
+selects on. The sweep supplied something better: evidence about which of these changes what is
+*recognisable* rather than only what is tidy. Items 5 and 4 moved to the top for one measured
+reason, recorded in full under "What the sweep changed" below.
 
 ---
+
+## What the sweep changed
+
+Item 0 ran over 2,000 MFCAD++ test-split models — 51,327 labelled faces, none skipped, none
+failed. Four findings, each with an issue, and the first is why this epic is re-ordered.
+
+### The substrate decides what is recognisable, not just what is tidy
+
+| | rectangular | triangular | 6-sided |
+|---|---|---|---|
+| **pockets** — pair faces within an axis bucket | 38% | **0%** | 4% |
+| **passages** — walk connected components over adjacency | 61% | **59%** | 49% |
+
+Same solids, same obliquity, same corpus. `recognise_pockets` buckets faces by `_Face.axis`,
+keeps those flagged `wall`, and pairs them within a bucket — a triangular pocket has no two walls
+sharing an axis, so it yields zero candidates *before any gate runs*. `recognise_passages` asks
+no wall to be axis-aligned.
+
+#75 concluded that *"adjacency is the cheap part"*, on a count of ~25 lines out of 6,198. That
+measured syntax. Measured per face, the family built on adjacency traversal is the one with no
+orientation gate at all. **Adjacency was not the cheap part; it was the part that decided what a
+family could see.** This is the evidence that epic's measurement regime could never have produced,
+and it is why items 5 and 4 now lead. Tracked as
+[#110](https://github.com/pzfreo/b123d-recognisers/issues/110).
+
+### Axis-alignment is the shared vocabulary, not a per-recogniser gate
+
+`_Face` reduces every face to `normal`, `axis`, `wall` before anything decides, and nineteen
+modules reference axis alignment. So the oblique gap is a property of the reduction the shared
+core performs *before* a recogniser is consulted, which is why it shows up identically across
+families and why no single fix has ever been proposed for it. `FaceGraph` carries `normal`,
+`bounds` and `surface` and **no** `axis` field — the graph node is orientation-neutral where
+`_Face` is not, which sharpens item 1 rather than changing it.
+
+### Categories fail as whole classes, and thresholds get the blame
+
+Blind steps 62%, rectangular *through* steps 8%, 2-sided 1%, slanted 2%. Both extremes are
+axis-aligned in every wall, so shape separates neither; what separates them is the feature
+reaching the part boundary. The recess core enumerates categories by how many ends are capped,
+and a step running off one edge is too open for `recognise_pockets` and not open enough for
+`recognise_channels`. 5,512 labelled faces sit in that crack. A hole in the category system, not
+a threshold — which is why tolerance work never found it, and why a fitted measurement could not
+tell it apart from the orientation gap. Tracked on
+[#89](https://github.com/pzfreo/b123d-recognisers/issues/89), whose own table this corrected.
+
+### Reconciliation has a ceiling set by the weakest recogniser
+
+28 chamfer records survive on faces labelled *Triangular blind step* — the exact faces
+`chamfers_that_are_not_angled_steps` exists to remove — because `recognise_angled_steps` never
+claimed them. **A precedence rule corrects double-counting, not recall.** When one family misses
+what another proposes, reconciliation converts a false negative into a false positive, and the
+census reads healthy either way: one record per face, wrong family. ADR 0003 offers accept,
+combine or reject, and there is no *"contested, and not confident"* — which is the first argument
+for ADR 0004's residual-evidence half that comes from measurement rather than architecture.
+Tracked as [#111](https://github.com/pzfreo/b123d-recognisers/issues/111) and
+[#112](https://github.com/pzfreo/b123d-recognisers/issues/112).
+
+### And the negative control failed at scale
+
+No claim landed on *Stock* across the vendored 40's 271 such faces. Across 13,438, four did.
+`test_no_claim_lands_on_a_stock_face` passes on the vendored subset because 271 faces is too few
+to contain the case — this epic's own corpus-blindness argument, landing on the test written to
+embody it. Tracked as [#108](https://github.com/pzfreo/b123d-recognisers/issues/108).
 
 ## The method this epic is committing to
 
@@ -96,6 +162,13 @@ in a metric that structurally cannot carry it. Applied today it selects items 1,
 have selected the components walk at two copies and ownership at two, and still correctly declines
 subgraph matching, gAAG and serialised ownership — which exist zero times.
 
+**It is a selection gate, not a ranking one, and item 0 supplied the ranking.** Duplication says
+what is worth doing; it says nothing about order, and ordering by it put the two items that change
+what is recognisable last. Per-face attribution is the ranking instrument, and it only became
+available once six families claimed — which is itself the answer to why #75 could not have found
+any of this. Both are needed: the gate keeps speculative architecture out, the measurement decides
+what to build first among the things that pass.
+
 ---
 
 ## 0 — Per-face recall, measured rather than fitted
@@ -117,11 +190,12 @@ slots, passages, grooves, turned steps, chamfers, angled steps — and MFCAD++ l
 `ADVANCED_FACE` name, so claimed node → face → label is a direct join.
 
 - [x] `tools/per_face_scan.py`, run over the vendored 40, pinned by two tests
-- [ ] Widen claiming beyond the four families the scan can see — **this gates the rest of item 0**
-- [ ] Re-run over a larger MFCAD++ draw once claiming is wider
-- [ ] Classify each miss: orientation gate, minimum-evidence threshold, taxonomy mismatch, or
-      genuinely unhandled geometry
-- [ ] Record which of items 1–5 each miss category actually depends on
+- [x] Widen claiming to pockets — the largest thing the scan was blind to
+- [x] Sweep 2,000 MFCAD++ test-split models, streamed from the archive: 51,327 labelled faces,
+      0 skipped, 0 failed
+- [x] Classify the misses — see "What the sweep changed" above, and #108–#112
+- [ ] Widen claiming to holes, fillets and bosses, which still write none
+- [ ] Re-run once they do, and once item 5 has moved
 
 **What the first run established, and the limit it hit.** Angled steps claim 11 faces, all
 labelled *Triangular blind step*; chamfers 11 of 14 on *Chamfer*, the same 79% the record-centroid
@@ -274,18 +348,23 @@ Claiming is much wider than reading: six families write claims, but only `passag
 `polygonal_bosses` read node attributes at all. `chamfers` and `angled_steps` claim a node and then
 derive their own normals and bounds by hand three lines later.
 
-Lower value than items 1–3 and mostly genuinely mechanical — worth doing *after* them, because a
-migration whose only benefit is API uniformity is the kind this project has correctly declined
-before. It becomes worth doing when the migrated modules would read attributes too.
+**Written as lower value than items 1–3 and mostly mechanical. The sweep promoted it.** The five
+modules on the dict map are not an arbitrary set: `chamfers`, `angled_steps`, `fillets`, `flats`
+and `_hole_features` are the ones that find features by pairing axis-aligned faces, and the recess
+core does the same through `_Face.axis`. Item 5 is blocked on exactly that, so this stopped being
+a uniformity exercise the moment passages were measured at 59% on geometry pockets score 0% on.
+
+The caution that was right stays right: a migration whose only benefit is API uniformity is the
+kind this project has correctly declined before. The benefit here is not uniformity.
 
 - [ ] Migrate the five dict-map modules, one PR each, goldens byte-identical
 - [ ] Retire the free-function adjacency helpers, or document why they stay
 - [ ] `connected_components` stays a free function taking a caller-supplied relation unless a
       third consumer wants face adjacency specifically
 
-## 5 — Oblique features: implement or exclude
+## 5 — Oblique recesses: a migration with a precedent, not a scope decision
 
-`docs, or a large behaviour change` · independent of items 0–4
+`behaviour-changing` · the highest-value item, on item 0's evidence
 
 **Corrected by item 0's first run.** The inherited claim — from #75's non-negative least squares,
 which was the best evidence available then — was that the dead classes are the *"triangular,
@@ -306,13 +385,24 @@ which is a narrower and more accurate statement of the same finding: a wall whos
 with no principal axis dies at `AXIS_ALIGNED_COS`, one face at a time, before adjacency is
 consulted. Side count was never the discriminator; orientation was.
 
-**No item above unblocks them.** This is a scope decision for
-[`capabilities.md`](../capabilities.md), and the honest options are to implement oblique support
-with its own evidence, or to document the exclusion so the corpus figures stop reading as a defect.
-Taking it explicitly is what stops it being re-answered by accident inside the next recogniser.
+**This was written as a scope decision — implement oblique support, or document the exclusion.
+The sweep withdrew that framing.** `recognise_passages` scores 59% on triangular geometry and 49%
+on 6-sided, flat across obliquity, on the same solids where `recognise_pockets` scores 0% and 4%.
+So oblique support is not a research question with an honest "no" available: one family in this
+package already has it, and the difference is that it walks adjacency instead of pairing faces
+within an axis bucket.
 
-- [ ] Decide, and write it into `capabilities.md` either way
-- [ ] If excluded, a test that fails when support is added, as the B-spline exclusion has
+That makes this a migration with a working precedent in-tree, and it makes item 4 its prerequisite
+rather than a tidying exercise — the five modules still on the dict-map API are the ones doing
+axis-bucketed pair-matching.
+
+- [ ] Confirm the mechanism by instrumentation, not by reading: count how many triangular-pocket
+      models produce zero candidates *before* any gate, rather than being rejected by one (#110)
+- [ ] Assess whether the recess core can be found ring-first as `recognise_passages` is, keeping
+      the axis pairing as the fast path for the rectangular case
+- [ ] If it cannot, `capabilities.md` excludes oblique-walled recesses explicitly, with a test
+      that fails when support arrives — the pattern the B-spline exclusion already uses
+- [ ] Either way `capabilities.md` says so; today it says neither
 
 ---
 
