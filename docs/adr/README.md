@@ -1,9 +1,13 @@
 # Architecture decision records
 
 These records extract the recognition-specific decisions from Draftwright without importing
-its drawing/compiler policy. Accepted records describe contracts already proven in Draftwright;
-proposed records describe the next recognition architecture and require evidence before
-acceptance.
+its drawing/compiler policy. Accepted records are the contracts this package holds itself to,
+whether proven in Draftwright or established here by measurement; proposed records describe the
+next recognition architecture and require evidence before acceptance.
+
+Acceptance is a statement about the decision, not about the code. A record can be accepted while
+work remains to bring the codebase to it -- that work belongs to an epic and its issues, so that
+the record stays a decision rather than a status report.
 
 | ADR | Title | Status |
 | --- | --- | --- |
@@ -15,6 +19,7 @@ acceptance.
 | [0006](0006-explicit-step-ladder-z-span.md) | Explicit step-ladder Z-span boundary | Accepted |
 | [0007](0007-recogniser-module-seams.md) | Internal recogniser module seams | Accepted |
 | [0008](0008-length-tolerance-policy.md) | Length tolerance policy | Accepted |
+| [0009](0009-filtering-belongs-to-a-recogniser.md) | Filtering belongs to a recogniser, not a shared reduction | Proposed |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
