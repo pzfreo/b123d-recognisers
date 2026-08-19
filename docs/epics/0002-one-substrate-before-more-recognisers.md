@@ -19,16 +19,18 @@ looking.
 |---|---|---|---|---|
 | 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | **done for four families** |
 | 5 | Oblique recesses: migrate, not a scope decision | **Highest** | **yes** | L |
-| 4 | One adjacency API instead of two | **High** | no | M |
-| 1 | Material-side as a named node attribute | High | **likely** | M |
+| 1 | Material-side as a named node attribute | **High** | **likely** | M |
 | 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
 | 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
+| 4 | One adjacency API instead of two | Low | no | M |
 
 **Re-ranked by item 0's sweep, and the numbering is kept so the history stays readable.** The
 first version ordered the work by duplication count, which is what the replacement gate below
 selects on. The sweep supplied something better: evidence about which of these changes what is
 *recognisable* rather than only what is tidy. Items 5 and 4 moved to the top for one measured
-reason, recorded in full under "What the sweep changed" below.
+reason, recorded in full under "What the sweep changed" below. Item 4 was promoted with them
+and has since been demoted again on item 5's own instrumentation — see item 4 for why, since a
+re-ranking reversed within a day is worth keeping visible.
 
 ---
 
@@ -348,14 +350,21 @@ Claiming is much wider than reading: six families write claims, but only `passag
 `polygonal_bosses` read node attributes at all. `chamfers` and `angled_steps` claim a node and then
 derive their own normals and bounds by hand three lines later.
 
-**Written as lower value than items 1–3 and mostly mechanical. The sweep promoted it.** The five
-modules on the dict map are not an arbitrary set: `chamfers`, `angled_steps`, `fillets`, `flats`
-and `_hole_features` are the ones that find features by pairing axis-aligned faces, and the recess
-core does the same through `_Face.axis`. Item 5 is blocked on exactly that, so this stopped being
-a uniformity exercise the moment passages were measured at 59% on geometry pockets score 0% on.
+**Promoted on the sweep, then demoted again by item 5's own measurement. Both are recorded,
+because the mistake is instructive.** The promotion claimed the five dict-map modules "are the
+ones that find features by pairing axis-aligned faces, and the recess core does the same through
+`_Face.axis`". That conflated two different things. `chamfers`, `angled_steps` and `fillets`
+consult `nearest_axis_aligned_planes` — axis-dependent, but not *pairing* — while `flats` and
+`_hole_features` only walk neighbours. **The pairing that costs the recall is in `_recess_core`,
+which is not one of the five and already uses `FaceGraph` for its claims.**
 
-The caution that was right stays right: a migration whose only benefit is API uniformity is the
-kind this project has correctly declined before. The benefit here is not uniformity.
+So migrating those five would not unblock item 5, and moving them to a graph API leaves
+`nearest_axis_aligned_planes` exactly as axis-dependent as it was. The original caution was right
+and stands restored: a migration whose only benefit is API uniformity is the kind this project has
+correctly declined before, and this is one. It goes last.
+
+What *would* help item 5 is `_recess_core` reading faces from `FaceGraph` nodes so `_planar_faces`
+can retire — and that is item 1's territory, not this one's.
 
 - [ ] Migrate the five dict-map modules, one PR each, goldens byte-identical
 - [ ] Retire the free-function adjacency helpers, or document why they stay
@@ -396,8 +405,13 @@ That makes this a migration with a working precedent in-tree, and it makes item 
 rather than a tidying exercise — the five modules still on the dict-map API are the ones doing
 axis-bucketed pair-matching.
 
-- [ ] Confirm the mechanism by instrumentation, not by reading: count how many triangular-pocket
-      models produce zero candidates *before* any gate, rather than being rejected by one (#110)
+- [x] Confirm the mechanism by instrumentation, not by reading (#110). Measured over 600 models,
+      tracing every labelled face through the reduction: **94% of triangular-pocket faces never
+      reach a gate** -- they are oblique, or axis-aligned with no same-feature partner in their
+      bucket, so no pair is formed and `_pocket_candidate` is never called. Pairability explains
+      recall rather than merely correlating with it (80% pairable → 38% claimed for rectangular
+      pockets, 8% → 4% for 6-sided, 6% → 0% for triangular). The control settles it: **triangular
+      passages are 2% pairable and 59% claimed**, because `recognise_passages` does not pair
 - [ ] Assess whether the recess core can be found ring-first as `recognise_passages` is, keeping
       the axis pairing as the fast path for the rectangular case
 - [ ] If it cannot, `capabilities.md` excludes oblique-walled recesses explicitly, with a test
