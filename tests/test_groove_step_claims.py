@@ -12,15 +12,15 @@ because `TurnedProfile` reads an interior end as a real end face and a ladder wi
 describes a shaft with two faces where the groove is. Only `feature_census`, which counts
 distinct machined features rather than describing them, should treat the band as one.
 
-**The rule is not wired into the census yet, and these tests say so.** Writing the claims
-uncovered a defect upstream of the count: at 0.05x the pinned `turned_steps_and_grooves`
-fixture, `recognise_turned_steps` reports every rung at the shaft OD and describes a plain
-shaft, so the reconciliation finds nothing and the census stops being scale-free. Wiring it
-before that is fixed would trade one wrong count for a scale-dependent one.
+The rule waited on a defect upstream of the count — while `recognise_turned_steps`
+reported the groove's rung at the shaft's OD on a part modelled small, wiring it would have
+traded one wrong count for a scale-dependent one. That is fixed, so the count is pinned here
+at three scales.
 """
 
 from __future__ import annotations
 
+import pytest
 from build123d import Cylinder, Pos
 
 import b123d_recognisers as r
@@ -89,12 +89,7 @@ def test_a_turned_step_claims_the_bands_that_set_its_diameter():
 
 
 def test_the_rule_finds_the_rung_the_groove_is():
-    """What the reconciliation would remove, proved on the pair, before it is wired anywhere.
-
-    Not yet used by `feature_census`, which still counts this band twice (#95): at small scale
-    `recognise_turned_steps` reports the groove's rung at the shaft's OD, so the rule finds
-    nothing and the count stops being scale-free. The defect is upstream and is fixed first.
-    """
+    """What the reconciliation removes, proved on the pair rather than through the count."""
 
     ledger, grooves, steps = _claimed(_grooved_shaft())
     (groove,) = grooves
@@ -159,3 +154,25 @@ def test_a_ledger_built_from_another_shaft_is_refused_rather_than_left_empty():
             assert "built from a different part" in str(refusal)
         else:
             raise AssertionError(f"{recognise.__name__} accepted another part's graph")
+
+
+@pytest.mark.parametrize("factor", (1.0, 0.05, 100.0))
+def test_the_census_counts_one_band_once_though_two_families_describe_it(factor):
+    """The count, at three scales, with the contrast that shows the rule is not just subtracting.
+
+    A groove adds two shoulders to the shaft and therefore two rungs to the ladder, one of which
+    is the groove itself. Counting *features*, that is one more than the plain shaft has, not
+    two — and it is the same answer however large the shaft is modelled, which it was not while
+    the rung reported its neighbour's diameter.
+    """
+
+    grooved, plain = _grooved_shaft(), _plain_shaft()
+    if factor != 1.0:
+        grooved, plain = grooved.scale(factor), plain.scale(factor)
+
+    grooved_census = r.feature_census(grooved)
+    plain_census = r.feature_census(plain)
+
+    assert grooved_census["groove"] == 1
+    assert plain_census["groove"] == 0
+    assert grooved_census["step"] == plain_census["step"] + 1

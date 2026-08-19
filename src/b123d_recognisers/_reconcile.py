@@ -95,11 +95,11 @@ def steps_that_are_not_grooves(
     them. That the two deliberately disagree is the point, and is why this is a named function
     rather than a subtraction written inline at the call site.
 
-    **Not yet wired into the census.** Writing the claims uncovered a defect upstream of the
-    count: at 0.05x the pinned `turned_steps_and_grooves` fixture, `recognise_turned_steps`
-    reports every rung at the shaft OD, so there is no groove rung to reconcile and the count
-    would stop being scale-free. One wrong count is better than a scale-dependent one, so this
-    waits for that fix.
+    It waited on a defect upstream of the count. While it was unwired, `recognise_turned_steps`
+    reported the groove's rung at the shaft's OD on a part modelled small, so there was no
+    groove rung to reconcile and the count stopped being scale-free -- one wrong count being
+    better than a scale-dependent one. That is fixed, and the census applies this at every scale
+    the corpus is checked at.
     """
 
     # Takes the records where `passages_that_are_not_slots` takes the part and runs the
