@@ -10,16 +10,19 @@ closed until independent corpus evidence establishes their geometry contract.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from typing import TypeVar, cast
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Plane
-
-from b123d_recognisers._adjacency import connected_components, edge_face_map, neighbours
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers._typing import Part
+
+#: Whatever a caller keys its ring by: this module passes face nodes, the unit tests pass ints.
+#: The two polygon helpers below never look inside it, which is the point -- they are geometry
+#: over headings and have no business knowing a B-Rep exists.
+_K = TypeVar("_K")
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -82,28 +85,21 @@ class PolygonalStock(Record):
         return self.top - self.base
 
 
-def _normal(face: FaceLike) -> tuple[float, float, float] | None:
-    try:
-        normal = face.normal_at(face.center())
-    except Exception:  # noqa: BLE001 - a degenerate face cannot prove a boss
-        return None
-    return (float(normal.X), float(normal.Y), float(normal.Z))
+def _heading(graph: FaceGraph, node: FaceNode) -> tuple[float, float, float]:
+    """A side face's outward normal, known to exist.
 
+    Every node that reaches the ring helpers came through `_vertical_side_faces`, which already
+    refused a face whose normal will not evaluate. Saying that once here beats either guarding
+    it at six call sites or writing six unreachable branches -- the graph cannot know the
+    filter has run, but this module does.
+    """
 
-def _bbox_tuple(face: FaceLike) -> tuple[float, float, float, float, float, float]:
-    bb = face.bounding_box()
-    return (
-        float(bb.min.X),
-        float(bb.max.X),
-        float(bb.min.Y),
-        float(bb.max.Y),
-        float(bb.min.Z),
-        float(bb.max.Z),
-    )
+    return cast("tuple[float, float, float]", graph.normal(node))
 
 
 def _cap_z(
-    face: FaceLike,
+    graph: FaceGraph,
+    node: FaceNode,
     tol: float,
     *,
     positive: bool,
@@ -116,17 +112,17 @@ def _cap_z(
     than spanning a range, and lies on the correct side of the wall it terminates.
     """
 
-    if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
+    if not graph.is_planar(node):
         return None
-    normal = _normal(face)
+    normal = graph.normal(node)
     if normal is None or (
         normal[2] < AXIS_ALIGNED_COS if positive else normal[2] > -AXIS_ALIGNED_COS
     ):
         return None
-    bb = _bbox_tuple(face)
-    if bb[5] - bb[4] > tol:
+    z_lo, z_hi = graph.bounds(node)[2]
+    if z_hi - z_lo > tol:
         return None
-    z = (bb[4] + bb[5]) / 2
+    z = (z_lo + z_hi) / 2
     if lower_than is not None and z > lower_than + tol:
         return None
     if higher_than is not None and z < higher_than - tol:
@@ -135,9 +131,9 @@ def _cap_z(
 
 
 def _common_cap(
-    component: tuple[int, ...],
-    faces: list,
-    adjacent_to: Callable[[int], set[int]],
+    component: tuple[FaceNode, ...],
+    graph: FaceGraph,
+    adjacent_to: Callable[[FaceNode], set[FaceNode]],
     tol: float,
     *,
     upper: bool,
@@ -153,13 +149,13 @@ def _common_cap(
     candidate tops is not a boss whose top we can name.
     """
 
-    boundary: list[int] = []
+    boundary: list[FaceNode] = []
     component_set = set(component)
     for side in component:
         choices = []
         for other in adjacent_to(side) - component_set:
-            bb = _bbox_tuple(faces[other])
-            reaches_end = abs(bb[4] - wall_hi) <= tol if upper else abs(bb[5] - wall_lo) <= tol
+            z_lo, z_hi = graph.bounds(other)[2]
+            reaches_end = abs(z_lo - wall_hi) <= tol if upper else abs(z_hi - wall_lo) <= tol
             if reaches_end:
                 choices.append(other)
         if len(choices) != 1:
@@ -174,10 +170,11 @@ def _common_cap(
         candidates -= component_set | boundary_set
     cap_zs = [
         cap
-        for index in candidates
+        for node in candidates
         if (
             cap := _cap_z(
-                faces[index],
+                graph,
+                node,
                 tol,
                 positive=positive,
                 lower_than=None if upper else wall_lo,
@@ -190,11 +187,11 @@ def _common_cap(
 
 
 def _side_rings(
-    vertical: list[int],
-    bounds: dict[int, tuple[float, float, float, float, float, float]],
+    vertical: list[FaceNode],
+    graph: FaceGraph,
     tol: float,
-    shares_edge: Callable[[int, int], bool],
-) -> list[tuple[int, ...]]:
+    shares_edge: Callable[[FaceNode, FaceNode], bool],
+) -> list[tuple[FaceNode, ...]]:
     """Group side faces into rings: connected, and spanning the same Z range.
 
     Both conditions are needed. Sharing an edge alone would chain a boss into the plate it
@@ -202,51 +199,44 @@ def _side_rings(
     ring with twelve sides.
     """
 
-    def same_span(i: int, j: int) -> bool:
-        return abs(bounds[i][4] - bounds[j][4]) <= tol and abs(bounds[i][5] - bounds[j][5]) <= tol
+    def same_span(i: FaceNode, j: FaceNode) -> bool:
+        lo_i, hi_i = graph.bounds(i)[2]
+        lo_j, hi_j = graph.bounds(j)[2]
+        return abs(lo_i - lo_j) <= tol and abs(hi_i - hi_j) <= tol
 
     return connected_components(
         vertical, lambda i, j: same_span(i, j) and shares_edge(i, j)
     )
 
 
-def _vertical_side_faces(
-    faces: list,
-    tol: float,
-) -> tuple[
-    dict[int, tuple[float, float, float]],
-    dict[int, tuple[float, float, float, float, float, float]],
-    list[int],
-]:
-    """Index the planar faces that could be prism sides: vertical, and tall enough to be walls.
+def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
+    """The planar faces that could be prism sides: vertical, and tall enough to be walls.
 
-    Returns their normals, bounding boxes and indices. Everything downstream works from these
-    three, so the scan is done once and the rest of recognition never touches a raw face again.
+    Only the selection is this recogniser's; the normal and the bounding box it selects on come
+    from the graph, which memoises them per face. Deriving them here meant a second copy of both
+    for every face the module touched, and the map that held them was the ad hoc face graph this
+    package now has one of.
     """
 
-    normals: dict[int, tuple[float, float, float]] = {}
-    bounds: dict[int, tuple[float, float, float, float, float, float]] = {}
-    vertical: list[int] = []
-    for index, face in enumerate(faces):
-        if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
+    vertical: list[FaceNode] = []
+    for node in graph.nodes:
+        if not graph.is_planar(node):
             continue
-        normal = _normal(face)
+        normal = graph.normal(node)
         if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
             continue
-        bb = _bbox_tuple(face)
-        if bb[5] - bb[4] <= tol:
+        z_lo, z_hi = graph.bounds(node)[2]
+        if z_hi - z_lo <= tol:
             continue
-        normals[index] = normal
-        bounds[index] = bb
-        vertical.append(index)
-    return normals, bounds, vertical
+        vertical.append(node)
+    return vertical
 
 
 def _regular_ring_order(
-    component: tuple[int, ...],
-    normals: dict[int, tuple[float, float, float]],
+    component: tuple[_K, ...],
+    headings: Mapping[_K, tuple[float, float, float]],
     angle_tol: float,
-) -> tuple[int, ...] | None:
+) -> tuple[_K, ...] | None:
     """Order a side ring by heading, or reject it as not a regular polygon.
 
     Two independent proofs, both needed: the headings are evenly spaced, and each side faces
@@ -255,16 +245,22 @@ def _regular_ring_order(
     """
 
     side_count = len(component)
-    ordered = tuple(sorted(component, key=lambda i: math.atan2(normals[i][1], normals[i][0])))
-    angles = [math.atan2(normals[i][1], normals[i][0]) % (2 * math.pi) for i in ordered]
+    def heading_angle(key: _K) -> float:
+        across, along, _ = headings[key]
+        return math.atan2(along, across)
+
+    ordered = tuple(sorted(component, key=heading_angle))
+    angles = [
+        heading_angle(i) % (2 * math.pi) for i in ordered
+    ]
     gaps = [(angles[(i + 1) % side_count] - angles[i]) % (2 * math.pi) for i in range(side_count)]
     expected_gap = 2 * math.pi / side_count
     if any(abs(gap - expected_gap) > angle_tol for gap in gaps):
         return None
     opposite = side_count // 2
     if any(
-        normals[ordered[i]][0] * normals[ordered[i + opposite]][0]
-        + normals[ordered[i]][1] * normals[ordered[i + opposite]][1]
+        headings[ordered[i]][0] * headings[ordered[i + opposite]][0]
+        + headings[ordered[i]][1] * headings[ordered[i + opposite]][1]
         > -math.cos(angle_tol)
         for i in range(opposite)
     ):
@@ -273,8 +269,8 @@ def _regular_ring_order(
 
 
 def _ring_profile(
-    ordered: tuple[int, ...],
-    normals: dict[int, tuple[float, float, float]],
+    ordered: tuple[_K, ...],
+    headings: Mapping[_K, tuple[float, float, float]],
     centres: list,
     tol: float,
 ) -> tuple[float, float, float] | None:
@@ -292,13 +288,13 @@ def _ring_profile(
     side_count = len(ordered)
     opposite = side_count // 2
     plane_offsets = [
-        normals[index][0] * float(point.X) + normals[index][1] * float(point.Y)
+        headings[index][0] * float(point.X) + headings[index][1] * float(point.Y)
         for index, point in zip(ordered, centres, strict=True)
     ]
     midplanes = [
         (
-            normals[ordered[i]][0],
-            normals[ordered[i]][1],
+            headings[ordered[i]][0],
+            headings[ordered[i]][1],
             (plane_offsets[i] - plane_offsets[i + opposite]) / 2,
         )
         for i in range(opposite)
@@ -314,7 +310,7 @@ def _ring_profile(
     cy = (sxx * by - sxy * bx) / determinant
 
     supports = [
-        offset - normals[index][0] * cx - normals[index][1] * cy
+        offset - headings[index][0] * cx - headings[index][1] * cy
         for index, offset in zip(ordered, plane_offsets, strict=True)
     ]
     if min(supports) <= tol:
@@ -332,34 +328,23 @@ def _recognise_one(
     part: Part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
 ) -> list[PolygonalBoss | PolygonalStock]:
     tol = _TOL if tol is None else tol
-    faces = list(part.faces())
-    # This module works in face *indices*, so the shared edge→faces map is resolved back to
-    # them once here; the ring and boundary helpers keep their index-based signatures.
-    edge_faces = edge_face_map(faces)
-    index_of = {face: index for index, face in enumerate(faces)}
-    # Resolved per face on demand and cached, not for the whole part up front: only the
-    # vertical sides and the few faces bounding a ring are ever asked about, and computing
-    # the rest measured at more than half of this recogniser's total time on the corpus.
-    neighbour_indices: dict[int, set[int]] = {}
+    # The graph holds the face inventory, the adjacency and the per-face attributes this
+    # module used to keep three private maps for. Its accessors memoise on first ask, which is
+    # the property the hand-rolled cache here existed for: only the vertical sides and the few
+    # faces bounding a ring are ever asked about, and resolving the rest measured at more than
+    # half of this recogniser's total time on the corpus.
+    graph = FaceGraph(part)
 
-    def _neighbours_of(index: int) -> set[int]:
-        cached = neighbour_indices.get(index)
-        if cached is None:
-            cached = {index_of[other] for other in neighbours(faces[index], edge_faces)}
-            neighbour_indices[index] = cached
-        return cached
+    def shares_edge(i: FaceNode, j: FaceNode) -> bool:
+        return j in graph.neighbours(i)
 
-    def shares_edge(i: int, j: int) -> bool:
-        return j in _neighbours_of(i)
+    vertical = _vertical_side_faces(graph, tol)
+    components = _side_rings(vertical, graph, tol, shares_edge)
 
-    normals, bounds, vertical = _vertical_side_faces(faces, tol)
-
-    components = _side_rings(vertical, bounds, tol, shares_edge)
-
-    def adjacent_to(index: int) -> set[int]:
-        # A copy, as before: `_common_cap` subtracts from what it gets back, and handing out
-        # the cached set would let one ring's bookkeeping corrupt the next one's.
-        return set(_neighbours_of(index))
+    def adjacent_to(node: FaceNode) -> set[FaceNode]:
+        # A fresh set each time: `_common_cap` subtracts from what it gets back, and the graph
+        # hands out a tuple precisely so one ring's bookkeeping cannot corrupt the next one's.
+        return set(graph.neighbours(node))
 
 
     found: list[PolygonalBoss | PolygonalStock] = []
@@ -372,7 +357,7 @@ def _recognise_one(
         # Whole stock is intentionally the exact-prism class: one closed solid made only
         # from this side ring and its two terminal caps. Attached bosses, recesses, holes,
         # chamfers and assemblies need different ownership/evidence.
-        if whole_stock and len(faces) != side_count + 2:
+        if whole_stock and len(graph) != side_count + 2:
             continue
         component_set = set(component)
         if any(
@@ -382,20 +367,24 @@ def _recognise_one(
         ):
             continue
 
-        ordered = _regular_ring_order(component, normals, angle_tol)
+        # Sourced from the graph's memo, not re-derived -- but handed on as a plain mapping,
+        # because these two are pure geometry over headings and have their own unit tests.
+        # Making them take the graph would have coupled a polygon calculation to a B-Rep.
+        headings = {node: _heading(graph, node) for node in component}
+        ordered = _regular_ring_order(component, headings, angle_tol)
         if ordered is None:
             continue
-        centres = [faces[i].center() for i in ordered]
-        profile = _ring_profile(ordered, normals, centres, tol)
+        centres = [graph.face(i).center() for i in ordered]
+        profile = _ring_profile(ordered, headings, centres, tol)
         if profile is None:
             continue
         cx, cy, across = profile
 
-        wall_lo = sum(bounds[i][4] for i in component) / side_count
-        wall_hi = sum(bounds[i][5] for i in component) / side_count
+        wall_lo = sum(graph.bounds(i)[2][0] for i in component) / side_count
+        wall_hi = sum(graph.bounds(i)[2][1] for i in component) / side_count
         base = _common_cap(
             component,
-            faces,
+            graph,
             adjacent_to,
             tol,
             upper=False,
@@ -404,7 +393,7 @@ def _recognise_one(
             wall_hi=wall_hi,
         )
         top = _common_cap(
-            component, faces, adjacent_to, tol, upper=True, positive=True,
+            component, graph, adjacent_to, tol, upper=True, positive=True,
             wall_lo=wall_lo, wall_hi=wall_hi,
         )
         if base is None or top is None or top - base <= tol:
@@ -416,7 +405,8 @@ def _recognise_one(
             for point in centres
         )
         flat_directions = tuple(
-            (round(normals[index][0], 3), round(normals[index][1], 3), 0.0) for index in ordered
+            (round(headings[index][0], 3), round(headings[index][1], 3), 0.0)
+            for index in ordered
         )
         record_type = PolygonalStock if whole_stock else PolygonalBoss
         found.append(
