@@ -38,7 +38,9 @@ MODULE_SEAM_EDGES = {
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
     "_claims": {"_adjacency"},
-    "_cylinder_substrate": {"_geometry", "_typing"},
+    # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
+    # three other modules each derived separately before it was lifted.
+    "_cylinder_substrate": {"_adjacency", "_geometry", "_typing"},
     "_hole_features": {
         "_adjacency",
         "_cylinder_substrate",

@@ -10,9 +10,8 @@ from typing import cast
 from build123d import Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
-from OCP.TopAbs import TopAbs_Orientation
 
-from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map, frame_points_outward, neighbours
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
@@ -283,9 +282,7 @@ def _classify_end_uncached(
             # Convex (material inside the sphere): the bore exits through a
             # spherical surface. Concave (a ball-nose cavity): a closed
             # bottom — reported as "flat" (no rounded-bottom category).
-            convex = (
-                partner.wrapped.Orientation() == TopAbs_Orientation.TopAbs_FORWARD
-            ) == surf.Sphere().Position().Direct()
+            convex = bool(frame_points_outward(partner))
             if not seg["external"]:
                 weak = "open" if convex else "flat"
             else:

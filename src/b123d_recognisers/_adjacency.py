@@ -26,7 +26,8 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Plane
+from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere
+from OCP.TopAbs import TopAbs_Orientation
 
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._typing import EdgeLike, FaceLike
@@ -229,6 +230,13 @@ class FaceGraph:
     def normal(self, node: FaceNode) -> tuple[float, float, float] | None:
         """The unit normal, or None for a face too degenerate to have one.
 
+        **Geometric, not material-side**, and the distinction is load-bearing rather than
+        pedantic. This is ``normal_at()``: it points whichever way the surface's parameterisation
+        does, so on a ``REVERSED`` face it points *into* the solid. A recogniser asking "which
+        side is the material" wants :func:`frame_points_outward` instead, and the two differ by a
+        sign on exactly the faces where it matters most. Nothing but this paragraph said so
+        before, and it is why ``_recess_core._Face`` cannot simply be replaced by a node.
+
         None rather than an exception because every caller today wraps the kernel call in a
         ``try`` and skips the face; returning the skip makes that one decision instead of
         seven.
@@ -305,6 +313,47 @@ class FaceGraph:
                     built.setdefault(edge, []).append(self._faces[node.index])
             self._edge_faces = built
         return self._edge_faces
+
+
+def frame_points_outward(face: FaceLike) -> bool | None:
+    """Does this face's own surface frame already point out of the solid?
+
+    The material-side convention, in one place. An analytic surface carries a frame whose normal
+    direction is a property of the *surface*, not of the face using it, so a face records
+    separately whether it runs with that direction (``FORWARD``) or against it (``REVERSED``).
+    Neither term alone answers the question: **mirroring a solid makes the frame left-handed and
+    flips the orientations too**, so a test on orientation alone inverts on a mirrored part. The
+    answer is the product, ``FORWARD == frame.Direct()``.
+
+    Four sites derived that independently -- planes in ``_recess_core``, cylinders there and in
+    ``_cylinder_substrate``, spheres in ``_hole_features`` -- one of them documenting itself as
+    mirroring another. They agreed, which is luck rather than design: no test could tell, because
+    left-handed frames are 6 of 3,853 across all 72 corpus parts, and deleting the handedness term
+    from any of them left the whole suite green. ``tests/test_material_side.py`` generates the
+    geometry the corpus lacks and checks the convention against the solid classifier.
+
+    Returns None for a surface this cannot read a frame from -- a torus, a spline -- which is a
+    genuine "no answer" rather than a default. Coercing it to False would put material on one
+    side of a blend and leave nothing downstream able to tell that from a real answer.
+
+    Every caller today has already established the surface type before asking, so None is
+    unreachable for them and ``bool(...)`` at those sites records that rather than dismissing
+    it. A caller that has *not* filtered first must handle the third answer, and the honest
+    shape is `_outward_normal`'s: return None onwards rather than pick a side.
+    """
+
+    surface = BRepAdaptor_Surface(face.wrapped)
+    kind = surface.GetType()
+    if kind == GeomAbs_Plane:
+        position = surface.Plane().Position()
+    elif kind == GeomAbs_Cylinder:
+        position = surface.Cylinder().Position()
+    elif kind == GeomAbs_Sphere:
+        position = surface.Sphere().Position()
+    else:
+        return None
+    forward = face.wrapped.Orientation() == TopAbs_Orientation.TopAbs_FORWARD
+    return bool(forward == position.Direct())
 
 
 def edge_face_map(faces: Iterable[FaceLike], *, face_edges: FaceEdges | None = None) -> dict:
