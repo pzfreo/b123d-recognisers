@@ -100,6 +100,14 @@ Three limits on how far this evidence reaches:
   package never adopted. Several classes are recognised under a *different* family than the
   corpus names — O-ring as boss, Circular blind step as fillet — which is a taxonomy mismatch,
   not a defect, and makes naive cross-corpus percentages meaningless.
+- **The labels are single-assignment, so they mislead at feature intersections.** MFCAD++ gives
+  each face exactly one feature label. Where two features meet, a wall belonging to both is
+  assigned to one of them, and a wall bounded by raw billet is assigned to *Stock* — which means
+  "assigned to no feature", not "no feature touches this". Measured: `recognise_passages` reports
+  a genuine 6-sided passage on `11251.step` whose six walls carry **five different labels**, two
+  of them *Stock*. Any per-face score against these labels therefore understates a family that is
+  right about an intersecting feature, and a recogniser tuned to raise such a score would be
+  fitted to the corpus rather than to the geometry.
 - **Attribution is statistical, not per-face.** Records do not say which faces they consumed, so
   the MFCAD++ figures come from fitting record counts against labelled-face counts across models
   rather than from observing ownership. The fit is strong for holes, fillets and bosses and weak

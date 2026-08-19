@@ -10,7 +10,6 @@ from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_core import (
     _body_scoped_pairs,
-    _body_scoped_records,
     _channel_sort_key,
     _Claims,
     _recognise_channels_one,
@@ -73,7 +72,9 @@ def recognise_slots(
     return [slot for slot, _ in pairs]
 
 
-def recognise_pockets(part: Part, *, face_edges: FaceEdges | None = None) -> list[Pocket]:
+def recognise_pockets(
+    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+) -> list[Pocket]:
     """Recognise blind rectangular recesses independently within each solid.
 
     The blind counterpart of :func:`recognise_slots`: the same facing-rectangular-wall
@@ -82,13 +83,38 @@ def recognise_pockets(part: Part, *, face_edges: FaceEdges | None = None) -> lis
     :func:`_pocket_candidate` -- not from a size heuristic, so a pocket deeper than it
     is long is dimensioned correctly. A compound is scanned per solid so separate
     components cannot supply walls or floors for one fictitious recess.
+
+    *ledger* is injected the way it is on :func:`recognise_slots`, and changes nothing about
+    what is returned: claims are written and never read here. What a pocket claims depends on
+    how it was found. From opposed walls it claims the two walls, and *not* the floor, which
+    only had to exist -- the same line the through-slot draws, since the depth is the walls'
+    own overlap rather than the floor's position. From a corner notch it claims the floor too,
+    because that path iterates floors and reads the notch's footprint off the one it finds. A
+    stubby obround pocket recovered from its cylindrical end caps claims nothing and is absent
+    from the ledger, as its through-slot counterpart is.
+
+    *ledger*'s graph must have been built from *part*; a face that does not resolve is refused
+    rather than silently claiming nothing.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    pockets = _body_scoped_records(
-        sources, partial(_recognise_pockets_one, face_edges=face_edges)
+    claims: _Claims | None = {} if ledger is not None else None
+    pairs = _body_scoped_pairs(
+        sources,
+        partial(
+            _recognise_pockets_one,
+            face_edges=face_edges,
+            graph=None if ledger is None else ledger.graph,
+            claims=claims,
+        ),
+        claims,
     )
-    return sorted(pockets, key=lambda pocket: (pocket.width, _region_center(pocket)))
+    pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+    if ledger is not None:
+        for pocket, nodes in pairs:
+            if nodes:
+                ledger.add_defining(pocket, nodes)
+    return [pocket for pocket, _ in pairs]
 
 
 def recognise_channels(part: Part, *, face_edges: FaceEdges | None = None) -> list[Channel]:
