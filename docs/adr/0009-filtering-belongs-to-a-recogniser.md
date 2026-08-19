@@ -1,6 +1,6 @@
 # ADR 0009 — Filtering belongs to a recogniser, not a shared reduction
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-19
 - **Decider:** Paul Fremantle
 - **Evidence:** [epic 0002](../epics/0002-one-substrate-before-more-recognisers.md), item 0
@@ -48,7 +48,7 @@ recall loss across five named gates because they are gates. The pocket loss has 
 breakdown: 3,163 faces produce zero candidates, and no instrumentation inside the recogniser can
 say why, because the faces never arrived.
 
-`FaceGraph` already obeys the rule this record proposes. Its nodes carry `normal`, `bounds`,
+`FaceGraph` already obeys the rule this record states. Its nodes carry `normal`, `bounds`,
 `surface` and `edges`, and no `axis` field; every face of the part gets a node whether or not any
 recogniser will want it.
 
@@ -73,19 +73,6 @@ an optimisation beside it. Carrying every face costs nothing if attributes are c
 ask, which is the property `FaceGraph` was built with and the reason it can afford to have no
 admission criterion. A total reduction that computed eagerly would trade this record's benefit
 for the cost the filter was avoiding.
-
-## Required evidence before acceptance
-
-- Every reduction shared by two or more families is enumerated, and each is either total or
-  carries a documented exclusion repeated on each inheriting family.
-- `_planar_faces` is total, or is split so that the axis-aligned selection is a step each family
-  applies for itself and can be counted.
-- For at least one family, the candidates entering recognition and the gate that rejected each
-  are countable — the instrumentation `recognise_chamfers` supports today and the recess families
-  cannot.
-- Making a reduction total does not move a pinned golden, or every moved record is reviewed.
-- Construction stays within the measured performance budget; the laziness this decision relies on
-  is verified rather than assumed.
 
 ## Consequences
 

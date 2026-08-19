@@ -1,9 +1,13 @@
 # Architecture decision records
 
 These records extract the recognition-specific decisions from Draftwright without importing
-its drawing/compiler policy. Accepted records describe contracts already proven in Draftwright;
-proposed records describe the next recognition architecture and require evidence before
-acceptance.
+its drawing/compiler policy. Accepted records are the contracts this package holds itself to,
+whether proven in Draftwright or established here by measurement; proposed records describe the
+next recognition architecture and require evidence before acceptance.
+
+Acceptance is a statement about the decision, not about the code. A record can be accepted while
+work remains to bring the codebase to it -- that work belongs to an epic and its issues, so that
+the record stays a decision rather than a status report.
 
 | ADR | Title | Status |
 | --- | --- | --- |
