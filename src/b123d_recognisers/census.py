@@ -47,6 +47,7 @@ from b123d_recognisers import (
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
+    chamfers_that_are_not_angled_steps,
     passages_that_are_not_slots,
     steps_that_are_not_grooves,
 )
@@ -85,6 +86,13 @@ def feature_census(part: Part) -> dict[str, int]:
     # question rather than documenting it, and the order of these two lines does not matter.
     grooves = recognise_grooves(part, cyls=cyls, ledger=ledger)
     steps = recognise_turned_steps(part, cyls=cyls, ledger=ledger)
+    # One bevel face is both "the edge break here" and "the slant of the step that stops here",
+    # and only the second is true when a triangular flat closes it. Hoisted above the mapping
+    # for the reason the two lines above are: `"chamfer"` is written before `"angled_step"`, so
+    # calling the recognisers inside the mapping would let the rule read a ledger with no step
+    # claims in it yet and subtract nothing -- silently, as a count one too high.
+    chamfers = recognise_chamfers(part, face_edges=face_edges, ledger=ledger)
+    angled_steps = recognise_angled_steps(part, face_edges=face_edges, ledger=ledger)
     records: dict[str, Sequence[Record]] = {
         "hole": holes,
         "hole_pattern": recognise_hole_patterns(holes),
@@ -96,8 +104,8 @@ def feature_census(part: Part) -> dict[str, int]:
         "channel": recognise_channels(part, face_edges=face_edges),
         "pocket": recognise_pockets(part, face_edges=face_edges),
         "passage": passages_that_are_not_slots(part, ledger),
-        "chamfer": recognise_chamfers(part, face_edges=face_edges),
-        "angled_step": recognise_angled_steps(part, face_edges=face_edges),
+        "chamfer": chamfers_that_are_not_angled_steps(chamfers, ledger),
+        "angled_step": angled_steps,
         "fillet": recognise_fillets(part, face_edges=face_edges),
         "countersink": recognise_countersinks(part),
         "plate": recognise_plates(part),

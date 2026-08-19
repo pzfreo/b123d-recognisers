@@ -20,9 +20,19 @@ measurement: the legs of the two populations overlap on every part-relative and
 neighbour-relative ratio tried, and a threshold that separated them on one corpus would be
 fitted to that corpus. The distinction is topological — **a chamfer runs the full length of
 the edge it breaks; an angled step stops, and something has to close the end.** That
-something is a triangular flat, and :func:`b123d_recognisers._adjacency.has_triangular_companion`
-is the whole discriminator. It says nothing about the part around the face, so a step is a
-step at any scale, which a size gate could never promise.
+something is a triangular flat, and :func:`_closed_by_a_triangular_flat` is the whole
+discriminator. It says nothing about the part around the face, so a step is a step at any
+scale, which a size gate could never promise.
+
+**That test is this family's own, and no longer shared.** It lived in ``_adjacency`` while
+``recognise_chamfers`` consulted it too — to *decline* a bevel this family would claim — and the
+comment on it said the two must agree or the feature would vanish from the census, claimed by
+neither. Agreement by shared helper is a hand-rolled ownership device: it worked for two
+contestants and generalised to no third. The chamfer family no longer asks the
+question at all. It proposes every bevel it sees, this family claims the ones with a blind end,
+and :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps` reads the claims and
+drops the duplicates — so there is exactly one implementation of the discriminator, owned by the
+family it defines, and nothing left for a second copy to drift from.
 
 Four gates, the first three shared with :func:`b123d_recognisers.recognise_chamfers` so the
 two cannot disagree about what they are looking at:
@@ -67,12 +77,14 @@ from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
+    axis_aligned_axis,
     edge_face_map,
-    has_triangular_companion,
     nearest_axis_aligned_planes,
+    neighbours,
 )
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 
@@ -97,22 +109,62 @@ class AngledStep(Record):
     at: tuple[float, float, float]
 
 
+def _closed_by_a_triangular_flat(
+    face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
+) -> bool:
+    """Is *face* edge-adjacent to an axis-aligned planar face bounded by exactly three edges?
+
+    The blind end, and the whole discriminator (see the module docstring). A chamfer strip runs
+    the length of the edge it breaks, so its neighbours are the two walls it bridges; a slant
+    that stops part-way into the part needs a flat to close it, and that flat is a triangle.
+
+    Purely topological: it reads a neighbour's surface type, its plane's alignment and its edge
+    count, and nothing about the size of anything. That is what lets the family promise a step
+    is a step at any scale.
+
+    Private, and that is the point. It was ``_adjacency``'s shared
+    ``has_triangular_companion`` while ``recognise_chamfers`` consulted it as well; it consults
+    nothing now, so the one caller keeps it.
+    """
+
+    for other in neighbours(face, edge_faces, face_edges=face_edges):
+        if axis_aligned_axis(other.wrapped) is None:
+            continue
+        edges = face_edges.of(other) if face_edges is not None else other.edges()
+        if len(edges) == 3:
+            return True
+    return False
+
+
 def recognise_angled_steps(
     part: Part,
     *,
     face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | None = None,
 ) -> list[AngledStep]:
     """Recognise the angled blind steps of *part* (see module docstring). Returns one
     :class:`AngledStep` per qualifying slant face, sorted deterministically. Empty when the
     part has none. Only single-axis slants (running along one principal axis) are recovered;
     a step whose blind end is closed by anything other than a triangular flat is not one —
     that end is what makes the feature blind, and without it the slant is a chamfer or a
-    through step."""
+    through step.
+
+    *ledger* records the face a step was **established by**: its slant, and only that. Every
+    number on the record is read off that one face — both legs from its in-plane extents,
+    ``length`` from its span along the edge, ``at`` from its centre. The triangular flat that
+    closes the blind end is *consulted*, not consumed, for the same reason a groove does not
+    claim the shaft either side of it: it belongs to whatever feature owns it, and claiming it
+    would have every step contest its own end cap.
+
+    ``recognise_chamfers`` reads the same slant as a bevel and proposes it too, because on the
+    face alone it is one. Which of the two survives is
+    :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps`, decided from these
+    claims rather than by each family second-guessing the other."""
 
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
-    out: list[AngledStep] = []
+    out: list[tuple[AngledStep, FaceLike]] = []
     for f in all_faces:
         try:
             edge_i, _nv, span, leg_hi, leg_lo = classify_bevel(f)
@@ -127,23 +179,31 @@ def recognise_angled_steps(
             continue
         if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave — a pocket or passage wall, not a step
-        # Last, mirroring `recognise_chamfers`, though it is the gate this family is named
-        # for. Hoisting it ahead of the solid classifier is the obvious optimisation and
+        # Last, though it is the gate this family is named for — the three above it are the
+        # shared bevel read, and this is the one thing that is only about a step.
+        # Hoisting it ahead of the solid classifier is the obvious optimisation and
         # measures as nothing (850.0 ms against 848.0 ms over the golden corpus, interleaved):
         # `convex_bevel` is reached by so few faces that it is 1% of this function, while the
         # companion walk costs a `.edges()` per axis-aligned neighbour. The cost lives in the
         # unavoidable scan above — `edge_face_map` and `classify_bevel` are two thirds of it.
-        if not has_triangular_companion(f, edge_faces, face_edges=face_edges):
-            continue  # runs edge to edge — a chamfer, and `recognise_chamfers` owns it
+        if not _closed_by_a_triangular_flat(f, edge_faces, face_edges=face_edges):
+            continue  # runs edge to edge — a chamfer, and the reconciler leaves it to them
         fctr = f.center()
         out.append(
-            AngledStep(
-                axis="xyz"[edge_i],
-                leg1=round(leg_hi, 3),
-                leg2=round(leg_lo, 3),
-                angle=round(math.degrees(math.atan2(leg_lo, leg_hi)), 2),
-                length=round(span[edge_i][1] - span[edge_i][0], 3),
-                at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+            (
+                AngledStep(
+                    axis="xyz"[edge_i],
+                    leg1=round(leg_hi, 3),
+                    leg2=round(leg_lo, 3),
+                    angle=round(math.degrees(math.atan2(leg_lo, leg_hi)), 2),
+                    length=round(span[edge_i][1] - span[edge_i][0], 3),
+                    at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+                ),
+                f,
             )
         )
-    return sorted(out, key=lambda s: (s.axis, s.at))
+    out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
+    if ledger is not None:
+        for step, face in out:
+            ledger.add_defining(step, [ledger.graph.require_node(face)])
+    return [step for step, _ in out]

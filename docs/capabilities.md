@@ -25,7 +25,7 @@ compatibility review, and release notes.
 | --- | --- | --- | --- |
 | `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned flat bounded by exactly three edges. | Ends whose triangle is subdivided into four or more edges by a neighbouring feature, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; over 120 MFCAD++ models, 100% precision and 70% instance recall. |
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
-| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis, running the full length of the edge they break. | Compound three-axis corner bevels, faces outside leg/size gates, and slants with a triangular blind end (an angled step). | Chamfer/fillet/flat golden and negative bevel tests. |
+| `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis. Called through `build_recognition_result` or `feature_census`, a slant with a triangular blind end is excluded — an angled step, dropped by `_reconcile.chamfers_that_are_not_angled_steps` from the claims both families write. Called directly, that slant is proposed, because on the face alone it is a bevel. | Compound three-axis corner bevels and faces outside leg/size gates. | Chamfer/fillet/flat golden, negative bevel tests, bevel-claim reconciliation tests, and 40 labelled MFCAD++ models. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid. | Bounded blind pockets, through slots, and cross-solid face combinations. | Open-channel golden and per-solid regressions. |
 | `recognise_countersinks` | Conical hole-mouth seats with a proven circular major rim, bore rim, and included angle. | General conical faces, decorative bevels, and unmatched cones. | Counterbore/countersink golden and cone rejection tests. |
 | `recognise_double_d_bores` | Constant, principal-axis, through double-D voids with two opposed common-circle profiles and a material-free connecting prism. | Blind recesses, obrounds, lenses, arbitrary line/arc loops, non-principal axes, mismatched ends, and cross-solid pairing. | Double-D golden plus capability-negative tests. |
@@ -109,7 +109,10 @@ Three limits on how far this evidence reaches:
   a record on a face centre, so their records *can* be matched back to the labelled face that
   produced them, and their figures — 100% precision for angled steps, 44% → 78% for chamfers
   over 120 models — are counted per face rather than fitted. That is why they are quoted as
-  precision, which the caveat above forbids for the rest.
+  precision, which the caveat above forbids for the rest. The chamfer figure is the
+  *reconciled* answer, which is what the aggregate and the census report; called directly the
+  recogniser proposes a blind step's slant as well and scores lower — 50% against 79% over the
+  40 vendored models — for the reason the row above gives.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.

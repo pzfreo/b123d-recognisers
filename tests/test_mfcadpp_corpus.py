@@ -32,6 +32,9 @@ import pytest
 from build123d import import_step
 
 from b123d_recognisers import recognise_angled_steps, recognise_chamfers
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
 
 CORPUS = Path(__file__).parent / "corpus" / "mfcadpp"
 #: The sdist ships this module but not the 4.8 MB of STEP it reads, so absence must skip. A
@@ -45,6 +48,21 @@ pytestmark = pytest.mark.skipif(
 #: relying on that legitimate rather than hopeful.
 _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 CHAMFER, TRIANGULAR_BLIND_STEP, STOCK = 0, 20, 24
+
+
+def _bevels(part):
+    """The two bevel families against one ledger: what each proposed, and what survives.
+
+    ``recognise_chamfers`` proposes a blind step's slant, because on the face alone it is a
+    bevel; the rule drops the ones ``recognise_angled_steps`` claimed. Every test below that
+    asks about *chamfers* asks about ``kept``, since that is what a consumer running the
+    aggregate or the census receives.
+    """
+
+    ledger = ClaimLedger(FaceGraph(part))
+    proposed = recognise_chamfers(part, ledger=ledger)
+    steps = recognise_angled_steps(part, ledger=ledger)
+    return proposed, chamfers_that_are_not_angled_steps(proposed, ledger), steps
 
 
 def _is_oblique(face) -> bool:
@@ -233,13 +251,19 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
 
     Before `recognise_angled_steps` existed this failed on every model carrying one: on nine
     of ten such models the step's slant was the *only* chamfer reported, while the real
-    chamfers on the same part were rejected. Removing the triangular-companion decline from
-    `recognise_chamfers` reintroduces exactly that, and this is what says so.
+    chamfers on the same part were rejected. Breaking the reconciliation — the rule, the claims
+    either family writes, or the blind-end test the step family gates on — reintroduces exactly
+    that, and this is what says so.
+
+    Asked of the reconciled list, which is what `feature_census` and
+    `build_recognition_result` report. `recognise_chamfers` on its own proposes the slant; the
+    next test is the one that pins that, and pins that the rule takes every one of them back.
     """
 
     stolen, resolved = [], 0
     for name, part, _labels, _faces, at_label in corpus:
-        for record in recognise_chamfers(part):
+        _, kept, _ = _bevels(part)
+        for record in kept:
             label = at_label.get(record.at)
             resolved += label is not None
             if label == TRIANGULAR_BLIND_STEP:
@@ -250,6 +274,43 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
     # regression guard" a silent no-op. All 14 chamfer records resolve today.
     assert resolved, "no chamfer record resolved to a labelled face; attribution is broken"
     assert stolen == [], f"chamfer records on faces labelled a blind step: {stolen}"
+
+
+def test_the_rule_takes_back_every_slant_the_chamfer_family_proposes(corpus):
+    """What the reconciliation actually removes, on geometry this project did not author.
+
+    Two claims at once, and neither is checkable from counts alone:
+
+    - every record `recognise_chamfers` gains by no longer declining a triangular-ended bevel
+      lands on a face MFCAD++ labels a *Triangular blind step* — so the proposals it now makes
+      are exactly the slants, not some wider set;
+    - the rule drops all of them, so nothing survives into the reconciled list that the labels
+      call a step.
+
+    Measured here: 8 of the 11 steps across 40 models are proposed as chamfers and all 8 are
+    taken back. The other 3 never reach the rule — `recognise_chamfers` turns them away as
+    spanning wedges, its own gate and nothing to do with the blind end, which is why "one
+    proposal per step" is not the assertion.
+    """
+
+    dropped = matched = steps_found = 0
+    wrong = []
+    for name, part, _labels, _faces, at_label in corpus:
+        proposed, kept, steps = _bevels(part)
+        steps_found += len(steps)
+        taken = [record for record in proposed if record not in kept]
+        dropped += len(taken)
+        assert len(kept) + len(taken) == len(proposed), f"{name}: the rule invented a record"
+        for record in taken:
+            if at_label.get(record.at) == TRIANGULAR_BLIND_STEP:
+                matched += 1
+            else:
+                wrong.append((name, record.at, at_label.get(record.at)))
+
+    assert steps_found == 11, f"the corpus no longer carries 11 angled steps: {steps_found}"
+    assert dropped == 8, f"the rule dropped {dropped} chamfer proposals, not 8"
+    assert wrong == [], f"proposals dropped on faces MFCAD++ does not label a blind step: {wrong}"
+    assert matched == dropped
 
 
 #: Record counts as of vendoring, **per model**. Not a correctness baseline -- a change
@@ -330,10 +391,8 @@ def test_the_records_each_model_yields_have_not_moved(corpus):
 
     actual = {}
     for name, part, _labels, _faces, _at in corpus:
-        counts = {
-            "angled_steps": len(recognise_angled_steps(part)),
-            "chamfers": len(recognise_chamfers(part)),
-        }
+        _, kept, steps = _bevels(part)
+        counts = {"angled_steps": len(steps), "chamfers": len(kept)}
         found = {k: v for k, v in counts.items() if v}
         if found:
             actual[name] = found
@@ -352,7 +411,8 @@ def test_chamfer_precision_does_not_regress(corpus):
 
     records = correct = 0
     for _name, part, _labels, _faces, at_label in corpus:
-        for record in recognise_chamfers(part):
+        _, kept, _ = _bevels(part)
+        for record in kept:
             records += 1
             correct += at_label.get(record.at) == CHAMFER
 
