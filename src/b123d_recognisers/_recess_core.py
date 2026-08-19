@@ -714,11 +714,6 @@ def _body_signature(solid) -> tuple[float, ...]:
     )
 
 
-def _body_scoped_records(sources, recognise_one) -> list:
-    """Recognise each source and attach unambiguous body correspondence."""
-    return [record for record, _ in _body_scoped_pairs(sources, recognise_one)]
-
-
 def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:
     """The same, paired with the nodes each record was built from.
 
@@ -1016,9 +1011,28 @@ def _channel_sort_key(channel: Channel) -> tuple:
     )
 
 
-def _recognise_pockets_one(part: Part, face_edges: FaceEdges | None = None) -> list[Pocket]:
-    """Recognise pockets using one solid's faces and bounds."""
-    faces = _planar_faces(part, face_edges)
+def _recognise_pockets_one(
+    part: Part,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    claims: _Claims | None = None,
+) -> list[Pocket]:
+    """Recognise pockets using one solid's faces and bounds.
+
+    *graph* and *claims* travel together exactly as they do in
+    :func:`_recognise_slots_one`, and the two paths below claim differently on purpose:
+
+    - **From opposed walls**, the two walls are defining and the floor is not. The floor
+      reaches this candidate through :func:`_end_capped`, which asks whether *something* caps
+      the footprint; the pocket's own depth is the walls' overlap on the depth axis, not the
+      floor's position. Same line the through-slot draws, for the same reason: consultation is
+      not consumption, and claiming it would have every pocket contest whatever owns its floor.
+    - **From a corner notch**, the floor *is* defining. That path iterates floors and reads the
+      notch's whole footprint off the one it finds, so the floor established the record as
+      literally as the two walls did.
+    """
+
+    faces = _planar_faces(part, face_edges, graph)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     by_axis: dict[str, list[_Face]] = {}
@@ -1032,11 +1046,17 @@ def _recognise_pockets_one(part: Part, face_edges: FaceEdges | None = None) -> l
                 p = _pocket_candidate(walls[i], walls[j], faces, part_ext, axis)
                 if p is not None:
                     candidates.append(p)
-    candidates.extend(_recognise_corner_notches(faces, pbb))
+                    if claims is not None:
+                        claims.setdefault(p, set()).update(
+                            node for node in (walls[i].node, walls[j].node) if node is not None
+                        )
+    candidates.extend(_recognise_corner_notches(faces, pbb, claims))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
-    # recover them from their end caps — the blind counterpart of the through-slot path.
+    # recover them from their end caps — the blind counterpart of the through-slot path, and
+    # claiming nothing for the same reason: its evidence is two cylindrical caps, which
+    # `_planar_faces` never yielded and which no consumer reconciling planar walls can want.
     candidates.extend(_recognise_obround_from_ends(part, faces, blind=True))
-    return _extend_obround_ends(_merge(candidates), part)
+    return _extend_obround_ends(_merge(candidates, claims), part, claims)
 
 
 def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> list[Channel]:
@@ -1070,7 +1090,9 @@ def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> 
     )
 
 
-def _recognise_corner_notches(faces: list[_Face], pbb) -> list[Pocket]:
+def _recognise_corner_notches(
+    faces: list[_Face], pbb, claims: _Claims | None = None
+) -> list[Pocket]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -1159,4 +1181,10 @@ def _recognise_corner_notches(faces: list[_Face], pbb) -> list[Pocket]:
                 edge_anchored=True,
             )
         )
+        if claims is not None:
+            # The floor belongs here, unlike the opposed-wall path above: this loop is *over*
+            # floors, and the notch's footprint is read straight off this one's bounding box.
+            claims.setdefault(out[-1], set()).update(
+                node for node in (floor.node, xwall.node, ywall.node) if node is not None
+            )
     return out

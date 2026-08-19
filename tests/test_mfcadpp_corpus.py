@@ -441,7 +441,7 @@ def _per_face(corpus):
 
     totals: dict[str, Counter] = defaultdict(Counter)
     for _name, part, labels, _faces, _at in corpus:
-        claimed, _records = scan_part(part, labels)
+        claimed, _records, _covered = scan_part(part, labels)
         for family, counts in claimed.items():
             totals[family].update(counts)
     return totals
@@ -499,3 +499,12 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     slots = claimed["Slot"]
     assert sum(slots.values()) == 73
     assert slots[16] == 37, "most of what Slot claims is labelled Circular end pocket"
+
+    # Pockets are the blind counterpart and land mostly where the name says, but a quarter of
+    # what they claim is labelled *Rectangular passage* -- faces `recognise_passages` claims
+    # too. Two families naming one face is what the ledger exists to make visible; whether
+    # either should yield is a reconciliation question nobody has asked yet.
+    pockets = claimed["Pocket"]
+    assert sum(pockets.values()) == 115
+    assert pockets[14] == 43, "most of what Pocket claims is labelled Rectangular pocket"
+    assert pockets[3] == 23, "and a quarter of it is a passage another family also claims"

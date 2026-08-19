@@ -102,7 +102,7 @@ def feature_census(part: Part) -> dict[str, int]:
         "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
         "slot": recognise_slots(part, ledger=ledger, face_edges=face_edges),
         "channel": recognise_channels(part, face_edges=face_edges),
-        "pocket": recognise_pockets(part, face_edges=face_edges),
+        "pocket": recognise_pockets(part, face_edges=face_edges, ledger=ledger),
         "passage": passages_that_are_not_slots(part, ledger),
         "chamfer": chamfers_that_are_not_angled_steps(chamfers, ledger),
         "angled_step": angled_steps,

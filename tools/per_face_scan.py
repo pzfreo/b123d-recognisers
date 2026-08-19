@@ -33,7 +33,7 @@ _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 #: and turned steps claim too but have no MFCAD++ counterpart at all -- the corpus is prismatic
 #: and those are turning features -- so they are absent from a run over it rather than scoring
 #: zero on it.
-CLAIMING = ("Slot", "Passage", "Chamfer", "AngledStep")
+CLAIMING = ("Slot", "Pocket", "Passage", "Chamfer", "AngledStep")
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
 LABELS = {
@@ -68,7 +68,7 @@ LABELS = {
 def scan_part(part, labels):
     """One part's claimed faces, as ``{family: Counter(label)}`` plus the record counts.
 
-    Runs the four claiming families against one ledger and applies the reconcilers, so what is
+    Runs the claiming families against one ledger and applies the reconcilers, so what is
     counted is what a consumer receives rather than what was proposed. A claim whose record a
     rule dropped is skipped -- counting it would credit the family with a face the caller never
     sees, which is the arithmetic that made the old fitted figures unreadable.
@@ -88,27 +88,37 @@ def scan_part(part, labels):
     at = {face: i for i, face in enumerate(faces)}
 
     slots = r.recognise_slots(part, ledger=ledger)
+    pockets = r.recognise_pockets(part, ledger=ledger)
     passages = passages_that_are_not_slots(part, ledger)
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
 
-    kept = {id(record) for record in (*slots, *passages, *chamfers, *steps)}
+    kept = {id(record) for record in (*slots, *pockets, *passages, *chamfers, *steps)}
     records = {
         "Slot": len(slots),
+        "Pocket": len(pockets),
         "Passage": len(passages),
         "Chamfer": len(chamfers),
         "AngledStep": len(steps),
     }
 
     claimed: dict[str, Counter] = defaultdict(Counter)
+    # Distinct faces, because two families legitimately claim one -- a rectangular passage's
+    # wall is a pocket wall to the family that reads it blind. Summing the per-family counters
+    # instead reported *124%* of one class claimed, which is how this was found: a share above
+    # 100% is arithmetically impossible and the overlap it exposed is a real reconciliation
+    # question, not a counting artefact.
+    covered: set[int] = set()
     for claim in ledger.claims:
         family = type(claim.claimant).__name__
         if family not in CLAIMING or id(claim.claimant) not in kept:
             continue
         for node in claim.defining:
-            claimed[family][labels[at[graph.face(node)]]] += 1
-    return claimed, records
+            index = at[graph.face(node)]
+            claimed[family][labels[index]] += 1
+            covered.add(index)
+    return claimed, records, Counter(labels[index] for index in covered)
 
 
 def scan(corpus: Path):
@@ -119,6 +129,7 @@ def scan(corpus: Path):
     claimed: dict[str, Counter] = defaultdict(Counter)
     records: Counter = Counter()
     per_label: Counter = Counter()
+    covered: Counter = Counter()
     models = skipped = 0
 
     for path in sorted(corpus.glob("*.st*p")):
@@ -129,10 +140,11 @@ def scan(corpus: Path):
             continue
         models += 1
         per_label.update(labels)
-        part_claimed, part_records = scan_part(part, labels)
+        part_claimed, part_records, part_covered = scan_part(part, labels)
         for family, counts in part_claimed.items():
             claimed[family].update(counts)
         records.update(part_records)
+        covered.update(part_covered)
 
     return {
         "models": models,
@@ -140,6 +152,7 @@ def scan(corpus: Path):
         "records": dict(records),
         "claimed": {family: dict(counts) for family, counts in claimed.items()},
         "faces_per_label": dict(per_label),
+        "faces_covered": dict(covered),
     }
 
 
@@ -157,14 +170,12 @@ def report(result) -> str:
         n = sum(counts.values())
         lines.append(f"{family:<12}{result['records'].get(family, 0):>8}{n:>7}  {dist or '-'}")
 
-    claimed_per_label: Counter = Counter()
-    for counts in claimed.values():
-        claimed_per_label.update(counts)
+    covered = {int(k): v for k, v in result["faces_covered"].items()}
 
     lines += ["", "PER-LABEL -- the fraction of each class any CLAIMING family claims", ""]
     lines.append(f"{'label':<34}{'faces':>7}{'claimed':>9}{'share':>8}")
     for label, total in sorted(result["faces_per_label"].items(), key=lambda kv: -kv[1]):
-        got = claimed_per_label[int(label)]
+        got = covered.get(int(label), 0)
         name = LABELS.get(int(label), label)
         lines.append(f"{name:<34}{total:>7}{got:>9}{100 * got / total:>7.0f}%")
     return "\n".join(lines)
