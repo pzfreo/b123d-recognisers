@@ -77,9 +77,12 @@ def feature_census(part: Part) -> dict[str, int]:
     holes = recognise_holes(part, cyls=cyls, face_edges=face_edges)
     # One band is both the annular channel cut into a shaft and a rung of that shaft's step
     # ladder. Both records are real -- see `_reconcile` -- but it is one machined feature, and
-    # this function counts features. Run before the mapping and in this order, because the rule
-    # reads what the grooves claimed, and the entries below are evaluated as written with
-    # `"step"` first.
+    # this function counts features. Both run before the mapping so that the rule below sees a
+    # complete ledger whatever order the entries are written in -- an earlier version called the
+    # recognisers inside the mapping, where `"step"` is written before `"groove"`, so the rule
+    # read an empty ledger and subtracted nothing. Silently: there is no groove claim to be
+    # missing, only a count that is quietly one too high. Hoisting them removes the ordering
+    # question rather than documenting it, and the order of these two lines does not matter.
     grooves = recognise_grooves(part, cyls=cyls, ledger=ledger)
     steps = recognise_turned_steps(part, cyls=cyls, ledger=ledger)
     records: dict[str, Sequence[Record]] = {
