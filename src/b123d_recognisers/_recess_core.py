@@ -184,14 +184,14 @@ def _overlap_len(bb_a, bb_b, axis) -> float:
     return float(hi - lo)
 
 
-def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float]) -> Slot | None:
+def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float], axis: str) -> Slot | None:
     """Build a :class:`Slot` from two facing rectangular walls, or None if the
     pair is not a slot (not facing, not overlapping, wider than long, or
     spanning the full part).  Geometry only — the through/blind test is applied
     by the caller, which needs the whole face set."""
-    axis = fa.axis
-    if axis is None:
-        return None  # an oblique wall has no axis to pair on; every caller declines these first
+    # *axis* is the bucket both walls came from, passed rather than re-read off `fa`: it is
+    # established once where the oblique walls are declined, so nothing downstream needs a
+    # branch for a wall that cannot reach here.
     k = _AXES[axis]
     bb_a, bb_b = fa.bb, fb.bb
     # Anti-parallel outward normals.
@@ -664,10 +664,10 @@ def _recognise_slots_one(
         if f.wall and f.axis is not None:
             by_axis.setdefault(f.axis, []).append(f)
     candidates: list[Slot] = []
-    for walls in by_axis.values():
+    for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                s = _candidate(walls[i], walls[j], part_ext)
+                s = _candidate(walls[i], walls[j], part_ext, axis)
                 # Keep only through-slots: a blind pocket (or the floored gap
                 # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
@@ -901,7 +901,13 @@ def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
 
 
 def _floored_candidate(
-    fa, fb, faces, part_ext, *, channel_bounds: dict[str, tuple[float, float]] | None = None
+    fa,
+    fb,
+    faces,
+    part_ext,
+    axis: str,
+    *,
+    channel_bounds: dict[str, tuple[float, float]] | None = None,
 ) -> Pocket | Channel | None:
     """Build a floored opposed-wall recess, with open-vs-enclosed semantics explicit.
 
@@ -915,10 +921,7 @@ def _floored_candidate(
     (the floor) and open on the other.  This keeps a recess deeper than it is long from
     having its floor mistaken for an end wall.
     """
-    axis = fa.axis  # the width axis: the facing walls' shared normal axis
-    if axis is None:
-        return None  # as `_candidate`: no axis, nothing to pair against
-    k = _AXES[axis]
+    k = _AXES[axis]  # *axis* is the width axis: the bucket both walls came from
     if fa.normal[k] * fb.normal[k] >= 0:
         return None  # not anti-parallel — not a facing pair
     c_a, c_b = _center(fa.bb, k), _center(fb.bb, k)
@@ -983,16 +986,18 @@ def _floored_candidate(
 
 
 def _pocket_candidate(
-    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float]
+    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], axis: str
 ) -> Pocket | None:
-    candidate = _floored_candidate(fa, fb, faces, part_ext)
+    candidate = _floored_candidate(fa, fb, faces, part_ext, axis)
     return candidate if isinstance(candidate, Pocket) else None
 
 
 def _channel_candidate(
-    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], part_bounds
+    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], part_bounds, axis: str
 ) -> Channel | None:
-    candidate = _floored_candidate(fa, fb, faces, part_ext, channel_bounds=part_bounds)
+    candidate = _floored_candidate(
+        fa, fb, faces, part_ext, axis, channel_bounds=part_bounds
+    )
     return candidate if isinstance(candidate, Channel) else None
 
 
@@ -1021,10 +1026,10 @@ def _recognise_pockets_one(part: Part, face_edges: FaceEdges | None = None) -> l
         if f.wall and f.axis is not None:
             by_axis.setdefault(f.axis, []).append(f)  # oblique declined here -- see slots
     candidates: list[Pocket] = []
-    for walls in by_axis.values():
+    for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                p = _pocket_candidate(walls[i], walls[j], faces, part_ext)
+                p = _pocket_candidate(walls[i], walls[j], faces, part_ext, axis)
                 if p is not None:
                     candidates.append(p)
     candidates.extend(_recognise_corner_notches(faces, pbb))
@@ -1051,10 +1056,12 @@ def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> 
         if face.wall and face.axis is not None:
             by_axis.setdefault(face.axis, []).append(face)  # oblique declined here -- see slots
     candidates: list[Channel] = []
-    for walls in by_axis.values():
+    for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                channel = _channel_candidate(walls[i], walls[j], faces, part_ext, part_bounds)
+                channel = _channel_candidate(
+                    walls[i], walls[j], faces, part_ext, part_bounds, axis
+                )
                 if channel is not None:
                     candidates.append(channel)
     return sorted(
