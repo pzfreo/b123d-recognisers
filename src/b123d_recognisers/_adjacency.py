@@ -333,7 +333,13 @@ def frame_points_outward(face: FaceLike) -> bool | None:
     geometry the corpus lacks and checks the convention against the solid classifier.
 
     Returns None for a surface this cannot read a frame from -- a torus, a spline -- which is a
-    genuine "no answer" and not a default, so a caller must decide what absence means for it.
+    genuine "no answer" rather than a default. Coercing it to False would put material on one
+    side of a blend and leave nothing downstream able to tell that from a real answer.
+
+    Every caller today has already established the surface type before asking, so None is
+    unreachable for them and ``bool(...)`` at those sites records that rather than dismissing
+    it. A caller that has *not* filtered first must handle the third answer, and the honest
+    shape is `_outward_normal`'s: return None onwards rather than pick a side.
     """
 
     surface = BRepAdaptor_Surface(face.wrapped)
