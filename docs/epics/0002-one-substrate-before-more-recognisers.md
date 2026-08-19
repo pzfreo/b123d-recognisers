@@ -401,9 +401,10 @@ So oblique support is not a research question with an honest "no" available: one
 package already has it, and the difference is that it walks adjacency instead of pairing faces
 within an axis bucket.
 
-That makes this a migration with a working precedent in-tree, and it makes item 4 its prerequisite
-rather than a tidying exercise — the five modules still on the dict-map API are the ones doing
-axis-bucketed pair-matching.
+That makes this a migration with a working precedent in-tree. An earlier draft added that item 4
+was therefore its prerequisite; the instrumentation below withdrew that, because the axis-bucketed
+pairing lives in `_recess_core` and not in the five dict-map modules. The prerequisite is item 1 —
+`_recess_core` reading faces from graph nodes, so `_planar_faces` can retire.
 
 - [x] Confirm the mechanism by instrumentation, not by reading (#110). Measured over 600 models,
       tracing every labelled face through the reduction: **94% of triangular-pocket faces never
