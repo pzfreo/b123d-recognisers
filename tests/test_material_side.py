@@ -34,6 +34,7 @@ from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN, TopAbs_Orientation, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
@@ -81,8 +82,23 @@ def _cells(part):
     return cells
 
 
+def _cylinder_frames(part):
+    """Whether each cylindrical face's frame is right-handed, in face order."""
+
+    out = []
+    for face in part.faces():
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if surface.GetType() == GeomAbs_Cylinder:
+            out.append(surface.Cylinder().Position().Direct())
+    return out
+
+
 def _points_on(face, limit=4):
     """Centroids of the face's own triangles.
+
+    Four is enough because every face probed here is planar, so its normal is the same
+    everywhere on it and one point would do; the rest are insurance against a degenerate
+    triangle. A curved face would need sampling proportional to its curvature.
 
     Not ``face.center()``: the centroid of a face with a hole in it lies *in the hole*, so a
     probe from there reports a violation that is the fixture's fault rather than the code's.
@@ -191,10 +207,19 @@ def test_a_cylinder_knows_which_side_its_material_is_on_when_mirrored(build, exp
 
     ``external`` distinguishes a boss OD from a bore, and is read the same way: orientation
     against frame handedness. Mirroring flips both, so the flag must not move.
+
+    The handedness assertion is not decoration. Without it this passes whether or not the
+    mirrored fixture reaches a left-handed *cylinder* frame, and a fixture that quietly stopped
+    reaching it would leave the mirror doing no work -- the same vacuity the planar tests above
+    guard against, which this one was missing.
     """
 
+    mirrored = mirror(build(), about=Plane.YZ)
+    assert _cylinder_frames(build()) == [True], "the control must be right-handed"
+    assert _cylinder_frames(mirrored) == [False], "the mirror must flip the cylinder's frame"
+
     plain = r.analyse_cylinders(build())[0]
-    flipped = r.analyse_cylinders(mirror(build(), about=Plane.YZ))[0]
+    flipped = r.analyse_cylinders(mirrored)[0]
 
     assert plain and flipped, "the fixture must yield a Z cylinder both ways"
     assert [c["external"] for c in plain] == [expected] * len(plain)
