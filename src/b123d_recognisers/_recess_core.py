@@ -96,10 +96,13 @@ def _dominant_axis(nrm) -> str | None:
 
 @dataclass(frozen=True)
 class _Face:
-    """An axis-aligned planar face reduced to the data the recogniser needs."""
+    """A planar face reduced to the data the recogniser needs."""
 
     normal: tuple
-    axis: str
+    #: The principal axis this face's normal aligns with, or None when it aligns with none.
+    #: Total by ADR 0009: an oblique wall is carried with ``axis=None`` rather than dropped, so
+    #: the family that cannot use it is the one seen to decline it.
+    axis: str | None
     #: Typed rather than left as ``object``: every use reads ``.min``/``.max``, so the
     #: placeholder silently disabled checking on the field this module touches most.
     bb: Bounds
@@ -136,7 +139,7 @@ def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
 def _planar_faces(
     part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
 ) -> list[_Face]:
-    """All axis-aligned planar faces as :class:`_Face` records (computed once).
+    """Every planar face as an :class:`_Face` record (computed once).
 
     *graph* is threaded only when the caller wants claims. Without it no node is resolved, so
     a run that claims nothing pays nothing -- which matters because this is called once per
@@ -156,13 +159,16 @@ def _planar_faces(
     for face in part.faces():
         nrm = _outward_normal(face)
         if nrm is None:
-            continue
-        axis = _dominant_axis(nrm)
-        if axis is None:
-            continue
+            continue  # not planar, which is this function's declared domain and its name
         bb = face.bounding_box()
         node = None if graph is None else graph.require_node(face)
-        faces.append(_Face(nrm, axis, bb, _is_wall(face, face_edges), node))
+        # `axis` is None for an oblique planar face, and the face is carried anyway. It used to
+        # be dropped here, which made an axis-aligned-walls restriction that three families
+        # inherit invisible to all three and impossible to count -- see ADR 0009. Each family
+        # now declines it for itself, where the rejection can be named and measured.
+        faces.append(
+            _Face(nrm, _dominant_axis(nrm), bb, _is_wall(face, face_edges), node)
+        )
     return faces
 
 
@@ -184,6 +190,8 @@ def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float]) -> Slot | None:
     spanning the full part).  Geometry only — the through/blind test is applied
     by the caller, which needs the whole face set."""
     axis = fa.axis
+    if axis is None:
+        return None  # an oblique wall has no axis to pair on; every caller declines these first
     k = _AXES[axis]
     bb_a, bb_b = fa.bb, fb.bb
     # Anti-parallel outward normals.
@@ -649,7 +657,11 @@ def _recognise_slots_one(
     # O(n^2) pairing runs within each axis instead of across all planar faces.
     by_axis: dict[str, list[_Face]] = {}
     for f in faces:
-        if f.wall:
+        # An oblique wall is declined here, by this family, rather than filtered out of the
+        # shared reduction on three families' behalf (ADR 0009). This recogniser pairs walls
+        # that share a normal axis, so a wall with no axis has nothing here to pair with --
+        # that is a real limit of the pairing strategy and it is now visible as one.
+        if f.wall and f.axis is not None:
             by_axis.setdefault(f.axis, []).append(f)
     candidates: list[Slot] = []
     for walls in by_axis.values():
@@ -904,6 +916,8 @@ def _floored_candidate(
     having its floor mistaken for an end wall.
     """
     axis = fa.axis  # the width axis: the facing walls' shared normal axis
+    if axis is None:
+        return None  # as `_candidate`: no axis, nothing to pair against
     k = _AXES[axis]
     if fa.normal[k] * fb.normal[k] >= 0:
         return None  # not anti-parallel — not a facing pair
@@ -1004,8 +1018,8 @@ def _recognise_pockets_one(part: Part, face_edges: FaceEdges | None = None) -> l
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     by_axis: dict[str, list[_Face]] = {}
     for f in faces:
-        if f.wall:
-            by_axis.setdefault(f.axis, []).append(f)
+        if f.wall and f.axis is not None:
+            by_axis.setdefault(f.axis, []).append(f)  # oblique declined here -- see slots
     candidates: list[Pocket] = []
     for walls in by_axis.values():
         for i in range(len(walls)):
@@ -1034,8 +1048,8 @@ def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> 
     }
     by_axis: dict[str, list[_Face]] = {}
     for face in faces:
-        if face.wall:
-            by_axis.setdefault(face.axis, []).append(face)
+        if face.wall and face.axis is not None:
+            by_axis.setdefault(face.axis, []).append(face)  # oblique declined here -- see slots
     candidates: list[Channel] = []
     for walls in by_axis.values():
         for i in range(len(walls)):
