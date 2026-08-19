@@ -17,7 +17,7 @@ looking.
 
 | # | Item | Value | Behaviour change | Effort |
 |---|---|---|---|---|
-| 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | S |
+| 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | S — started |
 | 1 | Material-side as a named node attribute | High | **likely** | M |
 | 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
 | 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
@@ -116,14 +116,30 @@ drawn from it"*.
 slots, passages, grooves, turned steps, chamfers, angled steps — and MFCAD++ labels live on the
 `ADVANCED_FACE` name, so claimed node → face → label is a direct join.
 
-- [ ] Per-face precision and recall for the six claiming families over the vendored 40, then over
-      a larger MFCAD++ draw
+- [x] `tools/per_face_scan.py`, run over the vendored 40, pinned by two tests
+- [ ] Widen claiming beyond the four families the scan can see — **this gates the rest of item 0**
+- [ ] Re-run over a larger MFCAD++ draw once claiming is wider
 - [ ] Classify each miss: orientation gate, minimum-evidence threshold, taxonomy mismatch, or
       genuinely unhandled geometry
 - [ ] Record which of items 1–5 each miss category actually depends on
 
-This is what sizes the rest of the epic. Right now the split between orientation-blocked,
-threshold-blocked and substrate-blocked is a well-supported guess drawn from one family.
+**What the first run established, and the limit it hit.** Angled steps claim 11 faces, all
+labelled *Triangular blind step*; chamfers 11 of 14 on *Chamfer*, the same 79% the record-centroid
+test measures, reached independently through the ledger. Passages claim 103 faces and **every one
+is a passage** across all three shape variants, which the family does not distinguish — a
+vocabulary difference, and a number never measured before. Slots claim 73 faces across 11 labelled
+classes, most of them *Circular end pocket*; that is the one the scan records rather than
+endorses, and item 5 is where it should be settled. No claim lands on *Stock*, which is the
+negative control and the assertion a precision figure cannot make.
+
+**The limit is claiming coverage, not corpus size.** Per-label share here means "claimed by a
+*claiming* family", and only four claim. *Through hole* 0%, *Blind hole* 0%, *O-ring* 0% and
+*Rectangular pocket* 1% are statements about the ledger, not about the recognisers — holes,
+pockets, fillets and bosses write no claims at all. Grooves and turned steps claim but have no
+MFCAD++ counterpart, the corpus being prismatic. So a larger draw would multiply the models
+behind a table whose rows are mostly structurally blind, and **widening claiming has to come
+first.** That the measurement's reach is bounded by substrate adoption is this epic's ordering
+argument, arrived at empirically rather than asserted.
 
 ## 1 — Material-side as a named node attribute
 
@@ -271,10 +287,24 @@ before. It becomes worth doing when the migrated modules would read attributes t
 
 `docs, or a large behaviour change` · independent of items 0–4
 
-The classes MFCAD++ labels and this package does not recognise are the **triangular, slanted,
-6-sided and 2-sided** variants, and their rectangular counterparts all recognise. They die at
-`AXIS_ALIGNED_COS`, one face at a time, before adjacency is consulted. Established on MFCAD and
-replicated independently on MFCAD++.
+**Corrected by item 0's first run.** The inherited claim — from #75's non-negative least squares,
+which was the best evidence available then — was that the dead classes are the *"triangular,
+slanted, 6-sided and 2-sided"* variants while their rectangular counterparts recognise. Measured
+per face over the vendored 40, that lumps together two groups that behave differently:
+
+| class | claimed |
+|---|---|
+| Rectangular passage | 81% |
+| Triangular passage | 40% |
+| 6-sided passage | 27% |
+| Slanted through step | **0%** |
+| Triangular pocket | **0%** |
+
+The odd-*sided* prismatic classes are not dead — `recognise_passages` claims them, and it
+post-dates the measurement that called them empty. What is dead is the oblique-*walled* group,
+which is a narrower and more accurate statement of the same finding: a wall whose normal aligns
+with no principal axis dies at `AXIS_ALIGNED_COS`, one face at a time, before adjacency is
+consulted. Side count was never the discriminator; orientation was.
 
 **No item above unblocks them.** This is a scope decision for
 [`capabilities.md`](../capabilities.md), and the honest options are to implement oblique support

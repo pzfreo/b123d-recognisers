@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import json
 import re
+import sys
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pytest
@@ -35,6 +37,10 @@ from b123d_recognisers import recognise_angled_steps, recognise_chamfers
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
+
+sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
+
+from per_face_scan import scan_part  # noqa: E402
 
 CORPUS = Path(__file__).parent / "corpus" / "mfcadpp"
 #: The sdist ships this module but not the 4.8 MB of STEP it reads, so absence must skip. A
@@ -422,3 +428,74 @@ def test_chamfer_precision_does_not_regress(corpus):
         f"({correct}/{records}); it was 79% when this subset was vendored and 44% before "
         "recognise_angled_steps existed"
     )
+
+
+def _per_face(corpus):
+    """Every claimed face across the corpus, as ``{family: Counter(label)}``.
+
+    Attribution by *claim* rather than by matching a record's ``at`` against a face centroid,
+    which is what the two tests above have to do because their families' records happen to
+    anchor on a face. A claim names its faces, so this needs no coincidence of coordinates and
+    works for a family whose record anchors on nothing in particular.
+    """
+
+    totals: dict[str, Counter] = defaultdict(Counter)
+    for _name, part, labels, _faces, _at in corpus:
+        claimed, _records = scan_part(part, labels)
+        for family, counts in claimed.items():
+            totals[family].update(counts)
+    return totals
+
+
+def test_no_claim_lands_on_a_stock_face(corpus):
+    """The negative control, and the strongest assertion this corpus supports.
+
+    ``Stock`` is the label for a face belonging to no machining feature at all -- the raw
+    billet the features were cut into, and 271 of the corpus's faces. A claim on one is a
+    recogniser asserting that unmachined material established a feature, which is wrong under
+    every taxonomy and needs no judgement about vocabulary to say so. It is also the assertion
+    a precision figure cannot make: a family could claim stock and still score well if it
+    claimed enough real faces alongside.
+    """
+
+    claimed = _per_face(corpus)
+    on_stock = {
+        family: counts[STOCK] for family, counts in claimed.items() if counts.get(STOCK)
+    }
+    assert on_stock == {}, f"claims on unmachined stock: {on_stock}"
+
+
+def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
+    """Per-face attribution for the four families MFCAD++ can see, as a change detector.
+
+    Not a correctness baseline. Two of these are *invariants* and the other two are
+    *observations*, and the difference matters when one of them moves:
+
+    - **Angled steps and passages are exact**, and should stay exact. Every face either claims
+      is labelled the feature it says it is -- for passages across all three shape variants,
+      which the family deliberately does not distinguish.
+    - **Chamfer at 11 of 14** is the same 79% ``test_chamfer_precision_does_not_regress``
+      measures from record centroids, arrived at independently through the ledger. The two
+      disagreeing would mean one of the attribution methods is wrong.
+    - **Slot is the open question, recorded rather than endorsed.** Most of what it claims is
+      labelled *Circular end pocket* -- an obround pocket, which this package would call a
+      slot with some justification. Whether that is a vocabulary difference or over-claiming
+      is a scope decision (epic 0002, item 5), and this number is what it should be taken on.
+    """
+
+    claimed = _per_face(corpus)
+    passages = {"Triangular passage": 2, "Rectangular passage": 3, "6-sided passage": 4}
+
+    steps = claimed["AngledStep"]
+    assert set(steps) == {TRIANGULAR_BLIND_STEP} and sum(steps.values()) == 11
+
+    ring = claimed["Passage"]
+    assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
+    assert sum(ring.values()) == 103
+
+    bevels = claimed["Chamfer"]
+    assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14
+
+    slots = claimed["Slot"]
+    assert sum(slots.values()) == 73
+    assert slots[16] == 37, "most of what Slot claims is labelled Circular end pocket"
