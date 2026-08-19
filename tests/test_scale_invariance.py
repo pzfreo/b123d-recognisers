@@ -37,7 +37,7 @@ from b123d_recognisers import (  # noqa: E402
     recognise_turned_steps,
     step_level_zs,
 )
-from b123d_recognisers._geometry import clears_threshold  # noqa: E402
+from b123d_recognisers._geometry import clears_threshold, quantise  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
@@ -161,3 +161,26 @@ def test_an_explicit_end_margin_is_also_honoured_literally():
     assert step_level_zs(part) == step_level_zs(part)
 
 
+
+
+def test_the_precision_floor_follows_the_value_and_not_the_millimetre():
+    """`quantise` is the scale-free `round`, and the reason the substrate needed one.
+
+    A decimal quantum is a length: `round(x, 2)` is 0.16% of a 6.25 mm band and 8% of the same
+    band on a part modelled at a twentieth, which is how `analyse_cylinders` came to report a
+    Ø6.25 band as Ø0.31. Significant figures keep the quantum proportional, and — unlike a
+    relative *tolerance* — still form a grid, so a quantised value can be a grouping key.
+    """
+
+    assert quantise(6.25) == 6.25
+    assert quantise(0.3125) == 0.3125, "the case the decimal quantum lost"
+    assert quantise(6.000000000000001) == 6.0, "kernel noise still goes"
+
+    # Scale-free by construction: quantising then scaling equals scaling then quantising,
+    # which is exactly what round(x, n) fails to do.
+    for value in (6.25, 0.3125, 12.7):
+        for factor in (0.05, 5.0, 100.0):
+            assert quantise(quantise(value) * factor) == quantise(value * factor)
+
+    # Still a grid, so it can key a dict — two values a millionth apart land together.
+    assert quantise(6.25, figures=4) == quantise(6.2500004, figures=4)

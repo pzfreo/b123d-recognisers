@@ -34,6 +34,7 @@ pytest.importorskip("build123d")
 from build123d import import_step  # noqa: E402
 
 from b123d_recognisers import recognise_turned_steps  # noqa: E402
+from b123d_recognisers._geometry import quantise  # noqa: E402
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
 
@@ -57,8 +58,15 @@ EXPECTED = {
 
 
 def _profile(part):
+    """Significant figures, not decimals — for the reason this module exists.
+
+    An earlier version rounded to three decimals and turned the Ø0.3125 rung of a bolt modelled
+    at 0.05× into Ø0.312, failing the scale check by 0.16% for a defect in the check itself. A
+    decimal quantum is a length, and a length has no business in a scale-free comparison.
+    """
+
     return [
-        (round(step.diameter, 3), round(step.lo, 3), round(step.hi, 3))
+        (quantise(step.diameter), quantise(step.lo), quantise(step.hi))
         for step in sorted(recognise_turned_steps(part), key=lambda step: step.lo)
     ]
 
@@ -86,15 +94,15 @@ def test_every_rung_reports_the_band_that_covers_it(name):
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))
-@pytest.mark.parametrize("factor", (5.0, 100.0))
+@pytest.mark.parametrize("factor", (0.05, 5.0, 100.0))
 def test_the_same_part_modelled_larger_has_the_same_profile(factor, name):
     """Scale-free as ratios, so no assertion depends on a length.
 
-    0.05× is deliberately absent, for a different reason on each part and neither of them this
-    branch's doing. GRM-03 gains a spurious shoulder and splits one rung into two of equal
-    diameter. GRM-05's Ø6.25 band reports as Ø0.31 rather than Ø0.3125, because
-    ``analyse_cylinders`` rounds every diameter to two decimals — fine at millimetre scale, a
-    0.8% error at a twentieth of it. Pinning either would only record today's wrong answer.
+    0.05× was excluded when these fixtures arrived, for a different reason on each part: GRM-03
+    gained a spurious shoulder that split a rung in two, and GRM-05's Ø6.25 band reported as
+    Ø0.31 because the substrate quantised diameters to two decimals. Both are fixed, so all
+    three parts are pinned at a twentieth scale — where a 14.8 mm post is 0.74 mm overall and
+    every absolute constant in the recogniser is larger than the features it is judging.
     """
 
     rungs = EXPECTED[name]
@@ -102,14 +110,14 @@ def test_the_same_part_modelled_larger_has_the_same_profile(factor, name):
     widest = max(diameter for diameter, _, _ in rungs)
     span = max(hi for _, _, hi in rungs) - min(lo for _, lo, _ in rungs)
     expected = [
-        (round(diameter / widest, 6), round((hi - lo) / span, 6)) for diameter, lo, hi in rungs
+        (quantise(diameter / widest), quantise((hi - lo) / span)) for diameter, lo, hi in rungs
     ]
 
     scaled = _profile(part.scale(factor))
     widest_scaled = max(diameter for diameter, _, _ in scaled)
     span_scaled = max(hi for _, _, hi in scaled) - min(lo for _, lo, _ in scaled)
     actual = [
-        (round(diameter / widest_scaled, 6), round((hi - lo) / span_scaled, 6))
+        (quantise(diameter / widest_scaled), quantise((hi - lo) / span_scaled))
         for diameter, lo, hi in scaled
     ]
 

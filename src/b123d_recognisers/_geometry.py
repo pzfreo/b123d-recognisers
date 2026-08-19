@@ -246,6 +246,23 @@ def part_scale(bbox: Bounds) -> float:
 COORD_FLOOR = 1e-6
 
 
+def quantise(value: float, *, figures: int = 6) -> float:
+    """*value* rounded to *figures* significant figures.
+
+    The scale-free form of ``round(value, n)``. A decimal quantum is a length, so it is 0.16% of
+    a 6.25 mm band and 0.8% of the same band on a part modelled at a twentieth — which is how
+    ``analyse_cylinders`` came to report a Ø6.25 band as Ø0.31. Significant figures keep the
+    quantum proportional to what is being measured, and unlike a relative *tolerance* they still
+    form a grid, so a value quantised this way can be used as a grouping key.
+
+    Not a tolerance and not a minimum-evidence threshold, so ADR 0008 does not classify it: it is
+    a precision floor on a measured value, whose job is to make two derivations of one length
+    compare equal despite kernel noise.
+    """
+
+    return float(f"{value:.{figures}g}")
+
+
 def length_tol(nominal: float, *, rel: float, floor: float = COORD_FLOOR) -> float:
     """Return a length tolerance proportional to *nominal* but never below *floor*.
 

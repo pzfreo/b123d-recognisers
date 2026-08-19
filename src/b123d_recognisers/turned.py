@@ -63,6 +63,13 @@ _OD_SPAN_PAD = 0.7
 # local OD. Constant + proportional terms cover both a fixed edge-break and a
 # chamfer that scales with the feature — enough to keep a chamfered shoulder, far
 # less than the gap between an internal bore radius and the OD.
+#
+# The sum is capped at half the local radius, and that cap is not decoration: without it the
+# absolute term alone exceeds the whole radius on a small part and the threshold goes
+# *negative*, so every transverse face qualifies as a shoulder. Measured on the GRM-03 screw at
+# 0.05x, where the radius is 0.125 and the allowance 0.515: a 0.04-radius internal face was
+# admitted and split a rung into two of equal diameter. A face that does not reach even halfway
+# to the OD is not a shoulder, however generous the deburr allowance.
 _CHAMFER_ALLOWANCE_ABS = 0.5
 _CHAMFER_ALLOWANCE_FRAC = 0.12
 # A genuine turned body is round about its axis: the perpendicular cross-section is
@@ -228,7 +235,8 @@ def recognise_turned_steps(
         spans = ((bb.min.X, bb.max.X), (bb.min.Y, bb.max.Y), (bb.min.Z, bb.max.Z))
         outer = max(max(abs(spans[j][0]), abs(spans[j][1])) for j in range(3) if j != idx)
         od = local_od(pos)
-        if outer >= od - (_CHAMFER_ALLOWANCE_ABS + _CHAMFER_ALLOWANCE_FRAC * od):
+        allowance = min(_CHAMFER_ALLOWANCE_ABS + _CHAMFER_ALLOWANCE_FRAC * od, od / 2)
+        if outer >= od - allowance:
             shoulders.add(round(pos, 3))
 
     planes = sorted(shoulders)

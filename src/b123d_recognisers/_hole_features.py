@@ -21,7 +21,7 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
-from b123d_recognisers._geometry import _unit, length_tol
+from b123d_recognisers._geometry import _unit, length_tol, quantise
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
@@ -41,11 +41,22 @@ class SegmentEvidence(CylinderEvidence):
 
 
 _full_cyls = full_cylinders
-#: Two cylinder patches are the same diameter. NOT a machining allowance: analyse_cylinders
-#: already rounds every diameter to 2 dp, so this is an equality test on those rounded values
-#: and does not scale with the part. Named because a bare 0.01 reads as a length tolerance and
-#: would invite exactly that mistake.
-_SAME_DIAMETER_EPS = 0.01
+#: Two cylinder patches are the same diameter. NOT a machining allowance: `analyse_cylinders`
+#: quantises every diameter to six significant figures, so this is an equality test on those
+#: quantised values rather than a tolerance on a length. Named because a bare number here reads
+#: as a machining allowance and would invite exactly that mistake.
+#:
+#: Relative, because the quantum it tests against is. It was 0.01 mm while the substrate rounded
+#: to two decimals, and that pairing held only at millimetre scale: on a part modelled at a
+#: twentieth, 0.01 mm is 8% of a 0.125 mm band, so patches of visibly different diameter
+#: compared equal.
+_SAME_DIAMETER_FRAC = 1e-4
+
+
+def _same_diameter(a: float, b: float) -> bool:
+    """Whether two quantised diameters are the same one, proportionally."""
+
+    return abs(a - b) <= _SAME_DIAMETER_FRAC * max(abs(a), abs(b), 1e-9)
 
 # A counterbore-like step shallower than this fraction of its diameter is a spotface.
 _SPOTFACE_MAX_RATIO = 0.2
@@ -325,7 +336,7 @@ def _merge_stacks(
             b = min(nxt, key=lambda s: s["s_lo"])
             closed = ("flat", "drill_point")
             if (
-                abs(a["diameter"] - b["diameter"]) < _SAME_DIAMETER_EPS
+                _same_diameter(a["diameter"], b["diameter"])
                 and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
                 and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
             ):
@@ -406,10 +417,10 @@ def _near_side_steps(steps: list[SegmentEvidence]) -> tuple[CounterBore | None, 
     step_order = []
     min_d = math.inf
     for step in steps:
-        if step["diameter"] > min_d + _SAME_DIAMETER_EPS:
+        if step["diameter"] > min_d and not _same_diameter(step["diameter"], min_d):
             continue
         min_d = step["diameter"]
-        key = round(step["diameter"], 2)
+        key = quantise(step["diameter"], figures=4)
         if key not in spans:
             spans[key] = [step["s_lo"], step["s_hi"]]
             step_order.append(key)
@@ -439,7 +450,7 @@ def _bore_depth(
     through hole, where a far-side counterbore is a separate feature and must not extend it.
     """
 
-    bore_segs = [s for s in stack if abs(s["diameter"] - bore["diameter"]) < _SAME_DIAMETER_EPS]
+    bore_segs = [s for s in stack if _same_diameter(s["diameter"], bore["diameter"])]
     deep_segs = bore_segs if bottom == "through" else stack
     # float() rather than a cast: the segment dicts are untyped, so the arithmetic is Any and
     # the annotation would be a claim rather than a guarantee.
