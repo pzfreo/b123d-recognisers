@@ -95,11 +95,13 @@ def steps_that_are_not_grooves(
     them. That the two deliberately disagree is the point, and is why this is a named function
     rather than a subtraction written inline at the call site.
 
-    **Not yet wired into the census.** Writing the claims uncovered a defect upstream of the
-    count: at 0.05x the pinned `turned_steps_and_grooves` fixture, `recognise_turned_steps`
-    reports every rung at the shaft OD, so there is no groove rung to reconcile and the count
-    would stop being scale-free. One wrong count is better than a scale-dependent one, so this
-    waits for that fix.
+    It waited on a defect upstream of the count. While it was unwired, `recognise_turned_steps`
+    reported the groove's rung at the shaft's OD on a part modelled small, so there was no
+    groove rung to reconcile and the count stopped being scale-free -- one wrong count being
+    better than a scale-dependent one. That is fixed, and `test_scale_invariance` now runs the
+    census over the turned-step golden at a twentieth and a hundred times size. Not over the
+    vendored corpus, which cannot check it: all 50 NIST and MFCAD++ parts are milled prismatic
+    and report no turned steps at all.
     """
 
     # Takes the records where `passages_that_are_not_slots` takes the part and runs the

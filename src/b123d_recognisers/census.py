@@ -46,7 +46,10 @@ from b123d_recognisers import (
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import passages_that_are_not_slots
+from b123d_recognisers._reconcile import (
+    passages_that_are_not_slots,
+    steps_that_are_not_grooves,
+)
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -72,18 +75,22 @@ def feature_census(part: Part) -> dict[str, int]:
     # and the metric agrees with `build_recognition_result` because it is the same rule.
     ledger = ClaimLedger(FaceGraph(part, face_edges=face_edges))
     holes = recognise_holes(part, cyls=cyls, face_edges=face_edges)
+    # One band is both the annular channel cut into a shaft and a rung of that shaft's step
+    # ladder. Both records are real -- see `_reconcile` -- but it is one machined feature, and
+    # this function counts features. Both run before the mapping so that the rule below sees a
+    # complete ledger whatever order the entries are written in -- an earlier version called the
+    # recognisers inside the mapping, where `"step"` is written before `"groove"`, so the rule
+    # read an empty ledger and subtracted nothing. Silently: there is no groove claim to be
+    # missing, only a count that is quietly one too high. Hoisting them removes the ordering
+    # question rather than documenting it, and the order of these two lines does not matter.
+    grooves = recognise_grooves(part, cyls=cyls, ledger=ledger)
+    steps = recognise_turned_steps(part, cyls=cyls, ledger=ledger)
     records: dict[str, Sequence[Record]] = {
         "hole": holes,
         "hole_pattern": recognise_hole_patterns(holes),
         "boss": recognise_bosses(part, cyls=cyls, face_edges=face_edges),
-        # One band is both the annular channel cut into a shaft and a rung of that shaft's
-        # step ladder, so this counts one machined feature twice.
-        # `_reconcile.steps_that_are_not_grooves` is the rule that fixes it and is deliberately
-        # not wired in yet: at small scale `recognise_turned_steps` reports the groove's rung at
-        # the shaft's OD, so the rule finds nothing to reconcile and the count stops being
-        # scale-free. That defect is upstream of this one and is fixed first.
-        "step": recognise_turned_steps(part, cyls=cyls),
-        "groove": recognise_grooves(part, cyls=cyls),
+        "step": steps_that_are_not_grooves(steps, ledger),
+        "groove": grooves,
         "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
         "slot": recognise_slots(part, ledger=ledger, face_edges=face_edges),
         "channel": recognise_channels(part, face_edges=face_edges),
