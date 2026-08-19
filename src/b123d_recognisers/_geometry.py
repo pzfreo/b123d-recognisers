@@ -258,6 +258,13 @@ def quantise(value: float, *, figures: int = 6) -> float:
     Not a tolerance and not a minimum-evidence threshold, so ADR 0008 does not classify it: it is
     a precision floor on a measured value, whose job is to make two derivations of one length
     compare equal despite kernel noise.
+
+    **The guarantee is a relative error bound, not commutativity with scaling.** An earlier
+    version of this docstring claimed the latter — ``quantise(quantise(v) * k) == quantise(v * k)``
+    — and it is false for about a fifth of values: rounding to a grid before multiplying can land
+    either side of the next grid line, so 57.9998… × 5 gives 290.0 one way and 289.999 the other.
+    Both are within the bound; neither is more correct. The property that holds, and the one the
+    substrate needs, is that the error never exceeds ``10**-figures`` of the value at any scale.
     """
 
     return float(f"{value:.{figures}g}")

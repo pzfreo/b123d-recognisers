@@ -176,11 +176,23 @@ def test_the_precision_floor_follows_the_value_and_not_the_millimetre():
     assert quantise(0.3125) == 0.3125, "the case the decimal quantum lost"
     assert quantise(6.000000000000001) == 6.0, "kernel noise still goes"
 
-    # Scale-free by construction: quantising then scaling equals scaling then quantising,
-    # which is exactly what round(x, n) fails to do.
-    for value in (6.25, 0.3125, 12.7):
-        for factor in (0.05, 5.0, 100.0):
-            assert quantise(quantise(value) * factor) == quantise(value * factor)
+    # The guarantee is a relative error bound at any scale — checked over a spread of values
+    # rather than a few, because the first version of this test asserted commutativity with
+    # scaling on three hand-picked values and that property is false for about a fifth of them.
+    # Derived, not picked: rounding to N significant figures moves a value by at most half a
+    # unit in the Nth digit, and the mantissa is at least 1, so the relative error is bounded by
+    # 0.5 * 10**(1-N). Writing 1e-6 here instead failed at a mantissa near 1.0, which is exactly
+    # where the bound is tightest.
+    figures = 6
+    bound = 0.5 * 10 ** (1 - figures)
+    step = 0.0007
+    value = 0.001
+    while value < 1000:
+        for factor in (1.0, 0.05, 5.0, 100.0):
+            scaled = value * factor
+            assert abs(quantise(scaled) - scaled) <= bound * abs(scaled), (value, factor)
+        value += step
+        step *= 1.05
 
     # Still a grid, so it can key a dict — two values a millionth apart land together.
     assert quantise(6.25, figures=4) == quantise(6.2500004, figures=4)

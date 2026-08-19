@@ -51,12 +51,17 @@ _full_cyls = full_cylinders
 #: twentieth, 0.01 mm is 8% of a 0.125 mm band, so patches of visibly different diameter
 #: compared equal.
 _SAME_DIAMETER_FRAC = 1e-4
+#: Smallest diameter the proportional test will divide by; see `_same_diameter`.
+_DIAMETER_FLOOR = 1e-9
 
 
 def _same_diameter(a: float, b: float) -> bool:
     """Whether two quantised diameters are the same one, proportionally."""
 
-    return abs(a - b) <= _SAME_DIAMETER_FRAC * max(abs(a), abs(b), 1e-9)
+    # The floor keeps a zero or near-zero diameter from making the test vacuous. It is well
+    # below `quantise`'s own resolution at any size this package sees, so it never decides a
+    # real comparison -- it only stops one from dividing the world by nothing.
+    return abs(a - b) <= _SAME_DIAMETER_FRAC * max(abs(a), abs(b), _DIAMETER_FLOOR)
 
 # A counterbore-like step shallower than this fraction of its diameter is a spotface.
 _SPOTFACE_MAX_RATIO = 0.2
