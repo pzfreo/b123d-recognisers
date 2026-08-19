@@ -87,3 +87,32 @@ its cache semantics part of this package's aggregate value.
 Consumers receive one explainable physical feature universe. Migration can be feature-family by
 feature-family, but temporary partial results must say which families were not evaluated.
 
+## Amendment (0.2.6, epic 0002)
+
+**A reconciler corrects double-counting. It does not correct recall, and the failure it leaves
+behind is quieter than the one it fixes.**
+
+This record gives a reconciler three verbs -- accept, combine, reject -- and its consequences do
+not record what happens when the families being reconciled disagree by *omission* rather than by
+overlap. Measured per face over 2,000 MFCAD++ models: the rule that drops a chamfer whose face an
+angled step claimed leaves 28 chamfer records still landing on faces the corpus labels
+*Triangular blind step* -- the exact faces that rule exists to remove. It did not remove them
+because `recognise_angled_steps` never claimed them: its blind-end test requires a neighbour of
+exactly three edges, and a neighbouring feature subdividing that triangle makes it four or five.
+
+So when family A misses a feature family B also proposes, reconciliation converts **A's false
+negative into B's false positive**. The census then reports one record for the face, under the
+wrong family, and every count in it looks correct. That is harder to notice than a double count,
+and it is the mirror of the failure the shared-predicate arrangement had before a rule replaced
+it, where two call sites disagreeing could make a feature vanish claimed by neither.
+
+Two consequences follow, and neither changes the decision above.
+
+- **A rule's ceiling is the recall of the weakest family it reconciles.** Precedence between two
+  families is worth having exactly as far as both can see the feature. Evidence offered for a
+  reconciliation rule should therefore include what the *losing* family recognises, not only that
+  the winner's records survive.
+- **There is no fourth verb.** A reconciler cannot say "this face is contested and I am not
+  deciding", and nothing in the result can carry that. Whether one is needed is not settled here:
+  it is the residual-evidence half of ADR 0004, which remains Proposed, and this is the first
+  argument for it that comes from measurement rather than from architecture.

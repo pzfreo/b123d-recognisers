@@ -15,6 +15,7 @@ acceptance.
 | [0006](0006-explicit-step-ladder-z-span.md) | Explicit step-ladder Z-span boundary | Accepted |
 | [0007](0007-recogniser-module-seams.md) | Internal recogniser module seams | Accepted |
 | [0008](0008-length-tolerance-policy.md) | Length tolerance policy | Accepted |
+| [0009](0009-filtering-belongs-to-a-recogniser.md) | Filtering belongs to a recogniser, not a shared reduction | Proposed |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
