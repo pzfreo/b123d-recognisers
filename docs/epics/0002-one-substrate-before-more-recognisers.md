@@ -20,7 +20,7 @@ looking.
 | 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | S |
 | 1 | Material-side as a named node attribute | High | **likely** | M |
 | 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
-| 3 | Smooth arcs, for seeing through a blend | Medium | **yes** | M |
+| 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
 | 4 | One adjacency API instead of two | Medium | no | M |
 | 5 | Oblique features: implement or exclude | High | n/a (docs) | S |
 
@@ -58,6 +58,24 @@ golden corpus exercised on every run and none was visible to it; they appeared o
 turned parts were vendored. Byte-identity over 72 parts proves the new code agrees with the old
 code on those parts. Where half the classes are unrecognised, capturing current output as golden
 also encodes that absence as correct.
+
+**So what carries the weight instead**, in descending order of strength, and item 1's checklist is
+the worked example:
+
+1. **An independent oracle**, where a cheap one exists. For material side it does: step a point off
+   the face along the claimed outward normal and classify it against the solid. That is a different
+   mechanism from every implementation being checked, so it can say which one is *right* — which no
+   amount of cross-comparison between copies can. For pair convexity the oracle *is* the incumbent
+   implementation, which is why item 2 is the easier of the two.
+2. **Metamorphic properties**, where no oracle exists. You need not know the right answer, only how
+   it must transform: mirror the solid and every material-side answer flips; scale it and every
+   topological answer holds. `recognise_angled_steps` already rests on the second — *"a step is a
+   step at any scale"* — and it is the strongest assertion in that module.
+3. **Mutation testing**, to check the tests can see a break at all. #104 ran five; four were caught
+   and the survivor exposed a real ordering defect that record counts could never have shown.
+
+Goldens keep exactly one job, and it is a real one: proving that **nothing else moved**. That is a
+blast-radius check, not a correctness check, and this epic should not ask more of them than that.
 
 ## The gate this epic replaces
 
@@ -128,7 +146,21 @@ is *geometric* (`normal_at`) and differs by a sign on `REVERSED` faces. Both con
 both are correct for their own question, and nothing in the package says so — the distinction
 currently survives as a note explaining why `_recess_core._Face` must not be migrated.
 
+**And the corpus cannot answer this one on its own.** The convention has two factors, and they are
+not equally exercised. Surveyed over all 72 parts: `REVERSED` faces number 3,061 of 4,407 and every
+one of the 72 parts carries at least one, so the orientation factor is well covered. **Left-handed
+surface frames number 6 of 3,853, on 1 of 72 parts.** Since the two conventions differ by a sign
+precisely where handedness flips, a disagreement count over the corpus would very likely come back
+zero and mean nothing — the same blindness that makes goldens the wrong check here, one level down.
+So the count is necessary and not sufficient, and the falsifier has to be built rather than found.
+
 - [ ] Count where the four disagree with each other over the 72 corpus parts, per surface type
+- [ ] Generate the four-cell matrix the corpus lacks — `FORWARD`/`REVERSED` × right/left-handed
+      frame, per surface type — from mirrored solids, and assert all four implementations agree
+      on each cell
+- [ ] Check each against an **independent oracle** rather than against each other: a point stepped
+      off the face along the claimed outward normal classifies `OUT` of the solid, and against it
+      `IN`. That says which implementation is right, which no amount of cross-comparison can
 - [ ] Add material-side as its own lazy node attribute, **named distinctly from** `normal`, so the
       two conventions are visible rather than latent
 - [ ] Migrate the four call sites; goldens byte-identical where the count above says they agree
@@ -171,13 +203,27 @@ Two design facts this item must carry forward:
       answer for arcs the probe cannot reach
 - [ ] Migrate `chamfers` and `fillets`; goldens byte-identical
 
-## 3 — Smooth arcs, for seeing through a blend
+## 3 — Smooth arcs, for seeing through a blend and across a split
 
 `behaviour-changing` · blocked on item 2
 
 ADR 0004's amendment (PR [#105](https://github.com/pzfreo/b123d-recognisers/pull/105)) adds the
-criterion this needs: a blend is a **bridge** as well as noise, and traversing through one deserves
-its own acceptance evidence. Two live consumers, both already costing recall:
+criterion this needs, and it has **two limbs**: two regions separated by a blend face are reachable
+under a named relation, *and* a face subdivided by a neighbouring feature answers as one region.
+
+**One mechanism serves both, and the reason should be stated rather than assumed.** A subdivided
+face is not separated by a blend — it is split, and the two pieces are coplanar and share an edge.
+The arc between them is therefore the *zero-angle* case of smoothness, so a traversal that walks
+smooth arcs and reports the merged region's boundary answers the split limb as a degenerate case
+of the blend limb. If an implementation delivers blend traversal without recovering split faces,
+the item is half done however well the first limb works, and the two acceptance tests below are
+what keep them apart.
+
+ADR 0004's own decision text already says nodes identify *"faces or **normalized regions**"*. That
+region concept is unbuilt, and neither the amendment nor this item introduces a new one — the
+merged region is a query result, not a second node type.
+
+Two live consumers, one per limb, both already costing recall:
 
 - `grooves._joined` matches a conical lead-in to both band rims by hand, because a manufactured
   groove's bands never touch (issue #60). Without it the groove is absent, not mis-measured.
@@ -193,8 +239,10 @@ where angles are equal, and its header warns `PopSubgraph()` does not clean them
 - [ ] Angular smoothness gate, dimensionless per ADR 0008, defaulting off
 - [ ] A **named** traversal query — not a widened `neighbours()`, which would move every existing
       recogniser's answer at once
-- [ ] `grooves._joined` reimplemented on it, or the item is not done
-- [ ] Measure what it recovers of the 24 subdivided-triangle misses
+- [ ] **Blend limb:** `grooves._joined` reimplemented on it, or the item is not done
+- [ ] **Split limb:** a subdivided triangle answers with three boundary edges, and the recovery of
+      the 24 misses is measured. Tested separately from the blend limb, on geometry with no blend
+      in it at all, so that passing the first cannot be mistaken for passing the second
 
 ## 4 — One adjacency API instead of two
 
