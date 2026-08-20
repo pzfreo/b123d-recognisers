@@ -19,12 +19,18 @@ for a cylinder test and the leg geometry for the cylinder radius:
 - **convex** — the virtual sharp corner the round replaces (where the two neighbour planes
   cross) lies *outside* the solid. An **internal** round filling a concave re-entrant
   corner buries that corner *inside* the material — the discriminator that face type +
-  adjacency alone cannot make (the same convex test the chamfer recogniser uses), so an
-  internal fillet / a slot-wall blend / a counterbore-floor round is excluded.
+  adjacency alone cannot make, so an internal fillet / a slot-wall blend / a
+  counterbore-floor round is excluded.
 
 The radius is the cylinder radius, read from the geometry, not estimated from the view.
 A too-small round (an edge-break / deburr, below ``min_radius``) is not a dimensioned
-feature. Bottom of the recognition DAG: depends only on build123d/OCP.
+feature.
+
+Depends on :mod:`.chamfers` for :func:`~b123d_recognisers.chamfers.convex_bevel` rather than
+copying it, as :mod:`.angled_steps` does and for the same reason: a change to what counts as a
+convex corner should reach every family that asks. That test was a line-for-line copy here until
+epic 0002 item 2 — same construction, same probe fraction, same classifier tolerance — and two
+copies of one decision can drift with nothing to notice.
 """
 
 from __future__ import annotations
