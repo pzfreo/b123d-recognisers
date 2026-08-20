@@ -3,13 +3,13 @@
 ## 0.2.6
 
 - **Recess candidates now have AAG-coherent boundaries and one aggregate ownership policy.**
-  Opposed planar walls form a slot or rectangular pocket candidate only when they meet the same
-  boundary neighbours with the same arc convexity. Complete polygonal passage and pocket rings
-  then take precedence over paired-wall fragments contained inside them; four-wall rings still
-  yield to the more directly dimensioned `Slot` or `Pocket`. On the 40-model MFCAD++ design
-  corpus this reduces 35 proposed slots to 19 accepted slots, removes all sub-0.5 mm
-  grazing-wall artifacts without a fitted size threshold, and leaves only two intentional
-  one-face partial overlaps where neither claim contains the other (#112, #119).
+  Opposed planar walls must have agreeing AAG arcs into shared boundary neighbours; when STEP
+  fragments that boundary, a smooth-arc walk supplies the equivalent gAAG region. Complete
+  polygonal passage and pocket rings then take precedence over paired-wall fragments contained
+  inside them; four-wall rings still yield to the more directly dimensioned `Slot` or `Pocket`.
+  On the 40-model MFCAD++ design corpus this reduces 35 proposed slots to 19 accepted slots,
+  removes all sub-0.5 mm grazing-wall artifacts without a fitted size threshold, and leaves only
+  two intentional one-face partial overlaps where neither claim contains the other (#112, #119).
 
 - **Fixed: a wall of a triangular pocket was reported as an angled step.** A step is a wedge cut
   into an *edge of the part*; the gate meant to exclude recess walls asked what the slant bridges,
@@ -61,6 +61,20 @@
 
   The census applies the half of the aggregate's gate it can evaluate. The other half is the
   caller's `rotational` classification, which `feature_census(part)` does not take.
+
+- **New family: `recognise_passages` / `Passage`.** A through void bounded by a closed ring of
+  three or more planar walls is recognised without requiring those walls to share principal
+  axes. The record carries the run `axis`, `length`, side count and section polygon, so a
+  triangular, rectangular or hexagonal passage keeps the geometry needed for dimensioning.
+
+  A through slot is also an uncapped wall ring, so the base recogniser may propose both records.
+  The aggregate and census reconcile them from their claimed faces: a four-wall passage yields
+  to the more directly dimensioned `Slot`, while a non-rectangular ring defeats paired-wall
+  fragments contained inside it. Calling `recognise_passages` directly returns candidates before
+  that aggregate policy, consistently with the other reconciled families.
+
+  `Passage` and `recognise_passages` are new public names. The capability manifest records the
+  family as introduced in 0.2.6, with independent functional and golden evidence.
 
 - **New family: `recognise_prismatic_pockets` / `PrismaticPocket`.** A floored recess of any
   planar cross-section, found by walking the closed ring of walls rather than pairing walls that
