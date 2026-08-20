@@ -37,7 +37,7 @@ from b123d_recognisers import (
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.passages import _canonical, _centroid, _interior_point
+from b123d_recognisers._rings import _canonical, _centroid, _interior_point
 
 
 def _block() -> Box:
