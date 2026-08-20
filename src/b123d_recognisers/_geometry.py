@@ -60,7 +60,8 @@ INTERIOR_PROBE_FRAC = 0.05
 #: at ``1e-3``, about 2.6 degrees. Nothing lies between. This sits in that band, three orders
 #: above float noise and six below the nearest real corner.
 #:
-#: An earlier value of ``1e-4`` (about 1.8 degrees) was picked on the assumption that a kernel
+#: An earlier value left a gap of ``5e-4`` -- a cosine of 0.9995, about 1.81 degrees -- picked
+#: on the assumption that a kernel
 #: boolean leaves noise at these joins. It does not -- the tangencies are exact -- and at 1.8
 #: degrees a genuinely shallow step would have read as smooth, which is the one false positive
 #: this attribute must not produce.

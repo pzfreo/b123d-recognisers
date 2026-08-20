@@ -311,3 +311,29 @@ def test_shared_edges_that_disagree_give_no_single_answer():
     graph.shared_edges = lambda *_: ("first", "second")  # type: ignore[method-assign]
 
     assert graph.arc(a, b) == "unknown"
+
+
+def test_a_warm_cache_still_refuses_another_graph_s_nodes():
+    """The cache must not become a way past the graph's provenance check.
+
+    `FaceNode` carries only an index, so a node from another graph of an identical part looks
+    the same. Every read the graph offers resolves through `owns`, and an arc keyed straight
+    off `.index` would have skipped that -- but only on a *hit*, because the miss path validates
+    inside `shared_edges`. So the bug appears for the second caller onward and never the first,
+    which is why this test warms the cache before it proves anything.
+
+    Answering for the wrong solid is the failure `require_node` and `claims_of` are both written
+    to refuse; a cache is not a licence to stop refusing it.
+    """
+
+    part, twin = _plain(), _plain()
+    graph, other = FaceGraph(part), FaceGraph(twin)
+    a = graph.nodes[0]
+    b = graph.neighbours(a)[0]
+
+    assert graph.arc(a, b) == "convex", "warm the cache with a pair this graph does own"
+
+    foreign_a = other.nodes[a.index]
+    foreign_b = other.nodes[b.index]
+    with pytest.raises(ValueError, match="not issued by this graph"):
+        graph.arc(foreign_a, foreign_b)

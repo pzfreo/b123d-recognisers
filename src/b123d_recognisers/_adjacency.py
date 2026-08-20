@@ -39,8 +39,10 @@ from b123d_recognisers._typing import EdgeLike, FaceLike
 _T = TypeVar("_T")
 
 
-#: What an arc can be. Closed, so a consumer can match exhaustively and mypy will say when one
-#: forgets a case -- a bare ``str`` let a caller compare against a value the graph never returns.
+#: What an arc can be. Closed, so a caller cannot compare against a value the graph never
+#: returns -- which a bare ``str`` allowed. Note that closing the set does not by itself make
+#: mypy reject a non-exhaustive consumer: that needs narrowing ending in ``assert_never``, which
+#: is the consumer's business rather than this alias's.
 #:
 #: ``"unknown"`` means *adjacent, but no single classification applies*: the geometry at the edge
 #: is too degenerate to read, or the pair shares several edges that do not agree. It is not the
@@ -352,7 +354,12 @@ class FaceGraph:
         to both walls it meets while filling a concave corner, and both answers are right.
         """
 
-        key = (min(a.index, b.index), max(a.index, b.index))
+        # `_at` rather than `.index`, and *before* the lookup: a cache hit would otherwise
+        # answer for a node this graph never issued, because the validation on the miss path
+        # only happens inside `_classify_arc`. That is the provenance contract `require_node`
+        # and `claims_of` both enforce, silently skipped for exactly the second caller onward.
+        key_a, key_b = self._at(a), self._at(b)
+        key = (min(key_a, key_b), max(key_a, key_b))
         if key not in self._arcs:
             self._arcs[key] = self._classify_arc(a, b)
         return self._arcs[key]
