@@ -19,8 +19,8 @@ looking.
 |---|---|---|---|---|
 | 0 | Per-face recall, measured rather than fitted | Sizes 1–5 | no | **done for four families** |
 | 5 | Oblique recesses: migrate, not a scope decision | **Highest** | **yes** | L |
-| 1 | Material-side as a named node attribute | **High** | **likely** | M |
-| 2 | Pair convexity as an arc — it already exists twice | High | **likely** | M |
+| 1 | Material-side convention, lifted to one place | **done** | no | — |
+| 2 | Convexity probe shared; the arc attribute is separate | **probe done** | no | — |
 | 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
 | 4 | One adjacency API instead of two | Low | no | M |
 
@@ -31,6 +31,12 @@ selects on. The sweep supplied something better: evidence about which of these c
 reason, recorded in full under "What the sweep changed" below. Item 4 was promoted with them
 and has since been demoted again on item 5's own instrumentation — see item 4 for why, since a
 re-ranking reversed within a day is worth keeping visible.
+
+**The consolidation half is now done.** Items 1 and 2 are closed, item 0 has run for the four
+claiming families, and item 4 is demoted to last. What remains — items 5 and 3, plus the arc
+attribute item 2 turned out not to contain — all changes what is *recognised* rather than what is
+tidy, and each needs a decision before code. The epic stops being a queue here and becomes a set
+of questions.
 
 ---
 
@@ -246,24 +252,27 @@ precisely where handedness flips, a disagreement count over the corpus would ver
 zero and mean nothing — the same blindness that makes goldens the wrong check here, one level down.
 So the count is necessary and not sufficient, and the falsifier has to be built rather than found.
 
-- [ ] Count where the four disagree with each other over the 72 corpus parts, per surface type
-- [ ] Generate the four-cell matrix the corpus lacks — `FORWARD`/`REVERSED` × right/left-handed
-      frame, per surface type — from mirrored solids, and assert all four implementations agree
-      on each cell
-- [ ] Check each against an **independent oracle** rather than against each other: a point stepped
-      off the face along the claimed outward normal classifies `OUT` of the solid, and against it
-      `IN`. That says which implementation is right, which no amount of cross-comparison can
-- [ ] Add material-side as its own lazy node attribute, **named distinctly from** `normal`, so the
-      two conventions are visible rather than latent
-- [ ] Migrate the four call sites; goldens byte-identical where the count above says they agree
-- [ ] `_recess_core._Face` keeps its own reader if and only if the count says it must
+- [x] Count where the four disagree — and establish first that the corpus *cannot* answer it.
+      `REVERSED` faces are 3,061 of 4,407 across all 72 parts, but left-handed frames are **6 of
+      3,853, on 1 of 72**, and deleting the handedness term left all 667 tests green (#115)
+- [x] Generate the four-cell matrix from mirrored solids, with a test asserting the fixtures reach
+      all four so the suite cannot quietly cover three (#115)
+- [x] Check against an **independent oracle** rather than against each other (#115)
+- [x] One implementation, `_adjacency.frame_points_outward`, and all four call sites on it;
+      byte-identical over all 72 parts (#116)
+- [x] **No node attribute, deliberately.** None of the four call sites holds a `FaceGraph` --
+      `analyse_cylinders` takes a bare part -- so a method with no consumer is the speculation
+      this project declines. What the attribute was *for* is visibility, delivered instead in
+      `FaceGraph.normal`'s docstring: it is *geometric*, points into the solid on a `REVERSED`
+      face, and names the counterpart. That reason had lived only in a memory note
+- [x] `_recess_core._Face` keeps its own reader, and now shares the convention underneath it
 
 The prize is not the four lines. It is that the next recogniser needing material side finds one
 attribute with a name that says which convention it is.
 
-## 2 — Pair convexity as an arc — it already exists twice
+## 2 — The convexity probe, shared; the arc attribute, still unbuilt
 
-`behaviour-neutral where the copies agree`
+`the probe is done; the arc is not, and it is a different thing`
 
 This is the AAG's defining attribute, the one [#75](https://github.com/pzfreo/b123d-recognisers/issues/75)
 phase 2 called *"this is the actual AAG"* and declined for want of a consumer. **It has two, and it
@@ -273,11 +282,25 @@ is already implemented for both:**
   planes cross, nudge toward the bevel face, and classify the point against the solid
 - `fillets.py:138–147` — the same construction, inline, with the sense inverted
 
-That is a convex/concave classification of the dihedral between two faces, computed at the point of
-use, twice, and reachable from nothing else. Both are `O(1)` solid classifications, and neither
-carries a tolerance to calibrate.
+**The framing above was wrong, and the item is split because of it.** It read as "the arc attribute
+already exists twice, just lift it". Two different things were being conflated:
 
-Two design facts this item must carry forward:
+- **the probe** existed twice and is now lifted — `fillets` calls `chamfers.convex_bevel` rather
+  than restating it, byte-identical over all 72 parts (#117). That was the consolidation, and the
+  replacement gate selected it correctly;
+- **the arc attribute** does not exist at all, and cannot be built from the probe.
+
+The reason is structural rather than a matter of effort. The probe answers *"is the corner where
+these two neighbour planes cross convex"* — and **those two planes do not share an edge.** The
+blend sits between them. There is no arc in the graph to hang the answer on, because the pair whose
+convexity is being measured is not an adjacent pair.
+
+An arc-shaped answer has to be a *different computation*: the dihedral between the blend face and
+each neighbour, which are adjacent. That is plausible and probably right, and it is **new
+capability, not consolidation** — a behaviour change with its own evidence to earn, which is why it
+now sits with item 3 rather than here.
+
+Two design facts whichever way that goes:
 
 - **The probe is better than the angle where it applies.** It classifies actual material at a
   point rather than inferring from a normal difference, which is why the chamfer recall analysis
@@ -288,12 +311,21 @@ Two design facts this item must carry forward:
   general case needs the angle as well and the arc attribute is a union of the two, not a
   replacement of one by the other.
 
-- [ ] Count where the two implementations disagree over the 72 parts (they should not; assert it)
-- [ ] Lift onto `FaceGraph` as a lazy arc attribute over `shared_edges`, retaining the probe for
-      the axis-aligned-corner case
-- [ ] Decide the general case: angular classification per ADR 0008, dimensionless, or refuse to
-      answer for arcs the probe cannot reach
-- [ ] Migrate `chamfers` and `fillets`; goldens byte-identical
+- [x] Confirm the two implementations are the same decision, not merely similar ones: identical
+      construction, probe fraction and classifier tolerance, differing only in whether the caller
+      reads the result as keep or skip
+- [x] `fillets` calls `convex_bevel`; byte-identical over all 72 parts, and inverting the shared
+      probe now fails 10 tests where the same break previously had to be made twice (#117)
+- [ ] **Open, and not this item's work:** an arc attribute means dihedral classification between
+      *adjacent* faces. Angular per ADR 0008, dimensionless, defaulting off — the same gate item 3
+      needs, and the same consumers, so the two should be decided together
+
+**Raised by the lift, not resolved by it.** The probe now has three consumers — `chamfers`,
+`angled_steps`, `fillets` — and lives in a recogniser module, which those two also import
+`classify_bevel` from. `chamfers` is a de-facto bevel substrate and nothing says so: the seam map
+polices only the private modules, so a public recogniser depending on another is unpoliced in
+either direction. Whether that machinery belongs below the recognisers is a real question and a
+separate change.
 
 ## 3 — Smooth arcs, for seeing through a blend and across a split
 
