@@ -115,15 +115,16 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_risers", counted("risers", []))
     monkeypatch.setattr(result_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(result_module, "recognise_angled_steps", counted("angled_steps", []))
-    # The orchestrator no longer calls `recognise_passages` itself: a through slot is also a
-    # passage, and the rule that decides between them belongs outside both recognisers, so what
-    # this layer injects is the reconciler and the ledger the slots were written into.
-    def fake_passages(part, ledger):
+    # All four recess families are proposed before one reconciler decides among them. The
+    # orchestrator passes the records and their shared ledger once rather than applying pairwise
+    # rules at different points in result construction.
+    def fake_recesses(part, found_slots, found_pockets, prismatic, ledger):
         calls["passages"] = calls.get("passages", 0) + 1
+        assert found_slots is slots and found_pockets is pockets
         assert ledger is not None
-        return []
+        return found_slots, found_pockets, prismatic, []
 
-    monkeypatch.setattr(result_module, "passages_that_are_not_slots", fake_passages)
+    monkeypatch.setattr(result_module, "reconcile_recesses", fake_recesses)
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
     monkeypatch.setattr(result_module, "recognise_plates", counted("plates", []))
 

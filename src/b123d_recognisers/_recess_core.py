@@ -50,7 +50,46 @@ _LENGTH_TIE_FRAC = 0.05
 
 _SLOT_MAX_SPAN_FRAC = 0.9
 
-def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float], axis: str) -> Slot | None:
+
+def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
+    """Whether two opposed walls participate in one coherent recess boundary.
+
+    Facing bounding boxes are not enough: walls of neighbouring features can overlap by a
+    sliver and manufacture a candidate spanning the space between them.  Walls of one recess
+    need not meet the same boundary face when an end is fragmented, but where they do, the
+    material must turn the same way from both walls. When there is no common neighbour, the
+    walls must still belong to one smooth-connected boundary component -- the gAAG view that
+    merges face subdivisions. Unrelated grazing walls fail both tests.
+    """
+
+    if fa.node is None or fb.node is None:
+        raise ValueError("recess walls require graph nodes")
+    common = set(graph.neighbours(fa.node)) & set(graph.neighbours(fb.node))
+    if common:
+        return all(
+            graph.arc(fa.node, neighbour) == graph.arc(fb.node, neighbour)
+            for neighbour in common
+        )
+
+    # A STEP face may be subdivided into several tangent faces. In a gAAG those fragments are
+    # one super-node; walking only smooth arcs is the equivalent query on this immutable AAG.
+    pending = [fa.node]
+    seen = {fa.node}
+    while pending:
+        node = pending.pop()
+        for neighbour in graph.neighbours(node):
+            if graph.arc(node, neighbour) != "smooth" or neighbour in seen:
+                continue
+            if neighbour is fb.node:
+                return True
+            seen.add(neighbour)
+            pending.append(neighbour)
+    return False
+
+
+def _candidate(
+    fa: _Face, fb: _Face, part_ext: dict[str, float], axis: str, graph: FaceGraph
+) -> Slot | None:
     """Build a :class:`Slot` from two facing rectangular walls, or None if the
     pair is not a slot (not facing, not overlapping, wider than long, or
     spanning the full part).  Geometry only — the through/blind test is applied
@@ -67,6 +106,8 @@ def _candidate(fa: _Face, fb: _Face, part_ext: dict[str, float], axis: str) -> S
     # Facing each other: A's outward normal points towards B.  Outer faces of
     # the stock fail this (their normals point apart).
     if (c_b - c_a) * fa.normal[k] <= 0:
+        return None
+    if not _bounds_one_void(fa, fb, graph):
         return None
     # The walls must genuinely overlap in both perpendicular axes, otherwise
     # they are unrelated faces that merely happen to be parallel and facing.
@@ -124,7 +165,8 @@ def _recognise_slots_one(
     unpaired call cannot produce.
     """
 
-    faces = _planar_faces(part, face_edges, graph)
+    owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
+    faces = _planar_faces(part, face_edges, owner)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     # Only straight-walled faces can be slot walls; bucket them by axis so the
@@ -141,7 +183,7 @@ def _recognise_slots_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                s = _candidate(walls[i], walls[j], part_ext, axis)
+                s = _candidate(walls[i], walls[j], part_ext, axis, owner)
                 # Keep only through-slots: a blind pocket (or the floored gap
                 # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
@@ -172,6 +214,7 @@ def _floored_candidate(
     faces,
     part_ext,
     axis: str,
+    graph: FaceGraph,
     *,
     channel_bounds: dict[str, tuple[float, float]] | None = None,
 ) -> Pocket | Channel | None:
@@ -193,6 +236,8 @@ def _floored_candidate(
     c_a, c_b = _center(fa.bb, k), _center(fb.bb, k)
     if (c_b - c_a) * fa.normal[k] <= 0:
         return None  # normals face away from each other (outer faces), not a cavity
+    if not _bounds_one_void(fa, fb, graph):
+        return None
     width = abs(c_b - c_a)
     others = [a for a in "xyz" if a != axis]
     ranges = {}  # per non-width axis: (lo, hi) overlap of the two walls
@@ -251,16 +296,27 @@ def _floored_candidate(
     return None
 
 def _pocket_candidate(
-    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], axis: str
+    fa: _Face,
+    fb: _Face,
+    faces: list[_Face],
+    part_ext: dict[str, float],
+    axis: str,
+    graph: FaceGraph,
 ) -> Pocket | None:
-    candidate = _floored_candidate(fa, fb, faces, part_ext, axis)
+    candidate = _floored_candidate(fa, fb, faces, part_ext, axis, graph)
     return candidate if isinstance(candidate, Pocket) else None
 
 def _channel_candidate(
-    fa: _Face, fb: _Face, faces: list[_Face], part_ext: dict[str, float], part_bounds, axis: str
+    fa: _Face,
+    fb: _Face,
+    faces: list[_Face],
+    part_ext: dict[str, float],
+    part_bounds,
+    axis: str,
+    graph: FaceGraph,
 ) -> Channel | None:
     candidate = _floored_candidate(
-        fa, fb, faces, part_ext, axis, channel_bounds=part_bounds
+        fa, fb, faces, part_ext, axis, graph, channel_bounds=part_bounds
     )
     return candidate if isinstance(candidate, Channel) else None
 
@@ -299,7 +355,8 @@ def _recognise_pockets_one(
       literally as the two walls did.
     """
 
-    faces = _planar_faces(part, face_edges, graph)
+    owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
+    faces = _planar_faces(part, face_edges, owner)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     by_axis: dict[str, list[_Face]] = {}
@@ -310,7 +367,7 @@ def _recognise_pockets_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                p = _pocket_candidate(walls[i], walls[j], faces, part_ext, axis)
+                p = _pocket_candidate(walls[i], walls[j], faces, part_ext, axis, owner)
                 if p is not None:
                     candidates.append(p)
                     if claims is not None:
@@ -329,7 +386,8 @@ def _recognise_channels_one(
     part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
 ) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
-    faces = _planar_faces(part, face_edges, graph)
+    owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
+    faces = _planar_faces(part, face_edges, owner)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     part_bounds = {
@@ -348,7 +406,7 @@ def _recognise_channels_one(
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
                 channel = _channel_candidate(
-                    walls[i], walls[j], faces, part_ext, part_bounds, axis
+                    walls[i], walls[j], faces, part_ext, part_bounds, axis, owner
                 )
                 if channel is not None:
                     candidates.append(channel)

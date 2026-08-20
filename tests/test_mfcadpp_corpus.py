@@ -33,10 +33,15 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-from b123d_recognisers import recognise_angled_steps, recognise_chamfers
+import b123d_recognisers as recognition
+from b123d_recognisers import _recess_core as recess_core
+from b123d_recognisers import recognise_angled_steps, recognise_chamfers, recognise_slots
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
+from b123d_recognisers._reconcile import (
+    chamfers_that_are_not_angled_steps,
+    reconcile_recesses,
+)
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -69,6 +74,25 @@ def _bevels(part):
     proposed = recognise_chamfers(part, ledger=ledger)
     steps = recognise_angled_steps(part, ledger=ledger)
     return proposed, chamfers_that_are_not_angled_steps(proposed, ledger), steps
+
+
+def test_slot_walls_must_turn_consistently_into_one_void(corpus, monkeypatch):
+    """A 0.19 mm wall overlap joins two labelled features only when AAG arcs are ignored.
+
+    The two faces are parallel, opposed and overlap, so bounding boxes alone report a slot.
+    They do not bound one recess: their shared boundary turns concavely from one wall and
+    convexly from the other.  Disabling the arc-consistency gate restores two false candidates,
+    including the grazing one from issue #119; with it, only the coherent slot remains.
+    """
+
+    part = next(part for name, part, *_rest in corpus if name == "10063.step")
+    coherent = recognise_slots(part)
+    assert len(coherent) == 1
+
+    monkeypatch.setattr(recess_core, "_bounds_one_void", lambda *_args: True)
+    unguarded = recognise_slots(part)
+    assert len(unguarded) == 3
+    assert min(slot.d_hi - slot.d_lo for slot in unguarded) == pytest.approx(0.19, abs=1e-6)
 
 
 def _is_oblique(face) -> bool:
@@ -485,10 +509,9 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     - **Chamfer at 11 of 14** is the same 79% ``test_chamfer_precision_does_not_regress``
       measures from record centroids, arrived at independently through the ledger. The two
       disagreeing would mean one of the attribution methods is wrong.
-    - **Slot is the open question, recorded rather than endorsed.** Most of what it claims is
-      labelled *Circular end pocket* -- an obround pocket, which this package would call a
-      slot with some justification. Whether that is a vocabulary difference or over-claiming
-      is a scope decision (epic 0002, item 5), and this number is what it should be taken on.
+    - **Slot is the accepted aggregate inventory.** Boundary reconciliation has removed the
+      paired-wall fragments that complete pocket and passage rings explain; the remainder is
+      pinned here as a change detector, not asserted to match MFCAD++'s single-label taxonomy.
     """
 
     claimed = _per_face(corpus)
@@ -499,20 +522,59 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
 
     ring = claimed["Passage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
-    assert sum(ring.values()) == 103
+    assert sum(ring.values()) == 115
 
     bevels = claimed["Chamfer"]
     assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14
 
     slots = claimed["Slot"]
-    assert sum(slots.values()) == 73
-    assert slots[16] == 37, "most of what Slot claims is labelled Circular end pocket"
+    assert sum(slots.values()) == 38
+    assert slots[16] == 28, "most accepted Slot walls are labelled Circular end pocket"
 
-    # Pockets are the blind counterpart and land mostly where the name says, but a quarter of
-    # what they claim is labelled *Rectangular passage* -- faces `recognise_passages` claims
-    # too. Two families naming one face is what the ledger exists to make visible; whether
-    # either should yield is a reconciliation question nobody has asked yet.
+    # Pockets are the blind counterpart and land mostly where the name says. Complete ring
+    # containment removes the old passage fragments; partial intersections deliberately remain.
     pockets = claimed["Pocket"]
-    assert sum(pockets.values()) == 115
+    assert sum(pockets.values()) == 93
     assert pockets[14] == 43, "most of what Pocket claims is labelled Rectangular pocket"
-    assert pockets[3] == 23, "and a quarter of it is a passage another family also claims"
+    assert pockets[3] == 3, "complete passage rings remove the old pocket fragments"
+
+
+def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
+    """#112 leaves only compatible partial overlaps, not duplicate descriptions of one void."""
+
+    overlaps = []
+    for name, part, _labels, _faces, _at in corpus:
+        graph = FaceGraph(part)
+        ledger = ClaimLedger(graph)
+        accepted = reconcile_recesses(
+            part,
+            recognition.recognise_slots(part, ledger=ledger),
+            recognition.recognise_pockets(part, ledger=ledger),
+            recognition.recognise_prismatic_pockets(part, ledger=ledger),
+            ledger,
+        )
+        records = [record for family in accepted for record in family]
+        for index, left in enumerate(records):
+            left_faces = ledger.defining_of(left)
+            for right in records[index + 1 :]:
+                if type(left) is type(right):
+                    continue
+                right_faces = ledger.defining_of(right)
+                shared = left_faces & right_faces
+                if shared:
+                    overlaps.append(
+                        (name, type(left).__name__, type(right).__name__, left_faces, right_faces)
+                    )
+
+    signatures = [
+        (name, {left, right}, len(left_faces & right_faces))
+        for name, left, right, left_faces, right_faces in overlaps
+    ]
+    assert signatures == [
+        ("10190.step", {"Pocket", "Slot"}, 1),
+        ("10212.step", {"Passage", "Pocket"}, 1),
+    ]
+    assert all(
+        not left_faces <= right_faces and not right_faces <= left_faces
+        for _name, _left, _right, left_faces, right_faces in overlaps
+    )

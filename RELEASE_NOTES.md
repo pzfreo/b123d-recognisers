@@ -2,6 +2,15 @@
 
 ## 0.2.6
 
+- **Recess candidates now have AAG-coherent boundaries and one aggregate ownership policy.**
+  Opposed planar walls form a slot or rectangular pocket candidate only when they meet the same
+  boundary neighbours with the same arc convexity. Complete polygonal passage and pocket rings
+  then take precedence over paired-wall fragments contained inside them; four-wall rings still
+  yield to the more directly dimensioned `Slot` or `Pocket`. On the 40-model MFCAD++ design
+  corpus this reduces 35 proposed slots to 19 accepted slots, removes all sub-0.5 mm
+  grazing-wall artifacts without a fitted size threshold, and leaves only two intentional
+  one-face partial overlaps where neither claim contains the other (#112, #119).
+
 - **Fixed: a wall of a triangular pocket was reported as an angled step.** A step is a wedge cut
   into an *edge of the part*; the gate meant to exclude recess walls asked what the slant bridges,
   and a pocket whose plan is a right triangle answers correctly — its hypotenuse bridges the two

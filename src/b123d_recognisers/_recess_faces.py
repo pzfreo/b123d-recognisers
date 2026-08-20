@@ -144,11 +144,10 @@ def _planar_faces(
                 _dominant_axis(nrm),
                 face.bounding_box(),
                 _is_wall(face, face_edges),
-                # Only a *caller's* node is stored. A node from the graph built above belongs
-                # to no ledger, so claiming against it would raise -- and the field exists for
-                # claiming. Reading attributes from a local graph is fine; naming one as
-                # evidence is not.
-                node if graph is not None else None,
+                # Also retained for a standalone recogniser's internal graph: candidate
+                # predicates use adjacency and arc attributes to prove two walls bound one
+                # void. Claims are still written only when a caller supplied a ledger.
+                node,
             )
         )
     return faces
