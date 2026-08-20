@@ -152,15 +152,13 @@ def _planar_faces(
     faces = []
     for face in part.faces():
         node = owner.require_node(face)
-        # Planarity asked directly. It used to ride on a normal reader that answered None for a
-        # curved face, which worked but meant the function's declared domain was enforced by a
-        # side effect of how its normals were fetched -- and broke silently the moment a reader
-        # that answers for cylinders too was substituted.
-        if not owner.is_planar(node):
-            continue
-        nrm = owner.normal(node)
+        # This function's declared domain is a planar face with a readable normal, and both
+        # halves are asked here rather than one riding on the other. It used to rest entirely on
+        # a normal reader that answered None for a curved face -- which worked, and broke
+        # silently the moment a reader that answers for cylinders too was substituted.
+        nrm = owner.normal(node) if owner.is_planar(node) else None
         if nrm is None:
-            continue  # planar but degenerate: no normal to read
+            continue
         # `axis` is None for an oblique planar face, and the face is carried anyway. It used to
         # be dropped here, which made an axis-aligned-walls restriction that three families
         # inherit invisible to all three and impossible to count -- see ADR 0009. Each family
