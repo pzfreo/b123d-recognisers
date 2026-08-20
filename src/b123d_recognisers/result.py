@@ -363,9 +363,9 @@ def _take_inventory(
     - `feature_census` on its own, over nine NIST and real-world STEP parts: 39.5 s to 53.4 s,
       about **35% more**. Spread across seven families with no hot spot to fix -- step levels
       are the largest single contributor at about a third of the added time.
-    - The pinned parity benchmark, which is what a consumer actually runs (two results and one
-      census over four fixtures): **about 4% more**, 1.849 s to 1.931 s, best of five over
-      three interleaved blocks.
+    - The pinned parity benchmark, the composite release workload (two results and one census
+      over four fixtures): **about 4% more**, 1.849 s to 1.931 s, best of five over three
+      interleaved blocks.
 
     The composite figure is the one that bears on release, and the census-only figure is the
     one that bears on corpus sweeps. Both are the price of the two entry points being unable to
