@@ -2,6 +2,16 @@
 
 ## 0.2.6
 
+- **`feature_census` no longer counts a plate on a shaft whose steps form a turned profile.**
+  `build_recognition_result` has always suppressed one there -- a stepped shaft is not a plate --
+  and the census did not, so the two entry points reported different answers about the same
+  solid. Measured across the 73 corpus parts it happened on exactly one, a real turned screw, and
+  **a public count changes for it**: `plate` goes from 1 to 0. No semantic golden moves, because
+  no pinned fixture carries the shape.
+
+  The census applies the half of the aggregate's gate it can evaluate. The other half is the
+  caller's `rotational` classification, which `feature_census(part)` does not take.
+
 - **New family: `recognise_prismatic_pockets` / `PrismaticPocket`.** A floored recess of any
   planar cross-section, found by walking the closed ring of walls rather than pairing walls that
   share a normal axis. `recognise_pockets` buckets walls by axis and pairs within a bucket, so a
