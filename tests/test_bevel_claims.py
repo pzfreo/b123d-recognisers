@@ -200,17 +200,31 @@ def test_the_rule_pairs_each_chamfer_with_its_own_claim_and_not_the_next_ones():
     assert kept.at == (0.0, -18.0, 4.0), "the surviving record is the through wedge"
 
 
-def test_the_rule_refuses_a_chamfer_list_that_is_not_the_one_that_was_claimed():
-    """Paired by position, so a filtered list is a caller error rather than a wrong answer."""
+def test_the_rule_does_not_care_what_order_or_how_many_records_it_is_given():
+    """Each record carries its own evidence, so the list is a list and not a parallel array.
+
+    This test used to assert the opposite -- that a short list *raises* -- because the rule
+    paired records against claims by position and `strict=True` caught a count that drifted.
+    That refusal was never protecting a caller from anything real; it was the coupling
+    announcing itself. It also could not see a *permutation*, which keeps the count and attaches
+    every record to another record's faces, and which a mutation in this very family once
+    produced.
+
+    With evidence looked up by identity there is nothing left to refuse: reversing the list, or
+    passing part of it, gives the same answers for the records passed.
+    """
 
     ledger, chamfers, _ = _claimed(_both())
-    assert len(chamfers_that_are_not_angled_steps(chamfers, ledger)) == 1
+    kept = chamfers_that_are_not_angled_steps(chamfers, ledger)
+    assert len(kept) == 1
 
-    try:
-        chamfers_that_are_not_angled_steps(chamfers[:-1], ledger)
-    except ValueError:
-        return
-    raise AssertionError("a short list must not be reconciled against another list's claims")
+    assert chamfers_that_are_not_angled_steps(list(reversed(chamfers)), ledger) == list(
+        reversed(kept)
+    )
+    for one in chamfers:
+        assert chamfers_that_are_not_angled_steps([one], ledger) == (
+            [one] if one in kept else []
+        )
 
 
 def test_a_ledger_built_from_another_block_is_refused_rather_than_left_empty():

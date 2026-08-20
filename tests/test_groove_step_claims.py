@@ -118,19 +118,21 @@ def test_the_ladder_keeps_the_rung_the_groove_is():
         assert lower.hi == upper.lo, "and it is still contiguous"
 
 
-def test_the_rule_refuses_a_step_list_that_is_not_the_one_that_was_claimed():
-    """Paired by position, so a filtered list is a caller error rather than a wrong answer."""
+def test_the_rule_does_not_care_what_order_or_how_many_records_it_is_given():
+    """Each step carries its own evidence, so the list is a list and not a parallel array.
 
-    part = _grooved_shaft()
-    ledger, _, steps = _claimed(part)
+    This asserted the opposite until the positional pairing went: that a short list *raises*.
+    That refusal caught a count that drifted and could not see a permutation, which keeps the
+    count and hands every record another record's faces.
+    """
 
-    assert len(steps_that_are_not_grooves(steps, ledger)) == len(steps) - 1
+    ledger, _, steps = _claimed(_grooved_shaft())
+    kept = steps_that_are_not_grooves(steps, ledger)
+    assert len(kept) == len(steps) - 1
 
-    try:
-        steps_that_are_not_grooves(steps[:-1], ledger)
-    except ValueError:
-        return
-    raise AssertionError("a short list must not be reconciled against another list's claims")
+    assert steps_that_are_not_grooves(list(reversed(steps)), ledger) == list(reversed(kept))
+    for one in steps:
+        assert steps_that_are_not_grooves([one], ledger) == ([one] if one in kept else [])
 
 
 def test_a_ledger_built_from_another_shaft_is_refused_rather_than_left_empty():

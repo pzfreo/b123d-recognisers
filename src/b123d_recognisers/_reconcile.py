@@ -24,6 +24,14 @@ more, and once they described two things that were both needed.
 
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
 one at a time, and these are the four that have had to.
+
+**A rule finds a record's evidence by identity**, through `ClaimLedger.defining_of`. Until #127
+every rule here paired its records against the ledger's claims *by position*, which held only
+while a recogniser wrote one claim per record in the order it returned them -- a coupling across
+two files that nothing checked. `strict=True` catches a count that drifts and cannot catch a
+permutation, and a permutation hands every record another record's faces while the counts stay
+right. A mutation in the chamfer/angled-step work did exactly that and survived the whole golden
+corpus.
 """
 
 from __future__ import annotations
@@ -63,16 +71,10 @@ def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage
 
     passages = recognise_passages(part, ledger=ledger)
     slot_walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Slot)]
-    # Paired by position rather than by looking each passage up: `recognise_passages` writes one
-    # claim per record it returns, in the order it returns them, and `strict=True` is what makes
-    # that an assertion instead of an assumption. Keying on the record would be wrong for the
-    # reason the ledger itself is not keyed that way -- two equal-valued records can be two
-    # features.
-    rings = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Passage)]
     return [
         passage
-        for passage, ring in zip(passages, rings, strict=True)
-        if not any(walls <= ring for walls in slot_walls)
+        for passage in passages
+        if not any(walls <= ledger.defining_of(passage) for walls in slot_walls)
     ]
 
 
@@ -119,14 +121,10 @@ def steps_that_are_not_grooves(
     # be wrong, but the full ladder is needed by `build_recognition_result` as well, and owning
     # the call here would mean scanning the shaft twice to throw one of the results away.
     floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
-    # Paired by position, as above: *steps* must be what `recognise_turned_steps` returned
-    # against this ledger, which writes one claim per step in return order. `strict=True` says
-    # so loudly if a caller ever passes a filtered list.
-    rungs = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, TurnedStep)]
     return [
         step
-        for step, band in zip(steps, rungs, strict=True)
-        if not any(floor <= band for floor in floors)
+        for step in steps
+        if not any(floor <= ledger.defining_of(step) for floor in floors)
     ]
 
 
@@ -164,25 +162,13 @@ def chamfers_that_are_not_angled_steps(
     `build_recognition_result` both apply this rule, so the reconciled answer is unchanged.
     """
 
-    # Every angled step's slant, in one set: unlike the two rules above there is nothing to pair
-    # positionally on this side, because the question asked of a chamfer is "did any step claim
-    # this face", not "did the step in the same position claim it".
     slants = {
         node
         for claim in ledger.claims
         if isinstance(claim.claimant, AngledStep)
         for node in claim.defining
     }
-    # Paired by position, as the other two rules are: `recognise_chamfers` writes one claim per
-    # record it returns, in the order it returns them, and `strict=True` makes that an assertion
-    # rather than an assumption. Keying on the record would be wrong for the reason the ledger
-    # itself is not keyed that way -- two equal-valued records can be two features.
-    bevels = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Chamfer)]
-    return [
-        chamfer
-        for chamfer, bevel in zip(chamfers, bevels, strict=True)
-        if bevel.isdisjoint(slants)
-    ]
+    return [chamfer for chamfer in chamfers if ledger.defining_of(chamfer).isdisjoint(slants)]
 
 
 def prismatic_pockets_that_are_not_pockets(
@@ -209,14 +195,8 @@ def prismatic_pockets_that_are_not_pockets(
     """
 
     walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Pocket)]
-    # Paired by position, as every rule here is: `recognise_prismatic_pockets` writes one claim
-    # per record it returns, in the order it returns them, and `strict=True` makes that an
-    # assertion rather than an assumption.
-    rings = [
-        claim.defining for claim in ledger.claims if isinstance(claim.claimant, PrismaticPocket)
-    ]
     return [
         pocket
-        for pocket, ring in zip(prismatic, rings, strict=True)
-        if not any(paired <= ring for paired in walls)
+        for pocket in prismatic
+        if not any(paired <= ledger.defining_of(pocket) for paired in walls)
     ]
