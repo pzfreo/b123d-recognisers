@@ -96,10 +96,10 @@ bosses and holes.
 
 Three limits on how far this evidence reaches:
 
-- **It is not a recall score.** These corpora use their own feature vocabulary, which this
-  package never adopted. Several classes are recognised under a *different* family than the
-  corpus names — O-ring as boss, Circular blind step as fillet — which is a taxonomy mismatch,
-  not a defect, and makes naive cross-corpus percentages meaningless.
+- **It is not a recall score.** These corpora use their own feature vocabulary. Several classes
+  are recognised under a *different* family than the corpus names — O-ring as boss, Circular
+  blind step as fillet — which is a taxonomy mismatch, not a defect, and makes naive cross-corpus
+  percentages meaningless. See *Naming* below for how far that vocabulary is adopted here.
 - **The labels are single-assignment, so they mislead at feature intersections.** MFCAD++ gives
   each face exactly one feature label. Where two features meet, a wall belonging to both is
   assigned to one of them, and a wall bounded by raw billet is assigned to *Stock* — which means
@@ -124,6 +124,41 @@ Three limits on how far this evidence reaches:
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.
+
+## Naming
+
+**A new family takes MFCAD++'s name for the thing it recognises, where MFCAD++ has one.**
+Inventing a parallel vocabulary for shapes a published corpus has already named costs
+comparability and buys nothing, and every figure in the section above has to be footnoted when
+the two disagree.
+
+**An existing public record keeps its name.** `Slot`, `Pocket`, `Chamfer` and the rest are
+drawing-callout vocabulary — what a machinist reading the output calls the feature — and ADR 0005
+makes them a versioned cross-repository contract with a downstream consumer. Renaming them to
+match a machine-learning label set is a breaking change bought with the wrong currency. Where the
+two vocabularies name the same shape differently, the mapping is recorded here rather than
+resolved by moving the code:
+
+| this package | MFCAD++ | note |
+| --- | --- | --- |
+| `Slot` (through) | Rectangular through slot; Circular through slot | this package's slots are through by definition |
+| `Pocket` (blind) | Rectangular pocket; 6-sided pocket; Triangular pocket; **Circular end pocket** | *Circular end pocket* is an obround blind recess — measured floored in 60 of 64 instances |
+| `Pocket` (edge-open) | Rectangular blind step | a floored recess open at one edge reads as a corner notch here |
+| `Channel` | — | full-span floored recess; no MFCAD++ counterpart |
+| `Passage` | Rectangular / Triangular / 6-sided passage | one family, three shapes; this package does not distinguish them |
+| `AngledStep` | Triangular blind step | |
+| `Chamfer` | Chamfer | |
+| `Fillet` | Round; Circular blind step | *Circular blind step* is recognised as a fillet |
+| `Boss` | O-ring | |
+| `Hole` | Through hole; Blind hole | |
+| — | Rectangular / 2-sided / Slanted through step | **unrecognised**; see the epic 0002 discussion of through steps |
+
+**A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
+therefore inconsistent exactly where two families disagree — the case a tiebreaker would be asked
+to settle. Measured: `recognise_passages` reports a genuine 6-sided passage on `11251.step` whose
+six walls carry **five different labels**, two of them *Stock*. Deferring to the corpus there
+would have deleted a correct record. Which family owns a face is decided by the reconciler from
+the claims, under ADR 0003, and by evidence about the geometry rather than about the label.
 
 ## Public record contract audit
 
