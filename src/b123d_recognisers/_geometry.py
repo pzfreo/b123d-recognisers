@@ -50,13 +50,24 @@ AXIS_ZERO_COS = 0.01
 #: Shared by the chamfer and fillet recognisers, which ask the same question the same way.
 INTERIOR_PROBE_FRAC = 0.05
 
-#: Two faces count as *smoothly* joined when their outward normals agree to this direction
-#: cosine where they meet. A face split in two by a neighbouring feature is the exact case, its
-#: halves coplanar; a tangential blend is the approximate one. Dimensionless, so it never scales
-#: with the part (ADR 0008) -- which is the property that keeps an arc's classification clear of
-#: the threshold-versus-tolerance trap, and the reason Analysis Situs gates the same decision on
-#: an angle rather than a distance.
-SMOOTH_ARC_COS = 0.9995
+#: Two faces count as *smoothly* joined when their outward normals agree to within this much of
+#: parallel, measured as ``1 - dot`` where they meet. A face split by a neighbouring feature is
+#: the exact case, its halves coplanar; a tangential blend is the other.
+#:
+#: **Measured, not chosen.** Over the checked-in STEP corpus the distribution is bimodal with a
+#: four-order-of-magnitude empty band between the modes: 114 arcs sit at ``<= 1e-12`` -- tangency
+#: is *exact*, on imported geometry as much as constructed -- and the nearest non-tangent arc is
+#: at ``1e-3``, about 2.6 degrees. Nothing lies between. This sits in that band, three orders
+#: above float noise and six below the nearest real corner.
+#:
+#: An earlier value left a gap of ``5e-4`` -- a cosine of 0.9995, about 1.81 degrees -- picked
+#: on the assumption that a kernel
+#: boolean leaves noise at these joins. It does not -- the tangencies are exact -- and at 1.8
+#: degrees a genuinely shallow step would have read as smooth, which is the one false positive
+#: this attribute must not produce.
+#:
+#: Dimensionless, so it never scales with the part (ADR 0008).
+SMOOTH_ARC_GAP = 1e-9
 
 
 def _unit(v: Sequence[float]) -> tuple[float, float, float]:
