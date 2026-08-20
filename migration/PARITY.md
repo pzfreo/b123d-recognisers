@@ -67,5 +67,12 @@ seven-run comparison on the migration environment produced:
 
 The package median was 0.870× the pinned baseline (13.0% faster); therefore the extraction shows no
 material regression. Raw samples and reproduction commands are in `performance-baseline.json`.
+
+That table is the extraction comparison and is left as measured. The package arm has moved once
+since: making `feature_census` a projection of the one inventory rather than a second
+orchestration costs about **4%** on this harness (1.849 s to 1.931 s, best of five over three
+interleaved blocks, both arms this package), which would put the ratio near 0.908× rather than
+0.870×. The Draftwright arm cannot be re-measured -- its pinned checkout is gone -- so the new
+number is recorded here rather than folded into a table it cannot honestly be compared within.
 Timing is recorded as review evidence rather than a brittle wall-clock CI assertion; the existing
 fillet adjacency regression uses a deterministic algorithmic-operation bound in CI.

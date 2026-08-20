@@ -56,7 +56,7 @@ a `GeomAbs_Cylinder`, a floor because it is a `GeomAbs_Plane`. Imported geometry
 arrive with its analytic surfaces intact.
 
 STEP carries analytic surfaces, and `tests/test_step_round_trip.py` proves the file boundary does
-not disturb them: all seventeen golden fixtures exported to STEP and re-imported reproduce their
+not disturb them: all twenty golden fixtures exported to STEP and re-imported reproduce their
 pinned records exactly, with planes and cylinders still typed as such.
 
 That evidence covers geometry written by this project's own OCCT-based exporter. It shows that
@@ -109,19 +109,26 @@ Three limits on how far this evidence reaches:
   of them *Stock*. Any per-face score against these labels therefore understates a family that is
   right about an intersecting feature, and a recogniser tuned to raise such a score would be
   fitted to the corpus rather than to the geometry.
-- **Attribution is statistical, not per-face.** Records do not say which faces they consumed, so
-  the MFCAD++ figures come from fitting record counts against labelled-face counts across models
-  rather than from observing ownership. The fit is strong for holes, fillets and bosses and weak
-  for plates and countersinks; only the former should be read.
+- **Attribution is per-face where a family writes claims, and statistical elsewhere.** A
+  recogniser handed a claim ledger records the faces each record was established by, so its
+  records can be scored against the labels of the faces they actually consumed rather than
+  fitted. `tools/per_face_scan.py` does exactly that, over the six claiming families these
+  corpora can reach — `recognise_slots`, `recognise_pockets`, `recognise_prismatic_pockets`,
+  `recognise_passages`, `recognise_chamfers` and `recognise_angled_steps`. Grooves and turned
+  steps write claims too and are absent from these figures for a different reason: all 50
+  vendored MFCAD++ and NIST parts are milled prismatic and report no turned steps at all. The
+  figures quoted as precision — 100% for angled steps, 44% → 78% for chamfers over 120 models —
+  are counted per face rather than fitted. The chamfer figure is the *reconciled* answer, which is what the
+  aggregate and the census report; called directly the recogniser proposes a blind step's slant
+  as well and scores lower — 50% against 79% over the 40 vendored models — for the reason the
+  row above gives.
 
-  Two families are the exception. `recognise_chamfers` and `recognise_angled_steps` each anchor
-  a record on a face centre, so their records *can* be matched back to the labelled face that
-  produced them, and their figures — 100% precision for angled steps, 44% → 78% for chamfers
-  over 120 models — are counted per face rather than fitted. That is why they are quoted as
-  precision, which the caveat above forbids for the rest. The chamfer figure is the
-  *reconciled* answer, which is what the aggregate and the census report; called directly the
-  recogniser proposes a blind step's slant as well and scores lower — 50% against 79% over the
-  40 vendored models — for the reason the row above gives.
+  Every other family still has to be fitted: it writes no claims, so the MFCAD++ figures for it
+  come from comparing record counts against labelled-face counts across models rather than from
+  observing ownership. That fit is strong for holes, fillets and bosses and weak for plates and
+  countersinks; only the former should be read. The difference between the two halves of this
+  bullet is the difference between measuring a recogniser and estimating it, and closing it is a
+  matter of writing claims in the remaining families rather than of new machinery.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.

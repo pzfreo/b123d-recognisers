@@ -1,6 +1,6 @@
 # ADR 0003 — One recognition result and explicit reconciliation
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-15
 - **Decider:** Paul Fremantle
 
@@ -15,7 +15,7 @@ topology.
 Draftwright ADR 0017 identified the problem, but mixed recognition decisions with downstream
 requirement and annotation identity. This project owns only the geometry-side portion.
 
-## Proposed decision
+## Decision
 
 One call to `recognise(part)` produces one immutable `RecognitionResult` containing:
 
@@ -74,7 +74,7 @@ handle must never leak into a record, and a record's identity must never be deri
 Consumer lifecycle caches are outside the result. A consumer may cache a result, but cannot make
 its cache semantics part of this package's aggregate value.
 
-## Required evidence before acceptance
+## Required evidence
 
 - One aggregate run performs each expensive substrate analysis once.
 - Equivalent re-imports produce identical serialized results and identities.
@@ -114,5 +114,44 @@ Two consequences follow, and neither changes the decision above.
   the winner's records survive.
 - **There is no fourth verb.** A reconciler cannot say "this face is contested and I am not
   deciding", and nothing in the result can carry that. Whether one is needed is not settled here:
-  it is the residual-evidence half of ADR 0004, which remains Proposed, and this is the first
-  argument for it that comes from measurement rather than from architecture.
+  it is the residual-evidence half of ADR 0004, which is decided in principle and not yet built,
+  and this is the first argument for it that comes from measurement rather than from
+  architecture.
+
+## Amendment (0.2.6, issue #127)
+
+**There is one inventory. Any other view of a part is a projection of it, never a second
+orchestration that is expected to agree.**
+
+This record says one call produces one result, and says nothing about what a *second* entry point
+into the same recognition may do. `feature_census` was such an entry point: it called the same
+recognisers in its own order, with its own choices about what to inject into each, and reported
+counts. Nothing forced the two to stay aligned, and they did not — measured over 73 parts, a real
+turned screw was a plate to one and not to the other, because the two had written the same gate
+differently. Each difference between them (a memo injected here and not there, countersinks fed
+to the hole recogniser on one side only) was a divergence nobody had decided.
+
+Two rules follow.
+
+- **A view counts or filters the one inventory; it does not re-run recognition.** The census is
+  now a projection of what `build_recognition_result` returns, so the two cannot answer
+  differently about a part. Where a view *deliberately* differs, the difference is a named
+  reconciliation rule applied to the shared inventory rather than a different sequence of calls —
+  `steps_that_are_not_grooves` is the only such rule today, and it is a compatibility rule under
+  the decision above: both records survive, only the count is corrected.
+- **The state a run shares is owned as one object.** The graph, the claim ledger, the face-edge
+  memo and the cylinder scan are facts about a run over a part. Derived individually they are
+  also individually forgettable, and a recogniser with no parameter to receive one derives its
+  own — silently, correctly, and twice. One object owns them, and orchestration is what holds
+  it.
+
+  **Ownership, not yet the call interface.** A recogniser is still handed `face_edges=`,
+  `ledger=`, `cyls=` and `graph=` separately, because a public standalone recogniser has to keep
+  a signature a caller with only a part can use. So this decides where that state comes from and
+  how many times it is derived; it does not decide how a recogniser receives it. That second half
+  is a migration of recogniser internals, and calling it done here would be the same kind of
+  claim this amendment exists to correct.
+
+Neither is a new architecture. Both are what "one aggregate run performs each expensive substrate
+analysis once", in the evidence list above, has to mean if it is to be checkable rather than
+aspirational — and it is now checked by counting derivations rather than by inspection.

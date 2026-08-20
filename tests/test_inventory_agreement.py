@@ -3,26 +3,29 @@
 
 """`feature_census` and `build_recognition_result` must not answer differently about one part.
 
-The two build similar run-local state and apply related reconciliation through separate code
-paths. That is a silent-divergence point by construction: nothing forces a rule added to one to
-be added to the other, and the symptom is not a crash but a *number* — the same solid reported
-as having a feature by one entry point and not by the other.
+The two used to build similar run-local state and apply related reconciliation through separate
+code paths. That was a silent-divergence point by construction: nothing forced a rule added to
+one to be added to the other, and the symptom was not a crash but a *number* — the same solid
+reported as having a feature by one entry point and not by the other.
 
-It is not hypothetical. Measured across all 73 corpus parts, the two disagreed about `plate` on
+It was not hypothetical. Measured across all 73 corpus parts, the two disagreed about `plate` on
 one of them: `build_recognition_result` suppresses a plate when the shaft's steps form a turned
 profile, and the census counted one anyway. A real turned screw, one part in seventy-three, and
 nothing in the suite was looking.
 
-This file is the guard, and it is deliberately a *property* over the whole corpus rather than a
-pinned number: a new family added to one inventory and forgotten in the other fails here on
-whichever part first carries it.
+They now share one inventory — `_take_inventory` — so a disagreement of that kind can no longer
+be written. What remains for this file to guard is the *mapping*: the census names a kind, the
+inventory returns a field, and nothing but this checks that the census counts the field it means
+to. A key wired to the wrong family, or a family added to one side and not the other, still
+produces a wrong number silently. So the property is kept, over the whole corpus, rather than
+retired as impossible.
 
 **Two differences are by design and are named rather than asserted away.** They are the reason
 this cannot simply compare every key:
 
 - `step` — `steps_that_are_not_grooves` is a *compatibility* rule under ADR 0003. Both records
-  survive into the result, and only the count is corrected, so the census reporting fewer steps
-  than the result carries is the rule working.
+  survive into the inventory, and only the census's count is corrected, so the census reporting
+  fewer steps than the result carries is the rule working.
 - pattern families — the census counts hole patterns but has no key for slot or pocket patterns.
   That is a scope decision about what a "distinct machined feature" is, not a divergence, but it
   is worth knowing it is deliberate.

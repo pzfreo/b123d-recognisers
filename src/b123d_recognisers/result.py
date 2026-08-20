@@ -15,15 +15,12 @@ import warnings
 from dataclasses import dataclass
 from enum import Enum
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
     HoleRecord,
     LinearArray,
     RectGrid,
-    analyse_cylinders,
     recognise_bosses,
     recognise_hole_patterns,
     recognise_holes,
@@ -33,6 +30,7 @@ from b123d_recognisers._reconcile import (
     passages_that_are_not_slots,
     prismatic_pockets_that_are_not_pockets,
 )
+from b123d_recognisers._run import RecognitionRun, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
@@ -335,25 +333,78 @@ def build_recognition_result(
     time, under-recognising reports a real feature as absent.
     """
 
-    z_cyls, cross_cyls = cylinders if cylinders is not None else analyse_cylinders(part)
-    cyls = (z_cyls, cross_cyls)
+    return _take_inventory(part, cylinders=cylinders, rotational=rotational)[1]
+
+
+def _take_inventory(
+    part: Part,
+    *,
+    cylinders: CylinderInventory | None = None,
+    rotational: bool = False,
+) -> tuple[RecognitionRun, RecognitionResult]:
+    """The one inventory, and the run it was taken over. Internal to this package.
+
+    `build_recognition_result` is this without the run, and `feature_census` is this counted.
+    They were two hand-maintained sequences of the same recogniser calls before, differing in
+    ways nobody had decided: the census injected a face-edge memo and the aggregate did not,
+    the aggregate injected countersinks into the hole recogniser and the census did not, and
+    the two gated plates on different halves of the same condition -- which is how one turned
+    screw came to be a plate to one entry point and not to the other. Every such difference is
+    a divergence waiting to be a wrong number, and none of them was written down as a choice.
+
+    So there is one sequence, and the census counts what it returns. The run comes back with
+    the result because the census needs the ledger: `steps_that_are_not_grooves` is a
+    *counting* rule under ADR 0003, applied by the census alone, and it asks the ledger which
+    faces a step and a groove were each built from.
+
+    The census now pays for the families it does not count -- pads, polygonal stock, step
+    levels and the rest. Two measurements, because one of them alone misleads:
+
+    - `feature_census` on its own, over nine NIST and real-world STEP parts: 39.5 s to 53.4 s,
+      about **35% more**. Spread across seven families with no hot spot to fix -- step levels
+      are the largest single contributor at about a third of the added time.
+    - The pinned parity benchmark, the composite release workload (two results and one census
+      over four fixtures): **about 4% more**, 1.849 s to 1.931 s, best of five over three
+      interleaved blocks.
+
+    The composite figure is the one that bears on release, and the census-only figure is the
+    one that bears on corpus sweeps. Both are the price of the two entry points being unable to
+    disagree, and it is the right way round -- a measurement tool that is fast and quietly wrong
+    is worth less than one that is slower and says what the library says.
+
+    Recoverable without reopening the divergence, if a consumer ever needs both: this function
+    returns the run, so one inventory can serve a result and a count. Left private until
+    something asks, rather than published on the chance that it will. Both figures are held to a
+    budget, tracked as a named follow-up rather than left as a number in a docstring.
+    """
+
+    # One run, one set of shared facts, derived once here rather than by whichever family asks
+    # first -- see `RecognitionRun`.
+    run = start(part, cylinders)
+    z_cyls, cross_cyls = run.cylinders
+    cyls = run.cylinders
+    face_edges = run.face_edges
     countersinks = recognise_countersinks(part)
-    holes = recognise_holes(part, cyls=cyls, csinks=countersinks)
+    holes = recognise_holes(part, cyls=cyls, csinks=countersinks, face_edges=face_edges)
     double_d_bores = recognise_double_d_bores(part)
     # The two families that describe a void by the faces bounding it both write into one
     # ledger, so the reconciliation below is a question about faces rather than about
     # coordinates each of them derived its own way.
-    ledger = ClaimLedger(FaceGraph(part))
-    slots = recognise_slots(part, ledger=ledger)
-    channels = recognise_channels(part, ledger=ledger)
+    ledger = run.ledger
+    slots = recognise_slots(part, ledger=ledger, face_edges=face_edges)
+    channels = recognise_channels(part, ledger=ledger, face_edges=face_edges)
     # Into the same ledger. No rule reads pocket claims today, and that is the reason to write
     # them rather than to wait: a partial ledger is the trap this whole mechanism exists to
     # close, since a future rule reading one would find no pocket claim and conclude there is
     # no overlap -- silently, which is the failure `require_node` and `claims_of` both refuse
     # to allow anywhere else.
-    pockets = recognise_pockets(part, ledger=ledger)
-    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger)
-    turned_steps = recognise_turned_steps(part, cyls=cyls)
+    pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
+    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
+    # Into the ledger for the same reason, though the rule that reads these two runs in the
+    # census rather than here: a groove is a rung of the step ladder, and both records survive
+    # into the result because a consumer dimensioning the shaft needs the feature and the
+    # profile. Only a count of *distinct machined features* has to choose.
+    turned_steps = recognise_turned_steps(part, cyls=cyls, ledger=ledger)
     # ONE place decides, from the classification the result then carries. Per-family
     # conditionals at each call site are what the aggregate single-scan design removes; this
     # decides once for every consumer rather than each consumer deciding again.
@@ -362,25 +413,32 @@ def build_recognition_result(
     # the rule below needs the step claims, and the field order of `RecognitionResult` puts
     # `chamfers` first. Gated together because they are the same oblique-face read, so a
     # rotational part yields neither and there is nothing to reconcile.
-    chamfers = recognise_chamfers(part, ledger=ledger) if prismatic else []
-    angled_steps = recognise_angled_steps(part, ledger=ledger) if prismatic else []
+    chamfers = (
+        recognise_chamfers(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+    )
+    angled_steps = (
+        recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+    )
     prof = TurnedProfile.from_steps(list(turned_steps))
-    return RecognitionResult(
+    return run, RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(countersinks),
         holes=tuple(holes),
         double_d_bores=tuple(double_d_bores),
         hole_patterns=tuple(recognise_hole_patterns(holes)),
-        bosses=tuple(recognise_bosses(part, cyls=cyls)),
-        polygonal_bosses=tuple(recognise_polygonal_bosses(part)),
-        polygonal_stock=tuple(recognise_polygonal_stock(part)),
+        bosses=tuple(recognise_bosses(part, cyls=cyls, face_edges=face_edges)),
+        polygonal_bosses=tuple(recognise_polygonal_bosses(part, graph=run.graph)),
+        polygonal_stock=tuple(recognise_polygonal_stock(part, graph=run.graph)),
         channels=tuple(channels),
         slots=tuple(slots),
         # Derived from the accepted members, like the other two pattern families — the
         # recogniser must not rediscover the slots it groups.
         slot_patterns=tuple(recognise_slot_patterns(slots)),
-        grooves=tuple(recognise_grooves(part, cyls=cyls)),
-        flats=tuple(recognise_flats(part, cyls=cyls)),
+        # Also into the ledger, and the census's step count depends on it: the rule it applies
+        # after this returns asks which faces a groove was built from, and an unclaimed groove
+        # would subtract nothing and be counted twice, silently.
+        grooves=tuple(recognise_grooves(part, cyls=cyls, ledger=ledger)),
+        flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
         pockets=tuple(pockets),
         prismatic_pockets=tuple(
             prismatic_pockets_that_are_not_pockets(ring_pockets, ledger)
@@ -395,6 +453,6 @@ def build_recognition_result(
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
         passages=tuple(passages_that_are_not_slots(part, ledger)) if prismatic else (),
-        fillets=tuple(recognise_fillets(part)) if prismatic else (),
+        fillets=tuple(recognise_fillets(part, face_edges=face_edges)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )
