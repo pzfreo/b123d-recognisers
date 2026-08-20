@@ -55,6 +55,7 @@ from b123d_recognisers._reconcile import (
 )
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
+from b123d_recognisers.turned import TurnedProfile
 
 
 def feature_census(part: Part) -> dict[str, int]:
@@ -115,6 +116,16 @@ def feature_census(part: Part) -> dict[str, int]:
         "angled_step": angled_steps,
         "fillet": recognise_fillets(part, face_edges=face_edges),
         "countersink": recognise_countersinks(part),
-        "plate": recognise_plates(part),
+        # Gated on the turned profile, as `build_recognition_result` gates it: a shaft whose
+        # steps form a ladder is not a plate, and counting one here while the aggregate reports
+        # none is two answers about one part. Measured before fixing -- it happened on exactly
+        # one of the 73 corpus parts, a real turned screw, which is what a divergence between
+        # two inventories looks like before anyone notices.
+        #
+        # The aggregate also gates on its caller's *rotational* classification. That is an input
+        # this function does not take, so this matches the half it can evaluate rather than
+        # pretending to the whole.
+        "plate": [] if TurnedProfile.from_steps(list(steps)) is not None
+        else recognise_plates(part),
     }
     return {kind: len(recs) for kind, recs in records.items()}
