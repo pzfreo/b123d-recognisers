@@ -282,6 +282,38 @@ def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
     assert recognise_chamfers(gusseted) == []
 
 
+def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
+    """The companion test counts the *outer* wire, so an inner one cannot cost recall.
+
+    The blind end is what makes a step a step, and it is recognised by being a triangle. Drill
+    a hole through it — a bolt hole in the face closing an angled shoulder, which is ordinary
+    — and the face has four edges: three sides and a circle. Counting all of them, the step
+    vanished entirely, and the record it had produced was correct in every field.
+
+    Relaxing the count itself is what the module docstring rules out, and rightly: a chamfer
+    strip's end cap is an axis-aligned four-edge face, so a family that accepted four would
+    take every chamfer back. The outer wire separates the two without relaxing anything —
+    a rectangle's outer wire has four edges whatever is drilled through it, a triangle's has
+    three.
+
+    What this does *not* recover is the other subdivision the docstring names: a triangle
+    whose *side* is split by a neighbouring feature has four edges in the outer wire itself,
+    and is still missed. That case needs the companion recognised as geometrically triangular
+    rather than topologically so.
+    """
+
+    plain = recognise_angled_steps(_blind())
+    drilled_part = _blind() - Pos(0, 18.67, 4.67) * Rot(0, 90, 0) * Cylinder(0.6, 80)
+
+    # The premise: the hole really did subdivide the blind end rather than missing it.
+    ends = [f for f in drilled_part.faces() if abs(f.center().X + 5) < 1e-6 and f.area < 20]
+    assert len(ends) == 1
+    assert len(ends[0].edges()) == 4, "the fixture must actually add an edge to the flat"
+    assert len(ends[0].outer_wire().edges()) == 3
+
+    assert recognise_angled_steps(drilled_part) == plain
+
+
 def test_a_step_is_a_step_at_any_scale():
     """No gate here mentions the part, so scaling the whole model changes nothing.
 

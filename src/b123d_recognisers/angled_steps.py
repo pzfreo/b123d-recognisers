@@ -64,15 +64,21 @@ No size gate, no tolerance, no fraction: every gate here is either a shared geom
 classification, a solid-classifier probe or a count of edges.
 
 **What that costs is recall, and the edge count is where about half of it goes.** The
-companion test asks for exactly three edges, so a blind end whose triangle is *subdivided* —
-its side split by a neighbouring feature — reads as four or five edges and the step is
-missed. Across 120 MFCAD++ models carrying the feature, instance recall is 70% (114 of 163),
-and 24 of the 49 misses have no bare triangular face anywhere on them.
+companion test asks for three edges, so a blind end whose triangle is *subdivided* reads as
+four or five and the step is missed. Across 120 MFCAD++ models carrying the feature, instance
+recall was 70% (114 of 163), and 24 of the 49 misses have no bare triangular face anywhere on
+them. That measurement predates the outer-wire count below and was taken over a set larger
+than the one vendored here, so it is left as the figure it was rather than restated.
 
 Relaxing the count is not the fix. A chamfer strip's own end caps are axis-aligned faces
 too, so admitting four-edge companions would hand every chamfer straight back to this
-family. Recovering those instances needs the companion recognised as *geometrically*
-triangular rather than topologically so, which is a different and larger change.
+family. **Counting the outer wire is not relaxing it**, and recovers one of the two ways a
+flat gets subdivided: a hole drilled through the blind end — a bolt hole in the face closing
+an angled shoulder — adds an inner wire, leaving three edges in the outer one. A rectangle
+still has four however it is drilled. The other way, a *side* split by a neighbouring
+feature, puts the extra edge in the outer wire itself and is still missed; recovering that
+needs the companion recognised as *geometrically* triangular rather than topologically so,
+which is a different and larger change.
 
 Depends on ``chamfers`` for the bevel read and the convexity probe rather than copying
 either, so a change to what counts as a bevel reaches both recognisers at once.
@@ -145,6 +151,12 @@ def _closed_by_a_triangular_flat(
             continue
         edges = face_edges.of(other) if face_edges is not None else other.edges()
         if len(edges) == 3:
+            return True
+        # Four edges is either a rectangle -- a chamfer strip's own end cap, which has to stay
+        # rejected -- or a triangle with a hole through it, which is a blind end with a bolt
+        # hole in it. The outer wire separates them and the memo cannot, so it is consulted
+        # only when the plain count has already failed.
+        if len(other.outer_wire().edges()) == 3:
             return True
     return False
 
