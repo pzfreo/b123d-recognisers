@@ -333,12 +333,13 @@ class FaceGraph:
         shared = self.shared_edges(a, b)
         if not shared:
             return None
+        # One guard, not three: a direction that cannot be walked and a normal that cannot be
+        # read are the same answer -- the geometry here is too degenerate to classify.
         walk = self._boundary_direction(a, shared[0])
-        if walk is None:
-            return None
-        direction, point = walk
-        na, nb = self._normal_at(a, point), self._normal_at(b, point)
-        if na is None or nb is None:
+        direction, point = walk if walk else (None, None)
+        na = self._normal_at(a, point) if point else None
+        nb = self._normal_at(b, point) if point else None
+        if direction is None or na is None or nb is None:
             return None
         if sum(x * y for x, y in zip(na, nb, strict=True)) > SMOOTH_ARC_COS:
             return "smooth"
@@ -376,11 +377,11 @@ class FaceGraph:
             adaptor = BRepAdaptor_Surface(face.wrapped)
             here, along_u, along_v = gp_Pnt(), gp_Vec(), gp_Vec()
             adaptor.D1(parameters.X(), parameters.Y(), here, along_u, along_v)
+            cross = along_u.Crossed(along_v)
         except Exception:  # noqa: BLE001 - a degenerate patch has no normal there
-            return None
-        cross = along_u.Crossed(along_v)
+            cross = gp_Vec()
         if cross.Magnitude() < 1e-12:
-            return None
+            return None  # degenerate: the surface has no normal at this point
         cross.Normalize()
         forward = face.wrapped.Orientation() != TopAbs_Orientation.TopAbs_REVERSED
         sign = 1.0 if forward else -1.0
@@ -401,16 +402,18 @@ class FaceGraph:
         """
 
         face = self._faces[self._at(node)]
+        # No "edge not found" branch: every caller reaches this through `shared_edges`, which
+        # returns edges of *this* face, so the explorer always finds it. A guard for a case the
+        # call graph excludes is a branch no test can reach, which this epic has removed twice
+        # already rather than carry.
+        reversed_here = False
         explorer = TopExp_Explorer(face.wrapped, TopAbs_EDGE)
-        reversed_here = None
         while explorer.More():
             current = explorer.Current()
             if current.IsSame(edge.wrapped):
                 reversed_here = current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
                 break
             explorer.Next()
-        if reversed_here is None:
-            return None
         curve = BRepAdaptor_Curve(edge.wrapped)
         middle = 0.5 * (curve.FirstParameter() + curve.LastParameter())
         point, tangent = gp_Pnt(), gp_Vec()
@@ -418,7 +421,7 @@ class FaceGraph:
         raw = (tangent.X(), tangent.Y(), tangent.Z())
         length = sum(x * x for x in raw) ** 0.5
         if length < 1e-12:
-            return None
+            return None  # a degenerate edge has no direction to walk
         sign = -1.0 / length if reversed_here else 1.0 / length
         return tuple(x * sign for x in raw), (point.X(), point.Y(), point.Z())
 
