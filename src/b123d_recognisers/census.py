@@ -28,7 +28,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from b123d_recognisers import (
-    analyse_cylinders,
     recognise_angled_steps,
     recognise_bosses,
     recognise_chamfers,
@@ -45,8 +44,6 @@ from b123d_recognisers import (
     recognise_slots,
     recognise_turned_steps,
 )
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     passages_that_are_not_slots,
@@ -54,6 +51,7 @@ from b123d_recognisers._reconcile import (
     steps_that_are_not_grooves,
 )
 from b123d_recognisers._record import Record
+from b123d_recognisers._run import start
 from b123d_recognisers._typing import Part
 from b123d_recognisers.turned import TurnedProfile
 
@@ -68,16 +66,11 @@ def feature_census(part: Part) -> dict[str, int]:
     *substrate* recognisers (face levels and step risers) are excluded: they feed other
     recognisers rather than being distinct machined features, and their level-derivation belongs
     to the model layer, not a metric."""
-    cyls = analyse_cylinders(part)
-    # One face-edge memo for the whole census. `Face.edges()` is the suite's most expensive
-    # derived query and the recognisers below ask it of the same faces over and over; sharing
-    # it here is worth about a fifth of this function's runtime. It must not outlive the call
-    # -- see `FaceEdges`.
-    face_edges = FaceEdges()
-    # A through slot is also a passage, so the two families would count one void twice. The
-    # rule that resolves it reads the faces each claimed, so both write into one ledger --
-    # and the metric agrees with `build_recognition_result` because it is the same rule.
-    ledger = ClaimLedger(FaceGraph(part, face_edges=face_edges))
+    # One run, one set of shared facts. The face-edge memo, the graph the families claim
+    # against and the cylinder scan were each threaded separately here and derived again in
+    # `build_recognition_result`; `RecognitionRun` is what stops the two deriving them apart.
+    run = start(part)
+    cyls, face_edges, ledger = run.cylinders, run.face_edges, run.ledger
     holes = recognise_holes(part, cyls=cyls, face_edges=face_edges)
     # One band is both the annular channel cut into a shaft and a rung of that shaft's step
     # ladder. Both records are real -- see `_reconcile` -- but it is one machined feature, and

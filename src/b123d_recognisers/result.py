@@ -15,15 +15,12 @@ import warnings
 from dataclasses import dataclass
 from enum import Enum
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
     HoleRecord,
     LinearArray,
     RectGrid,
-    analyse_cylinders,
     recognise_bosses,
     recognise_hole_patterns,
     recognise_holes,
@@ -33,6 +30,7 @@ from b123d_recognisers._reconcile import (
     passages_that_are_not_slots,
     prismatic_pockets_that_are_not_pockets,
 )
+from b123d_recognisers._run import start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
@@ -335,24 +333,28 @@ def build_recognition_result(
     time, under-recognising reports a real feature as absent.
     """
 
-    z_cyls, cross_cyls = cylinders if cylinders is not None else analyse_cylinders(part)
-    cyls = (z_cyls, cross_cyls)
+    # One run, one set of shared facts -- the same object `feature_census` builds, which is
+    # what stops the two orchestration paths deriving similar state and drifting apart.
+    run = start(part, cylinders)
+    z_cyls, cross_cyls = run.cylinders
+    cyls = run.cylinders
+    face_edges = run.face_edges
     countersinks = recognise_countersinks(part)
-    holes = recognise_holes(part, cyls=cyls, csinks=countersinks)
+    holes = recognise_holes(part, cyls=cyls, csinks=countersinks, face_edges=face_edges)
     double_d_bores = recognise_double_d_bores(part)
     # The two families that describe a void by the faces bounding it both write into one
     # ledger, so the reconciliation below is a question about faces rather than about
     # coordinates each of them derived its own way.
-    ledger = ClaimLedger(FaceGraph(part))
-    slots = recognise_slots(part, ledger=ledger)
-    channels = recognise_channels(part, ledger=ledger)
+    ledger = run.ledger
+    slots = recognise_slots(part, ledger=ledger, face_edges=face_edges)
+    channels = recognise_channels(part, ledger=ledger, face_edges=face_edges)
     # Into the same ledger. No rule reads pocket claims today, and that is the reason to write
     # them rather than to wait: a partial ledger is the trap this whole mechanism exists to
     # close, since a future rule reading one would find no pocket claim and conclude there is
     # no overlap -- silently, which is the failure `require_node` and `claims_of` both refuse
     # to allow anywhere else.
-    pockets = recognise_pockets(part, ledger=ledger)
-    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger)
+    pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
+    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
     turned_steps = recognise_turned_steps(part, cyls=cyls)
     # ONE place decides, from the classification the result then carries. Per-family
     # conditionals at each call site are what the aggregate single-scan design removes; this
@@ -362,8 +364,12 @@ def build_recognition_result(
     # the rule below needs the step claims, and the field order of `RecognitionResult` puts
     # `chamfers` first. Gated together because they are the same oblique-face read, so a
     # rotational part yields neither and there is nothing to reconcile.
-    chamfers = recognise_chamfers(part, ledger=ledger) if prismatic else []
-    angled_steps = recognise_angled_steps(part, ledger=ledger) if prismatic else []
+    chamfers = (
+        recognise_chamfers(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+    )
+    angled_steps = (
+        recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+    )
     prof = TurnedProfile.from_steps(list(turned_steps))
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -371,16 +377,16 @@ def build_recognition_result(
         holes=tuple(holes),
         double_d_bores=tuple(double_d_bores),
         hole_patterns=tuple(recognise_hole_patterns(holes)),
-        bosses=tuple(recognise_bosses(part, cyls=cyls)),
-        polygonal_bosses=tuple(recognise_polygonal_bosses(part)),
-        polygonal_stock=tuple(recognise_polygonal_stock(part)),
+        bosses=tuple(recognise_bosses(part, cyls=cyls, face_edges=face_edges)),
+        polygonal_bosses=tuple(recognise_polygonal_bosses(part, graph=run.graph)),
+        polygonal_stock=tuple(recognise_polygonal_stock(part, graph=run.graph)),
         channels=tuple(channels),
         slots=tuple(slots),
         # Derived from the accepted members, like the other two pattern families — the
         # recogniser must not rediscover the slots it groups.
         slot_patterns=tuple(recognise_slot_patterns(slots)),
         grooves=tuple(recognise_grooves(part, cyls=cyls)),
-        flats=tuple(recognise_flats(part, cyls=cyls)),
+        flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
         pockets=tuple(pockets),
         prismatic_pockets=tuple(
             prismatic_pockets_that_are_not_pockets(ring_pockets, ledger)
@@ -395,6 +401,6 @@ def build_recognition_result(
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
         passages=tuple(passages_that_are_not_slots(part, ledger)) if prismatic else (),
-        fillets=tuple(recognise_fillets(part)) if prismatic else (),
+        fillets=tuple(recognise_fillets(part, face_edges=face_edges)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

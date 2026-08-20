@@ -325,7 +325,12 @@ def _ring_profile(
 
 
 def _recognise_one(
-    part: Part, *, tol: float | None, angle_tol: float, whole_stock: bool = False
+    part: Part,
+    *,
+    tol: float | None,
+    angle_tol: float,
+    whole_stock: bool = False,
+    graph: FaceGraph | None = None,
 ) -> list[PolygonalBoss | PolygonalStock]:
     tol = _TOL if tol is None else tol
     # The graph holds the face inventory, the adjacency and the per-face attributes this
@@ -333,7 +338,10 @@ def _recognise_one(
     # the property the hand-rolled cache here existed for: only the vertical sides and the few
     # faces bounding a ring are ever asked about, and resolving the rest measured at more than
     # half of this recogniser's total time on the corpus.
-    graph = FaceGraph(part)
+    #
+    # Memoising is also why an aggregate should hand its own graph down rather than let this
+    # build a second one over the same faces: the run has already resolved some of them.
+    graph = FaceGraph(part) if graph is None else graph
 
     def shares_edge(i: FaceNode, j: FaceNode) -> bool:
         return j in graph.neighbours(i)
@@ -425,36 +433,56 @@ def _recognise_one(
 
 
 def recognise_polygonal_bosses(
-    part: Part, *, tol: float | None = None, angle_tol: float = math.radians(2)
+    part: Part,
+    *,
+    tol: float | None = None,
+    angle_tol: float = math.radians(2),
+    graph: FaceGraph | None = None,
 ) -> list[PolygonalBoss]:
     """Return regular hexagonal Z-axis bosses independently per physical solid.
 
     A candidate is accepted from a closed ring of outward planar side faces, opposed
     support planes with one A/F value, and common attached support/top caps. A whole prism,
     a blind recess, or faces assembled across separate solids cannot satisfy that evidence.
+
+    *graph* is an existing graph over *part*, from a caller running several recognisers over
+    one solid. It is used only when *part* is a single solid: with more than one, this looks at
+    each solid separately on purpose -- a ring assembled from faces of two solids is not a boss
+    -- and a whole-part graph would be the wrong inventory to ask.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
+    shared = graph if len(sources) == 1 else None
     return sorted(
         boss
         for solid in sources
-        for boss in _recognise_one(solid, tol=tol, angle_tol=angle_tol)
+        for boss in _recognise_one(solid, tol=tol, angle_tol=angle_tol, graph=shared)
         if isinstance(boss, PolygonalBoss)
     )
 
 
 def recognise_polygonal_stock(
-    part: Part, *, tol: float | None = None, angle_tol: float = math.radians(2)
+    part: Part,
+    *,
+    tol: float | None = None,
+    angle_tol: float = math.radians(2),
+    graph: FaceGraph | None = None,
 ) -> list[PolygonalStock]:
     """Return one record only when the complete part is a regular hexagonal prism.
 
     The exact-prism boundary is fail closed: multi-solid assemblies and solids with any
     additional or missing face are not silently promoted to stock.
+
+    *graph* is an existing graph over *part*, as above. This one asks about the whole part and
+    only ever with a single solid, so there is no case where the caller's graph is the wrong
+    inventory.
     """
     if len(list(part.solids())) != 1 or len(list(part.faces())) != 8:
         return []
     return sorted(
         record
-        for record in _recognise_one(part, tol=tol, angle_tol=angle_tol, whole_stock=True)
+        for record in _recognise_one(
+            part, tol=tol, angle_tol=angle_tol, whole_stock=True, graph=graph
+        )
         if isinstance(record, PolygonalStock)
     )

@@ -37,6 +37,7 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
 
 
 def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
+    import b123d_recognisers._run as run_module
     import b123d_recognisers.result as result_module
 
     calls: dict[str, int] = {}
@@ -73,13 +74,15 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         calls["cylinders"] = calls.get("cylinders", 0) + 1
         return cylinders
 
-    def fake_holes(part, *, cyls=None, csinks=None):
+    def fake_holes(part, *, cyls=None, csinks=None, **kwargs):
         calls["holes"] = calls.get("holes", 0) + 1
         assert cyls[0] is cylinders[0] and cyls[1] is cylinders[1]
         assert csinks is countersinks
         return holes
 
-    monkeypatch.setattr(result_module, "analyse_cylinders", fake_cylinders)
+    # Patched where the run derives it, not where the aggregate used to. The cylinder scan is
+    # one of the facts `RecognitionRun` owns, so `_run` is the only place that asks for it.
+    monkeypatch.setattr(run_module, "analyse_cylinders", fake_cylinders)
     monkeypatch.setattr(
         result_module, "recognise_countersinks", counted("countersinks", countersinks)
     )
@@ -168,6 +171,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
 
 def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
+    import b123d_recognisers._run as run_module
     import b123d_recognisers.result as result_module
 
     cylinders = ([], [])
@@ -175,7 +179,7 @@ def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
     def forbidden(part):
         raise AssertionError("supplied cylinder substrate was rediscovered")
 
-    monkeypatch.setattr(result_module, "analyse_cylinders", forbidden)
+    monkeypatch.setattr(run_module, "analyse_cylinders", forbidden)
     result = result_module.build_recognition_result(Box(10, 10, 10), cylinders=cylinders)
     assert result.cylinders == ((), ())
 
