@@ -23,7 +23,7 @@ compatibility review, and release notes.
 
 | Recogniser | Proven current scope | Explicitly excluded or deferred | Primary evidence |
 | --- | --- | --- | --- |
-| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis whose blind end is closed by an axis-aligned flat bounded by exactly three edges. | Ends whose triangle is subdivided into four or more edges by a neighbouring feature, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; over 120 MFCAD++ models, 100% precision and 70% instance recall. |
+| `recognise_angled_steps` | Convex oblique planar slants running along one principal axis, cut into an edge of the part rather than into a wall of a recess, whose blind end is closed by an axis-aligned flat whose **outer wire** has three edges — so a bolt hole through that flat does not hide the step. | Ends whose triangle has a *side* split by a neighbouring feature, through slants (a chamfer), and compound three-axis slants. | Angled-step functional tests; over 120 MFCAD++ models, 100% precision and 70% instance recall, measured before the 0.2.6 gate changes; on 33 held-out MFCAD++ models drawn from classes no predicate was shaped by, 8 records and 100% precision. |
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
 | `recognise_chamfers` | Dimension-worthy external planar bevels running along one principal axis. Called through `build_recognition_result` or `feature_census`, a slant with a triangular blind end is excluded — an angled step, dropped by `_reconcile.chamfers_that_are_not_angled_steps` from the claims both families write. Called directly, that slant is proposed, because on the face alone it is a bevel. | Compound three-axis corner bevels and faces outside leg/size gates. | Chamfer/fillet/flat golden, negative bevel tests, bevel-claim reconciliation tests, and 40 labelled MFCAD++ models. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid. | Bounded blind pockets, through slots, and cross-solid face combinations. | Open-channel golden and per-solid regressions. |
@@ -79,7 +79,9 @@ The exclusions above were written from this project's own fixtures. Two external
 labelled corpora now test them against models nobody here authored — [MFCAD](https://github.com/hducg/MFCAD)
 (15,488 models) and [MFCAD++](https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823)
 (59,665 models, 24 feature classes, 3–10 *interacting* features per model). Neither is checked
-in, per `migration/PARITY.md`; both are freely downloadable.
+in whole, per `migration/PARITY.md`; both are freely downloadable. Two small MFCAD++ subsets
+are vendored under `tests/corpus`, each with the rule that selected it: forty models the
+predicates here were shaped by, and thirty-three that were held out.
 
 **The exclusions hold, and they are the dominant failure mode.** On MFCAD, per-class recognition
 tracks how axis-aligned a class's faces are: classes whose feature faces are 100% axis-aligned are
@@ -89,6 +91,18 @@ rectangular class recognises, and Triangular passage, 6-sided passage, Triangula
 through slot, 2-sided through step, Horizontal circular end blind slot and Slanted through step
 produce essentially nothing. This is what "non-rectangular floors", "Slanted/curved faces" and
 "non-principal axes" above mean in practice, on parts written by someone else.
+
+**One figure is about geometry this project was not fitted to.** Everything above comes from a
+corpus that has already been used to change predicates, which makes it regression evidence rather
+than a generalisation estimate. `tests/corpus/mfcadpp_holdout` is thirty-three models drawn from
+the MFCAD++ *val* split — disjoint from the vendored design set by construction — covering the
+twenty classes the design set does not target. It was scored once, after the last predicate
+change. Angled steps: eight records, every one on a face labelled a triangular blind step, with
+forty-eight triangular-pocket faces and twenty-two slanted-through-step faces available to go
+wrong on. Stock: 226 faces, none claimed. It found one defect before it was sealed — a
+right-triangular pocket wall reported as an angled step — which is now rejected by a gate and
+pinned by a fixture. Scoring that set again is fine; changing a predicate to satisfy it is not,
+and would cost a fresh draw.
 
 **Curved families recognise.** MFCAD is planar-only in all 15 classes, so it cannot exercise
 holes, fillets, bosses, countersinks, grooves or turned steps at all. MFCAD++ can, and does:
