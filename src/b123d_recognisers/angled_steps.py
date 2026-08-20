@@ -34,7 +34,7 @@ and :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps` read
 drops the duplicates — so there is exactly one implementation of the discriminator, owned by the
 family it defines, and nothing left for a second copy to drift from.
 
-Four gates, the first three shared with :func:`b123d_recognisers.recognise_chamfers` so the
+Five gates, the first three shared with :func:`b123d_recognisers.recognise_chamfers` so the
 two cannot disagree about what they are looking at:
 
 - **an oblique bevel** — :func:`b123d_recognisers.classify_bevel`, so the slant is a planar
@@ -50,10 +50,18 @@ two cannot disagree about what they are looking at:
   a slant with material *behind* it rather than below — a gusset filling a concave corner,
   whose hypotenuse bridges two perpendicular walls and whose ends are triangles, so it
   satisfies every other gate here and the material is the only thing that differs;
+- **no material beyond the corner** — :func:`b123d_recognisers._bevel.material_beyond_corner`,
+  which finishes the job the second gate was doing alone. That gate excludes a pocket wall by
+  asking what the slant bridges, and a triangular pocket whose *other two* walls happen to be
+  axis-aligned answers correctly and is a pocket anyway. The held-out corpus contained one and
+  the design corpus did not, which is the whole argument for holding a corpus out. The corner
+  a step replaces is a corner of the stock, with free space behind it; the corner a recess wall
+  replaces is where two walls of that recess meet, with the material they were cut from behind
+  it. Convexity cannot see the difference — both have vacuum on the bevel side;
 - **a triangular companion** — the blind end.
 
 No size gate, no tolerance, no fraction: every gate here is either a shared geometric
-classification or a count of edges.
+classification, a solid-classifier probe or a count of edges.
 
 **What that costs is recall, and the edge count is where about half of it goes.** The
 companion test asks for exactly three edges, so a blind end whose triangle is *subdivided* —
@@ -82,7 +90,12 @@ from b123d_recognisers._adjacency import (
     nearest_axis_aligned_planes,
     neighbours,
 )
-from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
+from b123d_recognisers._bevel import (
+    BevelReject,
+    classify_bevel,
+    convex_bevel,
+    material_beyond_corner,
+)
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -179,6 +192,8 @@ def recognise_angled_steps(
             continue
         if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave — a pocket or passage wall, not a step
+        if material_beyond_corner(part, fc, edge_i, neigh_coord):
+            continue  # the corner two recess walls meet at, not a corner of the part
         # Last, though it is the gate this family is named for — the three above it are the
         # shared bevel read, and this is the one thing that is only about a step.
         # Hoisting it ahead of the solid classifier is the obvious optimisation and

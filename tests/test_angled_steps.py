@@ -44,6 +44,7 @@ from b123d_recognisers._adjacency import (
     edge_face_map,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._bevel import material_beyond_corner
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
@@ -181,6 +182,54 @@ def test_a_pocket_wall_is_not_an_angled_step_though_it_has_a_triangular_floor():
     """
 
     pocket = _block() - Pos(0, 0, 6) * Rot(0, 0, 30) * Box(20, 14, 6)
+
+    assert recognise_angled_steps(pocket) == []
+
+
+def test_a_right_triangular_pocket_wall_is_not_an_angled_step():
+    """The pocket the "bridges two axis-aligned faces" gate does not catch.
+
+    That gate excludes a pocket by asking what its wall bridges, and the pocket it was
+    measured against had none to offer: a rotated-box pocket's walls are all oblique, so no
+    two distinct in-plane axes are available. A pocket whose plan is a *right* triangle
+    answers the question correctly instead — the hypotenuse bridges the two axis-aligned
+    walls beside it, its floor is a triangle, and the corner it replaces has vacuum on the
+    bevel side like any other. Four of the five gates pass and it is still a pocket.
+
+    Found on held-out geometry, not designed for: ``corpus/mfcadpp_holdout``'s draw 1
+    carried one and the design corpus carried none, so the defect was invisible to every
+    figure this family quoted. What separates the two is what lies *beyond* the corner —
+    stock for a step cut into an edge of the part, material for two walls of a recess
+    meeting.
+    """
+
+    with BuildPart() as prism:
+        with BuildSketch(Plane.XY):
+            Polygon((0, 0), (14, 0), (0, 10))
+        extrude(amount=6)
+    pocket = _block() - prism.part
+
+    # The premise: the hypotenuse really does clear all four earlier gates, so this part
+    # exercises the far-corner probe rather than being rejected before reaching it.
+    faces = list(pocket.faces())
+    edge_faces = edge_face_map(faces)
+    reached = 0
+    for face in faces:
+        try:
+            edge_i, _nv, span, _hi, _lo = classify_bevel(face)
+        except BevelReject:
+            continue
+        oi = [j for j in (0, 1, 2) if j != edge_i]
+        centre = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}
+        neigh = nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=edge_i)
+        if (
+            oi[0] in neigh
+            and oi[1] in neigh
+            and convex_bevel(pocket, centre, edge_i, neigh)
+            and material_beyond_corner(pocket, centre, edge_i, neigh)
+        ):
+            reached += 1
+    assert reached == 1, "this fixture must reject exactly at the far-corner probe"
 
     assert recognise_angled_steps(pocket) == []
 
