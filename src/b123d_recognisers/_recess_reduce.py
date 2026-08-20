@@ -1,0 +1,261 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+"""Many candidates into the features they describe.
+
+A recess scan proposes the same void more than once -- seen through its other wall pair, split
+into arms by a channel crossing it, or found again from its end caps. Nothing above this module
+should have to know that, so this is where a list of candidates becomes a list of features:
+`_merge` folds co-located ones together, `_collapse_collinear` rejoins the arms a crossing
+feature split, and `_absorb` keeps the claims straight while they do it -- a folded candidate's
+faces belong to the feature that survives, or the ledger would report a void nobody built.
+
+`_body_scoped_pairs` is the other half of the same idea at a larger grain: a compound is scanned
+per solid, so faces from separate components cannot combine into a feature spanning the gap
+between them, and identical bodies are recognised once and their answer reused.
+
+Reduction only. Nothing here reads a face; it works on candidates that
+:mod:`b123d_recognisers._recess_faces` has already produced.
+"""
+
+from __future__ import annotations
+
+import math
+from collections import Counter
+from dataclasses import replace
+from typing import TypeVar
+
+from build123d import Box, Pos
+
+from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._recess_faces import _MERGE_TOL
+from b123d_recognisers._recess_records import Pocket, Slot
+from b123d_recognisers._typing import Part
+
+_R = TypeVar("_R", Slot, Pocket)
+
+#: Which faces a record was built from, while it is being built. Keyed by the record's *value*,
+#: which is safe here and nowhere else: this map lives inside one recognition of one part, and
+#: `_merge` already treats two candidates within `_MERGE_TOL` of each other as one feature -- so
+#: two value-equal candidates are, by the pipeline's own definition, the same slot. The ledger
+#: the values end up in keys by claim identity instead, because there two equal-valued *records*
+#: really can be two features.
+#:
+#: Spelled out rather than left as a bare ``dict``: the alias is the only description this map
+#: has, and an unparameterised one type-checks ``setdefault(<anything>, 1).no_such_method()``
+#: clean. `_Face.bb` below records what that costs on a field this module touches constantly.
+_Claims = dict[Slot | Pocket, set[FaceNode]]
+
+_VOID_INSET = 0.1
+
+_VOID_VOL_FRAC = 0.01
+
+def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) -> None:
+    """Give *into* the nodes of every record in *from_*, the records the pipeline replaces by it.
+
+    Every transform below rebuilds records rather than mutating them -- `_merge` keeps one of a
+    group, `_collapse_collinear` spans several into one, `_extend_obround_ends` `replace`s
+    fields -- so without this the claim would be attached to a record that never reaches the
+    caller. `_body_scoped_pairs` `replace`s a field too, but reads the map before it does rather
+    than going through here, because that is also where the map is scoped to one solid.
+    """
+
+    if claims is None:
+        return
+    nodes = claims.setdefault(into, set())
+    for record in from_:
+        nodes |= claims.get(record, set())
+
+def _body_signature(solid) -> tuple[float, ...]:
+    """Exact geometry-derived correspondence key for one physical solid.
+
+    Position, envelope, volume, and area are independent of compound traversal order.  The key
+    is deliberately not a traversal index or an OCP object/hash, so it remains serializable
+    under package ADR 0002. Callers treat duplicate signatures across separate solids as
+    ambiguous and fail closed rather than using the signature as proof of shared ownership.
+    """
+    bb = solid.bounding_box()
+    return (
+        float(bb.min.X),
+        float(bb.min.Y),
+        float(bb.min.Z),
+        float(bb.max.X),
+        float(bb.max.Y),
+        float(bb.max.Z),
+        float(solid.volume),
+        float(solid.area),
+    )
+
+def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:
+    """The same, paired with the nodes each record was built from.
+
+    The claim is read **per solid**, before the next one runs, and the map is cleared between
+    them. Reading it afterwards would have been wrong for a compound: the map is keyed by record
+    value, and two solids occupying the same space produce value-equal slots *and* duplicate body
+    signatures -- so both records would have come back carrying the union of both solids' faces.
+    That is precisely the cross-solid confusion `body_key` fails closed on, and it would have
+    reappeared in the claims.
+    """
+
+    signatures = [_body_signature(solid) for solid in sources]
+    counts = Counter(signatures)
+    out: list[tuple] = []
+    for solid, signature in zip(sources, signatures, strict=True):
+        if claims is not None:
+            claims.clear()
+        for record in recognise_one(solid):
+            keyed = replace(record, body_key=signature if counts[signature] == 1 else None)
+            nodes = frozenset() if claims is None else frozenset(claims.get(record, ()))
+            out.append((keyed, nodes))
+    return out
+
+def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
+    """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
+    (width axis, centreline, width and depth extent) but disjoint along their run
+    — return the gap ``(g_lo, g_hi)`` between them along ``long_axis``; else None.
+
+    Two arms of one channel that a crossing cut has split share every
+    dimension but their run; two genuinely parallel slots have different
+    centrelines (``w_center``) and never reach here."""
+    if a.width_axis != b.width_axis or a.long_axis != b.long_axis:
+        return None
+    if abs(a.w_center - b.w_center) > _MERGE_TOL or abs(a.width - b.width) > _MERGE_TOL:
+        return None
+    if abs(a.d_lo - b.d_lo) > _MERGE_TOL or abs(a.d_hi - b.d_hi) > _MERGE_TOL:
+        return None
+    if a.hi <= b.lo:
+        gap = (a.hi, b.lo)
+    elif b.hi <= a.lo:
+        gap = (b.hi, a.lo)
+    else:
+        return None  # overlapping along the run — not two disjoint arms
+    return gap if gap[1] - gap[0] > 0 else None
+
+def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
+    """True when the *whole* gap between two collinear arms is empty space — a
+    crossing channel of matching cross-section runs through it — rather than solid
+    stock or merely pierced by an incidental void.
+
+    The gap region is the box of its full run (along ``long_axis``) × the arm's
+    width × the arm's depth, inset slightly off the arm walls to avoid
+    coincident-face noise.  A crossing channel carves this box away entirely, so
+    its intersection with the solid is (near) zero volume.  A solid bridge fills
+    it; a small unrelated hole between two aligned slots leaves the box corners
+    solid — both keep a substantial intersection, so the arms stay separate.
+    Testing the whole box (not a single sample point) is what distinguishes a
+    channel from an incidental hole at the gap centre.
+
+    Known limitation: a wide *enclosed* void (a square window/pocket) flush with
+    the arm ends also empties the box and so fuses the arms.  This is a continuum
+    with the accepted symmetric-cross case — which likewise leaves the merged
+    slot wall-less where the crossing channel passes — and distinguishing a
+    narrow crossing channel from a wide window is an aspect-ratio judgement with
+    no clean line; the supported scope is intersecting *channels*, so it is left as-is."""
+    span = {
+        arm.long_axis: (gap[0], gap[1]),
+        arm.width_axis: (arm.w_center - arm.width / 2, arm.w_center + arm.width / 2),
+        arm.depth_axis: (arm.d_lo, arm.d_hi),
+    }
+    size, centre = {}, {}
+    for ax, (lo, hi) in span.items():
+        inset = min(_VOID_INSET, (hi - lo) / 4)
+        size[ax] = (hi - lo) - 2 * inset
+        centre[ax] = (lo + hi) / 2
+    if min(size.values()) <= 0:
+        return False
+    probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(size["x"], size["y"], size["z"])
+    inter = part.intersect(probe)
+    # ``intersect`` returns None (empty), a single shape with ``.volume`` (older
+    # build123d), or a ShapeList of shapes (newer build123d) — sum either way.
+    if inter is None:
+        inter_vol = 0.0
+    elif hasattr(inter, "volume"):
+        inter_vol = inter.volume
+    else:
+        inter_vol = sum(s.volume for s in inter)
+    box_vol = size["x"] * size["y"] * size["z"]
+    return bool(inter_vol <= _VOID_VOL_FRAC * box_vol)
+
+def _collapse_collinear(
+    slots: list[Slot], part: Part, claims: _Claims | None = None
+) -> list[Slot]:
+    """Recombine slot arms split by a crossing channel into whole channels.
+
+    A ``+`` of two intersecting through-channels is milled as one continuous slot
+    each, but the central intersection removes the middle of both channels' walls,
+    so the wall scan yields two collinear arm-slots per channel (four total).
+    Union collinear co-axial arms whose gap is void (a crossing channel passes
+    between them), and span each group into a single slot running its full length.
+    Arms separated by solid material — two genuinely distinct slots — are left as
+    separate features."""
+    parent = list(range(len(slots)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(len(slots)):
+        for j in range(i + 1, len(slots)):
+            gap = _same_channel_line(slots[i], slots[j])
+            if gap is not None and _gap_is_void(gap, slots[i], part):
+                parent[find(i)] = find(j)
+
+    groups: dict[int, list[Slot]] = {}
+    for idx, s in enumerate(slots):
+        groups.setdefault(find(idx), []).append(s)
+
+    out: list[Slot] = []
+    for members in groups.values():
+        if len(members) == 1:
+            out.append(members[0])
+            continue
+        base = members[0]
+        lo = min(m.lo for m in members)
+        hi = max(m.hi for m in members)
+        spanned = Slot(
+            width_axis=base.width_axis,
+            long_axis=base.long_axis,
+            width=base.width,
+            length=round(hi - lo, 2),
+            w_center=base.w_center,
+            lo=round(lo, 2),
+            hi=round(hi, 2),
+            d_lo=base.d_lo,
+            d_hi=base.d_hi,
+        )
+        # One channel milled through, split into arms by a crossing channel: every arm's walls
+        # bound the whole feature.
+        _absorb(claims, spanned, *members)
+        out.append(spanned)
+    return sorted(out, key=lambda c: (c.width, _region_center(c)))
+
+def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
+    """The slot's mid-point in part coordinates (axis-ordered)."""
+    c = {
+        s.width_axis: s.w_center,
+        s.long_axis: (s.lo + s.hi) / 2,
+        s.depth_axis: (s.d_lo + s.d_hi) / 2,
+    }
+    return (c["x"], c["y"], c["z"])
+
+def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
+    """A rectangular slot is bounded by two orthogonal opposed-wall pairs (the
+    width walls and the length end-caps), so the same feature is detected twice
+    — once per pair.  Collapse candidates that occupy the same region, keeping
+    the one with the smallest width (the true across-flats).
+
+    Sorted by ``(width, region_centre)`` so the output order — and therefore the
+    ``slot{i}`` annotation names downstream — is determined by geometry alone,
+    not by OCC face-iteration order (which is not stable across kernels)."""
+    kept: list[_R] = []
+    for s in sorted(candidates, key=lambda c: (c.width, _region_center(c))):
+        cs = _region_center(s)
+        keeper = next((k for k in kept if math.dist(cs, _region_center(k)) <= _MERGE_TOL), None)
+        if keeper is not None:
+            # The dropped candidate is the *same* feature seen through its other wall pair, so
+            # its walls are as much this slot's evidence as the ones that survived.
+            _absorb(claims, keeper, s)
+            continue
+        kept.append(s)
+    return kept

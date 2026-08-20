@@ -58,8 +58,37 @@ MODULE_SEAM_EDGES = {
     # Ring geometry: `passages` owned it while it was the only family walking rings.
     "_rings": {"_adjacency", "_geometry", "_typing"},
     "_recess_records": {"_record", "_typing"},
-    "_recess_core": {"_adjacency", "_geometry", "_recess_records", "_typing"},
-    "_recess_features": {"_adjacency", "_claims", "_recess_core", "_recess_records", "_typing"},
+    # The recess stack, bottom to top: faces are read, candidates are proposed from them,
+    # obround ends recover the ones no wall pair found, and reduction turns what is left into
+    # features. Each layer may import the ones below it and none may import one above, which is
+    # the property the split was for -- a family predicate cannot quietly become substrate.
+    "_recess_faces": {"_adjacency", "_recess_records", "_typing"},
+    "_recess_reduce": {"_adjacency", "_recess_faces", "_recess_records", "_typing"},
+    "_recess_obround": {
+        "_adjacency",
+        "_geometry",
+        "_recess_faces",
+        "_recess_records",
+        "_recess_reduce",
+        "_typing",
+    },
+    "_recess_core": {
+        "_adjacency",
+        "_geometry",
+        "_recess_faces",
+        "_recess_obround",
+        "_recess_records",
+        "_recess_reduce",
+        "_typing",
+    },
+    "_recess_features": {
+        "_adjacency",
+        "_claims",
+        "_recess_core",
+        "_recess_records",
+        "_recess_reduce",
+        "_typing",
+    },
     # The reconciler names both families it decides between, so it sits above them and neither
     # sits above it -- a recogniser importing this is the order dependence ADR 0003 forbids.
     "_reconcile": {

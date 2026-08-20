@@ -44,6 +44,7 @@ from b123d_recognisers._adjacency import (
     edge_face_map,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._bevel import material_beyond_corner
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
@@ -185,6 +186,54 @@ def test_a_pocket_wall_is_not_an_angled_step_though_it_has_a_triangular_floor():
     assert recognise_angled_steps(pocket) == []
 
 
+def test_a_right_triangular_pocket_wall_is_not_an_angled_step():
+    """The pocket the "bridges two axis-aligned faces" gate does not catch.
+
+    That gate excludes a pocket by asking what its wall bridges, and the pocket it was
+    measured against had none to offer: a rotated-box pocket's walls are all oblique, so no
+    two distinct in-plane axes are available. A pocket whose plan is a *right* triangle
+    answers the question correctly instead — the hypotenuse bridges the two axis-aligned
+    walls beside it, its floor is a triangle, and the corner it replaces has vacuum on the
+    bevel side like any other. Four of the five gates pass and it is still a pocket.
+
+    Found on held-out geometry, not designed for: ``corpus/mfcadpp_holdout``'s draw 1
+    carried one and the design corpus carried none, so the defect was invisible to every
+    figure this family quoted. What separates the two is what lies *beyond* the corner —
+    stock for a step cut into an edge of the part, material for two walls of a recess
+    meeting.
+    """
+
+    with BuildPart() as prism:
+        with BuildSketch(Plane.XY):
+            Polygon((0, 0), (14, 0), (0, 10))
+        extrude(amount=6)
+    pocket = _block() - prism.part
+
+    # The premise: the hypotenuse really does clear all four earlier gates, so this part
+    # exercises the far-corner probe rather than being rejected before reaching it.
+    faces = list(pocket.faces())
+    edge_faces = edge_face_map(faces)
+    reached = 0
+    for face in faces:
+        try:
+            edge_i, _nv, span, _hi, _lo = classify_bevel(face)
+        except BevelReject:
+            continue
+        oi = [j for j in (0, 1, 2) if j != edge_i]
+        centre = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}
+        neigh = nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=edge_i)
+        if (
+            oi[0] in neigh
+            and oi[1] in neigh
+            and convex_bevel(pocket, centre, edge_i, neigh)
+            and material_beyond_corner(pocket, centre, edge_i, neigh)
+        ):
+            reached += 1
+    assert reached == 1, "this fixture must reject exactly at the far-corner probe"
+
+    assert recognise_angled_steps(pocket) == []
+
+
 def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
     """The convex probe, on the only geometry that actually reaches it.
 
@@ -231,6 +280,38 @@ def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
     # convex probe rather than being turned away earlier as an oversized bevel. Both
     # recognisers must refuse a gusset, and for the same reason.
     assert recognise_chamfers(gusseted) == []
+
+
+def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
+    """The companion test counts the *outer* wire, so an inner one cannot cost recall.
+
+    The blind end is what makes a step a step, and it is recognised by being a triangle. Drill
+    a hole through it — a bolt hole in the face closing an angled shoulder, which is ordinary
+    — and the face has four edges: three sides and a circle. Counting all of them, the step
+    vanished entirely, and the record it had produced was correct in every field.
+
+    Relaxing the count itself is what the module docstring rules out, and rightly: a chamfer
+    strip's end cap is an axis-aligned four-edge face, so a family that accepted four would
+    take every chamfer back. The outer wire separates the two without relaxing anything —
+    a rectangle's outer wire has four edges whatever is drilled through it, a triangle's has
+    three.
+
+    What this does *not* recover is the other subdivision the docstring names: a triangle
+    whose *side* is split by a neighbouring feature has four edges in the outer wire itself,
+    and is still missed. That case needs the companion recognised as geometrically triangular
+    rather than topologically so.
+    """
+
+    plain = recognise_angled_steps(_blind())
+    drilled_part = _blind() - Pos(0, 18.67, 4.67) * Rot(0, 90, 0) * Cylinder(0.6, 80)
+
+    # The premise: the hole really did subdivide the blind end rather than missing it.
+    ends = [f for f in drilled_part.faces() if abs(f.center().X + 5) < 1e-6 and f.area < 20]
+    assert len(ends) == 1
+    assert len(ends[0].edges()) == 4, "the fixture must actually add an edge to the flat"
+    assert len(ends[0].outer_wire().edges()) == 3
+
+    assert recognise_angled_steps(drilled_part) == plain
 
 
 def test_a_step_is_a_step_at_any_scale():

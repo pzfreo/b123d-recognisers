@@ -9,15 +9,13 @@ from functools import partial
 from b123d_recognisers._adjacency import FaceEdges
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_core import (
-    _body_scoped_pairs,
     _channel_sort_key,
-    _Claims,
     _recognise_channels_one,
     _recognise_pockets_one,
     _recognise_slots_one,
-    _region_center,
 )
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
+from b123d_recognisers._recess_reduce import _body_scoped_pairs, _Claims, _region_center
 from b123d_recognisers._typing import Part
 
 

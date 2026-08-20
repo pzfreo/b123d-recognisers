@@ -2,6 +2,47 @@
 
 ## 0.2.6
 
+- **Fixed: a wall of a triangular pocket was reported as an angled step.** A step is a wedge cut
+  into an *edge of the part*; the gate meant to exclude recess walls asked what the slant bridges,
+  and a pocket whose plan is a right triangle answers correctly — its hypotenuse bridges the two
+  axis-aligned walls beside it and its floor is a triangle. Four of the five gates passed and it
+  was still a pocket. Now separated by what lies *beyond* the virtual corner: free space for a
+  corner of the stock, material for two walls of a recess meeting.
+
+  **No recorded value changes on any vendored part.** The geometry occurs in none of the 73, which
+  is why it survived until a corpus was held out — it was found on MFCAD++ models drawn from
+  classes no predicate here was shaped by.
+
+- **Fixed: a bolt hole through a step's blind end deleted the step.** The flat closing an angled
+  step is recognised by being a triangle, and the edge count included the hole's circle, so the
+  face read as four edges and the whole record vanished — every field of it correct. The count is
+  now taken on the flat's **outer wire**: a triangle with a hole through it still has three edges
+  there, a rectangle still has four however it is drilled, so no chamfer end cap is admitted. A
+  triangle whose *side* is split by a neighbouring feature is still missed, and is still listed as
+  an exclusion.
+
+  Additive where it applies, and again **no recorded value changes on any vendored part**.
+
+- **A held-out corpus, and the first accuracy figure not measured on geometry this project was
+  shaped by.** `tests/corpus/mfcadpp_holdout` is thirty-three MFCAD++ models from the *val* split,
+  covering the twenty classes the vendored design set does not target, scored once after the last
+  predicate change: angled steps 100% precision over eight records, and none of 226 stock faces
+  claimed by anything. The rule that selected it is in its manifest so the next draw can be made
+  the same way.
+
+- **A runtime budget with two workloads.** `tools/benchmark_recognition.py --workload census`
+  measures `feature_census` over the vendored NIST and real parts, `--workload composite` keeps
+  the four-fixture release arm, and `--check` measures either against
+  `docs/benchmarks/recognition-budget.json`. Reported as minimums rather than medians, with peak
+  RSS. Not wired into CI: a wall-clock assertion on a shared runner fails for reasons unrelated to
+  the code.
+
+- **Internal: the recess hotspot is four modules.** `_recess_core` carried face reading, candidate
+  reduction, obround recovery and the three families' predicates in 1,200 lines; those are now
+  `_recess_faces`, `_recess_reduce`, `_recess_obround` and a smaller `_recess_core`, layered
+  strictly downward and asserted edge by edge. No public symbol, signature, record value or
+  `__module__` changed.
+
 - **`feature_census` no longer counts a plate on a shaft whose steps form a turned profile.**
   `build_recognition_result` has always suppressed one there -- a stepped shaft is not a plate --
   and the census did not, so the two entry points reported different answers about the same

@@ -96,13 +96,48 @@ def convex_bevel(
     every other gate either recogniser applies.
     """
 
+    return not _material_at(part, _near_corner(centre, edge_i, neigh_coord, toward=1.0))
+
+
+def material_beyond_corner(
+    part: Part, centre: dict[int, float], edge_i: int, neigh_coord: dict[int, float]
+) -> bool:
+    """Is there solid on the *far* side of the virtual sharp corner, away from the bevel?
+
+    :func:`convex_bevel` asks what is between the corner and the bevel; this asks what is
+    behind it, and the pair together say what kind of corner it is. A bevel on an **edge of
+    the part** replaces a corner of the stock, so beyond it is free space in both directions.
+    A bevel on a **wall of a recess** replaces the corner where two walls of that recess meet,
+    and beyond that corner is the material the recess was cut out of.
+
+    Both cases have vacuum between corner and bevel, which is why convexity alone passes them
+    both. Found by the held-out corpus: a triangular pocket whose two other walls happen to be
+    axis-aligned satisfies every gate ``recognise_angled_steps`` applies, and was reported as
+    a step. The design corpus contained no such pocket.
+    """
+
+    return _material_at(part, _near_corner(centre, edge_i, neigh_coord, toward=-1.0))
+
+
+def _near_corner(
+    centre: dict[int, float], edge_i: int, neigh_coord: dict[int, float], *, toward: float
+) -> Vector3:
+    """A point just off the virtual sharp corner, on the bevel's side (*toward* 1) or the far
+    side (-1). The offset clears the on-boundary knife-edge at the raw corner itself."""
+
     oi = [j for j in (0, 1, 2) if j != edge_i]
     corner = [0.0, 0.0, 0.0]
     corner[edge_i] = centre[edge_i]
     corner[oi[0]] = neigh_coord[oi[0]]
     corner[oi[1]] = neigh_coord[oi[1]]
-    probe = tuple(corner[i] + INTERIOR_PROBE_FRAC * (centre[i] - corner[i]) for i in (0, 1, 2))
+    step = toward * INTERIOR_PROBE_FRAC
+    return (corner[0] + step * (centre[0] - corner[0]),
+            corner[1] + step * (centre[1] - corner[1]),
+            corner[2] + step * (centre[2] - corner[2]))
+
+
+def _material_at(part: Part, point: Vector3) -> bool:
     clsf = BRepClass3d_SolidClassifier(part.wrapped)
-    clsf.Perform(gp_Pnt(*probe), 1e-6)
+    clsf.Perform(gp_Pnt(*point), 1e-6)
     # `State()` is untyped in OCP, so the comparison is Any until it is narrowed here.
-    return bool(clsf.State() != TopAbs_IN)
+    return bool(clsf.State() == TopAbs_IN)

@@ -53,15 +53,19 @@ _geometry / _record / _typing
                      |       +--> _hole_patterns
                      |       +--> _recess_patterns
                      |
-          +--> _recess_core --> _recess_features
+          +--> _recess_faces --> _recess_reduce --> _recess_obround
+                                            |             |
+                                            +------+------+
+                                                   v
+                                            _recess_core --> _recess_features
 
 _features.py  --> _cylinder_substrate + _hole_features + _hole_patterns
 slots.py      --> _recess_features + _recess_patterns
 ```
 
 `_pattern_geometry` is record-agnostic and performs no topology scan. `_cylinder_substrate`
-performs the sole cylinder-face inventory scan. `_recess_core` performs the shared wall/floor
-candidate work used by the three recess recognisers. Family modules interpret injected/shared
+performs the sole cylinder-face inventory scan. The recess group performs the shared wall/floor
+candidate work used by the three recess recognisers, in four layers -- see the amendment below. Family modules interpret injected/shared
 evidence; they do not call sibling recognisers.
 
 All new modules are private. Existing root imports, facade imports, object identity, signatures,
@@ -83,3 +87,25 @@ goldens, determinism tests, benchmarks, and installed-archive audits protect beh
   topology scan.
 - The installed wheel gains private implementation files but no public module or symbol. This is an
   internal patch-level change; it does not alter the capability manifest or recognition policy.
+
+## Amendment (0.2.6, issue #127 item D)
+
+`_recess_core` reached 1,200 lines carrying four responsibilities, which is the maintenance
+hotspot this record's own consequences section was meant to prevent. It is now four modules,
+split by responsibility rather than by family, because the three recess families share almost
+everything below their candidate predicates and share nothing above them:
+
+| Module | Owns |
+| --- | --- |
+| `_recess_faces` | the face read, the candidate end/floor probes, and the coincidence bands |
+| `_recess_reduce` | merging, collapsing and body-scoping candidates into features |
+| `_recess_obround` | cylindrical end caps, and the slots and pockets recovered from them |
+| `_recess_core` | what a slot, a pocket and a channel each are, given those three |
+
+The layering is strict and downward, and the architecture tests assert it edge by edge rather
+than merely rejecting cycles. That is the property the split was for: a predicate belonging to
+one family cannot quietly become substrate for the other two without the import map saying so.
+
+No public symbol, signature, record value or `__module__` changed, and the split is verified
+byte-identical over the whole corpus. It remains an internal patch-level change, exactly as
+this record's consequences describe.

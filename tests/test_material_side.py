@@ -4,7 +4,7 @@
 """Which side of a face the material is on, checked where the corpus cannot check it.
 
 Four places in this package answer that question, by one convention specialised to three
-surface types: ``_recess_core._outward_normal`` for planes, ``_recess_core``'s concave test and
+surface types: ``_recess_faces._outward_normal`` for planes, ``_recess_faces``'s concave test and
 ``_cylinder_substrate``'s ``external`` flag for cylinders, and ``_hole_features``' convexity
 test for spheres. All four read a face's ``FORWARD``/``REVERSED`` orientation *against* its
 surface frame's handedness, because either alone is not enough: mirroring a solid makes the
