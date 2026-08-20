@@ -18,7 +18,7 @@ about performance that names one should say which.
 
 ## The recorded baseline
 
-Measured on the development container at `4bd8b3b`, which is a **shared** machine: these are
+Measured on the development container at `51d388b`, which is a **shared** machine: these are
 minimums over repeated samples rather than medians, because the median moves with whatever else
 happens to be running and the minimum is the closest available reading of the machine's own
 answer. Peak resident set is the whole process, so it includes the kernel's C++ allocations
@@ -26,11 +26,27 @@ that `tracemalloc` cannot see.
 
 | Workload | Iterations | Minimum | Peak RSS |
 | --- | ---: | ---: | ---: |
-| `composite` | 5 | 1.996 s | 461 MB |
+| `composite` | 5 | 1.927 s | 461 MB |
 | `census` | 3 | 99.683 s | 484 MB |
 
-The budget is **1.10** — ten percent, which is wider than the run-to-run spread on this box and
-narrower than any regression worth arguing about.
+The budget is **1.10** by default, and a workload may record its own. Two arms of very
+different length cannot share one ceiling on a shared box:
+
+| Workload | Budget | Why |
+| --- | ---: | --- |
+| `census` | 1.10 | a hundred seconds, stable here, and the arm the consolidation regression was about |
+| `composite` | 1.40 | two seconds, and its minimum-of-five ranged 1.93 s to 2.66 s over one evening with nothing else obviously running |
+
+The composite figure is loose because of the host, not because the code is allowed to be forty
+percent slower. On a dedicated machine it would be the tighter of the two; here, a ceiling under
+the observed spread reports the load rather than the code, and a check that cries wolf stops
+being run. **The census arm is the one to trust for a regression**, and it is also the one the
+one-inventory change actually cost.
+
+**The `budget` fields in the JSON are the authority**: `--check` reads its ceiling from there --
+a workload's own if it has one, the file's default otherwise -- so editing the policy changes
+what is enforced. `--budget` on the command line overrides both for a one-off question and
+defaults to not overriding.
 
 ## Running it
 
@@ -41,6 +57,11 @@ uv run python tools/benchmark_recognition.py --implementation package --workload
 
 Exits non-zero when the measured minimum is over the ceiling, and prints both numbers either
 way.
+
+Peak RSS is reported but not checked. `getrusage` reports kibibytes on Linux and bytes on
+macOS, so the macOS reading is converted to match the field name; Windows has no `resource`
+module and the field comes back null there rather than wrong. The seconds are what the
+budget is about.
 
 **Not run in CI, deliberately.** A wall-clock assertion on a shared runner fails for reasons
 that have nothing to do with the code, and a test that fails for unrelated reasons stops being

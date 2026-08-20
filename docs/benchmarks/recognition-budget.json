@@ -1,15 +1,17 @@
 {
   "schema_version": 1,
   "measured_at": "2026-08-20",
-  "source_commit": "4bd8b3b",
+  "source_commit": "51d388b",
   "environment": "epic development container, shared; interleaved arms, minimum of samples",
   "budget": 1.1,
   "workloads": {
     "composite": {
       "what": "two recognition results and one census over four golden fixtures, rebuilt each iteration",
       "iterations": 5,
-      "min_seconds": 1.996,
-      "peak_rss_kb": 472476
+      "min_seconds": 1.927,
+      "peak_rss_kb": 471896,
+      "budget": 1.4,
+      "budget_note": "Loose because of the host, not because the code may be 40% slower. Measured repeatedly over one evening with nothing else obviously running, this two-second arm's minimum-of-five ranged 1.93s to 2.66s -- 1.38x. A ceiling under that reports the load. The census arm is fifty times longer, does not move like this, and is the tight one; this arm becomes a real budget only on a dedicated machine."
     },
     "census": {
       "what": "feature_census over the ten vendored NIST parts and three real gramel parts, imported once",
@@ -22,5 +24,6 @@
     "uv run python tools/benchmark_recognition.py --implementation package --workload composite --iterations 5",
     "uv run python tools/benchmark_recognition.py --implementation package --workload census --iterations 3",
     "uv run python tools/benchmark_recognition.py --implementation package --workload census --iterations 3 --check docs/benchmarks/recognition-budget.json"
-  ]
+  ],
+  "budget_note": "The default multiplier, used by any workload that records none of its own. Applied to the census arm, which is long enough to be stable here."
 }

@@ -96,16 +96,26 @@ def _load_budget(path: Path, workload: str, override: float | None):
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     recorded = payload["workloads"][workload]
-    multiplier = payload["budget"] if override is None else override
+    # A workload may carry its own multiplier, because how much noise a measurement has to
+    # tolerate depends on how long it runs: a two-second arm on a shared box moves by more
+    # than a hundred-second one, and one ceiling for both either misses regressions on the
+    # long arm or reports the load on the short one.
+    multiplier = recorded.get("budget", payload["budget"]) if override is None else override
     return recorded, float(multiplier)
 
 
 def _peak_rss_kb() -> int | None:
-    """Return the process high-water mark where the standard library exposes it."""
+    """Return the process high-water mark where the standard library exposes it.
+
+    In the unit the field name promises, which takes a conversion: `ru_maxrss` is kibibytes on
+    Linux and **bytes** on macOS. Left raw it would make the same process look 1024 times
+    larger on one platform than the other, which is a regression that is not there.
+    """
 
     if resource is None:
         return None
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak // 1024 if sys.platform == "darwin" else peak
 
 
 def main() -> int:
