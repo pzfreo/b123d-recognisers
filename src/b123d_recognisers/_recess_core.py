@@ -12,7 +12,7 @@ from typing import Literal, TypeVar, cast, overload
 
 from build123d import Box, GeomType, Pos
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
+from OCP.GeomAbs import GeomAbs_Cylinder
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode, frame_points_outward
 from b123d_recognisers._geometry import length_tol
@@ -70,22 +70,6 @@ def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) 
         nodes |= claims.get(record, set())
 
 
-def _outward_normal(face) -> tuple[float, float, float] | None:
-    """Unit outward normal of a planar face as an (x, y, z) tuple, or None when the face is
-    not planar.
-
-    The plane's own frame direction, signed by
-    :func:`b123d_recognisers._adjacency.frame_points_outward` -- which is the material-side
-    convention this used to spell out for itself, and which three other sites spelled out
-    separately."""
-    surf = BRepAdaptor_Surface(face.wrapped)
-    if surf.GetType() != GeomAbs_Plane:
-        return None
-    n = surf.Plane().Axis().Direction()
-    sign = 1.0 if frame_points_outward(face) else -1.0
-    return (sign * n.X(), sign * n.Y(), sign * n.Z())
-
-
 def _dominant_axis(nrm) -> str | None:
     """Return the axis letter when ``nrm`` is axis-aligned, else None."""
     for axis, k in _AXES.items():
@@ -141,9 +125,16 @@ def _planar_faces(
 ) -> list[_Face]:
     """Every planar face as an :class:`_Face` record (computed once).
 
-    *graph* is threaded only when the caller wants claims. Without it no node is resolved, so
-    a run that claims nothing pays nothing -- which matters because this is called once per
-    solid by three families.
+    **A view over the graph, not a parallel computation.** Each face's material-side normal is
+    read from :meth:`FaceGraph.outward_normal` rather than derived here, so there is one owner
+    of that fact instead of two that agreed by luck. `_Face` carried a node before this, but only
+    as an identity tag for claiming -- every actual fact about the face it recomputed, which is
+    how a graph ends up being used as a name tag.
+
+    *graph* is now built when a caller does not supply one, rather than left absent. The graph is
+    lazy, so a family that reads only normals pays only for normals, and sharing the caller's is
+    still worth doing because the attributes are then computed once across every family in a
+    census rather than once per family.
 
     A compound is scanned per solid while the graph covers the whole part, and the faces of a
     solid are the same shapes the part yields, so they resolve against it. A face that does not
@@ -155,19 +146,29 @@ def _planar_faces(
     for the same reason rather than answering "no claims"; this is that check one layer up.
     """
 
+    owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
     faces = []
     for face in part.faces():
-        nrm = _outward_normal(face)
+        node = owner.require_node(face)
+        nrm = owner.outward_normal(node)
         if nrm is None:
             continue  # not planar, which is this function's declared domain and its name
-        bb = face.bounding_box()
-        node = None if graph is None else graph.require_node(face)
         # `axis` is None for an oblique planar face, and the face is carried anyway. It used to
         # be dropped here, which made an axis-aligned-walls restriction that three families
         # inherit invisible to all three and impossible to count -- see ADR 0009. Each family
         # now declines it for itself, where the rejection can be named and measured.
         faces.append(
-            _Face(nrm, _dominant_axis(nrm), bb, _is_wall(face, face_edges), node)
+            _Face(
+                nrm,
+                _dominant_axis(nrm),
+                face.bounding_box(),
+                _is_wall(face, face_edges),
+                # Only a *caller's* node is stored. A node from the graph built above belongs
+                # to no ledger, so claiming against it would raise -- and the field exists for
+                # claiming. Reading attributes from a local graph is fine; naming one as
+                # evidence is not.
+                node if graph is not None else None,
+            )
         )
     return faces
 
@@ -323,9 +324,9 @@ def _cylinder_faces(part: Part) -> list[tuple]:
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
     some unrelated cylinder at a different depth); ``concave`` is True when the face bounds a
     *void* (its material-outward normal points inward, toward the axis) — a recess wall — rather
-    than added material (a boss/post). Shares `_outward_normal`'s material-side convention rather
-    than restating it -- both now ask `frame_points_outward`, which is where the convention
-    lives."""
+    than added material (a boss/post). Asks `frame_points_outward`, which is where the
+    material-side convention lives -- planar faces reach it through
+    `FaceGraph.outward_normal`, and a cylinder has no single outward vector to cache."""
     out = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
@@ -1060,9 +1061,11 @@ def _recognise_pockets_one(
     return _extend_obround_ends(_merge(candidates, claims), part, claims)
 
 
-def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> list[Channel]:
+def _recognise_channels_one(
+    part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
+) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
-    faces = _planar_faces(part, face_edges)
+    faces = _planar_faces(part, face_edges, graph)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     part_bounds = {
