@@ -371,3 +371,25 @@ def test_a_feature_cut_into_a_wall_partway_along_does_not_cap_the_passage():
     assert passage.axis == "z"
     assert passage.length == 20.0
     assert passage.section == ((-5.0, -5.0), (5.0, -5.0), (5.0, 5.0), (-5.0, 5.0))
+
+
+def test_a_ledger_built_from_another_part_is_refused_rather_than_answered():
+    """A family that *walks* the graph is not refused for free, unlike one that resolves faces.
+
+    Every other family turns a face into a node as it goes, so a graph paired with the wrong
+    part raises on the first lookup. This one starts from the graph's own nodes and never asks
+    it about *this* part at all -- so before the shared walk checked, it happily reported a
+    record describing the other solid. Silently answering the wrong question is worse than
+    refusing, which is the whole reason `require_node` exists.
+    """
+
+    part, twin = _hexagonal_passage(), _hexagonal_passage()
+    assert recognise_passages(twin) == recognise_passages(part), "the twin is this part"
+
+    foreign = ClaimLedger(FaceGraph(twin))
+    try:
+        recognise_passages(part, ledger=foreign)
+    except ValueError as refusal:
+        assert "built from a different part" in str(refusal)
+    else:
+        raise AssertionError("recognise_passages answered about another part's graph")

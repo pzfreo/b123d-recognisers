@@ -8,26 +8,34 @@ here accept, combine or reject. They live outside every recogniser on purpose: o
 a face because another family had already claimed it would make the census depend on which
 family ran first, which ADR 0003 forbids and ADR 0002 forbids again by ruling out sibling calls.
 
-Three rules, of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
+Four rules, of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
 
-- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more;
-  and a chamfer that is an angled step's slant is dropped, for the same reason;
+- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more; a
+  chamfer that is an angled step's slant is dropped, for the same reason; and a prismatic pocket
+  a rectangular `Pocket` already describes is dropped, because `width` and `length` on named axes
+  are the numbers a drawing calls out where a four-corner section says the same thing less
+  directly;
 - **compatibility** -- a turned step whose band is a groove keeps its record, because both
   descriptions are needed, and only the *count* is corrected.
 
+Three of the four are precedence, and that is not a preference for rejecting. It is what the
+evidence has been: three times two families described one region and one of them said strictly
+more, and once they described two things that were both needed.
+
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
-one at a time, and these are the three that have had to.
+one at a time, and these are the four that have had to.
 """
 
 from __future__ import annotations
 
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._recess_records import Slot
+from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.grooves import Groove
 from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.turned import TurnedStep
 
 
@@ -174,4 +182,41 @@ def chamfers_that_are_not_angled_steps(
         chamfer
         for chamfer, bevel in zip(chamfers, bevels, strict=True)
         if bevel.isdisjoint(slants)
+    ]
+
+
+def prismatic_pockets_that_are_not_pockets(
+    prismatic: list[PrismaticPocket], ledger: ClaimLedger
+) -> list[PrismaticPocket]:
+    """The prismatic pockets no rectangular `Pocket` already describes, dropped where they are.
+
+    Two families reach a rectangular recess and neither is wrong. `recognise_pockets` pairs two
+    facing walls; `recognise_prismatic_pockets` walks the closed ring those walls sit in. On the
+    geometry alone both are true, and which record a caller wants is not a question either
+    recogniser can answer about itself.
+
+    **The rectangular record wins**, and the direction is not arbitrary. `Pocket` measures
+    `width` and `length` on named axes -- the numbers a drawing calls out -- where the prismatic
+    record carries a four-corner section that says the same thing less directly. For a shape the
+    older family can express, it expresses it better. For every shape it cannot, nothing here
+    fires and the prismatic record is the only one there is.
+
+    Containment, like `passages_that_are_not_slots`, and for the same reason: a `Pocket` claims
+    the two walls it was paired from, and those walls are members of the ring, so the subset runs
+    one way and never the other. Mere overlap would be too weak -- two recesses sharing a wall
+    are two recesses, which is what ADR 0003 means by overlapping claims being evidence rather
+    than a verdict.
+    """
+
+    walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Pocket)]
+    # Paired by position, as every rule here is: `recognise_prismatic_pockets` writes one claim
+    # per record it returns, in the order it returns them, and `strict=True` makes that an
+    # assertion rather than an assumption.
+    rings = [
+        claim.defining for claim in ledger.claims if isinstance(claim.claimant, PrismaticPocket)
+    ]
+    return [
+        pocket
+        for pocket, ring in zip(prismatic, rings, strict=True)
+        if not any(paired <= ring for paired in walls)
     ]

@@ -33,6 +33,16 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "prismatic-pockets": {
+        "recognisers": [("recognise_prismatic_pockets", "part")],
+        "records": [
+            ("PrismaticPocket", "output", ["RecognitionResult.prismatic_pockets"])
+        ],
+        "census": "prismatic_pocket",
+        "goldens": ["triangular_and_hex_pockets"],
+        "introduced": "0.2.6",
+        "tests": ["tests/test_prismatic_pockets.py"],
+    },
     "passages": {
         "recognisers": [("recognise_passages", "part")],
         "records": [("Passage", "output", ["RecognitionResult.passages"])],

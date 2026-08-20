@@ -2,6 +2,31 @@
 
 ## 0.2.6
 
+- **New family: `recognise_prismatic_pockets` / `PrismaticPocket`.** A floored recess of any
+  planar cross-section, found by walking the closed ring of walls rather than pairing walls that
+  share a normal axis. `recognise_pockets` buckets walls by axis and pairs within a bucket, so a
+  triangular recess -- whose walls share no axis -- forms no candidate and reaches no gate:
+  measured over 600 MFCAD++ models, **94% of triangular-pocket faces never reach a test**, which
+  is why that family scored 0% on them and 4% on hexagonal ones.
+
+  The record carries `sides` and the `section` polygon, as `Passage` does, because a triangular
+  and a hexagonal pocket of equal depth are otherwise the same record. It is **not** a `Pocket`:
+  folding it in would have made `Pocket.width` sometimes a wall-to-wall measurement and sometimes
+  a bounding-box extent, changing what an existing field means for every consumer.
+
+  **Neither family subsumes the other.** An obround recess has cylindrical ends and forms no
+  closed planar ring, so `recognise_pockets` remains the only path to it -- measured at zero
+  rings across the whole *Circular end pocket* class. Where both see the same rectangular recess
+  both report it, and `_reconcile.prismatic_pockets_that_are_not_pockets` keeps the `Pocket`.
+
+  Additive: **no existing recorded value changed**. Every golden gained the new family's output
+  and nothing was removed or altered.
+
+- **Fixed: a family that walks the graph accepted a ledger built from a different part.**
+  `recognise_passages` resolved no face against its graph, so a mispaired one was never refused
+  and it reported records describing the *other* solid. Now checked in the shared ring walk, so
+  both ring-walking families are covered.
+
 - **The chamfer/angled-step split moved from the recognisers to the reconciler.** Both families
   read the same oblique bevel, and until now each carried a gate phrased in terms of the *other*
   one: `recognise_chamfers` declined a bevel edge-adjacent to a triangular flat, and

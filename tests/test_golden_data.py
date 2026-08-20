@@ -11,6 +11,7 @@ from golden_support import CANONICALIZER_VERSION, canonical_json  # noqa: E402
 PUBLIC_RECOGNISERS = {
     "recognise_angled_steps",
     "recognise_passages",
+    "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",
@@ -48,7 +49,6 @@ def _goldens():
 
 
 def test_checked_in_goldens_are_canonical_and_bound_to_the_pinned_source():
-    expected_commit = "3fe20b0f71a71deced06b310943dd44cc66e355e"
     paths = []
 
     for path, golden in _goldens():
@@ -56,10 +56,9 @@ def test_checked_in_goldens_are_canonical_and_bound_to_the_pinned_source():
         assert path.read_text(encoding="utf-8") == canonical_json(golden)
         assert golden["canonicalizer_version"] == CANONICALIZER_VERSION
         assert golden["fixture"] == path.parent.name
-        assert golden["source"] == {
-            "repository": "https://github.com/pzfreo/draftwright.git",
-            "commit": expected_commit,
-        }
+        # A golden says where it came from; it is no longer pinned to a Draftwright commit,
+        # because the corpus has fixtures this package originated and they have no such source.
+        assert golden["source"]["repository"]
         assert set(golden["recognition"]["individual"]) == PUBLIC_RECOGNISERS
         assert set(golden["recognition"]["substrates"]) == SUBSTRATES
         assert set(golden["recognition"]["aggregate"]) == {"prismatic", "rotational"}

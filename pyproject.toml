@@ -73,6 +73,11 @@ exclude = ["/tests/corpus"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --cov=b123d_recognisers --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=91"
 testpaths = ["tests"]
+# `tests` is a package (`tests/golden/__init__.py`), so a golden fixture's
+# `from tests.golden._common import ...` needs the repo root importable. Without this it worked
+# only when some earlier test in the session had already imported `tests` -- an order dependency
+# that surfaced the moment a new test file changed collection order.
+pythonpath = ["."]
 
 [tool.coverage.report]
 # coverage.py otherwise rounds to a whole percentage before applying a decimal threshold.

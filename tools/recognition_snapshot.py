@@ -46,7 +46,11 @@ def recognition_snapshot(recognition, feature_census, part):
     # attribute. Keying off the module being snapshotted keeps both callers working, and the
     # inventory check below still fails closed: a name present in `__all__` but skipped here
     # is a mismatch, so this cannot quietly drop a family from a package that does have it.
-    for name in ("recognise_angled_steps", "recognise_passages"):
+    for name in (
+        "recognise_angled_steps",
+        "recognise_passages",
+        "recognise_prismatic_pockets",
+    ):
         recognise = getattr(recognition, name, None)
         if recognise is not None:
             individual[name] = recognise(part)

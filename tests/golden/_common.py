@@ -22,6 +22,23 @@ def provenance(source_path: str) -> dict[str, str]:
     }
 
 
+def originated_here(source_path: str) -> dict[str, str]:
+    """Record a fixture written for this package rather than adapted from Draftwright.
+
+    Every golden until now was relicensed from a Draftwright test, so :func:`provenance` names
+    that repository and the commit it was taken at. A fixture for a family originated here has
+    no such source, and pointing it at one would be false attribution -- the provenance block
+    exists for licensing, so a wrong entry in it is worse than an awkward one.
+    """
+
+    return {
+        "creator": "Paul Fremantle",
+        "source_repository": "https://github.com/pzfreo/b123d-recognisers.git",
+        "source_path": source_path,
+        "license": "Apache-2.0",
+    }
+
+
 def load_fixture(path):
     """Import a golden ``fixture.py`` by path, without adding it to ``sys.modules``."""
 
