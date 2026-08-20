@@ -139,19 +139,23 @@ match a machine-learning label set is a breaking change bought with the wrong cu
 two vocabularies name the same shape differently, the mapping is recorded here rather than
 resolved by moving the code:
 
-| this package | MFCAD++ | note |
+MFCAD++'s name leads, because that is the direction the policy runs — theirs is what a new family
+adopts, and this is where the older names are reconciled to it.
+
+| MFCAD++ class | reported here as | note |
 | --- | --- | --- |
-| `Slot` (through) | Rectangular through slot; Circular through slot | this package's slots are through by definition |
-| `Pocket` (blind) | Rectangular pocket; 6-sided pocket; Triangular pocket; **Circular end pocket** | *Circular end pocket* is an obround blind recess — measured floored in 60 of 64 instances |
-| `Pocket` (edge-open) | Rectangular blind step | a floored recess open at one edge reads as a corner notch here |
-| `Channel` | — | full-span floored recess; no MFCAD++ counterpart |
-| `Passage` | Rectangular / Triangular / 6-sided passage | one family, three shapes; this package does not distinguish them |
-| `AngledStep` | Triangular blind step | |
-| `Chamfer` | Chamfer | |
-| `Fillet` | Round; Circular blind step | *Circular blind step* is recognised as a fillet |
-| `Boss` | O-ring | |
-| `Hole` | Through hole; Blind hole | |
-| — | Rectangular / 2-sided / Slanted through step | **unrecognised**; see the epic 0002 discussion of through steps |
+| Rectangular through slot; Circular through slot | Slot | slots are through by definition here |
+| Rectangular / 6-sided / Triangular pocket | Pocket | blind by definition here |
+| **Circular end pocket** | Pocket, and often Slot | an obround blind recess, measured floored in 60 of 64 instances; that slots also claim it is open as issue #112 |
+| Rectangular blind step | Pocket | a floored recess open at one edge reads as a corner notch |
+| Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
+| Triangular blind step | AngledStep | |
+| Chamfer | Chamfer | |
+| Round; Circular blind step | Fillet | |
+| O-ring | Boss | |
+| Through hole; Blind hole | Hole | |
+| Rectangular / 2-sided / Slanted through step | — | **unrecognised**; see epic 0002 on through steps |
+| — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
 therefore inconsistent exactly where two families disagree — the case a tiebreaker would be asked
