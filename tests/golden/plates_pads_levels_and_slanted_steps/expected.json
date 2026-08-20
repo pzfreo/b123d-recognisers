@@ -112,6 +112,7 @@
         ],
         "polygonal_bosses": [],
         "polygonal_stock": [],
+        "prismatic_pockets": [],
         "repeating_radial_profiles": [],
         "risers": [
           {
@@ -273,6 +274,7 @@
         ],
         "polygonal_bosses": [],
         "polygonal_stock": [],
+        "prismatic_pockets": [],
         "repeating_radial_profiles": [],
         "risers": [
           {
@@ -364,6 +366,7 @@
       "passage": 0,
       "plate": 2,
       "pocket": 2,
+      "prismatic_pocket": 0,
       "slot": 0,
       "step": 0
     },
@@ -515,6 +518,7 @@
       ],
       "recognise_polygonal_bosses": [],
       "recognise_polygonal_stock": [],
+      "recognise_prismatic_pockets": [],
       "recognise_rectangular_pads": [
         {
           "_type": "RaisedPad",

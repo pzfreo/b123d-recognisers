@@ -62,6 +62,14 @@ def rings(part: Part, graph: FaceGraph) -> Iterator[Ring]:
     from outside, and that is `polygonal_bosses`' feature rather than a void.
     """
 
+    # The walk starts from the graph's own nodes, so an unpaired graph is never asked to
+    # resolve one of *this* part's faces -- it would answer about the wrong solid rather than
+    # refuse, which is the one failure `require_node` exists to prevent. Every family that
+    # resolves faces as it goes is refused for free; a family that walks the graph has to ask.
+    # A dict lookup per face against an index already built.
+    for face in part.faces():
+        graph.require_node(face)
+
     planar = [node for node in graph.nodes if graph.is_planar(node)]
     normal = {node: graph.normal(node) for node in planar}
     for axis in (0, 1, 2):

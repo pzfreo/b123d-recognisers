@@ -1358,6 +1358,72 @@
       ]
     },
     {
+      "census_name": "prismatic_pocket",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/triangular_and_hex_pockets/expected.json"
+      ],
+      "id": "prismatic-pockets",
+      "introduced_in": "0.2.6",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_prismatic_pockets",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.prismatic_pockets"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "depth": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "open_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "section": {
+              "required": true,
+              "type": "list[tuple[float,2]]",
+              "units": "mm"
+            },
+            "sides": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "PrismaticPocket",
+          "qualified_name": "b123d_recognisers.PrismaticPocket",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_prismatic_pockets.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [

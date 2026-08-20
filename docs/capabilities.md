@@ -42,6 +42,7 @@ compatibility review, and release notes.
 | `recognise_polygonal_bosses` | Attached regular hexagonal Z-axis bosses with six outward side faces, one A/F value, a support cap, and a top cap. | Other side counts, X/Y axes, whole-stock prisms, inward recesses, incomplete rings, and cross-solid assemblies. | Polygonal-boss golden plus capability-negative tests. |
 | `recognise_polygonal_stock` | Exactly one solid consisting solely of a regular hexagonal Z-axis prism’s six sides and two caps. | Other side counts or axes, attachments, holes, chamfers, missing/extra faces, and multi-solid assemblies. | Polygonal-stock golden plus capability-negative tests. |
 | `recognise_rectangular_pads` | Bounded rectangular +Z islands with a filled XY footprint and body-local support. | Full-span steps, non-rectangular/perforated tops, -Z/side pads, and cross-solid support. | Plate/pad/level golden and pad tests. |
+| `recognise_prismatic_pockets` | Floored recesses of any planar cross-section, found by walking the closed ring of walls: a triangular, hexagonal or rectangular pocket alike. Reports the section, so shape survives into the record. | Obround recesses, whose cylindrical ends form no closed planar ring — `recognise_pockets` reaches those; voids open at both ends (a passage) or capped at both (an enclosed cavity, unreachable by a tool). A rectangular recess is reported here and then dropped by `_reconcile.prismatic_pockets_that_are_not_pockets`, because `Pocket` describes it better. | Prismatic-pocket functional tests; `triangular_and_hex_pockets` golden; measured over 250 MFCAD++ models, capped rings reach 80 triangular, 72 hexagonal and 61 rectangular pockets where wall pairing reaches essentially only the rectangular ones. |
 | `recognise_repeating_radial_profiles` | Complete outer-wire profiles invariant under a proved sector rotation, independently per solid. | Gear semantics, partial-repeat inference, inner-only profiles, and cross-solid cycles. | Repeating-radial-profile and traversal-order goldens. |
 | `recognise_risers` | Full-span principal in-plane step-riser evidence, including bounded slanted transitions, independent of a level set. | Pads, pocket walls, partial corner notches, and end-treated/inset risers outside tolerance; shoulder selection remains a consumer projection. | Plate/level and slanted-step goldens. |
 | `recognise_slot_patterns` | Constant-pitch linear and complete rectangular arrays of identical through `Slot` records on the same through plane. | Bolt circles, pairs, mixed sizes/planes, and incomplete grids. | Straight/obround-slot golden and pattern-negative tests. |
@@ -145,7 +146,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
 | Rectangular through slot; Circular through slot | Slot | slots are through by definition here |
-| Rectangular / 6-sided / Triangular pocket | Pocket | blind by definition here |
+| Rectangular pocket | Pocket | blind by definition here |
+| Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |
 | **Circular end pocket** | Pocket, and often Slot | an obround blind recess, measured floored in 60 of 64 instances; that slots also claim it is open as issue #112 |
 | Rectangular blind step | Pocket | a floored recess open at one edge reads as a corner notch |
 | Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
@@ -189,6 +191,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `LinearArray` | At least three same-spec holes on one constant-pitch line, ordered along `direction`. |
 | `Passage` | One closed uncapped ring of walls; `sides` is the polygon, so a triangular passage reports 3, and `section` gives its corners so the shape can be dimensioned rather than only named. |
 | `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. |
+| `PrismaticPocket` | One floored recess of constant planar cross-section, open at one end; `sides` and `section` carry the shape that `width`/`length` cannot. |
 | `Pocket` | One floored bounded rectangular recess; elongated blind slots intentionally use this same class. |
 | `PocketArray` | At least three identical compatible pockets on one constant-pitch line. |
 | `PocketGrid` | A complete rectangular lattice of identical compatible pockets. |

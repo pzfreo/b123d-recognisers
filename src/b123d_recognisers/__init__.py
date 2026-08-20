@@ -118,6 +118,10 @@ from b123d_recognisers.polygonal_bosses import (
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
 )
+from b123d_recognisers.prismatic_pockets import (
+    PrismaticPocket,
+    recognise_prismatic_pockets,
+)
 from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
@@ -215,7 +219,9 @@ __all__ = [
     "capability_manifest_json",
     "validate_capability_manifest",
     "recognise_angled_steps",
+    "PrismaticPocket",
     "recognise_passages",
+    "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

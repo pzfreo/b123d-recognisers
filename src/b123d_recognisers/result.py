@@ -31,6 +31,7 @@ from b123d_recognisers._features import (
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     passages_that_are_not_slots,
+    prismatic_pockets_that_are_not_pockets,
 )
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
@@ -54,6 +55,10 @@ from b123d_recognisers.polygonal_bosses import (
     PolygonalStock,
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
+)
+from b123d_recognisers.prismatic_pockets import (
+    PrismaticPocket,
+    recognise_prismatic_pockets,
 )
 from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
 from b123d_recognisers.repeating_profiles import (
@@ -81,6 +86,7 @@ MIGRATED: frozenset[str] = frozenset(
     {
         "recognise_angled_steps",
         "recognise_passages",
+        "recognise_prismatic_pockets",
         "recognise_bosses",
         "recognise_chamfers",
         "recognise_channels",
@@ -203,6 +209,7 @@ class RecognitionResult:
     grooves: tuple[Groove, ...]
     flats: tuple[Flat, ...]
     pockets: tuple[Pocket, ...]
+    prismatic_pockets: tuple[PrismaticPocket, ...]
     pocket_patterns: tuple[PocketArray | PocketGrid, ...]
     pads: tuple[RaisedPad, ...]
     #: Complete outer-wire cyclic correspondence.  Geometry-only: consumers may compare a
@@ -345,6 +352,7 @@ def build_recognition_result(
     # no overlap -- silently, which is the failure `require_node` and `claims_of` both refuse
     # to allow anywhere else.
     pockets = recognise_pockets(part, ledger=ledger)
+    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger)
     turned_steps = recognise_turned_steps(part, cyls=cyls)
     # ONE place decides, from the classification the result then carries. Per-family
     # conditionals at each call site are what the aggregate single-scan design removes; this
@@ -374,6 +382,9 @@ def build_recognition_result(
         grooves=tuple(recognise_grooves(part, cyls=cyls)),
         flats=tuple(recognise_flats(part, cyls=cyls)),
         pockets=tuple(pockets),
+        prismatic_pockets=tuple(
+            prismatic_pockets_that_are_not_pockets(ring_pockets, ledger)
+        ),
         pocket_patterns=tuple(recognise_pocket_patterns(pockets)),
         pads=tuple(recognise_rectangular_pads(part)),
         repeating_radial_profiles=tuple(recognise_repeating_radial_profiles(part)),

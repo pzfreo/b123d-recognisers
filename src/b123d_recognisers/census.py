@@ -41,6 +41,7 @@ from b123d_recognisers import (
     recognise_holes,
     recognise_plates,
     recognise_pockets,
+    recognise_prismatic_pockets,
     recognise_slots,
     recognise_turned_steps,
 )
@@ -49,6 +50,7 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     passages_that_are_not_slots,
+    prismatic_pockets_that_are_not_pockets,
     steps_that_are_not_grooves,
 )
 from b123d_recognisers._record import Record
@@ -91,6 +93,10 @@ def feature_census(part: Part) -> dict[str, int]:
     # for the reason the two lines above are: `"chamfer"` is written before `"angled_step"`, so
     # calling the recognisers inside the mapping would let the rule read a ledger with no step
     # claims in it yet and subtract nothing -- silently, as a count one too high.
+    # Both pocket families before the mapping: the rule needs the pairing family's claims,
+    # and `"pocket"` is written before `"prismatic_pocket"`.
+    pockets = recognise_pockets(part, face_edges=face_edges, ledger=ledger)
+    prismatic = recognise_prismatic_pockets(part, face_edges=face_edges, ledger=ledger)
     chamfers = recognise_chamfers(part, face_edges=face_edges, ledger=ledger)
     angled_steps = recognise_angled_steps(part, face_edges=face_edges, ledger=ledger)
     records: dict[str, Sequence[Record]] = {
@@ -102,7 +108,8 @@ def feature_census(part: Part) -> dict[str, int]:
         "flat": recognise_flats(part, cyls=cyls, face_edges=face_edges),
         "slot": recognise_slots(part, ledger=ledger, face_edges=face_edges),
         "channel": recognise_channels(part, face_edges=face_edges, ledger=ledger),
-        "pocket": recognise_pockets(part, face_edges=face_edges, ledger=ledger),
+        "pocket": pockets,
+        "prismatic_pocket": prismatic_pockets_that_are_not_pockets(prismatic, ledger),
         "passage": passages_that_are_not_slots(part, ledger),
         "chamfer": chamfers_that_are_not_angled_steps(chamfers, ledger),
         "angled_step": angled_steps,

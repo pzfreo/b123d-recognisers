@@ -351,6 +351,7 @@
         ],
         "polygonal_bosses": [],
         "polygonal_stock": [],
+        "prismatic_pockets": [],
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": false,
@@ -713,6 +714,7 @@
         ],
         "polygonal_bosses": [],
         "polygonal_stock": [],
+        "prismatic_pockets": [],
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": true,
@@ -749,6 +751,7 @@
       "passage": 0,
       "plate": 0,
       "pocket": 6,
+      "prismatic_pocket": 0,
       "slot": 0,
       "step": 0
     },
@@ -1125,6 +1128,188 @@
       ],
       "recognise_polygonal_bosses": [],
       "recognise_polygonal_stock": [],
+      "recognise_prismatic_pockets": [
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            -25.0,
+            -25.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              -31.0,
+              -30.0
+            ],
+            [
+              -19.0,
+              -30.0
+            ],
+            [
+              -19.0,
+              -20.0
+            ],
+            [
+              -31.0,
+              -20.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            -25.0,
+            0.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              -31.0,
+              -5.0
+            ],
+            [
+              -19.0,
+              -5.0
+            ],
+            [
+              -19.0,
+              5.0
+            ],
+            [
+              -31.0,
+              5.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            -25.0,
+            25.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              -31.0,
+              20.0
+            ],
+            [
+              -19.0,
+              20.0
+            ],
+            [
+              -19.0,
+              30.0
+            ],
+            [
+              -31.0,
+              30.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            25.0,
+            -25.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              19.0,
+              -30.0
+            ],
+            [
+              31.0,
+              -30.0
+            ],
+            [
+              31.0,
+              -20.0
+            ],
+            [
+              19.0,
+              -20.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            25.0,
+            0.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              19.0,
+              -5.0
+            ],
+            [
+              31.0,
+              -5.0
+            ],
+            [
+              31.0,
+              5.0
+            ],
+            [
+              19.0,
+              5.0
+            ]
+          ],
+          "sides": 4
+        },
+        {
+          "_type": "PrismaticPocket",
+          "at": [
+            25.0,
+            25.0,
+            7.0
+          ],
+          "axis": "z",
+          "depth": 6.0,
+          "open_sign": 1,
+          "section": [
+            [
+              19.0,
+              20.0
+            ],
+            [
+              31.0,
+              20.0
+            ],
+            [
+              31.0,
+              30.0
+            ],
+            [
+              19.0,
+              30.0
+            ]
+          ],
+          "sides": 4
+        }
+      ],
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],

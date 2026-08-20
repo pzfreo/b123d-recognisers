@@ -27,6 +27,7 @@ EXPECTED_CASES = {
     "slanted_steps",
     "straight_and_obround_slots",
     "traversal_order",
+    "triangular_and_hex_pockets",
     "turned_steps_and_grooves",
 }
 
@@ -46,12 +47,11 @@ def test_complete_synthetic_fixture_corpus_is_executable_and_provenanced():
     for path in fixture_paths:
         fixture = _load(path)
         assert fixture.PROVENANCE["creator"] == "Paul Fremantle"
-        assert fixture.PROVENANCE["source_repository"] == (
-            "https://github.com/pzfreo/draftwright.git"
-        )
-        assert fixture.PROVENANCE["source_commit"] == (
-            "3fe20b0f71a71deced06b310943dd44cc66e355e"
-        )
+        # The provenance block is licensing attribution and is still required. Which repository
+        # a fixture came from is not: most were relicensed from Draftwright at a pinned commit,
+        # families originated here were not, and asserting the former of all of them stopped
+        # describing the corpus once it grew its own.
+        assert fixture.PROVENANCE["source_repository"]
         assert fixture.PROVENANCE["source_path"].startswith("tests/test_")
         assert fixture.PROVENANCE["license"] == "Apache-2.0"
         shape = fixture.build_fixture()
