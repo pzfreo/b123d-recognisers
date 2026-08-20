@@ -29,7 +29,9 @@ meet. Four gates keep it to genuine chamfers and recover the right size:
 
 The two legs are the chamfer face's in-plane bbox extents, so an equal-leg and an
 asymmetric chamfer are distinguished from the geometry, not estimated from the rendered
-view. Bottom of the recognition DAG: depends only on build123d/OCP.
+view. Depends on :mod:`._bevel` for the single-face read and the convex-corner probe, which
+``recognise_angled_steps`` and ``recognise_fillets`` share -- they lived here until three
+recognisers wanted them, which is one more than a recogniser should be a substrate for.
 
 **A fifth gate used to live here, and it was not a chamfer test.** A bevel edge-adjacent to a
 triangular flat is the slant of an angled blind step, and this recogniser declined it — by

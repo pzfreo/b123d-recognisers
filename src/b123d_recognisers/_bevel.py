@@ -47,9 +47,12 @@ class BevelReject(ValueError):
 def classify_bevel(
     face: FaceLike,
 ) -> tuple[int, Vector3, dict[int, tuple[float, float]], float, float]:
-    """The single-face oblique-bevel read shared by :func:`recognise_chamfers` and the
-    explicit-face reader — one home for the
-    normal→axis classification thresholds and the leg geometry. Returns
+    """The single-face oblique-bevel read, and the one home for the normal-to-axis
+    classification thresholds and the leg geometry.
+
+    Shared by ``recognise_chamfers``, ``recognise_angled_steps`` and the explicit-face reader.
+    Its docstring named only the first of those until this module existed, which is how a helper
+    three families depend on can look like one family's private business. Returns
     ``(edge_i, nv, span, leg_hi, leg_lo)``: the along-edge axis index, the unit normal,
     per-axis ``(lo, hi)`` bbox spans, and the two in-plane leg lengths (unrounded,
     ``leg_hi >= leg_lo``). Raises :class:`BevelReject` when the face is not one."""
