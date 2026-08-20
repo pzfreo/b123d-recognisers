@@ -18,11 +18,15 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-import resource
 import statistics
 import sys
 import time
 from pathlib import Path
+
+try:
+    import resource
+except ModuleNotFoundError:  # pragma: no cover - the module does not exist on Windows
+    resource = None  # type: ignore[assignment]
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
@@ -96,6 +100,14 @@ def _load_budget(path: Path, workload: str, override: float | None):
     return recorded, float(multiplier)
 
 
+def _peak_rss_kb() -> int | None:
+    """Return the process high-water mark where the standard library exposes it."""
+
+    if resource is None:
+        return None
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--implementation", choices=("package", "draftwright"), required=True)
@@ -155,7 +167,7 @@ def main() -> int:
         "min_seconds": min(samples),
         # Peak resident set of the whole process, so it includes the kernel's C++ allocations
         # that `tracemalloc` cannot see. A high-water mark, so it never falls back.
-        "peak_rss_kb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "peak_rss_kb": _peak_rss_kb(),
     }
     print(json.dumps(result, sort_keys=True))
 
