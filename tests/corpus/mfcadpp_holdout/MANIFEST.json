@@ -1,0 +1,175 @@
+{
+ "source": "MFCAD++ val split",
+ "doi": "https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+ "licence": "CC BY",
+ "purpose": "Held out. Nothing in this directory was consulted while designing a predicate, and the figures it produces are this package's only estimate of how it does on geometry it was not shaped by. Scoring it is allowed; fitting to it is not -- a set you have tuned against has stopped being held out, and recovering that costs a fresh draw.",
+ "rule": {
+  "split": "val",
+  "why_val": "corpus/mfcadpp is drawn from the test split, so no model can appear in both. Disjointness is by construction rather than by checking filenames.",
+  "targets": {
+   "1": "Through hole",
+   "2": "Triangular passage",
+   "3": "Rectangular passage",
+   "5": "Triangular through slot",
+   "6": "Rectangular through slot",
+   "7": "Circular through slot",
+   "8": "Rectangular through step",
+   "10": "Slanted through step",
+   "11": "O-ring",
+   "12": "Blind hole",
+   "14": "Rectangular pocket",
+   "15": "6-sided pocket",
+   "16": "Circular end pocket",
+   "17": "Rectangular blind slot",
+   "18": "Vertical circular end blind slot",
+   "19": "Horizontal circular end blind slot",
+   "21": "Circular blind step",
+   "22": "Rectangular blind step",
+   "23": "Round",
+   "24": "Stock"
+  },
+  "why_these_labels": "the twenty MFCAD++ classes corpus/mfcadpp does not target. Its five were chosen to exercise chamfers and angled steps; these are the classes no predicate here was ever shown.",
+  "order": "filename, ascending, numeric",
+  "per_label": 3,
+  "draw": 2,
+  "draw_note": "draw 1, the same rule over the same split, was the development set: it found one defect (a triangular pocket wall reported as an angled step) and is spent. This is the next three per label after it, disjoint in both files and models.",
+  "precondition": "STEP ADVANCED_FACE count equals part.faces() count"
+ },
+ "models": [
+  "118.step",
+  "119.step",
+  "163.step",
+  "181.step",
+  "182.step",
+  "183.step",
+  "196.step",
+  "200.step",
+  "203.step",
+  "205.step",
+  "229.step",
+  "238.step",
+  "244.step",
+  "257.step",
+  "265.step",
+  "274.step",
+  "275.step",
+  "317.step",
+  "340.step",
+  "363.step",
+  "388.step",
+  "408.step",
+  "419.step",
+  "464.step",
+  "467.step",
+  "471.step",
+  "483.step",
+  "498.step",
+  "520.step",
+  "808.step",
+  "16943.step",
+  "18016.step",
+  "20273.step"
+ ],
+ "by_label": {
+  "1": [
+   "183.step",
+   "238.step",
+   "257.step"
+  ],
+  "2": [
+   "183.step",
+   "238.step",
+   "244.step"
+  ],
+  "3": [
+   "182.step",
+   "265.step",
+   "274.step"
+  ],
+  "5": [
+   "388.step",
+   "408.step",
+   "419.step"
+  ],
+  "6": [
+   "363.step",
+   "388.step",
+   "419.step"
+  ],
+  "7": [
+   "408.step",
+   "498.step",
+   "808.step"
+  ],
+  "8": [
+   "181.step",
+   "196.step",
+   "200.step"
+  ],
+  "10": [
+   "119.step",
+   "181.step",
+   "196.step"
+  ],
+  "11": [
+   "119.step",
+   "163.step",
+   "196.step"
+  ],
+  "12": [
+   "118.step",
+   "119.step",
+   "205.step"
+  ],
+  "14": [
+   "118.step",
+   "163.step",
+   "182.step"
+  ],
+  "15": [
+   "118.step",
+   "181.step",
+   "196.step"
+  ],
+  "16": [
+   "119.step",
+   "196.step",
+   "229.step"
+  ],
+  "17": [
+   "363.step",
+   "464.step",
+   "471.step"
+  ],
+  "18": [
+   "317.step",
+   "467.step",
+   "483.step"
+  ],
+  "19": [
+   "388.step",
+   "408.step",
+   "520.step"
+  ],
+  "21": [
+   "181.step",
+   "275.step",
+   "340.step"
+  ],
+  "22": [
+   "118.step",
+   "119.step",
+   "203.step"
+  ],
+  "23": [
+   "16943.step",
+   "18016.step",
+   "20273.step"
+  ],
+  "24": [
+   "118.step",
+   "119.step",
+   "163.step"
+  ]
+ }
+}
