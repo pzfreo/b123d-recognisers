@@ -137,10 +137,10 @@ drawing-callout vocabulary — what a machinist reading the output calls the fea
 makes them a versioned cross-repository contract with a downstream consumer. Renaming them to
 match a machine-learning label set is a breaking change bought with the wrong currency. Where the
 two vocabularies name the same shape differently, the mapping is recorded here rather than
-resolved by moving the code:
+resolved by moving the code.
 
-MFCAD++'s name leads, because that is the direction the policy runs — theirs is what a new family
-adopts, and this is where the older names are reconciled to it.
+MFCAD++'s class leads in the table below, because that is the direction the policy runs: theirs is
+what a new family adopts, and this is where the existing names are reconciled to it.
 
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
@@ -152,8 +152,8 @@ adopts, and this is where the older names are reconciled to it.
 | Triangular blind step | AngledStep | |
 | Chamfer | Chamfer | |
 | Round; Circular blind step | Fillet | |
-| O-ring | Boss | |
-| Through hole; Blind hole | Hole | |
+| O-ring | BossRecord | |
+| Through hole; Blind hole | HoleRecord | |
 | Rectangular / 2-sided / Slanted through step | — | **unrecognised**; see epic 0002 on through steps |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
