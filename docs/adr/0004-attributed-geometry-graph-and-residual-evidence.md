@@ -1,6 +1,6 @@
 # ADR 0004 — Attributed geometry graph and residual evidence
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-15
 - **Decider:** Paul Fremantle
 
@@ -18,7 +18,7 @@ adopts the architectural pattern, not an Analysis Situs runtime dependency or co
 substrate is in detail, what the field built on it since, why the learned branch is closed to this
 package, and what the labelled corpora can and cannot evidence.
 
-## Proposed decision
+## Decision
 
 Introduce an immutable per-run attributed geometry graph:
 
@@ -37,7 +37,7 @@ The graph is recognition infrastructure. It does not decide whether residual geo
 dimensioned, machined, edited or shown to a user; consumers translate neutral diagnostics into
 their own policy.
 
-## Required evidence before acceptance
+## Required evidence
 
 - A graph can represent split cylindrical faces, interrupted bores and slanted transitions.
 - Existing recogniser outputs remain stable for a characterization corpus.

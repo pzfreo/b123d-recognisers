@@ -85,6 +85,6 @@ geometry, and it does not settle whether oblique recesses are in scope — that 
 decision with its own evidence. It requires only that the answer be *a recogniser's* to give, and
 therefore visible to anyone reading that recogniser or measuring its output.
 
-It also does not reopen the graph-versus-rules question. ADR 0004 remains Proposed and subgraph
-matching remains out; a total reduction is compatible with entirely procedural recognisers, which
-is what `recognise_passages` demonstrates.
+It also does not reopen the graph-versus-rules question. ADR 0004 decides for an attributed
+graph and against subgraph matching; a total reduction is compatible with entirely procedural
+recognisers, which is what `recognise_passages` demonstrates.
