@@ -320,12 +320,13 @@ Two design facts whichever way that goes:
       *adjacent* faces. Angular per ADR 0008, dimensionless, defaulting off — the same gate item 3
       needs, and the same consumers, so the two should be decided together
 
-**Raised by the lift, not resolved by it.** The probe now has three consumers — `chamfers`,
-`angled_steps`, `fillets` — and lives in a recogniser module, which those two also import
-`classify_bevel` from. `chamfers` is a de-facto bevel substrate and nothing says so: the seam map
-polices only the private modules, so a public recogniser depending on another is unpoliced in
-either direction. Whether that machinery belongs below the recognisers is a real question and a
-separate change.
+**Raised by the lift, and then resolved.** The probe reached three consumers — `chamfers`,
+`angled_steps`, `fillets` — while living in a recogniser the other two also imported
+`classify_bevel` from. Two could be read as one module happening to import another; three is an
+undeclared layer. It is now `_bevel`, with a seam-map entry that can have an opinion about it.
+Behaviour-neutral, and the public surface is unchanged and asserted: `BevelReject` and
+`classify_bevel` are still exported from `b123d_recognisers` and still reachable through
+`chamfers`, which is what ADR 0005 requires of a versioned contract.
 
 ## 3 — Smooth arcs, for seeing through a blend and across a split
 
