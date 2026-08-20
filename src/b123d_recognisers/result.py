@@ -27,8 +27,7 @@ from b123d_recognisers._features import (
 )
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
-    passages_that_are_not_slots,
-    prismatic_pockets_that_are_not_pockets,
+    reconcile_recesses,
 )
 from b123d_recognisers._run import RecognitionRun, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
@@ -400,6 +399,9 @@ def _take_inventory(
     # to allow anywhere else.
     pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
     ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
+    slots, pockets, ring_pockets, passages = reconcile_recesses(
+        part, slots, pockets, ring_pockets, ledger
+    )
     # Into the ledger for the same reason, though the rule that reads these two runs in the
     # census rather than here: a groove is a rung of the step ladder, and both records survive
     # into the result because a consumer dimensioning the shaft needs the feature and the
@@ -440,9 +442,7 @@ def _take_inventory(
         grooves=tuple(recognise_grooves(part, cyls=cyls, ledger=ledger)),
         flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
         pockets=tuple(pockets),
-        prismatic_pockets=tuple(
-            prismatic_pockets_that_are_not_pockets(ring_pockets, ledger)
-        ),
+        prismatic_pockets=tuple(ring_pockets),
         pocket_patterns=tuple(recognise_pocket_patterns(pockets)),
         pads=tuple(recognise_rectangular_pads(part)),
         repeating_radial_profiles=tuple(recognise_repeating_radial_profiles(part)),
@@ -452,7 +452,7 @@ def _take_inventory(
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
-        passages=tuple(passages_that_are_not_slots(part, ledger)) if prismatic else (),
+        passages=tuple(passages) if prismatic else (),
         fillets=tuple(recognise_fillets(part, face_edges=face_edges)) if prismatic else (),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

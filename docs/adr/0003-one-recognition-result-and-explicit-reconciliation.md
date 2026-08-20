@@ -155,3 +155,22 @@ Two rules follow.
 Neither is a new architecture. Both are what "one aggregate run performs each expensive substrate
 analysis once", in the evidence list above, has to mean if it is to be checkable rather than
 aspirational — and it is now checked by counting derivations rather than by inspection.
+
+## Amendment (0.2.6, issues #112 and #119)
+
+**Paired faces describe one recess only when the AAG says that they bound one void; overlap alone
+does not establish ownership.** Opposed planar walls can be drawn from different arms of an
+interrupted polygonal boundary and still satisfy every metric test used by a slot or rectangular
+pocket recogniser. The shared-neighbour arcs provide the missing local fact: for a valid pair,
+where both walls meet a shared boundary neighbour, they must do so with the same convexity. A
+fragmented boundary may provide no shared neighbour; then the walls must be connected through
+smooth AAG arcs, the same query a gAAG answers by merging those face fragments. This is discovery evidence,
+not a claim from another recogniser, so consuming it does not violate the order-independence rule.
+
+Aggregate reconciliation then compares complete boundary claims. A four-wall ring yields to the
+paired record that dimensions the same rectangular void; a non-rectangular ring defeats paired
+fragments contained within it; mere partial overlap leaves both records intact. On the 40-model
+MFCAD++ design corpus this changes 35 proposed slots to 19 accepted slots, removes every 0.08,
+0.19 and 0.31 mm grazing-wall artifact without a size threshold, and reduces cross-family recess
+overlap from 32 record pairs to two compatible pairs sharing a single face each (Pocket/Slot and
+Pocket/Passage). Both are deliberately retained because neither claim contains the other.

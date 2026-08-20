@@ -8,22 +8,17 @@ here accept, combine or reject. They live outside every recogniser on purpose: o
 a face because another family had already claimed it would make the census depend on which
 family ran first, which ADR 0003 forbids and ADR 0002 forbids again by ruling out sibling calls.
 
-Four rules, of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
+The rules are of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
 
-- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more; a
-  chamfer that is an angled step's slant is dropped, for the same reason; and a prismatic pocket
-  a rectangular `Pocket` already describes is dropped, because `width` and `length` on named axes
-  are the numbers a drawing calls out where a four-corner section says the same thing less
-  directly;
+- **precedence** -- the recess families are reconciled from their complete boundary claims, with
+  a rectangular paired-wall record winning only where it describes the same four-wall void and
+  a non-rectangular ring winning over paired-wall fragments assembled inside it; a chamfer that
+  is an angled step's slant is dropped because the step says strictly more;
 - **compatibility** -- a turned step whose band is a groove keeps its record, because both
   descriptions are needed, and only the *count* is corrected.
 
-Three of the four are precedence, and that is not a preference for rejecting. It is what the
-evidence has been: three times two families described one region and one of them said strictly
-more, and once they described two things that were both needed.
-
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
-one at a time, and these are the four that have had to.
+one at a time, and these are the rules for which there is measured evidence.
 
 **A rule finds a record's evidence by identity**, through `ClaimLedger.defining_of`. Every
 rule here once paired its records against the ledger's claims *by position*, which held only
@@ -35,6 +30,8 @@ corpus.
 """
 
 from __future__ import annotations
+
+from collections import defaultdict
 
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_records import Pocket, Slot
@@ -49,7 +46,7 @@ from b123d_recognisers.turned import TurnedStep
 
 def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage]:
     """Recognise passages against a ledger the slots have already been written into, and drop
-    the ones that are those slots.
+    the four-sided ones that are those slots.
 
     A through slot *is* a closed uncapped ring, so `recognise_passages` reports it too. Both
     families record the faces they were built from, so "are these the same void" is asked of
@@ -74,8 +71,91 @@ def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage
     return [
         passage
         for passage in passages
-        if not any(walls <= ledger.defining_of(passage) for walls in slot_walls)
+        # A four-wall ring is the rectangular void a Slot measures more directly. A ring with
+        # any other side count is not made a slot merely because one opposed pair happens to
+        # sit inside it; that is the false candidate exposed on triangular,
+        # hexagonal and interrupted passage sections.
+        if passage.sides != 4
+        or not any(walls <= ledger.defining_of(passage) for walls in slot_walls)
     ]
+
+
+def reconcile_recesses(
+    part: Part,
+    slots: list[Slot],
+    pockets: list[Pocket],
+    prismatic: list[PrismaticPocket],
+    ledger: ClaimLedger,
+) -> tuple[list[Slot], list[Pocket], list[PrismaticPocket], list[Passage]]:
+    """Apply the recess-family precedence rules after every family has proposed.
+
+    A shared face is only evidence.  The verdicts here require containment by a more complete
+    description of the same boundary:
+
+    - a verified through ring defeats paired-wall pocket fragments inside it;
+    - a verified floored pocket defeats a slot built from the same walls;
+    - a non-rectangular passage or prismatic-pocket ring defeats a slot assembled from a
+      subset of its walls;
+    - a four-wall passage still yields to the Slot that dimensions that rectangular void.
+
+    Interrupted rings may be returned as several records with the same section. Their claims
+    are pooled only within that exact ``(axis, section)`` identity before testing containment,
+    matching the way slot reduction pools collinear wall arms into one record.
+    """
+
+    passages = recognise_passages(part, ledger=ledger)
+
+    accepted_prismatic = prismatic_pockets_that_are_not_pockets(prismatic, ledger)
+    non_rectangular_pockets = [
+        pocket for pocket in accepted_prismatic if pocket.sides != 4
+    ]
+    accepted_pockets = [
+        pocket
+        for pocket in pockets
+        if not any(
+            ledger.defining_of(pocket) <= ledger.defining_of(passage)
+            for passage in passages
+        )
+        and not any(
+            ledger.defining_of(pocket) <= ledger.defining_of(ring)
+            for ring in non_rectangular_pockets
+        )
+    ]
+
+    non_rectangular_rings: dict[tuple, set] = defaultdict(set)
+    for passage in passages:
+        if passage.sides != 4:
+            non_rectangular_rings[(passage.axis, passage.section)].update(
+                ledger.defining_of(passage)
+            )
+
+    accepted_slots = []
+    for slot in slots:
+        walls = ledger.defining_of(slot)
+        # Obround slots recovered from their cylindrical caps deliberately have no planar-wall
+        # claim. Missing evidence cannot prove containment: the empty set is mathematically a
+        # subset of every ring, but semantically it is not an ownership verdict.
+        if not walls:
+            accepted_slots.append(slot)
+            continue
+        if any(walls <= ledger.defining_of(pocket) for pocket in accepted_pockets):
+            continue
+        if any(walls <= ledger.defining_of(pocket) for pocket in accepted_prismatic):
+            continue
+        if any(walls <= ring for ring in non_rectangular_rings.values()):
+            continue
+        accepted_slots.append(slot)
+
+    accepted_passages = [
+        passage
+        for passage in passages
+        if passage.sides != 4
+        or not any(
+            ledger.defining_of(slot) <= ledger.defining_of(passage)
+            for slot in accepted_slots
+        )
+    ]
+    return accepted_slots, accepted_pockets, accepted_prismatic, accepted_passages
 
 
 def steps_that_are_not_grooves(
@@ -181,7 +261,8 @@ def prismatic_pockets_that_are_not_pockets(
     geometry alone both are true, and which record a caller wants is not a question either
     recogniser can answer about itself.
 
-    **The rectangular record wins**, and the direction is not arbitrary. `Pocket` measures
+    **For a four-sided ring, the rectangular record wins**, and the direction is not arbitrary.
+    `Pocket` measures
     `width` and `length` on named axes -- the numbers a drawing calls out -- where the prismatic
     record carries a four-corner section that says the same thing less directly. For a shape the
     older family can express, it expresses it better. For every shape it cannot, nothing here
@@ -198,5 +279,6 @@ def prismatic_pockets_that_are_not_pockets(
     return [
         pocket
         for pocket in prismatic
-        if not any(paired <= ledger.defining_of(pocket) for paired in walls)
+        if pocket.sides != 4
+        or not any(paired <= ledger.defining_of(pocket) for paired in walls)
     ]

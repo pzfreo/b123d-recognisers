@@ -79,8 +79,7 @@ def scan_part(part, labels):
     from b123d_recognisers._claims import ClaimLedger
     from b123d_recognisers._reconcile import (
         chamfers_that_are_not_angled_steps,
-        passages_that_are_not_slots,
-        prismatic_pockets_that_are_not_pockets,
+        reconcile_recesses,
     )
 
     faces = list(part.faces())
@@ -90,10 +89,10 @@ def scan_part(part, labels):
 
     slots = r.recognise_slots(part, ledger=ledger)
     pockets = r.recognise_pockets(part, ledger=ledger)
-    ring_pockets = prismatic_pockets_that_are_not_pockets(
-        r.recognise_prismatic_pockets(part, ledger=ledger), ledger
+    ring_pockets = r.recognise_prismatic_pockets(part, ledger=ledger)
+    slots, pockets, ring_pockets, passages = reconcile_recesses(
+        part, slots, pockets, ring_pockets, ledger
     )
-    passages = passages_that_are_not_slots(part, ledger)
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
