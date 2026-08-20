@@ -33,7 +33,7 @@ _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 #: and turned steps claim too but have no MFCAD++ counterpart at all -- the corpus is prismatic
 #: and those are turning features -- so they are absent from a run over it rather than scoring
 #: zero on it.
-CLAIMING = ("Slot", "Pocket", "Passage", "Chamfer", "AngledStep")
+CLAIMING = ("Slot", "Pocket", "PrismaticPocket", "Passage", "Chamfer", "AngledStep")
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
 LABELS = {
@@ -80,6 +80,7 @@ def scan_part(part, labels):
     from b123d_recognisers._reconcile import (
         chamfers_that_are_not_angled_steps,
         passages_that_are_not_slots,
+        prismatic_pockets_that_are_not_pockets,
     )
 
     faces = list(part.faces())
@@ -89,15 +90,22 @@ def scan_part(part, labels):
 
     slots = r.recognise_slots(part, ledger=ledger)
     pockets = r.recognise_pockets(part, ledger=ledger)
+    ring_pockets = prismatic_pockets_that_are_not_pockets(
+        r.recognise_prismatic_pockets(part, ledger=ledger), ledger
+    )
     passages = passages_that_are_not_slots(part, ledger)
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
 
-    kept = {id(record) for record in (*slots, *pockets, *passages, *chamfers, *steps)}
+    kept = {
+        id(record)
+        for record in (*slots, *pockets, *ring_pockets, *passages, *chamfers, *steps)
+    }
     records = {
         "Slot": len(slots),
         "Pocket": len(pockets),
+        "PrismaticPocket": len(ring_pockets),
         "Passage": len(passages),
         "Chamfer": len(chamfers),
         "AngledStep": len(steps),
