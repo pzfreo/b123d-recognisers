@@ -119,3 +119,19 @@ def test_a_multi_solid_part_still_gets_one_graph_per_solid(derivations):
     assert len(two.solids()) == 2, "the point of the fixture"
     r.build_recognition_result(two)
     assert derivations["graph"] == 3, "the run's, plus one per solid for the boss scan"
+
+
+def test_a_graph_over_the_wrong_solid_is_refused_rather_than_answered():
+    """The one provenance link the sharing adds, and it is checked rather than trusted.
+
+    A graph is not self-describing: handed one built over a different solid,
+    `recognise_polygonal_bosses` would answer questions about the wrong faces and report a boss
+    found on one part as belonging to another. There is no wrong number to notice afterwards,
+    so the check is at the door — the same guard `_rings` applies to its own caller.
+    """
+
+    from b123d_recognisers._adjacency import FaceGraph
+
+    hexagon = _golden("hexagonal_passage")
+    with pytest.raises(ValueError):
+        r.recognise_polygonal_bosses(hexagon, graph=FaceGraph(Box(30, 30, 10)))

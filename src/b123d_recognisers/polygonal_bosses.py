@@ -341,7 +341,14 @@ def _recognise_one(
     #
     # Memoising is also why an aggregate should hand its own graph down rather than let this
     # build a second one over the same faces: the run has already resolved some of them.
-    graph = FaceGraph(part) if graph is None else graph
+    if graph is None:
+        graph = FaceGraph(part)
+    else:
+        # A graph over the wrong solid would not raise here on its own -- it would answer
+        # questions about the wrong faces, and a boss found on one solid would be reported for
+        # another. Checked rather than trusted, as `_rings` checks its own caller.
+        for face in part.faces():
+            graph.require_node(face)
 
     def shares_edge(i: FaceNode, j: FaceNode) -> bool:
         return j in graph.neighbours(i)
