@@ -10,10 +10,10 @@ both waste and a way for two families to disagree about the same solid.
 
 Before this they were threaded as separate optional parameters -- ``face_edges=``, ``ledger=``,
 ``cyls=`` -- each defaulting to "build your own if not given". That shape has produced two real
-defects rather than one hypothetical: a family with no way to *receive* the caller's graph built
-its own, taking a census from one graph construction to between two and four; and the two
-orchestration paths derived similar state separately and drifted, reporting different answers
-about one part until a corpus-wide comparison found it.
+defects rather than one hypothetical: `recognise_polygonal_bosses` had no parameter with which
+to *receive* the caller's graph, so every aggregate run over a single solid built a second one
+over the same faces; and the two orchestration paths derived similar state separately and
+drifted, reporting different answers about one part until a corpus-wide comparison found it.
 
 **Run-local and short-lived, like everything it holds.** The graph's node ids mean nothing once
 the part changes and `FaceEdges` must not outlive the call, so this must not either. It is
@@ -33,15 +33,18 @@ from b123d_recognisers._typing import CylinderInventory, Part
 
 @dataclass(frozen=True, slots=True)
 class RecognitionRun:
-    """One part, and the derived facts every family in this run should share.
+    """The derived facts every family in one run over one part should share.
 
     Frozen because nothing here is a result: a run is the *evidence* a run has in common, and a
     family that wanted to replace one of these would be changing what the others already saw.
     The ledger is the exception by design -- it is append-only and written into, which is what
     `_claims` documents as write-only during discovery.
+
+    The part itself is not a field. Every caller already has it -- it is what they passed to
+    `start` -- and a second reference to it here would be a second thing to keep in step with
+    the graph.
     """
 
-    part: Part
     face_edges: FaceEdges
     graph: FaceGraph
     ledger: ClaimLedger
@@ -64,7 +67,6 @@ def start(part: Part, cylinders: CylinderInventory | None = None) -> Recognition
     face_edges = FaceEdges()
     graph = FaceGraph(part, face_edges=face_edges)
     return RecognitionRun(
-        part=part,
         face_edges=face_edges,
         graph=graph,
         ledger=ClaimLedger(graph),

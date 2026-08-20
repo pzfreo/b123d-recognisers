@@ -13,7 +13,7 @@ one of them: `build_recognition_result` suppresses a plate when the shaft's step
 profile, and the census counted one anyway. A real turned screw, one part in seventy-three, and
 nothing in the suite was looking.
 
-They now share one inventory — `take_inventory` — so a disagreement of that kind can no longer
+They now share one inventory — `_take_inventory` — so a disagreement of that kind can no longer
 be written. What remains for this file to guard is the *mapping*: the census names a kind, the
 inventory returns a field, and nothing but this checks that the census counts the field it means
 to. A key wired to the wrong family, or a family added to one side and not the other, still
