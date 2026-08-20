@@ -8,15 +8,22 @@ here accept, combine or reject. They live outside every recogniser on purpose: o
 a face because another family had already claimed it would make the census depend on which
 family ran first, which ADR 0003 forbids and ADR 0002 forbids again by ruling out sibling calls.
 
-Three rules, of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
+Four rules, of two kinds, because ADR 0003 says a reconciler "accepts, combines or rejects":
 
-- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more;
-  and a chamfer that is an angled step's slant is dropped, for the same reason;
+- **precedence** -- a passage that is a slot is dropped, because the slot says strictly more; a
+  chamfer that is an angled step's slant is dropped, for the same reason; and a prismatic pocket
+  a rectangular `Pocket` already describes is dropped, because `width` and `length` on named axes
+  are the numbers a drawing calls out where a four-corner section says the same thing less
+  directly;
 - **compatibility** -- a turned step whose band is a groove keeps its record, because both
   descriptions are needed, and only the *count* is corrected.
 
+Three of the four are precedence, and that is not a preference for rejecting. It is what the
+evidence has been: three times two families described one region and one of them said strictly
+more, and once they described two things that were both needed.
+
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
-one at a time, and these are the three that have had to.
+one at a time, and these are the four that have had to.
 """
 
 from __future__ import annotations
