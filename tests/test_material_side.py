@@ -40,8 +40,7 @@ from OCP.TopAbs import TopAbs_IN, TopAbs_Orientation, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
 
 import b123d_recognisers as r
-from b123d_recognisers._adjacency import frame_points_outward
-from b123d_recognisers._recess_core import _outward_normal
+from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
 
 #: How far off the face to probe. Small against every fixture's thinnest wall (3 mm), so a
 #: probe that lands outside the solid did so because the normal points that way and not
@@ -129,13 +128,19 @@ def _points_on(face, limit=4):
 
 
 def _violations(part):
-    """Probes where the claimed outward normal disagrees with the solid classifier."""
+    """Probes where the claimed outward normal disagrees with the solid classifier.
+
+    Asked of `FaceGraph.outward_normal`, which is where the material-side normal now lives.
+    `_recess_core._outward_normal` was the same computation and was retired once the graph
+    carried it, so this points at the one that remains rather than at a copy.
+    """
 
     BRepMesh_IncrementalMesh(part.wrapped, 0.5, False, 0.5, True)
     classifier = BRepClass3d_SolidClassifier(part.wrapped)
+    graph = FaceGraph(part)
     bad, probes = [], 0
     for face in part.faces():
-        normal = _outward_normal(face)
+        normal = graph.outward_normal(graph.require_node(face))
         if normal is None:
             continue
         for point in _points_on(face):
@@ -238,8 +243,8 @@ def test_a_surface_with_no_readable_frame_answers_none_rather_than_guessing():
     recess families would silently place material on one side of a blend, and nothing downstream
     could tell that from a real answer.
 
-    None is what makes absence a caller's decision. `_outward_normal` turns it into "not a
-    planar face"; `_cylinder_substrate` never asks, because it has already filtered to
+    None is what makes absence a caller's decision. `FaceGraph.outward_normal` turns it into
+    "not a planar face"; `_cylinder_substrate` never asks, because it has already filtered to
     cylinders.
     """
 
