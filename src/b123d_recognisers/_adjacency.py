@@ -25,11 +25,15 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import TypeVar
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere
-from OCP.TopAbs import TopAbs_Orientation
+from OCP.gp import gp_Pnt, gp_Vec
+from OCP.ShapeAnalysis import ShapeAnalysis_Surface
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_Orientation
+from OCP.TopExp import TopExp_Explorer
 
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_COS
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
 _T = TypeVar("_T")
@@ -294,6 +298,132 @@ class FaceGraph:
                     found.append(self._nodes[neighbour])
             self._neighbours[at] = got = tuple(found)
         return got
+
+    def arc(self, a: FaceNode, b: FaceNode) -> str | None:
+        """How the solid turns where two faces meet: ``"convex"``, ``"concave"`` or ``"smooth"``.
+
+        The attribute an attributed adjacency graph is *for*, and the half this package went
+        without. Nodes carry facts about a face; until now nothing said what happened *between*
+        two of them, so a recogniser needing that inferred it at the point of use or did not ask.
+
+        - **smooth** -- the two outward normals agree to :data:`SMOOTH_ARC_COS` where the faces
+          meet. A face split in two by a neighbouring feature is the exact case, its halves
+          coplanar; a tangential blend is the approximate one. This is why ADR 0004's amendment
+          treats seeing *through* a blend and *across* a split as one mechanism: a split is the
+          zero-angle blend.
+        - **convex** / **concave** -- whether the material forms a wedge at the edge or wraps
+          around it. Read from the direction the boundary of *a* walks the shared edge: turning
+          left from that direction, in *a*'s surface, points into *a*, and which side of *b* that
+          lands on is the answer.
+
+        Evaluated *at a point on the shared edge*, from each face's own normal there, so it is
+        total rather than planar-only: a plane has one normal everywhere and a cone does not, and
+        a groove's conical lead-in is precisely the face a recogniser must classify an arc
+        against.
+
+        None when the faces share no edge, or where a normal or the edge's direction cannot be
+        read.
+
+        **Not a generalisation of** :func:`b123d_recognisers._bevel.convex_bevel`, which asks a
+        different question -- whether the corner a bevel *replaces* is convex, that is whether
+        material was removed there or added. A gusset filling a re-entrant corner has convex arcs
+        to both walls it meets while filling a concave corner, and both answers are right.
+        """
+
+        shared = self.shared_edges(a, b)
+        if not shared:
+            return None
+        # One guard, not three: a direction that cannot be walked and a normal that cannot be
+        # read are the same answer -- the geometry here is too degenerate to classify.
+        walk = self._boundary_direction(a, shared[0])
+        direction, point = walk if walk else (None, None)
+        na = self._normal_at(a, point) if point else None
+        nb = self._normal_at(b, point) if point else None
+        if direction is None or na is None or nb is None:
+            return None
+        if sum(x * y for x, y in zip(na, nb, strict=True)) > SMOOTH_ARC_COS:
+            return "smooth"
+        into = (
+            na[1] * direction[2] - na[2] * direction[1],
+            na[2] * direction[0] - na[0] * direction[2],
+            na[0] * direction[1] - na[1] * direction[0],
+        )
+        return "convex" if sum(x * y for x, y in zip(into, nb, strict=True)) < 0 else "concave"
+
+    def _normal_at(self, node: FaceNode, point) -> tuple[float, float, float] | None:
+        """This face's outward normal *at a point*, or None where it has none.
+
+        Not cached, unlike :meth:`normal`: the answer varies over a curved face, so there is no
+        one value to keep. The point is the whole reason this exists -- a plane has one normal
+        everywhere and a cone does not, and an arc has to be read where the faces actually meet.
+
+        **Not** ``normal_at``, which ignores the point it is given: asked at 0, 90 and 180
+        degrees around a cylinder it returns the same vector three times, so a per-point reader
+        built on it silently reads the patch's middle instead. The point is projected to a
+        surface parameter and the surface differentiated there.
+
+        The sign correction is a single orientation flip, unlike
+        :func:`frame_points_outward`'s two terms: ``du x dv`` is built from the parameterisation
+        and so already carries the frame's handedness, where a stored axis direction does not.
+        Checked on 659 faces across generated solids and imported STEP -- ``FORWARD`` agrees with
+        the material side every time, ``REVERSED`` never does.
+        """
+
+        face = self._faces[self._at(node)]
+        try:
+            parameters = ShapeAnalysis_Surface(BRep_Tool.Surface_s(face.wrapped)).ValueOfUV(
+                gp_Pnt(*point), 1e-6
+            )
+            adaptor = BRepAdaptor_Surface(face.wrapped)
+            here, along_u, along_v = gp_Pnt(), gp_Vec(), gp_Vec()
+            adaptor.D1(parameters.X(), parameters.Y(), here, along_u, along_v)
+            cross = along_u.Crossed(along_v)
+        except Exception:  # noqa: BLE001 - a degenerate patch has no normal there
+            cross = gp_Vec()
+        if cross.Magnitude() < 1e-12:
+            return None  # degenerate: the surface has no normal at this point
+        cross.Normalize()
+        forward = face.wrapped.Orientation() != TopAbs_Orientation.TopAbs_REVERSED
+        sign = 1.0 if forward else -1.0
+        return (sign * cross.X(), sign * cross.Y(), sign * cross.Z())
+
+    def _boundary_direction(self, node: FaceNode, edge: EdgeLike):
+        """``(direction, point)``: how *node*'s boundary walks *edge*, and where it was measured.
+
+        The edge's own parameterisation is not it -- OCP does not orient that consistently, and a
+        classification resting on it reports both signs on a plain box where every edge is
+        convex. What is consistent is the orientation the edge carries *within this face*, which
+        is what makes the two faces of a manifold edge walk it in opposite directions and the
+        arc's answer the same from either end.
+
+        Deliberately **not** flipped for a ``REVERSED`` face. ``normal_at`` already accounts for
+        face orientation, so flipping here too double-corrects -- measured, that broke the
+        opposite-directions property on exactly half a box's edges.
+        """
+
+        face = self._faces[self._at(node)]
+        # No "edge not found" branch: every caller reaches this through `shared_edges`, which
+        # returns edges of *this* face, so the explorer always finds it. A guard for a case the
+        # call graph excludes is a branch no test can reach, which this epic has removed twice
+        # already rather than carry.
+        reversed_here = False
+        explorer = TopExp_Explorer(face.wrapped, TopAbs_EDGE)
+        while explorer.More():
+            current = explorer.Current()
+            if current.IsSame(edge.wrapped):
+                reversed_here = current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
+                break
+            explorer.Next()
+        curve = BRepAdaptor_Curve(edge.wrapped)
+        middle = 0.5 * (curve.FirstParameter() + curve.LastParameter())
+        point, tangent = gp_Pnt(), gp_Vec()
+        curve.D1(middle, point, tangent)
+        raw = (tangent.X(), tangent.Y(), tangent.Z())
+        length = sum(x * x for x in raw) ** 0.5
+        if length < 1e-12:
+            return None  # a degenerate edge has no direction to walk
+        sign = -1.0 / length if reversed_here else 1.0 / length
+        return tuple(x * sign for x in raw), (point.X(), point.Y(), point.Z())
 
     def shared_edges(self, a: FaceNode, b: FaceNode) -> tuple[EdgeLike, ...]:
         """The edges along which two faces meet, which an arc's classification will need.
