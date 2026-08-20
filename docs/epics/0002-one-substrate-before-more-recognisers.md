@@ -22,7 +22,7 @@ looking.
 | 1 | Material-side convention, lifted to one place | **done** | no | — |
 | 2 | Convexity probe shared; the arc attribute is separate | **probe done** | no | — |
 | 3 | Smooth arcs: through a blend, and across a split | Medium | **yes** | M |
-| 4 | One adjacency API instead of two | Low | no | M |
+| 4 | One adjacency API instead of two | **declined** | no | — |
 
 **Re-ranked by item 0's sweep, and the numbering is kept so the history stays readable.** The
 first version ordered the work by duplication count, which is what the replacement gate below
@@ -399,10 +399,20 @@ correctly declined before, and this is one. It goes last.
 What *would* help item 5 is `_recess_core` reading faces from `FaceGraph` nodes so `_planar_faces`
 can retire — and that is item 1's territory, not this one's.
 
-- [ ] Migrate the five dict-map modules, one PR each, goldens byte-identical
-- [ ] Retire the free-function adjacency helpers, or document why they stay
-- [ ] `connected_components` stays a free function taking a caller-supplied relation unless a
-      third consumer wants face adjacency specifically
+**Declined, and closed rather than deferred.** A deferred item reads as a plan; there is no plan
+here, only a condition. Its whole benefit is that one API replaces two, and item 5's
+instrumentation showed that buys nothing: the five modules do not pair by axis bucket, so
+migrating them leaves `nearest_axis_aligned_planes` exactly as axis-dependent and unblocks
+nothing. That is the definition of a uniformity migration, which this project has declined
+before and should again.
+
+It becomes worth doing on the same condition #75's components extraction was: **when a migrated
+module would read node attributes too**, rather than only swap one adjacency call for another.
+Today none would.
+
+Note that the substrate work this item was ranked highly for did happen, under items 1 and 2 and
+under `_bevel` — by lifting the *concepts* three modules shared rather than the API they called
+them through. That is the distinction the original ranking missed.
 
 ## 5 — Oblique recesses: a migration with a precedent, not a scope decision
 
