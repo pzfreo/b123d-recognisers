@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-08-20",
+  "source_commit": "4bd8b3b",
+  "environment": "epic development container, shared; interleaved arms, minimum of samples",
+  "budget": 1.1,
+  "workloads": {
+    "composite": {
+      "what": "two recognition results and one census over four golden fixtures, rebuilt each iteration",
+      "iterations": 5,
+      "min_seconds": 1.996,
+      "peak_rss_kb": 472476
+    },
+    "census": {
+      "what": "feature_census over the ten vendored NIST parts and three real gramel parts, imported once",
+      "iterations": 3,
+      "min_seconds": 99.683,
+      "peak_rss_kb": 495264
+    }
+  },
+  "commands": [
+    "uv run python tools/benchmark_recognition.py --implementation package --workload composite --iterations 5",
+    "uv run python tools/benchmark_recognition.py --implementation package --workload census --iterations 3",
+    "uv run python tools/benchmark_recognition.py --implementation package --workload census --iterations 3 --check docs/benchmarks/recognition-budget.json"
+  ]
+}
