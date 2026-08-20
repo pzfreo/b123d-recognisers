@@ -130,9 +130,9 @@ def _points_on(face, limit=4):
 def _violations(part):
     """Probes where the claimed outward normal disagrees with the solid classifier.
 
-    Asked of `FaceGraph.outward_normal`, which is where the material-side normal now lives.
-    `_recess_core._outward_normal` was the same computation and was retired once the graph
-    carried it, so this points at the one that remains rather than at a copy.
+    Asked of `FaceGraph.normal`, which is the material-side normal -- `normal_at` already
+    applies the orientation correction, so the frame-derived spelling this package kept beside
+    it was the same answer by another route. These probes are what establish that.
     """
 
     BRepMesh_IncrementalMesh(part.wrapped, 0.5, False, 0.5, True)
@@ -140,7 +140,7 @@ def _violations(part):
     graph = FaceGraph(part)
     bad, probes = [], 0
     for face in part.faces():
-        normal = graph.outward_normal(graph.require_node(face))
+        normal = graph.normal(graph.require_node(face))
         if normal is None:
             continue
         for point in _points_on(face):

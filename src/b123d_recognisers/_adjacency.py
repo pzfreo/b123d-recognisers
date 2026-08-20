@@ -136,7 +136,6 @@ class FaceGraph:
         self._edges: dict[int, tuple[EdgeLike, ...]] = {}
         self._surface: dict[int, int] = {}
         self._normal: dict[int, tuple[float, float, float] | None] = {}
-        self._outward: dict[int, tuple[float, float, float] | None] = {}
         self._bounds: dict[int, tuple] = {}
         self._edge_faces: dict | None = None
         self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
@@ -253,38 +252,6 @@ class FaceGraph:
                 self._normal[at] = (unit.X, unit.Y, unit.Z)
         return self._normal[at]
 
-    def outward_normal(self, node: FaceNode) -> tuple[float, float, float] | None:
-        """The unit normal that points **out of the material**, or None when there is none.
-
-        The counterpart to :meth:`normal`, and the difference is a sign on every ``REVERSED``
-        face. :meth:`normal` is geometric -- where the surface's parameterisation points -- and
-        is what a caller wants for classifying an orientation. This is material-side, and is what
-        a caller wants for deciding which side of a face the solid is on.
-
-        Deliberately absent until there was a consumer: when `frame_points_outward` was lifted,
-        every call site had a bare face rather than a graph, so a node attribute would have been
-        built for nobody. `_recess_core` reading its faces from this graph is that consumer.
-
-        Planar faces only. A cylinder's outward direction varies over the face, so there is no
-        single vector to return and None is the honest answer rather than a point sample.
-        """
-
-        at = self._at(node)
-        if at not in self._outward:
-            face = self._faces[at]
-            surface = BRepAdaptor_Surface(face.wrapped)
-            if surface.GetType() != GeomAbs_Plane:
-                self._outward[at] = None
-            else:
-                direction = surface.Plane().Axis().Direction()
-                sign = 1.0 if frame_points_outward(face) else -1.0
-                self._outward[at] = (
-                    sign * direction.X(),
-                    sign * direction.Y(),
-                    sign * direction.Z(),
-                )
-        return self._outward[at]
-
     def bounds(
         self, node: FaceNode
     ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
@@ -358,9 +325,12 @@ def frame_points_outward(face: FaceLike) -> bool | None:
     flips the orientations too**, so a test on orientation alone inverts on a mirrored part. The
     answer is the product, ``FORWARD == frame.Direct()``.
 
-    Four sites derived that independently -- planes in ``_recess_core``, cylinders there and in
-    ``_cylinder_substrate``, spheres in ``_hole_features`` -- one of them documenting itself as
-    mirroring another. They agreed, which is luck rather than design: no test could tell, because
+    Three sites derive *which side* from this: cylinders in ``_recess_core`` and
+    ``_cylinder_substrate``, spheres in ``_hole_features``. A fourth used it to build a planar
+    outward normal, which turned out to be redundant -- ``normal_at`` already returns one -- so
+    what this is for is the whole-face question, asked where there is no single normal to read.
+
+    The sites agreed, which is luck rather than design: no test could tell, because
     left-handed frames are 6 of 3,853 across all 72 corpus parts, and deleting the handedness term
     from any of them left the whole suite green. ``tests/test_material_side.py`` generates the
     geometry the corpus lacks and checks the convention against the solid classifier.
@@ -372,7 +342,7 @@ def frame_points_outward(face: FaceLike) -> bool | None:
     Every caller today has already established the surface type before asking, so None is
     unreachable for them and ``bool(...)`` at those sites records that rather than dismissing
     it. A caller that has *not* filtered first must handle the third answer, and the honest
-    shape is `_outward_normal`'s: return None onwards rather than pick a side.
+    shape is to return None onwards rather than pick a side.
     """
 
     surface = BRepAdaptor_Surface(face.wrapped)

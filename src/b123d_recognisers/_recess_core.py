@@ -125,9 +125,11 @@ def _planar_faces(
 ) -> list[_Face]:
     """Every planar face as an :class:`_Face` record (computed once).
 
-    **A view over the graph, not a parallel computation.** Each face's material-side normal is
-    read from :meth:`FaceGraph.outward_normal` rather than derived here, so there is one owner
-    of that fact instead of two that agreed by luck. `_Face` carried a node before this, but only
+    **A view over the graph, not a parallel computation.** Each face's outward normal is read
+    from :meth:`FaceGraph.normal` rather than derived here, so there is one owner of that fact
+    instead of two -- which turned out to be two spellings of the same thing rather than two
+    conventions, though that took measuring to find out. `_Face` carried a node before this,
+    but only
     as an identity tag for claiming -- every actual fact about the face it recomputed, which is
     how a graph ends up being used as a name tag.
 
@@ -150,9 +152,13 @@ def _planar_faces(
     faces = []
     for face in part.faces():
         node = owner.require_node(face)
-        nrm = owner.outward_normal(node)
+        # This function's declared domain is a planar face with a readable normal, and both
+        # halves are asked here rather than one riding on the other. It used to rest entirely on
+        # a normal reader that answered None for a curved face -- which worked, and broke
+        # silently the moment a reader that answers for cylinders too was substituted.
+        nrm = owner.normal(node) if owner.is_planar(node) else None
         if nrm is None:
-            continue  # not planar, which is this function's declared domain and its name
+            continue
         # `axis` is None for an oblique planar face, and the face is carried anyway. It used to
         # be dropped here, which made an axis-aligned-walls restriction that three families
         # inherit invisible to all three and impossible to count -- see ADR 0009. Each family
@@ -324,9 +330,9 @@ def _cylinder_faces(part: Part) -> list[tuple]:
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
     some unrelated cylinder at a different depth); ``concave`` is True when the face bounds a
     *void* (its material-outward normal points inward, toward the axis) — a recess wall — rather
-    than added material (a boss/post). Asks `frame_points_outward`, which is where the
-    material-side convention lives -- planar faces reach it through
-    `FaceGraph.outward_normal`, and a cylinder has no single outward vector to cache."""
+    than added material (a boss/post). Asks `frame_points_outward`, which answers *which side*
+    for a whole face without needing a point on it -- what a cylinder needs, since it has no one
+    outward vector. A planar face wants `FaceGraph.normal`, which is already material-side."""
     out = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
