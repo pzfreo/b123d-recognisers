@@ -29,7 +29,9 @@ meet. Four gates keep it to genuine chamfers and recover the right size:
 
 The two legs are the chamfer face's in-plane bbox extents, so an equal-leg and an
 asymmetric chamfer are distinguished from the geometry, not estimated from the rendered
-view. Bottom of the recognition DAG: depends only on build123d/OCP.
+view. Depends on :mod:`._bevel` for the single-face read and the convex-corner probe, which
+``recognise_angled_steps`` and ``recognise_fillets`` share -- they lived here until three
+recognisers wanted them, which is one more than a recogniser should be a substrate for.
 
 **A fifth gate used to live here, and it was not a chamfer test.** A bevel edge-adjacent to a
 triangular flat is the slant of an angled blind step, and this recogniser declined it — by
@@ -56,21 +58,15 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepClass3d import BRepClass3d_SolidClassifier
-from OCP.GeomAbs import GeomAbs_Plane
-from OCP.gp import gp_Pnt
-from OCP.TopAbs import TopAbs_IN
-
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import FaceLike, Part, Vector3
+from b123d_recognisers._typing import FaceLike, Part
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -97,78 +93,6 @@ class Chamfer(Record):
     leg2: float
     angle: float
     at: tuple[float, float, float]
-
-
-class BevelReject(ValueError):
-    """*face* is not a single-axis oblique planar bevel; ``reason`` says why:
-    ``"nonplanar"``, ``"degenerate"`` (no clean normal), ``"aligned"`` (axis-aligned or a
-    shallow draft angle — a real face, not a chamfer), or ``"compound"`` (oblique on all
-    three axes — a corner bevel, out of scope)."""
-
-    def __init__(self, reason: str) -> None:
-        self.reason = reason
-        super().__init__(reason)
-
-
-def classify_bevel(
-    face: FaceLike,
-) -> tuple[int, Vector3, dict[int, tuple[float, float]], float, float]:
-    """The single-face oblique-bevel read shared by :func:`recognise_chamfers` and the
-    explicit-face reader — one home for the
-    normal→axis classification thresholds and the leg geometry. Returns
-    ``(edge_i, nv, span, leg_hi, leg_lo)``: the along-edge axis index, the unit normal,
-    per-axis ``(lo, hi)`` bbox spans, and the two in-plane leg lengths (unrounded,
-    ``leg_hi >= leg_lo``). Raises :class:`BevelReject` when the face is not one."""
-    if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
-        raise BevelReject("nonplanar")
-    try:
-        nvec = face.normal_at()
-    except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
-        raise BevelReject("degenerate") from None
-    nv = (nvec.X, nvec.Y, nvec.Z)
-    if max(abs(c) for c in nv) > AXIS_ALIGNED_COS:
-        raise BevelReject("aligned")
-    edge_i = next((i for i in (0, 1, 2) if abs(nv[i]) < _RUN_AXIS_COS), None)
-    if edge_i is None:
-        raise BevelReject("compound")
-    oi = [j for j in (0, 1, 2) if j != edge_i]
-    fb = face.bounding_box()
-    span = {0: (fb.min.X, fb.max.X), 1: (fb.min.Y, fb.max.Y), 2: (fb.min.Z, fb.max.Z)}
-    leg_u = span[oi[0]][1] - span[oi[0]][0]
-    leg_v = span[oi[1]][1] - span[oi[1]][0]
-    return edge_i, nv, span, max(leg_u, leg_v), min(leg_u, leg_v)
-
-
-def convex_bevel(
-    part: Part, centre: dict[int, float], edge_i: int, neigh_coord: dict[int, float]
-) -> bool:
-    """Does the virtual sharp corner the bevel replaces lie outside the solid?
-
-    *centre* is the bevel face's own centre per axis and *neigh_coord* the coordinates of
-    the two neighbour planes it bridges, as :func:`nearest_axis_aligned_planes` returns them.
-
-    The virtual corner sits where those two planes cross, at the bevel's own edge position.
-    Nudged a little toward the bevel face it lands in the removed-wedge *vacuum* for a real
-    (convex) bevel, but in filled *material* for a gusset/rib/web bevelling a concave
-    re-entrant corner. The nudge clears the on-boundary knife-edge at the raw corner; this
-    is the discriminator adjacency alone cannot make, since a gusset's hypotenuse is also
-    edge-adjacent to two perpendicular walls.
-
-    Shared with :func:`b123d_recognisers.recognise_angled_steps`, which admits larger slants
-    than a chamfer and so needs this call for exactly the same reason: a gusset satisfies
-    every other gate either recogniser applies.
-    """
-
-    oi = [j for j in (0, 1, 2) if j != edge_i]
-    corner = [0.0, 0.0, 0.0]
-    corner[edge_i] = centre[edge_i]
-    corner[oi[0]] = neigh_coord[oi[0]]
-    corner[oi[1]] = neigh_coord[oi[1]]
-    probe = tuple(corner[i] + INTERIOR_PROBE_FRAC * (centre[i] - corner[i]) for i in (0, 1, 2))
-    clsf = BRepClass3d_SolidClassifier(part.wrapped)
-    clsf.Perform(gp_Pnt(*probe), 1e-6)
-    # `State()` is untyped in OCP, so the comparison is Any until it is narrowed here.
-    return bool(clsf.State() != TopAbs_IN)
 
 
 def recognise_chamfers(

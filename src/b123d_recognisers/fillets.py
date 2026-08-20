@@ -46,10 +46,10 @@ from b123d_recognisers._adjacency import (
     edge_face_map,
     nearest_axis_aligned_planes,
 )
+from b123d_recognisers._bevel import convex_bevel
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
-from b123d_recognisers.chamfers import convex_bevel
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small

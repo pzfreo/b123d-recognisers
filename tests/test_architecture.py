@@ -37,6 +37,9 @@ MODULE_SEAM_EDGES = {
     "_adjacency": {"_geometry", "_typing"},
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
+    # Three recognisers begin with the same two questions of a face. Naming the layer is
+    # what lets this map have an opinion about it -- see the module docstring.
+    "_bevel": {"_geometry", "_typing"},
     "_claims": {"_adjacency"},
     # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
     # three other modules each derived separately before it was lifted.

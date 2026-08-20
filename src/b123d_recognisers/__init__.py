@@ -65,6 +65,7 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 
 from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._bevel import BevelReject, classify_bevel
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
@@ -84,12 +85,7 @@ from b123d_recognisers.angled_steps import (
     AngledStep,
     recognise_angled_steps,
 )
-from b123d_recognisers.chamfers import (
-    BevelReject,
-    Chamfer,
-    classify_bevel,
-    recognise_chamfers,
-)
+from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.countersinks import (
     CounterSink,
     cone_rims,
