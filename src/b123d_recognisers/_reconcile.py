@@ -25,8 +25,8 @@ more, and once they described two things that were both needed.
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
 one at a time, and these are the four that have had to.
 
-**A rule finds a record's evidence by identity**, through `ClaimLedger.defining_of`. Until #127
-every rule here paired its records against the ledger's claims *by position*, which held only
+**A rule finds a record's evidence by identity**, through `ClaimLedger.defining_of`. Every
+rule here once paired its records against the ledger's claims *by position*, which held only
 while a recogniser wrote one claim per record in the order it returned them -- a coupling across
 two files that nothing checked. `strict=True` catches a count that drifts and cannot catch a
 permutation, and a permutation hands every record another record's faces while the counts stay
