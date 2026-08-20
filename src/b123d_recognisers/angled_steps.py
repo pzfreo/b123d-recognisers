@@ -82,10 +82,10 @@ from b123d_recognisers._adjacency import (
     nearest_axis_aligned_planes,
     neighbours,
 )
+from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
-from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 
 @dataclass(frozen=True, order=True)
