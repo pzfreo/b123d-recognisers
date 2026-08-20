@@ -3,7 +3,7 @@
 
 """ADR 0009: a reduction shared by more than one recogniser is total over its input.
 
-`_recess_core._planar_faces` is the reduction the record was written about. It used to drop any
+`_recess_faces._planar_faces` is the reduction the record was written about. It used to drop any
 planar face whose normal aligned with no principal axis, and slots, pockets and channels all
 inherited that without saying so — an axis-aligned-walls restriction applying to three families
 and documented on none, which no consumer could observe and no instrumentation could count,
@@ -23,7 +23,7 @@ from __future__ import annotations
 from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, Pos, Rot, extrude
 
 import b123d_recognisers as r
-from b123d_recognisers._recess_core import _planar_faces
+from b123d_recognisers._recess_faces import _planar_faces
 
 
 def _triangular_pocket():

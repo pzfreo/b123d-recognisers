@@ -7,7 +7,7 @@
 
 ## Context
 
-`_recess_core._planar_faces` reduces a solid's faces to the data three families need, and drops
+`_recess_faces._planar_faces` reduces a solid's faces to the data three families need, and drops
 any planar face whose normal is not axis-aligned:
 
 ```python

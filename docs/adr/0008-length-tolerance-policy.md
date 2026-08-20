@@ -146,12 +146,12 @@ Every numeric gate in the package, classified. `no change` means the site is alr
 | `_hole_features._SPOTFACE_MAX_RATIO` | 0.2 | ratio |
 | `countersinks._MIN_MAJOR_RATIO` | 1.5 | ratio |
 | `countersinks._MAX_INCLUDED_ANGLE` | 160.0 | angle |
-| `_recess_core._FLOOR_COVER_FRAC` | 0.5 | area fraction |
-| `_recess_core._VOID_VOL_FRAC` | 0.01 | volume fraction |
+| `_recess_faces._FLOOR_COVER_FRAC` | 0.5 | area fraction |
+| `_recess_reduce._VOID_VOL_FRAC` | 0.01 | volume fraction |
 | `_recess_core._LENGTH_TIE_FRAC` | 0.05 | fraction |
 | `_recess_core._SLOT_MAX_SPAN_FRAC` | 0.9 | fraction |
-| `_recess_core._OBROUND_RATIO_TOL` | 0.1 | extent-to-radius ratio |
-| `_recess_core._AXIS_ALIGNED_TOL` | 1e-3 | unit-normal component |
+| `_recess_obround._OBROUND_RATIO_TOL` | 0.1 | extent-to-radius ratio |
+| `_recess_faces._AXIS_ALIGNED_TOL` | 1e-3 | unit-normal component |
 | `levels._STEP_MIN_AREA_FRAC` | 0.01 | area fraction |
 | `flats._RADIAL_TOL` | 0.05 | unit dot product |
 | `flats._ANTIPARALLEL_TOL` | 0.05 | unit dot product |
@@ -226,8 +226,8 @@ diameter, radius or width in hand at the comparison. These are what the policy i
 | `flats._AXIS_LINE_FRAC` | stock radius |
 | `grooves._ADJ_FRAC` | band diameter |
 | `grooves._WALL_DIA_FRAC` | wider wall diameter |
-| `_recess_core._END_RADIUS_FRAC` | cap radius |
-| `_recess_core._CAP_CLUSTER_FRAC` | cap radius |
+| `_recess_obround._END_RADIUS_FRAC` | cap radius |
+| `_recess_obround._CAP_CLUSTER_FRAC` | cap radius |
 
 ### Minimum-evidence thresholds — absolute (13)
 
@@ -248,8 +248,8 @@ in 0.2.4; see the section above on why a threshold is not a tolerance. The value
 | `flats._CHORD_MARGIN` | 0.05 | minimum inset from the OD |
 | `grooves._DIA_MARGIN` | 0.2 | minimum step down into the band |
 | `grooves._WIDTH_MARGIN` | 0.05 | minimum narrowness against the wider wall |
-| `_recess_core._MERGE_TOL` | 0.5 | coordinate merge and minimum slot-end separation |
-| `_recess_core._FLOOR_TOL` | 0.3 | floor-plane coincidence |
+| `_recess_faces._MERGE_TOL` | 0.5 | coordinate merge and minimum slot-end separation |
+| `_recess_faces._FLOOR_TOL` | 0.3 | floor-plane coincidence |
 
 Three of the thirteen were found only after the first fix shipped — the `flats` chord gates by
 running real parts, the `grooves` margins by reading every remaining gate and asking which
@@ -278,7 +278,7 @@ recognition output away from reference scale, which is the point.
 Conversion landed as five changes rather than the three planned, each split off when the
 previous one's evidence showed it was a different defect: the policy and helpers; the
 feature-relative group; distance-based coplanar grouping; the area-gate tie break; then the
-part-relative group with the public surface, and `_recess_core` behind it.
+part-relative group with the public surface, and the recess modules behind it.
 
 That conversion overreached, and 0.2.4 pulled thirteen of the sites back — see the threshold
 section above. The families that remain scale-invariant across 0.05x-100x are those gated only by
