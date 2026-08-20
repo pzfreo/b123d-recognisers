@@ -110,7 +110,8 @@ undertaken on an assumption of equivalence found something: phase 1 consolidated
 implementations and [#82](https://github.com/pzfreo/b123d-recognisers/issues/82) then found a
 sixth, written as a list comprehension with no dedupe and no self-exclusion. `_recess_core._Face`
 looked like the obvious next migration and turned out to be the one that must not happen, because
-its normal convention and `FaceGraph`'s differ by a sign that the recess families depend on.
+its normal convention and `FaceGraph`'s were believed to differ by a sign the recess families
+depend on -- which measurement later showed they never do (see item 1).
 
 So each item below starts with a count, not a patch: run the existing implementations over the
 72 corpus parts and record where they disagree. That converts "is this mechanical?" from a
@@ -240,14 +241,15 @@ specialised to three surface types:
 **A correction worth recording**: an earlier reading of this called it three mutually incompatible
 styles. It is not. These four agree in method and differ only in surface type, which is duplication
 rather than drift. The genuine incompatibility is between this family and `FaceGraph.normal`, which
-is *geometric* (`normal_at`) and differs by a sign on `REVERSED` faces. Both conventions are live,
+was believed to be *geometric* (`normal_at`) and to differ by a sign on `REVERSED` faces.
+**That was wrong**, and it is corrected below. Both were thought live,
 both are correct for their own question, and nothing in the package says so — the distinction
 currently survives as a note explaining why `_recess_core._Face` must not be migrated.
 
 **And the corpus cannot answer this one on its own.** The convention has two factors, and they are
 not equally exercised. Surveyed over all 72 parts: `REVERSED` faces number 3,061 of 4,407 and every
 one of the 72 parts carries at least one, so the orientation factor is well covered. **Left-handed
-surface frames number 6 of 3,853, on 1 of 72 parts.** Since the two conventions differ by a sign
+surface frames number 6 of 3,853, on 1 of 72 parts.** Since a two-term convention differs
 precisely where handedness flips, a disagreement count over the corpus would very likely come back
 zero and mean nothing — the same blindness that makes goldens the wrong check here, one level down.
 So the count is necessary and not sufficient, and the falsifier has to be built rather than found.
@@ -263,12 +265,32 @@ So the count is necessary and not sufficient, and the falsifier has to be built 
 - [x] **No node attribute, deliberately.** None of the four call sites holds a `FaceGraph` --
       `analyse_cylinders` takes a bare part -- so a method with no consumer is the speculation
       this project declines. What the attribute was *for* is visibility, delivered instead in
-      `FaceGraph.normal`'s docstring: it is *geometric*, points into the solid on a `REVERSED`
-      face, and names the counterpart. That reason had lived only in a memory note
+      `FaceGraph.normal`'s docstring -- which then turned out to be stating something false, and
+      is corrected below. That reason had lived only in a memory note
 - [x] `_recess_core._Face` keeps its own reader, and now shares the convention underneath it
 
 The prize is not the four lines. It is that the next recogniser needing material side finds one
 attribute with a name that says which convention it is.
+
+**Postscript: the premise of this item was false, and measuring it is what showed that.**
+
+Item 1 rested on there being two material-side conventions in the package, differing by a sign on
+`REVERSED` faces -- the stated reason `_recess_core` could not read the graph, written into
+`FaceGraph.normal`'s docstring and into the note explaining why `_Face` must not migrate.
+
+There is one convention. build123d's `normal_at` already applies the orientation correction, so
+`FaceGraph.normal` *is* the material-side normal. Measured over 1,144 imported-STEP faces from a
+corpus that is 70% `REVERSED`, and over generated mirrored solids covering all four
+orientation/handedness cells: the two are **never** opposite, and `normal` survives the
+solid-classifier falsifier in every cell.
+
+So `FaceGraph.outward_normal`, added under this item, is removed again -- it computed by a longer
+route what `normal` already returned. `frame_points_outward` stays for the three sites that ask
+*which side* about a whole face with no single normal to read.
+
+The falsifier built for this item is what caught it, one PR later, by being pointed at the other
+reader. That is the argument for building a falsifier before a migration rather than after: it
+outlives the migration and can be aimed at the next claim.
 
 ## 2 — The convexity probe, shared; the arc attribute, still unbuilt
 
@@ -472,5 +494,6 @@ pairing lives in `_recess_core` and not in the five dict-map modules. The prereq
 - **Public serialised face ownership.** Zero consumers, and it needs a stable identity scheme that
   fixture-stable face order cannot provide.
 - **Migrating `_recess_core._Face` to `FaceGraph` nodes.** Investigated and rejected: the
-  conventions differ by a sign the recess families depend on. Item 1 makes that difference
+  conventions were believed to differ by a sign the recess families depend on. Item 1 makes that
+  supposed difference
   explicit; it does not remove it.
