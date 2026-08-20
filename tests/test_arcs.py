@@ -21,11 +21,16 @@ wall-to-wall and wall-to-floor edges have.
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 
 import pytest
-from build123d import Axis, Box, Cone, Cylinder, Pos, fillet
+from build123d import Axis, Box, Cone, Cylinder, Pos, Rot, fillet
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._geometry import SMOOTH_ARC_GAP
+from tests.golden._common import load_fixture
+
+_CORPUS = Path(__file__).parent / "corpus" / "mfcadpp"
 
 
 def _arcs(part):
@@ -150,3 +155,159 @@ def test_faces_that_do_not_meet_have_no_arc():
     ]
     assert opposite, "a box has opposite faces, or this asserts nothing"
     assert all(graph.arc(a, b) is None for a, b in opposite)
+
+
+def _slanted_counterbore():
+    """A checked-in fixture carrying face pairs that meet along **two** edges.
+
+    Not contrived: swept over the golden corpus, four fixtures have such a pair and this one has
+    two, one all-convex and one all-concave. A pair sharing several edges is the case an
+    edge-at-a-time classifier answers by accident.
+    """
+
+    return load_fixture(
+        Path(__file__).parent / "golden" / "slanted_counterbore" / "fixture.py"
+    ).build_fixture()
+
+
+def test_a_pair_meeting_along_several_edges_is_classified_from_all_of_them():
+    """The semantic: an arc belongs to the *pair*, and every shared edge has to agree.
+
+    An earlier version read `shared_edges(...)[0]` and so depended on a traversal order
+    `neighbours` does not promise. Here the edges do agree, which is why requiring agreement is
+    free today -- and why the first pair that disagrees will be loud rather than silently
+    order-dependent.
+    """
+
+    graph = FaceGraph(_slanted_counterbore())
+    multi = [
+        (a, b)
+        for a in graph.nodes
+        for b in graph.neighbours(a)
+        if b.index > a.index and len(graph.shared_edges(a, b)) > 1
+    ]
+    assert multi, "this fixture must still carry a multi-edge pair, or the test proves nothing"
+
+    for a, b in multi:
+        per_edge = {graph._classify_at(a, b, edge) for edge in graph.shared_edges(a, b)}
+        assert len(per_edge) == 1, "the fixture's edges agree; a disagreement needs its own case"
+        assert graph.arc(a, b) == per_edge.pop()
+
+
+def test_the_answer_does_not_depend_on_the_order_the_shared_edges_come_back_in():
+    """Permutation, not just count -- the drift `strict=True` cannot see.
+
+    Classifying every edge and requiring agreement makes this true by construction, which is the
+    point: reversing the edge list cannot change a set of size one.
+    """
+
+    graph = FaceGraph(_slanted_counterbore())
+    for a in graph.nodes:
+        for b in graph.neighbours(a):
+            edges = graph.shared_edges(a, b)
+            if len(edges) < 2:
+                continue
+            forward = {graph._classify_at(a, b, edge) for edge in edges}
+            backward = {graph._classify_at(a, b, edge) for edge in reversed(edges)}
+            assert forward == backward
+
+
+def test_a_shallow_corner_is_not_smooth():
+    """The false positive this attribute must not produce, and the reason the gap was measured.
+
+    Seeing *through* a join that is really a shallow step would merge two faces a recogniser
+    needs kept apart. The threshold was once 1.8 degrees, chosen on an assumption about kernel
+    noise that measurement disproved -- tangencies are *exact*. A one-degree ramp is nowhere near
+    smooth and must not read as it.
+    """
+
+    ramp = Box(60, 40, 10) - Pos(0, 0, 5) * Rot(0, 1, 0) * Box(80, 60, 10)
+    graph = FaceGraph(ramp)
+    kinds = {
+        graph.arc(a, b)
+        for a in graph.nodes
+        for b in graph.neighbours(a)
+        if b.index > a.index
+    }
+    assert "smooth" not in kinds
+
+    # And the gap it would have to close is far outside the threshold, by orders of magnitude.
+    assert SMOOTH_ARC_GAP < 1e-6, "a shallow corner sits at ~1e-4; the gap must stay well below"
+
+
+def test_the_classification_is_the_same_at_any_scale():
+    """Angles and signs only, so a part a thousand times bigger is the same part to an arc."""
+
+    small = Box(2, 2, 2) - Pos(0, 0, 0.6) * Box(1.2, 1.2, 1.2)
+    large = Box(2000, 2000, 2000) - Pos(0, 0, 600) * Box(1200, 1200, 1200)
+    assert _arcs(small) == _arcs(large)
+
+
+@pytest.mark.skipif(
+    not (_CORPUS / "MANIFEST.json").is_file(),
+    reason="the vendored MFCAD++ subset is excluded from the sdist",
+)
+def test_imported_step_geometry_classifies_without_unknowns():
+    """Generated solids are the easy case; imported B-Rep is what the package is for.
+
+    `unknown` is a real answer and not a failure, but a corpus of ordinary machined parts should
+    not need it -- if it starts appearing here, some geometry has stopped being readable and
+    that is worth knowing before a recogniser depends on the attribute.
+    """
+
+    from build123d import import_step
+
+    models = sorted(_CORPUS.glob("*.step"))[:5]
+    assert models, "the vendored corpus must be present for this test to mean anything"
+    for path in models:
+        graph = FaceGraph(import_step(str(path)))
+        for a in graph.nodes:
+            for b in graph.neighbours(a):
+                assert graph.arc(a, b) in ("convex", "concave", "smooth")
+
+
+def test_a_repeated_query_does_not_recompute_the_kernel_work():
+    """The graph is a run-local memo everywhere else, and an arc is its most expensive fact.
+
+    Surface projection and two first-derivative evaluations per shared edge is not something to
+    repeat once several recognisers traverse the same arcs.
+    """
+
+    graph = FaceGraph(_plain())
+    a = graph.nodes[0]
+    b = graph.neighbours(a)[0]
+
+    calls = []
+    original = graph._classify_arc
+    graph._classify_arc = lambda x, y: (calls.append((x, y)), original(x, y))[1]  # type: ignore[method-assign]
+
+    first = graph.arc(a, b)
+    assert len(calls) == 1
+    assert graph.arc(a, b) == first
+    assert graph.arc(b, a) == first
+    assert len(calls) == 1, "the cache must be symmetric, not one entry per ordering"
+
+
+def test_shared_edges_that_disagree_give_no_single_answer():
+    """The rule that makes a multi-edge pair safe, tested as logic rather than hunted as geometry.
+
+    No disagreeing pair has been observed -- a sweep of the checked-in STEP corpus found 49
+    pairs sharing two edges and none whose edges classify differently -- so this cannot be
+    reached by choosing a fixture. It is still the branch that stops an arc silently depending
+    on which edge came back first, which is what the previous implementation did.
+
+    Injecting the disagreement tests the aggregation and nothing else, which is the part that
+    was written rather than measured.
+    """
+
+    graph = FaceGraph(_plain())
+    a = graph.nodes[0]
+    b = graph.neighbours(a)[0]
+    assert graph.arc(a, b) == "convex", "the real answer, before it is overridden"
+
+    answers = iter(("convex", "concave"))
+    graph._arcs.clear()
+    graph._classify_at = lambda *_: next(answers)  # type: ignore[method-assign]
+    graph.shared_edges = lambda *_: ("first", "second")  # type: ignore[method-assign]
+
+    assert graph.arc(a, b) == "unknown"

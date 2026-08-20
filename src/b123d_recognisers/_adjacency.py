@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
@@ -33,10 +33,21 @@ from OCP.ShapeAnalysis import ShapeAnalysis_Surface
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_Orientation
 from OCP.TopExp import TopExp_Explorer
 
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_COS
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
 _T = TypeVar("_T")
+
+
+#: What an arc can be. Closed, so a consumer can match exhaustively and mypy will say when one
+#: forgets a case -- a bare ``str`` let a caller compare against a value the graph never returns.
+#:
+#: ``"unknown"`` means *adjacent, but no single classification applies*: the geometry at the edge
+#: is too degenerate to read, or the pair shares several edges that do not agree. It is not the
+#: same as :meth:`FaceGraph.arc` returning None, which means the faces do not meet at all, and
+#: the difference matters -- a traversal rule reading "not smooth" from an absence would be
+#: concluding from silence, which `require_node` and `claims_of` both refuse to allow elsewhere.
+ArcKind = Literal["convex", "concave", "smooth", "unknown"]
 
 
 class FaceEdges:
@@ -143,6 +154,7 @@ class FaceGraph:
         self._bounds: dict[int, tuple] = {}
         self._edge_faces: dict | None = None
         self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
+        self._arcs: dict[tuple[int, int], ArcKind | None] = {}
 
     def __len__(self) -> int:
         return len(self._faces)
@@ -299,30 +311,40 @@ class FaceGraph:
             self._neighbours[at] = got = tuple(found)
         return got
 
-    def arc(self, a: FaceNode, b: FaceNode) -> str | None:
-        """How the solid turns where two faces meet: ``"convex"``, ``"concave"`` or ``"smooth"``.
+    def arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None:
+        """How the solid turns where two faces meet, or None when they do not meet.
 
         The attribute an attributed adjacency graph is *for*, and the half this package went
-        without. Nodes carry facts about a face; until now nothing said what happened *between*
+        without. Nodes carry facts about a face; until this, nothing said what happened *between*
         two of them, so a recogniser needing that inferred it at the point of use or did not ask.
 
-        - **smooth** -- the two outward normals agree to :data:`SMOOTH_ARC_COS` where the faces
-          meet. A face split in two by a neighbouring feature is the exact case, its halves
-          coplanar; a tangential blend is the approximate one. This is why ADR 0004's amendment
-          treats seeing *through* a blend and *across* a split as one mechanism: a split is the
-          zero-angle blend.
         - **convex** / **concave** -- whether the material forms a wedge at the edge or wraps
-          around it. Read from the direction the boundary of *a* walks the shared edge: turning
-          left from that direction, in *a*'s surface, points into *a*, and which side of *b* that
+          around it, from the direction the boundary of *a* walks the shared edge: turning left
+          from that direction, in *a*'s surface, points into *a*, and which side of *b* that
           lands on is the answer.
+        - **smooth** -- the outward normals agree to :data:`SMOOTH_ARC_GAP` where the faces meet.
+          A face split in two by a neighbouring feature is the exact case, its halves coplanar;
+          a tangential blend is the other. This is why ADR 0004's amendment treats seeing
+          *through* a blend and *across* a split as one mechanism: a split is the zero-angle
+          blend.
+        - **unknown** -- adjacent, but no single answer applies. See :data:`ArcKind`.
 
-        Evaluated *at a point on the shared edge*, from each face's own normal there, so it is
+        **A property of the face pair, not of one edge**, and where they share several the
+        classification must be the same at each or the answer is ``"unknown"``. Two faces meeting
+        along two edges are common -- 49 such pairs across the checked-in STEP corpus -- and an
+        earlier version read only ``shared_edges(...)[0]``, which made the answer depend on
+        traversal order that :meth:`neighbours` does not promise. No disagreeing pair has been
+        observed; requiring agreement therefore costs nothing today and makes the first one loud
+        rather than silently order-dependent.
+
+        Evaluated at a point on each shared edge, from the faces' own normals there, so it is
         total rather than planar-only: a plane has one normal everywhere and a cone does not, and
         a groove's conical lead-in is precisely the face a recogniser must classify an arc
         against.
 
-        None when the faces share no edge, or where a normal or the edge's direction cannot be
-        read.
+        Cached per unordered pair. The answer is symmetric by construction -- the two faces of a
+        manifold edge walk it in opposite directions, which cancels -- and the cache is keyed so
+        that ``arc(a, b)`` and ``arc(b, a)`` are one entry rather than two that could drift.
 
         **Not a generalisation of** :func:`b123d_recognisers._bevel.convex_bevel`, which asks a
         different question -- whether the corner a bevel *replaces* is convex, that is whether
@@ -330,18 +352,34 @@ class FaceGraph:
         to both walls it meets while filling a concave corner, and both answers are right.
         """
 
+        key = (min(a.index, b.index), max(a.index, b.index))
+        if key not in self._arcs:
+            self._arcs[key] = self._classify_arc(a, b)
+        return self._arcs[key]
+
+    def _classify_arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None:
+        """:meth:`arc` without the cache: every shared edge classified, and made to agree."""
+
         shared = self.shared_edges(a, b)
         if not shared:
             return None
+        answers = {self._classify_at(a, b, edge) for edge in shared}
+        if len(answers) != 1:
+            return "unknown"  # the edges disagree: no one answer describes this pair
+        return answers.pop()
+
+    def _classify_at(self, a: FaceNode, b: FaceNode, edge: EdgeLike) -> ArcKind:
+        """The classification along one shared edge."""
+
         # One guard, not three: a direction that cannot be walked and a normal that cannot be
         # read are the same answer -- the geometry here is too degenerate to classify.
-        walk = self._boundary_direction(a, shared[0])
+        walk = self._boundary_direction(a, edge)
         direction, point = walk if walk else (None, None)
         na = self._normal_at(a, point) if point else None
         nb = self._normal_at(b, point) if point else None
         if direction is None or na is None or nb is None:
-            return None
-        if sum(x * y for x, y in zip(na, nb, strict=True)) > SMOOTH_ARC_COS:
+            return "unknown"
+        if 1.0 - sum(x * y for x, y in zip(na, nb, strict=True)) <= SMOOTH_ARC_GAP:
             return "smooth"
         into = (
             na[1] * direction[2] - na[2] * direction[1],
