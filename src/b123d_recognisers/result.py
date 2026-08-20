@@ -358,12 +358,24 @@ def _take_inventory(
     faces a step and a groove were each built from.
 
     The census now pays for the families it does not count -- pads, polygonal stock, step
-    levels and the rest. Measured over nine NIST and real-world STEP parts, interleaved and
-    taking the best of three: 39.5 s before, 53.4 s after, about 35% more. That is the price,
-    and it is the right way round -- a measurement tool that is fast and quietly wrong is worth
-    less than one that is slower and says what the library says. It is also recoverable without
-    reopening the divergence, by having a caller that wants both take one inventory and count
-    it, which is what this function returning the run makes possible.
+    levels and the rest. Two measurements, because one of them alone misleads:
+
+    - `feature_census` on its own, over nine NIST and real-world STEP parts: 39.5 s to 53.4 s,
+      about **35% more**. Spread across seven families with no hot spot to fix -- step levels
+      are the largest single contributor at about a third of the added time.
+    - The pinned parity benchmark, which is what a consumer actually runs (two results and one
+      census over four fixtures): **about 4% more**, 1.849 s to 1.931 s, best of five over
+      three interleaved blocks.
+
+    The composite figure is the one that bears on release, and the census-only figure is the
+    one that bears on corpus sweeps. Both are the price of the two entry points being unable to
+    disagree, and it is the right way round -- a measurement tool that is fast and quietly wrong
+    is worth less than one that is slower and says what the library says.
+
+    Recoverable without reopening the divergence, if a consumer ever needs both: this function
+    returns the run, so one inventory can serve a result and a count. Left private until
+    something asks, rather than published on the chance that it will. Both figures are held to a
+    budget, tracked as a named follow-up rather than left as a number in a docstring.
     """
 
     # One run, one set of shared facts, derived once here rather than by whichever family asks

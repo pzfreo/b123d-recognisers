@@ -139,11 +139,18 @@ Two rules follow.
   reconciliation rule applied to the shared inventory rather than a different sequence of calls —
   `steps_that_are_not_grooves` is the only such rule today, and it is a compatibility rule under
   the decision above: both records survive, only the count is corrected.
-- **The state a run shares is one object, not a set of optional arguments.** The graph, the claim
-  ledger, the face-edge memo and the cylinder scan are facts about a run over a part. Threaded
-  individually they are also individually forgettable, and a recogniser with no parameter to
-  receive one derives its own — silently, correctly, and twice. A public standalone recogniser
-  still constructs what it needs; internal orchestration passes one run.
+- **The state a run shares is owned as one object.** The graph, the claim ledger, the face-edge
+  memo and the cylinder scan are facts about a run over a part. Derived individually they are
+  also individually forgettable, and a recogniser with no parameter to receive one derives its
+  own — silently, correctly, and twice. One object owns them, and orchestration is what holds
+  it.
+
+  **Ownership, not yet the call interface.** A recogniser is still handed `face_edges=`,
+  `ledger=`, `cyls=` and `graph=` separately, because a public standalone recogniser has to keep
+  a signature a caller with only a part can use. So this decides where that state comes from and
+  how many times it is derived; it does not decide how a recogniser receives it. That second half
+  is a migration of recogniser internals, and calling it done here would be the same kind of
+  claim this amendment exists to correct.
 
 Neither is a new architecture. Both are what "one aggregate run performs each expensive substrate
 analysis once", in the evidence list above, has to mean if it is to be checkable rather than
