@@ -19,12 +19,18 @@ for a cylinder test and the leg geometry for the cylinder radius:
 - **convex** — the virtual sharp corner the round replaces (where the two neighbour planes
   cross) lies *outside* the solid. An **internal** round filling a concave re-entrant
   corner buries that corner *inside* the material — the discriminator that face type +
-  adjacency alone cannot make (the same convex test the chamfer recogniser uses), so an
-  internal fillet / a slot-wall blend / a counterbore-floor round is excluded.
+  adjacency alone cannot make, so an internal fillet / a slot-wall blend / a
+  counterbore-floor round is excluded.
 
 The radius is the cylinder radius, read from the geometry, not estimated from the view.
 A too-small round (an edge-break / deburr, below ``min_radius``) is not a dimensioned
-feature. Bottom of the recognition DAG: depends only on build123d/OCP.
+feature.
+
+Depends on :mod:`.chamfers` for :func:`~b123d_recognisers.chamfers.convex_bevel` rather than
+copying it, as :mod:`.angled_steps` does and for the same reason: a change to what counts as a
+convex corner should reach every family that asks. That test was a line-for-line copy here until
+epic 0002 item 2 — same construction, same probe fraction, same classifier tolerance — and two
+copies of one decision can drift with nothing to notice.
 """
 
 from __future__ import annotations
@@ -33,19 +39,17 @@ import math
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.GeomAbs import GeomAbs_Cylinder
-from OCP.gp import gp_Pnt
-from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, INTERIOR_PROBE_FRAC
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part, SurfaceAdaptor
+from b123d_recognisers.chamfers import convex_bevel
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -130,21 +134,13 @@ def recognise_fillets(
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
 
-        # Convex-edge test (mirrors the chamfer's): the virtual sharp corner the round
-        # replaces sits where the two neighbour planes cross, at the fillet's own edge
-        # position. Nudged toward the fillet face it lands in the removed-round *vacuum* for
-        # a real (convex) fillet (OUT), but in filled *material* for an internal round
-        # bevelling a concave re-entrant corner (IN).
-        corner = [0.0, 0.0, 0.0]
-        corner[edge_i] = fc[edge_i]
-        corner[oi[0]] = neigh_coord[oi[0]]
-        corner[oi[1]] = neigh_coord[oi[1]]
-        probe = tuple(
-            corner[i] + INTERIOR_PROBE_FRAC * (fc[i] - corner[i]) for i in (0, 1, 2)
-        )
-        clsf = BRepClass3d_SolidClassifier(part.wrapped)
-        clsf.Perform(gp_Pnt(*probe), 1e-6)
-        if clsf.State() == TopAbs_IN:
+        # The convex-edge test, shared with the two bevel families rather than restated: the
+        # virtual sharp corner this round replaces sits where the two neighbour planes cross,
+        # and a nudge toward the blend lands in the removed *vacuum* for a real fillet but in
+        # filled *material* for an internal round bevelling a re-entrant corner. This was a
+        # line-for-line copy of `convex_bevel` down to the probe fraction and the classifier
+        # tolerance, and the copies could have drifted with nothing to notice.
+        if not convex_bevel(part, fc, edge_i, neigh_coord):
             continue  # concave corner — an internal round / slot-wall blend, not an edge fillet
 
         # Anchor the leader on the curved radius surface itself via the shared
