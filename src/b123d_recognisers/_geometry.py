@@ -50,6 +50,14 @@ AXIS_ZERO_COS = 0.01
 #: Shared by the chamfer and fillet recognisers, which ask the same question the same way.
 INTERIOR_PROBE_FRAC = 0.05
 
+#: Two faces count as *smoothly* joined when their outward normals agree to this direction
+#: cosine where they meet. A face split in two by a neighbouring feature is the exact case, its
+#: halves coplanar; a tangential blend is the approximate one. Dimensionless, so it never scales
+#: with the part (ADR 0008) -- which is the property that keeps an arc's classification clear of
+#: the threshold-versus-tolerance trap, and the reason Analysis Situs gates the same decision on
+#: an angle rather than a distance.
+SMOOTH_ARC_COS = 0.9995
+
 
 def _unit(v: Sequence[float]) -> tuple[float, float, float]:
     """Normalise negative zeros out of a direction 3-vector.
