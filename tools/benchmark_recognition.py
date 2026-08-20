@@ -82,6 +82,20 @@ def _implementation(kind: str, baseline: Path | None):
     return recognition, feature_census
 
 
+def _load_budget(path: Path, workload: str, override: float | None):
+    """Return the recorded workload and its ceiling multiplier.
+
+    The checked-in JSON is the policy source of truth.  ``override`` exists for an
+    intentional one-off experiment; leaving it out must follow the file rather than a
+    second default that can silently drift from it.
+    """
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    recorded = payload["workloads"][workload]
+    multiplier = payload["budget"] if override is None else override
+    return recorded, float(multiplier)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--implementation", choices=("package", "draftwright"), required=True)
@@ -89,7 +103,11 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=3)
     parser.add_argument("--workload", choices=("composite", "census"), default="composite")
     parser.add_argument("--check", type=Path, help="a recorded budget to measure against")
-    parser.add_argument("--budget", type=float, default=1.10)
+    parser.add_argument(
+        "--budget",
+        type=float,
+        help="override the multiplier recorded in the --check JSON for this run",
+    )
     args = parser.parse_args()
 
     recognition, feature_census = _implementation(args.implementation, args.baseline)
@@ -143,12 +161,12 @@ def main() -> int:
 
     if args.check is None:
         return 0
-    recorded = json.loads(args.check.read_text(encoding="utf-8"))["workloads"][args.workload]
-    ceiling = recorded["min_seconds"] * args.budget
+    recorded, multiplier = _load_budget(args.check, args.workload, args.budget)
+    ceiling = recorded["min_seconds"] * multiplier
     over = result["min_seconds"] > ceiling
     print(
         f"{args.workload}: {result['min_seconds']:.3f}s against a {ceiling:.3f}s ceiling "
-        f"({recorded['min_seconds']:.3f}s x {args.budget}) -- {'OVER' if over else 'within'}",
+        f"({recorded['min_seconds']:.3f}s x {multiplier}) -- {'OVER' if over else 'within'}",
         file=sys.stderr,
     )
     return 1 if over else 0
