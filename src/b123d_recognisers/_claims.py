@@ -80,6 +80,7 @@ class ClaimLedger:
         self._graph = graph
         self._claims: list[Claim] = []
         self._by_node: dict[FaceNode, list[Claim]] = {}
+        self._by_claimant: dict[int, Claim] = {}
 
     def __len__(self) -> int:
         return len(self._claims)
@@ -114,6 +115,7 @@ class ClaimLedger:
 
         claim = Claim(claimant, defining)
         self._claims.append(claim)
+        self._by_claimant[id(claimant)] = claim
         for node in defining:
             self._by_node.setdefault(node, []).append(claim)
         return claim
@@ -123,6 +125,34 @@ class ClaimLedger:
         """Every claim, in the order it was made."""
 
         return tuple(self._claims)
+
+    def defining_of(self, claimant: object) -> frozenset[FaceNode]:
+        """The faces *this* candidate was established by, or empty when it claimed none.
+
+        **By identity, deliberately**, and it is the direction a reconciler reads. A rule holds a
+        record and needs its evidence; the alternative it replaces was pairing the returned list
+        against the ledger's claims *by position*, which requires the recogniser to write claims
+        in exactly the order it returns records and never say so anywhere the reader can check.
+        `strict=True` catches a count that drifts. It cannot catch a permutation, and a
+        permutation attaches every record to another record's faces while the counts stay right.
+
+        That is not hypothetical: a mutation in the chamfer/angled-step work that claimed before
+        sorting rather than after did precisely this, kept the slant and dropped the real
+        chamfer, and survived the whole golden corpus. It was caught only by a part built so the
+        kernel's traversal order and the record sort order disagree.
+
+        Keyed on ``id`` and safe to be: the ledger holds the claim, the claim holds the claimant,
+        so nothing here can be collected and have its address reused while the entry lives. That
+        is the property the identity-keyed caches this project got wrong twice did not have.
+
+        Empty rather than None for a record that claimed nothing -- a stubby obround slot
+        recovered from its end caps is the case -- because "established by no face I can name" is
+        an answer a rule can act on, and every rule here asks whether some other family's faces
+        are inside this record's.
+        """
+
+        claim = self._by_claimant.get(id(claimant))
+        return claim.defining if claim is not None else frozenset()
 
     def claims_of(self, node: FaceNode) -> tuple[Claim, ...]:
         """Every claim naming *node* as defining, in claim order; empty for an unclaimed node.
