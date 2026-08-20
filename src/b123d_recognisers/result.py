@@ -333,12 +333,12 @@ def build_recognition_result(
     countersinks = recognise_countersinks(part)
     holes = recognise_holes(part, cyls=cyls, csinks=countersinks)
     double_d_bores = recognise_double_d_bores(part)
-    channels = recognise_channels(part)
     # The two families that describe a void by the faces bounding it both write into one
     # ledger, so the reconciliation below is a question about faces rather than about
     # coordinates each of them derived its own way.
     ledger = ClaimLedger(FaceGraph(part))
     slots = recognise_slots(part, ledger=ledger)
+    channels = recognise_channels(part, ledger=ledger)
     # Into the same ledger. No rule reads pocket claims today, and that is the reason to write
     # them rather than to wait: a partial ledger is the trap this whole mechanism exists to
     # close, since a future rule reading one would find no pocket claim and conclude there is

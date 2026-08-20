@@ -117,19 +117,28 @@ def recognise_pockets(
     return [pocket for pocket, _ in pairs]
 
 
-def recognise_channels(part: Part, *, face_edges: FaceEdges | None = None) -> list[Channel]:
+def recognise_channels(
+    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+) -> list[Channel]:
     """Recognise full-span floored channels independently within each solid.
 
     This is deliberately separate from :func:`recognise_pockets`: a channel's length
     and depth participate in the surrounding envelope/plate scheme, while only its
     wall-to-wall width is an independent defining measurement. Body-local bounds prove
     that the channel reaches the ends of the same solid whose faces bound it.
+
+    *ledger* is accepted but **never written to**: this family claims nothing, because no rule
+    needs to ask what a channel was built from. What the parameter is for is the *graph* --
+    `_planar_faces` reads each face's material-side normal from it, and a family without one
+    builds its own. Passing the run's keeps a census to a single graph rather than one per solid
+    for this family alone.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
+    graph = None if ledger is None else ledger.graph
     channels = [
         channel
         for solid in sources
-        for channel in _recognise_channels_one(solid, face_edges)
+        for channel in _recognise_channels_one(solid, face_edges, graph)
     ]
     return sorted(channels, key=_channel_sort_key)

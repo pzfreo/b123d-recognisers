@@ -163,6 +163,10 @@ def _planar_faces(
                 _dominant_axis(nrm),
                 face.bounding_box(),
                 _is_wall(face, face_edges),
+                # Only a *caller's* node is stored. A node from the graph built above belongs
+                # to no ledger, so claiming against it would raise -- and the field exists for
+                # claiming. Reading attributes from a local graph is fine; naming one as
+                # evidence is not.
                 node if graph is not None else None,
             )
         )
@@ -1057,9 +1061,11 @@ def _recognise_pockets_one(
     return _extend_obround_ends(_merge(candidates, claims), part, claims)
 
 
-def _recognise_channels_one(part: Part, face_edges: FaceEdges | None = None) -> list[Channel]:
+def _recognise_channels_one(
+    part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
+) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
-    faces = _planar_faces(part, face_edges)
+    faces = _planar_faces(part, face_edges, graph)
     pbb = part.bounding_box()
     part_ext = {a: getattr(pbb.size, "XYZ"[_AXES[a]]) for a in "xyz"}
     part_bounds = {
