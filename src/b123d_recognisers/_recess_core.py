@@ -57,18 +57,26 @@ def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
     Facing bounding boxes are not enough: walls of neighbouring features can overlap by a
     sliver and manufacture a candidate spanning the space between them.  Walls of one recess
     need not meet the same boundary face when an end is fragmented, but where they do, the
-    material must turn the same way from both walls. When there is no common neighbour, the
-    walls must still belong to one smooth-connected boundary component -- the gAAG view that
-    merges face subdivisions. Unrelated grazing walls fail both tests.
+    material must turn the same way from both walls. Planar common neighbours are the boundary
+    evidence when present: an added coaxial post contributes a cylindrical neighbour that meets
+    the two walls with opposite turns, but it interrupts rather than defines the slot. When
+    there is no common neighbour, the walls must still belong to one smooth-connected boundary
+    component -- the gAAG view that merges face subdivisions. Unrelated grazing walls fail both
+    tests.
     """
 
     if fa.node is None or fb.node is None:
         raise ValueError("recess walls require graph nodes")
     common = set(graph.neighbours(fa.node)) & set(graph.neighbours(fb.node))
     if common:
+        # Prefer the planar boundary shared by these planar walls. A convex cylindrical post at
+        # a slot end is also adjacent to both walls, with one convex and one concave arc, but is
+        # added material inside the boundary rather than evidence that the walls bound different
+        # voids. Keep curved neighbours as the fallback for boundaries with no planar member.
+        boundary = {neighbour for neighbour in common if graph.is_planar(neighbour)} or common
         return all(
             graph.arc(fa.node, neighbour) == graph.arc(fb.node, neighbour)
-            for neighbour in common
+            for neighbour in boundary
         )
 
     # A STEP face may be subdivided into several tangent faces. In a gAAG those fragments are
