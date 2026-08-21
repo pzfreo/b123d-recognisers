@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, Pos, extrude
+from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos, extrude
 
 import b123d_recognisers as r
 
@@ -51,3 +51,21 @@ def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():
     result = r.build_recognition_result(part)
     assert result.pockets == ()
     assert [pocket.sides for pocket in result.prismatic_pockets] == [8]
+
+
+def test_coaxial_posts_at_slot_ends_do_not_defeat_the_planar_boundary():
+    """Convex added material interrupts an end; it does not make the slot walls unrelated."""
+
+    plain = Box(60, 30, 10) - Box(30, 8, 20)
+    for posts in (
+        Pos(15, 0, 0) * Cylinder(4, 10),
+        Pos(15, 0, 0) * Cylinder(4, 10) + Pos(-15, 0, 0) * Cylinder(4, 10),
+    ):
+        part = plain + posts
+        (slot,) = r.recognise_slots(part)
+
+        assert (slot.width_axis, slot.long_axis) == ("y", "x")
+        assert (slot.width, slot.length) == (8.0, 30.0)
+        assert (slot.w_center, slot.lo, slot.hi) == (0.0, -15.0, 15.0)
+        assert (slot.d_lo, slot.d_hi) == (-5.0, 5.0)
+        assert r.build_recognition_result(part).slots == (slot,)
