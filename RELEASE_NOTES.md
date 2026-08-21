@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.2.7
+
+- **Fixed: a slot with a coaxial post at either end is recognised again.** The AAG coherence
+  gate added in 0.2.6 treated every face adjacent to both slot walls as boundary evidence. A
+  convex cylindrical post meets those walls with opposite arc directions, so it vetoed the
+  planar boundary and made the slot silently disappear. Planar shared neighbours now carry the
+  coherence decision when present, with curved neighbours retained for boundaries that have no
+  planar member. One- and two-post fixtures both recover the original 30 × 8 slot through the
+  direct recogniser and the aggregate, without weakening the grazing-wall rejection that
+  prompted the gate (#140).
+
+  This is a recognition-behaviour patch with no public record, capability-manifest, typing or
+  archive-boundary change. Roll back to 0.2.6 to restore the stricter 0.2.6 boundary policy.
+
 ## 0.2.6
 
 - **Recess candidates now have AAG-coherent boundaries and one aggregate ownership policy.**
