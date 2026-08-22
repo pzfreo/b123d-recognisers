@@ -41,6 +41,14 @@ def _git(root: Path, *args: str) -> str:
     ).stdout.rstrip("\n")
 
 
+def _git_bytes(root: Path, *args: str) -> bytes:
+    """Read object content without newline decoding or trimming."""
+
+    return subprocess.run(
+        ["git", *args], cwd=root, check=True, stdout=subprocess.PIPE
+    ).stdout
+
+
 def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple[str, str]:
     """Return ``(released, development)`` or raise on a non-mechanical branch."""
 
@@ -93,11 +101,13 @@ def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple
         )
 
     for relative in _VERSION_FILES:
-        before = _git(root, "show", f"{bump_parent}:{relative}")
-        after = _git(root, "show", f"{bump_commit}:{relative}")
-        if before.count(tagged) != 1:
+        before = _git_bytes(root, "show", f"{bump_parent}:{relative}")
+        after = _git_bytes(root, "show", f"{bump_commit}:{relative}")
+        tagged_bytes = tagged.encode()
+        development_bytes = development.encode()
+        if before.count(tagged_bytes) != 1:
             raise ValueError(f"{relative} does not contain exactly one {tagged} identity")
-        if before.replace(tagged, development) != after:
+        if before.replace(tagged_bytes, development_bytes) != after:
             raise ValueError(f"{relative} changes more than {tagged} -> {development}")
     return tagged, development
 

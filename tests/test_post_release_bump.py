@@ -91,6 +91,21 @@ def test_generated_bump_rejects_more_than_a_version_substitution(
         _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
 
 
+@pytest.mark.parametrize("ending", [b"\n\n", b"\r\n"])
+def test_generated_bump_rejects_newline_changes(
+    mechanical_bump: tuple[Path, str], ending: bytes
+) -> None:
+    root, _ = mechanical_bump
+    project = root / "pyproject.toml"
+    project.write_bytes(project.read_bytes().rstrip(b"\n") + ending)
+    _git(root, "add", "pyproject.toml")
+    _git(root, "commit", "--amend", "--no-edit", "-q")
+    bump_sha = _git(root, "rev-parse", "HEAD")
+
+    with pytest.raises(ValueError, match="pyproject.toml changes more"):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
+
+
 def test_generated_bump_rejects_root_wheel_metadata_changed_afterward(
     mechanical_bump: tuple[Path, str],
 ) -> None:
