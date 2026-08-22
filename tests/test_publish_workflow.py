@@ -97,13 +97,12 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
         "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
     ) == 1
 
-    # The generated post-release branch gets provider CI explicitly: a GITHUB_TOKEN push raises
-    # no event. It must NOT run the consumer candidate canary, because the next patch's .dev0
-    # identity is deliberately outside Draftwright's reviewed transition. The release candidate
-    # at the tag already supplied downstream evidence before publication.
+    # The generated post-release branch gets both required statuses explicitly: a GITHUB_TOKEN
+    # push raises no event. The canary recognizes the generated branch and validates a strictly
+    # mechanical identity bump instead of widening Draftwright's closed transition.
     assert 'gh workflow run ci.yml --ref "$branch"' in workflow
+    assert 'gh workflow run downstream-canary.yml --ref "$branch"' in workflow
     assert "for workflow in" not in workflow
-    assert "downstream-canary.yml" not in workflow
     # The bump derives its next version from `main`, as the ported workflow does, so there is
     # no RELEASE_TAG-in-the-wrong-scope bug to have. An earlier attempt derived it from the tag
     # and read that variable in a step where it was not defined, which would have failed every
@@ -185,7 +184,7 @@ def test_the_release_artifact_is_built_here_and_published_unmodified() -> None:
     assert "with" not in action, "PyPI is the default index; a repository-url would redirect it"
 
 
-def test_the_bump_opens_a_pr_and_dispatches_provider_ci_only() -> None:
+def test_the_bump_opens_a_pr_and_dispatches_both_required_statuses() -> None:
     """`git push origin HEAD:main` was green; the job holds `contents: write`."""
 
     jobs = _parsed(WORKFLOW)["jobs"]
@@ -195,9 +194,12 @@ def test_the_bump_opens_a_pr_and_dispatches_provider_ci_only() -> None:
     assert "HEAD:main" not in joined and "origin main" not in joined
 
     assert 'gh workflow run ci.yml --ref "$branch"' in joined
+    assert 'gh workflow run downstream-canary.yml --ref "$branch"' in joined
     assert "for workflow in" not in joined
-    assert "downstream-canary.yml" not in joined
     assert "workflow_dispatch" in _triggers(_parsed(ROOT / ".github" / "workflows/ci.yml"))
+    assert "workflow_dispatch" in _triggers(
+        _parsed(ROOT / ".github" / "workflows/downstream-canary.yml")
+    )
 
 
 @pytest.mark.skipif(

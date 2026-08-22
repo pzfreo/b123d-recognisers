@@ -139,10 +139,9 @@ jobs:
           gh pr create --base main --head "$branch" \
             --title "Bump version to ${new_version} after ${RELEASE_TAG}" \
             --body "Post-release development-version bump. Publication already succeeded for \`${RELEASE_TAG}\`; this changes only build and lock identity."
-          # A branch pushed with GITHUB_TOKEN raises no events, so dispatch the provider's CI
-          # explicitly. Do not dispatch the consumer candidate canary here: this mechanical
-          # branch is the *next* patch's .dev0 identity, which is intentionally outside every
-          # consumer's reviewed transition until that patch has real contract work. The release
-          # candidate at the tag was canaried before publication; widening a consumer merely to
-          # admit this version-only bump would violate the fail-closed delivery protocol.
+          # A branch pushed with GITHUB_TOKEN raises no events, so dispatch both required statuses
+          # explicitly. The downstream workflow recognizes this branch as the mechanical next-patch
+          # bump and proves its wheel-facing inputs differ from the released tag only by identity;
+          # every other branch still runs the fail-closed Draftwright contract.
           gh workflow run ci.yml --ref "$branch"
+          gh workflow run downstream-canary.yml --ref "$branch"
