@@ -103,6 +103,42 @@ def test_generated_bump_rejects_root_wheel_metadata_changed_afterward(
         _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
 
 
+def test_generated_bump_rejects_vcs_exclusions_changed_afterward(
+    mechanical_bump: tuple[Path, str],
+) -> None:
+    root, bump_sha = mechanical_bump
+    (root / ".gitignore").write_text("src/b123d_recognisers/post_release.py\n", encoding="utf-8")
+    _git(root, "add", "-f", ".gitignore")
+    _git(root, "commit", "-qm", "exclude runtime from wheel")
+
+    with pytest.raises(ValueError, match=r"\.gitignore"):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
+
+
+def test_generated_bump_rejects_checkout_attributes_changed_afterward(
+    mechanical_bump: tuple[Path, str],
+) -> None:
+    root, bump_sha = mechanical_bump
+    (root / ".gitattributes").write_text("src/**/*.py text eol=crlf\n", encoding="utf-8")
+    _git(root, "add", ".gitattributes")
+    _git(root, "commit", "-qm", "change packaged source checkout bytes")
+
+    with pytest.raises(ValueError, match=r"\.gitattributes"):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
+
+
+def test_generated_bump_rejects_runtime_file_renamed_out_of_source(
+    mechanical_bump: tuple[Path, str],
+) -> None:
+    root, bump_sha = mechanical_bump
+    runtime = root / "src/b123d_recognisers/post_release.py"
+    _git(root, "mv", str(runtime.relative_to(root)), "docs/runtime.py")
+    _git(root, "commit", "-qm", "move runtime out of source")
+
+    with pytest.raises(ValueError, match="src/b123d_recognisers/post_release.py"):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
+
+
 def test_generated_bump_rejects_a_branch_without_the_tag_identity(
     mechanical_bump: tuple[Path, str],
 ) -> None:
@@ -118,4 +154,18 @@ def test_generated_bump_rejects_an_off_main_parent(
     _git(root, "update-ref", "refs/remotes/origin/main", "v0.3.0")
 
     with pytest.raises(subprocess.CalledProcessError):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
+
+
+def test_generated_bump_rejects_mode_only_changes_against_an_old_tag(
+    mechanical_bump: tuple[Path, str],
+) -> None:
+    root, _ = mechanical_bump
+    _git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    for relative in _FILES:
+        _git(root, "update-index", "--chmod=+x", relative)
+    _git(root, "commit", "-qm", "mode-only pseudo bump")
+    bump_sha = _git(root, "rev-parse", "HEAD")
+
+    with pytest.raises(ValueError, match="file metadata"):
         _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)

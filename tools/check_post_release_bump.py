@@ -24,6 +24,8 @@ _VERSION_FILES = (
     "uv.lock",
 )
 _ROOT_WHEEL_INPUTS = {
+    ".gitattributes",
+    ".gitignore",
     "LICENSE",
     "NOTICE",
     "README.md",
@@ -76,7 +78,12 @@ def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple
             "generated commit does not change exactly the four version files; "
             f"extra={extra}, missing={missing}"
         )
-    later_changes = set(_git(root, "diff", "--name-only", f"{bump_commit}..HEAD").splitlines())
+    summary = _git(root, "diff", "--summary", f"{bump_parent}..{bump_commit}")
+    if summary:
+        raise ValueError(f"generated commit changes file metadata: {summary}")
+    later_changes = set(
+        _git(root, "diff", "--no-renames", "--name-only", f"{bump_commit}..HEAD").splitlines()
+    )
     later_wheel_changes = sorted(
         path for path in later_changes if path in _ROOT_WHEEL_INPUTS or path.startswith("src/")
     )
@@ -88,6 +95,8 @@ def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple
     for relative in _VERSION_FILES:
         before = _git(root, "show", f"{bump_parent}:{relative}")
         after = _git(root, "show", f"{bump_commit}:{relative}")
+        if before.count(tagged) != 1:
+            raise ValueError(f"{relative} does not contain exactly one {tagged} identity")
         if before.replace(tagged, development) != after:
             raise ValueError(f"{relative} changes more than {tagged} -> {development}")
     return tagged, development

@@ -137,6 +137,8 @@ def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None
     assert '"$PR_AUTHOR_ASSOCIATION" == MEMBER' in workflow
     assert '"$PR_AUTHOR_ASSOCIATION" == COLLABORATOR' in workflow
     assert '"$HEAD_REPOSITORY" == "$REPOSITORY"' in workflow
+    assert 'git checkout --detach "$PR_HEAD_SHA"' in workflow
+    assert "ref: ${{ github.event.pull_request.head.sha || github.sha }}" not in workflow
     assert "git merge-base refs/remotes/origin/main HEAD" in workflow
     ancestry = 'git merge-base --is-ancestor "$bump_parent" "$main_commit"'
     trusted_load = 'git show "$bump_parent:tools/check_post_release_bump.py"'
