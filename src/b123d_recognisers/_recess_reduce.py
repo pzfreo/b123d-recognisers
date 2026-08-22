@@ -24,9 +24,8 @@ from collections import Counter
 from dataclasses import replace
 from typing import TypeVar
 
-from build123d import Box, Pos
-
 from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._geometry import prism_material_fraction
 from b123d_recognisers._recess_faces import _MERGE_TOL
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
@@ -135,55 +134,6 @@ def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
     return gap if gap[1] - gap[0] > 0 else None
 
 
-def _prism_material_fraction(
-    spans: dict[str, tuple[float, float]], part: Part, *, inset: float = _VOID_INSET
-) -> float:
-    """The fraction of one axis-aligned prism occupied by *part*.
-
-    This is geometric evidence, not a recognition policy. Candidate admission requires an
-    exactly empty prism; collinear-arm reduction permits the separately documented
-    :data:`_VOID_VOL_FRAC`. Sharing only this measurement keeps those two decisions distinct.
-
-    ``inset`` belongs to the caller's numerical policy. Testing the whole box rather than sample
-    points distinguishes cleared material from a narrow incidental connector through an
-    otherwise-solid region.
-    """
-
-    size, centre = {}, {}
-    for ax, (lo, hi) in spans.items():
-        axis_inset = min(inset, (hi - lo) / 4)
-        size[ax] = (hi - lo) - 2 * axis_inset
-        centre[ax] = (lo + hi) / 2
-    if min(size.values()) <= 0:
-        raise ValueError("prism spans must have positive extent")
-    probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(size["x"], size["y"], size["z"])
-    inter = part.intersect(probe)
-    # ``intersect`` returns None (empty), a single shape with ``.volume`` (older
-    # build123d), or a ShapeList of shapes (newer build123d) — sum either way.
-    if inter is None:
-        inter_vol = 0.0
-    elif hasattr(inter, "volume"):
-        inter_vol = inter.volume
-    else:
-        inter_vol = sum(s.volume for s in inter)
-    box_vol = size["x"] * size["y"] * size["z"]
-    return float(inter_vol / box_vol)
-
-
-def _prism_is_empty(
-    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
-) -> bool:
-    """Whether an inset prism has no volumetric intersection with *part*.
-
-    OCCT represents a genuinely empty Boolean intersection as no solids (volume zero). Boundary
-    contacts may still yield lower-dimensional shapes, which also have zero volume and are not
-    material inside the open probe. The caller chooses the inset that moves coincident faces off
-    that boundary; no non-zero feature-volume threshold is applied here.
-    """
-
-    return _prism_material_fraction(spans, part, inset=inset) == 0.0
-
-
 def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
     """Whether the whole gap between collinear slot arms is near-empty.
 
@@ -201,7 +151,7 @@ def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
         arm.width_axis: (arm.w_center - arm.width / 2, arm.w_center + arm.width / 2),
         arm.depth_axis: (arm.d_lo, arm.d_hi),
     }
-    return _prism_material_fraction(spans, part) <= _VOID_VOL_FRAC
+    return prism_material_fraction(spans, part, inset=_VOID_INSET) <= _VOID_VOL_FRAC
 
 
 def _collapse_collinear(slots: list[Slot], part: Part, claims: _Claims | None = None) -> list[Slot]:

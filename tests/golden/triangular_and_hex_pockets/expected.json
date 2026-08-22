@@ -157,6 +157,7 @@
             "z": 2.0
           }
         ],
+        "through_steps": [],
         "turned_steps": []
       },
       "rotational": {
@@ -306,6 +307,7 @@
             "z": 2.0
           }
         ],
+        "through_steps": [],
         "turned_steps": []
       }
     },
@@ -325,7 +327,8 @@
       "pocket": 1,
       "prismatic_pocket": 2,
       "slot": 0,
-      "step": 0
+      "step": 0,
+      "through_step": 0
     },
     "individual": {
       "recognise_angled_steps": [],
@@ -522,6 +525,7 @@
       "recognise_risers": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
+      "recognise_through_steps": [],
       "recognise_turned_steps": []
     },
     "substrates": {

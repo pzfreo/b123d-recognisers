@@ -48,6 +48,7 @@ compatibility review, and release notes.
 | `recognise_slot_patterns` | Constant-pitch linear and complete rectangular arrays of identical through `Slot` records on the same through plane. | Bolt circles, pairs, mixed sizes/planes, and incomplete grids. | Straight/obround-slot golden and pattern-negative tests. |
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. | Floored pockets, open-ended channels, merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Straight/obround-slot golden, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, and recess-reconciliation regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
+| `recognise_through_steps` | Rectangular open-profile removals spanning one source solid: two orthogonal principal planar regions, one complete concave run seam, convex terminal context at both ends, distinct envelope-reaching legs, and an exactly empty removed prism. Coplanar representation splits are normalized and all source patches claimed. | Two-sided and slanted through steps; capped/blind steps; channels and pockets with additional concave walls; unequal spans, internal leg endings, non-rectangular region boundaries, and ambiguous branches. An additive L-solid is indistinguishable from the same final subtractive shape. | Constructed rotations/mirrors/scales, STEP round-trip, split-patch, compound and family-confusion adversaries; development evidence is 3 records/6 correctly labelled faces, followed by 3 records/6 correctly labelled faces on the frozen 33-model holdout. |
 
 ## Analytic surfaces are a precondition for every recogniser
 
@@ -126,9 +127,10 @@ Three limits on how far this evidence reaches:
 - **Attribution is per-face where a family writes claims, and statistical elsewhere.** A
   recogniser handed a claim ledger records the faces each record was established by, so its
   records can be scored against the labels of the faces they actually consumed rather than
-  fitted. `tools/per_face_scan.py` does exactly that, over the six claiming families these
+  fitted. `tools/per_face_scan.py` does exactly that, over the seven claiming families these
   corpora can reach — `recognise_slots`, `recognise_pockets`, `recognise_prismatic_pockets`,
-  `recognise_passages`, `recognise_chamfers` and `recognise_angled_steps`. Grooves and turned
+  `recognise_passages`, `recognise_chamfers`, `recognise_angled_steps` and
+  `recognise_through_steps`. Grooves and turned
   steps write claims too and are absent from these figures for a different reason: all 50
   vendored MFCAD++ and NIST parts are milled prismatic and report no turned steps at all. The
   figures quoted as precision — 100% for angled steps, 44% → 78% for chamfers over 120 models —
@@ -177,7 +179,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Round; Circular blind step | Fillet | |
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
-| Rectangular / 2-sided / Slanted through step | — | **unrecognised**; see epic 0002 on through steps |
+| Rectangular through step | ThroughStep | Bounded orthogonal two-region subset |
+| 2-sided / Slanted through step | — | **unrecognised**; separate geometric contracts required |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
@@ -228,6 +231,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `StepShoulder` | A pure projection result from `RiserEvidence` plus a caller-supplied level set, not a recogniser return. |
 | `TurnedProfile` | A consumer aggregate built from `TurnedStep` values, not a recogniser return. |
 | `TurnedStep` | One self-contained coaxial shaft segment; recognition requires a multi-step profile. |
+| `ThroughStep` | One open-profile step spanning a source solid; the current recogniser emits canonical three-point rectangular sections only. |
 
 `RecognitionResult` is the frozen orchestration inventory rather than a `Record`
 subclass. It owns every public recogniser family, preserves classification-gated

@@ -76,6 +76,7 @@ from b123d_recognisers.slots import (
     recognise_slot_patterns,
     recognise_slots,
 )
+from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
 
 #: The families this aggregate runs, exactly once, per orchestration.
@@ -111,6 +112,7 @@ MIGRATED: frozenset[str] = frozenset(
         "recognise_slot_patterns",
         "recognise_slots",
         "recognise_turned_steps",
+        "recognise_through_steps",
     }
 )
 
@@ -235,6 +237,8 @@ class RecognitionResult:
     #: Prismatic-only: an angled blind step is the same planar oblique-bevel read as a
     #: chamfer, while the conical bevel on a rotational part cannot establish one.
     angled_steps: tuple[AngledStep, ...]
+    #: Open right-angle cuts spanning a source solid; currently the rectangular subset.
+    through_steps: tuple[ThroughStep, ...]
     #: Prismatic voids running through the material, one record per closed ring.
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
@@ -429,6 +433,7 @@ def _take_inventory(
     angled_steps = (
         recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
     )
+    through_steps = recognise_through_steps(part, ledger=ledger) if prismatic else []
     prof = TurnedProfile.from_steps(list(turned_steps))
     return run, RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -462,6 +467,7 @@ def _take_inventory(
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
+        through_steps=tuple(through_steps),
         passages=accepted_passages if prismatic else (),
         fillets=tuple(
             recognise_fillets(

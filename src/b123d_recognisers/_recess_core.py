@@ -23,7 +23,7 @@ share nothing above them.
 from __future__ import annotations
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
-from b123d_recognisers._geometry import COORD_FLOOR
+from b123d_recognisers._geometry import COORD_FLOOR, prism_is_empty
 from b123d_recognisers._recess_faces import (
     _AXES,
     _FLOOR_TOL,
@@ -44,7 +44,6 @@ from b123d_recognisers._recess_reduce import (
     _Claims,
     _collapse_collinear,
     _merge,
-    _prism_is_empty,
 )
 from b123d_recognisers._typing import Part
 
@@ -135,7 +134,7 @@ def _candidate_has_void_evidence(
         return False
     probe = dict(spans)
     probe[long_axis] = long_span
-    return _prism_is_empty(probe, part, inset=COORD_FLOOR)
+    return prism_is_empty(probe, part, inset=COORD_FLOOR)
 
 
 def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:

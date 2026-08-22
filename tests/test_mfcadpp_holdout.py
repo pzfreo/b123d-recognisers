@@ -52,6 +52,7 @@ pytestmark = pytest.mark.skipif(
 )
 STOCK = "Stock"
 TRIANGULAR_BLIND_STEP = "Triangular blind step"
+RECTANGULAR_THROUGH_STEP = "Rectangular through step"
 
 
 @pytest.fixture(scope="module")
@@ -107,5 +108,19 @@ def test_every_angled_step_on_unseen_geometry_is_a_triangular_blind_step(scored)
         LABELS[int(label)]: count
         for label, count in claimed.items()
         if LABELS[int(label)] != TRIANGULAR_BLIND_STEP
+    }
+    assert off_target == {}
+
+
+def test_every_through_step_on_unseen_geometry_is_rectangular(scored):
+    """The bounded open-dihedral rule remains precise on its first unseen draw."""
+
+    claimed = scored["claimed"].get("ThroughStep", {})
+    assert scored["records"].get("ThroughStep", 0) == 3
+    assert sum(claimed.values()) == 6, "the held-out precision evidence must stay non-vacuous"
+    off_target = {
+        LABELS[int(label)]: count
+        for label, count in claimed.items()
+        if LABELS[int(label)] != RECTANGULAR_THROUGH_STEP
     }
     assert off_target == {}

@@ -11,7 +11,9 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from b123d_recognisers._typing import Bounds, Span2, Vector3
+from build123d import Box, Pos
+
+from b123d_recognisers._typing import Bounds, Part, Span2, Vector3
 
 _PLANE_AXES = {
     "x": ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
@@ -23,6 +25,52 @@ _DOMINANT_TIE_TOL = 1e-12
 
 #: Coordinate agreement for the longitudinal spans of one logical prismatic ring.
 SPAN_EPS = 1e-6
+
+
+def prism_material_fraction(
+    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
+) -> float:
+    """The volumetric fraction of an inset axis-aligned prism occupied by *part*.
+
+    This derives geometric evidence rather than choosing recognition policy. Callers supply the
+    inset and separately decide whether they require exact emptiness or permit a documented
+    material fraction. Testing the whole prism, rather than sample points, distinguishes cleared
+    material from a narrow incidental connector through an otherwise-solid region.
+    """
+
+    size, centre = {}, {}
+    for axis, (low, high) in spans.items():
+        axis_inset = min(inset, (high - low) / 4)
+        size[axis] = (high - low) - 2 * axis_inset
+        centre[axis] = (low + high) / 2
+    if min(size.values()) <= 0:
+        raise ValueError("prism spans must have positive extent")
+    probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(
+        size["x"], size["y"], size["z"]
+    )
+    intersection = part.intersect(probe)
+    # Depending on build123d version, an empty/single/multipart intersection is represented by
+    # None, one shape with ``volume``, or an iterable ShapeList respectively.
+    if intersection is None:
+        occupied = 0.0
+    elif hasattr(intersection, "volume"):
+        occupied = intersection.volume
+    else:
+        occupied = sum(shape.volume for shape in intersection)
+    return float(occupied / (size["x"] * size["y"] * size["z"]))
+
+
+def prism_is_empty(
+    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
+) -> bool:
+    """Whether an inset prism has no volumetric intersection with *part*.
+
+    OCCT may retain lower-dimensional boundary contacts, but those have zero volume and are not
+    material inside the open probe. The caller's inset moves coincident faces off that boundary;
+    no non-zero feature-volume threshold is applied here.
+    """
+
+    return prism_material_fraction(spans, part, inset=inset) == 0.0
 
 # Direction gates. A recogniser classifies a face by where its *unit* normal points, so these
 # are direction cosines: dimensionless, and never scaled with the part (ADR 0008). They were

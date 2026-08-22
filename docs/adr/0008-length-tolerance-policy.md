@@ -150,6 +150,11 @@ admitted. The 0.2.11 logical-wall normalization uses the floor for the same sewi
 requires an exact four-run, run-aligned rectangle. Coplanar membership itself comes from direct
 smooth AAG arcs between planar nodes, not from a new coordinate threshold.
 
+The 0.2.12 rectangular through-step predicate reuses the same coordinate floors for plane, span,
+seam and envelope coincidence, and the same dimensionless principal/smooth direction gates. Its
+exact-prism test has no non-zero material allowance. No width, depth, aspect, area or
+corpus-derived threshold is introduced.
+
 ## Site classification
 
 Every numeric gate in the package, classified. `no change` means the site is already correct.

@@ -33,6 +33,14 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "through-steps": {
+        "recognisers": [("recognise_through_steps", "part")],
+        "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],
+        "census": "through_step",
+        "goldens": ["rectangular_through_step"],
+        "introduced": "0.2.12",
+        "tests": ["tests/test_through_steps.py"],
+    },
     "prismatic-pockets": {
         "recognisers": [("recognise_prismatic_pockets", "part")],
         "records": [

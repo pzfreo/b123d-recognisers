@@ -76,6 +76,17 @@ rectangle proof is a normalization precondition, not a retroactive restriction o
 singleton walls, which may contain an inner wire made by another intersecting void. Every source
 node remains in the accepted claim; no virtual face or missing wall area is claimed.
 
+## Amendment (0.2.12, rectangular through steps)
+
+The first open-profile family uses an AAG dihedral rather than forcing a step into the closed-ring
+or opposed-wall recess substrates. Two coplanar-normalized principal planar regions are evidence
+only when their complete shared run is concave, both reach the same source-solid run ends, their
+other profile ends reach distinct envelope boundaries, and the inferred rectangular quadrant is
+volumetrically empty. Additional co-spanning concave neighbours make the interpretation a channel,
+pocket, branch or ambiguity and fail closed. The two regions are defining claims; terminal stock
+faces are consulted context. The record retains the actual open-section polyline, so later
+two-sided/slanted work cannot silently reinterpret two unsigned dimensions.
+
 ## Amendment (0.2.6, issue #75)
 
 **A blend is not only noise. It is also a bridge, and the acceptance list above only asks about

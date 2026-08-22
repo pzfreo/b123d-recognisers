@@ -142,12 +142,13 @@ from b123d_recognisers.slots import (
     recognise_slot_patterns,
     recognise_slots,
 )
+from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
 
 try:
     __version__ = version("b123d-recognisers")
 except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
-    __version__ = "0.2.10.dev0"
+    __version__ = "0.2.12.dev0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402
@@ -199,6 +200,7 @@ __all__ = [
     "StepShoulder",
     "TurnedProfile",
     "TurnedStep",
+    "ThroughStep",
     "RecognitionResult",
     "BevelReject",
     "FaceEdges",
@@ -219,6 +221,7 @@ __all__ = [
     "capability_manifest_json",
     "validate_capability_manifest",
     "recognise_angled_steps",
+    "recognise_through_steps",
     "PrismaticPocket",
     "recognise_passages",
     "recognise_prismatic_pockets",

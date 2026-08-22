@@ -1846,6 +1846,62 @@
       ]
     },
     {
+      "census_name": "through_step",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/rectangular_through_step/expected.json"
+      ],
+      "id": "through-steps",
+      "introduced_in": "0.2.12",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_through_steps",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.through_steps"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "section": {
+              "required": true,
+              "type": "tuple[tuple[float,2],3]",
+              "units": "mm"
+            }
+          },
+          "name": "ThroughStep",
+          "qualified_name": "b123d_recognisers.ThroughStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py",
+        "tests/test_through_steps.py"
+      ]
+    },
+    {
       "census_name": "step",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1925,6 +1981,6 @@
   "format_version": 1,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.2.10.dev0"
+    "version": "0.2.12.dev0"
   }
 }

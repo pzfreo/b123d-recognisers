@@ -108,6 +108,19 @@ remain unchanged, including 8/8 held-out angled-step precision and no stock clai
 recovery count: the implementation decision rests on the geometric motif, not an unrepeatable
 aggregate score. A first-class contested outcome remains separate residual-evidence work.
 
+**The bounded rectangular-through-step seam is now implemented.** Development-only inspection
+found a repeated geometric motif rather than a useful score threshold: two orthogonal principal
+planar regions, normalized through direct coplanar AAG arcs, joined by one complete concave seam
+and running between the same two source-solid ends. The recogniser additionally proves distinct
+envelope-reaching profile legs, convex terminal context, absence of a third co-spanning concave
+region, and an exactly material-free removed prism. It records the actual open three-point section
+and claims every source patch in the two defining regions. On the 40-model design subset this
+produces three records claiming 6 of 26 incidentally present rectangular-through-step faces with
+no off-class claims; those counts are diagnostic evidence after the geometry was stated, not the
+definition. After the predicate and two independent reviews were fixed, the frozen 33-model
+holdout produced three additional records claiming six faces, all correctly labelled rectangular
+through step. Two-sided, slanted, interacting and incomplete variants remain explicitly deferred.
+
 ### And the negative control failed at scale
 
 No claim landed on *Stock* across the vendored 40's 271 such faces. Across 13,438, four did.

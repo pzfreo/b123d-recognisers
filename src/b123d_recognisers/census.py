@@ -73,6 +73,7 @@ def feature_census(part: Part) -> dict[str, int]:
         "passage": found.passages,
         "chamfer": found.chamfers,
         "angled_step": found.angled_steps,
+        "through_step": found.through_steps,
         "fillet": found.fillets,
         "countersink": found.countersinks,
         "plate": found.plates,

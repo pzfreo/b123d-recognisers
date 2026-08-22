@@ -34,6 +34,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_slot_patterns",
     "recognise_slots",
     "recognise_turned_steps",
+    "recognise_through_steps",
 }
 SUBSTRATES = {
     "analyse_cylinders",

@@ -67,6 +67,7 @@ from b123d_recognisers import (
     SlotArray,
     SlotGrid,
     StepShoulder,
+    ThroughStep,
     TurnedStep,
     analyse_cylinders,
     project_step_shoulders,
@@ -94,6 +95,7 @@ from b123d_recognisers import (
     recognise_risers,
     recognise_slot_patterns,
     recognise_slots,
+    recognise_through_steps,
     recognise_turned_steps,
 )
 from b123d_recognisers._record import Record
@@ -134,6 +136,7 @@ _EXPECTED_RECORD_TYPES = {
     Passage,
     PrismaticPocket,
     RiserEvidence,
+    ThroughStep,
 }
 
 
@@ -166,6 +169,10 @@ def _linear_array_plate():
     for i in range(5):
         part -= Pos(-40 + i * 20, 0, 0) * Cylinder(3, 10)
     return part
+
+
+def _through_stepped_block():
+    return Box(40, 30, 20) - Pos(15, 10, 0) * Box(20, 20, 30)
 
 
 def _grid_plate(nx=3, ny=3, px=25, py=25):
@@ -311,6 +318,7 @@ def _records_from_recognisers():
         ("hole_patterns:grid", recognise_hole_patterns(recognise_holes(_grid_plate()))),
         ("recognise_angled_steps", recognise_angled_steps(_angled_stepped_box())),
         ("recognise_passages", recognise_passages(_passaged_block())),
+        ("recognise_through_steps", recognise_through_steps(_through_stepped_block())),
         (
             "recognise_prismatic_pockets",
             recognise_prismatic_pockets(_prismatic_pocketed_block()),
@@ -408,6 +416,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_double_d_bores,
         recognise_angled_steps,
         recognise_passages,
+        recognise_through_steps,
         recognise_prismatic_pockets,
         recognise_chamfers,
         recognise_channels,

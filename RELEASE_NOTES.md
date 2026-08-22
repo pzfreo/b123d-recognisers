@@ -1,5 +1,25 @@
 # Release notes
 
+## 0.2.12
+
+- **Added bounded rectangular through-step recognition.** `recognise_through_steps` discovers an
+  open right-angle removal represented by two principal planar regions joined along one complete
+  concave run seam. Both regions must share the source-solid run span, reach distinct section
+  envelope boundaries, meet convex terminal stock faces at both ends, have no additional
+  co-spanning concave wall, and bound an exactly material-free removed prism. Coplanar STEP
+  subdivisions normalize through the cached AAG query and every source patch remains claimed.
+
+  The new `ThroughStep` record stores the run axis and length plus a canonical three-point open
+  section, preserving the removed quadrant rather than reducing it to unsigned width/depth.
+  Recognition is deliberately limited to the rectangular two-region subset; MFCAD++ two-sided
+  and slanted variants remain unsupported pending their own geometric contracts. On the 40-model
+  development subset, the deliberately strict rule reports three records and all six defining
+  faces carry the `Rectangular through step` label (6/26 labelled faces). These counts diagnose
+  blast radius; they do not define the predicate. On the frozen 33-model holdout, first revealed
+  only after the predicate and two independent reviews were fixed, three further records claim
+  six faces and all six carry the same label. A history-free additive L-solid is geometrically
+  identical and is therefore reported under the same final-shape semantics.
+
 ## 0.2.11
 
 - **Fixed: harmless coplanar subdivisions of a prismatic ring wall no longer hide a passage or

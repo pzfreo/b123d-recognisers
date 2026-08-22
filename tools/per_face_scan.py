@@ -33,7 +33,15 @@ _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 #: and turned steps claim too but have no MFCAD++ counterpart at all -- the corpus is prismatic
 #: and those are turning features -- so they are absent from a run over it rather than scoring
 #: zero on it.
-CLAIMING = ("Slot", "Pocket", "PrismaticPocket", "Passage", "Chamfer", "AngledStep")
+CLAIMING = (
+    "Slot",
+    "Pocket",
+    "PrismaticPocket",
+    "Passage",
+    "Chamfer",
+    "AngledStep",
+    "ThroughStep",
+)
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
 LABELS = {
@@ -100,11 +108,20 @@ def scan_part(part, labels):
     passages = recesses.passages
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
+    through_steps = r.recognise_through_steps(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
 
     kept = {
         id(record)
-        for record in (*slots, *pockets, *ring_pockets, *passages, *chamfers, *steps)
+        for record in (
+            *slots,
+            *pockets,
+            *ring_pockets,
+            *passages,
+            *chamfers,
+            *steps,
+            *through_steps,
+        )
     }
     records = {
         "Slot": len(slots),
@@ -113,6 +130,7 @@ def scan_part(part, labels):
         "Passage": len(passages),
         "Chamfer": len(chamfers),
         "AngledStep": len(steps),
+        "ThroughStep": len(through_steps),
     }
 
     claimed: dict[str, Counter] = defaultdict(Counter)

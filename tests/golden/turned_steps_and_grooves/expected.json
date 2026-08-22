@@ -179,6 +179,7 @@
             "z": 20.5
           }
         ],
+        "through_steps": [],
         "turned_steps": [
           {
             "_type": "TurnedStep",
@@ -372,6 +373,7 @@
             "z": 20.5
           }
         ],
+        "through_steps": [],
         "turned_steps": [
           {
             "_type": "TurnedStep",
@@ -413,7 +415,8 @@
       "pocket": 0,
       "prismatic_pocket": 0,
       "slot": 0,
-      "step": 2
+      "step": 2,
+      "through_step": 0
     },
     "individual": {
       "recognise_angled_steps": [],
@@ -547,6 +550,7 @@
       "recognise_risers": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
+      "recognise_through_steps": [],
       "recognise_turned_steps": [
         {
           "_type": "TurnedStep",
