@@ -77,8 +77,11 @@ jobs:
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
           RELEASE_TAG: ${{ steps.bump.outputs.release_tag }}
         run: |
+          bump_parent=$(git rev-parse --verify "$BUMP_SHA^")
+          main_commit=$(git rev-parse --verify refs/remotes/origin/main)
+          git merge-base --is-ancestor "$bump_parent" "$main_commit"
           validator="$RUNNER_TEMP/check_post_release_bump.py"
-          git show "$BUMP_SHA^:tools/check_post_release_bump.py" > "$validator"
+          git show "$bump_parent:tools/check_post_release_bump.py" > "$validator"
           python "$validator" \
             --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH" --bump-sha "$BUMP_SHA"
           {
