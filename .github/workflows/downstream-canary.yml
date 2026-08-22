@@ -23,8 +23,38 @@ jobs:
         with:
           path: package
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Classify a generated post-release bump
+        id: bump
+        env:
+          CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          if [[ "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
+            echo "release_tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate mechanical post-release identity bump
+        if: steps.bump.outputs.release_tag != ''
+        working-directory: package
+        env:
+          CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          RELEASE_TAG: ${{ steps.bump.outputs.release_tag }}
+        run: |
+          python tools/check_post_release_bump.py \
+            --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH"
+          {
+            echo "## Draftwright downstream compatibility"
+            echo
+            echo "Mechanical post-release identity bump validated against \`${RELEASE_TAG}\`."
+            echo "The released candidate already supplied the Draftwright contract evidence;"
+            echo "the next patch's \`.dev0\` identity is outside that closed transition by design."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Resolve and check out Draftwright compatibility point
+        if: steps.bump.outputs.release_tag == ''
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: pzfreo/draftwright
@@ -33,12 +63,14 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
+        if: steps.bump.outputs.release_tag == ''
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
           python-version: "3.13"
 
       - name: Run bounded candidate-wheel compatibility check
+        if: steps.bump.outputs.release_tag == ''
         working-directory: package
         env:
           PACKAGE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
