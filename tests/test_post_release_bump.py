@@ -45,6 +45,7 @@ def mechanical_bump(tmp_path: Path) -> tuple[Path, str]:
     (tmp_path / "docs" / "release.md").write_text("workflow explanation\n", encoding="utf-8")
     _git(tmp_path, "add", ".")
     _git(tmp_path, "commit", "-qm", "main advanced after release")
+    _git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
     for relative in _FILES:
         path = tmp_path / relative
         path.write_text(f"identity = 0.3.1.dev0 in {relative}\n", encoding="utf-8")
@@ -108,3 +109,13 @@ def test_generated_bump_rejects_a_branch_without_the_tag_identity(
     root, bump_sha = mechanical_bump
     with pytest.raises(ValueError, match="branch does not match"):
         _VALIDATE(root, "v0.3.0", "feature/not-a-release-bump", bump_sha)
+
+
+def test_generated_bump_rejects_an_off_main_parent(
+    mechanical_bump: tuple[Path, str],
+) -> None:
+    root, bump_sha = mechanical_bump
+    _git(root, "update-ref", "refs/remotes/origin/main", "v0.3.0")
+
+    with pytest.raises(subprocess.CalledProcessError):
+        _VALIDATE(root, "v0.3.0", "automation/post-release-v0.3.0-123", bump_sha)
