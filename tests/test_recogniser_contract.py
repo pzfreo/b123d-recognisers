@@ -65,6 +65,7 @@ from b123d_recognisers import (
     RepeatingRadialProfile,
     RiserEvidence,
     RoundBottomBlindSlot,
+    SemicircularBottomBlindSlot,
     Slot,
     SlotArray,
     SlotGrid,
@@ -96,6 +97,7 @@ from b123d_recognisers import (
     recognise_repeating_radial_profiles,
     recognise_risers,
     recognise_round_bottom_blind_slots,
+    recognise_semicircular_bottom_blind_slots,
     recognise_slot_patterns,
     recognise_slots,
     recognise_through_steps,
@@ -141,6 +143,7 @@ _EXPECTED_RECORD_TYPES = {
     RiserEvidence,
     ThroughStep,
     RoundBottomBlindSlot,
+    SemicircularBottomBlindSlot,
 }
 
 
@@ -185,6 +188,15 @@ def _round_bottom_blind_slot():
         bottom = [vertex for vertex in sketch.vertices() if abs(vertex.Y + 3) < 1e-8]
         fillet(bottom, radius=3)
     stock = Pos(0, -5, 0) * Box(30, 10, 40)
+    return stock - extrude(sketch.sketch, amount=20, dir=(0, 0, 1))
+
+
+def _semicircular_bottom_blind_slot():
+    with BuildSketch() as sketch:
+        Rectangle(6, 7, align=(Align.CENTER, Align.MAX))
+        bottom = [vertex for vertex in sketch.vertices() if abs(vertex.Y + 7) < 1e-8]
+        fillet(bottom, radius=3)
+    stock = Pos(0, -6, 0) * Box(30, 12, 40)
     return stock - extrude(sketch.sketch, amount=20, dir=(0, 0, 1))
 
 
@@ -337,6 +349,10 @@ def _records_from_recognisers():
             recognise_round_bottom_blind_slots(_round_bottom_blind_slot()),
         ),
         (
+            "recognise_semicircular_bottom_blind_slots",
+            recognise_semicircular_bottom_blind_slots(_semicircular_bottom_blind_slot()),
+        ),
+        (
             "recognise_prismatic_pockets",
             recognise_prismatic_pockets(_prismatic_pocketed_block()),
         ),
@@ -435,6 +451,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_passages,
         recognise_through_steps,
         recognise_round_bottom_blind_slots,
+        recognise_semicircular_bottom_blind_slots,
         recognise_prismatic_pockets,
         recognise_chamfers,
         recognise_channels,

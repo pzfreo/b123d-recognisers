@@ -556,4 +556,14 @@ pairing lives in `_recess_core` and not in the five dict-map modules. The prereq
 - **Migrating `_recess_core._Face` to `FaceGraph` nodes.** Investigated and rejected: the
   conventions were believed to differ by a sign the recess families depend on. Item 1 makes that
   supposed difference
-  explicit; it does not remove it.
+explicit; it does not remove it.
+
+### Semicircular-bottom blind-slot iteration (0.2.12)
+
+The next bounded gain uses the same substrate for a distinct sharp profile: two rectangular
+planar legs tangent to one half-cylinder and closed by one exact cap. It deliberately rejects the
+interacted extra-closure and chamfer/cone-mediated development anatomies rather than reconstructing
+them from labels. Synthetic topology and actual-boundary invariants define acceptance; the
+development subset's two records/eight on-target claimed faces are post-design diagnostics. The
+frozen holdout was revealed only after two independent implementation reviews accepted the
+result; it adds three records/twelve on-target claimed faces without changing the predicate.

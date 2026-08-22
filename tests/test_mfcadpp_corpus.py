@@ -526,6 +526,9 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     round_bottom = claimed["RoundBottomBlindSlot"]
     assert set(round_bottom) == {19} and sum(round_bottom.values()) == 8
 
+    semicircular_bottom = claimed["SemicircularBottomBlindSlot"]
+    assert set(semicircular_bottom) == {18} and sum(semicircular_bottom.values()) == 8
+
     ring = claimed["Passage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
     assert sum(ring.values()) == 115
@@ -538,7 +541,8 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     # material: a 6-sided pocket fragment in 10101 and a rectangular-slot-labelled pair in
     # 10138 whose proposed prism is 57% solid. The latter label is face-local evidence, not proof
     # that this particular opposed pair describes the labelled removal's volume.
-    assert sum(slots.values()) == 34
+    # The complete semicircular profile supersedes the two planar-wall fragments on 10092.
+    assert sum(slots.values()) == 32
     assert slots[16] == 28, "most accepted Slot walls are labelled Circular end pocket"
 
     # Pockets are the blind counterpart and land mostly where the name says. Complete ring
@@ -548,7 +552,8 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     # 10212. Their proposed prisms are respectively 7%, 31% and 27% solid. Four removed defining
     # faces carry the corpus's rectangular-pocket label, illustrating why the corpus is diagnostic
     # evidence rather than the feature definition.
-    assert sum(pockets.values()) == 87
+    # The complete semicircular profile likewise supersedes the two planar-wall fragments on 1013.
+    assert sum(pockets.values()) == 85
     assert pockets[14] == 38, "most of what Pocket claims is labelled Rectangular pocket"
     assert pockets[3] == 2, "complete passage rings remove the old pocket fragments"
 
@@ -561,18 +566,23 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
         graph = FaceGraph(part)
         ledger = ClaimLedger(graph)
         passages = recognition.recognise_passages(part, ledger=ledger)
+        semicircular = recognition.recognise_semicircular_bottom_blind_slots(
+            part, ledger=ledger
+        )
         accepted = reconcile_recesses(
             recognition.recognise_slots(part, ledger=ledger),
             recognition.recognise_pockets(part, ledger=ledger),
             recognition.recognise_prismatic_pockets(part, ledger=ledger),
             passages,
             ledger,
+            semicircular=semicircular,
         )
         records = [
             *accepted.slots,
             *accepted.pockets,
             *accepted.prismatic_pockets,
             *accepted.passages,
+            *accepted.semicircular_bottom_blind_slots,
         ]
         for index, left in enumerate(records):
             left_faces = ledger.defining_of(left)

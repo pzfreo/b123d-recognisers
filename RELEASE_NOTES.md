@@ -2,6 +2,26 @@
 
 ## 0.2.12
 
+- **Added bounded semicircular-bottom blind-slot recognition.**
+  `recognise_semicircular_bottom_blind_slots` recognises the sharp, edge-open constant profile
+  formed by two equal rectangular legs tangent to one analytic half-cylinder, swept from a
+  source-envelope mouth to one exact planar cap. Coplanar and same-cylinder AAG subdivisions
+  normalize locally; all three walls must share one span, meet convex mouth/depth context, and
+  bound a materially empty cap sweep. The dedicated `SemicircularBottomBlindSlot` preserves the
+  radius and straight-leg depth instead of projecting the curved profile into `Slot` or `Pocket`.
+  Central reconciliation removes those rectangular wall fragments only when their non-empty
+  claims are proper subsets of the complete curved profile and cover the same run.
+
+  Through/two-cap sections, the flat-plus-quarter-cylinder sibling, incomplete or chamfer-mediated
+  caps, extra closures, unequal legs/radii/spans, holes, notches and material bridges fail closed.
+  The 40-model development subset reports two records and eight claimed faces, all labelled
+  `Vertical circular end blind slot`; interacted labelled variants deliberately remain
+  unsupported. These counts were measured after the geometric rule and are diagnostic, not its
+  definition. Only after two independent implementation reviews accepted the rule, the frozen
+  33-model holdout was revealed: three further records claim twelve faces and every one carries
+  the same target label. A clean 20-sample composite run measured a 2.366 s minimum against the
+  recorded 2.698 s ceiling; earlier concurrent runs were discarded as contaminated evidence.
+
 - **Added bounded round-bottom blind-slot recognition.**
   `recognise_round_bottom_blind_slots` recognises an edge-open constant U section swept from one
   source-solid envelope mouth to one internal cap: a positive-width planar floor joined

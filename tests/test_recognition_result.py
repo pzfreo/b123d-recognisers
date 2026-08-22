@@ -126,19 +126,39 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "recognise_round_bottom_blind_slots",
         counted("round_bottom_blind_slots", []),
     )
+    monkeypatch.setattr(
+        result_module,
+        "recognise_semicircular_bottom_blind_slots",
+        counted("semicircular_bottom_blind_slots", []),
+    )
+    monkeypatch.setattr(result_module, "_has_semicircular_cylinder", lambda _: True)
     # All four recess families are proposed before one reconciler decides among them. The
     # orchestrator passes the records and their shared ledger once rather than applying pairwise
     # rules at different points in result construction.
     monkeypatch.setattr(result_module, "recognise_passages", counted("passages", passages))
 
-    def fake_recesses(found_slots, found_pockets, prismatic, found_passages, ledger):
+    def fake_recesses(
+        found_slots,
+        found_pockets,
+        prismatic,
+        found_passages,
+        ledger,
+        *,
+        semicircular=(),
+    ):
         from b123d_recognisers._reconcile import ReconciledRecesses
 
         assert found_slots is slots and found_pockets is pockets
         assert found_passages is passages
+        assert semicircular == []
         assert ledger is not None
         return ReconciledRecesses(
-            accepted_slots, accepted_pockets, tuple(prismatic), tuple(found_passages), ()
+            accepted_slots,
+            accepted_pockets,
+            tuple(prismatic),
+            tuple(found_passages),
+            (),
+            (),
         )
 
     monkeypatch.setattr(result_module, "reconcile_recesses", fake_recesses)
@@ -158,6 +178,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "angled_steps",
         "through_steps",
         "round_bottom_blind_slots",
+        "semicircular_bottom_blind_slots",
         "passages",
         "cylinders",
         "countersinks",

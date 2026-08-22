@@ -109,6 +109,7 @@ MODULE_SEAM_EDGES = {
         "grooves",
         "passages",
         "prismatic_pockets",
+        "round_bottom_slots",
         "turned",
     },
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},

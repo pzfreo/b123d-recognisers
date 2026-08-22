@@ -260,6 +260,7 @@
         "risers": [],
         "rotational": false,
         "round_bottom_blind_slots": [],
+        "semicircular_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [
@@ -451,6 +452,7 @@
         "risers": [],
         "rotational": true,
         "round_bottom_blind_slots": [],
+        "semicircular_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [
@@ -499,6 +501,7 @@
       "pocket": 0,
       "prismatic_pocket": 0,
       "round_bottom_blind_slot": 0,
+      "semicircular_bottom_blind_slot": 0,
       "slot": 0,
       "step": 0,
       "through_step": 0
@@ -706,6 +709,7 @@
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
       "recognise_round_bottom_blind_slots": [],
+      "recognise_semicircular_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],

@@ -25,6 +25,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
     recognise_holes,
 )
+from b123d_recognisers._geometry import SPAN_EPS
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
@@ -64,7 +65,9 @@ from b123d_recognisers.repeating_profiles import (
 )
 from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
+    SemicircularBottomBlindSlot,
     recognise_round_bottom_blind_slots,
+    recognise_semicircular_bottom_blind_slots,
 )
 from b123d_recognisers.slots import (
     Channel,
@@ -245,6 +248,7 @@ class RecognitionResult:
     #: Open right-angle cuts spanning a source solid; currently the rectangular subset.
     through_steps: tuple[ThroughStep, ...]
     round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
+    semicircular_bottom_blind_slots: tuple[SemicircularBottomBlindSlot, ...]
     #: Prismatic voids running through the material, one record per closed ring.
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
@@ -344,6 +348,38 @@ def build_recognition_result(
     return _take_inventory(part, cylinders=cylinders, rotational=rotational)[1]
 
 
+def _has_semicircular_cylinder(cylinders: CylinderInventory) -> bool:
+    """Permissive shared-substrate gate for a half-cylinder, including angular splits.
+
+    This may over-admit and make discovery do harmless extra work. It must not reject patches
+    that the recogniser's same-cylinder and arc-length tolerances would normalize.
+    """
+
+    candidates = [*cylinders[0], *cylinders[1]]
+    axis_index = {"x": 0, "y": 1, "z": 2}
+    for cylinder in candidates:
+        axis = axis_index[cylinder["axis"]]
+        radius = cylinder["diameter"] / 2
+        compatible = [
+            other
+            for other in candidates
+            if other["solid_idx"] == cylinder["solid_idx"]
+            and other["axis"] == cylinder["axis"]
+            and abs(other["diameter"] - cylinder["diameter"]) <= 2 * SPAN_EPS
+            and all(
+                abs(other["axis_xyz"][i] - cylinder["axis_xyz"][i]) <= SPAN_EPS
+                for i in range(3)
+                if i != axis
+            )
+        ]
+        extents = [abs(other["u_extent"]) for other in compatible]
+        if any(abs(extent - math.pi) * radius <= SPAN_EPS for extent in extents):
+            return True
+        if abs(sum(extents) - math.pi) * radius <= SPAN_EPS:
+            return True
+    return False
+
+
 def _take_inventory(
     part: Part,
     *,
@@ -409,13 +445,24 @@ def _take_inventory(
     pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
     ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
     passages = recognise_passages(part, ledger=ledger)
+    semicircular_bottom_blind_slots = (
+        recognise_semicircular_bottom_blind_slots(part, ledger=ledger)
+        if not rotational and _has_semicircular_cylinder(cyls)
+        else []
+    )
     recesses = reconcile_recesses(
-        slots, pockets, ring_pockets, passages, ledger
+        slots,
+        pockets,
+        ring_pockets,
+        passages,
+        ledger,
+        semicircular=semicircular_bottom_blind_slots,
     )
     accepted_slots = recesses.slots
     accepted_pockets = recesses.pockets
     accepted_ring_pockets = recesses.prismatic_pockets
     accepted_passages = recesses.passages
+    accepted_semicircular_bottom_blind_slots = recesses.semicircular_bottom_blind_slots
     # Into the ledger for the same reason, though the rule that reads these two runs in the
     # census rather than here: a groove is a rung of the step ladder, and both records survive
     # into the result because a consumer dimensioning the shaft needs the feature and the
@@ -478,6 +525,7 @@ def _take_inventory(
         angled_steps=tuple(angled_steps),
         through_steps=tuple(through_steps),
         round_bottom_blind_slots=tuple(round_bottom_blind_slots),
+        semicircular_bottom_blind_slots=accepted_semicircular_bottom_blind_slots,
         passages=accepted_passages if prismatic else (),
         fillets=tuple(
             recognise_fillets(

@@ -1,12 +1,11 @@
 {
   "canonicalizer_version": 2,
-  "fixture": "double_d_bore",
+  "fixture": "semicircular_bottom_blind_slot",
   "provenance": {
     "creator": "Paul Fremantle",
     "license": "Apache-2.0",
-    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "source_path": "tests/test_issue_1058_wheel_profile.py",
-    "source_repository": "https://github.com/pzfreo/draftwright.git"
+    "source_path": "tests/test_semicircular_bottom_slots.py",
+    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
   },
   "recognition": {
     "aggregate": {
@@ -22,66 +21,25 @@
             {
               "axis": "z",
               "axis_xyz": [
-                0.0,
-                0.0,
-                -10.0
+                -7e-08,
+                -4.0,
+                0.0
               ],
-              "diameter": 10.0,
+              "diameter": 6.0,
               "dir_xyz": [
                 0.0,
                 0.0,
                 1.0
               ],
               "external": false,
-              "s_hi": 5.0,
-              "s_lo": -5.0,
-              "u_extent": 1.6076046
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                0.0,
-                0.0,
-                -10.0
-              ],
-              "diameter": 10.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": false,
-              "s_hi": 5.0,
-              "s_lo": -5.0,
-              "u_extent": 1.6076046
+              "s_hi": 20.0,
+              "s_lo": 0.0,
+              "u_extent": 3.1415927
             }
           ],
           []
         ],
-        "double_d_bores": [
-          {
-            "_type": "DoubleDBore",
-            "across_flats": 7.2,
-            "axis": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "depth": 10.0,
-            "flat_direction": [
-              1.0,
-              0.0,
-              0.0
-            ],
-            "location": [
-              0.0,
-              0.0,
-              5.0
-            ],
-            "major_diameter": 10.0,
-            "through": true
-          }
-        ],
+        "double_d_bores": [],
         "fillets": [],
         "flats": [],
         "grooves": [],
@@ -99,10 +57,39 @@
         "risers": [],
         "rotational": false,
         "round_bottom_blind_slots": [],
-        "semicircular_bottom_blind_slots": [],
+        "semicircular_bottom_blind_slots": [
+          {
+            "_type": "SemicircularBottomBlindSlot",
+            "at": [
+              0.0,
+              -3.5,
+              10.0
+            ],
+            "axis": "z",
+            "depth_axis": "y",
+            "leg_depth": 4.0,
+            "length": 20.0,
+            "open_sign": 1,
+            "radius": 3.0,
+            "width_axis": "x"
+          }
+        ],
         "slot_patterns": [],
         "slots": [],
-        "step_levels": [],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -3.00000007,
+              3.0
+            ],
+            "y_span": [
+              -7.0,
+              0.0
+            ],
+            "z": 0.0
+          }
+        ],
         "through_steps": [],
         "turned_steps": []
       },
@@ -118,66 +105,25 @@
             {
               "axis": "z",
               "axis_xyz": [
-                0.0,
-                0.0,
-                -10.0
+                -7e-08,
+                -4.0,
+                0.0
               ],
-              "diameter": 10.0,
+              "diameter": 6.0,
               "dir_xyz": [
                 0.0,
                 0.0,
                 1.0
               ],
               "external": false,
-              "s_hi": 5.0,
-              "s_lo": -5.0,
-              "u_extent": 1.6076046
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                0.0,
-                0.0,
-                -10.0
-              ],
-              "diameter": 10.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": false,
-              "s_hi": 5.0,
-              "s_lo": -5.0,
-              "u_extent": 1.6076046
+              "s_hi": 20.0,
+              "s_lo": 0.0,
+              "u_extent": 3.1415927
             }
           ],
           []
         ],
-        "double_d_bores": [
-          {
-            "_type": "DoubleDBore",
-            "across_flats": 7.2,
-            "axis": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "depth": 10.0,
-            "flat_direction": [
-              1.0,
-              0.0,
-              0.0
-            ],
-            "location": [
-              0.0,
-              0.0,
-              5.0
-            ],
-            "major_diameter": 10.0,
-            "through": true
-          }
-        ],
+        "double_d_bores": [],
         "fillets": [],
         "flats": [],
         "grooves": [],
@@ -197,8 +143,44 @@
         "round_bottom_blind_slots": [],
         "semicircular_bottom_blind_slots": [],
         "slot_patterns": [],
-        "slots": [],
-        "step_levels": [],
+        "slots": [
+          {
+            "_type": "Slot",
+            "body_key": [
+              -15.0,
+              -12.0,
+              -20.0,
+              15.0,
+              0.0,
+              20.0,
+              13637.25666118,
+              4308.49555922
+            ],
+            "d_hi": 0.0,
+            "d_lo": -4.0,
+            "hi": 20.0,
+            "length": 20.0,
+            "lo": 0.0,
+            "long_axis": "z",
+            "w_center": 0.0,
+            "width": 6.0,
+            "width_axis": "x"
+          }
+        ],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -3.00000007,
+              3.0
+            ],
+            "y_span": [
+              -7.0,
+              0.0
+            ],
+            "z": 0.0
+          }
+        ],
         "through_steps": [],
         "turned_steps": []
       }
@@ -219,7 +201,7 @@
       "pocket": 0,
       "prismatic_pocket": 0,
       "round_bottom_blind_slot": 0,
-      "semicircular_bottom_blind_slot": 0,
+      "semicircular_bottom_blind_slot": 1,
       "slot": 0,
       "step": 0,
       "through_step": 0
@@ -230,30 +212,7 @@
       "recognise_chamfers": [],
       "recognise_channels": [],
       "recognise_countersinks": [],
-      "recognise_double_d_bores": [
-        {
-          "_type": "DoubleDBore",
-          "across_flats": 7.2,
-          "axis": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "depth": 10.0,
-          "flat_direction": [
-            1.0,
-            0.0,
-            0.0
-          ],
-          "location": [
-            0.0,
-            0.0,
-            5.0
-          ],
-          "major_diameter": 10.0,
-          "through": true
-        }
-      ],
+      "recognise_double_d_bores": [],
       "recognise_face_levels": [
         {
           "_type": "FaceLevel",
@@ -262,10 +221,22 @@
             15.0
           ],
           "y_span": [
-            -15.0,
-            15.0
+            -12.0,
+            0.0
           ],
-          "z": -5.0
+          "z": -20.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -3.00000007,
+            3.0
+          ],
+          "y_span": [
+            -7.0,
+            0.0
+          ],
+          "z": 0.0
         },
         {
           "_type": "FaceLevel",
@@ -274,10 +245,10 @@
             15.0
           ],
           "y_span": [
-            -15.0,
-            15.0
+            -12.0,
+            0.0
           ],
-          "z": 5.0
+          "z": 20.0
         }
       ],
       "recognise_fillets": [],
@@ -296,9 +267,48 @@
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
       "recognise_round_bottom_blind_slots": [],
-      "recognise_semicircular_bottom_blind_slots": [],
+      "recognise_semicircular_bottom_blind_slots": [
+        {
+          "_type": "SemicircularBottomBlindSlot",
+          "at": [
+            0.0,
+            -3.5,
+            10.0
+          ],
+          "axis": "z",
+          "depth_axis": "y",
+          "leg_depth": 4.0,
+          "length": 20.0,
+          "open_sign": 1,
+          "radius": 3.0,
+          "width_axis": "x"
+        }
+      ],
       "recognise_slot_patterns": [],
-      "recognise_slots": [],
+      "recognise_slots": [
+        {
+          "_type": "Slot",
+          "body_key": [
+            -15.0,
+            -12.0,
+            -20.0,
+            15.0,
+            0.0,
+            20.0,
+            13637.25666118,
+            4308.49555922
+          ],
+          "d_hi": 0.0,
+          "d_lo": -4.0,
+          "hi": 20.0,
+          "length": 20.0,
+          "lo": 0.0,
+          "long_axis": "z",
+          "w_center": 0.0,
+          "width": 6.0,
+          "width_axis": "x"
+        }
+      ],
       "recognise_through_steps": [],
       "recognise_turned_steps": []
     },
@@ -308,38 +318,20 @@
           {
             "axis": "z",
             "axis_xyz": [
-              0.0,
-              0.0,
-              -10.0
+              -7e-08,
+              -4.0,
+              0.0
             ],
-            "diameter": 10.0,
+            "diameter": 6.0,
             "dir_xyz": [
               0.0,
               0.0,
               1.0
             ],
             "external": false,
-            "s_hi": 5.0,
-            "s_lo": -5.0,
-            "u_extent": 1.6076046
-          },
-          {
-            "axis": "z",
-            "axis_xyz": [
-              0.0,
-              0.0,
-              -10.0
-            ],
-            "diameter": 10.0,
-            "dir_xyz": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "external": false,
-            "s_hi": 5.0,
-            "s_lo": -5.0,
-            "u_extent": 1.6076046
+            "s_hi": 20.0,
+            "s_lo": 0.0,
+            "u_extent": 3.1415927
           }
         ],
         []
@@ -349,11 +341,23 @@
         [],
         []
       ],
-      "step_level_records": []
+      "step_level_records": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -3.00000007,
+            3.0
+          ],
+          "y_span": [
+            -7.0,
+            0.0
+          ],
+          "z": 0.0
+        }
+      ]
     }
   },
   "source": {
-    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "repository": "https://github.com/pzfreo/draftwright.git"
+    "repository": "https://github.com/pzfreo/b123d-recognisers.git"
   }
 }

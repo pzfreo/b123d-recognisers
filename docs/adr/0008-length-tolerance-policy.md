@@ -319,3 +319,11 @@ minimum is *correctly* not scale-invariant: a 1 mm chamfer shrunk to 0.05 mm is 
 Absolute constants remain **legal but justified**. A new one needs a comment naming the physical
 constant it encodes and a proportional term beside it. Anything else is a defect this ADR exists to
 catch in review.
+
+## Amendment (0.2.12, semicircular-bottom profile)
+
+The new profile introduces no fitted feature-size threshold. Equal radii, spans, seam stations and
+principal boundary runs use the existing kernel-coordinate and direction tolerances. Half-circle
+and cap proofs compare analytic arc length with `pi * radius`; candidate admission extrudes the
+actual unrounded cap face and requires zero same-solid material. Rounded public record fields are
+created only after admission and never feed recognition geometry.

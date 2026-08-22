@@ -50,6 +50,7 @@ def recognition_snapshot(recognition, feature_census, part):
         "recognise_angled_steps",
         "recognise_through_steps",
         "recognise_round_bottom_blind_slots",
+        "recognise_semicircular_bottom_blind_slots",
         "recognise_passages",
         "recognise_prismatic_pockets",
     ):

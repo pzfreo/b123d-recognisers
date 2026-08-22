@@ -225,3 +225,12 @@ connectivity to prove geometry it cannot prove. Emptiness is evaluated within th
 material belonging to that same solid, including a connected island or bridge, is not representable
 by the simple record; disconnected compound members are recognised independently and do not
 suppress it.
+
+## Amendment (0.2.12, semicircular-bottom blind slots)
+
+The semicircular-bottom family is discovered independently and writes defining claims for its
+two planar legs, half-cylinder and feature-local cap. The phase-pure recess reconciler then lets
+that complete curved profile defeat a rectangular `Slot` or `Pocket` fragment only when the
+fragment has non-empty evidence that is a proper subset of the curved claim and covers the same
+run interval. An incomplete curved proposal suppresses nothing, and discovery never reads a
+sibling family's claims.

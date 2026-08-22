@@ -130,7 +130,9 @@ from b123d_recognisers.repeating_profiles import (
 from b123d_recognisers.result import RecognitionResult, build_recognition_result
 from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
+    SemicircularBottomBlindSlot,
     recognise_round_bottom_blind_slots,
+    recognise_semicircular_bottom_blind_slots,
 )
 from b123d_recognisers.slots import (
     Channel,
@@ -197,6 +199,7 @@ __all__ = [
     "RaisedPad",
     "RepeatingRadialProfile",
     "RoundBottomBlindSlot",
+    "SemicircularBottomBlindSlot",
     "RectGrid",
     "Slot",
     "SlotArray",
@@ -248,6 +251,7 @@ __all__ = [
     "recognise_rectangular_pads",
     "recognise_repeating_radial_profiles",
     "recognise_round_bottom_blind_slots",
+    "recognise_semicircular_bottom_blind_slots",
     "recognise_slot_patterns",
     "recognise_slots",
     "recognise_turned_steps",

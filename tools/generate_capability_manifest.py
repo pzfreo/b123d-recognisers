@@ -51,6 +51,24 @@ FAMILIES = {
             "tests/test_mfcadpp_holdout.py",
         ],
     },
+    "semicircular-bottom-blind-slots": {
+        "recognisers": [("recognise_semicircular_bottom_blind_slots", "part")],
+        "records": [
+            (
+                "SemicircularBottomBlindSlot",
+                "output",
+                ["RecognitionResult.semicircular_bottom_blind_slots"],
+            )
+        ],
+        "census": "semicircular_bottom_blind_slot",
+        "goldens": ["semicircular_bottom_blind_slot"],
+        "introduced": "0.2.12",
+        "tests": [
+            "tests/test_semicircular_bottom_slots.py",
+            "tests/test_mfcadpp_corpus.py",
+            "tests/test_mfcadpp_holdout.py",
+        ],
+    },
     "through-steps": {
         "recognisers": [("recognise_through_steps", "part")],
         "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],

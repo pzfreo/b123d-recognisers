@@ -42,6 +42,7 @@ CLAIMING = (
     "AngledStep",
     "ThroughStep",
     "RoundBottomBlindSlot",
+    "SemicircularBottomBlindSlot",
 )
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
@@ -100,13 +101,20 @@ def scan_part(part, labels):
     pockets = r.recognise_pockets(part, ledger=ledger)
     ring_pockets = r.recognise_prismatic_pockets(part, ledger=ledger)
     passages = r.recognise_passages(part, ledger=ledger)
+    semicircular_slots = r.recognise_semicircular_bottom_blind_slots(part, ledger=ledger)
     recesses = reconcile_recesses(
-        slots, pockets, ring_pockets, passages, ledger
+        slots,
+        pockets,
+        ring_pockets,
+        passages,
+        ledger,
+        semicircular=semicircular_slots,
     )
     slots = recesses.slots
     pockets = recesses.pockets
     ring_pockets = recesses.prismatic_pockets
     passages = recesses.passages
+    semicircular_slots = recesses.semicircular_bottom_blind_slots
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     through_steps = r.recognise_through_steps(part, ledger=ledger)
@@ -124,6 +132,7 @@ def scan_part(part, labels):
             *steps,
             *through_steps,
             *round_bottom_slots,
+            *semicircular_slots,
         )
     }
     records = {
@@ -135,6 +144,7 @@ def scan_part(part, labels):
         "AngledStep": len(steps),
         "ThroughStep": len(through_steps),
         "RoundBottomBlindSlot": len(round_bottom_slots),
+        "SemicircularBottomBlindSlot": len(semicircular_slots),
     }
 
     claimed: dict[str, Counter] = defaultdict(Counter)

@@ -58,6 +58,28 @@ class RoundBottomBlindSlot(Record):
         return self.radius
 
 
+@dataclass(frozen=True, order=True)
+class SemicircularBottomBlindSlot(Record):
+    """One capped slot with two straight legs and a semicircular bottom."""
+
+    axis: str
+    open_sign: int
+    length: float
+    width_axis: str
+    depth_axis: str
+    radius: float
+    leg_depth: float
+    at: tuple[float, float, float]
+
+    @property
+    def width(self) -> float:
+        return 2 * self.radius
+
+    @property
+    def depth(self) -> float:
+        return self.leg_depth + self.radius
+
+
 @dataclass(frozen=True)
 class _Cylinder:
     nodes: frozenset[FaceNode]
@@ -212,11 +234,8 @@ def _principal_rectangle(graph: FaceGraph, nodes: frozenset[FaceNode], normal_ax
     return len(run_axes) == 4 and all(run_axes.count(axis) == 2 for axis in in_plane)
 
 
-def _alternating_profile_runs(
-    wire: Wire,
-) -> tuple[list[list[EdgeLike]], list[list[EdgeLike]]] | None:
-    """The two co-directed straight and two same-circle runs of one U boundary."""
-
+def _boundary_runs(wire: Wire) -> list[tuple[GeomType, list[EdgeLike]]] | None:
+    """Co-directed straight or same-radius circular runs around one boundary."""
     edges = wire.edges()
     if not edges or any(edge.geom_type not in (GeomType.LINE, GeomType.CIRCLE) for edge in edges):
         return None
@@ -246,6 +265,17 @@ def _alternating_profile_runs(
         ) or (kind == GeomType.CIRCLE and abs(tail[-1].radius - members[0].radius) <= SPAN_EPS)
         if compatible:
             groups[0] = kind, [*groups.pop()[1], *members]
+    return groups
+
+
+def _alternating_profile_runs(
+    wire: Wire,
+) -> tuple[list[list[EdgeLike]], list[list[EdgeLike]]] | None:
+    """The two co-directed straight and two same-circle runs of one U boundary."""
+
+    groups = _boundary_runs(wire)
+    if groups is None:
+        return None
     if len(groups) != 4 or any(
         groups[index][0] == groups[(index + 1) % 4][0] for index in range(4)
     ):
@@ -282,6 +312,65 @@ def _quarter_cylinder(graph: FaceGraph, cylinder: _Cylinder, run_span: tuple[flo
             and abs(sum(edge.length for edge in run) - pi * cylinder.radius / 2) <= SPAN_EPS
             for run in arcs
         )
+    )
+
+
+def _half_cylinder(graph: FaceGraph, cylinder: _Cylinder, run_span: tuple[float, float]) -> bool:
+    wire = _region_boundary_wire(graph, cylinder.nodes, planar=False)
+    runs = _alternating_profile_runs(wire) if wire is not None else None
+    if runs is None:
+        return False
+    lines, arcs = runs
+    length = run_span[1] - run_span[0]
+    return (
+        len(lines) == 2
+        and len(arcs) == 2
+        and all(abs(sum(edge.length for edge in run) - length) <= SPAN_EPS for run in lines)
+        and all(
+            all(abs(edge.radius - cylinder.radius) <= SPAN_EPS for edge in run)
+            and abs(sum(edge.length for edge in run) - pi * cylinder.radius) <= SPAN_EPS
+            for run in arcs
+        )
+    )
+
+
+def _semicircular_cap_matches_profile(
+    graph: FaceGraph,
+    cap: frozenset[FaceNode],
+    radius: float,
+    leg_depth: float,
+    width_axis: int,
+    depth_axis: int,
+) -> bool:
+    wire = _region_boundary_wire(graph, cap)
+    groups = _boundary_runs(wire) if wire is not None else None
+    if groups is None or len(groups) != 4:
+        return False
+    arcs = [members for kind, members in groups if kind == GeomType.CIRCLE]
+    lines = [members for kind, members in groups if kind == GeomType.LINE]
+    if len(arcs) != 1 or len(lines) != 3:
+        return False
+    arc = arcs[0]
+    if any(abs(edge.radius - radius) > SPAN_EPS for edge in arc):
+        return False
+    if abs(sum(edge.length for edge in arc) - pi * radius) > SPAN_EPS:
+        return False
+    lengths: dict[int, list[float]] = {width_axis: [], depth_axis: []}
+    for run in lines:
+        direction = run[0].tangent_at()
+        aligned = [
+            axis
+            for axis in (width_axis, depth_axis)
+            if 1.0 - abs(getattr(direction, _AXES[axis].upper())) <= SMOOTH_ARC_GAP
+        ]
+        if len(aligned) != 1:
+            return False
+        lengths[aligned[0]].append(sum(edge.length for edge in run))
+    return (
+        len(lengths[width_axis]) == 1
+        and abs(lengths[width_axis][0] - 2 * radius) <= SPAN_EPS
+        and len(lengths[depth_axis]) == 2
+        and all(abs(length - leg_depth) <= SPAN_EPS for length in lengths[depth_axis])
     )
 
 
@@ -488,6 +577,159 @@ def _recognise_one(
     return out
 
 
+def _recognise_semicircular_one(
+    solid, graph: FaceGraph
+) -> list[tuple[SemicircularBottomBlindSlot, frozenset[FaceNode]]]:
+    """Recognise the sharp two-leg plus half-cylinder profile in one source solid."""
+
+    solid_nodes = {graph.require_node(face) for face in solid.faces()}
+    bounds = solid.bounding_box()
+    envelope = (
+        (bounds.min.X, bounds.max.X),
+        (bounds.min.Y, bounds.max.Y),
+        (bounds.min.Z, bounds.max.Z),
+    )
+    out: list[tuple[SemicircularBottomBlindSlot, frozenset[FaceNode]]] = []
+    seen_caps: set[FaceNode] = set()
+    for cap in sorted(solid_nodes, key=lambda node: node.index):
+        if cap in seen_caps:
+            continue
+        cap_plane = axis_aligned_axis(graph.face(cap).wrapped)
+        if cap_plane is None or not any(
+            graph.surface(node) == GeomAbs_Cylinder and graph.arc(cap, node) == "concave"
+            for node in graph.neighbours(cap)
+        ):
+            continue
+        cap_region = graph.coplanar_region(cap) & solid_nodes
+        seen_caps.update(cap_region)
+        if any(axis_aligned_axis(graph.face(node).wrapped) != cap_plane for node in cap_region):
+            continue
+        run, cap_station = cap_plane
+        neighbours = {
+            node
+            for source in cap_region
+            for node in graph.neighbours(source)
+            if node not in cap_region
+        }
+        cylinder_by_nodes: dict[frozenset[FaceNode], _Cylinder] = {}
+        planar_regions: set[frozenset[FaceNode]] = set()
+        for node in neighbours:
+            cylinder = _cylinder_region(graph, node)
+            if cylinder is not None:
+                nodes = cylinder.nodes & solid_nodes
+                cylinder_by_nodes[nodes] = replace(cylinder, nodes=nodes)
+            elif graph.is_planar(node):
+                planar_regions.add(graph.coplanar_region(node) & solid_nodes)
+        cylinders = tuple(
+            cylinder
+            for nodes, cylinder in cylinder_by_nodes.items()
+            if _relation(graph, cap_region, nodes) == "concave"
+        )
+        legs = tuple(
+            region for region in planar_regions if _relation(graph, cap_region, region) == "concave"
+        )
+        if len(cylinders) != 1 or len(legs) != 2:
+            continue
+        cylinder = cylinders[0]
+        leg_planes = [
+            axis_aligned_axis(graph.face(min(region, key=lambda node: node.index)).wrapped)
+            for region in legs
+        ]
+        if (
+            cylinder.axis != run
+            or any(plane is None for plane in leg_planes)
+            or leg_planes[0][0] != leg_planes[1][0]  # type: ignore[index]
+            or leg_planes[0][0] == run  # type: ignore[index]
+        ):
+            continue
+        width = leg_planes[0][0]  # type: ignore[index]
+        depth = 3 - run - width
+        if any(
+            not _principal_rectangle(graph, region, width)
+            or _relation(graph, cylinder.nodes, region) != "smooth"
+            for region in legs
+        ):
+            continue
+        side_regions = (legs[0], cylinder.nodes, legs[1])
+        run_span = _same_span(graph, side_regions, run)
+        if run_span is None or not _half_cylinder(graph, cylinder, run_span):
+            continue
+        low, high = run_span
+        if abs(cap_station - low) <= SPAN_EPS and abs(high - envelope[run][1]) <= SPAN_EPS:
+            open_sign, open_station = 1, high
+        elif abs(cap_station - high) <= SPAN_EPS and abs(low - envelope[run][0]) <= SPAN_EPS:
+            open_sign, open_station = -1, low
+        else:
+            continue
+        radius = cylinder.radius
+        leg_stations = sorted(plane[1] for plane in leg_planes if plane is not None)
+        leg_bounds = [_region_bounds(graph, region) for region in legs]
+        cylinder_bounds = _region_bounds(graph, cylinder.nodes)
+        if (
+            abs((leg_stations[1] - leg_stations[0]) - 2 * radius) > SPAN_EPS
+            or abs((cylinder_bounds[width][1] - cylinder_bounds[width][0]) - 2 * radius)
+            > SPAN_EPS
+            or abs((cylinder_bounds[depth][1] - cylinder_bounds[depth][0]) - radius) > SPAN_EPS
+        ):
+            continue
+        depth_intervals = [item[depth] for item in leg_bounds]
+        if any(
+            abs(interval[index] - depth_intervals[0][index]) > SPAN_EPS
+            for interval in depth_intervals[1:]
+            for index in (0, 1)
+        ):
+            continue
+        tangent_candidates = [
+            station
+            for station in depth_intervals[0]
+            if any(abs(station - end) <= SPAN_EPS for end in cylinder_bounds[depth])
+        ]
+        if len(tangent_candidates) != 1:
+            continue
+        tangent = tangent_candidates[0]
+        depth_open = (
+            depth_intervals[0][1]
+            if abs(tangent - depth_intervals[0][0]) <= SPAN_EPS
+            else depth_intervals[0][0]
+        )
+        leg_depth = abs(depth_open - tangent)
+        if (
+            leg_depth <= 0
+            or not any(abs(depth_open - end) <= SPAN_EPS for end in envelope[depth])
+            or not _semicircular_cap_matches_profile(
+                graph, cap_region, radius, leg_depth, width, depth
+            )
+            or not _common_convex_context(graph, side_regions, run, open_station)
+            or not _common_convex_context(graph, (legs[0], cap_region, legs[1]), depth, depth_open)
+        ):
+            continue
+        cap_face = _region_face(graph, cap_region)
+        if cap_face is None or not _empty_sweep(cap_face, solid, run, open_station - cap_station):
+            continue
+        centre = [0.0, 0.0, 0.0]
+        centre[run] = (low + high) / 2
+        centre[width] = (leg_stations[0] + leg_stations[1]) / 2
+        profile_bottom = (
+            cylinder_bounds[depth][0]
+            if abs(tangent - cylinder_bounds[depth][1]) <= SPAN_EPS
+            else cylinder_bounds[depth][1]
+        )
+        centre[depth] = (profile_bottom + depth_open) / 2
+        record = SemicircularBottomBlindSlot(
+            axis=_AXES[run],
+            open_sign=open_sign,
+            length=round(high - low, 3),
+            width_axis=_AXES[width],
+            depth_axis=_AXES[depth],
+            radius=round(radius, 3),
+            leg_depth=round(leg_depth, 3),
+            at=(round(centre[0], 3), round(centre[1], 3), round(centre[2], 3)),
+        )
+        defining = frozenset((*legs[0], *cylinder.nodes, *legs[1], *cap_region))
+        out.append((record, defining))
+    return out
+
+
 def recognise_round_bottom_blind_slots(
     part: Part, *, ledger: ClaimLedger | None = None
 ) -> list[RoundBottomBlindSlot]:
@@ -498,6 +740,21 @@ def recognise_round_bottom_blind_slots(
     found: list[RoundBottomBlindSlot] = []
     for solid in solids:
         for record, nodes in _recognise_one(solid, graph):
+            found.append(record)
+            if ledger is not None:
+                ledger.add_defining(record, nodes)
+    return sorted(found)
+
+
+def recognise_semicircular_bottom_blind_slots(
+    part: Part, *, ledger: ClaimLedger | None = None
+) -> list[SemicircularBottomBlindSlot]:
+    """Recognise the exact two-leg, half-cylinder, one-cap supported subset."""
+
+    graph = ledger.graph if ledger is not None else FaceGraph(part)
+    found: list[SemicircularBottomBlindSlot] = []
+    for solid in part.solids():
+        for record, nodes in _recognise_semicircular_one(solid, graph):
             found.append(record)
             if ledger is not None:
                 ledger.add_defining(record, nodes)

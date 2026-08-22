@@ -144,3 +144,12 @@ mutates the graph, propagates dihedral attributes to newly inserted transition a
 the angles are equal, and its own header records that `PopSubgraph()` does not clean those
 attributes up afterwards. What is wanted here is a query over an immutable graph — which is what
 the run-local face graph built for issue #92 already is.
+
+## Amendment (0.2.12, analytic open profiles)
+
+Circular-bottom blind-slot families use the immutable graph as attributed evidence, not as a
+generic shape matcher. Direct smooth arcs may normalize coplanar planar patches or patches of the
+same analytic cylinder; traversal may not escape through a tangent blend onto a different
+surface. Family-owned boundary proofs distinguish flat-plus-two-quarter-cylinder and
+two-leg-plus-one-half-cylinder profiles from their actual sewn wires. Context faces are consulted
+but only the profile walls and feature-local cap are claimed.

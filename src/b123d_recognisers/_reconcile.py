@@ -45,9 +45,12 @@ from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.grooves import Groove
 from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
+from b123d_recognisers.round_bottom_slots import SemicircularBottomBlindSlot
 from b123d_recognisers.turned import TurnedStep
 
-RecessCandidate: TypeAlias = Slot | Pocket | PrismaticPocket | Passage
+RecessCandidate: TypeAlias = (
+    Slot | Pocket | PrismaticPocket | Passage | SemicircularBottomBlindSlot
+)
 RecessOutcome = Literal["accepted", "rejected"]
 RecessReason = Literal[
     "accepted",
@@ -56,6 +59,7 @@ RecessReason = Literal[
     "contained_by_non_rectangular_prismatic_pocket",
     "rectangular_passage_superseded_by_slot",
     "slot_fragment_superseded_by_rectangular_passage",
+    "rectangular_fragment_superseded_by_semicircular_profile",
     "rectangular_ring_superseded_by_pocket",
     "superseded_by_non_rectangular_passage",
     "superseded_by_pocket",
@@ -80,6 +84,7 @@ class ReconciledRecesses:
     pockets: tuple[Pocket, ...]
     prismatic_pockets: tuple[PrismaticPocket, ...]
     passages: tuple[Passage, ...]
+    semicircular_bottom_blind_slots: tuple[SemicircularBottomBlindSlot, ...]
     dispositions: tuple[RecessDisposition, ...]
 
 
@@ -89,6 +94,8 @@ def reconcile_recesses(
     prismatic: list[PrismaticPocket],
     passages: list[Passage],
     ledger: ClaimLedger,
+    *,
+    semicircular: Sequence[SemicircularBottomBlindSlot] = (),
 ) -> ReconciledRecesses:
     """Apply the recess-family precedence rules after every family has proposed.
 
@@ -116,6 +123,10 @@ def reconcile_recesses(
             raise AssertionError("a recess candidate received more than one disposition")
         dispositions[key] = RecessDisposition(candidate, outcome, reason)
 
+    semicircular_walls = {
+        id(candidate): ledger.defining_of(candidate) for candidate in semicircular
+    }
+
     accepted_prismatic = []
     pocket_walls = _pocket_wall_claims(pockets, ledger)
     for ring in prismatic:
@@ -142,16 +153,24 @@ def reconcile_recesses(
         inside_ring = bool(defining_walls) and any(
             defining_walls <= ledger.defining_of(ring) for ring in non_rectangular_pockets
         )
+        inside_semicircular = bool(defining_walls) and any(
+            defining_walls < walls
+            and _covers_axis_span(defining_walls, walls, candidate.axis, ledger)
+            for candidate in semicircular
+            if (walls := semicircular_walls[id(candidate)])
+        )
         reason: RecessReason = (
             "accepted_without_claim"
             if not defining_walls
+            else "rectangular_fragment_superseded_by_semicircular_profile"
+            if inside_semicircular
             else "contained_by_passage"
             if inside_passage
             else "contained_by_non_rectangular_prismatic_pocket"
             if inside_ring
             else "accepted"
         )
-        rejected = inside_passage or inside_ring
+        rejected = inside_semicircular or inside_passage or inside_ring
         decide(pocket, "rejected" if rejected else "accepted", reason)
         if not rejected:
             accepted_pockets.append(pocket)
@@ -172,6 +191,18 @@ def reconcile_recesses(
         if not walls:
             accepted_slots.append(slot)
             decide(slot, "accepted", "accepted_without_claim")
+            continue
+        if any(
+            walls < candidate_walls
+            and _covers_axis_span(walls, candidate_walls, candidate.axis, ledger)
+            for candidate in semicircular
+            if (candidate_walls := semicircular_walls[id(candidate)])
+        ):
+            decide(
+                slot,
+                "rejected",
+                "rectangular_fragment_superseded_by_semicircular_profile",
+            )
             continue
         if any(walls <= ledger.defining_of(pocket) for pocket in accepted_pockets):
             decide(slot, "rejected", "superseded_by_pocket")
@@ -218,7 +249,17 @@ def reconcile_recesses(
         if not superseded:
             accepted_passages.append(passage)
 
-    discovered = (*slots, *pockets, *prismatic, *passages)
+    accepted_semicircular = []
+    for candidate in semicircular:
+        walls = semicircular_walls[id(candidate)]
+        decide(
+            candidate,
+            "accepted",
+            "accepted" if walls else "accepted_without_claim",
+        )
+        accepted_semicircular.append(candidate)
+
+    discovered = (*slots, *pockets, *prismatic, *passages, *semicircular)
     if len(dispositions) != len(discovered) or set(dispositions) != {id(c) for c in discovered}:
         raise AssertionError(
             "every discovered recess candidate must receive exactly one disposition"
@@ -229,7 +270,30 @@ def reconcile_recesses(
         tuple(accepted_pockets),
         tuple(accepted_prismatic),
         tuple(accepted_passages),
+        tuple(accepted_semicircular),
         tuple(dispositions[id(candidate)] for candidate in discovered),
+    )
+
+
+def _covers_axis_span(
+    candidate_walls: AbstractSet,
+    feature_walls: AbstractSet,
+    axis: str,
+    ledger: ClaimLedger,
+) -> bool:
+    """Whether the candidate and complete curved profile cover the same run interval."""
+
+    axis_index = {"x": 0, "y": 1, "z": 2}[axis]
+
+    def envelope(nodes: AbstractSet) -> tuple[float, float]:
+        spans = [ledger.graph.bounds(node)[axis_index] for node in nodes]
+        return min(low for low, _ in spans), max(high for _, high in spans)
+
+    return all(
+        abs(candidate - feature) <= SPAN_EPS
+        for candidate, feature in zip(
+            envelope(candidate_walls), envelope(feature_walls), strict=True
+        )
     )
 
 
