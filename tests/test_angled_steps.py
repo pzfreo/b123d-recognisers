@@ -148,7 +148,12 @@ def test_the_chamfer_family_proposes_a_slant_and_the_reconciler_takes_it_back():
         ledger = ClaimLedger(FaceGraph(part))
         chamfers = recognise_chamfers(part, ledger=ledger)
         steps = recognise_angled_steps(part, ledger=ledger)
-        assert chamfers_that_are_not_angled_steps(chamfers, ledger) == chamfers[:kept]
+        assert (
+            chamfers_that_are_not_angled_steps(
+                chamfers, steps, ledger.snapshot_index()
+            )
+            == chamfers[:kept]
+        )
         assert len(steps) == 1 - kept
 
 

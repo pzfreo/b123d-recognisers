@@ -86,7 +86,11 @@ def test_permuting_recogniser_output_does_not_change_what_survives():
     part = _busy_part()
     ledger, found = _claimed(part)
     evidence = ledger.snapshot_index()
-    baseline_bevels = set(chamfers_that_are_not_angled_steps(found["chamfers"], ledger))
+    baseline_bevels = set(
+        chamfers_that_are_not_angled_steps(
+            found["chamfers"], found["steps"], evidence
+        )
+    )
     baseline_pockets = set(
         prismatic_pockets_that_are_not_pockets(
             found["prismatic"], found["pockets"], evidence
@@ -100,7 +104,10 @@ def test_permuting_recogniser_output_does_not_change_what_survives():
         shuffler.shuffle(bevels)
         shuffler.shuffle(pockets)
 
-        assert set(chamfers_that_are_not_angled_steps(bevels, ledger)) == baseline_bevels
+        assert (
+            set(chamfers_that_are_not_angled_steps(bevels, found["steps"], evidence))
+            == baseline_bevels
+        )
         assert (
             set(
                 prismatic_pockets_that_are_not_pockets(

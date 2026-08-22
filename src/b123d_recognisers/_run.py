@@ -4,8 +4,8 @@
 """The state one recognition run shares, in one object instead of several optional arguments.
 
 A recogniser called on its own takes a part and works everything out. Called as part of an
-aggregate it should not: the face-edge derivation, the face graph, the claim ledger and the
-cylinder scan are all facts about *this run over this part*, and deriving them per family is
+aggregate it should not: the face-edge derivation, the face graph and the cylinder scan are
+all facts about *this run over this part*, and deriving them per family is
 both waste and a way for two families to disagree about the same solid.
 
 Before this they were threaded as separate optional parameters -- ``face_edges=``, ``ledger=``,
@@ -26,32 +26,38 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
-from b123d_recognisers._typing import CylinderInventory, Part
+from b123d_recognisers._typing import CylinderInventory, FrozenCylinderInventory, Part
 
 
 @dataclass(frozen=True, slots=True)
-class RecognitionRun:
+class RecognitionContext:
     """The derived facts every family in one run over one part should share.
 
     Frozen because nothing here is a result: a run is the *evidence* a run has in common, and a
     family that wanted to replace one of these would be changing what the others already saw.
-    The ledger is the exception by design -- it is append-only and written into, which is what
-    `_claims` documents as write-only during discovery.
-
-    The part itself is not a field. Every caller already has it -- it is what they passed to
-    `start` -- and a second reference to it here would be a second thing to keep in step with
-    the graph.
+    ``FaceGraph`` and ``FaceEdges`` fill private memo caches but their geometric meaning cannot
+    be replaced through this capability. Evidence is deliberately absent: candidates belong to
+    the discovery lifecycle, not to neutral context.
     """
 
+    part: Part
     face_edges: FaceEdges
     graph: FaceGraph
-    ledger: ClaimLedger
-    cylinders: CylinderInventory
+    cylinders: FrozenCylinderInventory
+    rotational: bool
 
 
-def start(part: Part, cylinders: CylinderInventory | None = None) -> RecognitionRun:
+# Temporary internal name compatibility while phase callers migrate in this change.
+RecognitionRun = RecognitionContext
+
+
+def start(
+    part: Part,
+    cylinders: CylinderInventory | None = None,
+    *,
+    rotational: bool = False,
+) -> RecognitionContext:
     """Derive the shared state for one run over *part*.
 
     *cylinders* is accepted because `build_recognition_result` lets a caller inject a scan it
@@ -66,9 +72,11 @@ def start(part: Part, cylinders: CylinderInventory | None = None) -> Recognition
 
     face_edges = FaceEdges()
     graph = FaceGraph(part, face_edges=face_edges)
-    return RecognitionRun(
+    derived = analyse_cylinders(part) if cylinders is None else cylinders
+    return RecognitionContext(
+        part=part,
         face_edges=face_edges,
         graph=graph,
-        ledger=ClaimLedger(graph),
-        cylinders=analyse_cylinders(part) if cylinders is None else cylinders,
+        cylinders=(tuple(derived[0]), tuple(derived[1])),
+        rotational=rotational,
     )

@@ -60,7 +60,7 @@ from b123d_recognisers._adjacency import (
     FaceNode,
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
 from b123d_recognisers._typing import Part
@@ -104,7 +104,7 @@ def recognise_passages(
     part: Part,
     *,
     face_edges: FaceEdges | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[Passage]:
     """Recognise the prismatic passages of *part* (see module docstring).
 

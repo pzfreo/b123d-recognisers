@@ -31,7 +31,9 @@ from build123d import Box, Pos, Rot
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
+from b123d_recognisers._reconcile import (
+    chamfers_that_are_not_angled_steps as _reconcile_chamfers,
+)
 
 #: A 45° wedge cutting 4 mm into each of the two faces meeting at the edge.
 _WEDGE = 5.657
@@ -299,3 +301,8 @@ def test_the_three_rules_share_one_ledger_without_reading_each_others_claims():
     assert len(result.angled_steps) == 1
     assert len(result.chamfers) == 1
     assert result.chamfers[0].at != result.angled_steps[0].at
+def chamfers_that_are_not_angled_steps(chamfers, ledger):
+    steps = [
+        claim.claimant for claim in ledger.claims if isinstance(claim.claimant, r.AngledStep)
+    ]
+    return _reconcile_chamfers(chamfers, steps, ledger.snapshot_index())

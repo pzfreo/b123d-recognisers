@@ -80,6 +80,30 @@ class Claim:
         return f"Claim({self.claimant!r}, defining={len(self.defining)} faces)"
 
 
+class EvidenceWriter:
+    """Aggregate discovery's graph-bound, write-only compatibility capability."""
+
+    __slots__ = ("graph", "sink")
+
+    def __init__(self, graph: FaceGraph, sink: EvidenceSink) -> None:
+        self.graph = graph
+        self.sink = sink
+
+    def add_defining(
+        self,
+        claimant: object,
+        nodes: Iterable[FaceNode],
+        *,
+        family: FamilyId = FamilyId.LEGACY,
+    ) -> Candidate[object]:
+        """Issue defining evidence without exposing any read or freeze operation."""
+
+        defining = tuple(nodes)
+        if not defining:
+            raise ValueError(f"{claimant!r} claims no defining face")
+        return self.sink.propose(family, claimant, defining=defining)
+
+
 class ClaimLedger:
     """Append-only claims against the nodes of one :class:`FaceGraph`.
 
@@ -122,6 +146,12 @@ class ClaimLedger:
 
         return self._issuer.sink
 
+    @property
+    def writer(self) -> EvidenceWriter:
+        """The graph-bound write-only adapter used by aggregate discovery."""
+
+        return EvidenceWriter(self._graph, self.sink)
+
     def propose(
         self,
         family: FamilyId,
@@ -132,7 +162,13 @@ class ClaimLedger:
 
         return self.sink.propose(family, record, defining=nodes)
 
-    def add_defining(self, claimant: object, nodes: Iterable[FaceNode]) -> Claim:
+    def add_defining(
+        self,
+        claimant: object,
+        nodes: Iterable[FaceNode],
+        *,
+        family: FamilyId = FamilyId.LEGACY,
+    ) -> Claim:
         """Record that *nodes* are what established *claimant*, and return the claim.
 
         *claimant* is normally the record itself; nothing here interprets it.
@@ -146,7 +182,7 @@ class ClaimLedger:
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        candidate = self.propose(FamilyId.LEGACY, claimant, defining)
+        candidate = self.propose(family, claimant, defining)
         return self._claims[id(candidate)]
 
     @property
@@ -164,6 +200,13 @@ class ClaimLedger:
 
         return self._issuer.candidate_set(family)
 
+    def candidate_set_for(
+        self, family: FamilyId, records: Iterable[object]
+    ) -> CandidateSet[object]:
+        """Bind returned record occurrences to their one family candidate."""
+
+        return self._issuer.candidate_set_for(family, records)
+
     def snapshot_index(self) -> EvidenceIndex:
         """Freeze the evidence issued so far into a point-in-time read capability.
 
@@ -173,6 +216,11 @@ class ClaimLedger:
         """
 
         return self._issuer.snapshot_index()
+
+    def freeze_index(self) -> EvidenceIndex:
+        """Seal aggregate issuance and return the complete evidence index."""
+
+        return self._issuer.freeze_index()
 
     def defining_of(self, claimant: object) -> frozenset[FaceNode]:
         """The faces *this* candidate was established by, or empty when it claimed none.

@@ -25,6 +25,7 @@ from build123d import Cylinder, Pos
 
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import steps_that_are_not_grooves
 
@@ -94,13 +95,30 @@ def test_the_rule_finds_the_rung_the_groove_is():
     ledger, grooves, steps = _claimed(_grooved_shaft())
     (groove,) = grooves
 
-    kept = steps_that_are_not_grooves(steps, ledger)
+    kept = steps_that_are_not_grooves(steps, grooves, ledger.snapshot_index())
     assert len(kept) == len(steps) - 1
     assert [step for step in steps if step not in kept][0].diameter == groove.diameter
 
     plain_ledger, plain_grooves, plain_steps = _claimed(_plain_shaft())
     assert plain_grooves == []
-    assert steps_that_are_not_grooves(plain_steps, plain_ledger) == plain_steps
+    assert (
+        steps_that_are_not_grooves(
+            plain_steps, plain_grooves, plain_ledger.snapshot_index()
+        )
+        == plain_steps
+    )
+
+
+def test_an_unclaimed_groove_cannot_suppress_a_step() -> None:
+    part = _grooved_shaft()
+    _, grooves, steps = _claimed(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    ledger.propose(FamilyId.GROOVES, grooves[0])
+    ledger.propose(FamilyId.TURNED_STEPS, steps[0], [ledger.graph.nodes[0]])
+
+    assert steps_that_are_not_grooves(
+        [steps[0]], [grooves[0]], ledger.snapshot_index()
+    ) == [steps[0]]
 
 
 def test_the_ladder_keeps_the_rung_the_groove_is():
@@ -126,13 +144,18 @@ def test_the_rule_does_not_care_what_order_or_how_many_records_it_is_given():
     count and hands every record another record's faces.
     """
 
-    ledger, _, steps = _claimed(_grooved_shaft())
-    kept = steps_that_are_not_grooves(steps, ledger)
+    ledger, grooves, steps = _claimed(_grooved_shaft())
+    evidence = ledger.snapshot_index()
+    kept = steps_that_are_not_grooves(steps, grooves, evidence)
     assert len(kept) == len(steps) - 1
 
-    assert steps_that_are_not_grooves(list(reversed(steps)), ledger) == list(reversed(kept))
+    assert steps_that_are_not_grooves(list(reversed(steps)), grooves, evidence) == list(
+        reversed(kept)
+    )
     for one in steps:
-        assert steps_that_are_not_grooves([one], ledger) == ([one] if one in kept else [])
+        assert steps_that_are_not_grooves([one], grooves, evidence) == (
+            [one] if one in kept else []
+        )
 
 
 def test_a_ledger_built_from_another_shaft_is_refused_rather_than_left_empty():

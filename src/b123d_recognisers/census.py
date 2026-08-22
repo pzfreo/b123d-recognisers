@@ -29,8 +29,9 @@ drifted -- see ADR 0003's amendment for what that cost.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import cast
 
-from b123d_recognisers._reconcile import steps_that_are_not_grooves
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 from b123d_recognisers.result import _take_inventory
@@ -54,7 +55,8 @@ def feature_census(part: Part) -> dict[str, int]:
     worse error for a metric.
     """
 
-    run, found = _take_inventory(part)
+    product = _take_inventory(part)
+    found = product.result
     records: dict[str, Sequence[Record]] = {
         "hole": found.holes,
         "hole_pattern": found.hole_patterns,
@@ -63,7 +65,14 @@ def feature_census(part: Part) -> dict[str, int]:
         # both an annular channel and a rung of the step ladder; both records are true and both
         # survive into the inventory, but it is one machined feature and this counts features.
         # See `steps_that_are_not_grooves` for why the ladder keeps its rung.
-        "step": steps_that_are_not_grooves(list(found.turned_steps), run.ledger),
+        "step": cast(
+            Sequence[Record],
+            tuple(
+                candidate.record
+                for candidate in product.distinct_steps.candidates
+                if candidate.family is FamilyId.TURNED_STEPS
+            ),
+        ),
         "groove": found.grooves,
         "flat": found.flats,
         "slot": found.slots,

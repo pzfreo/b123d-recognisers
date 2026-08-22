@@ -41,7 +41,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
 from b123d_recognisers._typing import Part
@@ -86,7 +87,7 @@ def recognise_prismatic_pockets(
     part: Part,
     *,
     face_edges: FaceEdges | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[PrismaticPocket]:
     """Recognise the prismatic pockets of *part* (see module docstring).
 
@@ -137,5 +138,5 @@ def recognise_prismatic_pockets(
     found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for pocket, nodes in found:
-            ledger.add_defining(pocket, nodes)
+            ledger.add_defining(pocket, nodes, family=FamilyId.PRISMATIC_POCKETS)
     return [pocket for pocket, _ in found]

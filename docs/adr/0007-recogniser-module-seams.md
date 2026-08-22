@@ -119,3 +119,17 @@ conflicts it decides, but it may not import discovery entry points, accept `Part
 graph facts. Migrated discovery cores receive `FaceGraph` plus `EvidenceSink`, never the readable
 legacy ledger. Architecture tests enforce these edges and capability shapes while later epic
 stages migrate the remaining families.
+
+## Amendment (framework consolidation, issue #159)
+
+`RecognitionContext` owns only logically immutable neutral facts: the part, shared face-edge and
+face-graph derivations, cylinder substrate and applicability classification. Evidence is not a
+context field. Aggregate orchestration is split into discovery, reconciliation, derivation and
+projection functions. Discovery receives the mutable write capability; reconciliation receives
+candidate sets plus the terminal `EvidenceIndex`; derivation receives accepted records; projection
+receives accepted and derived inventories and may not discover or decide policy.
+
+The private `InventoryProduct` is the sole bridge to census and attribution tools. Those consumers
+may inspect its accepted identities and frozen evidence but may not invoke recognisers or repeat a
+filter. This preserves the existing family-owned geometry predicates while making orchestration
+direction executable rather than conventional.

@@ -209,3 +209,18 @@ snapshot; those later writes cannot change the earlier index. The sole terminal 
 only when all physical discovery moves ahead of reconciliation under epic 0003. Public standalone
 recognisers keep their existing ledger-compatible facades while their migrated discovery cores
 receive only neutral graph facts and the write-only sink.
+
+## Amendment (framework consolidation, issue #159)
+
+Aggregate recognition now has one explicit lifecycle. It derives neutral run context, completes
+all applicable physical discovery, binds every returned occurrence to exactly one family-scoped
+candidate, and terminally seals evidence once. Existing reconciliation rules then consume only
+the complete candidate inventory and frozen index; pattern records are derived afterward from
+accepted members, and projection merely unwraps those inventories into `RecognitionResult`.
+
+The terminal seal rejects later proposals and a second seal. Standalone compatibility may still
+take non-closing point-in-time snapshots, but aggregate census and attribution consume the same
+`InventoryProduct` as public result construction rather than running discovery or policy again.
+The temporary physical-family roster is deliberately closed and explicit until issue #160 owns
+registry metadata; cylinders, graph facts, rotational classification and turned-profile
+applicability remain context or value dependencies, not physical candidates.

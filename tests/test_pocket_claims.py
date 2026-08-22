@@ -108,28 +108,31 @@ def test_a_pocket_recovered_from_round_ends_claims_nothing():
     assert ledger.claims == (), "no flat wall established it, so there is nothing to claim"
 
 
-def test_the_aggregate_writes_pocket_claims_into_the_same_ledger_as_the_slots(monkeypatch):
-    """A partial ledger is the trap, so `build_recognition_result` must not leave one.
+def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypatch):
+    """A split evidence issuer is the trap, so the aggregate must not create one.
 
     No rule reads pocket claims today. That is the reason to write them: a rule added later
     would read a ledger with no pocket claim in it and conclude there is no overlap, which is
     the exact silent failure `require_node` and `claims_of` refuse to allow everywhere else.
 
-    The ledger is run-local and no result field carries it, so this has to be observed at the
-    call rather than read off the output. An earlier version of this test asserted only that a
-    pocket and a slot were both recognised, which passes whether or not the aggregate hands
-    the ledger over -- confirmed by unwiring it and watching the test stay green. Capturing
-    the argument is what makes the assertion about the thing the name claims.
+    Discovery now receives the write-only adapter rather than a readable ledger. Capturing it at
+    both calls proves the two families write through one issuer without weakening that boundary.
     """
 
     seen = {}
-    real = result_module.recognise_pockets
+    real_pockets = result_module.recognise_pockets
+    real_slots = result_module.recognise_slots
 
-    def capture(part, **kwargs):
-        seen["ledger"] = kwargs.get("ledger")
-        return real(part, **kwargs)
+    def capture_pockets(part, **kwargs):
+        seen["pockets"] = kwargs.get("ledger")
+        return real_pockets(part, **kwargs)
 
-    monkeypatch.setattr(result_module, "recognise_pockets", capture)
+    def capture_slots(part, **kwargs):
+        seen["slots"] = kwargs.get("ledger")
+        return real_slots(part, **kwargs)
+
+    monkeypatch.setattr(result_module, "recognise_pockets", capture_pockets)
+    monkeypatch.setattr(result_module, "recognise_slots", capture_slots)
 
     part = (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)) - Pos(0, -14, 0) * Box(8, 12, 40)
     result = r.build_recognition_result(part)
@@ -137,12 +140,9 @@ def test_the_aggregate_writes_pocket_claims_into_the_same_ledger_as_the_slots(mo
     assert len(result.pockets) == 1, "the fixture must carry a pocket"
     assert result.slots, "and a slot, or this proves nothing about sharing one ledger"
 
-    ledger = seen["ledger"]
-    assert ledger is not None, "the aggregate called the recogniser without a ledger"
-    claimants = [type(claim.claimant).__name__ for claim in ledger.claims]
-    assert "Pocket" in claimants and "Slot" in claimants, (
-        f"one ledger must carry both families' claims, got {sorted(set(claimants))}"
-    )
+    assert seen["pockets"] is seen["slots"]
+    writer = seen["pockets"]
+    assert writer is not None and not hasattr(writer, "claims")
 
 
 def test_a_ledger_built_from_another_block_is_refused_rather_than_left_empty():

@@ -84,6 +84,7 @@ MODULE_SEAM_EDGES = {
     },
     "_recess_features": {
         "_adjacency",
+        "_candidates",
         "_claims",
         "_recess_core",
         "_recess_records",
@@ -148,6 +149,29 @@ def test_recess_reconciler_accepts_completed_records_and_frozen_evidence_only() 
     assert hints["evidence"].__name__ == "EvidenceIndex"
 
 
+def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
+    module = importlib.import_module("b123d_recognisers.result")
+    expected = {
+        "_discover_all": {"context", "writer", "return"},
+        "_reconcile_existing": {"physical", "evidence", "return"},
+        "_derive_patterns": {"accepted", "return"},
+        "_project_result": {"context", "accepted", "derived", "return"},
+    }
+    for name, parameters in expected.items():
+        assert set(typing.get_type_hints(getattr(module, name))) == parameters
+
+    run_module = importlib.import_module("b123d_recognisers._run")
+    context = typing.get_type_hints(run_module.RecognitionContext)
+    assert set(context) == {"part", "face_edges", "graph", "cylinders", "rotational"}
+    assert not ({"ledger", "sink", "evidence", "index"} & set(context))
+
+    writer_type = typing.get_type_hints(module._discover_all)["writer"]
+    assert writer_type.__name__ == "EvidenceWriter"
+    assert {
+        name for name in dir(writer_type) if not name.startswith("_")
+    } == {"add_defining", "graph", "sink"}
+
+
 def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence() -> None:
     roots = (PACKAGE, ROOT / "tools", ROOT / "tests")
     calls = []
@@ -165,7 +189,6 @@ def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence()
     assert {path for path, _ in calls} == {
         "src/b123d_recognisers/result.py",
         "tests/test_mfcadpp_corpus.py",
-        "tools/per_face_scan.py",
     }
     for _path, call in calls:
         assert len(call.args) == 5 and not call.keywords

@@ -20,9 +20,8 @@ The rules are of two kinds, because ADR 0003 says a reconciler "accepts, combine
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
 one at a time, and these are the rules for which there is measured evidence.
 
-**A rule finds a record's evidence by identity**, through a frozen `EvidenceIndex` on migrated
-paths and the temporary `ClaimLedger` adapter elsewhere. Every rule here once paired its records
-against the ledger's claims *by position*, which held only
+**A rule finds a record's evidence by identity**, through the terminal frozen `EvidenceIndex`.
+Every rule here once paired its records against the ledger's claims *by position*, which held only
 while a recogniser wrote one claim per record in the order it returned them -- a coupling across
 two files that nothing checked. `strict=True` catches a count that drifts and cannot catch a
 permutation, and a permutation hands every record another record's faces while the counts stay
@@ -35,7 +34,6 @@ from __future__ import annotations
 from collections import defaultdict
 
 from b123d_recognisers._candidates import EvidenceIndex, FamilyId
-from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
@@ -70,7 +68,7 @@ def passages_that_are_not_slots(
 
     slot_walls = [
         evidence.defining_of(candidate)
-        for candidate in evidence.candidate_set(FamilyId.LEGACY).candidates
+        for candidate in evidence.candidate_set(FamilyId.SLOTS).candidates
         if isinstance(candidate.record, Slot)
     ]
     return [
@@ -166,7 +164,7 @@ def reconcile_recesses(
 
 
 def steps_that_are_not_grooves(
-    steps: list[TurnedStep], ledger: ClaimLedger
+    steps: list[TurnedStep], grooves: list[Groove], evidence: EvidenceIndex
 ) -> list[TurnedStep]:
     """The turned steps that are a distinct machined feature, for counting purposes only.
 
@@ -203,19 +201,16 @@ def steps_that_are_not_grooves(
     and report no turned steps at all.
     """
 
-    # Takes completed records, as the migrated recess rule now does. The full ladder is needed by
-    # `build_recognition_result` as well, so owning discovery here would scan the shaft twice to
-    # throw one result away; the later phase extraction removes this remaining ledger adapter.
-    floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
+    floors = [floor for groove in grooves if (floor := evidence.defining_of(groove))]
     return [
         step
         for step in steps
-        if not any(floor <= ledger.defining_of(step) for floor in floors)
+        if not any(floor <= evidence.defining_of(step) for floor in floors)
     ]
 
 
 def chamfers_that_are_not_angled_steps(
-    chamfers: list[Chamfer], ledger: ClaimLedger
+    chamfers: list[Chamfer], angled_steps: list[AngledStep], evidence: EvidenceIndex
 ) -> list[Chamfer]:
     """The chamfers that are not the slant of an angled blind step, dropped where they are.
 
@@ -249,12 +244,13 @@ def chamfers_that_are_not_angled_steps(
     """
 
     slants = {
-        node
-        for claim in ledger.claims
-        if isinstance(claim.claimant, AngledStep)
-        for node in claim.defining
+        node for step in angled_steps for node in evidence.defining_of(step)
     }
-    return [chamfer for chamfer in chamfers if ledger.defining_of(chamfer).isdisjoint(slants)]
+    return [
+        chamfer
+        for chamfer in chamfers
+        if evidence.defining_of(chamfer).isdisjoint(slants)
+    ]
 
 
 def prismatic_pockets_that_are_not_pockets(

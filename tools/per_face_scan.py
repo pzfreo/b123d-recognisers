@@ -74,45 +74,29 @@ def scan_part(part, labels):
     sees, which is the arithmetic that made the old fitted figures unreadable.
     """
 
-    import b123d_recognisers as r
-    from b123d_recognisers._adjacency import FaceGraph
-    from b123d_recognisers._claims import ClaimLedger
-    from b123d_recognisers._reconcile import (
-        chamfers_that_are_not_angled_steps,
-        reconcile_recesses,
-    )
+    from b123d_recognisers._candidates import FamilyId
+    from b123d_recognisers.result import _take_inventory
 
     faces = list(part.faces())
-    graph = FaceGraph(part)
-    ledger = ClaimLedger(graph)
+    product = _take_inventory(part)
+    graph = product.context.graph
     at = {face: i for i, face in enumerate(faces)}
-
-    slots = r.recognise_slots(part, ledger=ledger)
-    pockets = r.recognise_pockets(part, ledger=ledger)
-    ring_pockets = r.recognise_prismatic_pockets(part, ledger=ledger)
-    passages = r.recognise_passages(part, ledger=ledger)
-    slots, pockets, ring_pockets, passages = reconcile_recesses(
-        slots,
-        pockets,
-        ring_pockets,
-        passages,
-        ledger.snapshot_index(),
-    )
-    proposed = r.recognise_chamfers(part, ledger=ledger)
-    steps = r.recognise_angled_steps(part, ledger=ledger)
-    chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
-
-    kept = {
-        id(record)
-        for record in (*slots, *pockets, *ring_pockets, *passages, *chamfers, *steps)
+    family_names = {
+        FamilyId.SLOTS: "Slot",
+        FamilyId.POCKETS: "Pocket",
+        FamilyId.PRISMATIC_POCKETS: "PrismaticPocket",
+        FamilyId.PASSAGES: "Passage",
+        FamilyId.CHAMFERS: "Chamfer",
+        FamilyId.ANGLED_STEPS: "AngledStep",
     }
+    accepted = tuple(
+        candidate
+        for family in family_names
+        for candidate in product.accepted.candidate_set(family).candidates
+    )
     records = {
-        "Slot": len(slots),
-        "Pocket": len(pockets),
-        "PrismaticPocket": len(ring_pockets),
-        "Passage": len(passages),
-        "Chamfer": len(chamfers),
-        "AngledStep": len(steps),
+        name: len(product.accepted.candidate_set(family).candidates)
+        for family, name in family_names.items()
     }
 
     claimed: dict[str, Counter] = defaultdict(Counter)
@@ -122,11 +106,11 @@ def scan_part(part, labels):
     # 100% is arithmetically impossible and the overlap it exposed is a real reconciliation
     # question, not a counting artefact.
     covered: set[int] = set()
-    for claim in ledger.claims:
-        family = type(claim.claimant).__name__
-        if family not in CLAIMING or id(claim.claimant) not in kept:
+    for candidate in accepted:
+        family = family_names[candidate.family]
+        if family not in CLAIMING:
             continue
-        for node in claim.defining:
+        for node in product.evidence.defining_of(candidate):
             index = at[graph.face(node)]
             claimed[family][labels[index]] += 1
             covered.add(index)
