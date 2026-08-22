@@ -131,6 +131,9 @@ def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None
     assert "tools/check_post_release_bump.py" in workflow
     assert "post_release_tag:" in workflow and "post_release_bump_sha:" in workflow
     assert '"$EVENT_NAME" == workflow_dispatch' in workflow
+    assert '"$PR_AUTHOR" == \'github-actions[bot]\'' in workflow
+    assert '"$HEAD_REPOSITORY" == "$REPOSITORY"' in workflow
+    assert "git merge-base refs/remotes/origin/main HEAD" in workflow
     assert "steps.bump.outputs.bump_sha" in workflow
 
 

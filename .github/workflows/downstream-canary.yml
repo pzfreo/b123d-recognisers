@@ -33,18 +33,31 @@ jobs:
           path: package
           persist-credentials: false
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Classify a generated post-release bump
         id: bump
+        working-directory: package
         env:
           BUMP_SHA: ${{ inputs.post_release_bump_sha }}
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
           EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           RELEASE_TAG: ${{ inputs.post_release_tag }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           if [[ "$EVENT_NAME" == workflow_dispatch && -n "$RELEASE_TAG" && -n "$BUMP_SHA" ]]; then
             echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
             echo "bump_sha=$BUMP_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == pull_request && "$PR_AUTHOR" == 'github-actions[bot]' \
+              && "$HEAD_REPOSITORY" == "$REPOSITORY" \
+              && "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
+            release_tag=${BASH_REMATCH[1]}
+            base=$(git merge-base refs/remotes/origin/main HEAD)
+            bump=$(git rev-list --reverse "$base..HEAD" | head -n 1)
+            echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=$bump" >> "$GITHUB_OUTPUT"
           else
             echo "release_tag=" >> "$GITHUB_OUTPUT"
             echo "bump_sha=" >> "$GITHUB_OUTPUT"
