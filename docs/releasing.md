@@ -18,11 +18,13 @@ A release is one GitHub release:
    with `GITHUB_TOKEN` raises no events and would otherwise arrive with no checks. The downstream
    workflow's explicit dispatch identifies the exact generated commit, verifies that its parent is
    on `origin/main` history and descended from the release tag, and proves that the commit differs
-   from that parent only by the four synchronized version copies. The generated PR event uses the
-   same path only when GitHub identifies its author as `github-actions[bot]`, its head repository as
-   this repository, and its branch as the generated release branch; ordinary and fork pull requests
-   cannot select it. It does not widen Draftwright to accept the next patch's development identity:
-   the released tag's candidate already supplied that contract evidence before publication.
+   from that parent only by the four synchronized version copies. The validator itself is loaded
+   from that authenticated parent, never from mutable pull-request HEAD. The generated PR event uses
+   this path only when GitHub identifies its base as `main`, its author as `github-actions[bot]`, its
+   head repository as this repository, and its branch as the generated release branch; ordinary and
+   fork pull requests cannot select it. It does not widen Draftwright to accept the next patch's
+   development identity: the released tag's candidate already supplied that contract evidence
+   before publication.
 
 The published wheel is a function of the tagged commit. It used to be built on a maintainer's
 machine and attached to the release, which could only check that the attached artifact's

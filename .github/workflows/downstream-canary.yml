@@ -40,6 +40,7 @@ jobs:
         working-directory: package
         env:
           BUMP_SHA: ${{ inputs.post_release_bump_sha }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
@@ -50,7 +51,8 @@ jobs:
           if [[ "$EVENT_NAME" == workflow_dispatch && -n "$RELEASE_TAG" && -n "$BUMP_SHA" ]]; then
             echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
             echo "bump_sha=$BUMP_SHA" >> "$GITHUB_OUTPUT"
-          elif [[ "$EVENT_NAME" == pull_request && "$PR_AUTHOR" == 'github-actions[bot]' \
+          elif [[ "$EVENT_NAME" == pull_request && "$BASE_BRANCH" == main \
+              && "$PR_AUTHOR" == 'github-actions[bot]' \
               && "$HEAD_REPOSITORY" == "$REPOSITORY" \
               && "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
             release_tag=${BASH_REMATCH[1]}
@@ -71,7 +73,9 @@ jobs:
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
           RELEASE_TAG: ${{ steps.bump.outputs.release_tag }}
         run: |
-          python tools/check_post_release_bump.py \
+          validator="$RUNNER_TEMP/check_post_release_bump.py"
+          git show "$BUMP_SHA^:tools/check_post_release_bump.py" > "$validator"
+          python "$validator" \
             --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH" --bump-sha "$BUMP_SHA"
           {
             echo "## Draftwright downstream compatibility"
