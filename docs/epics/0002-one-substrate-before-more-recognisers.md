@@ -568,9 +568,9 @@ development subset's two records/eight on-target claimed faces are post-design d
 frozen holdout was revealed only after two independent implementation reviews accepted the
 result; it adds three records/twelve on-target claimed faces without changing the predicate.
 
-### Circular blind-step design boundary
+### Circular blind-step iteration (0.2.12)
 
-The next development-only population is MFCAD++ label 21. Kernel measurements correct the
+This development-only population is MFCAD++ label 21. Kernel measurements correct the
 taxonomy shorthand: every intact motif is an analytic **quarter-cylinder** (`pi / 2`), capped by
 one quarter disk whose actual boundary is two perpendicular principal radii of length `r` and one
 circular run of length `pi * r / 2`. It is not a half-cylinder. Seven recurring components retain
@@ -579,19 +579,25 @@ hole- and slot-interrupted cylinders, malformed caps, an isolated cylinder fragm
 internal-mouth interaction remain unsupported in the first iteration. Counts locate the anatomy;
 they do not define acceptance.
 
-The proposed `CircularBlindStep` record carries the principal run axis/open sign/length, radius,
+The `CircularBlindStep` record carries the principal run axis/open sign/length, radius,
 canonical transverse axes and their two quadrant signs, plus a geometry-derived location. The
-recogniser must normalize only direct smooth patches of the same analytic cylinder and coplanar
-cap, prove the cylinder's two run generators and two quarter-circle terminals, prove the exact
+recogniser normalizes only direct smooth patches of the same analytic cylinder and coplanar cap,
+proves the cylinder's two run generators and two quarter-circle terminals, proves the exact
 hole-free quarter-disk cap, consult two convex radial context regions, require the opposite run end
 at the source-solid envelope, and extrude the actual unrounded cap to prove an empty same-solid
 sweep. It claims every cap and cylinder source patch; stock context is consulted, not claimed.
+Actual shared-edge coverage proves the whole cap seam, radial generators and opening arc rather
+than accepting partial context by existence. The development subset reports seven records and
+fourteen claimed faces, all carrying label 21; this is post-design diagnostic evidence, not the
+predicate or a recall claim. Only after two independent reviews accepted the corrected rule was
+the frozen holdout revealed; it adds seventeen records and thirty-four claimed faces, all with the
+same target label, without changing the predicate.
 
-This population is currently also reported as `Fillet`: locally, the quarter-cylinder is a valid
+Direct Fillet discovery also reports this population: locally, the quarter-cylinder is a valid
 convex edge round, while the cap-to-envelope assembly is the more specific physical feature.
-`recognise_fillets` will therefore gain optional defining claims, and one central identity-based
-rule will let a complete circular blind step defeat only Fillet claims contained in its accepted
+`recognise_fillets` therefore writes optional defining claims, and one central identity-based
+rule lets a complete circular blind step defeat only Fillet claims contained in its accepted
 cylinder evidence. Direct Fillet recognition remains compatible, incomplete step evidence
-suppresses nothing, and neither recogniser reads sibling claims. Before implementation, neutral
-same-cylinder sewing, boundary-run and exact-sweep derivations should move out of the now
-two-family `round_bottom_slots.py` rather than being copied into a third recogniser.
+suppresses nothing, and neither recogniser reads sibling claims. Neutral same-cylinder sewing,
+boundary-run and exact-sweep derivations live in `_profile_regions`; family semantics remain in
+their public recognisers.

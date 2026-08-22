@@ -234,3 +234,13 @@ that complete curved profile defeat a rectangular `Slot` or `Pocket` fragment on
 fragment has non-empty evidence that is a proper subset of the curved claim and covers the same
 run interval. An incomplete curved proposal suppresses nothing, and discovery never reads a
 sibling family's claims.
+
+## Amendment (0.2.12, circular blind steps)
+
+An exact cap-to-envelope quarter-sector and its cylindrical wall have two truthful local reads:
+the curved patch is an external `Fillet`, while the complete cylinder-plus-cap evidence is a
+`CircularBlindStep`. Both recognisers discover independently and write identity-based defining
+claims. Central reconciliation retains the more specific step and suppresses a Fillet only when
+the Fillet's non-empty defining claim is a proper subset of an accepted step claim. Direct
+`recognise_fillets` output remains unchanged; rejected or incomplete step evidence suppresses
+nothing.

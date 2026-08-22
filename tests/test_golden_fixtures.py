@@ -13,6 +13,7 @@ EXPECTED_CASES = {
     "blind_pockets_and_pocket_patterns",
     "bolt_circle_and_rectangular_grid",
     "chamfers_fillets_and_flats",
+    "circular_blind_step",
     "counterbored_and_countersunk_holes",
     "double_d_bore",
     "hexagonal_passage",

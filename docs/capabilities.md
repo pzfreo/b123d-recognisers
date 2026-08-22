@@ -27,6 +27,7 @@ compatibility review, and release notes.
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
 | `recognise_chamfers` | Dimension-worthy external planar bevels and principal-axis conical bevels on turned stock. Called through `build_recognition_result` or `feature_census`, a planar slant with a triangular blind end is excluded — an angled step, dropped by `_reconcile.chamfers_that_are_not_angled_steps` from the claims both families write. Called directly, that planar slant is proposed, because on the face alone it is a bevel. | Compound three-axis corner bevels, internal cones such as countersinks, and faces outside leg/size gates. | Chamfer/fillet/flat golden, turned-chamfer tests, negative bevel tests, bevel-claim reconciliation tests, and 40 labelled MFCAD++ models. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid; after graph-proved curved end interruptions are trimmed, a paired-wall candidate's unrounded rectangular prism must be materially empty within that solid. | Bounded blind pockets, through slots, same-solid internal islands/bridges that the simple record cannot express, and cross-solid face combinations. | Open-channel golden, per-solid regressions, and H/U/rib adversaries. |
+| `recognise_circular_blind_steps` | One-cap quarter-disc sectors swept along a principal axis to one source-solid envelope opening. The analytic quarter-cylinder and exact quarter-disc cap are normalized across harmless splits, the two radial stock contexts are convex, the actual sweep is materially empty, and every cylinder/cap patch is claimed. | Half/full cylinders, no- or two-cap sectors, interrupted caps or cylinders, internal run openings, tangent escapes, material-bearing sweeps, and cross-solid composites. | Constructed axes/open signs/quadrants/scales, STEP and split-region adversaries; development evidence is seven records/fourteen correctly labelled faces, followed after review by seventeen records/thirty-four correctly labelled faces on the frozen holdout. Interacted variants remain unsupported. |
 | `recognise_countersinks` | Conical hole-mouth seats with a proven circular major rim, bore rim, and included angle. | General conical faces, decorative bevels, and unmatched cones. | Counterbore/countersink golden and cone rejection tests. |
 | `recognise_double_d_bores` | Constant, principal-axis, through double-D voids with two opposed common-circle profiles and a material-free connecting prism. | Blind recesses, obrounds, lenses, arbitrary line/arc loops, non-principal axes, mismatched ends, and cross-solid pairing. | Double-D golden plus capability-negative tests. |
 | `recognise_face_levels` | Horizontal planar face levels, optionally area-filtered, with XY support spans. | Slanted/curved faces and semantic decisions about which levels form dimensions. | Plate/level and slanted-step goldens. |
@@ -110,14 +111,15 @@ and would cost a fresh draw.
 
 **Curved families recognise.** MFCAD is planar-only in all 15 classes, so it cannot exercise
 holes, fillets, bosses, countersinks, grooves or turned steps at all. MFCAD++ can, and does:
-Through hole and Blind hole yield hole records, Circular blind step yields fillets, O-ring yields
-bosses and holes.
+Through hole and Blind hole yield hole records, complete Circular blind steps yield their dedicated
+record (while direct fillet discovery still sees the local radius), and O-ring yields bosses and
+holes.
 
 Three limits on how far this evidence reaches:
 
 - **It is not a recall score.** These corpora use their own feature vocabulary. Several classes
-  are recognised under a *different* family than the corpus names — O-ring as boss, Circular
-  blind step as fillet — which is a taxonomy mismatch, not a defect, and makes naive cross-corpus
+  are recognised under a *different* family than the corpus names — O-ring as boss, for example —
+  which is a taxonomy mismatch, not a defect, and makes naive cross-corpus
   percentages meaningless. See *Naming* below for how far that vocabulary is adopted here.
 - **The labels are single-assignment, so they mislead at feature intersections.** MFCAD++ gives
   each face exactly one feature label. Where two features meet, a wall belonging to both is
@@ -180,7 +182,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
 | Triangular blind step | AngledStep | |
 | Chamfer | Chamfer | |
-| Round; Circular blind step | Fillet | |
+| Round | Fillet | |
+| Circular blind step | CircularBlindStep | The aggregate gives the complete cap-to-envelope sector precedence over its local Fillet proposal; direct Fillet discovery remains compatible. |
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | Rectangular through step | ThroughStep | Bounded orthogonal two-region subset |
@@ -208,6 +211,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar bevel. |
 | `Channel` | One floored rectangular recess open at both ends of its longitudinal solid envelope. |
+| `CircularBlindStep` | One exact quarter-disc sector swept from a blind cap to a source-solid run opening; transverse axes and signs preserve its quadrant. |
 | `CounterBore` | One coaxial cylindrical hole step used as either the `cbore` or `spotface` field of `HoleRecord`. |
 | `CounterSink` | One proved conical seat at a matching cylindrical bore mouth. |
 | `DoubleDBore` | One constant principal-axis through double-D void; recogniser output always has `through=True`. |

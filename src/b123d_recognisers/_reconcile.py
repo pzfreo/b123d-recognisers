@@ -42,6 +42,8 @@ from b123d_recognisers._geometry import SPAN_EPS
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
+from b123d_recognisers.circular_blind_steps import CircularBlindStep
+from b123d_recognisers.fillets import Fillet
 from b123d_recognisers.grooves import Groove
 from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
@@ -423,6 +425,22 @@ def chamfers_that_are_not_angled_steps(
         for node in claim.defining
     }
     return [chamfer for chamfer in chamfers if ledger.defining_of(chamfer).isdisjoint(slants)]
+
+
+def fillets_that_are_not_circular_blind_steps(
+    fillets: list[Fillet], steps: list[CircularBlindStep], ledger: ClaimLedger
+) -> list[Fillet]:
+    """Drop local radius records subsumed by a complete cap-to-envelope quarter sector."""
+
+    step_claims = [claim for step in steps if (claim := ledger.defining_of(step))]
+    return [
+        fillet
+        for fillet in fillets
+        if not (
+            (claim := ledger.defining_of(fillet))
+            and any(claim < step_claim for step_claim in step_claims)
+        )
+    ]
 
 
 def _pocket_wall_claims(

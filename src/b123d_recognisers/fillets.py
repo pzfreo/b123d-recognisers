@@ -49,6 +49,7 @@ from b123d_recognisers._adjacency import (
     neighbours,
 )
 from b123d_recognisers._bevel import convex_bevel
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
 from b123d_recognisers._record import Record
@@ -106,6 +107,7 @@ def recognise_fillets(
     face_edges: FaceEdges | None = None,
     cyls: CylinderInventory | None = None,
     include_cylindrical: bool = True,
+    ledger: ClaimLedger | None = None,
 ) -> list[Fillet]:
     """Recognise the external edge fillets of *part* (see module docstring). Returns one
     :class:`Fillet` per qualifying blend face, sorted deterministically. A prismatic blend
@@ -172,13 +174,14 @@ def recognise_fillets(
         # interior hole through its centre could still land mid-UV in that void — rare,
         # and no worse than the bbox centre it replaces.
         p = fillet_anchor(s)
-        out.append(
-            Fillet(
-                axis="xyz"[edge_i],
-                radius=round(radius, 3),
-                at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
-            )
+        record = Fillet(
+            axis="xyz"[edge_i],
+            radius=round(radius, 3),
+            at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
         )
+        out.append(record)
+        if ledger is not None:
+            ledger.add_defining(record, {ledger.graph.require_node(f)})
 
     # A lathe sweeps an ordinary edge fillet around its axis, producing a torus rather than a
     # partial cylinder. The minor radius is the callout radius. An adjacent external cylinder
@@ -249,11 +252,12 @@ def recognise_fillets(
             if not transverse_plane and not bridges_two_bands and not continues_round:
                 continue  # a toroidal bead meeting one band, not a rounded edge
             p = fillet_anchor(s)
-            out.append(
-                Fillet(
-                    axis="xyz"[edge_i],
-                    radius=round(radius, 3),
-                    at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
-                )
+            record = Fillet(
+                axis="xyz"[edge_i],
+                radius=round(radius, 3),
+                at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
             )
+            out.append(record)
+            if ledger is not None:
+                ledger.add_defining(record, {ledger.graph.require_node(f)})
     return sorted(out, key=lambda c: (c.axis, c.at))

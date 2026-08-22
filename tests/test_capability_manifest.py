@@ -111,6 +111,16 @@ def test_manifest_inventories_are_derived_independently_from_public_runtime() ->
     assert sum(len(family["records"]) for family in families) == len(manifest_records)
 
 
+def test_circular_blind_step_orientation_fields_are_dimensionless() -> None:
+    family = next(
+        family for family in _families() if family["id"] == "circular-blind-steps"
+    )
+    fields = family["records"][0]["fields"]
+
+    assert fields["section_axes"]["units"] == "none"
+    assert fields["section_signs"]["units"] == "none"
+
+
 def test_manifest_entry_kinds_and_record_returns_match_runtime_signatures() -> None:
     for family in _families():
         family_records = {record["name"] for record in family["records"]}
@@ -339,7 +349,9 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             "introduced after",
         ),
         (
-            lambda value: value["families"][5].pop("census_rationale"),
+            lambda value: next(
+                family for family in value["families"] if "census_rationale" in family
+            ).pop("census_rationale"),
             "needs census_rationale",
         ),
         (
@@ -463,7 +475,9 @@ def test_reserved_family_shape_and_global_uniqueness_rules_fail_closed() -> None
         validate_capability_manifest(manifest)
 
     manifest = capability_manifest()
-    manifest["families"][10]["records"].reverse()
+    next(family for family in manifest["families"] if len(family["records"]) > 1)[
+        "records"
+    ].reverse()
     with pytest.raises(CapabilityManifestError, match="records are not sorted"):
         validate_capability_manifest(manifest)
 

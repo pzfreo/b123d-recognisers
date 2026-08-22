@@ -28,12 +28,17 @@ from b123d_recognisers._features import (
 from b123d_recognisers._geometry import SPAN_EPS
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
+    fillets_that_are_not_circular_blind_steps,
     reconcile_recesses,
 )
 from b123d_recognisers._run import RecognitionRun, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
+from b123d_recognisers.circular_blind_steps import (
+    CircularBlindStep,
+    recognise_circular_blind_steps,
+)
 from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
 from b123d_recognisers.fillets import Fillet, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
@@ -94,6 +99,7 @@ MIGRATED: frozenset[str] = frozenset(
         "recognise_prismatic_pockets",
         "recognise_bosses",
         "recognise_chamfers",
+        "recognise_circular_blind_steps",
         "recognise_channels",
         "recognise_countersinks",
         "recognise_double_d_bores",
@@ -121,6 +127,7 @@ MIGRATED: frozenset[str] = frozenset(
         "recognise_turned_steps",
         "recognise_through_steps",
         "recognise_round_bottom_blind_slots",
+        "recognise_semicircular_bottom_blind_slots",
     }
 )
 
@@ -249,6 +256,7 @@ class RecognitionResult:
     through_steps: tuple[ThroughStep, ...]
     round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
     semicircular_bottom_blind_slots: tuple[SemicircularBottomBlindSlot, ...]
+    circular_blind_steps: tuple[CircularBlindStep, ...]
     #: Prismatic voids running through the material, one record per closed ring.
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
@@ -355,6 +363,24 @@ def _has_semicircular_cylinder(cylinders: CylinderInventory) -> bool:
     that the recogniser's same-cylinder and arc-length tolerances would normalize.
     """
 
+    return _has_cylinder_angular_extent(cylinders, math.pi)
+
+
+def _has_quarter_cylinder(cylinders: CylinderInventory) -> bool:
+    """Permissive substrate gate for a quarter-cylinder, including angular splits."""
+
+    return _has_cylinder_angular_extent(cylinders, math.pi / 2)
+
+
+def _has_cylinder_angular_extent(
+    cylinders: CylinderInventory, target_extent: float
+) -> bool:
+    """Whether compatible analytic patches may sum to *target_extent* radians.
+
+    Deliberately ignores run span and material-side classification. A cheap orchestration gate
+    may over-admit work, but must never be stricter than the family recogniser's AAG proof.
+    """
+
     candidates = [*cylinders[0], *cylinders[1]]
     axis_index = {"x": 0, "y": 1, "z": 2}
     for cylinder in candidates:
@@ -373,9 +399,11 @@ def _has_semicircular_cylinder(cylinders: CylinderInventory) -> bool:
             )
         ]
         extents = [abs(other["u_extent"]) for other in compatible]
-        if any(abs(extent - math.pi) * radius <= SPAN_EPS for extent in extents):
-            return True
-        if abs(sum(extents) - math.pi) * radius <= SPAN_EPS:
+        # Patches may be split in both angular and run directions. The same angular sector then
+        # appears once per run band, so its raw sum exceeds the target. Requiring equality would
+        # make this prefilter stricter than the recogniser's gAAG region normalization. Excess is
+        # harmless: this is an over-admitting performance gate, never recognition evidence.
+        if (sum(extents) - target_extent) * radius >= -SPAN_EPS:
             return True
     return False
 
@@ -490,6 +518,18 @@ def _take_inventory(
     round_bottom_blind_slots = (
         recognise_round_bottom_blind_slots(part, ledger=ledger) if prismatic else []
     )
+    circular_blind_steps = (
+        recognise_circular_blind_steps(part, ledger=ledger)
+        if prismatic and _has_quarter_cylinder(cyls)
+        else []
+    )
+    fillets = recognise_fillets(
+        part,
+        cyls=cyls,
+        face_edges=face_edges,
+        include_cylindrical=prismatic,
+        ledger=ledger,
+    )
     prof = TurnedProfile.from_steps(list(turned_steps))
     return run, RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -526,13 +566,11 @@ def _take_inventory(
         through_steps=tuple(through_steps),
         round_bottom_blind_slots=tuple(round_bottom_blind_slots),
         semicircular_bottom_blind_slots=accepted_semicircular_bottom_blind_slots,
+        circular_blind_steps=tuple(circular_blind_steps),
         passages=accepted_passages if prismatic else (),
         fillets=tuple(
-            recognise_fillets(
-                part,
-                cyls=cyls,
-                face_edges=face_edges,
-                include_cylindrical=prismatic,
+            fillets_that_are_not_circular_blind_steps(
+                fillets, circular_blind_steps, ledger
             )
         ),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),

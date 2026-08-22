@@ -2,6 +2,26 @@
 
 ## 0.2.12
 
+- **Added bounded circular blind-step recognition.** `recognise_circular_blind_steps` recognises
+  an exact analytic quarter-cylinder sector swept from one quarter-disc cap to a source-solid
+  envelope opening. Direct smooth same-cylinder and coplanar cap subdivisions normalize locally;
+  the actual boundary must prove the complete cap seam, both radial generators and the opening
+  quarter-circle, both radial stock contexts must be convex, and the unrounded cap sweep must be
+  materially empty within its source solid. The dedicated `CircularBlindStep` preserves run/open
+  direction, radius and both transverse quadrant signs.
+
+  Direct `recognise_fillets` remains compatible because the local curved patch is also a valid
+  external radius. In aggregate recognition, identity-based central reconciliation removes that
+  Fillet only when its non-empty defining claim is a proper subset of the accepted complete step.
+  Half/full cylinders, no- or two-cap sectors, partial seams or context, internal mouths, holes,
+  interruptions and material bridges fail closed. On the 40-model development subset the strict
+  rule reports seven records/fourteen claimed faces, all labelled `Circular blind step`; interacted
+  variants deliberately remain unsupported. These counts were measured after the geometric rule
+  and are diagnostic rather than its definition. Only after two independent implementation
+  reviews accepted the corrected rule was the frozen holdout revealed: seventeen further records
+  claim thirty-four faces, all with the target label. A clean 20-sample composite run measured a
+  2.533 s minimum against the recorded 2.698 s ceiling.
+
 - **Added bounded semicircular-bottom blind-slot recognition.**
   `recognise_semicircular_bottom_blind_slots` recognises the sharp, edge-open constant profile
   formed by two equal rectangular legs tangent to one analytic half-cylinder, swept from a

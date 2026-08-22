@@ -529,6 +529,9 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     semicircular_bottom = claimed["SemicircularBottomBlindSlot"]
     assert set(semicircular_bottom) == {18} and sum(semicircular_bottom.values()) == 8
 
+    circular_steps = claimed["CircularBlindStep"]
+    assert set(circular_steps) == {21} and sum(circular_steps.values()) == 14
+
     ring = claimed["Passage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
     assert sum(ring.values()) == 115

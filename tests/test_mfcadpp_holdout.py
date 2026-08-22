@@ -55,6 +55,7 @@ TRIANGULAR_BLIND_STEP = "Triangular blind step"
 RECTANGULAR_THROUGH_STEP = "Rectangular through step"
 HORIZONTAL_CIRCULAR_END_BLIND_SLOT = "Horizontal circular end blind slot"
 VERTICAL_CIRCULAR_END_BLIND_SLOT = "Vertical circular end blind slot"
+CIRCULAR_BLIND_STEP = "Circular blind step"
 
 
 @pytest.fixture(scope="module")
@@ -152,5 +153,19 @@ def test_every_semicircular_bottom_blind_slot_on_unseen_geometry_has_the_target_
         LABELS[int(label)]: count
         for label, count in claimed.items()
         if LABELS[int(label)] != VERTICAL_CIRCULAR_END_BLIND_SLOT
+    }
+    assert off_target == {}
+
+
+def test_every_circular_blind_step_on_unseen_geometry_has_the_target_profile(scored):
+    """Seventeen unseen records claim thirty-four faces, all on circular blind steps."""
+
+    claimed = scored["claimed"].get("CircularBlindStep", {})
+    assert scored["records"].get("CircularBlindStep", 0) == 17
+    assert sum(claimed.values()) == 34, "held-out evidence must stay non-vacuous"
+    off_target = {
+        LABELS[int(label)]: count
+        for label, count in claimed.items()
+        if LABELS[int(label)] != CIRCULAR_BLIND_STEP
     }
     assert off_target == {}

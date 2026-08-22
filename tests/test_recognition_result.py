@@ -131,7 +131,13 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "recognise_semicircular_bottom_blind_slots",
         counted("semicircular_bottom_blind_slots", []),
     )
+    monkeypatch.setattr(
+        result_module,
+        "recognise_circular_blind_steps",
+        counted("circular_blind_steps", []),
+    )
     monkeypatch.setattr(result_module, "_has_semicircular_cylinder", lambda _: True)
+    monkeypatch.setattr(result_module, "_has_quarter_cylinder", lambda _: True)
     # All four recess families are proposed before one reconciler decides among them. The
     # orchestrator passes the records and their shared ledger once rather than applying pairwise
     # rules at different points in result construction.
@@ -178,7 +184,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "angled_steps",
         "through_steps",
         "round_bottom_blind_slots",
-        "semicircular_bottom_blind_slots",
+            "semicircular_bottom_blind_slots",
+            "circular_blind_steps",
         "passages",
         "cylinders",
         "countersinks",

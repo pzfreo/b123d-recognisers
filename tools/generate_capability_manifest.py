@@ -69,6 +69,24 @@ FAMILIES = {
             "tests/test_mfcadpp_holdout.py",
         ],
     },
+    "circular-blind-steps": {
+        "recognisers": [("recognise_circular_blind_steps", "part")],
+        "records": [
+            (
+                "CircularBlindStep",
+                "output",
+                ["RecognitionResult.circular_blind_steps"],
+            )
+        ],
+        "census": "circular_blind_step",
+        "goldens": ["circular_blind_step"],
+        "introduced": "0.2.12",
+        "tests": [
+            "tests/test_circular_blind_steps.py",
+            "tests/test_mfcadpp_corpus.py",
+            "tests/test_mfcadpp_holdout.py",
+        ],
+    },
     "through-steps": {
         "recognisers": [("recognise_through_steps", "part")],
         "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],
@@ -320,6 +338,8 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         "csink",
         "holes",
         "pockets",
+        "section_axes",
+        "section_signs",
         "sector_signature",
         "slots",
         "spotface",

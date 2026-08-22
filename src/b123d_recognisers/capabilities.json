@@ -264,6 +264,79 @@
       ]
     },
     {
+      "census_name": "circular_blind_step",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/circular_blind_step/expected.json"
+      ],
+      "id": "circular-blind-steps",
+      "introduced_in": "0.2.12",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_circular_blind_steps",
+          "kind": "part"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.circular_blind_steps"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "open_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "section_axes": {
+              "required": true,
+              "type": "tuple[str,2]",
+              "units": "none"
+            },
+            "section_signs": {
+              "required": true,
+              "type": "tuple[int,2]",
+              "units": "none"
+            }
+          },
+          "name": "CircularBlindStep",
+          "qualified_name": "b123d_recognisers.CircularBlindStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_circular_blind_steps.py",
+        "tests/test_mfcadpp_corpus.py",
+        "tests/test_mfcadpp_holdout.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "countersink",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"

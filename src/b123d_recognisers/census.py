@@ -76,6 +76,7 @@ def feature_census(part: Part) -> dict[str, int]:
         "through_step": found.through_steps,
         "round_bottom_blind_slot": found.round_bottom_blind_slots,
         "semicircular_bottom_blind_slot": found.semicircular_bottom_blind_slots,
+        "circular_blind_step": found.circular_blind_steps,
         "fillet": found.fillets,
         "countersink": found.countersinks,
         "plate": found.plates,

@@ -14,6 +14,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",
+    "recognise_circular_blind_steps",
     "recognise_channels",
     "recognise_countersinks",
     "recognise_double_d_bores",

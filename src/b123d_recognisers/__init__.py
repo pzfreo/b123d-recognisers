@@ -86,6 +86,10 @@ from b123d_recognisers.angled_steps import (
     recognise_angled_steps,
 )
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
+from b123d_recognisers.circular_blind_steps import (
+    CircularBlindStep,
+    recognise_circular_blind_steps,
+)
 from b123d_recognisers.countersinks import (
     CounterSink,
     cone_rims,
@@ -177,6 +181,7 @@ __all__ = [
     "Passage",
     "BoltCircle",
     "Chamfer",
+    "CircularBlindStep",
     "Channel",
     "Fillet",
     "Flat",
@@ -235,6 +240,7 @@ __all__ = [
     "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",
+    "recognise_circular_blind_steps",
     "recognise_channels",
     "recognise_fillets",
     "recognise_flats",

@@ -43,6 +43,7 @@ from b123d_recognisers import (
     BossRecord,
     Chamfer,
     Channel,
+    CircularBlindStep,
     CounterSink,
     DoubleDBore,
     FaceEdges,
@@ -78,6 +79,7 @@ from b123d_recognisers import (
     recognise_bosses,
     recognise_chamfers,
     recognise_channels,
+    recognise_circular_blind_steps,
     recognise_countersinks,
     recognise_double_d_bores,
     recognise_face_levels,
@@ -144,6 +146,7 @@ _EXPECTED_RECORD_TYPES = {
     ThroughStep,
     RoundBottomBlindSlot,
     SemicircularBottomBlindSlot,
+    CircularBlindStep,
 }
 
 
@@ -198,6 +201,12 @@ def _semicircular_bottom_blind_slot():
         fillet(bottom, radius=3)
     stock = Pos(0, -6, 0) * Box(30, 12, 40)
     return stock - extrude(sketch.sketch, amount=20, dir=(0, 0, 1))
+
+
+def _circular_blind_step():
+    return Box(40, 30, 20) - Pos(20, 15, 0) * Cylinder(
+        6, 10, align=(Align.CENTER, Align.CENTER, Align.MIN)
+    )
 
 
 def _grid_plate(nx=3, ny=3, px=25, py=25):
@@ -353,6 +362,10 @@ def _records_from_recognisers():
             recognise_semicircular_bottom_blind_slots(_semicircular_bottom_blind_slot()),
         ),
         (
+            "recognise_circular_blind_steps",
+            recognise_circular_blind_steps(_circular_blind_step()),
+        ),
+        (
             "recognise_prismatic_pockets",
             recognise_prismatic_pockets(_prismatic_pocketed_block()),
         ),
@@ -452,6 +465,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_through_steps,
         recognise_round_bottom_blind_slots,
         recognise_semicircular_bottom_blind_slots,
+        recognise_circular_blind_steps,
         recognise_prismatic_pockets,
         recognise_chamfers,
         recognise_channels,
