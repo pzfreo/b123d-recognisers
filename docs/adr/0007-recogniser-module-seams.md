@@ -109,3 +109,14 @@ one family cannot quietly become substrate for the other two without the import 
 No public symbol, signature, record value or `__module__` changed, and the split is verified
 byte-identical over the whole corpus. It remains an internal patch-level change, exactly as
 this record's consequences describe.
+
+## Amendment (edge-anchored Pocket evidence)
+
+`_profile_regions` is a lower factual geometry layer, not an open-profile family: it normalizes
+direct coplanar graph regions and derives their actual sewn boundary, bounds, shared edges, and
+uniform AAG relation. `_recess_core` may consume those facts when a family predicate needs to
+prove a logical planar region, just as the curved-profile recognisers do. Feature meaning remains
+above that seam: `_profile_regions` does not know what a Pocket or any other public record is.
+
+The import map therefore permits `_recess_core -> _profile_regions`. The reverse edge remains
+forbidden, and discovery/reconciliation ownership is unchanged.

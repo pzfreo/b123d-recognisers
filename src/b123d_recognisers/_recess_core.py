@@ -24,10 +24,15 @@ from __future__ import annotations
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._geometry import COORD_FLOOR, prism_is_empty
+from b123d_recognisers._profile_regions import (
+    principal_rectangle,
+    region_bounds,
+    relation,
+    shared_region_edges,
+)
 from b123d_recognisers._recess_faces import (
     _AXES,
     _FLOOR_TOL,
-    _MERGE_TOL,
     _center,
     _end_capped,
     _Face,
@@ -492,7 +497,7 @@ def _recognise_pockets_one(
                         claims.setdefault(p, set()).update(
                             node for node in (walls[i].node, walls[j].node) if node is not None
                         )
-    candidates.extend(_recognise_corner_notches(faces, pbb, claims))
+    candidates.extend(_recognise_corner_notches(part, faces, pbb, owner, claims))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path, and
     # claiming nothing for the same reason: its evidence is two cylindrical caps, which
@@ -536,100 +541,161 @@ def _recognise_channels_one(
 
 
 def _recognise_corner_notches(
-    faces: list[_Face], pbb, claims: _Claims | None = None
+    part: Part,
+    faces: list[_Face],
+    pbb,
+    graph: FaceGraph,
+    claims: _Claims | None = None,
 ) -> list[Pocket]:
-    """Recognise an axis-aligned rectangular blind interruption open at two
-    adjacent envelope edges.
+    """Recognise an empty rectangular cuboid removed at one source-solid corner.
 
-    A conventional pocket has opposed wall pairs.  A corner notch deliberately
-    has only one X wall and one Y wall, so the pair-based pocket recogniser
-    cannot see it.  Its three interior faces still form an unambiguous box:
-    an X wall, a Y wall, and a horizontal floor.  Reuse ``Pocket`` as the
-    rectangular-recess record so the existing W×L×D callout/coverage pipeline
-    owns the dimensions; edge contact makes its X/Y location implicit.
+    A conventional pocket has opposed wall pairs.  This edge-anchored form instead has three
+    mutually perpendicular logical support regions: two side walls and one floor.  They meet
+    along complete concave seams and the void opens to the source-solid envelope on the other
+    end of all three axes.  That is still exactly the public ``Pocket`` W×L×D contract; the
+    special location is recorded by ``edge_anchored=True`` rather than by a duplicate feature
+    family.
+
+    The old implementation inferred this from three bounding boxes and selected each wall with
+    ``next()``.  Besides being traversal-order dependent, that could combine unrelated planes
+    and never proved the nominal cuboid empty.  This version normalizes harmless coplanar STEP
+    splits through the immutable graph, proves the actual rectangular boundaries and complete
+    concave trihedron, then applies the same exact material-free-prism policy as other simple
+    rectangular recess records.
     """
-    tol = _MERGE_TOL
 
-    def limits(bb, axis) -> tuple[float, float]:
-        c = "XYZ"[_AXES[axis]]
-        return getattr(bb.min, c), getattr(bb.max, c)
+    def close(left: tuple[float, float], right: tuple[float, float]) -> bool:
+        return all(abs(a - b) <= COORD_FLOOR for a, b in zip(left, right, strict=True))
+
+    def complete_concave_seam(
+        left: frozenset[FaceNode], right: frozenset[FaceNode], expected: float
+    ) -> bool:
+        edges = shared_region_edges(graph, left, right)
+        return (
+            relation(graph, left, right) == "concave"
+            and bool(edges)
+            and all(edge.geom_type.name == "LINE" for edge in edges)
+            and abs(sum(edge.length for edge in edges) - expected) <= COORD_FLOOR
+        )
+
+    bounds = {
+        axis: (
+            getattr(pbb.min, axis.upper()),
+            getattr(pbb.max, axis.upper()),
+        )
+        for axis in "xyz"
+    }
+    by_node = {face.node: face for face in faces if face.node is not None}
+    regions: dict[str, list[frozenset[FaceNode]]] = {axis: [] for axis in "xyz"}
+    seen: set[frozenset[FaceNode]] = set()
+    for face in faces:
+        if not face.wall or face.axis is None or face.node is None:
+            continue
+        region = graph.coplanar_region(face.node)
+        if region in seen or any(node not in by_node for node in region):
+            continue
+        if any(by_node[node].axis != face.axis or not by_node[node].wall for node in region):
+            continue
+        seen.add(region)
+        if principal_rectangle(graph, region, _AXES[face.axis]):
+            regions[face.axis].append(region)
 
     out: list[Pocket] = []
-    bx = (pbb.min.X, pbb.max.X)
-    by = (pbb.min.Y, pbb.max.Y)
-    bz = (pbb.min.Z, pbb.max.Z)
-    for floor in (f for f in faces if f.axis == "z" and f.wall):
-        x0, x1 = limits(floor.bb, "x")
-        y0, y1 = limits(floor.bb, "y")
-        z0, z1 = limits(floor.bb, "z")
-        if x1 - x0 <= tol or y1 - y0 <= tol or abs(z1 - z0) > tol:
-            continue
-        if (x1 - x0) >= _SLOT_MAX_SPAN_FRAC * (bx[1] - bx[0]) or (
-            y1 - y0
-        ) >= _SLOT_MAX_SPAN_FRAC * (by[1] - by[0]):
-            continue  # a full-span step floor, not a bounded interruption
-        x_edge = abs(x0 - bx[0]) <= tol or abs(x1 - bx[1]) <= tol
-        y_edge = abs(y0 - by[0]) <= tol or abs(y1 - by[1]) <= tol
-        if not (x_edge and y_edge) or min(abs(z0 - z) for z in bz) <= tol:
-            continue
-        x_inner = x1 if abs(x0 - bx[0]) <= tol else x0
-        y_inner = y1 if abs(y0 - by[0]) <= tol else y0
+    # A bare concave trihedron is symmetric: final B-rep topology cannot say which of its three
+    # faces was the machining floor. Preserve the established corner-Pocket contract rather than
+    # infer intent from relative dimensions: Z is the floor axis and X/Y are the footprint.
+    for depth_axis in ("z",):
+        transverse = [axis for axis in "xyz" if axis != depth_axis]
+        for floor in regions[depth_axis]:
+            floor_bounds = region_bounds(graph, floor)
+            d_station = sum(floor_bounds[_AXES[depth_axis]]) / 2
+            floor_faces = [by_node[node] for node in floor]
+            normal_component = floor_faces[0].normal[_AXES[depth_axis]]
+            if abs(normal_component) < 0.99 or any(
+                face.normal[_AXES[depth_axis]] * normal_component < 0.99
+                for face in floor_faces
+            ):
+                continue
+            open_sign = 1 if normal_component > 0 else -1
+            d_envelope = bounds[depth_axis][1 if open_sign > 0 else 0]
+            if abs(d_station - d_envelope) <= COORD_FLOOR:
+                continue
+            d_span = tuple(sorted((d_station, d_envelope)))
 
-        xwall = next(
-            (
-                f
-                for f in faces
-                if f.axis == "x"
-                and abs(_center(f.bb, _AXES["x"]) - x_inner) <= tol
-                and _overlap_len(f.bb, floor.bb, "y") >= y1 - y0 - tol
-            ),
-            None,
-        )
-        ywall = next(
-            (
-                f
-                for f in faces
-                if f.axis == "y"
-                and abs(_center(f.bb, _AXES["y"]) - y_inner) <= tol
-                and _overlap_len(f.bb, floor.bb, "x") >= x1 - x0 - tol
-            ),
-            None,
-        )
-        if xwall is None or ywall is None:
-            continue
-        wz0, wz1 = limits(xwall.bb, "z")
-        vz0, vz1 = limits(ywall.bb, "z")
-        d_lo, d_hi = max(wz0, vz0), min(wz1, vz1)
-        if d_hi - d_lo <= tol or not (d_lo - tol <= z0 <= d_hi + tol):
-            continue
+            spans: dict[str, tuple[float, float]] = {depth_axis: d_span}
+            openings: dict[str, int] = {}
+            valid_floor = True
+            for axis in transverse:
+                span = floor_bounds[_AXES[axis]]
+                touches_low = abs(span[0] - bounds[axis][0]) <= COORD_FLOOR
+                touches_high = abs(span[1] - bounds[axis][1]) <= COORD_FLOOR
+                if touches_low == touches_high or span[1] - span[0] <= COORD_FLOOR:
+                    valid_floor = False
+                    break
+                spans[axis] = span
+                openings[axis] = -1 if touches_low else 1
+            if not valid_floor:
+                continue
 
-        sx, sy = x1 - x0, y1 - y0
-        if sx <= sy:
-            width_axis, long_axis = "x", "y"
-            width, length, w_center, lo, hi = sx, sy, (x0 + x1) / 2, y0, y1
-        else:
-            width_axis, long_axis = "y", "x"
-            width, length, w_center, lo, hi = sy, sx, (y0 + y1) / 2, x0, x1
-        out.append(
-            Pocket(
+            walls: list[frozenset[FaceNode]] = []
+            for axis, other in ((transverse[0], transverse[1]), (transverse[1], transverse[0])):
+                inner_station = spans[axis][1 if openings[axis] < 0 else 0]
+                matches = []
+                for region in regions[axis]:
+                    rb = region_bounds(graph, region)
+                    region_faces = [by_node[node] for node in region]
+                    if (
+                        abs(sum(rb[_AXES[axis]]) / 2 - inner_station) <= COORD_FLOOR
+                        and close(rb[_AXES[other]], spans[other])
+                        and close(rb[_AXES[depth_axis]], d_span)
+                        and all(
+                            face.normal[_AXES[axis]] * openings[axis] > 0.99
+                            for face in region_faces
+                        )
+                    ):
+                        matches.append(region)
+                if len(matches) != 1:
+                    break
+                walls.append(matches[0])
+            if len(walls) != 2:
+                continue
+
+            first, second = walls
+            if not (
+                complete_concave_seam(
+                    floor,
+                    first,
+                    spans[transverse[1]][1] - spans[transverse[1]][0],
+                )
+                and complete_concave_seam(
+                    floor, second, spans[transverse[0]][1] - spans[transverse[0]][0]
+                )
+                and complete_concave_seam(first, second, d_span[1] - d_span[0])
+            ):
+                continue
+
+            # Boolean occupancy is the most expensive proof. Keep it behind the cheaper
+            # region, orientation, envelope, and complete-seam gates above.
+            if not prism_is_empty(spans, part, inset=COORD_FLOOR):
+                continue
+
+            sizes = {axis: spans[axis][1] - spans[axis][0] for axis in transverse}
+            width_axis, long_axis = sorted(transverse, key=lambda axis: (sizes[axis], axis))
+            record = Pocket(
                 width_axis=width_axis,
                 long_axis=long_axis,
-                width=round(width, 2),
-                length=round(length, 2),
-                depth=round(d_hi - d_lo, 2),
-                w_center=round(w_center, 2),
-                lo=round(lo, 2),
-                hi=round(hi, 2),
-                d_lo=round(d_lo, 2),
-                d_hi=round(d_hi, 2),
-                open_sign=1 if floor.normal[2] > 0 else -1,
+                width=round(sizes[width_axis], 2),
+                length=round(sizes[long_axis], 2),
+                depth=round(d_span[1] - d_span[0], 2),
+                w_center=round(sum(spans[width_axis]) / 2, 2),
+                lo=round(spans[long_axis][0], 2),
+                hi=round(spans[long_axis][1], 2),
+                d_lo=round(d_span[0], 2),
+                d_hi=round(d_span[1], 2),
+                open_sign=open_sign,
                 edge_anchored=True,
             )
-        )
-        if claims is not None:
-            # The floor belongs here, unlike the opposed-wall path above: this loop is *over*
-            # floors, and the notch's footprint is read straight off this one's bounding box.
-            claims.setdefault(out[-1], set()).update(
-                node for node in (floor.node, xwall.node, ywall.node) if node is not None
-            )
+            out.append(record)
+            if claims is not None:
+                claims.setdefault(record, set()).update(floor | first | second)
     return out

@@ -85,6 +85,7 @@ MODULE_SEAM_EDGES = {
     "_recess_core": {
         "_adjacency",
         "_geometry",
+        "_profile_regions",
         "_recess_faces",
         "_recess_obround",
         "_recess_records",
