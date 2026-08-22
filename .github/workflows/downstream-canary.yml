@@ -5,6 +5,15 @@ on:
   schedule:
     - cron: "43 5 * * 6"
   workflow_dispatch:
+    inputs:
+      post_release_tag:
+        description: Released tag for a trusted generated bump (empty runs the normal canary)
+        required: false
+        type: string
+      post_release_bump_sha:
+        description: Exact generated version-bump commit
+        required: false
+        type: string
 
 concurrency:
   group: downstream-${{ github.event.pull_request.number || github.ref }}
@@ -28,23 +37,29 @@ jobs:
       - name: Classify a generated post-release bump
         id: bump
         env:
+          BUMP_SHA: ${{ inputs.post_release_bump_sha }}
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ inputs.post_release_tag }}
         run: |
-          if [[ "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
-            echo "release_tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == workflow_dispatch && -n "$RELEASE_TAG" && -n "$BUMP_SHA" ]]; then
+            echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=$BUMP_SHA" >> "$GITHUB_OUTPUT"
           else
             echo "release_tag=" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Validate mechanical post-release identity bump
         if: steps.bump.outputs.release_tag != ''
         working-directory: package
         env:
+          BUMP_SHA: ${{ steps.bump.outputs.bump_sha }}
           CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
           RELEASE_TAG: ${{ steps.bump.outputs.release_tag }}
         run: |
           python tools/check_post_release_bump.py \
-            --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH"
+            --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH" --bump-sha "$BUMP_SHA"
           {
             echo "## Draftwright downstream compatibility"
             echo

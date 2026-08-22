@@ -129,7 +129,9 @@ def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None
     assert "Wall time" in workflow
     assert "matrix:" not in workflow
     assert "tools/check_post_release_bump.py" in workflow
-    assert "automation/post-release-" in workflow
+    assert "post_release_tag:" in workflow and "post_release_bump_sha:" in workflow
+    assert '"$EVENT_NAME" == workflow_dispatch' in workflow
+    assert "steps.bump.outputs.bump_sha" in workflow
 
 
 def test_package_branch_runs_one_full_matrix_not_push_and_pr_duplicates() -> None:

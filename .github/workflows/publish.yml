@@ -144,4 +144,5 @@ jobs:
           # bump and proves its wheel-facing inputs differ from the released tag only by identity;
           # every other branch still runs the fail-closed Draftwright contract.
           gh workflow run ci.yml --ref "$branch"
-          gh workflow run downstream-canary.yml --ref "$branch"
+          gh workflow run downstream-canary.yml --ref "$branch" \
+            -f post_release_tag="$RELEASE_TAG" -f post_release_bump_sha="$(git rev-parse HEAD)"
