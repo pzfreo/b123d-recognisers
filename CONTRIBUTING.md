@@ -5,15 +5,9 @@ project, you agree that it is provided under the Apache License 2.0, as describe
 that licence, unless you explicitly state otherwise in writing.
 
 Changes to a recogniser or public record follow the tests-first
-[`docs/delivery-protocol.md`](docs/delivery-protocol.md). Start with the recogniser issue template,
-declare every downstream capability state, and run its two-checkout compatibility command before
-either repository merges.
-
-Every package pull request also runs the single-job **Draftwright downstream canary**. It resolves
-Draftwright `main` to an exact commit, builds the candidate wheel, runs the same bounded contract
-harness, and records both commits, the manifest digest, and wall time in the job summary. A weekly
-run catches later consumer drift. This complements the package platform matrix; it does not copy or
-rerun Draftwright's full matrix.
+[`docs/delivery-protocol.md`](docs/delivery-protocol.md). Start with the recogniser issue template
+and declare every downstream capability state. Downstream compatibility is proven in Draftwright's
+own CI on the pull request that moves its exact dependency pin, not in this repository's checks.
 
 ## Architectural rules
 

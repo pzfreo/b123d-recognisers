@@ -5,8 +5,8 @@
 - [ ] Public record, manifest, typing, documentation and archive boundaries were checked.
 
 For any recogniser or record change, follow the tests-first
-[`docs/delivery-protocol.md`][protocol]: record every downstream state, run the two-checkout
-harness, and attach the package/Draftwright compatibility and rollback evidence.
+[`docs/delivery-protocol.md`][protocol]: record every downstream state and attach the
+package/Draftwright compatibility and rollback evidence.
 
 [protocol]: https://github.com/pzfreo/b123d-recognisers/blob/main/docs/delivery-protocol.md
 

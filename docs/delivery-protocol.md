@@ -49,7 +49,7 @@ Draftwright still consumes its previous exact release; the package candidate val
 On a Draftwright branch, update the immutable package version and hashes in the lockfile. Declare
 every downstream state and add independent IR, DSL, code-generation, drawing and completeness tests
 that apply. Use `deferred` with a tracking issue or `not-applicable`/`unsupported` with evidence when
-support is not valid. Run the two-checkout harness against the two candidate branches. Then publish
+support is not valid. Draftwright's own CI proves the join against the candidate branch. Then publish
 the package's stable patch release and replace the prerelease lock with that registry artifact.
 **Both repositories green:** package behavior is additive; released Draftwright ignores it, while
 candidate Draftwright fails closed against exactly the new contract.
@@ -99,26 +99,14 @@ DSL, generated code and drawing `not-applicable`. A meaningful but intentionally
 `deferred` and must link a tracking issue. Never add a placeholder adapter or inferred CAD intent to
 make the capability table look complete.
 
-## Local two-checkout check
+## Upgrading Draftwright
 
-Commit the candidate state in each checkout, then run from the package checkout:
-
-```bash
-uv run python tools/check_downstream.py --draftwright ../draftwright
-```
-
-The harness runs the package manifest/contract evidence, builds a wheel, exports the committed
-Draftwright branch into a temporary directory, syncs its locked environment, installs the candidate
-wheel without changing dependencies, and runs Draftwright's capability/import contract tests. For
-a version-bump candidate, it reads the exact identity from the built wheel metadata and passes that
-version through Draftwright's explicitly reviewed candidate-validation seam. It does not rewrite the
-consumer's production pin or declaration; a candidate outside the single approved transition
-release fails closed. The harness never edits either checkout, its lock, or its release evidence,
-and never commits a path/Git dependency. The focused consumer test asserts that the installed
-distribution is the exact candidate wheel and has a direct candidate origin; hosted Draftwright CI
-separately proves that the committed production lock came from the registry.
-
-Use `--plan` to inspect the bounded commands without executing them.
+Compatibility is proven where the upgrade happens: on a Draftwright branch that moves the exact
+lockfile pin to the released package artifact. Draftwright's own CI runs its capability/import
+contract tests, drawing regressions and completeness checks against that release before the bump
+merges. This package's CI does not run Draftwright's tests; the pin guarantees production only
+ever consumes a release Draftwright has tested, and the bump PR is the review point for any
+semantic transition the release notes declare.
 
 ## BossRecord walkthrough
 
