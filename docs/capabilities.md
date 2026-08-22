@@ -198,13 +198,13 @@ invitation to construct values outside that evidence and call them recognized.
 | `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
-| `Chamfer` | One qualifying external, single-principal-axis planar bevel. |
+| `Chamfer` | One qualifying external, single-principal-axis planar or conical bevel; `turned` is true only for the conical shaft treatment. |
 | `Channel` | One floored rectangular recess open at both ends of its longitudinal solid envelope. |
 | `CounterBore` | One coaxial cylindrical hole step used as either the `cbore` or `spotface` field of `HoleRecord`. |
 | `CounterSink` | One proved conical seat at a matching cylindrical bore mouth. |
 | `DoubleDBore` | One constant principal-axis through double-D void; recogniser output always has `through=True`. |
 | `FaceLevel` | One horizontal Z level plus optional XY support spans; it does not claim a dimension requirement. |
-| `Fillet` | One qualifying external, single-principal-axis cylindrical edge blend. |
+| `Fillet` | One qualifying external, single-principal-axis cylindrical or toroidal edge blend; `turned` is true only for the toroidal shaft treatment. |
 | `Flat` | One planar truncation corresponding to a proved cylindrical-stock substrate. |
 | `Groove` | One external reduced-OD band between larger coaxial neighbours. |
 | `HoleRecord` | One internal full-cylinder stack with optional near-side hole treatments and one classified bottom. |

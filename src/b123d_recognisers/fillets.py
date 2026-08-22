@@ -79,11 +79,14 @@ _COAXIAL_FRAC = 1e-4
 class Fillet(Record):
     """A recognised external edge fillet. ``axis`` is the rounded edge's direction
     ("x"/"y"/"z"); ``radius`` is the fillet radius (the cylinder radius); ``at`` is the
-    fillet face centre in part space (the ``R`` callout leader's tip)."""
+    fillet face centre in part space (the ``R`` callout leader's tip). ``turned`` distinguishes
+    a toroidal treatment swept around a shaft from a cylindrical prismatic blend; it defaults
+    to ``False`` for constructor compatibility."""
 
     axis: str
     radius: float
     at: tuple[float, float, float]
+    turned: bool = False
 
 
 def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
@@ -254,6 +257,7 @@ def recognise_fillets(
                     axis="xyz"[edge_i],
                     radius=round(radius, 3),
                     at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
+                    turned=True,
                 )
             )
     return sorted(out, key=lambda c: (c.axis, c.at))
