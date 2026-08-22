@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Which faces established which candidate: run-local, append-only, never read during discovery.
+"""Which faces established which candidate: run-local and append-only during discovery.
 
 Two recognisers can describe the same physical region, and until now the package could only ask
 *where* their records were, not *what they were built from*. `recognise_passages` suppressed a
@@ -16,10 +16,13 @@ and a competing recogniser may interpret the same faces differently. Keeping int
 of the graph is what lets the graph stay immutable and shared while each run, or a rerun of one
 family, gets a fresh ledger.
 
-**Write-only during discovery.** Recognisers append; nothing reads back until every family has
-run. This is the property that keeps discovery independent, and it is why claims do not violate
-ADR 0003's separation of discovery from reconciliation: a recogniser that declined a face because
-another family had claimed it would make output order-dependent, and that stays forbidden.
+**Write-only during discovery.** Migrated recogniser cores receive only `EvidenceSink`, so they
+cannot read what another family proposed. Once all participants in one current conflict have run,
+orchestration may copy their issued prefix into an immutable `EvidenceIndex` for that reconciler.
+The temporary legacy ledger can still append for later unmigrated families, but those writes are
+invisible to the earlier index. The one aggregate-wide freeze remains deferred until all physical
+discovery moves ahead of reconciliation. A recogniser that declined a face because another family
+had claimed it would make output order-dependent, and that stays forbidden by ADR 0003.
 
 **A claim is a role, not a fact of ownership.** A feature's faces do not all relate to it the same
 way: a pocket is defined by its floor and walls, while a fillet is defined by the blend face and
@@ -49,6 +52,7 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import (
     Candidate,
     CandidateSet,
+    EvidenceIndex,
     EvidenceSink,
     FamilyId,
     _CandidateIssuer,
@@ -159,6 +163,16 @@ class ClaimLedger:
         """Candidates issued for *family*, preserving proposal order."""
 
         return self._issuer.candidate_set(family)
+
+    def snapshot_index(self) -> EvidenceIndex:
+        """Freeze the evidence issued so far into a point-in-time read capability.
+
+        This does not close the temporary legacy append path.  Later proposals remain visible to
+        a later snapshot but cannot change this one; the aggregate-wide terminal freeze is owned
+        by the phase migration rather than this compatibility ledger.
+        """
+
+        return self._issuer.snapshot_index()
 
     def defining_of(self, claimant: object) -> frozenset[FaceNode]:
         """The faces *this* candidate was established by, or empty when it claimed none.

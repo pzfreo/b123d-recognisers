@@ -59,6 +59,7 @@ from b123d_recognisers._adjacency import (
     FaceGraph,
     FaceNode,
 )
+from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
@@ -122,6 +123,15 @@ def recognise_passages(
     """
 
     graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
+    return _discover_passages(part, graph, None if ledger is None else ledger.sink)
+
+
+def _discover_passages(
+    part: Part,
+    graph: FaceGraph,
+    sink: EvidenceSink | None,
+) -> list[Passage]:
+    """Discover passages from neutral graph facts and an optional write-only evidence sink."""
 
     found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
     for ring in rings(part, graph):
@@ -147,7 +157,7 @@ def recognise_passages(
         )
 
     found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
-    if ledger is not None:
+    if sink is not None:
         for passage, nodes in found:
-            ledger.add_defining(passage, nodes)
+            sink.propose(FamilyId.PASSAGES, passage, defining=nodes)
     return [passage for passage, _ in found]

@@ -46,6 +46,7 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.defining_of(record) == frozenset()
     assert ledger.claims == ()
     assert ledger.candidate_set(FamilyId.LEGACY).candidates == (candidate,)
+    assert ledger.snapshot_index().defining_of(candidate) == frozenset()
 
 
 def test_foreign_evidence_is_refused_atomically() -> None:
@@ -99,6 +100,7 @@ def test_an_issued_candidate_cannot_be_altered_after_issuance(field: str) -> Non
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     other = FaceGraph(Box(4, 4, 4))
     candidate = ledger.propose(FamilyId.LEGACY, Record(1), [ledger.graph.nodes[0]])
+    snapshot = ledger.snapshot_index()
     if field == "foreign_evidence":
         object.__setattr__(candidate, "evidence", Evidence(frozenset({other.nodes[0]})))
     elif field == "local_evidence":
@@ -114,6 +116,8 @@ def test_an_issued_candidate_cannot_be_altered_after_issuance(field: str) -> Non
         ledger.defining_of(candidate)
     with pytest.raises(ValueError, match="no longer matches its issued state"):
         ledger.candidate_set(FamilyId.LEGACY)
+    with pytest.raises(ValueError, match="no longer matches its issued state"):
+        snapshot.defining_of(candidate)
 
 
 def test_direct_sink_issuance_updates_candidate_and_legacy_views() -> None:
@@ -129,6 +133,63 @@ def test_direct_sink_issuance_updates_candidate_and_legacy_views() -> None:
     assert ledger.defining_of(candidate) == frozenset({ledger.graph.nodes[0]})
     assert tuple(claim.claimant for claim in ledger.claims) == (record,)
     assert ledger.claims_of(ledger.graph.nodes[0]) == ledger.claims
+
+
+def test_evidence_index_is_a_point_in_time_snapshot_while_legacy_writes_continue() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    first_record = Record(1)
+    first = ledger.propose(FamilyId.LEGACY, first_record, [ledger.graph.nodes[0]])
+
+    snapshot = ledger.snapshot_index()
+    second_record = Record(2)
+    second = ledger.propose(FamilyId.LEGACY, second_record, [ledger.graph.nodes[1]])
+
+    assert snapshot.candidate_set(FamilyId.LEGACY).candidates == (first,)
+    assert snapshot.defining_of(first_record) == frozenset({ledger.graph.nodes[0]})
+    assert snapshot.claims_of(ledger.graph.nodes[1]) == ()
+    with pytest.raises(ValueError, match="not present in this evidence snapshot"):
+        snapshot.defining_of(second)
+
+    later = ledger.snapshot_index()
+    assert later.candidate_set(FamilyId.LEGACY).candidates == (first, second)
+    assert later.defining_of(second) == frozenset({ledger.graph.nodes[1]})
+    assert snapshot.candidate_set(FamilyId.LEGACY).candidates == (first,)
+
+
+def test_evidence_capabilities_have_disjoint_runtime_surfaces() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    sink = ledger.sink
+    index = ledger.snapshot_index()
+
+    for read_name in ("candidate_set", "defining_of", "claims_of", "graph"):
+        assert not hasattr(sink, read_name)
+    for write_name in ("propose", "add_defining", "sink"):
+        assert not hasattr(index, write_name)
+
+
+def test_snapshot_preserves_duplicate_record_identity_and_last_wins_adapter() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    record = Record(1)
+    first = ledger.propose(FamilyId.LEGACY, record, [ledger.graph.nodes[0]])
+    snapshot = ledger.snapshot_index()
+    second = ledger.propose(FamilyId.LEGACY, record, [ledger.graph.nodes[1]])
+
+    assert snapshot.defining_of(record) == snapshot.defining_of(first)
+    with pytest.raises(ValueError, match="not present in this evidence snapshot"):
+        snapshot.defining_of(second)
+    assert ledger.snapshot_index().defining_of(record) == frozenset({ledger.graph.nodes[1]})
+
+
+def test_snapshot_refuses_foreign_nodes_and_candidates() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    other = ClaimLedger(FaceGraph(Box(4, 4, 4)))
+    foreign = other.propose(FamilyId.LEGACY, Record(1), [other.graph.nodes[0]])
+    snapshot = ledger.snapshot_index()
+
+    with pytest.raises(ValueError, match="not present in this evidence snapshot"):
+        snapshot.defining_of(foreign)
+    with pytest.raises(ValueError, match="not this graph's node"):
+        snapshot.claims_of(other.graph.nodes[0])
 
 
 def test_the_same_record_object_can_back_distinct_proposals() -> None:

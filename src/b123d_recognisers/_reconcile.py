@@ -20,8 +20,9 @@ The rules are of two kinds, because ADR 0003 says a reconciler "accepts, combine
 Not a constraint solver. ADR 0003 allows family-specific rules to migrate behind this protocol
 one at a time, and these are the rules for which there is measured evidence.
 
-**A rule finds a record's evidence by identity**, through `ClaimLedger.defining_of`. Every
-rule here once paired its records against the ledger's claims *by position*, which held only
+**A rule finds a record's evidence by identity**, through a frozen `EvidenceIndex` on migrated
+paths and the temporary `ClaimLedger` adapter elsewhere. Every rule here once paired its records
+against the ledger's claims *by position*, which held only
 while a recogniser wrote one claim per record in the order it returned them -- a coupling across
 two files that nothing checked. `strict=True` catches a count that drifts and cannot catch a
 permutation, and a permutation hands every record another record's faces while the counts stay
@@ -33,20 +34,21 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from b123d_recognisers._candidates import EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_records import Pocket, Slot
-from b123d_recognisers._typing import Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.grooves import Groove
-from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.turned import TurnedStep
 
 
-def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage]:
-    """Recognise passages against a ledger the slots have already been written into, and drop
-    the four-sided ones that are those slots.
+def passages_that_are_not_slots(
+    passages: list[Passage], evidence: EvidenceIndex
+) -> list[Passage]:
+    """Drop four-sided Passage candidates already dimensioned as Slots.
 
     A through slot *is* a closed uncapped ring, so `recognise_passages` reports it too. Both
     families record the faces they were built from, so "are these the same void" is asked of
@@ -66,8 +68,11 @@ def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage
     different procedures, one averaging wall-face centres and the other reading slot extents.
     """
 
-    passages = recognise_passages(part, ledger=ledger)
-    slot_walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Slot)]
+    slot_walls = [
+        evidence.defining_of(candidate)
+        for candidate in evidence.candidate_set(FamilyId.LEGACY).candidates
+        if isinstance(candidate.record, Slot)
+    ]
     return [
         passage
         for passage in passages
@@ -76,16 +81,16 @@ def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage
         # sit inside it; that is the false candidate exposed on triangular,
         # hexagonal and interrupted passage sections.
         if passage.sides != 4
-        or not any(walls <= ledger.defining_of(passage) for walls in slot_walls)
+        or not any(walls <= evidence.defining_of(passage) for walls in slot_walls)
     ]
 
 
 def reconcile_recesses(
-    part: Part,
     slots: list[Slot],
     pockets: list[Pocket],
     prismatic: list[PrismaticPocket],
-    ledger: ClaimLedger,
+    passages: list[Passage],
+    evidence: EvidenceIndex,
 ) -> tuple[list[Slot], list[Pocket], list[PrismaticPocket], list[Passage]]:
     """Apply the recess-family precedence rules after every family has proposed.
 
@@ -103,9 +108,11 @@ def reconcile_recesses(
     matching the way slot reduction pools collinear wall arms into one record.
     """
 
-    passages = recognise_passages(part, ledger=ledger)
-
-    accepted_prismatic = prismatic_pockets_that_are_not_pockets(prismatic, ledger)
+    accepted_prismatic = prismatic_pockets_that_are_not_pockets(
+        prismatic,
+        pockets,
+        evidence,
+    )
     non_rectangular_pockets = [
         pocket for pocket in accepted_prismatic if pocket.sides != 4
     ]
@@ -113,11 +120,11 @@ def reconcile_recesses(
         pocket
         for pocket in pockets
         if not any(
-            ledger.defining_of(pocket) <= ledger.defining_of(passage)
+            evidence.defining_of(pocket) <= evidence.defining_of(passage)
             for passage in passages
         )
         and not any(
-            ledger.defining_of(pocket) <= ledger.defining_of(ring)
+            evidence.defining_of(pocket) <= evidence.defining_of(ring)
             for ring in non_rectangular_pockets
         )
     ]
@@ -126,21 +133,21 @@ def reconcile_recesses(
     for passage in passages:
         if passage.sides != 4:
             non_rectangular_rings[(passage.axis, passage.section)].update(
-                ledger.defining_of(passage)
+                evidence.defining_of(passage)
             )
 
     accepted_slots = []
     for slot in slots:
-        walls = ledger.defining_of(slot)
+        walls = evidence.defining_of(slot)
         # Obround slots recovered from their cylindrical caps deliberately have no planar-wall
         # claim. Missing evidence cannot prove containment: the empty set is mathematically a
         # subset of every ring, but semantically it is not an ownership verdict.
         if not walls:
             accepted_slots.append(slot)
             continue
-        if any(walls <= ledger.defining_of(pocket) for pocket in accepted_pockets):
+        if any(walls <= evidence.defining_of(pocket) for pocket in accepted_pockets):
             continue
-        if any(walls <= ledger.defining_of(pocket) for pocket in accepted_prismatic):
+        if any(walls <= evidence.defining_of(pocket) for pocket in accepted_prismatic):
             continue
         if any(walls <= ring for ring in non_rectangular_rings.values()):
             continue
@@ -151,7 +158,7 @@ def reconcile_recesses(
         for passage in passages
         if passage.sides != 4
         or not any(
-            ledger.defining_of(slot) <= ledger.defining_of(passage)
+            evidence.defining_of(slot) <= evidence.defining_of(passage)
             for slot in accepted_slots
         )
     ]
@@ -196,10 +203,9 @@ def steps_that_are_not_grooves(
     and report no turned steps at all.
     """
 
-    # Takes the records where `passages_that_are_not_slots` takes the part and runs the
-    # recogniser itself. Not an oversight: that one owns the call so the pairing below cannot
-    # be wrong, but the full ladder is needed by `build_recognition_result` as well, and owning
-    # the call here would mean scanning the shaft twice to throw one of the results away.
+    # Takes completed records, as the migrated recess rule now does. The full ladder is needed by
+    # `build_recognition_result` as well, so owning discovery here would scan the shaft twice to
+    # throw one result away; the later phase extraction removes this remaining ledger adapter.
     floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
     return [
         step
@@ -252,7 +258,9 @@ def chamfers_that_are_not_angled_steps(
 
 
 def prismatic_pockets_that_are_not_pockets(
-    prismatic: list[PrismaticPocket], ledger: ClaimLedger
+    prismatic: list[PrismaticPocket],
+    pockets: list[Pocket],
+    evidence: EvidenceIndex,
 ) -> list[PrismaticPocket]:
     """The prismatic pockets no rectangular `Pocket` already describes, dropped where they are.
 
@@ -275,10 +283,14 @@ def prismatic_pockets_that_are_not_pockets(
     than a verdict.
     """
 
-    walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Pocket)]
+    walls = tuple(
+        defining
+        for pocket in pockets
+        if (defining := evidence.defining_of(pocket))
+    )
     return [
         pocket
         for pocket in prismatic
         if pocket.sides != 4
-        or not any(paired <= ledger.defining_of(pocket) for paired in walls)
+        or not any(paired <= evidence.defining_of(pocket) for paired in walls)
     ]

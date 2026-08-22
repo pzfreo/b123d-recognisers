@@ -39,6 +39,7 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
 def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     import b123d_recognisers._run as run_module
     import b123d_recognisers.result as result_module
+    from b123d_recognisers._candidates import EvidenceIndex
 
     calls: dict[str, int] = {}
     cylinders = ([{"axis": "z"}], [{"axis": "x"}])
@@ -46,6 +47,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     holes = [object()]
     slots = [object()]
     pockets = [object()]
+    passages = [object()]
 
     def counted(name, returns):
         def fake(part, **kwargs):
@@ -102,6 +104,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_grooves", cyl_consumer("grooves", []))
     monkeypatch.setattr(result_module, "recognise_flats", cyl_consumer("flats", []))
     monkeypatch.setattr(result_module, "recognise_pockets", counted("pockets", pockets))
+    monkeypatch.setattr(result_module, "recognise_passages", counted("passages", passages))
     monkeypatch.setattr(
         result_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
     )
@@ -115,14 +118,15 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_risers", counted("risers", []))
     monkeypatch.setattr(result_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(result_module, "recognise_angled_steps", counted("angled_steps", []))
-    # All four recess families are proposed before one reconciler decides among them. The
-    # orchestrator passes the records and their shared ledger once rather than applying pairwise
-    # rules at different points in result construction.
-    def fake_recesses(part, found_slots, found_pockets, prismatic, ledger):
-        calls["passages"] = calls.get("passages", 0) + 1
+    # All four recess families are proposed before one reconciler decides among them. Passage
+    # discovery is a counted family call of its own; the reconciler receives completed records
+    # and the point-in-time read capability rather than a Part or mutable ledger.
+    def fake_recesses(found_slots, found_pockets, prismatic, found_passages, evidence):
+        calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
         assert found_slots is slots and found_pockets is pockets
-        assert ledger is not None
-        return found_slots, found_pockets, prismatic, []
+        assert found_passages is passages
+        assert isinstance(evidence, EvidenceIndex)
+        return found_slots, found_pockets, prismatic, found_passages
 
     monkeypatch.setattr(result_module, "reconcile_recesses", fake_recesses)
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
@@ -140,6 +144,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     expected = {
         "angled_steps",
         "passages",
+        "reconcile_recesses",
         "cylinders",
         "countersinks",
         "holes",

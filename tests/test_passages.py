@@ -35,7 +35,9 @@ from b123d_recognisers import (
     recognise_passages,
     recognise_slots,
 )
+from b123d_recognisers import result as result_module
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._rings import _canonical, _centroid, _interior_point
 
@@ -301,12 +303,31 @@ def test_a_passage_records_the_ring_it_was_built_from():
     (passage,) = recognise_passages(part, ledger=ledger)
 
     (claim,) = ledger.claims
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is passage
+    assert candidate.evidence.defining == claim.defining
     assert claim.claimant is passage
     assert len(claim.defining) == passage.sides
     for node in claim.defining:
         assert ledger.graph.is_planar(node)
         normal = ledger.graph.normal(node)
         assert abs(normal[2]) <= 0.01, "a wall runs along the passage, not across it"
+
+
+def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) -> None:
+    original = result_module.recognise_passages
+    calls = 0
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(result_module, "recognise_passages", counted)
+
+    build_recognition_result(_hexagonal_passage())
+
+    assert calls == 1
 
 
 def test_a_cross_section_that_is_not_a_simple_polygon_is_refused():
