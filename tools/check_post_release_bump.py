@@ -3,9 +3,9 @@
 
 The released tag has already passed the Draftwright candidate canary. Its automatic follow-up
 branch changes the package identity to the next patch, which Draftwright must reject until that
-transition is reviewed. This check proves that the branch has not changed any wheel-facing input
-except the four synchronized version copies, so the downstream status remains meaningful without
-opening Draftwright's fail-closed version gate.
+transition is reviewed. This check proves that the generated commit changes exactly the four
+synchronized version copies relative to its checked-out main parent, so the downstream status
+remains meaningful without opening Draftwright's fail-closed version gate.
 """
 
 from __future__ import annotations
@@ -23,6 +23,14 @@ _VERSION_FILES = (
     "src/b123d_recognisers/capabilities.json",
     "uv.lock",
 )
+_ROOT_WHEEL_INPUTS = {
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "pyproject.toml",
+    "uv.lock",
+}
 
 
 def _git(root: Path, *args: str) -> str:
@@ -31,7 +39,7 @@ def _git(root: Path, *args: str) -> str:
     ).stdout.rstrip("\n")
 
 
-def validate(root: Path, released_tag: str, branch: str) -> tuple[str, str]:
+def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple[str, str]:
     """Return ``(released, development)`` or raise on a non-mechanical branch."""
 
     match = _TAG.fullmatch(released_tag)
@@ -47,27 +55,35 @@ def validate(root: Path, released_tag: str, branch: str) -> tuple[str, str]:
     if expected_branch.fullmatch(branch) is None:
         raise ValueError("branch does not match the generated post-release convention")
 
-    _git(root, "rev-parse", "--verify", f"refs/tags/{released_tag}^{{commit}}")
+    tag_commit = _git(root, "rev-parse", "--verify", f"refs/tags/{released_tag}^{{commit}}")
+    bump_commit = _git(root, "rev-parse", "--verify", f"{bump_sha}^{{commit}}")
+    bump_parent = _git(root, "rev-parse", "--verify", f"{bump_commit}^")
     subprocess.run(
-        ["git", "merge-base", "--is-ancestor", released_tag, "HEAD"], cwd=root, check=True
+        ["git", "merge-base", "--is-ancestor", tag_commit, bump_parent], cwd=root, check=True
     )
-    changed = set(_git(root, "diff", "--name-only", f"{released_tag}..HEAD").splitlines())
-    protected = {
-        path
-        for path in changed
-        if path == "pyproject.toml" or path == "uv.lock" or path.startswith("src/")
-    }
-    if protected != set(_VERSION_FILES):
-        extra = sorted(protected - set(_VERSION_FILES))
-        missing = sorted(set(_VERSION_FILES) - protected)
+    subprocess.run(
+        ["git", "merge-base", "--is-ancestor", bump_commit, "HEAD"], cwd=root, check=True
+    )
+    changed = set(_git(root, "diff", "--name-only", f"{bump_parent}..{bump_commit}").splitlines())
+    if changed != set(_VERSION_FILES):
+        extra = sorted(changed - set(_VERSION_FILES))
+        missing = sorted(set(_VERSION_FILES) - changed)
         raise ValueError(
-            "wheel-facing change set is not the four version files; "
+            "generated commit does not change exactly the four version files; "
             f"extra={extra}, missing={missing}"
+        )
+    later_changes = set(_git(root, "diff", "--name-only", f"{bump_commit}..HEAD").splitlines())
+    later_wheel_changes = sorted(
+        path for path in later_changes if path in _ROOT_WHEEL_INPUTS or path.startswith("src/")
+    )
+    if later_wheel_changes:
+        raise ValueError(
+            f"wheel-facing files changed after the generated bump: {later_wheel_changes}"
         )
 
     for relative in _VERSION_FILES:
-        before = _git(root, "show", f"{released_tag}:{relative}")
-        after = (root / relative).read_text(encoding="utf-8").rstrip("\n")
+        before = _git(root, "show", f"{bump_parent}:{relative}")
+        after = _git(root, "show", f"{bump_commit}:{relative}")
         if before.replace(tagged, development) != after:
             raise ValueError(f"{relative} changes more than {tagged} -> {development}")
     return tagged, development
@@ -77,9 +93,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--released-tag", required=True)
     parser.add_argument("--branch", required=True)
+    parser.add_argument("--bump-sha", required=True)
     args = parser.parse_args()
     try:
-        released, development = validate(Path.cwd(), args.released_tag, args.branch)
+        released, development = validate(
+            Path.cwd(), args.released_tag, args.branch, args.bump_sha
+        )
     except (ValueError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
     print(f"validated mechanical post-release identity: {released} -> {development}")
