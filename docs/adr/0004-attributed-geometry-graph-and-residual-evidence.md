@@ -70,11 +70,14 @@ Two measurements, on geometry this package already ships:
   textbook drawing shows a sharp corner, so its two cylindrical bands never touch.
   `grooves._joined` matches a cone to both rims to see across it (issue #60). Without that the
   groove is not recognised at all — not mis-measured, absent.
-- **A split triangle breaks a topological count.** `recognise_angled_steps` identifies a blind end
-  by an axis-aligned neighbour bounded by exactly three edges. Where a neighbouring feature
-  subdivides that triangle it reads as four or five and the step is missed. Instance recall is 70%
-  over 120 MFCAD++ models (114 of 163), 24 of the 49 misses have no bare triangular face anywhere
-  on them, and the module records the edge count as about half the recall it costs.
+- **A split triangle used to break a topological count.** `recognise_angled_steps` identified a
+  blind end by an axis-aligned neighbour bounded by exactly three edges. Where a neighbouring
+  feature subdivided that triangle it read as four or five and the step was missed. Historical
+  instance recall was 70% over 120 MFCAD++ models (114 of 163), and 24 of the 49 misses had no bare
+  triangular face anywhere on them. Issue #111 implements this criterion as a named immutable
+  query: smooth-connected patches are restricted back to one coplanar terminal region, internal
+  edges are cancelled, and its actual exterior must reduce to three straight runs. It does not
+  replace that exterior with a convex hull or traverse through tangent curved faces.
 
 ### What the added criterion asks
 
@@ -95,4 +98,3 @@ mutates the graph, propagates dihedral attributes to newly inserted transition a
 the angles are equal, and its own header records that `PopSubgraph()` does not clean those
 attributes up afterwards. What is wanted here is a query over an immutable graph — which is what
 the run-local face graph built for issue #92 already is.
-

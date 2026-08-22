@@ -24,12 +24,20 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Cylinder,
+    Face,
     Plane,
     Polygon,
     Pos,
     Rot,
+    Shell,
+    Solid,
+    Vector,
+    Wire,
     chamfer,
+    export_step,
     extrude,
+    fillet,
+    import_step,
 )
 
 from b123d_recognisers import (
@@ -41,12 +49,19 @@ from b123d_recognisers import (
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
+    axis_aligned_axis,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
 from b123d_recognisers._bevel import material_beyond_corner
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
+from b123d_recognisers.angled_steps import (
+    _closed_by_a_triangular_flat,
+    _coplanar_region,
+    _geometrically_triangular_region,
+    _three_straight_runs,
+)
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
@@ -69,6 +84,50 @@ def _through():
     """The same wedge run edge to edge, so neither end is closed — a chamfer."""
 
     return _block() - Pos(0, 20, 6) * Rot(45, 0, 0) * Box(70, _WEDGE, _WEDGE)
+
+
+def _planar_face(*points: tuple[float, float, float]) -> Face:
+    return Face(Wire.make_polygon([Vector(*point) for point in points], close=True))
+
+
+def _split_triangular_end() -> Shell:
+    """A slant whose terminal triangle is three quadrilateral planar patches.
+
+    No individual end patch is triangular, so a raw face/outer-wire edge count cannot pass.
+    Their smooth coplanar union has exactly the same exterior as the ordinary triangular end.
+    """
+
+    a, b, c = (0, 0, 4), (0, 4, 0), (0, 4, 4)
+    ab, bc, ca, centre = (0, 2, 2), (0, 4, 2), (0, 2, 4), (0, 8 / 3, 8 / 3)
+    slant = _planar_face((-5, 0, 4), (-5, 4, 0), b, a)
+    patches = (
+        _planar_face(a, ab, centre, ca),
+        _planar_face(b, bc, centre, ab),
+        _planar_face(c, ca, centre, bc),
+    )
+    return Shell([slant, *patches])
+
+
+def _blind_with_split_terminal() -> Solid:
+    """The ordinary blind wedge with its end face replaced by three sewn quads."""
+
+    plain = _blind()
+    faces = list(plain.faces())
+    terminal = next(face for face in faces if len(face.outer_wire().edges()) == 3)
+    a, b, c = (tuple(vertex) for vertex in terminal.vertices())
+
+    def midpoint(p, q):
+        return tuple((left + right) / 2 for left, right in zip(p, q, strict=True))
+
+    ab, bc, ca = midpoint(a, b), midpoint(b, c), midpoint(c, a)
+    centre = tuple(sum(coords) / 3 for coords in zip(a, b, c, strict=True))
+    patches = (
+        _planar_face(a, ab, centre, ca),
+        _planar_face(b, bc, centre, ab),
+        _planar_face(c, ca, centre, bc),
+    )
+    shell = Shell([*(face for face in faces if not face.is_same(terminal)), *patches])
+    return Solid(shell)
 
 
 def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
@@ -312,6 +371,174 @@ def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
     assert len(ends[0].outer_wire().edges()) == 3
 
     assert recognise_angled_steps(drilled_part) == plain
+
+
+def test_a_coplanar_subdivision_does_not_hide_the_triangular_blind_end():
+    """The gAAG reads three quadrilateral patches as one geometric terminal region.
+
+    This is the #111 recall failure isolated from every solid-classifier gate.  Each patch has
+    four outer edges, so the old raw count rejected all of them; cancelling their shared smooth
+    arcs leaves the same three-sided exterior as an unsplit triangle.
+    """
+
+    shell = _split_triangular_end()
+    graph = FaceGraph(shell)
+    slant_node = next(
+        node for node in graph.nodes if axis_aligned_axis(graph.face(node).wrapped) is None
+    )
+    terminal = [node for node in graph.nodes if node is not slant_node]
+
+    assert len(terminal) == 3
+    assert all(len(graph.edges(node)) == 4 for node in terminal)
+    assert len(graph.smooth_region(terminal[0])) == 3
+    assert _closed_by_a_triangular_flat(graph.face(slant_node), 0, graph)
+
+
+def test_a_split_terminal_is_recovered_and_reconciled_from_the_same_slant_claim():
+    """The complete path: discovery recovers #111 and central ownership drops the bevel."""
+
+    part = _blind_with_split_terminal()
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    proposed = recognise_chamfers(part, ledger=ledger)
+    steps = recognise_angled_steps(part, ledger=ledger)
+
+    assert steps == recognise_angled_steps(_blind())
+    assert len(proposed) == len(steps) == 1
+    assert chamfers_that_are_not_angled_steps(proposed, ledger) == []
+
+    (slant,) = ledger.defining_of(steps[0])
+    assert axis_aligned_axis(graph.face(slant).wrapped) is None
+    terminal_nodes = [
+        node
+        for node in graph.nodes
+        if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
+    ]
+    assert len(terminal_nodes) == 3
+    assert all(not ledger.claims_of(node) for node in terminal_nodes)
+
+    result = build_recognition_result(part)
+    assert result.angled_steps == tuple(steps)
+    assert result.chamfers == ()
+
+
+def test_split_terminal_recovery_is_principal_axis_and_scale_invariant():
+    """The normalized topology has no preferred axis or model-unit feature threshold."""
+
+    oriented = (
+        (_blind_with_split_terminal(), "x"),
+        (Rot(0, 0, 90) * _blind_with_split_terminal(), "y"),
+        (Rot(0, 90, 0) * _blind_with_split_terminal(), "z"),
+    )
+    for part, axis in oriented:
+        result = build_recognition_result(part)
+        assert len(result.angled_steps) == 1
+        assert result.angled_steps[0].axis == axis
+        assert result.chamfers == ()
+
+    for factor in (0.001, 1000):
+        (step,) = recognise_angled_steps(_blind_with_split_terminal().scale(factor))
+        assert step.axis == "x"
+        assert step.angle == 45.0
+        assert round(step.leg1 / factor, 3) == 4.0
+        assert round(step.length / factor, 3) == 25.0
+
+
+def test_split_terminal_recovery_survives_step_round_trip(tmp_path):
+    """Serialization may reorder faces and edges but cannot change the geometric answer."""
+
+    part = _blind_with_split_terminal()
+    path = tmp_path / "split-terminal.step"
+    export_step(part, path)
+    imported = import_step(path)
+
+    assert recognise_angled_steps(imported) == recognise_angled_steps(part)
+    assert build_recognition_result(imported).chamfers == ()
+
+
+def test_collinear_vertices_change_topology_but_not_a_triangular_boundary():
+    """One straight side split into pieces remains one geometric run."""
+
+    split_side = Wire.make_polygon(
+        [Vector(0, 0), Vector(2, 0), Vector(4, 0), Vector(0, 4)], close=True
+    )
+
+    assert len(split_side.edges()) == 4
+    assert _three_straight_runs(split_side)
+
+
+def test_a_subdivided_rectangle_is_not_normalised_into_a_triangle():
+    """Collinear reduction merges representations, not genuine corners."""
+
+    rectangle = Wire.make_polygon(
+        [Vector(0, 0), Vector(2, 0), Vector(4, 0), Vector(4, 3), Vector(0, 3)],
+        close=True,
+    )
+
+    assert len(rectangle.edges()) == 5
+    assert not _three_straight_runs(rectangle)
+
+
+def test_a_backtracking_spike_is_not_a_collinear_triangle_subdivision():
+    """Anti-parallel overlap is an invalid boundary, not one co-directed straight run."""
+
+    backtracking = Wire.make_polygon(
+        [Vector(0, 0), Vector(4, 0), Vector(3, 0), Vector(4, 0), Vector(0, 4)],
+        close=True,
+    )
+
+    invalid = Face(backtracking)
+    graph = FaceGraph(invalid)
+
+    assert not invalid.is_valid
+    assert not _three_straight_runs(backtracking)
+    assert not _geometrically_triangular_region(graph, graph.nodes[0])
+
+
+def test_a_notched_triangle_is_not_accepted_via_its_triangular_convex_hull():
+    """The actual exterior is evidence; a hull must not erase a neighbouring cut."""
+
+    notched = _planar_face(
+        (0, 0, 0),
+        (4, 0, 0),
+        (0, 4, 0),
+        (0, 2.5, 0),
+        (0.6, 2.0, 0),
+        (0, 1.5, 0),
+    )
+    graph = FaceGraph(notched)
+
+    assert not _geometrically_triangular_region(graph, graph.nodes[0])
+
+
+def test_a_triangular_patch_does_not_hide_its_rectangular_coplanar_region():
+    """The one-face fast path applies only after proving the terminal is not subdivided."""
+
+    a, b, c, d = (0, 0, 0), (0, 4, 0), (0, 4, 4), (0, 0, 4)
+    slant = _planar_face((-5, 0, 2), (-5, 4, 2), b, a)
+    terminal = (_planar_face(a, b, c), _planar_face(a, c, d))
+    graph = FaceGraph(Shell([slant, *terminal]))
+    slant_node = next(
+        node for node in graph.nodes if axis_aligned_axis(graph.face(node).wrapped) is None
+    )
+
+    assert all(len(face.outer_wire().edges()) == 3 for face in terminal)
+    assert not _closed_by_a_triangular_flat(graph.face(slant_node), 0, graph)
+
+
+def test_a_smooth_path_through_a_fillet_does_not_merge_distinct_planes():
+    """A maximal smooth component is broader than one coplanar terminal region."""
+
+    part = fillet(Box(10, 10, 10).edges().filter_by(Axis.Z)[0], 1)
+    graph = FaceGraph(part)
+    seed = next(
+        node
+        for node in graph.nodes
+        if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
+    )
+
+    assert len(graph.smooth_region(seed)) == 3, "the fixture must cross plane/fillet/plane"
+    assert _coplanar_region(graph, seed) == frozenset({seed})
 
 
 def test_a_step_is_a_step_at_any_scale():

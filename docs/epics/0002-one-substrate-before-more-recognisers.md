@@ -96,6 +96,18 @@ for ADR 0004's residual-evidence half that comes from measurement rather than ar
 Tracked as [#111](https://github.com/pzfreo/b123d-recognisers/issues/111) and
 [#112](https://github.com/pzfreo/b123d-recognisers/issues/112).
 
+**Issue #111 is now addressed for the demonstrated representation failure.** The family reads a
+terminal plane as a local smooth-coplanar gAAG region and proves that region's actual exterior is
+three straight runs. A valid sewn solid, collinear splits, multi-face splits, holes, STEP
+round-trip, all principal axes and 0.001×–1000× scale are positive evidence; rectangular and
+notched regions, curved boundaries, fillet bridges, invalid/backtracking loops and a rectangular
+region split into triangular patches are negative evidence. Claims remain slant-only and the
+central rule is unchanged. The 40-model design subset and the previously frozen 33-model holdout
+remain unchanged, including 8/8 held-out angled-step precision and no stock claims. The original
+2,000-model sweep is not available in this repository, so the historical 28 is not rewritten as a
+recovery count: the implementation decision rests on the geometric motif, not an unrepeatable
+aggregate score. A first-class contested outcome remains separate residual-evidence work.
+
 ### And the negative control failed at scale
 
 No claim landed on *Stock* across the vendored 40's 271 such faces. Across 13,438, four did.

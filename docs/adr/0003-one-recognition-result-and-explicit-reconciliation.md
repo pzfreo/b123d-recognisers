@@ -118,6 +118,14 @@ Two consequences follow, and neither changes the decision above.
   and this is the first argument for it that comes from measurement rather than from
   architecture.
 
+Issue #111 later fixes the bounded discovery defect without moving policy into reconciliation:
+the angled-step family now normalizes one terminal plane's smooth coplanar patches and requires
+their actual exterior boundary to remain geometrically triangular. A recovered step therefore
+writes the same slant-only defining claim as an unsplit one, and the existing rule can remove the
+chamfer proposed from that face. This raises the rule's effective ceiling for harmless STEP
+subdivisions; it does not create the still-missing contested outcome for genuinely unsupported
+terminal geometry.
+
 ## Amendment (0.2.6, issue #127)
 
 **There is one inventory. Any other view of a part is a projection of it, never a second

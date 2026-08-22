@@ -2,6 +2,19 @@
 
 ## 0.2.10
 
+- **Fixed: harmless subdivisions of an angled step's triangular blind end no longer hide the
+  step.** The previous discriminator counted one face's outer-wire edges, so a collinear vertex
+  or a smooth coplanar face split changed a geometric triangle into four or more topological
+  edges and left the same slant misreported as a chamfer. The family now asks the immutable AAG
+  for the terminal plane's smooth-connected patches, cancels their internal edges, and requires
+  the actual exterior loop to reduce to exactly three straight runs. Inner holes remain ignored;
+  rectangles, curved bites, notches and tangent paths through fillets remain rejected. The step
+  still claims only its slant, and the existing central reconciliation removes only the chamfer
+  proposed from that same face. A sewn multi-patch solid and its STEP round-trip exercise the new
+  support directly. Outputs on the 40-model MFCAD++ design subset and the previously frozen
+  33-model holdout remain unchanged; the latter still yields eight angled steps, all eight on
+  labelled triangular blind-step faces, and no claims on 226 stock faces (#111).
+
 - **Fixed: unrelated recess walls no longer manufacture a rectangular feature across solid
   material.** AAG/gAAG coherence remains the first proof that two opposed walls participate in
   one boundary, but connectivity alone cannot establish that the rectangle between them was
