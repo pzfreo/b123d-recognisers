@@ -102,6 +102,7 @@ from b123d_recognisers._bevel import (
     convex_bevel,
     material_beyond_corner,
 )
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -232,5 +233,9 @@ def recognise_angled_steps(
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for step, face in out:
-            ledger.add_defining(step, [ledger.graph.require_node(face)])
+            ledger.propose(
+                FamilyId.ANGLED_STEPS,
+                step,
+                [ledger.graph.require_node(face)],
+            )
     return [step for step, _ in out]

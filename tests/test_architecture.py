@@ -41,7 +41,8 @@ MODULE_SEAM_EDGES = {
     # Three recognisers begin with the same two questions of a face. Naming the layer is
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
-    "_claims": {"_adjacency"},
+    "_candidates": {"_adjacency"},
+    "_claims": {"_adjacency", "_candidates"},
     # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
     # three other modules each derived separately before it was lifted.
     "_cylinder_substrate": {"_adjacency", "_geometry", "_typing"},
