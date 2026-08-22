@@ -121,6 +121,18 @@ definition. After the predicate and two independent reviews were fixed, the froz
 holdout produced three additional records claiming six faces, all correctly labelled rectangular
 through step. Two-sided, slanted, interacting and incomplete variants remain explicitly deferred.
 
+**Two-sided through steps were investigated and deliberately not implemented.** The clean
+development motif is an induced all-concave three-region tripod: two generally oblique side walls
+share a spine and meet a terminal material face along two V rays. That terminal face commonly
+continues far beyond the local feature footprint, so claiming the whole face would misrepresent
+ownership merely because MFCAD++ labels it as one feature. The current `ThroughStep` record also
+cannot preserve the orientation-neutral 3-D tripod or distinguish its capped and open spine ends.
+A future bounded family therefore needs a skeleton record (apex, spine endpoint and both V
+endpoints), exact empty-wedge evidence, and either sub-face claims or an explicit consulted-context
+role. Larger interacting components, concave chains and corpus-labelled face aggregates are not a
+justification for a loose K3 recogniser. This is recorded as a research prerequisite rather than
+turned into a fitted implementation.
+
 ### And the negative control failed at scale
 
 No claim landed on *Stock* across the vendored 40's 271 such faces. Across 13,438, four did.

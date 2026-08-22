@@ -180,7 +180,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | Rectangular through step | ThroughStep | Bounded orthogonal two-region subset |
-| 2-sided / Slanted through step | — | **unrecognised**; separate geometric contracts required |
+| 2-sided / Slanted through step | — | **unrecognised**; two-sided examples expose a local concave tripod whose terminal material face extends beyond the feature footprint, requiring a 3-D skeleton record and sub-face/context evidence rather than whole-face claims; slanted variants need a separate contract |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
