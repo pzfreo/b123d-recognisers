@@ -45,6 +45,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
           RELEASE_TAG: ${{ inputs.post_release_tag }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -52,7 +53,10 @@ jobs:
             echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
             echo "bump_sha=$BUMP_SHA" >> "$GITHUB_OUTPUT"
           elif [[ "$EVENT_NAME" == pull_request && "$BASE_BRANCH" == main \
-              && "$PR_AUTHOR" == 'github-actions[bot]' \
+              && ( "$PR_AUTHOR" == 'github-actions[bot]' \
+                || "$PR_AUTHOR_ASSOCIATION" == OWNER \
+                || "$PR_AUTHOR_ASSOCIATION" == MEMBER \
+                || "$PR_AUTHOR_ASSOCIATION" == COLLABORATOR ) \
               && "$HEAD_REPOSITORY" == "$REPOSITORY" \
               && "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
             release_tag=${BASH_REMATCH[1]}
