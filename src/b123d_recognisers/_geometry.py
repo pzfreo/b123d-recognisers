@@ -181,6 +181,33 @@ def _axis_line_coordinates(
     )
 
 
+def _coaxial_axis_lines(
+    point_a: Sequence[float],
+    direction_a: Sequence[float],
+    point_b: Sequence[float],
+    direction_b: Sequence[float],
+    *,
+    tol: float,
+) -> bool:
+    """Whether two unit-direction axis lines are parallel and within *tol*.
+
+    A cone or torus adjacent to an external cylinder is not thereby a *turned* transition:
+    intersecting round features can share an edge while their axes differ. Turned evidence
+    requires the analytic surface and the stock cylinder to revolve about the same line.
+    """
+
+    da = tuple(float(component) for component in direction_a)
+    db = tuple(float(component) for component in direction_b)
+    if len(da) != 3 or len(db) != 3:
+        raise ValueError("directions must be 3-vectors")
+    if abs(sum(da[i] * db[i] for i in range(3))) < 1 - 1e-6:
+        return False
+    offset = tuple(float(point_a[i]) - float(point_b[i]) for i in range(3))
+    along = sum(offset[i] * db[i] for i in range(3))
+    distance_sq = sum((offset[i] - along * db[i]) ** 2 for i in range(3))
+    return bool(distance_sq <= tol**2)
+
+
 def _axis_direction_is_aligned(
     axis: str, direction: Sequence[float] | None, *, tol: float = 1e-3
 ) -> bool:

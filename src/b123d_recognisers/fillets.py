@@ -40,7 +40,7 @@ import math
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Torus
+from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
@@ -50,7 +50,7 @@ from b123d_recognisers._adjacency import (
 )
 from b123d_recognisers._bevel import convex_bevel
 from b123d_recognisers._features import analyse_cylinders
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, Part, SurfaceAdaptor
 
@@ -65,6 +65,14 @@ _MIN_RADIUS = 0.6
 # recognition, `_features._FULL_CYL_MIN_EXTENT`) so a bore is excluded; the convex test
 # then drops the internal rounds / slot end caps (half turns) that also pass this gate.
 _FILLET_MAX_EXTENT = math.pi * 1.05
+
+# A turned edge fillet is a quarter-circle in the radial/axial section. Slightly loose for
+# imported parameter noise, but below the half-round of a toroidal bead or rolled feature.
+_TURNED_FILLET_MAX_EXTENT = math.pi / 2 * 1.05
+
+# Analytic axes derived from adjacent STEP faces should coincide; this permits only their
+# modelling noise. It is a tolerance, so it follows the cylinder diameter (ADR 0008).
+_COAXIAL_FRAC = 1e-4
 
 
 @dataclass(frozen=True)
@@ -179,23 +187,67 @@ def recognise_fillets(
     tori = [f for f in all_faces if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Torus]
     if tori:
         z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
-        external_cyl_faces = {c["face"] for c in (*z_cyls, *cross_cyls) if c["external"]}
+        external_cylinders = {
+            c["face"]: c for c in (*z_cyls, *cross_cyls) if c["external"]
+        }
         for f in tori:
             s = BRepAdaptor_Surface(f.wrapped)
             torus = s.Torus()
             radius = torus.MinorRadius()
             if radius < min_radius or radius > max_radius_frac * max_ext:
                 continue
-            d = torus.Axis().Direction()
+            if abs(s.LastVParameter() - s.FirstVParameter()) > _TURNED_FILLET_MAX_EXTENT:
+                continue  # a half/full toroidal profile, not an edge round
+            torus_axis = torus.Axis()
+            d = torus_axis.Direction()
+            direction = (d.X(), d.Y(), d.Z())
             comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
             if max(comp) <= AXIS_ALIGNED_COS:
                 continue  # a compound corner round (axis not a principal direction)
             edge_i = max(range(3), key=lambda i: comp[i])
-            if not any(
-                n in external_cyl_faces
-                for n in neighbours(f, edge_faces, face_edges=face_edges)
-            ):
+            location = torus_axis.Location()
+            axis_point = (location.X(), location.Y(), location.Z())
+            torus_neighbours = neighbours(f, edge_faces, face_edges=face_edges)
+            coaxial_cylinders = [
+                external_cylinders[n]
+                for n in torus_neighbours
+                if n in external_cylinders
+                and _coaxial_axis_lines(
+                    axis_point,
+                    direction,
+                    external_cylinders[n]["axis_xyz"],
+                    external_cylinders[n]["dir_xyz"],
+                    tol=length_tol(
+                        external_cylinders[n]["diameter"], rel=_COAXIAL_FRAC
+                    ),
+                )
+            ]
+            if not coaxial_cylinders:
                 continue
+            transverse_plane = False
+            continues_round = False
+            for neighbour in torus_neighbours:
+                neighbour_surface = BRepAdaptor_Surface(neighbour.wrapped)
+                if neighbour_surface.GetType() == GeomAbs_Sphere:
+                    # A compound turned fillet can continue into its spherical corner cap.
+                    # This is distinct from a rolled bead, whose two quarter-torus patches
+                    # continue into one another without reaching a second stock face.
+                    continues_round = True
+                    continue
+                if neighbour_surface.GetType() != GeomAbs_Plane:
+                    continue
+                nd = neighbour_surface.Plane().Axis().Direction()
+                normal_dot = (
+                    nd.X() * direction[0]
+                    + nd.Y() * direction[1]
+                    + nd.Z() * direction[2]
+                )
+                if abs(normal_dot) > AXIS_ALIGNED_COS:
+                    transverse_plane = True
+                    break
+            bridges_two_bands = len({c["diameter"] for c in coaxial_cylinders}) >= 2
+            if not transverse_plane and not bridges_two_bands and not continues_round:
+                continue  # a toroidal bead meeting one band, not a rounded edge
             p = fillet_anchor(s)
             out.append(
                 Fillet(

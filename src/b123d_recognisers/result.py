@@ -232,8 +232,8 @@ class RecognitionResult:
     #: which is the distinction that let these migrate at all: owning a family and always
     #: running it are different things.
     chamfers: tuple[Chamfer, ...]
-    #: Gated with the blends, and for the same reason: an angled blind step is the same
-    #: oblique-bevel read as a chamfer, so a rotational part yields none either way.
+    #: Prismatic-only: an angled blind step is the same planar oblique-bevel read as a
+    #: chamfer, while the conical bevel on a rotational part cannot establish one.
     angled_steps: tuple[AngledStep, ...]
     #: Prismatic voids running through the material, one record per closed ring.
     passages: tuple[Passage, ...]
@@ -442,7 +442,9 @@ def _take_inventory(
         # Also into the ledger, and the census's step count depends on it: the rule it applies
         # after this returns asks which faces a groove was built from, and an unclaimed groove
         # would subtract nothing and be counted twice, silently.
-        grooves=tuple(recognise_grooves(part, cyls=cyls, ledger=ledger)),
+        grooves=tuple(
+            recognise_grooves(part, cyls=cyls, ledger=ledger, face_edges=face_edges)
+        ),
         flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
         pockets=tuple(pockets),
         prismatic_pockets=tuple(ring_pockets),

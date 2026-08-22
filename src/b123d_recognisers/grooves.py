@@ -32,7 +32,7 @@ from dataclasses import dataclass
 
 from build123d import GeomType
 
-from b123d_recognisers._adjacency import edge_face_map, neighbours
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
@@ -137,7 +137,7 @@ def _torus_joined(lower, upper, tol: float, edge_faces: dict) -> bool:
         face_lo, face_hi = _axis_span(face, axis)
         return bool(face_hi >= lo and face_lo <= hi)
 
-    seen = {lower["face"]}
+    seen = {(lower["face"], False)}
     pending = [(lower["face"], False)]
     while pending:
         face, crossed_torus = pending.pop()
@@ -146,11 +146,14 @@ def _torus_joined(lower, upper, tol: float, edge_faces: dict) -> bool:
                 if crossed_torus:
                     return True
                 continue
-            if other in seen or not transition(other):
+            if not transition(other):
                 continue
-            seen.add(other)
             kind = BRepAdaptor_Surface(other.wrapped).GetType()
-            pending.append((other, crossed_torus or kind == GeomAbs_Torus))
+            state = (other, crossed_torus or kind == GeomAbs_Torus)
+            if state in seen:
+                continue
+            seen.add(state)
+            pending.append(state)
     return False
 
 
@@ -235,6 +238,7 @@ def recognise_grooves(
     *,
     cyls: CylinderInventory | None = None,
     ledger: ClaimLedger | None = None,
+    face_edges: FaceEdges | None = None,
 ) -> list[Groove]:
     """Recognise the turned grooves of *part* (see module docstring). Returns one
     :class:`Groove` per external band whose OD is a strict local minimum between two
@@ -244,6 +248,9 @@ def recognise_grooves(
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
     re-scanning the solid, matching the dependency-injection contract of
     :func:`recognise_holes`.
+
+    Pass *face_edges* to reuse the run's face-edge memo when radiused lead-ins require an
+    adjacency walk. Ordinary and conical grooves do not consult it.
 
     *ledger* records the face a groove was **established by**: its floor band, and only that.
     The two larger neighbours are what make the band a local minimum rather than a shoulder,
@@ -268,7 +275,7 @@ def recognise_grooves(
     # The run already owns a FaceEdges memo. Do not construct another unless a torus makes the
     # adjacency walk necessary: ordinary and conical grooves need only their rim evidence.
     has_tori = any(f.geom_type == GeomType.TORUS for f in all_faces)
-    edge_faces = edge_face_map(all_faces) if has_tori else None
+    edge_faces = edge_face_map(all_faces, face_edges=face_edges) if has_tori else None
     out: list[tuple[Groove, FaceLike]] = []
     for bands in shafts.values():
         bands = sorted(bands, key=lambda c: c["s_lo"])

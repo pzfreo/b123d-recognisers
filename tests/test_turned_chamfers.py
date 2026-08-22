@@ -3,7 +3,7 @@
 
 """Turned chamfers are conical rather than planar faces."""
 
-from build123d import Box, Cone, Cylinder, GeomType, Pos, fillet
+from build123d import Box, Cone, Cylinder, GeomType, Pos, Torus, fillet
 
 from b123d_recognisers import build_recognition_result, recognise_chamfers, recognise_fillets
 
@@ -42,6 +42,7 @@ def test_rotational_inventory_keeps_toroidal_turned_fillets():
     result = build_recognition_result(_filleted_stepped_shaft(), rotational=True)
 
     assert len(recognise_fillets(_filleted_stepped_shaft())) == 4
+    assert len(result.fillets) == 4
     assert {(fillet.axis, fillet.radius) for fillet in result.fillets} == {("z", 0.8)}
 
 
@@ -56,3 +57,9 @@ def test_internal_toroidal_bore_round_is_not_a_turned_fillet():
     inner_rim = bored.edges().filter_by(GeomType.CIRCLE)[0]
 
     assert recognise_fillets(fillet(inner_rim, 1.0)) == []
+
+
+def test_toroidal_bead_is_not_a_turned_fillet():
+    bead = Cylinder(10, 20) + Torus(10, 2)
+
+    assert recognise_fillets(bead) == []

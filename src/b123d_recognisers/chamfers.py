@@ -59,7 +59,7 @@ import math
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cone
+from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Plane
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
@@ -70,7 +70,7 @@ from b123d_recognisers._adjacency import (
 from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 from b123d_recognisers.countersinks import cone_rims
@@ -85,6 +85,10 @@ _MIN_LEG = 0.5
 #: that axis. Looser than the package's AXIS_ZERO_COS because a chamfer face carries more
 #: angular noise than a plane that is nominally perpendicular to an axis.
 _RUN_AXIS_COS = 0.05
+
+# Analytic axes derived from adjacent STEP faces should coincide; this permits only their
+# modelling noise. It is a tolerance, so it follows the cylinder diameter (ADR 0008).
+_COAXIAL_FRAC = 1e-4
 
 
 @dataclass(frozen=True)
@@ -196,14 +200,17 @@ def recognise_chamfers(
     cones = [f for f in all_faces if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Cone]
     if cones:
         z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
-        external_cyl_faces = {c["face"] for c in (*z_cyls, *cross_cyls) if c["external"]}
+        external_cylinders = {
+            c["face"]: c for c in (*z_cyls, *cross_cyls) if c["external"]
+        }
         for f in cones:
             rims = cone_rims(f)
             if rims is None:
                 continue  # drill point / degenerate cone, not an edge treatment
             minor, major, _included = rims
             cone = BRepAdaptor_Surface(f.wrapped).Cone()
-            direction = cone.Axis().Direction()
+            cone_axis = cone.Axis()
+            direction = cone_axis.Direction()
             dv = (direction.X(), direction.Y(), direction.Z())
             edge_i = max(range(3), key=lambda i: abs(dv[i]))
             if abs(dv[edge_i]) < AXIS_ALIGNED_COS:
@@ -219,8 +226,37 @@ def recognise_chamfers(
             if leg_lo < tol or leg_hi > max_leg_frac * max(ext.values()):
                 continue
             cone_neighbours = neighbours(f, edge_faces, face_edges=face_edges)
-            if not any(n in external_cyl_faces for n in cone_neighbours):
+            axis_location = cone_axis.Location()
+            axis_point = (axis_location.X(), axis_location.Y(), axis_location.Z())
+            coaxial_cylinders = [
+                external_cylinders[n]
+                for n in cone_neighbours
+                if n in external_cylinders
+                and _coaxial_axis_lines(
+                    axis_point,
+                    dv,
+                    external_cylinders[n]["axis_xyz"],
+                    external_cylinders[n]["dir_xyz"],
+                    tol=length_tol(
+                        external_cylinders[n]["diameter"], rel=_COAXIAL_FRAC
+                    ),
+                )
+            ]
+            if not coaxial_cylinders:
                 continue
+            transverse_plane = False
+            for neighbour in cone_neighbours:
+                neighbour_surface = BRepAdaptor_Surface(neighbour.wrapped)
+                if neighbour_surface.GetType() != GeomAbs_Plane:
+                    continue
+                nd = neighbour_surface.Plane().Axis().Direction()
+                normal_dot = nd.X() * dv[0] + nd.Y() * dv[1] + nd.Z() * dv[2]
+                if abs(normal_dot) > AXIS_ALIGNED_COS:
+                    transverse_plane = True
+                    break
+            bridges_two_bands = len({c["diameter"] for c in coaxial_cylinders}) >= 2
+            if not transverse_plane and not bridges_two_bands:
+                continue  # a taper meeting one band, not a bevelled edge
             fctr = f.center()
             out.append(
                 (
