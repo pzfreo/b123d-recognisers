@@ -3,9 +3,11 @@
 
 """Turned chamfers are conical rather than planar faces."""
 
-from build123d import Box, Cone, Cylinder, GeomType, Pos, Torus, fillet
+import pytest
+from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet
 
 from b123d_recognisers import build_recognition_result, recognise_chamfers, recognise_fillets
+from b123d_recognisers._geometry import _coaxial_axis_lines
 
 
 def _chamfered_stepped_shaft():
@@ -63,3 +65,27 @@ def test_toroidal_bead_is_not_a_turned_fillet():
     bead = Cylinder(10, 20) + Torus(10, 2)
 
     assert recognise_fillets(bead) == []
+
+
+def test_a_full_torus_is_not_a_turned_fillet():
+    assert recognise_fillets(Torus(10, 2)) == []
+
+
+def test_non_principal_turned_surfaces_are_out_of_scope():
+    slanted_cone = Cone(10, 8, 2).rotate(Axis.X, 45)
+    slanted_bead = (Cylinder(10, 20) + Torus(10, 2)).rotate(Axis.X, 45)
+
+    assert recognise_chamfers(slanted_cone) == []
+    assert recognise_fillets(slanted_bead) == []
+
+
+def test_a_taper_into_a_rounded_nose_is_not_a_turned_chamfer():
+    shaft_and_taper = Cylinder(10, 20).fuse(Pos(0, 0, 13) * Cone(10, 8, 6))
+    rounded_nose = shaft_and_taper.fuse(Pos(0, 0, 16) * Sphere(8))
+
+    assert recognise_chamfers(rounded_nose) == []
+
+
+def test_coaxial_line_evidence_requires_three_component_directions():
+    with pytest.raises(ValueError, match="directions must be 3-vectors"):
+        _coaxial_axis_lines((0, 0, 0), (0, 1), (0, 0, 0), (0, 0, 1), tol=0.01)
