@@ -1,5 +1,15 @@
 # Release notes
 
+## 0.2.9
+
+- **Fixed: dimensioned 0.3 mm chamfers are recognised.** The absolute chamfer evidence floor is
+  recalibrated from 0.5 mm to 0.3 mm against the two C0.3 flange edge treatments on the real
+  GRM-03 turned screw. The threshold remains one family-level manufacturing policy for planar
+  and conical chamfers: there is no turned-only exception. A 0.2 mm synthetic edge break and the
+  existing countersink, taper, drill-point and corpus negatives remain excluded. Equality at the
+  floor now tolerates only the shared 1 µm coordinate-noise band before record quantisation
+  (#146).
+
 ## 0.2.8
 
 - **Fixed: turned chamfers are now recognised.** A lathe produces a short external conical face

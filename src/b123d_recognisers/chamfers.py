@@ -70,7 +70,12 @@ from b123d_recognisers._adjacency import (
 from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
+from b123d_recognisers._geometry import (
+    AXIS_ALIGNED_COS,
+    COORD_FLOOR,
+    _coaxial_axis_lines,
+    length_tol,
+)
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 from b123d_recognisers.countersinks import cone_rims
@@ -79,7 +84,7 @@ from b123d_recognisers.countersinks import cone_rims
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
 #: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
 #: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
-_MIN_LEG = 0.5
+_MIN_LEG = 0.3
 
 #: A chamfer runs *along* one principal axis, so its normal has essentially no component on
 #: that axis. Looser than the package's AXIS_ZERO_COS because a chamfer face carries more
@@ -89,6 +94,18 @@ _RUN_AXIS_COS = 0.05
 # Analytic axes derived from adjacent STEP faces should coincide; this permits only their
 # modelling noise. It is a tolerance, so it follows the cylinder diameter (ADR 0008).
 _COAXIAL_FRAC = 1e-4
+
+
+def _below_minimum_evidence(value: float, minimum: float) -> bool:
+    """Whether a measured leg is materially below the declared evidence floor.
+
+    Imported analytic geometry carries final-bit coordinate noise: GRM-03's nominal 0.3 mm
+    chamfer measures infinitesimally below 0.3 before the public record is quantised. Equality
+    belongs on the accepted side of a minimum, so use the package coordinate floor only to
+    settle that boundary; it does not widen the feature-size policy in practice.
+    """
+
+    return value < minimum and not math.isclose(value, minimum, rel_tol=0.0, abs_tol=COORD_FLOOR)
 
 
 @dataclass(frozen=True)
@@ -158,7 +175,7 @@ def recognise_chamfers(
             continue
         oi = [j for j in (0, 1, 2) if j != edge_i]
         fc = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}  # face centre
-        if leg_lo < tol:
+        if _below_minimum_evidence(leg_lo, tol):
             continue
         if leg_hi > max_leg_frac * max(ext.values()):
             continue  # a ramp/wedge spanning a large fraction of the part — not an edge break
@@ -223,7 +240,7 @@ def recognise_chamfers(
                 + (major_c.Z - minor_c.Z) * dv[2]
             )
             leg_hi, leg_lo = max(axial, radial), min(axial, radial)
-            if leg_lo < tol or leg_hi > max_leg_frac * max(ext.values()):
+            if _below_minimum_evidence(leg_lo, tol) or leg_hi > max_leg_frac * max(ext.values()):
                 continue
             cone_neighbours = neighbours(f, edge_faces, face_edges=face_edges)
             axis_location = cone_axis.Location()
