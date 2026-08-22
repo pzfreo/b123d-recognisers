@@ -133,6 +133,16 @@ An unbounded absolute constant is a defect whether or not its physical justifica
 public record contract under ADR 0002 and the capability schema under ADR 0005. They are not
 tolerances and do not scale.
 
+### Kernel-coordinate floors are not feature allowances
+
+`_geometry.COORD_FLOOR` (1e-6 model units) is the smallest coordinate separation at which this
+package asks OCCT to distinguish coincident geometry. Issue #142 uses it to inset a candidate
+recess prism before a Boolean material test. It is not an allowance on the feature: the test still
+requires exactly zero material volume, and any continuous barrier thicker than twice the floor
+remains inside the probe. Keeping this numerical floor separate from record rounding and from the
+1% volume allowance used only to merge already-recognised collinear slot arms prevents either
+policy from silently becoming candidate geometry.
+
 ## Site classification
 
 Every numeric gate in the package, classified. `no change` means the site is already correct.

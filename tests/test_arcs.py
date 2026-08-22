@@ -143,6 +143,25 @@ def test_a_tangential_blend_reads_as_smooth():
     assert _arcs(_filleted()) == {"convex": 16, "smooth": 8}
 
 
+def test_a_smooth_region_is_maximal_immutable_and_cached_for_each_member():
+    """The gAAG view normalises tangent patches once without changing the base graph."""
+
+    graph = FaceGraph(_filleted())
+    a, b = next(
+        (a, b) for a in graph.nodes for b in graph.neighbours(a) if graph.arc(a, b) == "smooth"
+    )
+
+    region = graph.smooth_region(a)
+    assert {a, b} <= region
+    assert graph.smooth_region(b) is region
+    assert all(
+        neighbour in region
+        for member in region
+        for neighbour in graph.neighbours(member)
+        if graph.arc(member, neighbour) == "smooth"
+    )
+
+
 def test_faces_that_do_not_meet_have_no_arc():
     """None, rather than a guess. Two faces with no shared edge have no dihedral to report."""
 

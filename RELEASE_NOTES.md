@@ -1,5 +1,25 @@
 # Release notes
 
+## 0.2.10
+
+- **Fixed: unrelated recess walls no longer manufacture a rectangular feature across solid
+  material.** AAG/gAAG coherence remains the first proof that two opposed walls participate in
+  one boundary, but connectivity alone cannot establish that the rectangle between them was
+  removed: parallel recesses, and H- or U-shaped connections between them, supplied concrete
+  counterexamples. Paired-wall `Slot`, `Pocket`, and `Channel` candidates now additionally require
+  their uninterrupted, **unrounded** rectangular prism to be materially empty within the source
+  solid being recognised. Disconnected compound members remain independent. Only a curved end
+  interruption proved from opposite-turn AAG arcs is trimmed before that test. Candidate
+  admission has no material-volume allowance; the existing 1% allowance remains confined to
+  recombining already-recognised collinear slot arms.
+
+  This is a visible recognition correction: callers that relied on permissive opposed-wall
+  candidates will receive fewer records. Across the ten vendored NIST complex parts it removes
+  old rectangles whose proposed volumes still contain material—including repeated pockets about
+  24–31% solid and slots about 3–54% solid—while the frozen 33-model MFCAD++ holdout remains
+  unchanged. The historical NIST counts remain recorded in the tests, with the reviewed removals
+  applied separately rather than silently rewriting that baseline (#142).
+
 ## 0.2.9
 
 - **Fixed: dimensioned 0.3 mm chamfers are recognised.** The absolute chamfer evidence floor is
