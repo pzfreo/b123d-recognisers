@@ -175,7 +175,7 @@ MFCAD++ design corpus this changes 35 proposed slots to 19 accepted slots, remov
 overlap from 32 record pairs to two compatible pairs sharing a single face each (Pocket/Slot and
 Pocket/Passage). Both are deliberately retained because neither claim contains the other.
 
-## Amendment (0.2.10, issue #142)
+## Amendment (0.3.1, issue #142)
 
 The AAG condition above is necessary, not sufficient. Two independent recesses can contribute an
 outer wall pair whose shared stock faces have matching arcs, and a narrow H- or U-shaped connector
