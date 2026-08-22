@@ -97,39 +97,20 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
         "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
     ) == 1
 
-    # Every workflow that runs on `pull_request` must be dispatched by name for the
-    # post-release bump PR, because a branch pushed with GITHUB_TOKEN raises no events and
-    # would otherwise arrive with no checks at all. Asserting the *set* rather than one name:
-    # dispatching only ci.yml is how this was wrong the first time it was fixed.
-    on_pull_request = {
-        path.name
-        for path in (ROOT / ".github" / "workflows").iterdir()
-        if path.suffix in {".yml", ".yaml"}
-        and re.search(
-            r"""(?mx) ^["']?on["']?:\s*
-                ( \n(?:.*\n)*?\ \ -?\ ?pull_request:?\s*$   # block map or sequence
-                | \[[^]]*\bpull_request\b                      # flow list
-                | \ *pull_request\s*$ )                         # bare scalar""",
-            path.read_text(encoding="utf-8"),
-        )
-    }
-    dispatched = re.search(r"^\s*for workflow in (.+?); do$", workflow, re.M)
-    assert dispatched, "the dispatch loop is missing or has been reshaped"
-    # Parsed from the loop, not searched for in the file. `assert name in workflow` passed
-    # with ci.yml removed from the loop, because the comment above it says the words "ci.yml"
-    # -- so the test could not detect the exact defect it was written for.
-    assert set(dispatched.group(1).split()) == on_pull_request, (
-        f"dispatch loop runs {dispatched.group(1)}, but the workflows triggered by "
-        f"pull_request are {sorted(on_pull_request)}"
-    )
+    # The generated post-release branch gets provider CI explicitly: a GITHUB_TOKEN push raises
+    # no event. It must NOT run the consumer candidate canary, because the next patch's .dev0
+    # identity is deliberately outside Draftwright's reviewed transition. The release candidate
+    # at the tag already supplied downstream evidence before publication.
+    assert 'gh workflow run ci.yml --ref "$branch"' in workflow
+    assert "for workflow in" not in workflow
+    assert "downstream-canary.yml" not in workflow
     # The bump derives its next version from `main`, as the ported workflow does, so there is
     # no RELEASE_TAG-in-the-wrong-scope bug to have. An earlier attempt derived it from the tag
     # and read that variable in a step where it was not defined, which would have failed every
     # release after PyPI had accepted the artifact.
     assert "actions: write" in _job(workflow, "bump-version")
-    for name in on_pull_request:
-        target = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
-        assert "workflow_dispatch:" in target, f"{name} is dispatched but declares no trigger"
+    target = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "workflow_dispatch:" in target
     # Two publish steps: the main-push snapshot to TestPyPI, and the release to PyPI.
     assert workflow.count("pypa/gh-action-pypi-publish@") == 2
     assert workflow.count(
@@ -204,7 +185,7 @@ def test_the_release_artifact_is_built_here_and_published_unmodified() -> None:
     assert "with" not in action, "PyPI is the default index; a repository-url would redirect it"
 
 
-def test_the_bump_opens_a_pr_and_dispatches_every_pull_request_workflow() -> None:
+def test_the_bump_opens_a_pr_and_dispatches_provider_ci_only() -> None:
     """`git push origin HEAD:main` was green; the job holds `contents: write`."""
 
     jobs = _parsed(WORKFLOW)["jobs"]
@@ -213,20 +194,10 @@ def test_the_bump_opens_a_pr_and_dispatches_every_pull_request_workflow() -> Non
     assert 'git push origin HEAD:"$branch"' in joined
     assert "HEAD:main" not in joined and "origin main" not in joined
 
-    dispatched = re.search(r"^\s*for workflow in (.+?); do$", joined, re.M)
-    assert dispatched, "the dispatch loop is missing or has been reshaped"
-    # The body, not just the list: replacing the dispatch with `echo "$workflow"` was green.
-    assert 'gh workflow run "$workflow" --ref "$branch"' in joined
-    on_pull_request = {
-        path.name
-        for path in (ROOT / ".github" / "workflows").iterdir()
-        if path.suffix in {".yml", ".yaml"} and "pull_request" in _triggers(_parsed(path))
-    }
-    # Parsed from the loop, not searched for in the file: the comment beside it names ci.yml,
-    # so a substring check passed with ci.yml removed from the loop.
-    assert set(dispatched.group(1).split()) == on_pull_request
-    for name in on_pull_request:
-        assert "workflow_dispatch" in _triggers(_parsed(ROOT / ".github" / "workflows" / name))
+    assert 'gh workflow run ci.yml --ref "$branch"' in joined
+    assert "for workflow in" not in joined
+    assert "downstream-canary.yml" not in joined
+    assert "workflow_dispatch" in _triggers(_parsed(ROOT / ".github" / "workflows/ci.yml"))
 
 
 @pytest.mark.skipif(

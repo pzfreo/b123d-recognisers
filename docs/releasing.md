@@ -14,8 +14,11 @@ A release is one GitHub release:
 3. `build-release` checks out the tag, strips the `.dev` suffix, builds the wheel and sdist,
    and hands them to the protected `pypi` environment for approval.
 4. When PyPI accepts, the workflow opens a PR moving `main` to the next `.dev0`. It dispatches
-   CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN` raises no
-   events and would otherwise arrive with no checks.
+   provider CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN` raises
+   no events and would otherwise arrive with no checks. It deliberately does not dispatch the
+   Draftwright candidate canary: the next patch's development identity is outside the consumer's
+   reviewed transition until that patch has actual contract work. The released tag's candidate
+   was already canaried before publication.
 
 The published wheel is a function of the tagged commit. It used to be built on a maintainer's
 machine and attached to the release, which could only check that the attached artifact's
