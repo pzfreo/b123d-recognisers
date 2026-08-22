@@ -44,13 +44,15 @@ EXPECTED = {
     "nist_ctc_01": {"pockets": 10, "chamfers": 3, "fillets": 8},
     "nist_ctc_02": {"pockets": 13, "fillets": 21, "step_levels": 6},
     "nist_ctc_03": {"pockets": 5, "slots": 3, "step_levels": 3, "fillets": 17},
-    "nist_ctc_04": {"fillets": 24, "chamfers": 8, "pockets": 9, "slots": 6, "step_levels": 6},
-    "nist_ctc_05": {"flats": 4, "pockets": 12, "fillets": 5},
+    # External toroidal blends count as fillets since 0.2.7.
+    "nist_ctc_04": {"fillets": 50, "chamfers": 8, "pockets": 9, "slots": 6, "step_levels": 6},
+    "nist_ctc_05": {"flats": 4, "pockets": 12, "fillets": 12},
     # ftc_06 is here for a different reason: it has no 0.2.2 baseline because it *crashed* on
     # 0.2.2 and 0.2.4 alike (issue #74 — ``Face.radius`` is ``None`` on a trimmed surface, and
     # a ``cast`` carried that ``None`` into the countersink bore search). These are the counts
-    # from the first run that completed, pinned so the crash cannot return unnoticed.
-    "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 5, "fillets": 3},
+    # from the first run that completed, pinned so the crash cannot return unnoticed. External
+    # conical faces count as turned chamfers since 0.2.7; this part carries two of them.
+    "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 7, "fillets": 9},
 }
 
 _VENDORED = Path(__file__).parent / "corpus" / "nist"
@@ -110,7 +112,7 @@ def test_recognition_counts_match_the_reported_baseline(stem):
 _OBSERVED = {
     "nist_ftc_07": {
         "cylinders": 2,
-        "fillets": 16,
+        "fillets": 20,
         "hole_patterns": 2,
         "holes": 23,
         "plates": 5,
@@ -119,7 +121,7 @@ _OBSERVED = {
     },
     "nist_ftc_08": {
         "cylinders": 2,
-        "fillets": 13,
+        "fillets": 21,
         "hole_patterns": 2,
         "holes": 21,
         "plates": 5,
@@ -139,7 +141,7 @@ _OBSERVED = {
     },
     "nist_ftc_10": {
         "cylinders": 2,
-        "fillets": 22,
+        "fillets": 55,
         "hole_patterns": 6,
         "holes": 30,
         "pockets": 5,

@@ -218,20 +218,19 @@ class RecognitionResult:
     #: values through :meth:`step_ladder_for_z_span`.
     step_levels: tuple[FaceLevel, ...]
     #: Whether the part classified as ROTATIONAL, carried so consumers can tell a gated-away
-    #: inventory from an empty one. ``chamfers``/``fillets``/``plates`` are ``()`` on a
-    #: rotational part because they were not run, not because the part has none — the same
+    #: inventory from an empty one. ``plates`` are ``()`` on a rotational part because they
+    #: were not run, not because the part has none — the same
     #: empty-vs-not-run distinction consumers must preserve for declared inputs.
     rotational: bool
     #: Candidate step risers, scanned once and projected per consumer. NOT shoulders:
     #: which risers count depends on the level set the asker holds, and that is the whole
     #: reason this family could not be hoisted until the scan and the filter were separated.
     risers: tuple[RiserEvidence, ...]
-    #: Classification-gated inventories. Recognised only for the class that consumes
-    #: them: chamfers and fillets on a non-rotational part (a turned part's chamfers are
-    #: conical, so the recogniser finds none anyway), plates additionally only when there is no
-    #: turned profile. The gate lives HERE, in the one orchestration, rather than at each call
-    #: site — which is the distinction that let these migrate at all: owning a family and
-    #: always running it are different things.
+    #: Chamfers and fillets are recognised on every part: planar/cylindrical on a prismatic
+    #: part and conical/toroidal on a turned part. Plates additionally require no turned
+    #: profile. The gate lives HERE, in the one orchestration, rather than at each call site —
+    #: which is the distinction that let these migrate at all: owning a family and always
+    #: running it are different things.
     chamfers: tuple[Chamfer, ...]
     #: Gated with the blends, and for the same reason: an angled blind step is the same
     #: oblique-bevel read as a chamfer, so a rotational part yields none either way.
@@ -413,10 +412,14 @@ def _take_inventory(
     prismatic = not rotational
     # Both bevel families write into the same ledger, and both run before the result is built:
     # the rule below needs the step claims, and the field order of `RecognitionResult` puts
-    # `chamfers` first. Gated together because they are the same oblique-face read, so a
-    # rotational part yields neither and there is nothing to reconcile.
-    chamfers = (
-        recognise_chamfers(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+    # `chamfers` first. Only angled steps are prismatic; chamfers also cover the external cones
+    # that a lathe makes at a turned shoulder or free end.
+    chamfers = recognise_chamfers(
+        part,
+        cyls=cyls,
+        ledger=ledger,
+        face_edges=face_edges,
+        include_planar=prismatic,
     )
     angled_steps = (
         recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
@@ -453,6 +456,13 @@ def _take_inventory(
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
         passages=tuple(passages) if prismatic else (),
-        fillets=tuple(recognise_fillets(part, face_edges=face_edges)) if prismatic else (),
+        fillets=tuple(
+            recognise_fillets(
+                part,
+                cyls=cyls,
+                face_edges=face_edges,
+                include_cylindrical=prismatic,
+            )
+        ),
         plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
     )

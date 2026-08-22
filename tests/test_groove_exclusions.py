@@ -198,19 +198,16 @@ def test_cones_elsewhere_on_the_part_are_not_lead_ins():
     assert (grooves[0].diameter, grooves[0].width) == (24.0, 5.0)
 
 
-def test_a_radiused_lead_in_is_still_outside_the_proven_scope():
-    """Only a *conical* lead-in is read as a join. A radiused one is a torus, not a cone.
-
-    Recorded because ``docs/capabilities.md`` now claims this exclusion by name, and the
-    chamfer work above deliberately did not widen to it: a torus has no two circular rims at
-    band diameters to land on, so it would need its own evidence rather than the same read.
-    """
+def test_a_radiused_lead_in_joins_the_groove_bands():
+    """A torus/annular-wall chain is the rounded counterpart of a conical lead-in."""
 
     plain = Cylinder(15, 20) + Pos(0, 0, 12.5) * Cylinder(12, 5)
     plain += Pos(0, 0, 22.5) * Cylinder(15, 20)
     radiused = fillet(plain.edges().filter_by(GeomType.CIRCLE).group_by(Axis.Z)[1], 1.0)
 
-    assert recognise_grooves(radiused) == []
+    assert [(groove.diameter, groove.width) for groove in recognise_grooves(radiused)] == [
+        (24.0, 1.5)
+    ]
 
 
 def test_a_chamfered_groove_reads_the_same_at_any_scale():

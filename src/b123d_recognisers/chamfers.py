@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Chamfer (bevelled-edge) recognition for prismatic parts.
+"""Chamfer (bevelled-edge) recognition.
 
 ``recognise_chamfers`` recovers the manufacturing size of each chamfer so it can be called
 out (``C12`` / ``12 × 45°``) rather than left as a rendered-but-undimensioned bevel. A
@@ -9,9 +9,9 @@ with any principal axis (a 45° equal-leg chamfer on a Z edge has normal ≈ (0.
 0)) — that breaks a **convex** edge where two mutually-perpendicular axis-aligned faces
 meet. Four gates keep it to genuine chamfers and recover the right size:
 
-- **oblique** — the face's steepest normal component is below ``AXIS_ALIGNED_COS``, excluding real
-  axis-aligned faces and shallow draft angles; a turned part's conical chamfer is not
-  planar (none found);
+- **oblique planar or conical** — a prismatic chamfer is an oblique plane; a turned chamfer is
+  its rotational analogue, a short external cone. Both recover their axial/radial legs from
+  the analytic face rather than from a rendered view;
 - **bridges two axis-aligned faces** — the face is edge-adjacent to axis-aligned faces on
   two distinct in-plane axes, excluding a hex/polygon prism's real oblique sides (whose
   neighbours are themselves oblique);
@@ -58,15 +58,22 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.GeomAbs import GeomAbs_Cone
+
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
     nearest_axis_aligned_planes,
+    neighbours,
 )
 from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._features import analyse_cylinders
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
+from b123d_recognisers.countersinks import cone_rims
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -102,11 +109,23 @@ def recognise_chamfers(
     max_leg_frac: float = 0.45,
     face_edges: FaceEdges | None = None,
     ledger: ClaimLedger | None = None,
+    cyls: CylinderInventory | None = None,
+    include_planar: bool = True,
 ) -> list[Chamfer]:
     """Recognise the chamfers of *part* (see module docstring). Returns one
-    :class:`Chamfer` per qualifying oblique face, sorted deterministically. Empty when the
-    part has no chamfer. Only single-axis chamfers (running along one principal axis) are
-    recovered; a compound corner bevel (oblique on all three axes) is skipped.
+    :class:`Chamfer` per qualifying bevel face, sorted deterministically. Empty when the
+    part has no chamfer. A prismatic chamfer is an oblique plane and a turned chamfer is a
+    short external cone; both must run along one principal axis. A compound corner bevel
+    (oblique on all three axes) is skipped.
+
+    Pass *cyls* — a precomputed :func:`analyse_cylinders` result — to avoid re-scanning a
+    turned part. It is consulted only for conical faces, to prove that the cone is outside the
+    material rather than a countersink or other internal transition.
+
+    Set *include_planar* to ``False`` when a caller has already classified the part as
+    rotational. That preserves the aggregate's existing policy of not treating incidental
+    planar bevels on a turned part as its turned chamfer inventory, while retaining its
+    principal-axis external cones.
 
     *ledger* records the face a chamfer was **established by**: the bevel, and only that. The
     two axis-aligned planes it bridges are *consulted* — they locate the virtual sharp corner
@@ -123,7 +142,7 @@ def recognise_chamfers(
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
     out: list[tuple[Chamfer, FaceLike]] = []
-    for f in all_faces:
+    for f in all_faces if include_planar else ():
         # The shared single-face read (classification thresholds + legs = the face's OWN
         # in-plane bbox extents, not measured against a possibly distant outermost wall).
         # (The old extra skew gate on the in-plane normal components was unreachable — a
@@ -168,6 +187,53 @@ def recognise_chamfers(
                 f,
             )
         )
+
+    # A lathe turns the planar cut of an ordinary chamfer into a cone. Its two circular rims
+    # give exactly the same legs as the planar reader: axial separation and *radial* (not
+    # diameter) reduction. Requiring an adjacent external cylinder is the material-side proof
+    # that distinguishes it from a countersink, which has the same analytic cone but neighbours
+    # an internal bore.
+    cones = [f for f in all_faces if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Cone]
+    if cones:
+        z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+        external_cyl_faces = {c["face"] for c in (*z_cyls, *cross_cyls) if c["external"]}
+        for f in cones:
+            rims = cone_rims(f)
+            if rims is None:
+                continue  # drill point / degenerate cone, not an edge treatment
+            minor, major, _included = rims
+            cone = BRepAdaptor_Surface(f.wrapped).Cone()
+            direction = cone.Axis().Direction()
+            dv = (direction.X(), direction.Y(), direction.Z())
+            edge_i = max(range(3), key=lambda i: abs(dv[i]))
+            if abs(dv[edge_i]) < AXIS_ALIGNED_COS:
+                continue  # a slanted cone is not a principal-axis turned chamfer
+            radial = major.radius - minor.radius
+            minor_c, major_c = minor.arc_center, major.arc_center
+            axial = abs(
+                (major_c.X - minor_c.X) * dv[0]
+                + (major_c.Y - minor_c.Y) * dv[1]
+                + (major_c.Z - minor_c.Z) * dv[2]
+            )
+            leg_hi, leg_lo = max(axial, radial), min(axial, radial)
+            if leg_lo < tol or leg_hi > max_leg_frac * max(ext.values()):
+                continue
+            cone_neighbours = neighbours(f, edge_faces, face_edges=face_edges)
+            if not any(n in external_cyl_faces for n in cone_neighbours):
+                continue
+            fctr = f.center()
+            out.append(
+                (
+                    Chamfer(
+                        axis="xyz"[edge_i],
+                        leg1=round(leg_hi, 3),
+                        leg2=round(leg_lo, 3),
+                        angle=round(math.degrees(math.atan2(leg_lo, leg_hi)), 2),
+                        at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+                    ),
+                    f,
+                )
+            )
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for chamfer, face in out:
