@@ -16,11 +16,11 @@ A release is one GitHub release:
 4. When PyPI accepts, the workflow opens a PR moving `main` to the next `.dev0`. It dispatches
    provider CI and the downstream status against that branch explicitly, because a branch pushed
    with `GITHUB_TOKEN` raises no events and would otherwise arrive with no checks. The downstream
-   workflow's explicit dispatch identifies the exact generated commit and proves that it differs
-   from its checked-out `main` parent only by the four synchronized version copies. Ordinary pull
-   requests cannot select that path. It does not widen Draftwright to accept the next patch's
-   development identity: the released tag's candidate already supplied that contract evidence
-   before publication.
+   workflow's explicit dispatch identifies the exact generated commit, verifies that its parent is
+   on `origin/main` history and descended from the release tag, and proves that the commit differs
+   from that parent only by the four synchronized version copies. Ordinary pull requests cannot
+   select that path. It does not widen Draftwright to accept the next patch's development identity:
+   the released tag's candidate already supplied that contract evidence before publication.
 
 The published wheel is a function of the tagged commit. It used to be built on a maintainer's
 machine and attached to the release, which could only check that the attached artifact's

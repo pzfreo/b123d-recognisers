@@ -56,10 +56,14 @@ def validate(root: Path, released_tag: str, branch: str, bump_sha: str) -> tuple
         raise ValueError("branch does not match the generated post-release convention")
 
     tag_commit = _git(root, "rev-parse", "--verify", f"refs/tags/{released_tag}^{{commit}}")
+    main_commit = _git(root, "rev-parse", "--verify", "refs/remotes/origin/main^{commit}")
     bump_commit = _git(root, "rev-parse", "--verify", f"{bump_sha}^{{commit}}")
     bump_parent = _git(root, "rev-parse", "--verify", f"{bump_commit}^")
     subprocess.run(
         ["git", "merge-base", "--is-ancestor", tag_commit, bump_parent], cwd=root, check=True
+    )
+    subprocess.run(
+        ["git", "merge-base", "--is-ancestor", bump_parent, main_commit], cwd=root, check=True
     )
     subprocess.run(
         ["git", "merge-base", "--is-ancestor", bump_commit, "HEAD"], cwd=root, check=True
