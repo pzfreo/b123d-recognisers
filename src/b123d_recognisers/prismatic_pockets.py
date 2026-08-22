@@ -90,9 +90,11 @@ def recognise_prismatic_pockets(
     """Recognise the prismatic pockets of *part* (see module docstring).
 
     Returns one :class:`PrismaticPocket` per ring capped at exactly one end, sorted
-    deterministically. A ring capped at *both* ends is an enclosed cavity and is not reported by
-    any family here: it is not reachable by a tool, so it is not a machined recess, and reporting
-    one would be asserting a feature that cannot have been cut.
+    deterministically. A logical ring wall may be represented by directly smooth coplanar patches
+    only when their union remains one complete hole-free rectangle. A ring capped at *both* ends
+    is an enclosed cavity and is not reported by any family here: it is not reachable by a tool,
+    so it is not a machined recess, and reporting one would assert a feature that could not have
+    been cut.
 
     **A rectangular recess is reported here as well as by**
     :func:`b123d_recognisers.recognise_pockets`, because on the ring alone it is one. Which
@@ -122,7 +124,7 @@ def recognise_prismatic_pockets(
             (
                 PrismaticPocket(
                     axis="xyz"[axis],
-                    sides=len(ring.nodes),
+                    sides=len(section),
                     depth=round(ring.high - ring.low, 3),
                     # The floor caps one end, so the opening is the other.
                     open_sign=1 if low_capped else -1,

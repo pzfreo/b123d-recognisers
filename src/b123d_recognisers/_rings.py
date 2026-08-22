@@ -2,9 +2,11 @@
 # Copyright 2024-2026 Paul Fremantle
 """Closed prismatic rings of planar walls: finding them, measuring them, and asking what caps them.
 
-A **ring** is a cycle of planar faces whose spans along one principal axis all agree, each meeting
-exactly two others -- the walls of a constant-cross-section void running along that axis. What
-caps its ends decides which feature it is:
+A **ring** is a cycle of logical planar walls whose spans along one principal axis all agree,
+each meeting exactly two others -- the walls of a constant-cross-section void running along that
+axis. A logical wall may be one face or a hole-free rectangular region of directly smooth,
+coplanar STEP patches; claims retain every source patch. What caps its ends decides which feature
+it is:
 
 - **neither end** -- a passage, running clean through the material;
 - **one end** -- a pocket with a floor;
@@ -24,17 +26,14 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 
+from build123d import Face, GeomType, Wire
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_OUT
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
-from b123d_recognisers._geometry import AXIS_ZERO_COS
-from b123d_recognisers._typing import Part
-
-#: Spans agree to this to count as one ring. A coordinate comparison, not a size, so absolute
-#: and dimensionless of the part (ADR 0008).
-SPAN_EPS = 1e-6
+from b123d_recognisers._geometry import AXIS_ZERO_COS, COORD_FLOOR, SMOOTH_ARC_GAP, SPAN_EPS
+from b123d_recognisers._typing import EdgeLike, Part
 
 
 @dataclass(frozen=True)
@@ -52,6 +51,15 @@ class Ring:
     low: float
     high: float
     caps: tuple[bool, bool]
+
+
+@dataclass(frozen=True)
+class _WallRegion:
+    """One logical planar wall, retaining every source patch that establishes it."""
+
+    nodes: tuple[FaceNode, ...]
+    low: float
+    high: float
 
 
 def rings(part: Part, graph: FaceGraph) -> Iterator[Ring]:
@@ -78,36 +86,124 @@ def rings(part: Part, graph: FaceGraph) -> Iterator[Ring]:
             for node in planar
             if normal[node] is not None and abs(normal[node][axis]) <= AXIS_ZERO_COS  # type: ignore[index]
         ]
-        adjacent = {node: set(graph.neighbours(node)) for node in walls}
+        regions = _wall_regions(graph, walls, axis)
+        owner = {node: region for region in regions for node in region.nodes}
+        adjacent: dict[_WallRegion, set[_WallRegion]] = {region: set() for region in regions}
+        for region in regions:
+            for node in region.nodes:
+                for neighbour in graph.neighbours(node):
+                    other = owner.get(neighbour)
+                    if other is not None and other is not region:
+                        adjacent[region].add(other)
 
-        def shares_a_span(
-            a: FaceNode, b: FaceNode, axis: int = axis, adjacent: dict = adjacent
-        ) -> bool:
+        def shares_a_span(a: _WallRegion, b: _WallRegion, adjacent: dict = adjacent) -> bool:
             return (
                 b in adjacent[a]
-                and abs(graph.bounds(a)[axis][0] - graph.bounds(b)[axis][0]) <= SPAN_EPS
-                and abs(graph.bounds(a)[axis][1] - graph.bounds(b)[axis][1]) <= SPAN_EPS
+                and abs(a.low - b.low) <= SPAN_EPS
+                and abs(a.high - b.high) <= SPAN_EPS
             )
 
-        for ring in connected_components(walls, shares_a_span):
+        for ring in connected_components(regions, shares_a_span):
             members = set(ring)
             if len(ring) < 3 or any(len(adjacent[node] & members) != 2 for node in ring):
                 continue  # a ring closes; a chain of walls does not
-            section = _cross_section(graph, ring, members, axis)
+            section = _cross_section(graph, ring, members, adjacent, axis)
             if section is None:
                 continue  # the walls do not meet in a simple prismatic polygon
-            spans = [graph.bounds(node)[axis] for node in ring]
-            low, high = min(a for a, _ in spans), max(b for _, b in spans)
+            low = min(region.low for region in ring)
+            high = max(region.high for region in ring)
             if not _is_void(part, section, axis, low, high):
                 continue
+            source_nodes = tuple(
+                node
+                for region in ring
+                for node in sorted(region.nodes, key=lambda item: item.index)
+            )
+            source_members = set(source_nodes)
             yield Ring(
-                ring, section, axis, low, high,
-                _capped_ends(graph, ring, members, axis, low, high),
+                source_nodes,
+                section,
+                axis,
+                low,
+                high,
+                _capped_ends(graph, source_nodes, source_members, axis, low, high),
             )
 
 
+def _wall_regions(graph: FaceGraph, walls: list[FaceNode], axis: int) -> list[_WallRegion]:
+    """Normalize only complete rectangular coplanar subdivisions into logical walls.
+
+    A genuine notch, hole, branch or unequal extent is feature geometry, not a harmless STEP
+    representation split.  Such a region falls back to its individual faces, preserving the
+    pre-normalization behaviour rather than widening the `Passage` contract.
+    """
+
+    available = set(walls)
+    seen: set[FaceNode] = set()
+    regions: list[_WallRegion] = []
+    for seed in walls:
+        if seed in seen:
+            continue
+        coplanar = graph.coplanar_region(seed) & available
+        seen.update(coplanar)
+        if len(coplanar) > 1 and _is_complete_wall_region(graph, coplanar, axis):
+            nodes = tuple(sorted(coplanar, key=lambda node: node.index))
+            regions.append(
+                _WallRegion(
+                    nodes,
+                    min(graph.bounds(node)[axis][0] for node in nodes),
+                    max(graph.bounds(node)[axis][1] for node in nodes),
+                )
+            )
+            continue
+        for node in sorted(coplanar, key=lambda item: item.index):
+            low, high = graph.bounds(node)[axis]
+            regions.append(_WallRegion((node,), low, high))
+    return regions
+
+
+def _is_complete_wall_region(graph: FaceGraph, region: frozenset[FaceNode], axis: int) -> bool:
+    """Whether patches tile one hole-free rectangular wall aligned to the run axis."""
+
+    if any(not graph.face(node).is_valid for node in region):
+        return False
+    uses: dict[EdgeLike, int] = {}
+    for node in region:
+        for edge in graph.edges(node):
+            uses[edge] = uses.get(edge, 0) + 1
+    if any(count > 2 for count in uses.values()):
+        return False
+    boundary = [edge for edge, count in uses.items() if count == 1]
+    if not boundary or any(edge.geom_type != GeomType.LINE for edge in boundary):
+        return False
+    wires = list(Wire.combine(boundary, tol=COORD_FLOOR))
+    if len(wires) != 1 or not wires[0].is_closed:
+        return False  # holes, gaps and branches are not representation-only splits
+    try:
+        face = Face(wires[0])
+    except Exception:
+        return False
+    if not face.is_valid:
+        return False
+    directions = [edge.tangent_at() for edge in wires[0].edges()]
+    turns = [
+        after
+        for before, after in zip(directions, directions[1:] + directions[:1], strict=True)
+        if 1.0 - before.dot(after) > SMOOTH_ARC_GAP
+    ]
+    if len(turns) != 4:
+        return False
+    axial = sum(abs(getattr(direction, "XYZ"[axis])) >= 1.0 - SMOOTH_ARC_GAP for direction in turns)
+    transverse = sum(abs(getattr(direction, "XYZ"[axis])) <= SMOOTH_ARC_GAP for direction in turns)
+    return bool(axial == transverse == 2)
+
+
 def _cross_section(
-    graph: FaceGraph, ring: tuple[FaceNode, ...], members: set[FaceNode], axis: int
+    graph: FaceGraph,
+    ring: tuple[_WallRegion, ...],
+    members: set[_WallRegion],
+    adjacent: dict[_WallRegion, set[_WallRegion]],
+    axis: int,
 ) -> tuple[tuple[float, float], ...] | None:
     """The ring's corners, walked around it, or None when it is not a prismatic polygon.
 
@@ -127,7 +223,7 @@ def _cross_section(
         # `next` rather than a decline: were that invariant ever to break, raising is the
         # honest answer, and a `return None` here would be an untestable branch pretending to
         # handle a case its caller has already ruled out.
-        step = next(n for n in graph.neighbours(order[-1]) if n in members and n not in seen)
+        step = next(n for n in adjacent[order[-1]] if n in members and n not in seen)
         seen.add(step)
         order.append(step)
 
@@ -141,7 +237,9 @@ def _cross_section(
         # where that is decided.
         boxes = [
             edge.bounding_box()
-            for edge in graph.shared_edges(node, order[(at + 1) % len(order)])
+            for left in node.nodes
+            for right in order[(at + 1) % len(order)].nodes
+            for edge in graph.shared_edges(left, right)
         ]
         across, along = (
             0.5
@@ -316,9 +414,7 @@ def _capped_ends(
             # There is nothing to reject on that count, only on where within the span it sits.
             end = graph.bounds(other)
             near_low = abs(end[axis][0] - low) <= SPAN_EPS or abs(end[axis][1] - low) <= SPAN_EPS
-            near_high = (
-                abs(end[axis][0] - high) <= SPAN_EPS or abs(end[axis][1] - high) <= SPAN_EPS
-            )
+            near_high = abs(end[axis][0] - high) <= SPAN_EPS or abs(end[axis][1] - high) <= SPAN_EPS
             if not (near_low or near_high):
                 continue
             if all(

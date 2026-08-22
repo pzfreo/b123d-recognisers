@@ -131,45 +131,6 @@ class AngledStep(Record):
     at: tuple[float, float, float]
 
 
-def _same_axis_plane(graph: FaceGraph, node: FaceNode, plane: tuple[int, float]) -> bool:
-    """Whether *node* is a planar patch on the same principal plane as *plane*."""
-
-    aligned = axis_aligned_axis(graph.face(node).wrapped)
-    return (
-        aligned is not None
-        and aligned[0] == plane[0]
-        and math.isclose(aligned[1], plane[1], rel_tol=0.0, abs_tol=COORD_FLOOR)
-    )
-
-
-def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
-    """The seed's smooth-connected planar patches, without crossing a curved blend.
-
-    A tangent fillet can put two planes in one maximal smooth component, so this family asks
-    the narrower gAAG question directly: traverse only smooth arcs between patches on the
-    seed's own plane.  That both prevents a fillet escape and avoids classifying unrelated
-    curved arcs around a large stock face.
-    """
-
-    plane = axis_aligned_axis(graph.face(seed).wrapped)
-    if plane is None:
-        return frozenset()
-    found = {seed}
-    pending = [seed]
-    while pending:
-        current = pending.pop()
-        for other in graph.neighbours(current):
-            if (
-                other in found
-                or not _same_axis_plane(graph, other, plane)
-                or graph.arc(current, other) != "smooth"
-            ):
-                continue
-            found.add(other)
-            pending.append(other)
-    return frozenset(found)
-
-
 def _region_boundary(graph: FaceGraph, region: frozenset[FaceNode]) -> list[EdgeLike]:
     """Edges on the boundary of *region*, cancelling its internal subdivision edges."""
 
@@ -209,9 +170,7 @@ def _face_exterior_is_geometrically_triangular(face: FaceLike) -> bool:
     return exterior.is_closed and _three_straight_runs(exterior)
 
 
-def _region_is_geometrically_triangular(
-    graph: FaceGraph, region: frozenset[FaceNode]
-) -> bool:
+def _region_is_geometrically_triangular(graph: FaceGraph, region: frozenset[FaceNode]) -> bool:
     """Whether one coplanar region has a triangular exterior boundary.
 
     Internal subdivision edges are cancelled and inner loops are ignored, preserving a
@@ -241,7 +200,7 @@ def _region_is_geometrically_triangular(
 def _geometrically_triangular_region(graph: FaceGraph, seed: FaceNode) -> bool:
     """Whether the seed's coplanar smooth region is geometrically triangular."""
 
-    return _region_is_geometrically_triangular(graph, _coplanar_region(graph, seed))
+    return _region_is_geometrically_triangular(graph, graph.coplanar_region(seed))
 
 
 def _closed_by_a_triangular_flat(face: FaceLike, edge_axis: int, graph: FaceGraph) -> bool:
@@ -268,7 +227,7 @@ def _closed_by_a_triangular_flat(face: FaceLike, edge_axis: int, graph: FaceGrap
         aligned = axis_aligned_axis(terminal.wrapped)
         if aligned is None or aligned[0] != edge_axis:
             continue
-        region = _coplanar_region(graph, other)
+        region = graph.coplanar_region(other)
         if len(region) == 1:
             if _face_exterior_is_geometrically_triangular(terminal):
                 return True

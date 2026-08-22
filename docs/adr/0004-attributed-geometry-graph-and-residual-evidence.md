@@ -58,6 +58,24 @@ every discovered recess candidate receives one internal accepted/rejected reason
 It does **not** implement residual analysis or public ambiguous/unsupported outcomes, and therefore
 must not be cited as satisfying those required-evidence items.
 
+## Amendment (0.2.11, logical planar wall regions)
+
+The split-face limb now has a second family consumer. `FaceGraph.coplanar_region` is the cached,
+immutable gAAG query for patches reachable across **direct material-side zero-angle** adjacency
+while remaining planar.
+It is intentionally narrower than `smooth_region`: a plane-to-fillet-to-plane tangent path does
+not make the two planes one boundary region. Angled-step terminal evidence and prismatic-ring wall
+normalization share this neutral query; their feature predicates remain in their family modules.
+
+For rings, graph connectivity is necessary but not sufficient. Multiple source patches become one logical
+wall only when cancelling internal seams leaves one valid, hole-free rectangular exterior aligned
+with the proposed run axis. Logical walls must then satisfy the pre-existing equal-span, degree-2
+cycle, simple-section, void and cap proofs. This normalizes representation without interpreting a
+genuine multi-patch notch, lateral breakout, step or branch as a constant sweep. The stricter
+rectangle proof is a normalization precondition, not a retroactive restriction on pre-existing
+singleton walls, which may contain an inner wire made by another intersecting void. Every source
+node remains in the accepted claim; no virtual face or missing wall area is claimed.
+
 ## Amendment (0.2.6, issue #75)
 
 **A blend is not only noise. It is also a bridge, and the acceptance list above only asks about

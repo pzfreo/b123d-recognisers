@@ -38,6 +38,7 @@ from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import SPAN_EPS
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
@@ -54,6 +55,7 @@ RecessReason = Literal[
     "contained_by_passage",
     "contained_by_non_rectangular_prismatic_pocket",
     "rectangular_passage_superseded_by_slot",
+    "slot_fragment_superseded_by_rectangular_passage",
     "rectangular_ring_superseded_by_pocket",
     "superseded_by_non_rectangular_passage",
     "superseded_by_pocket",
@@ -180,6 +182,20 @@ def reconcile_recesses(
         if any(walls <= ring for ring in non_rectangular_rings.values()):
             decide(slot, "rejected", "superseded_by_non_rectangular_passage")
             continue
+        if any(
+            passage.sides == 4
+            and walls < (passage_walls := ledger.defining_of(passage))
+            and _is_patch_local_slot_fragment(walls, passage_walls, ledger)
+            and not _covers_run_span(walls, passage_walls, passage.axis, ledger)
+            for passage in passages
+        ):
+            # A normalized ring may claim several patches for each logical wall while paired
+            # wall discovery still proposes one Slot per patch interval. A proper subset that
+            # does not cover the ring's run is a fragment, not the Slot dimensioning the whole
+            # rectangular void. Reconciliation selects the complete observed candidate; it
+            # does not synthesize a replacement Slot.
+            decide(slot, "rejected", "slot_fragment_superseded_by_rectangular_passage")
+            continue
         accepted_slots.append(slot)
         decide(slot, "accepted", "accepted")
 
@@ -214,6 +230,49 @@ def reconcile_recesses(
         tuple(accepted_prismatic),
         tuple(accepted_passages),
         tuple(dispositions[id(candidate)] for candidate in discovered),
+    )
+
+
+def _covers_run_span(
+    candidate_walls: AbstractSet,
+    ring_walls: AbstractSet,
+    axis: str,
+    ledger: ClaimLedger,
+) -> bool:
+    """Whether candidate evidence covers the ring's complete unrounded run interval."""
+
+    axis_index = {"x": 0, "y": 1, "z": 2}[axis]
+
+    def envelope(nodes: AbstractSet) -> tuple[float, float]:
+        intervals = [ledger.graph.bounds(node)[axis_index] for node in nodes]
+        return min(low for low, _ in intervals), max(high for _, high in intervals)
+
+    candidate_intervals = [ledger.graph.bounds(node)[axis_index] for node in candidate_walls]
+    candidate_overlap = (
+        max(low for low, _ in candidate_intervals),
+        min(high for _, high in candidate_intervals),
+    )
+    ring_span = envelope(ring_walls)
+    return all(
+        abs(candidate - ring) <= SPAN_EPS
+        for candidate, ring in zip(candidate_overlap, ring_span, strict=True)
+    )
+
+
+def _is_patch_local_slot_fragment(
+    candidate_walls: AbstractSet,
+    ring_walls: AbstractSet,
+    ledger: ClaimLedger,
+) -> bool:
+    """Whether a paired wall is a patch of a normalized logical ring wall.
+
+    This prevents the representation-normalization rule from changing precedence for the
+    older supported case where an intersecting void leaves an interrupted singleton wall.
+    """
+
+    return any(
+        len(ledger.graph.coplanar_region(node) & ring_walls) > 1
+        for node in candidate_walls
     )
 
 

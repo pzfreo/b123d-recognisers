@@ -153,11 +153,13 @@ class FaceGraph:
         self._edges: dict[int, tuple[EdgeLike, ...]] = {}
         self._surface: dict[int, int] = {}
         self._normal: dict[int, tuple[float, float, float] | None] = {}
+        self._outward_planar_normal: dict[int, tuple[float, float, float] | None] = {}
         self._bounds: dict[int, tuple] = {}
         self._edge_faces: dict | None = None
         self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
         self._arcs: dict[tuple[int, int], ArcKind | None] = {}
         self._smooth_regions: dict[int, frozenset[FaceNode]] = {}
+        self._coplanar_regions: dict[int, frozenset[FaceNode]] = {}
 
     def __len__(self) -> int:
         return len(self._faces)
@@ -270,6 +272,35 @@ class FaceGraph:
             else:
                 self._normal[at] = (unit.X, unit.Y, unit.Z)
         return self._normal[at]
+
+    def _planar_material_normal(
+        self, node: FaceNode
+    ) -> tuple[float, float, float] | None:
+        """The cached material-side normal of a planar face.
+
+        ``normal()`` deliberately exposes the supporting surface's parameterisation normal.
+        Coplanar wall normalization instead needs the topological face orientation: imported
+        STEP patches may parameterise the same physical plane in opposite directions while
+        their oriented material-side normals still agree.
+        """
+
+        at = self._at(node)
+        if at not in self._outward_planar_normal:
+            normal = self.normal(node)
+            if normal is None or not self.is_planar(node):
+                self._outward_planar_normal[at] = None
+            else:
+                reversed_face = (
+                    self._faces[at].wrapped.Orientation()
+                    == TopAbs_Orientation.TopAbs_REVERSED
+                )
+                sign = -1.0 if reversed_face else 1.0
+                self._outward_planar_normal[at] = (
+                    sign * normal[0],
+                    sign * normal[1],
+                    sign * normal[2],
+                )
+        return self._outward_planar_normal[at]
 
     def bounds(
         self, node: FaceNode
@@ -390,6 +421,49 @@ class FaceGraph:
         region = frozenset(found)
         for member in region:
             self._smooth_regions[member.index] = region
+        return region
+
+    def coplanar_region(self, node: FaceNode) -> frozenset[FaceNode]:
+        """The maximal planar region joined by direct material-side zero-angle adjacency.
+
+        Unlike :meth:`smooth_region`, this query cannot cross a tangent curved blend to reach a
+        second plane.  It is the gAAG normalization for one planar boundary represented as
+        several STEP patches.  Every member is cached against the same immutable set.
+        """
+
+        at = self._at(node)
+        cached = self._coplanar_regions.get(at)
+        if cached is not None:
+            return cached
+        if not self.is_planar(node):
+            region = frozenset({node})
+            self._coplanar_regions[at] = region
+            return region
+        found = {node}
+        pending = [node]
+        while pending:
+            current = pending.pop()
+            current_normal = self._planar_material_normal(current)
+            assert current_normal is not None  # every queued member passed the planar gate
+            for neighbour in self.neighbours(current):
+                if neighbour in found or not self.is_planar(neighbour):
+                    continue
+                neighbour_normal = self._planar_material_normal(neighbour)
+                if (
+                    neighbour_normal is None
+                    or 1.0
+                    - sum(
+                        left * right
+                        for left, right in zip(current_normal, neighbour_normal, strict=True)
+                    )
+                    > SMOOTH_ARC_GAP
+                ):
+                    continue
+                found.add(neighbour)
+                pending.append(neighbour)
+        region = frozenset(found)
+        for member in region:
+            self._coplanar_regions[member.index] = region
         return region
 
     def _classify_arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None:
@@ -603,7 +677,7 @@ def neighbours(face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None
 
     seen = {face}
     out = []
-    for edge in (face_edges.of(face) if face_edges is not None else face.edges()):
+    for edge in face_edges.of(face) if face_edges is not None else face.edges():
         for other in edge_faces.get(edge, ()):
             if other in seen:
                 continue

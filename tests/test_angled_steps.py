@@ -58,7 +58,6 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
 from b123d_recognisers.angled_steps import (
     _closed_by_a_triangular_flat,
-    _coplanar_region,
     _geometrically_triangular_region,
     _three_straight_runs,
 )
@@ -328,9 +327,7 @@ def test_a_gusset_filling_a_concave_corner_is_not_an_angled_step():
         oi = [j for j in (0, 1, 2) if j != edge_i]
         centre = {i: 0.5 * (span[i][0] + span[i][1]) for i in (0, 1, 2)}
         neigh = nearest_axis_aligned_planes(face, edge_faces, centre, exclude_axis=edge_i)
-        if oi[0] in neigh and oi[1] in neigh and not convex_bevel(
-            gusseted, centre, edge_i, neigh
-        ):
+        if oi[0] in neigh and oi[1] in neigh and not convex_bevel(gusseted, centre, edge_i, neigh):
             reached += 1
     assert reached == 1, "this fixture must reject exactly at the convex probe"
 
@@ -391,6 +388,9 @@ def test_a_coplanar_subdivision_does_not_hide_the_triangular_blind_end():
     assert len(terminal) == 3
     assert all(len(graph.edges(node)) == 4 for node in terminal)
     assert len(graph.smooth_region(terminal[0])) == 3
+    coplanar = graph.coplanar_region(terminal[0])
+    assert len(coplanar) == 3
+    assert all(graph.coplanar_region(node) is coplanar for node in terminal)
     assert _closed_by_a_triangular_flat(graph.face(slant_node), 0, graph)
 
 
@@ -410,9 +410,7 @@ def test_a_split_terminal_is_recovered_and_reconciled_from_the_same_slant_claim(
     (slant,) = ledger.defining_of(steps[0])
     assert axis_aligned_axis(graph.face(slant).wrapped) is None
     terminal_nodes = [
-        node
-        for node in graph.nodes
-        if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
+        node for node in graph.nodes if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
     ]
     assert len(terminal_nodes) == 3
     assert all(not ledger.claims_of(node) for node in terminal_nodes)
@@ -532,13 +530,11 @@ def test_a_smooth_path_through_a_fillet_does_not_merge_distinct_planes():
     part = fillet(Box(10, 10, 10).edges().filter_by(Axis.Z)[0], 1)
     graph = FaceGraph(part)
     seed = next(
-        node
-        for node in graph.nodes
-        if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
+        node for node in graph.nodes if axis_aligned_axis(graph.face(node).wrapped) == (0, -5.0)
     )
 
     assert len(graph.smooth_region(seed)) == 3, "the fixture must cross plane/fillet/plane"
-    assert _coplanar_region(graph, seed) == frozenset({seed})
+    assert graph.coplanar_region(seed) == frozenset({seed})
 
 
 def test_a_step_is_a_step_at_any_scale():

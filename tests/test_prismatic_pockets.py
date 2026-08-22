@@ -21,9 +21,14 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Cylinder,
+    Face,
     Plane,
     Polygon,
     Pos,
+    Shell,
+    Solid,
+    Vector,
+    Wire,
     extrude,
 )
 
@@ -51,6 +56,30 @@ def _rectangular():
     """The shape both families reach, so the overlap has something to be about."""
 
     return Box(120, 80, 20) - Pos(0, 0, 8) * Box(20, 12, 14)
+
+
+def _rectangular_with_split_wall() -> Solid:
+    """The same blind recess with one complete wall represented by two coplanar patches."""
+
+    part = _rectangular()
+    wall = next(
+        face
+        for face in part.faces()
+        if abs(face.center().Y - 6) < 1e-9
+        and abs(face.center().X) < 1e-9
+        and abs(face.center().Z - 5.5) < 1e-9
+    )
+
+    def planar(*points):
+        return Face(Wire.make_polygon([Vector(*point) for point in points], close=True))
+
+    patches = (
+        planar((-10, 6, 1), (10, 6, 1), (10, 6, 5.5), (-10, 6, 5.5)),
+        planar((-10, 6, 5.5), (10, 6, 5.5), (10, 6, 10), (-10, 6, 10)),
+    )
+    solid = Solid(Shell([*(face for face in part.faces() if not face.is_same(wall)), *patches]))
+    assert solid.is_valid
+    return solid
 
 
 def _through():
@@ -156,6 +185,20 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     tri_pockets = r.recognise_pockets(triangle, ledger=tri_ledger)
     tri = r.recognise_prismatic_pockets(triangle, ledger=tri_ledger)
     assert len(reconcile_recesses([], tri_pockets, tri, [], tri_ledger).prismatic_pockets) == 1
+
+
+def test_a_split_wall_preserves_the_prismatic_pocket_and_claims_every_patch():
+    """The shared ring normalization keeps cap semantics and logical side count intact."""
+
+    part = _rectangular_with_split_wall()
+    ledger = ClaimLedger(FaceGraph(part))
+
+    (pocket,) = r.recognise_prismatic_pockets(part, ledger=ledger)
+
+    assert pocket.sides == 4
+    assert pocket.depth == 9
+    assert len(ledger.defining_of(pocket)) == 5
+    assert reconcile_recesses([], [], [pocket], [], ledger).prismatic_pockets == (pocket,)
 
 
 def test_an_obround_recess_is_the_other_family_s_to_find():

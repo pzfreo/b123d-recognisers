@@ -399,9 +399,16 @@ where angles are equal, and its header warns `PopSubgraph()` does not clean them
 - [ ] A **named** traversal query — not a widened `neighbours()`, which would move every existing
       recogniser's answer at once
 - [ ] **Blend limb:** `grooves._joined` reimplemented on it, or the item is not done
-- [ ] **Split limb:** a subdivided triangle answers with three boundary edges, and the recovery of
-      the 24 misses is measured. Tested separately from the blend limb, on geometry with no blend
-      in it at all, so that passing the first cannot be mistaken for passing the second
+- [x] **Split limb:** a subdivided triangle answers with three boundary runs, tested separately
+      from the blend limb on geometry with no blend. The historical 24-miss source corpus is not
+      available locally, so no post-change recovery count is claimed.
+
+**The split limb is now implemented without claiming an unavailable recovery count.** Issue #111
+normalizes a subdivided angled-step terminal, and 0.2.11 lifts its direct-planar traversal into the
+cached neutral `FaceGraph.coplanar_region` query when prismatic ring walls become the second real
+consumer. Both families reduce the actual regional boundary rather than a convex hull. The
+original 2,000-model sweep is not vendored, so its historical 24 misses remain diagnostic context,
+not a claimed post-change result. The 40-model design subset is unchanged by both bounded motifs.
 
 ## 4 — One adjacency API instead of two
 
@@ -490,11 +497,13 @@ pairing lives in `_recess_core` and not in the five dict-map modules. The prereq
       recall rather than merely correlating with it (80% pairable → 38% claimed for rectangular
       pockets, 8% → 4% for 6-sided, 6% → 0% for triangular). The control settles it: **triangular
       passages are 2% pairable and 59% claimed**, because `recognise_passages` does not pair
-- [ ] Assess whether the recess core can be found ring-first as `recognise_passages` is, keeping
-      the axis pairing as the fast path for the rectangular case
-- [ ] If it cannot, `capabilities.md` excludes oblique-walled recesses explicitly, with a test
-      that fails when support arrives — the pattern the B-spline exclusion already uses
-- [ ] Either way `capabilities.md` says so; today it says neither
+- [x] Assess whether the recess core can be found ring-first as `recognise_passages` is. The
+      answer is the separate `recognise_prismatic_pockets` family: it walks one-capped rings of
+      arbitrary planar cross-section without changing the paired rectangular `Pocket` contract.
+- [x] Reconcile the overlap centrally: a four-wall ring yields to the dimensioned rectangular
+      `Pocket`; a non-rectangular ring survives and defeats paired-wall fragments.
+- [x] State the boundary in `capabilities.md`, including obrounds (no planar ring), open passages,
+      enclosed cavities and genuinely interrupted/piecewise walls.
 
 ---
 

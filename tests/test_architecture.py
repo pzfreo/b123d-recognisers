@@ -93,6 +93,7 @@ MODULE_SEAM_EDGES = {
     # sits above it -- a recogniser importing this is the order dependence ADR 0003 forbids.
     "_reconcile": {
         "_claims",
+        "_geometry",
         "_recess_records",
         "_typing",
         "angled_steps",

@@ -143,10 +143,12 @@ remains inside the probe. Keeping this numerical floor separate from record roun
 1% volume allowance used only to merge already-recognised collinear slot arms prevents either
 policy from silently becoming candidate geometry.
 
-Issue #111 also uses the floor only to identify patches on the same principal plane and to sew
-boundary edges that already share topological vertices. Whether that boundary is triangular is
-then decided by three co-directed straight runs under the dimensionless `SMOOTH_ARC_GAP`; no side
-length, area residual or almost-triangle distance is admitted.
+Issue #111 uses the floor only to sew boundary edges that already share topological vertices.
+Whether that boundary is triangular is then decided by three co-directed straight runs under the
+dimensionless `SMOOTH_ARC_GAP`; no side length, area residual or almost-triangle distance is
+admitted. The 0.2.11 logical-wall normalization uses the floor for the same sewing operation and
+requires an exact four-run, run-aligned rectangle. Coplanar membership itself comes from direct
+smooth AAG arcs between planar nodes, not from a new coordinate threshold.
 
 ## Site classification
 

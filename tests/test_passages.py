@@ -11,19 +11,28 @@ pass for reasons unrelated to the gate it names.
 
 from __future__ import annotations
 
+import pytest
 from build123d import (
     Box,
     BuildPart,
     BuildSketch,
     Compound,
+    Face,
     Locations,
     Plane,
     Polygon,
     Pos,
     RegularPolygon,
+    Rot,
+    Shell,
+    Solid,
+    Vector,
+    Wire,
     chamfer,
+    export_step,
     extrude,
     fillet,
+    import_step,
 )
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.gp import gp_Pnt
@@ -37,7 +46,7 @@ from b123d_recognisers import (
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._rings import _canonical, _centroid, _interior_point
+from b123d_recognisers._rings import _canonical, _centroid, _interior_point, _wall_regions
 
 
 def _block() -> Box:
@@ -54,6 +63,77 @@ def _hexagonal_passage():
     return _block() - bore.part
 
 
+def _planar_face(*points):
+    return Face(Wire.make_polygon([Vector(*point) for point in points], close=True))
+
+
+def _split_square_passage(scale: float = 1.0) -> Solid:
+    """One unchanged square void whose four logical walls are eight sewn face patches."""
+
+    part = Box(60 * scale, 40 * scale, 20 * scale) - Box(30 * scale, 10 * scale, 30 * scale)
+    walls = [
+        face
+        for face in part.faces()
+        if abs(face.center().Z) <= 1e-9
+        and (
+            abs(abs(face.center().X) - 15 * scale) <= 1e-9
+            or abs(abs(face.center().Y) - 5 * scale) <= 1e-9
+        )
+    ]
+    assert len(walls) == 4
+    x0, x1, y0, y1, z0, z1 = (value * scale for value in (-15, 15, -5, 5, -10, 10))
+    split = {"yp": -3 * scale, "yn": 2 * scale, "xp": 4 * scale, "xn": -5 * scale}
+    patches = [
+        _planar_face((x0, y1, z0), (x1, y1, z0), (x1, y1, split["yp"]), (x0, y1, split["yp"])),
+        _planar_face((x0, y1, split["yp"]), (x1, y1, split["yp"]), (x1, y1, z1), (x0, y1, z1)),
+        _planar_face((x0, y0, z0), (x0, y0, split["yn"]), (x1, y0, split["yn"]), (x1, y0, z0)),
+        _planar_face((x0, y0, split["yn"]), (x0, y0, z1), (x1, y0, z1), (x1, y0, split["yn"])),
+        _planar_face((x1, y0, z0), (x1, y0, split["xp"]), (x1, y1, split["xp"]), (x1, y1, z0)),
+        _planar_face((x1, y0, split["xp"]), (x1, y0, z1), (x1, y1, z1), (x1, y1, split["xp"])),
+        _planar_face((x0, y0, z0), (x0, y1, z0), (x0, y1, split["xn"]), (x0, y0, split["xn"])),
+        _planar_face((x0, y0, split["xn"]), (x0, y1, split["xn"]), (x0, y1, z1), (x0, y0, z1)),
+    ]
+    solid = Solid(
+        Shell(
+            [
+                *(face for face in part.faces() if not any(face.is_same(wall) for wall in walls)),
+                *patches,
+            ]
+        )
+    )
+    assert solid.is_valid
+    return solid
+
+
+def _split_one_z_wall(part, wall, at: float = 0.0) -> Solid:
+    """Replace one vertical quadrilateral by two orientation-preserving sewn patches."""
+
+    low = sorted(
+        (tuple(vertex) for vertex in wall.vertices() if at > vertex.Z),
+        key=lambda point: point[:2],
+    )
+    high = sorted(
+        (tuple(vertex) for vertex in wall.vertices() if at < vertex.Z),
+        key=lambda point: point[:2],
+    )
+    assert len(low) == len(high) == 2
+    middle = [(point[0], point[1], at) for point in low]
+
+    def oriented(*points):
+        face = _planar_face(*points)
+        if face.normal_at().dot(wall.normal_at()) < 0:
+            face = _planar_face(*points[::-1])
+        return face
+
+    patches = (
+        oriented(low[0], low[1], middle[1], middle[0]),
+        oriented(middle[0], middle[1], high[1], high[0]),
+    )
+    solid = Solid(Shell([*(face for face in part.faces() if not face.is_same(wall)), *patches]))
+    assert solid.is_valid
+    return solid
+
+
 def test_a_void_open_at_both_ends_is_a_passage():
     passages = recognise_passages(_hexagonal_passage())
 
@@ -62,6 +142,125 @@ def test_a_void_open_at_both_ends_is_a_passage():
     assert passage.axis == "z"
     assert passage.sides == 6
     assert passage.length == 20.0
+
+
+def test_coplanar_wall_subdivisions_preserve_one_passage_and_all_claim_evidence():
+    """A gAAG logical wall removes representation splits without changing feature geometry."""
+
+    part = _split_square_passage()
+    ledger = ClaimLedger(FaceGraph(part))
+
+    (passage,) = recognise_passages(part, ledger=ledger)
+
+    assert passage == Passage(
+        axis="z",
+        sides=4,
+        length=20.0,
+        at=(0.0, 0.0, 0.0),
+        section=((-15.0, -5.0), (15.0, -5.0), (15.0, 5.0), (-15.0, 5.0)),
+    )
+    assert len(ledger.defining_of(passage)) == 8
+
+
+def test_wall_normalization_is_not_specialized_to_rectangular_sections():
+    """An oblique hexagon wall split is still one logical side, not two taxonomy sides."""
+
+    plain = _hexagonal_passage()
+    wall = next(
+        face
+        for face in plain.faces()
+        if abs(face.center().Z) < 1e-9
+        and abs(face.normal_at().Z) < 1e-9
+        and abs(face.normal_at().X) < 0.99
+        and abs(face.normal_at().Y) < 0.99
+    )
+    split = _split_one_z_wall(plain, wall)
+    ledger = ClaimLedger(FaceGraph(split))
+
+    (passage,) = recognise_passages(split, ledger=ledger)
+
+    assert passage == recognise_passages(plain)[0]
+    assert passage.sides == 6
+    assert len(ledger.defining_of(passage)) == 7
+
+
+def test_split_wall_passage_is_stable_across_step_roundtrip_axes_and_scale(tmp_path):
+    """Normalization is geometric, not tied to sewing order, Z, or millimetre-sized fixtures."""
+
+    base = _split_square_passage()
+    path = tmp_path / "split-wall-passage.step"
+    export_step(base, path)
+    assert recognise_passages(import_step(path)) == recognise_passages(base)
+
+    for part, axis in (
+        (base, "z"),
+        (Rot(90, 0, 0) * base, "y"),
+        (Rot(0, 90, 0) * base, "x"),
+    ):
+        (passage,) = recognise_passages(part)
+        assert passage.axis == axis
+        assert passage.sides == 4
+
+    for scale in (0.001, 1000.0):
+        (passage,) = recognise_passages(_split_square_passage(scale))
+        assert passage.sides == 4
+        assert passage.length == pytest.approx(20 * scale, abs=max(0.001, scale * 1e-6))
+
+
+def test_aggregate_keeps_the_complete_split_wall_ring_over_slot_fragments():
+    """Patch-local paired walls cannot defeat the complete normalized physical boundary."""
+
+    result = build_recognition_result(_split_square_passage())
+
+    assert result.slots == ()
+    assert len(result.passages) == 1
+    assert result.passages[0].sides == 4
+
+
+def test_one_split_wall_is_enough_to_identify_patch_local_slot_fragments():
+    """The opposite logical wall need not also be subdivided for the artifact to be local."""
+
+    plain = Box(60, 40, 20) - Box(30, 10, 30)
+    wall = next(
+        face
+        for face in plain.faces()
+        if abs(face.center().Y - 5) < 1e-8
+        and abs(face.center().Z) < 1e-8
+        and face.area < 1000
+    )
+    result = build_recognition_result(_split_one_z_wall(plain, wall, at=0))
+
+    assert result.slots == ()
+    assert len(result.passages) == 1
+
+
+def test_normalization_does_not_promote_offset_or_branched_voids_to_one_sweep():
+    """Smooth coplanar patches are harmless; changed sections and branches are feature geometry."""
+
+    offset = Box(40, 40, 40) - (Pos(0, 0, -10) * Box(10, 10, 20) + Pos(2, 0, 10) * Box(10, 10, 20))
+    assert recognise_passages(offset) == []
+
+    main = Box(40, 40, 40) - Box(10, 10, 60)
+    branched = main - Box(60, 4, 4)
+    before = recognise_passages(main)
+    after = recognise_passages(branched)
+    assert [item for item in after if item.axis == "z"] == before
+    assert not any(item.axis == "x" and item.length == 40 for item in after)
+
+
+def test_notched_coplanar_patches_do_not_become_one_logical_wall():
+    """Connectivity and a common plane cannot erase the actual non-rectangular boundary."""
+
+    lower = _planar_face((0, 0, 0), (1, 0, 0), (1, 0, 2), (0, 0, 2))
+    upper = _planar_face((1, 0, 1), (2, 0, 1), (2, 0, 2), (1, 0, 2))
+    graph = FaceGraph(Shell([lower, upper]))
+    nodes = list(graph.nodes)
+    assert graph.coplanar_region(nodes[0]) == frozenset(nodes)
+
+    regions = _wall_regions(graph, nodes, axis=2)
+
+    assert len(regions) == 2
+    assert all(len(region.nodes) == 1 for region in regions)
 
 
 def test_a_through_slot_is_reported_here_too_and_the_aggregate_resolves_it():
@@ -334,8 +533,14 @@ def test_an_interior_point_is_inside_the_polygon_and_not_merely_near_it():
 
     triangle = ((-8.0, -6.0), (8.0, -6.0), (0.0, 8.0))
     u_shape = (
-        (-15.0, -15.0), (15.0, -15.0), (15.0, 15.0), (9.0, 15.0),
-        (9.0, -9.0), (-9.0, -9.0), (-9.0, 15.0), (-15.0, 15.0),
+        (-15.0, -15.0),
+        (15.0, -15.0),
+        (15.0, 15.0),
+        (9.0, 15.0),
+        (9.0, -9.0),
+        (-9.0, -9.0),
+        (-9.0, 15.0),
+        (-15.0, 15.0),
     )
     for polygon in (triangle, u_shape):
         assert _winds_around(polygon, _interior_point(polygon)), polygon

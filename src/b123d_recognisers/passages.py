@@ -108,9 +108,12 @@ def recognise_passages(
     """Recognise the prismatic passages of *part* (see module docstring).
 
     Returns one :class:`Passage` per closed uncapped ring, sorted deterministically. Empty when
-    the part has none. Only passages whose walls all run parallel to one principal axis, share
-    one span, and meet their neighbours along a single edge parallel to that axis are recovered;
-    a passage whose walls step or taper along its length is not one.
+    the part has none. Only passages whose logical walls all run parallel to one principal axis,
+    share one span, and meet their neighbours along run-parallel seams are recovered. A logical
+    wall may normalize directly smooth coplanar patches only when their actual union is one
+    complete hole-free rectangle. This is a condition on merging multiple patches; existing
+    singleton walls interrupted by another void remain eligible for truthful maximal
+    constant-section segments. Genuinely unequal multi-patch spans are not merged.
 
     **A through slot is reported here too** -- it is a closed uncapped ring. The families are
     reconciled in :func:`b123d_recognisers.build_recognition_result` and not here; see the
@@ -137,7 +140,7 @@ def recognise_passages(
             (
                 Passage(
                     axis="xyz"[axis],
-                    sides=len(ring.nodes),
+                    sides=len(section),
                     length=round(ring.high - ring.low, 3),
                     at=(round(at[0], 3), round(at[1], 3), round(at[2], 3)),
                     section=tuple((round(u, 3), round(v, 3)) for u, v in section),

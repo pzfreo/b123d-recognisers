@@ -21,6 +21,9 @@ _PLANE_AXES = {
 
 _DOMINANT_TIE_TOL = 1e-12
 
+#: Coordinate agreement for the longitudinal spans of one logical prismatic ring.
+SPAN_EPS = 1e-6
+
 # Direction gates. A recogniser classifies a face by where its *unit* normal points, so these
 # are direction cosines: dimensionless, and never scaled with the part (ADR 0008). They were
 # spelled as bare 0.99 and 0.01 at a dozen sites across six modules, where the same number

@@ -1,5 +1,29 @@
 # Release notes
 
+## 0.2.11
+
+- **Fixed: harmless coplanar subdivisions of a prismatic ring wall no longer hide a passage or
+  prismatic pocket.** Ring discovery previously required each source face to span the complete
+  extrusion, so splitting one unchanged wall into two STEP faces broke the cycle. The immutable
+  AAG now exposes a cached `coplanar_region` query that follows only direct material-side
+  zero-angle adjacency between
+  planar patches—it cannot escape through a tangent fillet. Ring discovery accepts such a region
+  as one logical wall only when its sewn actual boundary is one valid, hole-free rectangle aligned
+  with the run axis; all logical walls must still share the same span and form the same simple
+  constant-section cycle. Every source patch remains in the feature claim, while the record's
+  `sides` remains the number of geometric walls rather than the number of STEP patches.
+
+  This deliberately does not merge genuinely unequal wall spans or multi-patch walls whose union
+  is stepped, notched, branched or laterally broken out. Pre-existing singleton-wall behaviour is
+  unchanged: intersecting voids may still be reported as truthful maximal constant-section
+  segments even where a wall has an inner wire. Staggered
+  four-wall splits, an oblique hexagonal wall split, a capped pocket, STEP round-trip, principal
+  axes and 0.001×–1000× scale exercise the supported motif; offset geometry is not widened and a
+  cross-branch adversary creates no fabricated full-span branch. The aggregate retains the
+  complete normalized ring over patch-local Slot fragments. The 40-model MFCAD++ design subset
+  is unchanged, evidence that its remaining
+  unequal-span misses are interacting/piecewise geometry rather than harmless subdivisions.
+
 ## 0.2.10
 
 - **Internal architecture: recess discovery and reconciliation are now phase-pure and every
