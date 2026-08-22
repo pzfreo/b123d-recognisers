@@ -3,19 +3,23 @@
 
 """Turned chamfers are conical rather than planar faces."""
 
+from pathlib import Path
+
 import pytest
-from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet
+from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet, import_step
 
 from b123d_recognisers import build_recognition_result, recognise_chamfers, recognise_fillets
 from b123d_recognisers._geometry import _coaxial_axis_lines
 
+CORPUS = Path(__file__).parent / "corpus" / "gramel"
 
-def _chamfered_stepped_shaft():
+
+def _chamfered_stepped_shaft(size=0.8):
     """Two turned diameters, with each free end and shoulder edge chamfered."""
 
     shaft = Pos(0, 0, 20) * Cylinder(15, 40) + Pos(0, 0, 55) * Cylinder(8, 30)
     circular_edges = [edge for edge in shaft.edges() if edge.geom_type == GeomType.CIRCLE]
-    return shaft.chamfer(0.8, None, circular_edges)
+    return shaft.chamfer(size, None, circular_edges)
 
 
 def _filleted_stepped_shaft():
@@ -38,6 +42,24 @@ def test_rotational_inventory_keeps_turned_chamfers():
 
     assert len(result.chamfers) == 4
     assert all(chamfer.axis == "z" for chamfer in result.chamfers)
+
+
+def test_real_turned_inventory_keeps_dimensioned_three_tenths_chamfers():
+    part = import_step(str(CORPUS / "GRM-03_thumbwheel_drive_screw.step"))
+
+    found = build_recognition_result(part, rotational=True).chamfers
+
+    assert [
+        (chamfer.axis, chamfer.leg1, chamfer.leg2, chamfer.angle, chamfer.at) for chamfer in found
+    ] == [
+        ("x", 0.3, 0.3, 45.0, (0.65, 0.0, 4.85)),
+        ("x", 0.3, 0.3, 45.0, (2.35, 0.0, 4.85)),
+        ("x", 0.5, 0.5, 45.0, (23.25, 0.0, 1.25)),
+    ]
+
+
+def test_two_tenths_turned_edge_break_stays_below_evidence_floor():
+    assert recognise_chamfers(_chamfered_stepped_shaft(0.2)) == []
 
 
 def test_rotational_inventory_keeps_toroidal_turned_fillets():

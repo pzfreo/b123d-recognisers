@@ -232,12 +232,14 @@ diameter, radius or width in hand at the comparison. These are what the policy i
 ### Minimum-evidence thresholds — absolute (13)
 
 Each asks *is this big enough to be a feature?* All thirteen were converted in 0.2.3 and reverted
-in 0.2.4; see the section above on why a threshold is not a tolerance. The values are the ones
-0.2.2 used.
+in 0.2.4; see the section above on why a threshold is not a tolerance. Most values remain the ones
+0.2.2 used. The chamfer floor was recalibrated in 0.2.9 against the smallest explicitly
+dimensioned edge treatment in the real-part corpus, with a smaller edge break retained as the
+negative boundary.
 
 | Site | Value | What it gates |
 | --- | --- | --- |
-| `chamfers._MIN_LEG` | 0.5 | minimum chamfer leg |
+| `chamfers._MIN_LEG` | 0.3 | minimum chamfer leg; the smallest dimensioned real-part edge treatment in the corpus |
 | `fillets._MIN_RADIUS` | 0.6 | minimum blend radius |
 | `plates._TOL` | 0.5 | minimum slab thickness |
 | `pads._TOL` | 0.2 | minimum pad footprint |
