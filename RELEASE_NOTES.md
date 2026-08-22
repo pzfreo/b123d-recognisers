@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.3.0
+
+- **Added explicit turned semantics to chamfer and fillet records.** `Chamfer` and `Fillet`
+  now carry `turned: bool = False`. Conical chamfers and toroidal fillets report `True`;
+  planar bevels and cylindrical blends report `False`. The default preserves legacy positional
+  construction. Recognition acceptance, counts, measurements and claims are unchanged. This lets
+  drafting consumers choose a shaft-profile view without guessing from axis equality or rescanning
+  the solid (#150).
+
 ## 0.2.9
 
 - **Fixed: dimensioned 0.3 mm chamfers are recognised.** The absolute chamfer evidence floor is

@@ -8,7 +8,13 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet, import_step
 
-from b123d_recognisers import build_recognition_result, recognise_chamfers, recognise_fillets
+from b123d_recognisers import (
+    Chamfer,
+    Fillet,
+    build_recognition_result,
+    recognise_chamfers,
+    recognise_fillets,
+)
 from b123d_recognisers._geometry import _coaxial_axis_lines
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
@@ -35,13 +41,14 @@ def test_direct_reader_recognises_conical_turned_chamfers():
     assert {(chamfer.axis, chamfer.leg1, chamfer.leg2, chamfer.angle) for chamfer in found} == {
         ("z", 0.8, 0.8, 45.0)
     }
+    assert all(chamfer.turned for chamfer in found)
 
 
 def test_rotational_inventory_keeps_turned_chamfers():
     result = build_recognition_result(_chamfered_stepped_shaft(), rotational=True)
 
     assert len(result.chamfers) == 4
-    assert all(chamfer.axis == "z" for chamfer in result.chamfers)
+    assert all(chamfer.axis == "z" and chamfer.turned for chamfer in result.chamfers)
 
 
 def test_real_turned_inventory_keeps_dimensioned_three_tenths_chamfers():
@@ -68,6 +75,19 @@ def test_rotational_inventory_keeps_toroidal_turned_fillets():
     assert len(recognise_fillets(_filleted_stepped_shaft())) == 4
     assert len(result.fillets) == 4
     assert {(fillet.axis, fillet.radius) for fillet in result.fillets} == {("z", 0.8)}
+    assert all(fillet.turned for fillet in result.fillets)
+
+
+def test_prismatic_edge_treatments_and_legacy_constructors_default_to_not_turned():
+    box = Box(40, 30, 20)
+    vertical_edges = list(box.edges().filter_by(Axis.Z))
+    bevelled = box.chamfer(1.0, None, vertical_edges)
+    rounded = fillet(vertical_edges, 1.0)
+
+    assert all(not item.turned for item in recognise_chamfers(bevelled))
+    assert all(not item.turned for item in recognise_fillets(rounded))
+    assert not Chamfer("z", 1.0, 1.0, 45.0, (0.0, 0.0, 0.0)).turned
+    assert not Fillet("z", 1.0, (0.0, 0.0, 0.0)).turned
 
 
 def test_internal_countersink_is_not_a_turned_chamfer():

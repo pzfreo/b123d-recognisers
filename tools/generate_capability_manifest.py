@@ -62,6 +62,7 @@ FAMILIES = {
         "records": [("Chamfer", "output", ["RecognitionResult.chamfers"])],
         "census": "chamfer",
         "goldens": ["chamfers_fillets_and_flats"],
+        "tests": ["tests/test_turned_chamfers.py"],
     },
     "channels": {
         "recognisers": [("recognise_channels", "part")],
@@ -98,6 +99,7 @@ FAMILIES = {
         "records": [("Fillet", "output", ["RecognitionResult.fillets"])],
         "census": "fillet",
         "goldens": ["chamfers_fillets_and_flats"],
+        "tests": ["tests/test_turned_chamfers.py"],
     },
     "flats": {
         "recognisers": [("recognise_flats", "part")],
@@ -221,6 +223,11 @@ FAMILIES = {
     },
 }
 
+RECORD_SCHEMA_VERSIONS = {
+    "Chamfer": 2,
+    "Fillet": 2,
+}
+
 NO_MEMBERSHIP_RATIONALE = {
     "HoleSpec": (
         "Derived grouping key; it is computed from HoleRecord and is not retained by "
@@ -303,7 +310,7 @@ def _record(name: str, role: str, membership: list[str]) -> dict[str, object]:
         "name": name,
         "qualified_name": f"b123d_recognisers.{name}",
         "role": role,
-        "schema_version": 1,
+        "schema_version": RECORD_SCHEMA_VERSIONS.get(name, 1),
     }
     if not membership:
         result["aggregate_membership_rationale"] = NO_MEMBERSHIP_RATIONALE[name]
