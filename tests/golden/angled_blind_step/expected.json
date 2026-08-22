@@ -39,7 +39,8 @@
             ],
             "axis": "x",
             "leg1": 3.0,
-            "leg2": 3.0
+            "leg2": 3.0,
+            "turned": false
           }
         ],
         "channels": [],
@@ -216,7 +217,8 @@
           ],
           "axis": "x",
           "leg1": 3.0,
-          "leg2": 3.0
+          "leg2": 3.0,
+          "turned": false
         },
         {
           "_type": "Chamfer",
@@ -228,7 +230,8 @@
           ],
           "axis": "y",
           "leg1": 15.0,
-          "leg2": 10.0
+          "leg2": 10.0,
+          "turned": false
         }
       ],
       "recognise_channels": [],

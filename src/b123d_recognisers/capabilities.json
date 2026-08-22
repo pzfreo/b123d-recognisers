@@ -169,18 +169,24 @@
               "required": true,
               "type": "float",
               "units": "mm"
+            },
+            "turned": {
+              "required": false,
+              "type": "bool",
+              "units": "none"
             }
           },
           "name": "Chamfer",
           "qualified_name": "b123d_recognisers.Chamfer",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
       "test_evidence": [
         "tests/test_capability_claims.py",
-        "tests/test_recogniser_contract.py"
+        "tests/test_recogniser_contract.py",
+        "tests/test_turned_chamfers.py"
       ]
     },
     {
@@ -488,18 +494,24 @@
               "required": true,
               "type": "float",
               "units": "mm"
+            },
+            "turned": {
+              "required": false,
+              "type": "bool",
+              "units": "none"
             }
           },
           "name": "Fillet",
           "qualified_name": "b123d_recognisers.Fillet",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
       "test_evidence": [
         "tests/test_capability_claims.py",
-        "tests/test_recogniser_contract.py"
+        "tests/test_recogniser_contract.py",
+        "tests/test_turned_chamfers.py"
       ]
     },
     {
@@ -1925,6 +1937,6 @@
   "format_version": 1,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.2.10.dev0"
+    "version": "0.3.0.dev0"
   }
 }

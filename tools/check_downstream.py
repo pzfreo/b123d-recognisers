@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -28,10 +27,7 @@ DRAFTWRIGHT_TESTS = (
     "tests/test_recogniser_capabilities.py",
     "tests/test_import_boundaries.py",
 )
-_DRAFTWRIGHT_PACKAGE_VERSION = re.compile(
-    r'^_PACKAGE_VERSION = "(?P<version>[^"]+)"$', re.MULTILINE
-)
-_DRAFTWRIGHT_VERSION_ERROR = re.compile(r'f"does not satisfy ==\{PINNED_VERSION\}"')
+_CANDIDATE_VERSION_ENV = "DRAFTWRIGHT_RECOGNISER_CANDIDATE_VERSION"
 
 
 def _python(venv: Path) -> Path:
@@ -93,15 +89,16 @@ def _plan(package: Path, draftwright: Path, temporary: Path) -> list[dict[str, o
                 "pytest",
                 "-q",
                 *DRAFTWRIGHT_TESTS,
-                "-k",
-                "not installed_released_package_contract",
             ],
+            "environment": {_CANDIDATE_VERSION_ENV: "<candidate-version>"},
         },
     ]
 
 
-def _run(command: list[str], cwd: Path) -> None:
-    subprocess.run(command, cwd=cwd, check=True)
+def _run(command: list[str], cwd: Path, *, environment: dict[str, str] | None = None) -> None:
+    env = os.environ.copy()
+    env.update(environment or {})
+    subprocess.run(command, cwd=cwd, check=True, env=env)
 
 
 def _candidate_wheel(dist: Path) -> Path:
@@ -120,27 +117,6 @@ def _wheel_version(wheel: Path) -> str:
     if message.get("Name") != "b123d-recognisers" or not (version := message.get("Version")):
         raise SystemExit("candidate wheel has unexpected or missing project metadata")
     return version
-
-
-def _adapt_exported_draftwright_version(export: Path, version: str) -> None:
-    """Adapt only exact version references in the disposable consumer export."""
-    contract = export / "src" / "draftwright" / "recogniser_contract.py"
-    source = contract.read_text(encoding="utf-8")
-    updated, count = _DRAFTWRIGHT_PACKAGE_VERSION.subn(
-        f'_PACKAGE_VERSION = "{version}"', source
-    )
-    if count != 1:
-        raise SystemExit("expected one Draftwright package-version declaration")
-    contract.write_text(updated, encoding="utf-8")
-
-    tests = export / "tests" / "test_recogniser_capabilities.py"
-    source = tests.read_text(encoding="utf-8")
-    updated, count = _DRAFTWRIGHT_VERSION_ERROR.subn(
-        f'"does not satisfy =={version}"', source
-    )
-    if count != 1:
-        raise SystemExit("expected one Draftwright package-version error assertion")
-    tests.write_text(updated, encoding="utf-8")
 
 
 def _validate_checkout(path: Path, project_name: str) -> None:
@@ -187,12 +163,13 @@ def main() -> int:
                 export = Path(str(step["extract_to"]))
                 export.mkdir()
                 shutil.unpack_archive(str(step["archive"]), export, format="tar")
-                wheel = _candidate_wheel(temporary / "dist")
-                _adapt_exported_draftwright_version(export, _wheel_version(wheel))
                 _run(["uv", "sync", "--locked"], export)
             elif name == "install-candidate-wheel":
                 command[-1] = str(_candidate_wheel(temporary / "dist"))
                 _run(command, cwd)
+            elif name == "draftwright-contract":
+                version = _wheel_version(_candidate_wheel(temporary / "dist"))
+                _run(command, cwd, environment={_CANDIDATE_VERSION_ENV: version})
             else:
                 _run(command, cwd)
         print("candidate package and Draftwright contract are compatible")

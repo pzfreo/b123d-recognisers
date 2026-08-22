@@ -114,13 +114,15 @@ class Chamfer(Record):
     ``leg1``/``leg2`` are the cut depths into the two adjacent faces (equal for a 45°
     chamfer, ``leg1`` the larger); ``angle`` is the chamfer angle in degrees (45 for
     equal-leg); ``at`` is the chamfer face centre in part space (the callout leader's
-    tip)."""
+    tip). ``turned`` distinguishes a conical treatment swept around a shaft from a planar
+    prismatic bevel; it defaults to ``False`` for constructor compatibility."""
 
     axis: str
     leg1: float
     leg2: float
     angle: float
     at: tuple[float, float, float]
+    turned: bool = False
 
 
 def recognise_chamfers(
@@ -283,6 +285,7 @@ def recognise_chamfers(
                         leg2=round(leg_lo, 3),
                         angle=round(math.degrees(math.atan2(leg_lo, leg_hi)), 2),
                         at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
+                        turned=True,
                     ),
                     f,
                 )
