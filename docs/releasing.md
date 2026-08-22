@@ -14,8 +14,18 @@ A release is one GitHub release:
 3. `build-release` checks out the tag, strips the `.dev` suffix, builds the wheel and sdist,
    and hands them to the protected `pypi` environment for approval.
 4. When PyPI accepts, the workflow opens a PR moving `main` to the next `.dev0`. It dispatches
-   CI against that branch explicitly, because a branch pushed with `GITHUB_TOKEN` raises no
-   events and would otherwise arrive with no checks.
+   provider CI and the downstream status against that branch explicitly, because a branch pushed
+   with `GITHUB_TOKEN` raises no events and would otherwise arrive with no checks. The downstream
+   workflow's explicit dispatch identifies the exact generated commit, verifies that its parent is
+   on `origin/main` history and descended from the release tag, and proves that the commit differs
+   from that parent only by the four synchronized version copies. The fixed workflow authenticates
+   the parent against `origin/main` before loading the validator from it, never from mutable
+   pull-request HEAD. The generated PR event uses
+   this path only when GitHub identifies its base as `main`, its author as the Actions bot or a
+   repository owner/member/collaborator, its head repository as this repository, and its branch as
+   the generated release branch; ordinary and fork pull requests cannot select it. It does not widen
+   Draftwright to accept the next patch's development identity: the released tag's candidate already
+   supplied that contract evidence before publication.
 
 The published wheel is a function of the tagged commit. It used to be built on a maintainer's
 machine and attached to the release, which could only check that the attached artifact's

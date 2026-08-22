@@ -5,6 +5,15 @@ on:
   schedule:
     - cron: "43 5 * * 6"
   workflow_dispatch:
+    inputs:
+      post_release_tag:
+        description: Released tag for a trusted generated bump (empty runs the normal canary)
+        required: false
+        type: string
+      post_release_bump_sha:
+        description: Exact generated version-bump commit
+        required: false
+        type: string
 
 concurrency:
   group: downstream-${{ github.event.pull_request.number || github.ref }}
@@ -23,8 +32,69 @@ jobs:
         with:
           path: package
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Classify a generated post-release bump
+        id: bump
+        working-directory: package
+        env:
+          BUMP_SHA: ${{ inputs.post_release_bump_sha }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RELEASE_TAG: ${{ inputs.post_release_tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if [[ "$EVENT_NAME" == workflow_dispatch && -n "$RELEASE_TAG" && -n "$BUMP_SHA" ]]; then
+            echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=$BUMP_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == pull_request && "$BASE_BRANCH" == main \
+              && ( "$PR_AUTHOR" == 'github-actions[bot]' \
+                || "$PR_AUTHOR_ASSOCIATION" == OWNER \
+                || "$PR_AUTHOR_ASSOCIATION" == MEMBER \
+                || "$PR_AUTHOR_ASSOCIATION" == COLLABORATOR ) \
+              && "$HEAD_REPOSITORY" == "$REPOSITORY" \
+              && "$CANDIDATE_BRANCH" =~ ^automation/post-release-(v[0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
+            release_tag=${BASH_REMATCH[1]}
+            git checkout --detach "$PR_HEAD_SHA"
+            base=$(git merge-base refs/remotes/origin/main HEAD)
+            bump=$(git rev-list --reverse "$base..HEAD" | head -n 1)
+            echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=$bump" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=" >> "$GITHUB_OUTPUT"
+            echo "bump_sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate mechanical post-release identity bump
+        if: steps.bump.outputs.release_tag != ''
+        working-directory: package
+        env:
+          BUMP_SHA: ${{ steps.bump.outputs.bump_sha }}
+          CANDIDATE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          RELEASE_TAG: ${{ steps.bump.outputs.release_tag }}
+        run: |
+          bump_parent=$(git rev-parse --verify "$BUMP_SHA^")
+          main_commit=$(git rev-parse --verify refs/remotes/origin/main)
+          git merge-base --is-ancestor "$bump_parent" "$main_commit"
+          validator="$RUNNER_TEMP/check_post_release_bump.py"
+          git show "$bump_parent:tools/check_post_release_bump.py" > "$validator"
+          python "$validator" \
+            --released-tag "$RELEASE_TAG" --branch "$CANDIDATE_BRANCH" --bump-sha "$BUMP_SHA"
+          {
+            echo "## Draftwright downstream compatibility"
+            echo
+            echo "Mechanical post-release identity bump validated against \`${RELEASE_TAG}\`."
+            echo "The released candidate already supplied the Draftwright contract evidence;"
+            echo "the next patch's \`.dev0\` identity is outside that closed transition by design."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Resolve and check out Draftwright compatibility point
+        if: steps.bump.outputs.release_tag == ''
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: pzfreo/draftwright
@@ -33,12 +103,14 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
+        if: steps.bump.outputs.release_tag == ''
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
           python-version: "3.13"
 
       - name: Run bounded candidate-wheel compatibility check
+        if: steps.bump.outputs.release_tag == ''
         working-directory: package
         env:
           PACKAGE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
