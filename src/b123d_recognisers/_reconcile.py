@@ -32,61 +32,62 @@ corpus.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
+from collections.abc import Set as AbstractSet
+from dataclasses import dataclass
+from typing import Literal, TypeAlias
 
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_records import Pocket, Slot
-from b123d_recognisers._typing import Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.grooves import Groove
-from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.turned import TurnedStep
 
+RecessCandidate: TypeAlias = Slot | Pocket | PrismaticPocket | Passage
+RecessOutcome = Literal["accepted", "rejected"]
+RecessReason = Literal[
+    "accepted",
+    "accepted_without_claim",
+    "contained_by_passage",
+    "contained_by_non_rectangular_prismatic_pocket",
+    "rectangular_passage_superseded_by_slot",
+    "rectangular_ring_superseded_by_pocket",
+    "superseded_by_non_rectangular_passage",
+    "superseded_by_pocket",
+    "superseded_by_prismatic_pocket",
+]
 
-def passages_that_are_not_slots(part: Part, ledger: ClaimLedger) -> list[Passage]:
-    """Recognise passages against a ledger the slots have already been written into, and drop
-    the four-sided ones that are those slots.
 
-    A through slot *is* a closed uncapped ring, so `recognise_passages` reports it too. Both
-    families record the faces they were built from, so "are these the same void" is asked of
-    those faces: **a passage whose ring contains both walls a slot was established by is that
-    slot, seen from inside.** The slot record wins, because it dimensions the void -- width,
-    length and the extent on the third axis -- where the passage would only count its sides.
+@dataclass(frozen=True, eq=False, slots=True)
+class RecessDisposition:
+    """One discovery candidate's explicit reconciliation outcome and reason."""
 
-    Containment, and directional, rather than overlap. A slot claims its two opposed walls; the
-    ring is every wall, so the slot's claim sits inside the passage's and never the reverse.
-    Mere overlap would be too weak to be a verdict, which is what ADR 0003 means by overlapping
-    claims being evidence and not one: two records sharing a face may both be real, as a
-    pattern and its members are.
+    candidate: RecessCandidate
+    outcome: RecessOutcome
+    reason: RecessReason
 
-    The heuristic this replaced compared a ring's averaged centre with a slot record's centre in
-    X and Y within 1e-6. It ignored the run axis and Z, so an X-running passage and an unrelated
-    Z slot at the same XY were the same feature to it; the two centres were also derived by
-    different procedures, one averaging wall-face centres and the other reading slot extents.
-    """
 
-    passages = recognise_passages(part, ledger=ledger)
-    slot_walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Slot)]
-    return [
-        passage
-        for passage in passages
-        # A four-wall ring is the rectangular void a Slot measures more directly. A ring with
-        # any other side count is not made a slot merely because one opposed pair happens to
-        # sit inside it; that is the false candidate exposed on triangular,
-        # hexagonal and interrupted passage sections.
-        if passage.sides != 4
-        or not any(walls <= ledger.defining_of(passage) for walls in slot_walls)
-    ]
+@dataclass(frozen=True, slots=True)
+class ReconciledRecesses:
+    """Accepted recess inventory plus a complete, identity-preserving decision trace."""
+
+    slots: tuple[Slot, ...]
+    pockets: tuple[Pocket, ...]
+    prismatic_pockets: tuple[PrismaticPocket, ...]
+    passages: tuple[Passage, ...]
+    dispositions: tuple[RecessDisposition, ...]
 
 
 def reconcile_recesses(
-    part: Part,
     slots: list[Slot],
     pockets: list[Pocket],
     prismatic: list[PrismaticPocket],
+    passages: list[Passage],
     ledger: ClaimLedger,
-) -> tuple[list[Slot], list[Pocket], list[PrismaticPocket], list[Passage]]:
+) -> ReconciledRecesses:
     """Apply the recess-family precedence rules after every family has proposed.
 
     A shared face is only evidence.  The verdicts here require containment by a more complete
@@ -103,24 +104,55 @@ def reconcile_recesses(
     matching the way slot reduction pools collinear wall arms into one record.
     """
 
-    passages = recognise_passages(part, ledger=ledger)
+    dispositions: dict[int, RecessDisposition] = {}
 
-    accepted_prismatic = prismatic_pockets_that_are_not_pockets(prismatic, ledger)
-    non_rectangular_pockets = [
-        pocket for pocket in accepted_prismatic if pocket.sides != 4
-    ]
-    accepted_pockets = [
-        pocket
-        for pocket in pockets
-        if not any(
-            ledger.defining_of(pocket) <= ledger.defining_of(passage)
-            for passage in passages
+    def decide(candidate: RecessCandidate, outcome: RecessOutcome, reason: RecessReason) -> None:
+        """Record exactly one verdict without relying on value equality between records."""
+
+        key = id(candidate)
+        if key in dispositions:
+            raise AssertionError("a recess candidate received more than one disposition")
+        dispositions[key] = RecessDisposition(candidate, outcome, reason)
+
+    accepted_prismatic = []
+    pocket_walls = _pocket_wall_claims(pockets, ledger)
+    for ring in prismatic:
+        rejected = _rectangular_ring_is_superseded(ring, pocket_walls, ledger)
+        ring_walls = ledger.defining_of(ring)
+        decide(
+            ring,
+            "rejected" if rejected else "accepted",
+            "rectangular_ring_superseded_by_pocket"
+            if rejected
+            else "accepted"
+            if ring_walls
+            else "accepted_without_claim",
         )
-        and not any(
-            ledger.defining_of(pocket) <= ledger.defining_of(ring)
-            for ring in non_rectangular_pockets
+        if not rejected:
+            accepted_prismatic.append(ring)
+    non_rectangular_pockets = [pocket for pocket in accepted_prismatic if pocket.sides != 4]
+    accepted_pockets = []
+    for pocket in pockets:
+        defining_walls = ledger.defining_of(pocket)
+        inside_passage = bool(defining_walls) and any(
+            defining_walls <= ledger.defining_of(passage) for passage in passages
         )
-    ]
+        inside_ring = bool(defining_walls) and any(
+            defining_walls <= ledger.defining_of(ring) for ring in non_rectangular_pockets
+        )
+        reason: RecessReason = (
+            "accepted_without_claim"
+            if not defining_walls
+            else "contained_by_passage"
+            if inside_passage
+            else "contained_by_non_rectangular_prismatic_pocket"
+            if inside_ring
+            else "accepted"
+        )
+        rejected = inside_passage or inside_ring
+        decide(pocket, "rejected" if rejected else "accepted", reason)
+        if not rejected:
+            accepted_pockets.append(pocket)
 
     non_rectangular_rings: dict[tuple, set] = defaultdict(set)
     for passage in passages:
@@ -137,30 +169,55 @@ def reconcile_recesses(
         # subset of every ring, but semantically it is not an ownership verdict.
         if not walls:
             accepted_slots.append(slot)
+            decide(slot, "accepted", "accepted_without_claim")
             continue
         if any(walls <= ledger.defining_of(pocket) for pocket in accepted_pockets):
+            decide(slot, "rejected", "superseded_by_pocket")
             continue
         if any(walls <= ledger.defining_of(pocket) for pocket in accepted_prismatic):
+            decide(slot, "rejected", "superseded_by_prismatic_pocket")
             continue
         if any(walls <= ring for ring in non_rectangular_rings.values()):
+            decide(slot, "rejected", "superseded_by_non_rectangular_passage")
             continue
         accepted_slots.append(slot)
+        decide(slot, "accepted", "accepted")
 
-    accepted_passages = [
-        passage
-        for passage in passages
-        if passage.sides != 4
-        or not any(
-            ledger.defining_of(slot) <= ledger.defining_of(passage)
+    accepted_passages = []
+    for passage in passages:
+        passage_walls = ledger.defining_of(passage)
+        superseded = passage.sides == 4 and any(
+            (slot_walls := ledger.defining_of(slot)) and slot_walls <= passage_walls
             for slot in accepted_slots
         )
-    ]
-    return accepted_slots, accepted_pockets, accepted_prismatic, accepted_passages
+        decide(
+            passage,
+            "rejected" if superseded else "accepted",
+            "rectangular_passage_superseded_by_slot"
+            if superseded
+            else "accepted"
+            if passage_walls
+            else "accepted_without_claim",
+        )
+        if not superseded:
+            accepted_passages.append(passage)
+
+    discovered = (*slots, *pockets, *prismatic, *passages)
+    if len(dispositions) != len(discovered) or set(dispositions) != {id(c) for c in discovered}:
+        raise AssertionError(
+            "every discovered recess candidate must receive exactly one disposition"
+        )
+
+    return ReconciledRecesses(
+        tuple(accepted_slots),
+        tuple(accepted_pockets),
+        tuple(accepted_prismatic),
+        tuple(accepted_passages),
+        tuple(dispositions[id(candidate)] for candidate in discovered),
+    )
 
 
-def steps_that_are_not_grooves(
-    steps: list[TurnedStep], ledger: ClaimLedger
-) -> list[TurnedStep]:
+def steps_that_are_not_grooves(steps: list[TurnedStep], ledger: ClaimLedger) -> list[TurnedStep]:
     """The turned steps that are a distinct machined feature, for counting purposes only.
 
     A groove *is* a rung of the step ladder: an external band whose OD is a local minimum is
@@ -196,15 +253,9 @@ def steps_that_are_not_grooves(
     and report no turned steps at all.
     """
 
-    # Takes the records where `passages_that_are_not_slots` takes the part and runs the
-    # recogniser itself. Not an oversight: that one owns the call so the pairing below cannot
-    # be wrong, but the full ladder is needed by `build_recognition_result` as well, and owning
-    # the call here would mean scanning the shaft twice to throw one of the results away.
     floors = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Groove)]
     return [
-        step
-        for step in steps
-        if not any(floor <= ledger.defining_of(step) for floor in floors)
+        step for step in steps if not any(floor <= ledger.defining_of(step) for floor in floors)
     ]
 
 
@@ -222,8 +273,8 @@ def chamfers_that_are_not_angled_steps(
     before the triangular flat closes it. That flat is what the step found and the chamfer
     could not see.
 
-    Precedence, like `passages_that_are_not_slots`, and for the same reason -- one description
-    subsumes the other. Not the containment test that rule uses, though: there a slot's two
+    Precedence, like the recess rules above, and for the same reason -- one description subsumes
+    the other. Not their containment test, though: there a slot's two
     walls sit *inside* a passage's whole ring, so the direction of the subset carries the
     verdict. Here the two claims are the same single face, so overlap and containment are the
     same question and the honest way to write it is that they name the same face at all.
@@ -251,34 +302,20 @@ def chamfers_that_are_not_angled_steps(
     return [chamfer for chamfer in chamfers if ledger.defining_of(chamfer).isdisjoint(slants)]
 
 
-def prismatic_pockets_that_are_not_pockets(
-    prismatic: list[PrismaticPocket], ledger: ClaimLedger
-) -> list[PrismaticPocket]:
-    """The prismatic pockets no rectangular `Pocket` already describes, dropped where they are.
+def _pocket_wall_claims(
+    pockets: Sequence[Pocket], ledger: ClaimLedger
+) -> list[AbstractSet[object]]:
+    """Return non-empty evidence only for Pocket candidates supplied to this phase."""
 
-    Two families reach a rectangular recess and neither is wrong. `recognise_pockets` pairs two
-    facing walls; `recognise_prismatic_pockets` walks the closed ring those walls sit in. On the
-    geometry alone both are true, and which record a caller wants is not a question either
-    recogniser can answer about itself.
+    return [walls for pocket in pockets if (walls := ledger.defining_of(pocket))]
 
-    **For a four-sided ring, the rectangular record wins**, and the direction is not arbitrary.
-    `Pocket` measures
-    `width` and `length` on named axes -- the numbers a drawing calls out -- where the prismatic
-    record carries a four-corner section that says the same thing less directly. For a shape the
-    older family can express, it expresses it better. For every shape it cannot, nothing here
-    fires and the prismatic record is the only one there is.
 
-    Containment, like `passages_that_are_not_slots`, and for the same reason: a `Pocket` claims
-    the two walls it was paired from, and those walls are members of the ring, so the subset runs
-    one way and never the other. Mere overlap would be too weak -- two recesses sharing a wall
-    are two recesses, which is what ADR 0003 means by overlapping claims being evidence rather
-    than a verdict.
-    """
+def _rectangular_ring_is_superseded(
+    ring: PrismaticPocket,
+    pocket_walls: Sequence[AbstractSet[object]],
+    ledger: ClaimLedger,
+) -> bool:
+    """Whether a dimensioned rectangular pocket subsumes this less-specific ring record."""
 
-    walls = [claim.defining for claim in ledger.claims if isinstance(claim.claimant, Pocket)]
-    return [
-        pocket
-        for pocket in prismatic
-        if pocket.sides != 4
-        or not any(paired <= ledger.defining_of(pocket) for paired in walls)
-    ]
+    ring_walls = ledger.defining_of(ring)
+    return ring.sides == 4 and any(walls <= ring_walls for walls in pocket_walls)

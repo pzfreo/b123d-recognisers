@@ -37,6 +37,7 @@ from build123d import (
 )
 
 from b123d_recognisers import (
+    AngledStep,
     BoltCircle,
     BossRecord,
     Chamfer,
@@ -50,15 +51,18 @@ from b123d_recognisers import (
     Groove,
     HoleRecord,
     LinearArray,
+    Passage,
     Plate,
     Pocket,
     PocketArray,
     PocketGrid,
     PolygonalBoss,
     PolygonalStock,
+    PrismaticPocket,
     RaisedPad,
     RectGrid,
     RepeatingRadialProfile,
+    RiserEvidence,
     Slot,
     SlotArray,
     SlotGrid,
@@ -84,6 +88,7 @@ from b123d_recognisers import (
     recognise_pockets,
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
+    recognise_prismatic_pockets,
     recognise_rectangular_pads,
     recognise_repeating_radial_profiles,
     recognise_risers,
@@ -125,6 +130,10 @@ _EXPECTED_RECORD_TYPES = {
     StepShoulder,
     TurnedStep,
     RepeatingRadialProfile,
+    AngledStep,
+    Passage,
+    PrismaticPocket,
+    RiserEvidence,
 }
 
 
@@ -216,6 +225,16 @@ def _passaged_block():
     return Box(60, 40, 20) - bore.part
 
 
+def _prismatic_pocketed_block():
+    """A blind hexagonal recess with a complete wall ring and floor."""
+
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY):
+            RegularPolygon(9, 6)
+        extrude(amount=8)
+    return Box(60, 40, 20) - Pos(0, 0, 2) * cutter.part
+
+
 def _angled_stepped_box():
     """A 45 degrees wedge stopped inside the block, so a triangular flat closes its blind end."""
     return Box(60, 40, 12) - Pos(-20, 20, 6) * Rot(45, 0, 0) * Box(30, 5.657, 5.657)
@@ -292,6 +311,10 @@ def _records_from_recognisers():
         ("hole_patterns:grid", recognise_hole_patterns(recognise_holes(_grid_plate()))),
         ("recognise_angled_steps", recognise_angled_steps(_angled_stepped_box())),
         ("recognise_passages", recognise_passages(_passaged_block())),
+        (
+            "recognise_prismatic_pockets",
+            recognise_prismatic_pockets(_prismatic_pocketed_block()),
+        ),
         ("recognise_chamfers", recognise_chamfers(_chamfered_box())),
         ("recognise_channels", recognise_channels(channel)),
         ("recognise_fillets", recognise_fillets(_filleted_box())),
@@ -361,7 +384,9 @@ def test_every_record_type_is_actually_exercised():
     """
     seen = {type(rec) for _, rec in _records_from_recognisers()}
     missing = _EXPECTED_RECORD_TYPES - seen
+    unexpected = seen - _EXPECTED_RECORD_TYPES
     assert not missing, f"contract test never exercised these record types: {missing}"
+    assert not unexpected, f"contract roster omits these emitted record types: {unexpected}"
 
 
 def test_frozen_records_reject_mutation():
@@ -383,6 +408,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_double_d_bores,
         recognise_angled_steps,
         recognise_passages,
+        recognise_prismatic_pockets,
         recognise_chamfers,
         recognise_channels,
         recognise_fillets,

@@ -53,6 +53,11 @@ The graph creates a coherent substrate for future rule or subgraph recognisers a
 unclaimed-geometry diagnostics. It also adds memory, identity and tolerance complexity, so it is
 proposed separately from the initial mechanical extraction.
 
+The 0.2.10 recess phase-purity work implements a narrow precursor to the disposition requirement:
+every discovered recess candidate receives one internal accepted/rejected reason after discovery.
+It does **not** implement residual analysis or public ambiguous/unsupported outcomes, and therefore
+must not be cited as satisfying those required-evidence items.
+
 ## Amendment (0.2.6, issue #75)
 
 **A blend is not only noise. It is also a bridge, and the acceptance list above only asks about

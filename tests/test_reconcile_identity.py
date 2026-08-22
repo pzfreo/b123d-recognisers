@@ -30,7 +30,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
-    prismatic_pockets_that_are_not_pockets,
+    reconcile_recesses,
 )
 
 _WEDGE = 5.657
@@ -55,11 +55,23 @@ def _busy_part():
 def _claimed(part):
     ledger = ClaimLedger(FaceGraph(part))
     return ledger, {
+        "slots": r.recognise_slots(part, ledger=ledger),
         "pockets": r.recognise_pockets(part, ledger=ledger),
         "prismatic": r.recognise_prismatic_pockets(part, ledger=ledger),
+        "passages": r.recognise_passages(part, ledger=ledger),
         "chamfers": r.recognise_chamfers(part, ledger=ledger),
         "steps": r.recognise_angled_steps(part, ledger=ledger),
     }
+
+
+def _accepted_prismatic(found, ledger):
+    return reconcile_recesses(
+        found["slots"],
+        found["pockets"],
+        found["prismatic"],
+        found["passages"],
+        ledger,
+    ).prismatic_pockets
 
 
 def test_the_fixture_actually_exercises_both_rules():
@@ -86,9 +98,7 @@ def test_permuting_recogniser_output_does_not_change_what_survives():
     part = _busy_part()
     ledger, found = _claimed(part)
     baseline_bevels = set(chamfers_that_are_not_angled_steps(found["chamfers"], ledger))
-    baseline_pockets = set(
-        prismatic_pockets_that_are_not_pockets(found["prismatic"], ledger)
-    )
+    baseline_pockets = set(_accepted_prismatic(found, ledger))
 
     shuffler = random.Random(20260820)
     for _ in range(20):
@@ -98,9 +108,8 @@ def test_permuting_recogniser_output_does_not_change_what_survives():
         shuffler.shuffle(pockets)
 
         assert set(chamfers_that_are_not_angled_steps(bevels, ledger)) == baseline_bevels
-        assert (
-            set(prismatic_pockets_that_are_not_pockets(pockets, ledger)) == baseline_pockets
-        )
+        shuffled = {**found, "prismatic": pockets}
+        assert set(_accepted_prismatic(shuffled, ledger)) == baseline_pockets
 
 
 def test_two_records_of_equal_value_keep_separate_evidence():
@@ -111,9 +120,7 @@ def test_two_records_of_equal_value_keep_separate_evidence():
     why `Claim` compares by identity, and `defining_of` has to preserve it.
     """
 
-    part = Box(120, 60, 20) - Pos(-30, 0, 8) * Box(16, 12, 14) - Pos(30, 0, 8) * Box(
-        16, 12, 14
-    )
+    part = Box(120, 60, 20) - Pos(-30, 0, 8) * Box(16, 12, 14) - Pos(30, 0, 8) * Box(16, 12, 14)
     ledger, found = _claimed(part)
     pockets = found["prismatic"]
 

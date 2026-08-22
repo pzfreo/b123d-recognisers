@@ -27,10 +27,9 @@ that did so read ``continue  # a floor fills the ring: this is a pocket``.
   on the *Circular end pocket* class, which the pairing family recognises.
 
 Where both see the same rectangular recess, both report it. That overlap is a reconciliation
-question and is answered by
-:func:`b123d_recognisers._reconcile.prismatic_pockets_that_are_not_pockets`, from the faces
-each family claimed -- not by either recogniser declining a face because the other might want
-it, which ADR 0003 forbids.
+question and is answered by :func:`b123d_recognisers._reconcile.reconcile_recesses`, from the
+complete candidate inventory and faces each family claimed -- not by either recogniser declining
+a face because the other might want it, which ADR 0003 forbids.
 
 Ring-finding, the cross-section walk and the cap test are
 :mod:`b123d_recognisers._rings`, shared with ``passages``.
@@ -97,9 +96,9 @@ def recognise_prismatic_pockets(
 
     **A rectangular recess is reported here as well as by**
     :func:`b123d_recognisers.recognise_pockets`, because on the ring alone it is one. Which
-    survives is
-    :func:`b123d_recognisers._reconcile.prismatic_pockets_that_are_not_pockets`, decided from
-    the claims rather than by either family second-guessing the other.
+    survives is decided by :func:`b123d_recognisers._reconcile.reconcile_recesses`, from the
+    completed claims and candidate inventory rather than by either family second-guessing the
+    other.
 
     *ledger* records the faces the pocket was **established by**: its ring walls. The floor is
     *consulted* -- it is what makes the recess blind, and `depth` is the walls' own span rather

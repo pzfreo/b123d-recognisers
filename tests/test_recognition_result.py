@@ -46,6 +46,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     holes = [object()]
     slots = [object()]
     pockets = [object()]
+    passages = [object()]
 
     def counted(name, returns):
         def fake(part, **kwargs):
@@ -96,14 +97,18 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "recognise_polygonal_stock", counted("polygonal_stock", []))
     monkeypatch.setattr(result_module, "recognise_channels", counted("channels", []))
     monkeypatch.setattr(result_module, "recognise_slots", counted("slots", slots))
+    accepted_slots = tuple(slots)
+    accepted_pockets = tuple(pockets)
     monkeypatch.setattr(
-        result_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
+        result_module, "recognise_slot_patterns", derived("slot_patterns", accepted_slots, [])
     )
     monkeypatch.setattr(result_module, "recognise_grooves", cyl_consumer("grooves", []))
     monkeypatch.setattr(result_module, "recognise_flats", cyl_consumer("flats", []))
     monkeypatch.setattr(result_module, "recognise_pockets", counted("pockets", pockets))
     monkeypatch.setattr(
-        result_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
+        result_module,
+        "recognise_pocket_patterns",
+        derived("pocket_patterns", accepted_pockets, []),
     )
     monkeypatch.setattr(result_module, "recognise_rectangular_pads", counted("pads", []))
     monkeypatch.setattr(
@@ -118,11 +123,17 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # All four recess families are proposed before one reconciler decides among them. The
     # orchestrator passes the records and their shared ledger once rather than applying pairwise
     # rules at different points in result construction.
-    def fake_recesses(part, found_slots, found_pockets, prismatic, ledger):
-        calls["passages"] = calls.get("passages", 0) + 1
+    monkeypatch.setattr(result_module, "recognise_passages", counted("passages", passages))
+
+    def fake_recesses(found_slots, found_pockets, prismatic, found_passages, ledger):
+        from b123d_recognisers._reconcile import ReconciledRecesses
+
         assert found_slots is slots and found_pockets is pockets
+        assert found_passages is passages
         assert ledger is not None
-        return found_slots, found_pockets, prismatic, []
+        return ReconciledRecesses(
+            accepted_slots, accepted_pockets, tuple(prismatic), tuple(found_passages), ()
+        )
 
     monkeypatch.setattr(result_module, "reconcile_recesses", fake_recesses)
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))

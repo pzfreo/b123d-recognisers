@@ -8,6 +8,20 @@ from __future__ import annotations
 from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos, Rot, extrude
 
 import b123d_recognisers as r
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._reconcile import reconcile_recesses
+
+
+def _reconcile(part):
+    ledger = ClaimLedger(FaceGraph(part))
+    return reconcile_recesses(
+        r.recognise_slots(part, ledger=ledger),
+        r.recognise_pockets(part, ledger=ledger),
+        r.recognise_prismatic_pockets(part, ledger=ledger),
+        r.recognise_passages(part, ledger=ledger),
+        ledger,
+    )
 
 
 def _u_void(*, blind: bool):
@@ -43,6 +57,143 @@ def test_a_non_rectangular_passage_beats_slots_assembled_from_its_wall_pairs():
     result = r.build_recognition_result(part)
     assert result.slots == ()
     assert [passage.sides for passage in result.passages] == [8]
+
+
+def test_every_recess_candidate_has_one_identity_preserving_disposition():
+    """Reconciliation explains every proposal; rejection is not represented by disappearance."""
+
+    part = _u_void(blind=False)
+    ledger = ClaimLedger(FaceGraph(part))
+    slots = r.recognise_slots(part, ledger=ledger)
+    pockets = r.recognise_pockets(part, ledger=ledger)
+    prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)
+    passages = r.recognise_passages(part, ledger=ledger)
+    reconciled = reconcile_recesses(slots, pockets, prismatic, passages, ledger)
+
+    discovered = [*slots, *pockets, *prismatic, *passages]
+    accepted = {
+        id(candidate)
+        for candidate in (
+            *reconciled.slots,
+            *reconciled.pockets,
+            *reconciled.prismatic_pockets,
+            *reconciled.passages,
+        )
+    }
+    assert len(reconciled.dispositions) == len(discovered)
+    assert {id(item.candidate) for item in reconciled.dispositions} == {
+        id(candidate) for candidate in discovered
+    }
+    assert len({id(item.candidate) for item in reconciled.dispositions}) == len(discovered)
+    assert all(
+        (item.outcome == "accepted") == (id(item.candidate) in accepted)
+        for item in reconciled.dispositions
+    )
+    assert {
+        item.reason
+        for item in reconciled.dispositions
+        if item.outcome == "rejected" and isinstance(item.candidate, r.Slot)
+    } == {"superseded_by_non_rectangular_passage"}
+
+
+def test_dispositions_name_each_rectangular_and_non_rectangular_precedence_rule():
+    """The trace explains the rules rather than exposing an unstructured kept/dropped split."""
+
+    through_rectangle = Box(60, 30, 10) - Box(30, 8, 20)
+    blind_rectangle = Box(60, 30, 10) - Pos(0, 0, 3) * Box(30, 8, 6)
+
+    cases = {
+        "through rectangle": (
+            through_rectangle,
+            {
+                ("Slot", "accepted", "accepted"),
+                ("Passage", "rejected", "rectangular_passage_superseded_by_slot"),
+            },
+        ),
+        "blind rectangle": (
+            blind_rectangle,
+            {
+                ("Pocket", "accepted", "accepted"),
+                (
+                    "PrismaticPocket",
+                    "rejected",
+                    "rectangular_ring_superseded_by_pocket",
+                ),
+            },
+        ),
+        "blind U": (
+            _u_void(blind=True),
+            {
+                (
+                    "Pocket",
+                    "rejected",
+                    "contained_by_non_rectangular_prismatic_pocket",
+                ),
+                ("PrismaticPocket", "accepted", "accepted"),
+            },
+        ),
+    }
+
+    for name, (part, expected) in cases.items():
+        observed = {
+            (type(item.candidate).__name__, item.outcome, item.reason)
+            for item in _reconcile(part).dispositions
+        }
+        assert observed == expected, name
+
+
+def test_unclaimed_candidates_cannot_win_or_lose_a_containment_decision():
+    """Missing evidence is not containment, even though the empty set is every set's subset."""
+
+    part = Box(60, 30, 10) - Box(30, 8, 20)
+    ledger = ClaimLedger(FaceGraph(part))
+    passage = r.recognise_passages(part, ledger=ledger)[0]
+    slot = r.Slot("y", "x", 8, 30, 0, -15, 15, -5, 5)
+    pocket = r.Pocket("y", "x", 8, 30, 6, 0, -15, 15, -3, 3)
+
+    reconciled = reconcile_recesses([slot], [pocket], [], [passage], ledger)
+
+    assert reconciled.slots == (slot,)
+    assert reconciled.pockets == (pocket,)
+    assert reconciled.passages == (passage,)
+    assert [(item.outcome, item.reason) for item in reconciled.dispositions] == [
+        ("accepted", "accepted_without_claim"),
+        ("accepted", "accepted_without_claim"),
+        ("accepted", "accepted"),
+    ]
+
+
+def test_ledger_claims_outside_the_candidate_inventory_cannot_decide_the_result():
+    """A complete trace cannot depend on a ghost winner that has no disposition in this phase."""
+
+    part = Box(60, 30, 10) - Pos(0, 0, 3) * Box(30, 8, 6)
+    ledger = ClaimLedger(FaceGraph(part))
+    pockets = r.recognise_pockets(part, ledger=ledger)
+    rings = r.recognise_prismatic_pockets(part, ledger=ledger)
+    assert pockets and rings
+
+    reconciled = reconcile_recesses([], [], rings, [], ledger)
+
+    assert reconciled.prismatic_pockets == tuple(rings)
+    assert [(item.outcome, item.reason) for item in reconciled.dispositions] == [
+        ("accepted", "accepted")
+    ]
+
+
+def test_equal_candidate_values_keep_identity_distinct_dispositions():
+    """A trace must not merge two physical proposals merely because their records compare equal."""
+
+    ledger = ClaimLedger(FaceGraph(Box(1, 1, 1)))
+    first = r.Slot("x", "y", 1, 2, 0, -1, 1, -0.5, 0.5)
+    second = r.Slot("x", "y", 1, 2, 0, -1, 1, -0.5, 0.5)
+    assert first == second and first is not second
+
+    dispositions = reconcile_recesses([first, second], [], [], [], ledger).dispositions
+
+    assert len(dispositions) == 2
+    assert dispositions[0].candidate is first
+    assert dispositions[1].candidate is second
+    assert dispositions[0] != dispositions[1]
 
 
 def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():
@@ -143,11 +294,7 @@ def test_a_blind_u_does_not_turn_one_end_and_a_floor_into_a_wide_pocket():
 def test_two_end_connectors_leave_a_separate_body_not_material_in_the_slot_body():
     """Compound bodies remain independent even when one spatially occupies another's void."""
 
-    part = (
-        _parallel_recesses()
-        - Pos(-14, 0, 0) * Box(2, 10, 20)
-        - Pos(14, 0, 0) * Box(2, 10, 20)
-    )
+    part = _parallel_recesses() - Pos(-14, 0, 0) * Box(2, 10, 20) - Pos(14, 0, 0) * Box(2, 10, 20)
 
     assert len(part.solids()) == 2
     (slot,) = r.recognise_slots(part)

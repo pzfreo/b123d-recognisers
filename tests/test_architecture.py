@@ -200,6 +200,36 @@ def test_internal_module_seams_match_adr_0007() -> None:
     assert crossings == {}
 
 
+def test_reconcilers_consume_candidates_but_never_run_recognisers() -> None:
+    """Discovery is complete before a rule assigns ownership (ADR 0003)."""
+
+    path = PACKAGE / "_reconcile.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    imported = [
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+        if alias.name.startswith("recognise_")
+    ]
+    called = [
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id.startswith("recognise_")
+    ]
+    qualified_references = [
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and node.attr.startswith("recognise_")
+    ]
+
+    assert imported == []
+    assert called == []
+    assert qualified_references == []
+
+
 def test_no_accidental_public_modules() -> None:
     modules = {path.stem for path in PACKAGE.glob("*.py") if path.stem != "__init__"}
     public = {module for module in modules if not module.startswith("_")}
@@ -303,9 +333,7 @@ def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() 
         (PACKAGE / "_recess_core.py").read_text(encoding="utf-8"),
         filename="_recess_core.py",
     )
-    functions = {
-        node.name: node for node in core.body if isinstance(node, ast.FunctionDef)
-    }
+    functions = {node.name: node for node in core.body if isinstance(node, ast.FunctionDef)}
     for name in ("_recognise_slots_one", "_recognise_pockets_one", "_recognise_channels_one"):
         scans = [
             node
@@ -317,13 +345,10 @@ def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() 
         assert len(scans) == 1, name
 
     for module_name in ("_hole_patterns.py", "_pattern_geometry.py", "_recess_patterns.py"):
-        tree = ast.parse(
-            (PACKAGE / module_name).read_text(encoding="utf-8"), filename=module_name
-        )
+        tree = ast.parse((PACKAGE / module_name).read_text(encoding="utf-8"), filename=module_name)
         topology_reads = [
             node.attr
             for node in ast.walk(tree)
-            if isinstance(node, ast.Attribute)
-            and node.attr in {"edges", "faces", "solids"}
+            if isinstance(node, ast.Attribute) and node.attr in {"edges", "faces", "solids"}
         ]
         assert topology_reads == [], module_name

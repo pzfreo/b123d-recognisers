@@ -87,6 +87,30 @@ its cache semantics part of this package's aggregate value.
 Consumers receive one explainable physical feature universe. Migration can be feature-family by
 feature-family, but temporary partial results must say which families were not evaluated.
 
+## Amendment (0.2.10, phase-pure recess reconciliation)
+
+The first bounded implementation of the disposition protocol covers the four overlapping recess
+families. Orchestration discovers `Slot`, `Pocket`, `PrismaticPocket` and `Passage` candidates,
+including all their claims, before invoking `reconcile_recesses`. The reconciler consumes only
+those candidates and the completed ledger; it may not call a recogniser or inspect the part. An
+architecture test enforces that direction.
+
+The reconciler returns accepted family inventories and exactly one run-local disposition for each
+candidate, preserving candidate identity even when two immutable records compare equal. Outcomes
+are a closed `accepted | rejected` vocabulary and reasons are a closed family-rule vocabulary,
+not free-form strings. The disposition sequence follows discovery-family order and the reconciler
+asserts completeness, so rejection is no longer represented internally by a record silently
+disappearing from a filtered list. Missing defining evidence is explicitly not containment: an
+unclaimed record's empty face set cannot suppress a claimed candidate merely because the empty
+set is mathematically a subset of every set.
+
+This amendment is deliberately not the completion of this ADR. The trace remains internal and
+currently covers recess precedence only; `RecognitionResult` still does not publish proposed
+candidates, rejection reasons, ambiguous/unsupported outcomes or residual evidence. Other
+family-specific legacy reconcilers continue to return filtered lists. Migrating them and defining
+a stable serialisable public diagnostic contract remain separate work, so this patch does not
+accidentally expand the public API around a first implementation.
+
 ## Amendment (0.2.6, epic 0002)
 
 **A reconciler corrects double-counting. It does not correct recall, and the failure it leaves

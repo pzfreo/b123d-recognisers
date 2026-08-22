@@ -2,6 +2,17 @@
 
 ## 0.2.10
 
+- **Internal architecture: recess discovery and reconciliation are now phase-pure and every
+  proposal receives a named disposition.** Passage discovery previously happened inside the
+  recess reconciler, obscuring both execution ownership and the complete candidate inventory.
+  Orchestration now discovers slots, pockets, prismatic pockets and passages first; a pure
+  reconciler then returns the accepted inventories plus one identity-preserving accepted or
+  rejected outcome and reason for every proposal. This is internal groundwork for ADR 0003's
+  public explainability contract, not an API expansion: `RecognitionResult` does not yet expose
+  these dispositions or residual/unsupported evidence. Architecture guards prevent reconcilers
+  from calling recognisers, and the public-record contract roster now fails for both omitted and
+  unexpected recogniser return types.
+
 - **Fixed: harmless subdivisions of an angled step's triangular blind end no longer hide the
   step.** The previous discriminator counted one face's outer-wire edges, so a collinear vertex
   or a smooth coplanar face split changed a geometric triangle into four or more topological
@@ -161,7 +172,7 @@
   **Neither family subsumes the other.** An obround recess has cylindrical ends and forms no
   closed planar ring, so `recognise_pockets` remains the only path to it -- measured at zero
   rings across the whole *Circular end pocket* class. Where both see the same rectangular recess
-  both report it, and `_reconcile.prismatic_pockets_that_are_not_pockets` keeps the `Pocket`.
+  both report it, and the unified `_reconcile.reconcile_recesses` phase keeps the `Pocket`.
 
   Additive: **no existing recorded value changed**. Every golden gained the new family's output
   and nothing was removed or altered.

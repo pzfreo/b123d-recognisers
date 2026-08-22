@@ -4,8 +4,8 @@
 
 This is the orchestration boundary above the package ADR 0002 recognisers. It owns every public
 recognition family and the shared evidence consumers reuse. It deliberately stops at
-geometry-only evidence: reconciliation, requirement identity, drawing policy, and diagnostics
-belong to consumers and require their own independent evidence.
+geometry-only evidence and package-owned geometric reconciliation. Requirement identity,
+drawing policy, and consumer diagnostics remain outside this layer.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ from b123d_recognisers.levels import (
     step_level_records,
 )
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -398,9 +398,14 @@ def _take_inventory(
     # to allow anywhere else.
     pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
     ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
-    slots, pockets, ring_pockets, passages = reconcile_recesses(
-        part, slots, pockets, ring_pockets, ledger
+    passages = recognise_passages(part, ledger=ledger)
+    recesses = reconcile_recesses(
+        slots, pockets, ring_pockets, passages, ledger
     )
+    accepted_slots = recesses.slots
+    accepted_pockets = recesses.pockets
+    accepted_ring_pockets = recesses.prismatic_pockets
+    accepted_passages = recesses.passages
     # Into the ledger for the same reason, though the rule that reads these two runs in the
     # census rather than here: a groove is a rung of the step ladder, and both records survive
     # into the result because a consumer dimensioning the shaft needs the feature and the
@@ -435,10 +440,10 @@ def _take_inventory(
         polygonal_bosses=tuple(recognise_polygonal_bosses(part, graph=run.graph)),
         polygonal_stock=tuple(recognise_polygonal_stock(part, graph=run.graph)),
         channels=tuple(channels),
-        slots=tuple(slots),
+        slots=accepted_slots,
         # Derived from the accepted members, like the other two pattern families — the
         # recogniser must not rediscover the slots it groups.
-        slot_patterns=tuple(recognise_slot_patterns(slots)),
+        slot_patterns=tuple(recognise_slot_patterns(accepted_slots)),
         # Also into the ledger, and the census's step count depends on it: the rule it applies
         # after this returns asks which faces a groove was built from, and an unclaimed groove
         # would subtract nothing and be counted twice, silently.
@@ -446,9 +451,9 @@ def _take_inventory(
             recognise_grooves(part, cyls=cyls, ledger=ledger, face_edges=face_edges)
         ),
         flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
-        pockets=tuple(pockets),
-        prismatic_pockets=tuple(ring_pockets),
-        pocket_patterns=tuple(recognise_pocket_patterns(pockets)),
+        pockets=accepted_pockets,
+        prismatic_pockets=accepted_ring_pockets,
+        pocket_patterns=tuple(recognise_pocket_patterns(accepted_pockets)),
         pads=tuple(recognise_rectangular_pads(part)),
         repeating_radial_profiles=tuple(recognise_repeating_radial_profiles(part)),
         turned_steps=tuple(turned_steps),
@@ -457,7 +462,7 @@ def _take_inventory(
         risers=tuple(recognise_risers(part)),
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
-        passages=tuple(passages) if prismatic else (),
+        passages=accepted_passages if prismatic else (),
         fillets=tuple(
             recognise_fillets(
                 part,

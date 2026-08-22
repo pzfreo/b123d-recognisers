@@ -90,9 +90,14 @@ def scan_part(part, labels):
     slots = r.recognise_slots(part, ledger=ledger)
     pockets = r.recognise_pockets(part, ledger=ledger)
     ring_pockets = r.recognise_prismatic_pockets(part, ledger=ledger)
-    slots, pockets, ring_pockets, passages = reconcile_recesses(
-        part, slots, pockets, ring_pockets, ledger
+    passages = r.recognise_passages(part, ledger=ledger)
+    recesses = reconcile_recesses(
+        slots, pockets, ring_pockets, passages, ledger
     )
+    slots = recesses.slots
+    pockets = recesses.pockets
+    ring_pockets = recesses.prismatic_pockets
+    passages = recesses.passages
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)

@@ -146,9 +146,9 @@ def test_the_chamfer_family_and_the_step_family_claim_the_same_face():
     """The overlap the rule exists to resolve, stated directly rather than through a count.
 
     Both claims name one face, and it is the *same* face. That is what makes this precedence
-    rather than the containment `passages_that_are_not_slots` uses: there a slot's walls sit
-    inside a passage's whole ring and the direction of the subset carries the verdict, here the
-    two claims are indistinguishable and the verdict is which record says more.
+    rather than the unified recess reconciler's Slot-versus-Passage containment rule: there a
+    slot's walls sit inside a passage's whole ring and the direction of the subset carries the
+    verdict, here the two claims are indistinguishable and the verdict is which record says more.
     """
 
     ledger, chamfers, steps = _claimed(_blind())

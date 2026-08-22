@@ -557,14 +557,20 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
     for name, part, _labels, _faces, _at in corpus:
         graph = FaceGraph(part)
         ledger = ClaimLedger(graph)
+        passages = recognition.recognise_passages(part, ledger=ledger)
         accepted = reconcile_recesses(
-            part,
             recognition.recognise_slots(part, ledger=ledger),
             recognition.recognise_pockets(part, ledger=ledger),
             recognition.recognise_prismatic_pockets(part, ledger=ledger),
+            passages,
             ledger,
         )
-        records = [record for family in accepted for record in family]
+        records = [
+            *accepted.slots,
+            *accepted.pockets,
+            *accepted.prismatic_pockets,
+            *accepted.passages,
+        ]
         for index, left in enumerate(records):
             left_faces = ledger.defining_of(left)
             for right in records[index + 1 :]:

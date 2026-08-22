@@ -30,7 +30,7 @@ from build123d import (
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
+from b123d_recognisers._reconcile import reconcile_recesses
 
 
 def _prism(*corners, height=14):
@@ -56,9 +56,7 @@ def _rectangular():
 def _through():
     """The same triangular void cut clean through: a passage, not a pocket."""
 
-    return Box(120, 80, 20) - Pos(0, 0, -20) * _prism(
-        (-12, -9), (12, -9), (0, 12), height=60
-    )
+    return Box(120, 80, 20) - Pos(0, 0, -20) * _prism((-12, -9), (12, -9), (0, 12), height=60)
 
 
 def _claimed(part):
@@ -148,16 +146,16 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)
 
     assert len(pockets) == 1 and len(prismatic) == 1, "both families see this recess"
-    assert prismatic_pockets_that_are_not_pockets(prismatic, ledger) == []
+    assert reconcile_recesses([], pockets, prismatic, [], ledger).prismatic_pockets == ()
 
     # And the rule is not simply "drop everything": a shape `Pocket` cannot express survives it.
     # One part, built once -- a second `_triangular()` is a different solid, and the ledger
     # would refuse its faces rather than quietly answering about the wrong one.
     triangle = _triangular()
     tri_ledger = ClaimLedger(FaceGraph(triangle))
-    r.recognise_pockets(triangle, ledger=tri_ledger)
+    tri_pockets = r.recognise_pockets(triangle, ledger=tri_ledger)
     tri = r.recognise_prismatic_pockets(triangle, ledger=tri_ledger)
-    assert len(prismatic_pockets_that_are_not_pockets(tri, tri_ledger)) == 1
+    assert len(reconcile_recesses([], tri_pockets, tri, [], tri_ledger).prismatic_pockets) == 1
 
 
 def test_an_obround_recess_is_the_other_family_s_to_find():
