@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from build123d import Box, Pos
+from build123d import Axis, Box, Cylinder, GeomType, Pos, fillet
 
 import b123d_recognisers as r
 from b123d_recognisers import _adjacency, _cylinder_substrate
@@ -94,6 +94,20 @@ def test_the_census_derives_each_shared_fact_once(derivations, name):
     """And the census does not derive a second set of them, because it is the same inventory."""
 
     feature_census(_golden(name))
+    assert derivations == {"graph": 1, "edges": 1, "cylinders": 1}
+
+
+def test_a_radiused_groove_reuses_the_run_face_edge_memo(derivations):
+    """The torus walk needs adjacency, but it still uses the run's one shared memo."""
+
+    plain = Cylinder(15, 20) + Pos(0, 0, 12.5) * Cylinder(12, 5)
+    plain += Pos(0, 0, 22.5) * Cylinder(15, 20)
+    shoulder = plain.edges().filter_by(GeomType.CIRCLE).group_by(Axis.Z)[1]
+    radiused = fillet(shoulder, 1.0)
+
+    result = r.build_recognition_result(radiused, rotational=True)
+
+    assert len(result.grooves) == 1
     assert derivations == {"graph": 1, "edges": 1, "cylinders": 1}
 
 

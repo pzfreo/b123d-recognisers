@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Fillet (rounded-edge) radius recognition for prismatic parts.
+"""Fillet (rounded-edge) radius recognition.
 
 ``recognise_fillets`` recovers the radius of each external edge fillet so it can be
 called out (``R3`` / ``4× R3``) rather than left as a rendered-but-undimensioned round. A
 fillet is the **arc analog** of a chamfer (:mod:`.chamfers`): where a chamfer
 is a small *oblique planar* face bevelling a convex edge, a fillet is a small *partial
-cylindrical* face rounding one. The gates mirror the chamfer's, swapping the plane test
-for a cylinder test and the leg geometry for the cylinder radius:
+cylindrical* face rounding one. On turned stock that same round is a short external torus.
+The gates mirror the chamfer's, swapping the plane test for a cylinder/torus test and the leg
+geometry for the blend radius:
 
 - **partial cylinder** — the face's angular span is less than a bore's, so a real hole /
   boss (a full or near-full turn) is excluded; a convex edge fillet is a quarter-turn;
@@ -39,17 +40,19 @@ import math
 from dataclasses import dataclass
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cylinder
+from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     edge_face_map,
     nearest_axis_aligned_planes,
+    neighbours,
 )
 from b123d_recognisers._bevel import convex_bevel
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers._features import analyse_cylinders
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part, SurfaceAdaptor
+from b123d_recognisers._typing import CylinderInventory, Part, SurfaceAdaptor
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -62,6 +65,14 @@ _MIN_RADIUS = 0.6
 # recognition, `_features._FULL_CYL_MIN_EXTENT`) so a bore is excluded; the convex test
 # then drops the internal rounds / slot end caps (half turns) that also pass this gate.
 _FILLET_MAX_EXTENT = math.pi * 1.05
+
+# A turned edge fillet is a quarter-circle in the radial/axial section. Slightly loose for
+# imported parameter noise, but below the half-round of a toroidal bead or rolled feature.
+_TURNED_FILLET_MAX_EXTENT = math.pi / 2 * 1.05
+
+# Analytic axes derived from adjacent STEP faces should coincide; this permits only their
+# modelling noise. It is a tolerance, so it follows the cylinder diameter (ADR 0008).
+_COAXIAL_FRAC = 1e-4
 
 
 @dataclass(frozen=True)
@@ -93,11 +104,20 @@ def recognise_fillets(
     min_radius: float | None = None,
     max_radius_frac: float = 0.45,
     face_edges: FaceEdges | None = None,
+    cyls: CylinderInventory | None = None,
+    include_cylindrical: bool = True,
 ) -> list[Fillet]:
     """Recognise the external edge fillets of *part* (see module docstring). Returns one
-    :class:`Fillet` per qualifying cylindrical blend face, sorted deterministically. Empty
-    when the part has no dimension-worthy fillet. Only single-axis fillets (running along
-    one principal axis) are recovered; a compound corner round is skipped."""
+    :class:`Fillet` per qualifying blend face, sorted deterministically. A prismatic blend
+    is a partial cylinder; a turned blend is a short external torus. Empty when the part has
+    no dimension-worthy fillet. Only single-axis fillets (running along one principal axis)
+    are recovered; a compound corner round is skipped.
+
+    Pass *cyls* — a precomputed :func:`analyse_cylinders` result — to avoid re-scanning a
+    turned part. It is consulted only for toroidal faces, to prove that the blend is external
+    rather than an internal bore round. Set *include_cylindrical* to ``False`` for a part
+    already classified as rotational, retaining that aggregate's policy for incidental
+    prismatic blends while recognising its toroidal fillets."""
     bb = part.bounding_box()
     min_radius = _MIN_RADIUS if min_radius is None else min_radius
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
@@ -105,7 +125,7 @@ def recognise_fillets(
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
     out: list[Fillet] = []
-    for f in all_faces:
+    for f in all_faces if include_cylindrical else ():
         fw = f.wrapped
         s = BRepAdaptor_Surface(fw)
         if s.GetType() != GeomAbs_Cylinder:
@@ -159,4 +179,81 @@ def recognise_fillets(
                 at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
             )
         )
+
+    # A lathe sweeps an ordinary edge fillet around its axis, producing a torus rather than a
+    # partial cylinder. The minor radius is the callout radius. An adjacent external cylinder
+    # supplies the material-side proof: internal toroidal bore blends have the same analytic
+    # surface but meet an internal cylinder instead.
+    tori = [f for f in all_faces if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Torus]
+    if tori:
+        z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+        external_cylinders = {
+            c["face"]: c for c in (*z_cyls, *cross_cyls) if c["external"]
+        }
+        for f in tori:
+            s = BRepAdaptor_Surface(f.wrapped)
+            torus = s.Torus()
+            radius = torus.MinorRadius()
+            if radius < min_radius or radius > max_radius_frac * max_ext:
+                continue
+            if abs(s.LastVParameter() - s.FirstVParameter()) > _TURNED_FILLET_MAX_EXTENT:
+                continue  # a half/full toroidal profile, not an edge round
+            torus_axis = torus.Axis()
+            d = torus_axis.Direction()
+            direction = (d.X(), d.Y(), d.Z())
+            comp = (abs(d.X()), abs(d.Y()), abs(d.Z()))
+            if max(comp) <= AXIS_ALIGNED_COS:
+                continue  # a compound corner round (axis not a principal direction)
+            edge_i = max(range(3), key=lambda i: comp[i])
+            location = torus_axis.Location()
+            axis_point = (location.X(), location.Y(), location.Z())
+            torus_neighbours = neighbours(f, edge_faces, face_edges=face_edges)
+            coaxial_cylinders = [
+                external_cylinders[n]
+                for n in torus_neighbours
+                if n in external_cylinders
+                and _coaxial_axis_lines(
+                    axis_point,
+                    direction,
+                    external_cylinders[n]["axis_xyz"],
+                    external_cylinders[n]["dir_xyz"],
+                    tol=length_tol(
+                        external_cylinders[n]["diameter"], rel=_COAXIAL_FRAC
+                    ),
+                )
+            ]
+            if not coaxial_cylinders:
+                continue
+            transverse_plane = False
+            continues_round = False
+            for neighbour in torus_neighbours:
+                neighbour_surface = BRepAdaptor_Surface(neighbour.wrapped)
+                if neighbour_surface.GetType() == GeomAbs_Sphere:
+                    # A compound turned fillet can continue into its spherical corner cap.
+                    # This is distinct from a rolled bead, whose two quarter-torus patches
+                    # continue into one another without reaching a second stock face.
+                    continues_round = True
+                    continue
+                if neighbour_surface.GetType() != GeomAbs_Plane:
+                    continue
+                nd = neighbour_surface.Plane().Axis().Direction()
+                normal_dot = (
+                    nd.X() * direction[0]
+                    + nd.Y() * direction[1]
+                    + nd.Z() * direction[2]
+                )
+                if abs(normal_dot) > AXIS_ALIGNED_COS:
+                    transverse_plane = True
+                    break
+            bridges_two_bands = len({c["diameter"] for c in coaxial_cylinders}) >= 2
+            if not transverse_plane and not bridges_two_bands and not continues_round:
+                continue  # a toroidal bead meeting one band, not a rounded edge
+            p = fillet_anchor(s)
+            out.append(
+                Fillet(
+                    axis="xyz"[edge_i],
+                    radius=round(radius, 3),
+                    at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
+                )
+            )
     return sorted(out, key=lambda c: (c.axis, c.at))

@@ -53,6 +53,18 @@ EXPECTED = {
     "nist_ftc_06": {"holes": 12, "bosses": 8, "pockets": 6, "chamfers": 5, "fillets": 3},
 }
 
+#: Intentional additive recognition introduced in 0.2.8, kept separate so ``EXPECTED`` remains
+#: the historical baseline it claims to be. Each toroidal fillet below is coaxial with an
+#: adjacent external cylinder; the cross-axis tori in FTC 07 and elsewhere are deliberately not
+#: included. FTC 06 also carries two external conical chamfers.
+_SUPPORTED_ADDITIONS = {
+    "nist_ctc_04": {"fillets": 24},
+    "nist_ctc_05": {"fillets": 7},
+    "nist_ftc_06": {"chamfers": 2, "fillets": 6},
+    "nist_ftc_08": {"fillets": 8},
+    "nist_ftc_10": {"fillets": 19},
+}
+
 _VENDORED = Path(__file__).parent / "corpus" / "nist"
 _DIR = os.environ.get("B123D_NIST_STEP_DIR") or str(_VENDORED)
 
@@ -92,9 +104,12 @@ def test_recognition_counts_match_the_reported_baseline(stem):
 
     result = build_recognition_result(import_step(str(_step_for(stem))))
 
-    actual = {family: len(getattr(result, family)) for family in EXPECTED[stem]}
+    expected = dict(EXPECTED[stem])
+    for family, addition in _SUPPORTED_ADDITIONS.get(stem, {}).items():
+        expected[family] += addition
+    actual = {family: len(getattr(result, family)) for family in expected}
 
-    assert actual == EXPECTED[stem]
+    assert actual == expected
 
 
 #: Counts as of vendoring. **Not a correctness baseline** -- unlike ``EXPECTED``, no
@@ -155,6 +170,9 @@ def test_recognition_on_the_remaining_vendored_parts_has_not_moved(stem):
 
     result = build_recognition_result(import_step(str(_step_for(stem))))
 
-    actual = {family: len(getattr(result, family)) for family in _OBSERVED[stem]}
+    expected = dict(_OBSERVED[stem])
+    for family, addition in _SUPPORTED_ADDITIONS.get(stem, {}).items():
+        expected[family] += addition
+    actual = {family: len(getattr(result, family)) for family in expected}
 
-    assert actual == _OBSERVED[stem]
+    assert actual == expected

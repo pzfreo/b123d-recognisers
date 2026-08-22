@@ -1,5 +1,18 @@
 # Release notes
 
+## 0.2.8
+
+- **Fixed: turned chamfers are now recognised.** A lathe produces a short external conical face
+  where a prismatic part has an oblique planar bevel; the chamfer reader now recognises both,
+  recovers the axial and radial legs, and proves the cone is adjacent to an external OD so an
+  internal countersink is not misreported. `RecognitionResult.chamfers` is no longer gated away
+  when `rotational=True`.
+
+- **Added: turned fillets and radiused groove lead-ins.** A lathe sweeps an edge fillet into a
+  torus; external, principal-axis tori now produce `Fillet` records in rotational inventories.
+  Groove recognition also follows a bounded coaxial torus/annular-wall chain between two OD
+  bands, so a rounded lead-in joins the bands without mistaking an unrelated torus for a groove.
+
 ## 0.2.7
 
 - **Fixed: a slot with a coaxial post at either end is recognised again.** The AAG coherence
