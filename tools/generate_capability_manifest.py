@@ -33,6 +33,24 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "round-bottom-blind-slots": {
+        "recognisers": [("recognise_round_bottom_blind_slots", "part")],
+        "records": [
+            (
+                "RoundBottomBlindSlot",
+                "output",
+                ["RecognitionResult.round_bottom_blind_slots"],
+            )
+        ],
+        "census": "round_bottom_blind_slot",
+        "goldens": ["round_bottom_blind_slot"],
+        "introduced": "0.2.12",
+        "tests": [
+            "tests/test_round_bottom_slots.py",
+            "tests/test_mfcadpp_corpus.py",
+            "tests/test_mfcadpp_holdout.py",
+        ],
+    },
     "through-steps": {
         "recognisers": [("recognise_through_steps", "part")],
         "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],

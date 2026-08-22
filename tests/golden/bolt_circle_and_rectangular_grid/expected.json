@@ -1,5 +1,5 @@
 {
-  "canonicalizer_version": 1,
+  "canonicalizer_version": 2,
   "fixture": "bolt_circle_and_rectangular_grid",
   "provenance": {
     "creator": "Paul Fremantle",
@@ -35,7 +35,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -53,7 +53,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -71,7 +71,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -89,7 +89,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -107,7 +107,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -125,7 +125,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -143,7 +143,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -161,7 +161,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -179,7 +179,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -197,7 +197,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -215,7 +215,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -233,7 +233,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -739,6 +739,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": false,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -770,7 +771,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -788,7 +789,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -806,7 +807,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -824,7 +825,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -842,7 +843,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -860,7 +861,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -878,7 +879,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -896,7 +897,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -914,7 +915,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -932,7 +933,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -950,7 +951,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -968,7 +969,7 @@
               "external": false,
               "s_hi": 5.0,
               "s_lo": -5.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -1474,6 +1475,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": true,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -1496,6 +1498,7 @@
       "plate": 0,
       "pocket": 0,
       "prismatic_pocket": 0,
+      "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 0,
       "through_step": 0
@@ -2032,6 +2035,7 @@
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
+      "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],
@@ -2056,7 +2060,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2074,7 +2078,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2092,7 +2096,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2110,7 +2114,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2128,7 +2132,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2146,7 +2150,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2164,7 +2168,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2182,7 +2186,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2200,7 +2204,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2218,7 +2222,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2236,7 +2240,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2254,7 +2258,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []
@@ -2281,7 +2285,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2299,7 +2303,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2317,7 +2321,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2335,7 +2339,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2353,7 +2357,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2371,7 +2375,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2389,7 +2393,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2407,7 +2411,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2425,7 +2429,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2443,7 +2447,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2461,7 +2465,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -2479,7 +2483,7 @@
             "external": false,
             "s_hi": 5.0,
             "s_lo": -5.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []

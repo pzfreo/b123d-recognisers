@@ -23,6 +23,7 @@ EXPECTED_CASES = {
     "polygonal_stock",
     "repeating_radial_profile",
     "rectangular_through_step",
+    "round_bottom_blind_slot",
     "simple_through_hole",
     "slanted_counterbore",
     "slanted_steps",

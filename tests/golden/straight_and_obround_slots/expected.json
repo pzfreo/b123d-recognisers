@@ -1,5 +1,5 @@
 {
-  "canonicalizer_version": 1,
+  "canonicalizer_version": 2,
   "fixture": "straight_and_obround_slots",
   "provenance": {
     "creator": "Paul Fremantle",
@@ -35,7 +35,7 @@
               "external": false,
               "s_hi": 8.0,
               "s_lo": -8.0,
-              "u_extent": 3.14159265
+              "u_extent": 3.1415927
             },
             {
               "axis": "z",
@@ -53,7 +53,7 @@
               "external": false,
               "s_hi": 8.0,
               "s_lo": -8.0,
-              "u_extent": 3.14159265
+              "u_extent": 3.1415927
             }
           ],
           []
@@ -75,6 +75,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": false,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [
           {
             "_type": "SlotArray",
@@ -317,7 +318,7 @@
               "external": false,
               "s_hi": 8.0,
               "s_lo": -8.0,
-              "u_extent": 3.14159265
+              "u_extent": 3.1415927
             },
             {
               "axis": "z",
@@ -335,7 +336,7 @@
               "external": false,
               "s_hi": 8.0,
               "s_lo": -8.0,
-              "u_extent": 3.14159265
+              "u_extent": 3.1415927
             }
           ],
           []
@@ -357,6 +358,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": true,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [
           {
             "_type": "SlotArray",
@@ -590,6 +592,7 @@
       "plate": 0,
       "pocket": 0,
       "prismatic_pocket": 0,
+      "round_bottom_blind_slot": 0,
       "slot": 5,
       "step": 0,
       "through_step": 0
@@ -759,6 +762,7 @@
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
+      "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [
         {
           "_type": "SlotArray",
@@ -994,7 +998,7 @@
             "external": false,
             "s_hi": 8.0,
             "s_lo": -8.0,
-            "u_extent": 3.14159265
+            "u_extent": 3.1415927
           },
           {
             "axis": "z",
@@ -1012,7 +1016,7 @@
             "external": false,
             "s_hi": 8.0,
             "s_lo": -8.0,
-            "u_extent": 3.14159265
+            "u_extent": 3.1415927
           }
         ],
         []

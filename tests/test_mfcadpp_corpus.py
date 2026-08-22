@@ -501,7 +501,7 @@ def test_no_claim_lands_on_a_stock_face(corpus):
 
 
 def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
-    """Per-face attribution for the four families MFCAD++ can see, as a change detector.
+    """Per-face attribution for the claiming families, as a change detector.
 
     Not a correctness baseline. Two of these are *invariants* and the other two are
     *observations*, and the difference matters when one of them moves:
@@ -522,6 +522,9 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
 
     steps = claimed["AngledStep"]
     assert set(steps) == {TRIANGULAR_BLIND_STEP} and sum(steps.values()) == 11
+
+    round_bottom = claimed["RoundBottomBlindSlot"]
+    assert set(round_bottom) == {19} and sum(round_bottom.values()) == 8
 
     ring = claimed["Passage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"

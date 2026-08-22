@@ -9,8 +9,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-CANONICALIZER_VERSION = 1
+CANONICALIZER_VERSION = 2
 FLOAT_DIGITS = 8
+_U_EXTENT_DIGITS = 7
 _OMIT_MAPPING_KEYS = frozenset({"face", "solid_idx"})
 
 
@@ -43,11 +44,19 @@ def canonicalize(value: Any) -> Any:
     if isinstance(value, dict):
         if not all(isinstance(key, str) for key in value):
             raise CanonicalizationError("canonical mapping keys must be strings")
-        return {
-            key: canonicalize(item)
-            for key, item in sorted(value.items())
-            if key not in _OMIT_MAPPING_KEYS
-        }
+        result = {}
+        for key, item in sorted(value.items()):
+            if key in _OMIT_MAPPING_KEYS:
+                continue
+            # OCCT can move an analytic STEP face's dimensionless parameter span by roughly
+            # 1.4e-8 while preserving its geometry. Seven digits remove that observed jitter;
+            # other floats retain the established eight-digit semantic snapshot contract.
+            result[key] = (
+                _float(round(item, _U_EXTENT_DIGITS))
+                if key == "u_extent" and isinstance(item, float)
+                else canonicalize(item)
+            )
+        return result
     if isinstance(value, (list, tuple)):
         return [canonicalize(item) for item in value]
     if isinstance(value, (set, frozenset)):

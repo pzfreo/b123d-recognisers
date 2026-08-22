@@ -133,6 +133,20 @@ role. Larger interacting components, concave chains and corpus-labelled face agg
 justification for a loose K3 recogniser. This is recorded as a research prerequisite rather than
 turned into a fitted implementation.
 
+**A bounded round-bottom blind-slot family is the next implemented mixed-surface gain.** The
+development subset contributes only one model, but its two independent instances expose the same
+exact analytic motif at different sizes/orientations: a flat floor tangent to two equal-radius
+quarter cylinders, one matching concave cap, one source-envelope opening, and one materially empty
+constant U sweep. The implementation decision therefore rests on constructed topology properties,
+including split representation, through/two-cap, cap-hole, cap-continuation, bridge, compound and
+family-confusion adversaries—not on recovering eight labels. It uses a dedicated record because
+the existing rectangular/obround pocket records cannot preserve this cross-section. The two
+development records claim eight faces, all carrying the horizontal circular-end blind-slot label.
+After two independent implementation reviews accepted the geometry and layering, the frozen
+33-model holdout produced five more records claiming twenty faces, all with that same label.
+The ten NIST complex-part contracts, installed-wheel schema/type checks and Draftwright's bounded
+downstream contract remain green; the composite workload remains within its recorded ceiling.
+
 ### And the negative control failed at scale
 
 No claim landed on *Stock* across the vendored 40's 271 such faces. Across 13,438, four did.

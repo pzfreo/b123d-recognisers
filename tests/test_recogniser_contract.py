@@ -29,6 +29,7 @@ from build123d import (
     Plane,
     Polygon,
     Pos,
+    Rectangle,
     RegularPolygon,
     Rot,
     chamfer,
@@ -63,6 +64,7 @@ from b123d_recognisers import (
     RectGrid,
     RepeatingRadialProfile,
     RiserEvidence,
+    RoundBottomBlindSlot,
     Slot,
     SlotArray,
     SlotGrid,
@@ -93,6 +95,7 @@ from b123d_recognisers import (
     recognise_rectangular_pads,
     recognise_repeating_radial_profiles,
     recognise_risers,
+    recognise_round_bottom_blind_slots,
     recognise_slot_patterns,
     recognise_slots,
     recognise_through_steps,
@@ -137,6 +140,7 @@ _EXPECTED_RECORD_TYPES = {
     PrismaticPocket,
     RiserEvidence,
     ThroughStep,
+    RoundBottomBlindSlot,
 }
 
 
@@ -173,6 +177,15 @@ def _linear_array_plate():
 
 def _through_stepped_block():
     return Box(40, 30, 20) - Pos(15, 10, 0) * Box(20, 20, 30)
+
+
+def _round_bottom_blind_slot():
+    with BuildSketch() as sketch:
+        Rectangle(10, 3, align=(Align.CENTER, Align.MAX))
+        bottom = [vertex for vertex in sketch.vertices() if abs(vertex.Y + 3) < 1e-8]
+        fillet(bottom, radius=3)
+    stock = Pos(0, -5, 0) * Box(30, 10, 40)
+    return stock - extrude(sketch.sketch, amount=20, dir=(0, 0, 1))
 
 
 def _grid_plate(nx=3, ny=3, px=25, py=25):
@@ -320,6 +333,10 @@ def _records_from_recognisers():
         ("recognise_passages", recognise_passages(_passaged_block())),
         ("recognise_through_steps", recognise_through_steps(_through_stepped_block())),
         (
+            "recognise_round_bottom_blind_slots",
+            recognise_round_bottom_blind_slots(_round_bottom_blind_slot()),
+        ),
+        (
             "recognise_prismatic_pockets",
             recognise_prismatic_pockets(_prismatic_pocketed_block()),
         ),
@@ -417,6 +434,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_angled_steps,
         recognise_passages,
         recognise_through_steps,
+        recognise_round_bottom_blind_slots,
         recognise_prismatic_pockets,
         recognise_chamfers,
         recognise_channels,

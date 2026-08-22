@@ -53,6 +53,7 @@ pytestmark = pytest.mark.skipif(
 STOCK = "Stock"
 TRIANGULAR_BLIND_STEP = "Triangular blind step"
 RECTANGULAR_THROUGH_STEP = "Rectangular through step"
+HORIZONTAL_CIRCULAR_END_BLIND_SLOT = "Horizontal circular end blind slot"
 
 
 @pytest.fixture(scope="module")
@@ -122,5 +123,19 @@ def test_every_through_step_on_unseen_geometry_is_rectangular(scored):
         LABELS[int(label)]: count
         for label, count in claimed.items()
         if LABELS[int(label)] != RECTANGULAR_THROUGH_STEP
+    }
+    assert off_target == {}
+
+
+def test_every_round_bottom_blind_slot_on_unseen_geometry_has_the_target_profile(scored):
+    """Five unseen records claim twenty faces, all on the bounded U-profile class."""
+
+    claimed = scored["claimed"].get("RoundBottomBlindSlot", {})
+    assert scored["records"].get("RoundBottomBlindSlot", 0) == 5
+    assert sum(claimed.values()) == 20, "held-out evidence must stay non-vacuous"
+    off_target = {
+        LABELS[int(label)]: count
+        for label, count in claimed.items()
+        if LABELS[int(label)] != HORIZONTAL_CIRCULAR_END_BLIND_SLOT
     }
     assert off_target == {}

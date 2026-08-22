@@ -87,6 +87,18 @@ pocket, branch or ambiguity and fail closed. The two regions are defining claims
 faces are consulted context. The record retains the actual open-section polyline, so later
 two-sided/slanted work cannot silently reinterpret two unsigned dimensions.
 
+## Amendment (0.2.12, round-bottom blind slots)
+
+The first mixed planar/cylindrical open-profile family uses direct AAG relations rather than
+flattening a curved section into the rectangular recess substrate. Two equal-radius analytic
+quarter-cylinder regions and one tangent planar floor are defining only when their logical regions
+share the same cap-to-envelope span, one feature-local U-profile cap meets all three concavely,
+normalized mouth/depth stock context meets them convexly, and extrusion of the actual cap profile
+is materially empty. Direct coplanar and same-cylinder smooth subdivisions are representation
+normalization; tangent traversal into a different surface is not. Every source patch of the three
+side regions and cap is claimed. Opening stock is consulted context. Corpus labels locate the
+motif but neither its two-record count nor its orientation word defines acceptance.
+
 ## Amendment (0.2.6, issue #75)
 
 **A blend is not only noise. It is also a bridge, and the acceptance list above only asks about

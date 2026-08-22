@@ -45,6 +45,7 @@ compatibility review, and release notes.
 | `recognise_prismatic_pockets` | Floored recesses of any planar cross-section, found by walking the closed ring of logical walls: a triangular, hexagonal or rectangular pocket alike. Directly smooth coplanar wall patches normalize only when their union is one complete hole-free rectangle. Reports the section, so shape survives into the record, and claims every source patch. | Obround recesses, whose cylindrical ends form no closed planar ring — `recognise_pockets` reaches those; genuinely interrupted/piecewise wall regions; voids open at both ends (a passage) or capped at both (an enclosed cavity, unreachable by a tool). In the aggregate, a four-wall ring yields to a paired `Pocket`; a non-rectangular ring survives and defeats paired-wall fragments inside it. | Prismatic-pocket functional and split-wall tests; `triangular_and_hex_pockets` golden; measured over 250 MFCAD++ models, capped rings historically reach 80 triangular, 72 hexagonal and 61 rectangular pockets where wall pairing reaches essentially only the rectangular ones. |
 | `recognise_repeating_radial_profiles` | Complete outer-wire profiles invariant under a proved sector rotation, independently per solid. | Gear semantics, partial-repeat inference, inner-only profiles, and cross-solid cycles. | Repeating-radial-profile and traversal-order goldens. |
 | `recognise_risers` | Full-span principal in-plane step-riser evidence, including bounded slanted transitions, independent of a level set. | Pads, pocket walls, partial corner notches, and end-treated/inset risers outside tolerance; shoulder selection remains a consumer projection. | Plate/level and slanted-step goldens. |
+| `recognise_round_bottom_blind_slots` | One-cap, edge-open constant U-section recesses: a positive-width planar floor tangent to two equal-radius analytic quarter cylinders, with identical cap-to-envelope span, exact matching cap, convex opening/depth context and materially empty sweep. Direct coplanar and coaxial-cylinder subdivisions normalize and every defining source patch is claimed. | Rectangular/obround pockets, through or two-cap U sections, unequal/non-quarter radii, cap holes or continuation, branches, tangent-blend escapes, and same-solid material inside the sweep. | Constructed axes/open signs/scales, STEP, split cap/floor/cylinders/context, compound and family-confusion adversaries; development anatomy is two records/eight correctly labelled faces in one model, followed by five records/twenty correctly labelled faces on the frozen holdout. |
 | `recognise_slot_patterns` | Constant-pitch linear and complete rectangular arrays of identical through `Slot` records on the same through plane. | Bolt circles, pairs, mixed sizes/planes, and incomplete grids. | Straight/obround-slot golden and pattern-negative tests. |
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. | Floored pockets, open-ended channels, merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Straight/obround-slot golden, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, and recess-reconciliation regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
@@ -87,10 +88,11 @@ predicates here were shaped by, and thirty-three that were held out.
 **The exclusions hold, and they are the dominant failure mode.** On MFCAD, per-class recognition
 tracks how axis-aligned a class's faces are: classes whose feature faces are 100% axis-aligned are
 recognised in every model, while the three mostly-oblique classes return nothing in 78% of theirs.
-On MFCAD++, fitting labelled faces to emitted records across 400 models reproduces it — every
-rectangular class recognises, and Triangular passage, 6-sided passage, Triangular pocket, Circular
-through slot, 2-sided through step, Horizontal circular end blind slot and Slanted through step
-produce essentially nothing. This is what "non-rectangular floors", "Slanted/curved faces" and
+Before the AAG expansions recorded below, fitting labelled faces to emitted records across 400
+MFCAD++ models reproduced it — every rectangular class recognised, while Triangular passage,
+6-sided passage, Triangular pocket, Circular through slot, 2-sided through step, Horizontal
+circular end blind slot and Slanted through step produced essentially nothing. This is what
+"non-rectangular floors", "Slanted/curved faces" and
 "non-principal axes" above mean in practice, on parts written by someone else.
 
 **One figure is about geometry this project was not fitted to.** Everything above comes from a
@@ -127,10 +129,10 @@ Three limits on how far this evidence reaches:
 - **Attribution is per-face where a family writes claims, and statistical elsewhere.** A
   recogniser handed a claim ledger records the faces each record was established by, so its
   records can be scored against the labels of the faces they actually consumed rather than
-  fitted. `tools/per_face_scan.py` does exactly that, over the seven claiming families these
+  fitted. `tools/per_face_scan.py` does exactly that, over the eight claiming families these
   corpora can reach — `recognise_slots`, `recognise_pockets`, `recognise_prismatic_pockets`,
   `recognise_passages`, `recognise_chamfers`, `recognise_angled_steps` and
-  `recognise_through_steps`. Grooves and turned
+  `recognise_through_steps` and `recognise_round_bottom_blind_slots`. Grooves and turned
   steps write claims too and are absent from these figures for a different reason: all 50
   vendored MFCAD++ and NIST parts are milled prismatic and report no turned steps at all. The
   figures quoted as precision — 100% for angled steps, 44% → 78% for chamfers over 120 models —
@@ -180,6 +182,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | Rectangular through step | ThroughStep | Bounded orthogonal two-region subset |
+| Horizontal circular end blind slot | RoundBottomBlindSlot | Bounded edge-open U-profile subset; the corpus orientation word does not limit the axis-generic record |
 | 2-sided / Slanted through step | — | **unrecognised**; two-sided examples expose a local concave tripod whose terminal material face extends beyond the feature footprint, requiring a 3-D skeleton record and sub-face/context evidence rather than whole-face claims; slanted variants need a separate contract |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
@@ -225,6 +228,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `RectGrid` | A complete rectangular lattice of same-spec holes with the documented row/column basis convention. |
 | `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, not gear semantics. |
 | `RiserEvidence` | One full-span candidate riser before any consumer-specific level projection. |
+| `RoundBottomBlindSlot` | One edge-open, one-cap constant U-section recess; explicit run/open direction, section axes, quarter-cylinder radius and flat width. |
 | `Slot` | One enclosed through-slot; no floor and no open longitudinal end. |
 | `SlotArray` | At least three identical compatible through-slots on one constant-pitch line. |
 | `SlotGrid` | A complete rectangular lattice of identical compatible through-slots. |

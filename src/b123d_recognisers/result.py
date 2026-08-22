@@ -62,6 +62,10 @@ from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
 )
+from b123d_recognisers.round_bottom_slots import (
+    RoundBottomBlindSlot,
+    recognise_round_bottom_blind_slots,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -113,6 +117,7 @@ MIGRATED: frozenset[str] = frozenset(
         "recognise_slots",
         "recognise_turned_steps",
         "recognise_through_steps",
+        "recognise_round_bottom_blind_slots",
     }
 )
 
@@ -239,6 +244,7 @@ class RecognitionResult:
     angled_steps: tuple[AngledStep, ...]
     #: Open right-angle cuts spanning a source solid; currently the rectangular subset.
     through_steps: tuple[ThroughStep, ...]
+    round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
     #: Prismatic voids running through the material, one record per closed ring.
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
@@ -434,6 +440,9 @@ def _take_inventory(
         recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
     )
     through_steps = recognise_through_steps(part, ledger=ledger) if prismatic else []
+    round_bottom_blind_slots = (
+        recognise_round_bottom_blind_slots(part, ledger=ledger) if prismatic else []
+    )
     prof = TurnedProfile.from_steps(list(turned_steps))
     return run, RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -468,6 +477,7 @@ def _take_inventory(
         chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
         angled_steps=tuple(angled_steps),
         through_steps=tuple(through_steps),
+        round_bottom_blind_slots=tuple(round_bottom_blind_slots),
         passages=accepted_passages if prismatic else (),
         fillets=tuple(
             recognise_fillets(

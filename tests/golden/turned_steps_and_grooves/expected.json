@@ -1,5 +1,5 @@
 {
-  "canonicalizer_version": 1,
+  "canonicalizer_version": 2,
   "fixture": "turned_steps_and_grooves",
   "provenance": {
     "creator": "Paul Fremantle",
@@ -81,7 +81,7 @@
               "external": true,
               "s_hi": 35.0,
               "s_lo": 20.5,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -99,7 +99,7 @@
               "external": true,
               "s_hi": 20.5,
               "s_lo": 15.5,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -117,7 +117,7 @@
               "external": true,
               "s_hi": 15.5,
               "s_lo": -35.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -151,6 +151,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": false,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [
@@ -275,7 +276,7 @@
               "external": true,
               "s_hi": 35.0,
               "s_lo": 20.5,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -293,7 +294,7 @@
               "external": true,
               "s_hi": 20.5,
               "s_lo": 15.5,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -311,7 +312,7 @@
               "external": true,
               "s_hi": 15.5,
               "s_lo": -35.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -345,6 +346,7 @@
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": true,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [
@@ -414,6 +416,7 @@
       "plate": 0,
       "pocket": 0,
       "prismatic_pocket": 0,
+      "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 2,
       "through_step": 0
@@ -548,6 +551,7 @@
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
+      "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],
@@ -594,7 +598,7 @@
             "external": true,
             "s_hi": 35.0,
             "s_lo": 20.5,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -612,7 +616,7 @@
             "external": true,
             "s_hi": 20.5,
             "s_lo": 15.5,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -630,7 +634,7 @@
             "external": true,
             "s_hi": 15.5,
             "s_lo": -35.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []
@@ -657,7 +661,7 @@
             "external": true,
             "s_hi": 15.5,
             "s_lo": -35.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -675,7 +679,7 @@
             "external": true,
             "s_hi": 35.0,
             "s_lo": 20.5,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -693,7 +697,7 @@
             "external": true,
             "s_hi": 20.5,
             "s_lo": 15.5,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []

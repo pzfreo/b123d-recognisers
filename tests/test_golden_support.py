@@ -32,7 +32,7 @@ def test_canonicalizer_is_versioned_typed_quantized_and_ordered():
         "unordered": {"z", "a"},
     }
 
-    assert CANONICALIZER_VERSION == 1
+    assert CANONICALIZER_VERSION == 2
     assert canonicalize(value) == {
         "records": [
             {"_type": "Sample", "z": 0.0, "name": "first"},
@@ -43,6 +43,12 @@ def test_canonicalizer_is_versioned_typed_quantized_and_ordered():
     assert json.loads(canonical_json(value)) == canonicalize(value)
 
 
+def test_kernel_parameter_span_is_projected_below_observed_step_noise():
+    assert canonicalize({"u_extent": 1.5707963267948966}) == canonicalize(
+        {"u_extent": 1.5707963412320556}
+    )
+
+
 @pytest.mark.parametrize("value", [math.inf, math.nan, Box(1, 1, 1), {1: "non-string"}])
 def test_canonicalizer_rejects_nonportable_values(value):
     with pytest.raises(CanonicalizationError):
@@ -50,9 +56,9 @@ def test_canonicalizer_rejects_nonportable_values(value):
 
 
 def test_traversal_ids_and_cylinder_face_handles_are_omitted():
-    assert canonicalize(
-        {"diameter": 4.0, "solid_idx": 7, "face": Box(1, 1, 1).faces()[0]}
-    ) == {"diameter": 4.0}
+    assert canonicalize({"diameter": 4.0, "solid_idx": 7, "face": Box(1, 1, 1).faces()[0]}) == {
+        "diameter": 4.0
+    }
 
 
 def test_other_unknown_objects_are_not_silently_omitted():

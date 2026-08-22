@@ -133,6 +133,12 @@ An unbounded absolute constant is a defect whether or not its physical justifica
 public record contract under ADR 0002 and the capability schema under ADR 0005. They are not
 tolerances and do not scale.
 
+Canonical goldens retain eight decimal digits generally. The cylinder substrate's dimensionless
+`u_extent` is projected to seven because OCCT STEP round-trip moves a preserved quarter-cylinder
+parameter bound by about 1.4e-8. This is serialization determinism derived from observed kernel
+parameter jitter, not a length comparison or recognition tolerance, and no geometric predicate
+reads the projected value. Changing that projection increments the canonicalizer format version.
+
 ### Kernel-coordinate floors are not feature allowances
 
 `_geometry.COORD_FLOOR` (1e-6 model units) is the smallest coordinate separation at which this

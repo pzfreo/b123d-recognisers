@@ -28,6 +28,7 @@ PUBLIC_MODULES = {
     "polygonal_bosses",
     "profiled_bores",
     "repeating_profiles",
+    "round_bottom_slots",
     "result",
     "slots",
     "turned",

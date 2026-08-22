@@ -2,6 +2,30 @@
 
 ## 0.2.12
 
+- **Added bounded round-bottom blind-slot recognition.**
+  `recognise_round_bottom_blind_slots` recognises an edge-open constant U section swept from one
+  source-solid envelope mouth to one internal cap: a positive-width planar floor joined
+  tangentially to two equal-radius analytic quarter cylinders. The three logical side regions
+  must share one run span, meet the exact U-profile cap concavely, meet coplanar-normalized stock
+  context convexly at the opening and depth envelope, and bound an exactly material-free swept
+  cap volume. Harmless planar and coaxial-cylinder subdivisions normalize through direct AAG
+  arcs; all source patches of the floor, curved walls and feature-local cap are claimed.
+
+  The dedicated `RoundBottomBlindSlot` record preserves run/open direction, width/depth axes,
+  penetration, radius and flat width. It is not silently projected into rectangular `Pocket`,
+  `Slot` or `PrismaticPocket` semantics. Through/two-cap profiles, unequal or non-quarter radii,
+  holes, cap continuation, material bridges and unrelated tangent blends fail closed. The
+  40-model development subset contains two instances in one model; the strict rule emits two
+  records and all eight defining faces carry the `Horizontal circular end blind slot` label.
+  That small count is anatomy/blast-radius evidence, not the predicate or a recall claim. Only
+  after the predicate and two independent reviews were fixed, the frozen 33-model holdout was
+  revealed: five further records claim twenty faces and every one carries the same label.
+  All ten NIST complex-part contracts remain unchanged; the candidate wheel passes its installed
+  manifest/type contract and Draftwright's 74-test downstream contract. The composite recognition
+  workload measured a 2.593 s minimum against the recorded 2.698 s ceiling. Canonical goldens move
+  to format v2 solely to project OCCT's observed quarter-cylinder STEP parameter jitter at seven
+  digits; recognition geometry still uses unprojected kernel values.
+
 - **Added bounded rectangular through-step recognition.** `recognise_through_steps` discovers an
   open right-angle removal represented by two principal planar regions joined along one complete
   concave run seam. Both regions must share the source-solid run span, reach distinct section

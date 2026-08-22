@@ -1,5 +1,5 @@
 {
-  "canonicalizer_version": 1,
+  "canonicalizer_version": 2,
   "fixture": "slanted_counterbore",
   "provenance": {
     "creator": "Paul Fremantle",
@@ -35,7 +35,7 @@
               "external": false,
               "s_hi": 23.0,
               "s_lo": -7.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -53,7 +53,7 @@
               "external": false,
               "s_hi": -7.0,
               "s_lo": -19.34925693,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -119,6 +119,7 @@
           }
         ],
         "rotational": false,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -150,7 +151,7 @@
               "external": false,
               "s_hi": 23.0,
               "s_lo": -7.0,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             },
             {
               "axis": "z",
@@ -168,7 +169,7 @@
               "external": false,
               "s_hi": -7.0,
               "s_lo": -19.34925693,
-              "u_extent": 6.28318531
+              "u_extent": 6.2831853
             }
           ],
           []
@@ -234,6 +235,7 @@
           }
         ],
         "rotational": true,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -256,6 +258,7 @@
       "plate": 0,
       "pocket": 0,
       "prismatic_pocket": 0,
+      "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 0,
       "through_step": 0
@@ -352,6 +355,7 @@
           "z_lo": -10.0
         }
       ],
+      "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],
@@ -376,7 +380,7 @@
             "external": false,
             "s_hi": 23.0,
             "s_lo": -7.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -394,7 +398,7 @@
             "external": false,
             "s_hi": -7.0,
             "s_lo": -19.34925693,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []
@@ -421,7 +425,7 @@
             "external": false,
             "s_hi": 23.0,
             "s_lo": -7.0,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           },
           {
             "axis": "z",
@@ -439,7 +443,7 @@
             "external": false,
             "s_hi": -7.0,
             "s_lo": -19.34925693,
-            "u_extent": 6.28318531
+            "u_extent": 6.2831853
           }
         ],
         []

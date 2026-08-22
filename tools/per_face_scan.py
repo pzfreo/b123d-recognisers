@@ -41,6 +41,7 @@ CLAIMING = (
     "Chamfer",
     "AngledStep",
     "ThroughStep",
+    "RoundBottomBlindSlot",
 )
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
@@ -109,6 +110,7 @@ def scan_part(part, labels):
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)
     through_steps = r.recognise_through_steps(part, ledger=ledger)
+    round_bottom_slots = r.recognise_round_bottom_blind_slots(part, ledger=ledger)
     chamfers = chamfers_that_are_not_angled_steps(proposed, ledger)
 
     kept = {
@@ -121,6 +123,7 @@ def scan_part(part, labels):
             *chamfers,
             *steps,
             *through_steps,
+            *round_bottom_slots,
         )
     }
     records = {
@@ -131,6 +134,7 @@ def scan_part(part, labels):
         "Chamfer": len(chamfers),
         "AngledStep": len(steps),
         "ThroughStep": len(through_steps),
+        "RoundBottomBlindSlot": len(round_bottom_slots),
     }
 
     claimed: dict[str, Counter] = defaultdict(Counter)

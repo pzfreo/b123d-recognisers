@@ -35,6 +35,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_slots",
     "recognise_turned_steps",
     "recognise_through_steps",
+    "recognise_round_bottom_blind_slots",
 }
 SUBSTRATES = {
     "analyse_cylinders",
