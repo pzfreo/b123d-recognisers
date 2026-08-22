@@ -22,7 +22,8 @@ share nothing above them.
 
 from __future__ import annotations
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
+from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_faces import (
     _AXES,
     _FLOOR_TOL,
@@ -43,6 +44,7 @@ from b123d_recognisers._recess_reduce import (
     _Claims,
     _collapse_collinear,
     _merge,
+    _prism_is_empty,
 )
 from b123d_recognisers._typing import Part
 
@@ -51,18 +53,105 @@ _LENGTH_TIE_FRAC = 0.05
 _SLOT_MAX_SPAN_FRAC = 0.9
 
 
+def _concave_boundary_regions(wall: FaceNode, graph: FaceGraph) -> set[frozenset[FaceNode]]:
+    """Distinct closing regions reached concavely from one proposed wall.
+
+    One physical end or floor may arrive from STEP as several tangent face patches. A gAAG
+    collapses those patches into one region; :meth:`FaceGraph.smooth_region` asks the same
+    question without mutating this graph. Convex arcs are excluded because they lead onto outer
+    stock or added material, neither of which closes the removed region.
+    """
+
+    return {
+        graph.smooth_region(node)
+        for node in graph.neighbours(wall)
+        if graph.arc(wall, node) == "concave"
+    }
+
+
+def _shared_concave_boundaries(fa: _Face, fb: _Face, graph: FaceGraph) -> set[frozenset[FaceNode]]:
+    if fa.node is None or fb.node is None:
+        raise ValueError("recess walls require graph nodes")
+    return _concave_boundary_regions(fa.node, graph) & _concave_boundary_regions(fb.node, graph)
+
+
+def _uninterrupted_long_span(
+    long_axis: str,
+    long_span: tuple[float, float],
+    fa: _Face,
+    fb: _Face,
+    graph: FaceGraph,
+) -> tuple[float, float] | None:
+    """The record span after graph-proved curved interruptions at its ends.
+
+    A coaxial post can replace a slot's planar end entirely. It is common to both walls, curved,
+    and the material turns oppositely at its two contacts; that is explicit AAG evidence of added
+    material interrupting the end rather than of the void ending there. Remove exactly its
+    bounding interval from the occupancy probe. Interior material is not trimmed: the simple
+    rectangular record has no way to represent it.
+    """
+
+    if fa.node is None or fb.node is None:
+        raise ValueError("recess walls require graph nodes")
+    lo, hi = long_span
+    common = set(graph.neighbours(fa.node)) & set(graph.neighbours(fb.node))
+    for node in common:
+        if graph.is_planar(node):
+            continue
+        turns = {graph.arc(fa.node, node), graph.arc(fb.node, node)}
+        if turns != {"convex", "concave"}:
+            continue
+        bounds = graph.bounds(node)[_AXES[long_axis]]
+        if bounds[0] <= lo + COORD_FLOOR:
+            lo = max(lo, bounds[1])
+        if bounds[1] >= hi - COORD_FLOOR:
+            hi = min(hi, bounds[0])
+    return (lo, hi) if hi - lo > COORD_FLOOR else None
+
+
+def _candidate_has_void_evidence(
+    spans: dict[str, tuple[float, float]],
+    long_axis: str,
+    fa: _Face,
+    fb: _Face,
+    graph: FaceGraph,
+    part: Part,
+) -> bool:
+    """Whether the record's uninterrupted, unrounded rectangular prism is empty.
+
+    A complete outer AAG boundary still does not prove this record: a ring-shaped removal around
+    a large rectangular island has two shared concave ends but is not a simple rectangular slot.
+    The graph instead proves only which curved end interruptions are added material that may be
+    trimmed from the claimed run. Everything left in the record's prism must be void.
+
+    Candidate existence has no volume allowance: even a thin continuous membrane keeps two
+    recesses distinct. ``COORD_FLOOR`` is only a kernel-coordinate inset which avoids asking an
+    OCCT Boolean about coincident boundary faces; any barrier thicker than twice that supported
+    numerical floor remains inside the probe. The separate collinear-arm policy deliberately has
+    a much larger allowance and does not leak into this decision.
+    """
+    long_span = _uninterrupted_long_span(long_axis, spans[long_axis], fa, fb, graph)
+    if long_span is None:
+        return False
+    probe = dict(spans)
+    probe[long_axis] = long_span
+    return _prism_is_empty(probe, part, inset=COORD_FLOOR)
+
+
 def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
     """Whether two opposed walls participate in one coherent recess boundary.
 
     Facing bounding boxes are not enough: walls of neighbouring features can overlap by a
-    sliver and manufacture a candidate spanning the space between them.  Walls of one recess
-    need not meet the same boundary face when an end is fragmented, but where they do, the
-    material must turn the same way from both walls. Planar common neighbours are the boundary
-    evidence when present: an added coaxial post contributes a cylindrical neighbour that meets
-    the two walls with opposite turns, but it interrupts rather than defines the slot. When
-    there is no common neighbour, the walls must still belong to one smooth-connected boundary
-    component -- the gAAG view that merges face subdivisions. Unrelated grazing walls fail both
-    tests.
+    sliver and manufacture a candidate spanning the space between them. Two separate slots cut
+    into the same plate make the stronger counterexample: their outer walls share the plate's
+    top and bottom with matching *convex* arcs, but no concave boundary region joins them across
+    the solid rib.
+
+    Where the walls share a boundary face, both arcs must agree. Planar common neighbours are
+    preferred because an added coaxial post contributes a cylindrical neighbour with opposite
+    turns but interrupts rather than defines the slot. Agreement is only a prerequisite: after
+    the candidate has exact bounds, :func:`_candidate_has_void_evidence` additionally requires
+    an empty uninterrupted prism.
     """
 
     if fa.node is None or fb.node is None:
@@ -79,24 +168,20 @@ def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
             for neighbour in boundary
         )
 
-    # A STEP face may be subdivided into several tangent faces. In a gAAG those fragments are
-    # one super-node; walking only smooth arcs is the equivalent query on this immutable AAG.
-    pending = [fa.node]
-    seen = {fa.node}
-    while pending:
-        node = pending.pop()
-        for neighbour in graph.neighbours(node):
-            if graph.arc(node, neighbour) != "smooth" or neighbour in seen:
-                continue
-            if neighbour is fb.node:
-                return True
-            seen.add(neighbour)
-            pending.append(neighbour)
-    return False
+    # With no common neighbour, a fragmented boundary must still join the walls through one
+    # concave region or the wall faces themselves must be smooth subdivisions of one region.
+    if _shared_concave_boundaries(fa, fb, graph):
+        return True
+    return fb.node in graph.smooth_region(fa.node)
 
 
 def _candidate(
-    fa: _Face, fb: _Face, part_ext: dict[str, float], axis: str, graph: FaceGraph
+    fa: _Face,
+    fb: _Face,
+    part: Part,
+    part_ext: dict[str, float],
+    axis: str,
+    graph: FaceGraph,
 ) -> Slot | None:
     """Build a :class:`Slot` from two facing rectangular walls, or None if the
     pair is not a slot (not facing, not overlapping, wider than long, or
@@ -147,6 +232,13 @@ def _candidate(
     dc = "XYZ"[_AXES[depth_axis]]
     d_lo = max(getattr(bb_a.min, dc), getattr(bb_b.min, dc))
     d_hi = min(getattr(bb_a.max, dc), getattr(bb_b.max, dc))
+    spans = {
+        axis: tuple(sorted((c_a, c_b))),
+        long_axis: (lo, hi),
+        depth_axis: (d_lo, d_hi),
+    }
+    if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
+        return None
     return Slot(
         width_axis=axis,
         long_axis=long_axis,
@@ -158,6 +250,7 @@ def _candidate(
         d_lo=round(d_lo, 2),
         d_hi=round(d_hi, 2),
     )
+
 
 def _recognise_slots_one(
     part: Part,
@@ -191,7 +284,7 @@ def _recognise_slots_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                s = _candidate(walls[i], walls[j], part_ext, axis, owner)
+                s = _candidate(walls[i], walls[j], part, part_ext, axis, owner)
                 # Keep only through-slots: a blind pocket (or the floored gap
                 # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
@@ -216,9 +309,11 @@ def _recognise_slots_one(
         _collapse_collinear(_merge(candidates, claims), part, claims), part, claims
     )
 
+
 def _floored_candidate(
     fa,
     fb,
+    part,
     faces,
     part_ext,
     axis: str,
@@ -274,6 +369,13 @@ def _floored_candidate(
         if channel_bounds is None:
             if length >= _SLOT_MAX_SPAN_FRAC * part_ext[long_axis]:
                 return None  # footprint spans the part — an open feature, not a pocket
+            spans = {
+                axis: tuple(sorted((c_a, c_b))),
+                long_axis: (l_lo, l_hi),
+                depth_axis: (d_lo, d_hi),
+            }
+            if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
+                return None
             return Pocket(
                 width_axis=axis,
                 long_axis=long_axis,
@@ -290,6 +392,9 @@ def _floored_candidate(
         part_lo, part_hi = channel_bounds[long_axis]
         if abs(l_lo - part_lo) > _FLOOR_TOL or abs(l_hi - part_hi) > _FLOOR_TOL:
             continue  # not open at both longitudinal envelope ends
+        spans = {axis: tuple(sorted((c_a, c_b))), long_axis: (l_lo, l_hi), depth_axis: (d_lo, d_hi)}
+        if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
+            return None
         return Channel(
             width_axis=axis,
             long_axis=long_axis,
@@ -303,20 +408,24 @@ def _floored_candidate(
         )
     return None
 
+
 def _pocket_candidate(
     fa: _Face,
     fb: _Face,
+    part: Part,
     faces: list[_Face],
     part_ext: dict[str, float],
     axis: str,
     graph: FaceGraph,
 ) -> Pocket | None:
-    candidate = _floored_candidate(fa, fb, faces, part_ext, axis, graph)
+    candidate = _floored_candidate(fa, fb, part, faces, part_ext, axis, graph)
     return candidate if isinstance(candidate, Pocket) else None
+
 
 def _channel_candidate(
     fa: _Face,
     fb: _Face,
+    part: Part,
     faces: list[_Face],
     part_ext: dict[str, float],
     part_bounds,
@@ -324,9 +433,10 @@ def _channel_candidate(
     graph: FaceGraph,
 ) -> Channel | None:
     candidate = _floored_candidate(
-        fa, fb, faces, part_ext, axis, graph, channel_bounds=part_bounds
+        fa, fb, part, faces, part_ext, axis, graph, channel_bounds=part_bounds
     )
     return candidate if isinstance(candidate, Channel) else None
+
 
 def _channel_sort_key(channel: Channel) -> tuple:
     """Geometry-only order, including depth to break cross-solid traversal ties."""
@@ -341,6 +451,7 @@ def _channel_sort_key(channel: Channel) -> tuple:
         channel.d_hi,
         channel.open_sign,
     )
+
 
 def _recognise_pockets_one(
     part: Part,
@@ -375,7 +486,7 @@ def _recognise_pockets_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                p = _pocket_candidate(walls[i], walls[j], faces, part_ext, axis, owner)
+                p = _pocket_candidate(walls[i], walls[j], part, faces, part_ext, axis, owner)
                 if p is not None:
                     candidates.append(p)
                     if claims is not None:
@@ -389,6 +500,7 @@ def _recognise_pockets_one(
     # `_planar_faces` never yielded and which no consumer reconciling planar walls can want.
     candidates.extend(_recognise_obround_from_ends(part, faces, blind=True))
     return _extend_obround_ends(_merge(candidates, claims), part, claims)
+
 
 def _recognise_channels_one(
     part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
@@ -414,7 +526,7 @@ def _recognise_channels_one(
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
                 channel = _channel_candidate(
-                    walls[i], walls[j], faces, part_ext, part_bounds, axis, owner
+                    walls[i], walls[j], part, faces, part_ext, part_bounds, axis, owner
                 )
                 if channel is not None:
                     candidates.append(channel)
@@ -422,6 +534,7 @@ def _recognise_channels_one(
         set(candidates),
         key=_channel_sort_key,
     )
+
 
 def _recognise_corner_notches(
     faces: list[_Face], pbb, claims: _Claims | None = None
