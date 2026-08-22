@@ -49,6 +49,7 @@ _VOID_INSET = 0.1
 
 _VOID_VOL_FRAC = 0.01
 
+
 def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) -> None:
     """Give *into* the nodes of every record in *from_*, the records the pipeline replaces by it.
 
@@ -64,6 +65,7 @@ def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) 
     nodes = claims.setdefault(into, set())
     for record in from_:
         nodes |= claims.get(record, set())
+
 
 def _body_signature(solid) -> tuple[float, ...]:
     """Exact geometry-derived correspondence key for one physical solid.
@@ -84,6 +86,7 @@ def _body_signature(solid) -> tuple[float, ...]:
         float(solid.volume),
         float(solid.area),
     )
+
 
 def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:
     """The same, paired with the nodes each record was built from.
@@ -108,6 +111,7 @@ def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) ->
             out.append((keyed, nodes))
     return out
 
+
 def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
     """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
     (width axis, centreline, width and depth extent) but disjoint along their run
@@ -130,38 +134,28 @@ def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
         return None  # overlapping along the run — not two disjoint arms
     return gap if gap[1] - gap[0] > 0 else None
 
-def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
-    """True when the *whole* gap between two collinear arms is empty space — a
-    crossing channel of matching cross-section runs through it — rather than solid
-    stock or merely pierced by an incidental void.
 
-    The gap region is the box of its full run (along ``long_axis``) × the arm's
-    width × the arm's depth, inset slightly off the arm walls to avoid
-    coincident-face noise.  A crossing channel carves this box away entirely, so
-    its intersection with the solid is (near) zero volume.  A solid bridge fills
-    it; a small unrelated hole between two aligned slots leaves the box corners
-    solid — both keep a substantial intersection, so the arms stay separate.
-    Testing the whole box (not a single sample point) is what distinguishes a
-    channel from an incidental hole at the gap centre.
+def _prism_material_fraction(
+    spans: dict[str, tuple[float, float]], part: Part, *, inset: float = _VOID_INSET
+) -> float:
+    """The fraction of one axis-aligned prism occupied by *part*.
 
-    Known limitation: a wide *enclosed* void (a square window/pocket) flush with
-    the arm ends also empties the box and so fuses the arms.  This is a continuum
-    with the accepted symmetric-cross case — which likewise leaves the merged
-    slot wall-less where the crossing channel passes — and distinguishing a
-    narrow crossing channel from a wide window is an aspect-ratio judgement with
-    no clean line; the supported scope is intersecting *channels*, so it is left as-is."""
-    span = {
-        arm.long_axis: (gap[0], gap[1]),
-        arm.width_axis: (arm.w_center - arm.width / 2, arm.w_center + arm.width / 2),
-        arm.depth_axis: (arm.d_lo, arm.d_hi),
-    }
+    This is geometric evidence, not a recognition policy. Candidate admission requires an
+    exactly empty prism; collinear-arm reduction permits the separately documented
+    :data:`_VOID_VOL_FRAC`. Sharing only this measurement keeps those two decisions distinct.
+
+    ``inset`` belongs to the caller's numerical policy. Testing the whole box rather than sample
+    points distinguishes cleared material from a narrow incidental connector through an
+    otherwise-solid region.
+    """
+
     size, centre = {}, {}
-    for ax, (lo, hi) in span.items():
-        inset = min(_VOID_INSET, (hi - lo) / 4)
-        size[ax] = (hi - lo) - 2 * inset
+    for ax, (lo, hi) in spans.items():
+        axis_inset = min(inset, (hi - lo) / 4)
+        size[ax] = (hi - lo) - 2 * axis_inset
         centre[ax] = (lo + hi) / 2
     if min(size.values()) <= 0:
-        return False
+        raise ValueError("prism spans must have positive extent")
     probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(size["x"], size["y"], size["z"])
     inter = part.intersect(probe)
     # ``intersect`` returns None (empty), a single shape with ``.volume`` (older
@@ -173,11 +167,44 @@ def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
     else:
         inter_vol = sum(s.volume for s in inter)
     box_vol = size["x"] * size["y"] * size["z"]
-    return bool(inter_vol <= _VOID_VOL_FRAC * box_vol)
+    return float(inter_vol / box_vol)
 
-def _collapse_collinear(
-    slots: list[Slot], part: Part, claims: _Claims | None = None
-) -> list[Slot]:
+
+def _prism_is_empty(
+    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
+) -> bool:
+    """Whether an inset prism has no volumetric intersection with *part*.
+
+    OCCT represents a genuinely empty Boolean intersection as no solids (volume zero). Boundary
+    contacts may still yield lower-dimensional shapes, which also have zero volume and are not
+    material inside the open probe. The caller chooses the inset that moves coincident faces off
+    that boundary; no non-zero feature-volume threshold is applied here.
+    """
+
+    return _prism_material_fraction(spans, part, inset=inset) == 0.0
+
+
+def _gap_is_void(gap, arm: Slot, part: Part) -> bool:
+    """Whether the whole gap between collinear slot arms is near-empty.
+
+    A crossing channel of matching cross-section clears it. Solid stock or a small incidental
+    hole leaves substantial material, so the arms remain separate. The 1% allowance belongs to
+    this reduction policy only; candidate existence uses exact emptiness instead.
+
+    Known limitation: a wide enclosed void flush with the arm ends also empties the box and
+    fuses the arms. Distinguishing that from the supported crossing-channel case needs an
+    aspect-ratio policy with no clean line, so it remains deliberately out of scope.
+    """
+
+    spans = {
+        arm.long_axis: (gap[0], gap[1]),
+        arm.width_axis: (arm.w_center - arm.width / 2, arm.w_center + arm.width / 2),
+        arm.depth_axis: (arm.d_lo, arm.d_hi),
+    }
+    return _prism_material_fraction(spans, part) <= _VOID_VOL_FRAC
+
+
+def _collapse_collinear(slots: list[Slot], part: Part, claims: _Claims | None = None) -> list[Slot]:
     """Recombine slot arms split by a crossing channel into whole channels.
 
     A ``+`` of two intersecting through-channels is milled as one continuous slot
@@ -230,6 +257,7 @@ def _collapse_collinear(
         out.append(spanned)
     return sorted(out, key=lambda c: (c.width, _region_center(c)))
 
+
 def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
     """The slot's mid-point in part coordinates (axis-ordered)."""
     c = {
@@ -238,6 +266,7 @@ def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
         s.depth_axis: (s.d_lo + s.d_hi) / 2,
     }
     return (c["x"], c["y"], c["z"])
+
 
 def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
     """A rectangular slot is bounded by two orthogonal opposed-wall pairs (the

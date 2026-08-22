@@ -157,6 +157,7 @@ class FaceGraph:
         self._edge_faces: dict | None = None
         self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
         self._arcs: dict[tuple[int, int], ArcKind | None] = {}
+        self._smooth_regions: dict[int, frozenset[FaceNode]] = {}
 
     def __len__(self) -> int:
         return len(self._faces)
@@ -363,6 +364,33 @@ class FaceGraph:
         if key not in self._arcs:
             self._arcs[key] = self._classify_arc(a, b)
         return self._arcs[key]
+
+    def smooth_region(self, node: FaceNode) -> frozenset[FaceNode]:
+        """The maximal face region reachable across only smooth arcs.
+
+        This is the non-mutating gAAG operation used when one physical boundary arrives as
+        several tangent STEP patches. Every member is cached against the same immutable set, so
+        repeated wall-pair queries traverse a smooth component once per recognition run rather
+        than once per candidate. Set membership, not traversal order, is the contract.
+        """
+
+        at = self._at(node)
+        cached = self._smooth_regions.get(at)
+        if cached is not None:
+            return cached
+        found = {node}
+        pending = [node]
+        while pending:
+            current = pending.pop()
+            for neighbour in self.neighbours(current):
+                if neighbour in found or self.arc(current, neighbour) != "smooth":
+                    continue
+                found.add(neighbour)
+                pending.append(neighbour)
+        region = frozenset(found)
+        for member in region:
+            self._smooth_regions[member.index] = region
+        return region
 
     def _classify_arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None:
         """:meth:`arc` without the cache: every shared edge classified, and made to agree."""
