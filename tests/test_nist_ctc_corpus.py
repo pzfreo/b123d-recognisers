@@ -65,6 +65,36 @@ _SUPPORTED_ADDITIONS = {
     "nist_ftc_10": {"fillets": 19},
 }
 
+#: Issue #142 correctness changes, kept separate for the same reason as additions: ``EXPECTED``
+#: remains the historical downstream report rather than being silently rewritten. The old
+#: opposed-wall scan counted rectangles whose proposed prisms contain material. Inspection on
+#: these external parts found repeated polygonal/cross-feature motifs, including nominal pockets
+#: that are 24--31% solid and slots that are 3--54% solid. Exact unrounded-prism admission removes
+#: them without using these filenames or counts in recognition.
+_SUPPORTED_RECESS_CORRECTIONS = {
+    "nist_ctc_01": {"pockets": -2},
+    "nist_ctc_02": {"pockets": -9},
+    "nist_ctc_03": {"pockets": -1, "slots": -1},
+    "nist_ctc_04": {"pockets": -2},
+    "nist_ctc_05": {"pockets": -2},
+    "nist_ftc_06": {"pockets": -1},
+    "nist_ftc_07": {"slots": -5},
+    "nist_ftc_08": {"pockets": -2},
+    "nist_ftc_09": {"pockets": -2},
+    "nist_ftc_10": {"pockets": -1, "slots": -1},
+}
+
+
+def _expected_after_supported_changes(stem: str, baseline: dict[str, int]) -> dict[str, int]:
+    expected = dict(baseline)
+    for changes in (
+        _SUPPORTED_ADDITIONS.get(stem, {}),
+        _SUPPORTED_RECESS_CORRECTIONS.get(stem, {}),
+    ):
+        for family, change in changes.items():
+            expected[family] += change
+    return expected
+
 _VENDORED = Path(__file__).parent / "corpus" / "nist"
 _DIR = os.environ.get("B123D_NIST_STEP_DIR") or str(_VENDORED)
 
@@ -96,17 +126,16 @@ def _step_for(stem: str) -> Path:
 
 @pytest.mark.parametrize("stem", sorted(EXPECTED), ids=lambda s: s.removeprefix("nist_"))
 def test_recognition_counts_match_the_reported_baseline(stem):
-    """Every family that regressed under 0.2.3 is back to its 0.2.2 count.
+    """The historical count plus separately reviewed additions and correctness removals.
 
     Counts rather than records: the downstream report is in counts, and a record-level pin would
-    make this a second golden corpus without the review discipline the real one has.
+    make this a second golden corpus without the review discipline the real one has. Corrections
+    remain visibly separate above rather than changing what that report said.
     """
 
     result = build_recognition_result(import_step(str(_step_for(stem))))
 
-    expected = dict(EXPECTED[stem])
-    for family, addition in _SUPPORTED_ADDITIONS.get(stem, {}).items():
-        expected[family] += addition
+    expected = _expected_after_supported_changes(stem, EXPECTED[stem])
     actual = {family: len(getattr(result, family)) for family in expected}
 
     assert actual == expected
@@ -170,9 +199,7 @@ def test_recognition_on_the_remaining_vendored_parts_has_not_moved(stem):
 
     result = build_recognition_result(import_step(str(_step_for(stem))))
 
-    expected = dict(_OBSERVED[stem])
-    for family, addition in _SUPPORTED_ADDITIONS.get(stem, {}).items():
-        expected[family] += addition
+    expected = _expected_after_supported_changes(stem, _OBSERVED[stem])
     actual = {family: len(getattr(result, family)) for family in expected}
 
     assert actual == expected

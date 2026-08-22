@@ -89,6 +89,9 @@ def test_slot_walls_must_turn_consistently_into_one_void(corpus, monkeypatch):
     coherent = recognise_slots(part)
     assert len(coherent) == 1
 
+    monkeypatch.setattr(recess_core, "_candidate_has_void_evidence", lambda *_args: True)
+    assert len(recognise_slots(part)) == 1, "the AAG gate alone rejects both false pairs"
+
     monkeypatch.setattr(recess_core, "_bounds_one_void", lambda *_args: True)
     unguarded = recognise_slots(part)
     assert len(unguarded) == 3
@@ -528,15 +531,23 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14
 
     slots = claimed["Slot"]
-    assert sum(slots.values()) == 38
+    # Exact prism evidence removes two paired-wall interpretations whose nominal boxes contain
+    # material: a 6-sided pocket fragment in 10101 and a rectangular-slot-labelled pair in
+    # 10138 whose proposed prism is 57% solid. The latter label is face-local evidence, not proof
+    # that this particular opposed pair describes the labelled removal's volume.
+    assert sum(slots.values()) == 34
     assert slots[16] == 28, "most accepted Slot walls are labelled Circular end pocket"
 
     # Pockets are the blind counterpart and land mostly where the name says. Complete ring
     # containment removes the old passage fragments; partial intersections deliberately remain.
     pockets = claimed["Pocket"]
-    assert sum(pockets.values()) == 93
-    assert pockets[14] == 43, "most of what Pocket claims is labelled Rectangular pocket"
-    assert pockets[3] == 3, "complete passage rings remove the old pocket fragments"
+    # #142 removes cross-feature and incomplete rectangular interpretations in 10131, 10170 and
+    # 10212. Their proposed prisms are respectively 7%, 31% and 27% solid. Four removed defining
+    # faces carry the corpus's rectangular-pocket label, illustrating why the corpus is diagnostic
+    # evidence rather than the feature definition.
+    assert sum(pockets.values()) == 87
+    assert pockets[14] == 38, "most of what Pocket claims is labelled Rectangular pocket"
+    assert pockets[3] == 2, "complete passage rings remove the old pocket fragments"
 
 
 def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
@@ -572,7 +583,6 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
     ]
     assert signatures == [
         ("10190.step", {"Pocket", "Slot"}, 1),
-        ("10212.step", {"Passage", "Pocket"}, 1),
     ]
     assert all(
         not left_faces <= right_faces and not right_faces <= left_faces

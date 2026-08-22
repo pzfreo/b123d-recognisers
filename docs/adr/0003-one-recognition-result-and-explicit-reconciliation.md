@@ -174,3 +174,22 @@ MFCAD++ design corpus this changes 35 proposed slots to 19 accepted slots, remov
 0.19 and 0.31 mm grazing-wall artifact without a size threshold, and reduces cross-family recess
 overlap from 32 record pairs to two compatible pairs sharing a single face each (Pocket/Slot and
 Pocket/Passage). Both are deliberately retained because neither claim contains the other.
+
+## Amendment (0.2.10, issue #142)
+
+The AAG condition above is necessary, not sufficient. Two independent recesses can contribute an
+outer wall pair whose shared stock faces have matching arcs, and a narrow H- or U-shaped connector
+can make their boundary graph connected while most of the proposed rectangle remains solid. For a
+paired-wall `Slot`, `Pocket`, or `Channel`, the remaining unrounded axis-aligned prism must therefore
+be materially empty after any curved end interruption has been proved from opposite-turn AAG arcs
+and trimmed. Public record rounding is applied only after that admission decision.
+
+Candidate existence has no material-volume allowance. The Boolean probe uses only the numerical
+coordinate floor documented by ADR 0008; the separate 1% policy for recombining already-recognised
+collinear slot arms is not reused. A complete outer boundary and an arbitrary internal island are
+not enough for a simple rectangular record, because that record cannot represent the island. This
+keeps AAG/gAAG in its proper role—coherent topology and normalized boundary evidence—without asking
+connectivity to prove geometry it cannot prove. Emptiness is evaluated within the source solid:
+material belonging to that same solid, including a connected island or bridge, is not representable
+by the simple record; disconnected compound members are recognised independently and do not
+suppress it.
