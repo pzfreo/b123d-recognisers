@@ -119,6 +119,9 @@ consumer → b123d-recognisers → build123d/OCP
 The runtime package does not import Draftwright and does not return build123d or OCP objects in
 public feature records.
 
+Contributors: see [Adding a recogniser](docs/adding-a-recogniser.md) for the AAG predicate,
+candidate/evidence, registry, reconciliation, and verification path.
+
 Maintainers: see [the release guide](docs/releasing.md) for the TestPyPI-first, OIDC-only
 publication process.
 

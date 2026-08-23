@@ -228,8 +228,8 @@ applicability remain context or value dependencies, not physical candidates.
 ## Amendment (framework consolidation, issue #158)
 
 Every emitted physical aggregate candidate now receives exactly one identity-preserving
-`Disposition`. Closed outcomes distinguish acceptance, rejection, ambiguity and unsupported
-proposals; closed namespaced reasons state the named policy, and `related` holds the actual
+`Disposition`. The implemented closed outcomes distinguish acceptance from rejection; closed
+namespaced reasons state the named policy, and `related` holds the actual
 same-run winning or compatible candidates in source order. The reconciliation result stores only
 the ordered dispositions. Accepted candidate sets, pattern inputs and the distinct-step census
 projection are derived views rather than synchronized inventories.

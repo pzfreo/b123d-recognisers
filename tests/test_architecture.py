@@ -3,6 +3,8 @@
 
 import ast
 import importlib
+import inspect
+import textwrap
 import typing
 from pathlib import Path
 
@@ -203,6 +205,37 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     assert "reconciliation" in product_fields
     assert "diagnostics" in product_fields
     assert "accepted" not in product_fields and "distinct_steps" not in product_fields
+
+
+def test_projection_family_bindings_match_the_registry() -> None:
+    module = importlib.import_module("b123d_recognisers.result")
+    source = inspect.getsource(module._project_result)
+    tree = ast.parse(textwrap.dedent(source))
+    result_call = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "RecognitionResult"
+    )
+    projected: dict[str, str] = {}
+    for keyword in result_call.keywords:
+        families = {
+            node.attr
+            for node in ast.walk(keyword.value)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "FamilyId"
+        }
+        if families:
+            assert len(families) == 1, keyword.arg
+            projected[typing.cast(str, keyword.arg)] = families.pop()
+
+    registry = importlib.import_module("b123d_recognisers._registry")
+    assert projected == {
+        definition.result_field: definition.family.name
+        for definition in registry.PHYSICAL_DEFINITIONS
+    }
 
 
 def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:

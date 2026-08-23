@@ -2,6 +2,19 @@
 
 ## 0.3.1
 
+- **Clarified empty-evidence reconciliation and restored rotational Passage evidence.** Empty
+  defining evidence now explicitly proves no containment: an unrelated Passage cannot erase an
+  evidence-free obround Pocket, and an evidence-free obround Slot cannot erase an unrelated
+  four-wall Passage. This blesses the fail-closed semantics introduced by the framework
+  consolidation; reverting them would restore vacuous empty-set precedence. Passage discovery
+  again runs for rotational aggregate inputs so its evidence participates in reconciliation,
+  while the public rotational projection remains empty as before the consolidation.
+
+  The private framework was narrowed to what has a production consumer: Candidate evidence owns
+  defining faces only, failed-predicate terminal context remains on Observations, and unused
+  ambiguous/unsupported Candidate disposition arms were removed. No public record or schema
+  changes.
+
 - **Fixed: unrelated recess walls no longer manufacture a rectangular feature across solid
   material.** AAG/gAAG coherence remains the first proof that two opposed walls participate in
   one boundary, but connectivity alone cannot establish that the rectangle between them was

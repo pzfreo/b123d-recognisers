@@ -57,30 +57,6 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.snapshot_index().defining_of(candidate) == frozenset()
 
 
-def test_consulted_evidence_is_context_and_never_a_claim() -> None:
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    candidate = ledger.propose(
-        FamilyId.ANGLED_STEPS,
-        Record(1),
-        [ledger.graph.nodes[0]],
-        consulted=[ledger.graph.nodes[1]],
-    )
-    evidence = ledger.snapshot_index()
-
-    assert evidence.defining_of(candidate) == frozenset({ledger.graph.nodes[0]})
-    assert evidence.consulted_of(candidate) == frozenset({ledger.graph.nodes[1]})
-    assert ledger.claims_of(ledger.graph.nodes[1]) == ()
-    assert evidence.claims_of(ledger.graph.nodes[1]) == ()
-
-
-def test_defining_and_consulted_roles_must_be_disjoint() -> None:
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    node = ledger.graph.nodes[0]
-
-    with pytest.raises(ValueError, match="roles must be disjoint"):
-        ledger.propose(FamilyId.LEGACY, Record(1), [node], consulted=[node])
-
-
 def test_observations_freeze_without_becoming_candidates_or_claims() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     observation = ledger.sink.observe(
@@ -327,7 +303,7 @@ def test_evidence_capabilities_have_disjoint_runtime_surfaces() -> None:
         assert not hasattr(index, write_name)
 
 
-def test_snapshot_preserves_duplicate_record_identity_and_last_wins_adapter() -> None:
+def test_snapshot_preserves_duplicate_record_identity_and_rejects_ambiguous_adapter() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     record = Record(1)
     first = ledger.propose(FamilyId.LEGACY, record, [ledger.graph.nodes[0]])
@@ -337,7 +313,9 @@ def test_snapshot_preserves_duplicate_record_identity_and_last_wins_adapter() ->
     assert snapshot.defining_of(record) == snapshot.defining_of(first)
     with pytest.raises(ValueError, match="not present in this evidence snapshot"):
         snapshot.defining_of(second)
-    assert ledger.snapshot_index().defining_of(record) == frozenset({ledger.graph.nodes[1]})
+    with pytest.raises(ValueError, match=r"Record\(value=1\) has multiple candidates"):
+        ledger.snapshot_index().defining_of(record)
+    assert ledger.snapshot_index().defining_of(second) == frozenset({ledger.graph.nodes[1]})
 
 
 def test_snapshot_refuses_foreign_nodes_and_candidates() -> None:
@@ -428,9 +406,30 @@ def test_the_same_record_object_can_back_distinct_proposals() -> None:
     assert ledger.candidate_set(FamilyId.LEGACY).candidates == (first, second)
     assert ledger.defining_of(first) == frozenset({ledger.graph.nodes[0]})
     assert ledger.defining_of(second) == frozenset({ledger.graph.nodes[1]})
-    # The compatibility record lookup deliberately preserves ClaimLedger's previous last-wins
-    # behaviour; candidate lookup is the unambiguous new path.
-    assert ledger.defining_of(record) == ledger.defining_of(second)
+    with pytest.raises(ValueError, match="multiple candidates"):
+        ledger.defining_of(record)
+    with pytest.raises(ValueError, match="multiple candidates"):
+        ledger.snapshot_index().defining_of(record)
+
+
+@pytest.mark.parametrize("empty_first", [False, True])
+def test_empty_and_defining_proposals_require_candidate_identity(
+    empty_first: bool,
+) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    record = Record(1)
+    defining = [ledger.graph.nodes[0]]
+    evidence = ((), defining) if empty_first else (defining, ())
+    candidates = [
+        ledger.propose(FamilyId.LEGACY, record, nodes) for nodes in evidence
+    ]
+
+    assert {ledger.defining_of(candidate) for candidate in candidates} == {
+        frozenset(),
+        frozenset(defining),
+    }
+    with pytest.raises(ValueError, match="multiple candidates"):
+        ledger.defining_of(record)
 
 
 def test_angled_steps_use_the_named_candidate_family() -> None:

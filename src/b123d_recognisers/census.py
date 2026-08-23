@@ -31,7 +31,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import cast
 
-from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._record import Record
 from b123d_recognisers._registry import validate_census_contract
 from b123d_recognisers._typing import Part
@@ -81,35 +80,20 @@ def feature_census(part: Part) -> dict[str, int]:
 
     product = _take_inventory(part)
     found = product.result
-    records: dict[str, Sequence[Record]] = {
-        "hole": found.holes,
-        "hole_pattern": found.hole_patterns,
-        "boss": found.bosses,
-        # The one place the census deliberately differs from the result it counts. A groove is
-        # both an annular channel and a rung of the step ladder; both records are true and both
-        # survive into the inventory, but it is one machined feature and this counts features.
-        # See `steps_that_are_not_grooves` for why the ladder keeps its rung.
-        "step": cast(
-            Sequence[Record],
-            tuple(
-                candidate.record
-                for candidate in product.distinct_steps.candidates
-                if candidate.family is FamilyId.TURNED_STEPS
-            ),
-        ),
-        "groove": found.grooves,
-        "flat": found.flats,
-        "slot": found.slots,
-        "channel": found.channels,
-        "pocket": found.pockets,
-        "prismatic_pocket": found.prismatic_pockets,
-        "passage": found.passages,
-        "chamfer": found.chamfers,
-        "angled_step": found.angled_steps,
-        "fillet": found.fillets,
-        "countersink": found.countersinks,
-        "plate": found.plates,
-    }
-    if tuple(records) != CENSUS_KEYS:
-        raise RuntimeError("feature census implementation drifted from its stable key contract")
+    records: dict[str, Sequence[Record]] = {}
+    for key, source in CENSUS_BINDINGS:
+        # TurnedStep is the registered source, but the census deliberately projects its accepted
+        # step/groove compatibility relation so one machined band is not counted twice.
+        records[key] = (
+            cast(
+                Sequence[Record],
+                tuple(candidate.record for candidate in product.distinct_steps.candidates),
+            )
+            if key == "step"
+            else cast(Sequence[Record], getattr(found, source))
+        )
+    # The one place the census deliberately differs from the result it counts. A groove is
+    # both an annular channel and a rung of the step ladder; both records are true and both
+    # survive into the inventory, but it is one machined feature and this counts features.
+    # See `steps_that_are_not_grooves` for why the ladder keeps its rung.
     return {kind: len(recs) for kind, recs in records.items()}

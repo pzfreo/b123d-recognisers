@@ -13,14 +13,10 @@ from b123d_recognisers._candidates import Candidate, CandidateSet, EvidenceIndex
 class Outcome(Enum):
     ACCEPTED = "accepted"
     REJECTED = "rejected"
-    AMBIGUOUS = "ambiguous"
-    UNSUPPORTED = "unsupported"
 
 
 class ReasonCode(Enum):
     DEFAULT_ACCEPTED = "default.accepted"
-    CANDIDATE_AMBIGUOUS = "diagnostic.ambiguous"
-    CANDIDATE_UNSUPPORTED = "diagnostic.unsupported"
     PRISMATIC_SUPERSEDED_BY_POCKET = "recess.prismatic_superseded_by_pocket"
     POCKET_SUPERSEDED_BY_PASSAGE = "recess.pocket_superseded_by_passage"
     POCKET_SUPERSEDED_BY_PRISMATIC = "recess.pocket_superseded_by_prismatic"
@@ -45,8 +41,6 @@ class Disposition:
 
 _REASON_SPEC: dict[ReasonCode, tuple[Outcome, FamilyId | None, FamilyId | None, bool]] = {
     ReasonCode.DEFAULT_ACCEPTED: (Outcome.ACCEPTED, None, None, False),
-    ReasonCode.CANDIDATE_AMBIGUOUS: (Outcome.AMBIGUOUS, None, None, False),
-    ReasonCode.CANDIDATE_UNSUPPORTED: (Outcome.UNSUPPORTED, None, None, False),
     ReasonCode.PRISMATIC_SUPERSEDED_BY_POCKET: (
         Outcome.REJECTED,
         FamilyId.PRISMATIC_POCKETS,
@@ -108,6 +102,8 @@ _REASON_SPEC: dict[ReasonCode, tuple[Outcome, FamilyId | None, FamilyId | None, 
         True,
     ),
 }
+if set(_REASON_SPEC) != set(ReasonCode):
+    raise ValueError("every closed reason needs one semantic specification")
 
 
 @dataclass(frozen=True, init=False, slots=True)
