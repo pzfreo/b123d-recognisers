@@ -333,9 +333,10 @@ idiom: derived *views* over an immutable graph rather than Analysis Situs's muta
 whose own header warns that collapsed attributes are not cleaned up by `PopSubgraph`. A
 collapsed view is additive, and the evidence model survives it — defining evidence names real
 faces, which a recogniser working through a view can still claim. The prerequisite is
-enriching `ArcKind` from four to seven values (the smooth-sided pair), and the `"smooth"`
-literal does not leak outside `_adjacency.py`, so that is a contained internal refactor rather
-than a contract change.
+enriching `ArcKind` from four to six values (adding the smooth-sided pair; Analysis Situs's
+seven-member enum needs no further mirroring here, since `unknown` already covers `Undefined`
+and non-manifold input is out of scope), and the `"smooth"` literal does not leak outside
+`_adjacency.py`, so that is a contained internal refactor rather than a contract change.
 
 **Persistent feature identity — green, as a layer.** Records-are-values means identity cannot
 live inside records, but ADR 0004 already concluded face indices are not persistent identity
