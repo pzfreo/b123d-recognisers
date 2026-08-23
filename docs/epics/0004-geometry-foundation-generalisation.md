@@ -123,35 +123,89 @@ the holdout stays sealed.
 
 ### F1 — Bounded canonical analytic recovery
 
-Introduce one neutral service that can recognise a plane, cylinder, cone, sphere or torus represented
-as a B-spline and provide an effective analytic surface plus residual and provenance.
+Introduce a private, lazy, run-owned `EffectiveSurfaceIndex` keyed only by the original
+`FaceGraph`'s issuer-owned `FaceNode` values. F1 rejects an analysis-shape pre-pass: a second
+topology universe would require a face bijection before Candidate evidence could remain truthful.
+The index reads `graph.face(node)`, caches one immutable result per node, never substitutes the
+caller Part or graph, and retains that exact original node as the only evidence provenance.
 
-Required contract:
+The closed result is native analytic, uniquely recovered analytic, or refused original. Native and
+recovered plane, cylinder, cone and sphere facts contain canonical finite numeric parameters,
+original node, a closed orientation capability (`NATIVE_ORIENTED` or `RECOVERED_UNORIENTED`),
+requested tolerance, kernel-reported deviation and the separate
+verified acceptance bound. Refusals retain the original surface behind a private query and use a
+closed reason: unsupported kind, unavailable fit, invalid/nonfinite result, bound exceeded,
+or ambiguous primitive. An oriented-view request against `RECOVERED_UNORIENTED` separately refuses
+as `ORIENTATION_UNPROVEN`; this is not a geometry-recovery failure. Native analytic faces use a
+zero-recovery fast path. Only B-spline/Bezier faces enter recovery; torus recovery remains an
+explicit unsupported refusal until a separately reviewed fitter, residual proof and performance
+gate exist.
 
-- recovery is deterministic for equivalent geometry and configured tolerance;
-- every recovered primitive reports type, parameters, maximum residual and original faces;
-- native analytic faces pass through unchanged;
-- a failed or ambiguous fit returns the original surface with an explicit refusal reason;
-- topology, orientation and material-side interpretation remain invariant;
-- `RecognitionContext` derives the canonical inventory once per run;
-- discoverers consume the injected effective-surface query rather than calling OCCT recovery;
-- no family becomes responsible for fitting its own B-spline.
+`ShapeAnalysis_CanonicalRecognition.GetGap()` is recorded only as `kernel_reported_gap`; F1 does
+not independently rename that scalar a maximum. The acceptance certificate is the documented OCCT
+`ShapeAnalysis_CanonicalRecognition` face operation itself: OCCT's official shape-healing contract
+defines recognition by the maximum-distance criterion over the input face. Each primitive attempt
+uses a fresh/reset recogniser, requires success and status zero, records `GetGap()`, and requires it
+not exceed the requested tolerance. The supported OCCT version and source/documentation contract
+are pinned by test and ADR. A finite UV sample is only an adversary, never the certificate. If that
+upstream maximum-distance contract changes or cannot be established for the installed version,
+recovery refuses globally rather than substituting a sampled bound.
 
-Implementation must first compare two seams: an analysis-shape pre-pass and a provenance-preserving
-effective-surface adapter. The chosen seam needs an ADR amendment because surface-type reads are
-currently distributed across family modules. A pre-pass is preferred only if it proves stable
-face provenance and does not mutate caller geometry.
+All four eligible primitive fits are evaluated independently. Canonical parameters use deterministic
+run/sign, closest-axis-point and frame conventions. Multiple materially non-equivalent passing
+facts produce `AMBIGUOUS_PRIMITIVE`; call order is never precedence. Degenerate trims, huge-radius
+near-planes, cylinder/cone ambiguity, sphere poles/seams and split faces fail closed unless the
+same uniqueness and bound are proven.
 
-Torus is a known seam gap: OCCT's `ShapeAnalysis_CanonicalRecognition` documents plane, cylinder,
-cone and sphere fits only, so torus recovery — which turned-stock fillet and groove evidence
-depends on — needs its own fitting machinery. Torus recovery is therefore a separately gated
-increment of F1: the four documented primitives may land and exit first, and a torus slip narrows
-scope explicitly rather than failing the whole package.
+Topology, boundaries, adjacency, `TopAbs_Orientation`, material-side probes and Candidate evidence
+always use the original face/solid/graph. F1 deliberately recovers **unoriented primitive
+geometry**: canonical axis/frame signs are serialization conventions, not material-side facts.
+Recovered geometry may not answer normals, concavity, outwardness or any orientation-dependent
+family rule. Those readers remain classified raw/deferred until F2 supplies its separately reviewed
+material-side semantics; a request for oriented recovered geometry returns
+`ORIENTATION_UNPROVEN`. This removes the unsafe one-anchor/global-parity claim while preserving
+current original-face behaviour. Effective facts cannot replace topology or decide a family
+predicate.
 
-Exit gate: native-analytic and canonically equivalent B-spline fixtures return identical records
-and defining-face attribution; deliberately non-analytic B-splines still fail closed; existing
-goldens are byte-identical; runtime and memory remain within a newly recorded canonicalisation
-budget.
+Recovery tolerance is an ADR 0008 same-geometry policy fixed before corpus measurement:
+`fit_tol = relative * local_nominal + coordinate_floor`. For trimmed-face area `A > 0` and physical
+trim-boundary length `P >= 0`, the rotation/translation-invariant nominal is
+`min(sqrt(A), 2*A/P)` when `P > 0`, otherwise `sqrt(A)`. Area and boundary length are measured on
+the original face in model units. `P` counts each physical boundary component once and excludes
+periodic seam pairs and degenerate representation edges; a topologically closed face therefore has
+`P == 0` regardless of seam parameterisation. Nonfinite/nonpositive area or a nonfinite/negative
+perimeter refuses. This makes long-thin patches width-controlled without using a world AABB, while
+closed sphere-like faces use their area scale. Same geometry with different STEP seam
+parameterisation must produce the same nominal. The exact relative coefficient and coordinate floor are
+named and justified in ADR 0008 before corpus inspection. Requested tolerance, kernel-reported gap
+and the OCCT maximum-distance certificate remain distinct full-precision values.
+
+F1 is staged rather than migrating every distributed surface read in one PR:
+
+1. land the neutral four-primitive index, refusals, caching, provenance and architecture guards
+   with zero recognition-output change;
+2. freeze a machine-checked roster of every `BRepAdaptor_Surface.GetType`, `Face.geom_type`,
+   `graph.is_planar` and equivalent decision, classifying each as migrated, deliberately raw
+   topology, orientation-deferred, or torus-deferred. Every non-migrated entry requires a named
+   rationale; raw surface classification may not remain a family-acceptance escape hatch;
+3. migrate consumers in explicitly ordered family slices. Private cores receive a restricted
+   read-only surface query; public wrappers construct one graph/index for standalone use and
+   registry adapters inject `RecognitionContext.surfaces`. Families cannot construct or invoke
+   the fitter. Cylinder analysis and every public/aggregate caller must share one surface universe.
+
+The neutral slice changes no public signature, capability manifest, record, Candidate, disposition
+or reconciliation policy. ADR 0004 owns original-node provenance and the immutable view; ADR 0007
+owns the module/core-wrapper and reader-roster seams; ADR 0008 owns the residual policy; ADR 0002
+is amended when standalone/aggregate injection first changes. ADR 0005 applies only if a later
+slice changes a public signature or capability contract.
+
+Exit gate: native and supported equivalent encodings return byte-identical records, ordering and
+defining `FaceNode` identities for every migrated consumer; unsupported, ambiguous and unbounded
+B-splines refuse; direct and aggregate entry points agree; one recovery occurs per original node
+per run; semantic goldens remain byte-identical. Measure native-only index overhead separately from
+B-spline recovery runtime/peak RSS without rebasing existing ceilings. The two-review and holdout
+chronology applies separately to any slice that changes recovery acceptance. Torus remains named
+unsupported unless independently authorised.
 
 ### F2 — Complete smooth-sided AAG semantics
 
