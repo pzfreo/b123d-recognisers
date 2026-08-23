@@ -30,7 +30,7 @@ wheels = [
 
 [[package]]
 name = "b123d-recognisers"
-version = "0.3.1.dev0"
+version = "0.3.2.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "build123d" },
