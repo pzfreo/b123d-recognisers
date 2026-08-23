@@ -139,7 +139,28 @@ MODULE_SEAM_EDGES = {
     # two polygonal records whose legacy values round-trip; production recognition does not use it.
     "_sections": set(),
     "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
+    # Effective analytic facts sit above original graph identity and below run orchestration.
+    "_effective_surfaces": {"_adjacency", "_geometry"},
 }
+
+
+def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:
+    from b123d_recognisers._effective_surfaces import SURFACE_READER_ROSTER
+
+    readers: set[str] = set()
+    for path in PACKAGE.glob("*.py"):
+        if path.name == "_effective_surfaces.py":
+            continue
+        source = path.read_text(encoding="utf-8")
+        surface_read = "BRepAdaptor_Surface" in source or ".is_planar(" in source
+        face_geom_read = any(
+            token in source for token in ("face.geom_type", "f.geom_type", "other.geom_type")
+        )
+        if surface_read or face_geom_read:
+            readers.add(path.stem)
+
+    assert readers == set(SURFACE_READER_ROSTER)
+    assert all(rationale.strip() for _, rationale in SURFACE_READER_ROSTER.values())
 
 
 def test_reconciler_never_imports_or_calls_discovery() -> None:
@@ -194,7 +215,14 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
 
     run_module = importlib.import_module("b123d_recognisers._run")
     context = typing.get_type_hints(run_module.RecognitionContext)
-    assert set(context) == {"part", "face_edges", "graph", "cylinders", "rotational"}
+    assert set(context) == {
+        "part",
+        "face_edges",
+        "graph",
+        "surfaces",
+        "cylinders",
+        "rotational",
+    }
     assert not ({"ledger", "sink", "evidence", "index"} & set(context))
 
     writer_type = typing.get_type_hints(module._discover_all)["writer"]

@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
 from b123d_recognisers._typing import CylinderInventory, FrozenCylinderInventory, Part
 
 
@@ -44,6 +45,7 @@ class RecognitionContext:
     part: Part
     face_edges: FaceEdges
     graph: FaceGraph
+    surfaces: EffectiveSurfaceIndex
     cylinders: FrozenCylinderInventory
     rotational: bool
 
@@ -77,6 +79,7 @@ def start(
         part=part,
         face_edges=face_edges,
         graph=graph,
+        surfaces=EffectiveSurfaceIndex(graph),
         cylinders=(tuple(derived[0]), tuple(derived[1])),
         rotational=rotational,
     )
