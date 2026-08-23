@@ -282,6 +282,13 @@ validated. Length values are millimetres under the current capability contract. 
 inherits the future enclosing family record's capability-manifest `schema_version`; it does not
 start a second version-negotiation protocol.
 
+The discrete canonical-frame gauge is chosen from the six-decimal serialized run (positive
+dominant component, ties Z→Y→X), while analytic vectors remain full precision. A consumer derives
+the same expected basis for validation but reconstructs with the serialized vectors unchanged.
+Serialized intrinsic centring and origin/run perpendicularity have explicit projection-derived
+bounds. Every private occurrence read/projection revalidates the canonical frame, section, interval,
+end topology and run-owned body provenance so reflection or foreign-state mutation fails closed.
+
 This package is explicitly split into two halves with different risk and different clocks:
 
 - **F4a — the schema**: private frame/section primitives, canonical tie-breaks, concrete

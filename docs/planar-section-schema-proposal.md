@@ -80,13 +80,25 @@ serialized frame with these closed tolerances:
 - every pairwise absolute dot product is at most `2e-6`; and
 - `norm(cross(run, u) - v)` is at most `3e-6`.
 
+For canonical-basis validation only, the reader normalizes the serialized `run`, chooses its
+largest absolute **serialized** component (ties Z, then Y, then X), and requires that component to
+be positive. It projects the corresponding package seed (X→Y, Y→Z, Z→X), normalizes it as the
+expected `u`, and takes `cross(run, u)` as the expected `v`; each serialized in-plane vector must
+be within Euclidean distance `3e-6` of that expected vector. The producer makes the same dominant
+choice from the six-decimal run before constructing its full-precision basis, so two runs that
+serialize identically cannot select different in-plane gauges.
+
 These are serialization-validation bounds, not recognition tolerances. Every vector and point is
 an exact-length JSON array (three and two elements respectively). Every numeric member must be a
 finite JSON number and not a boolean. `run_interval` contains exactly two numbers with
 `low < high`; end flags are actual JSON booleans; the boundary contains at least two vertices,
 has distinct adjacent points, is simple, has positive signed line-and-arc area, and follows the
-canonical winding/start rules. Keys shown in the proposed value are required, and unknown keys
-are rejected until an enclosing record schema explicitly adds them.
+canonical winding/start rules. Its analytic serialized centroid must be within `0.0008 mm` of
+`(0, 0)`. The rounded placement must satisfy
+`abs(dot(origin, run)) <= 0.000868 mm + 1e-6 * norm(origin)`; this is the conservative envelope of
+three-decimal origin and six-decimal direction projection from an exactly perpendicular private
+frame. Keys shown in the proposed value are required, and unknown keys are rejected until an
+enclosing record schema explicitly adds them.
 
 ## End topology
 
@@ -101,8 +113,10 @@ cavity rather than a tool-reachable feature.
 
 ## Canonical geometry
 
-The frame is right handed: `run × u = v`. Run sign uses the positive dominant component with the
-existing Z→Y→X tie priority. The in-plane seed follows the package's existing `plane_axes` basis.
+The frame is right handed: `run × u = v`. Run sign and the in-plane seed use the positive dominant
+component of the six-decimal serialized run with the existing Z→Y→X tie priority; analytic vectors
+remain full precision after that discrete choice. The seed follows the package's existing
+`plane_axes` basis.
 The frame origin is the closest point to world origin on the run-parallel line through the exact
 signed-area centroid. Area and Green-theorem first moments include the circular segments, so an
 equivalent split of an arc cannot move the centroid or origin.

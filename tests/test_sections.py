@@ -146,7 +146,10 @@ def test_schema_proposal_pins_the_normative_consumer_contract() -> None:
         "Euclidean norm within `1e-6`",
         "dot product is at most `2e-6`",
         "at most `3e-6`",
+        "largest absolute **serialized** component",
         "finite JSON number and not a boolean",
+        "analytic serialized centroid must be within `0.0008 mm`",
+        "abs(dot(origin, run)) <= 0.000868 mm + 1e-6 * norm(origin)",
         "capability-manifest `schema_version`",
     ):
         assert contract in proposal
@@ -580,6 +583,45 @@ def test_equivalent_noncanonical_occurrence_encodings_fail_closed() -> None:
         )
 
 
+def test_rotated_in_plane_frame_gauge_fails_closed() -> None:
+    issuer = BodyRefIssuer()
+    rotated_section = PlanarSection(
+        tuple(
+            SectionVertex(point)
+            for point in ((-1.0, -2.0), (1.0, -2.0), (1.0, 2.0), (-1.0, 2.0))
+        )
+    )
+    with pytest.raises(ValueError, match="canonical run and in-plane basis"):
+        SectionOccurrence(
+            issuer.issue(),
+            LocalFrame(
+                origin=(0.0, 0.0, 0.0),
+                run=(0.0, 0.0, 1.0),
+                u=(0.0, 1.0, 0.0),
+                v=(-1.0, 0.0, 0.0),
+            ),
+            (-1.0, 1.0),
+            rotated_section,
+            SectionEnds(False, False),
+        )
+
+
+def test_dominant_axis_tie_is_decided_from_the_serialized_run() -> None:
+    issuer = BodyRefIssuer()
+    section = PlanarSection(tuple(SectionVertex(point) for point in _square()))
+    projected = []
+    for run in ((1.0 + 1e-8, 0.0, 1.0), (1.0, 0.0, 1.0 + 1e-8)):
+        occurrence = SectionOccurrence(
+            issuer.issue(),
+            LocalFrame.canonical(run, (0.0, 0.0, 0.0)),
+            (-1.0, 1.0),
+            section,
+            SectionEnds(False, False),
+        )
+        projected.append(occurrence_geometry_dict(occurrence, body_refs=issuer)["frame"])
+    assert projected[0] == projected[1]
+
+
 def test_occurrence_projection_revalidates_canonical_placement() -> None:
     issuer = BodyRefIssuer()
     occurrence = SectionOccurrence(
@@ -601,6 +643,64 @@ def test_occurrence_projection_revalidates_canonical_placement() -> None:
     )
     with pytest.raises(ValueError, match="perpendicular to its run"):
         occurrence_geometry_dict(occurrence, body_refs=issuer)
+
+
+@pytest.mark.parametrize("target", ["proposal", "passage", "pocket"])
+def test_every_occurrence_reader_rejects_a_mutated_nonfinite_interval(target: str) -> None:
+    issuer = BodyRefIssuer()
+    body = issuer.issue()
+    if target == "pocket":
+        occurrence = prismatic_pocket_to_occurrence(
+            PrismaticPocket("z", 4, 2.0, 1, (0.0, 0.0, 0.0), _square()),
+            body_ref=body,
+            body_refs=issuer,
+        )
+    else:
+        occurrence = passage_to_occurrence(
+            Passage("z", 4, 2.0, (0.0, 0.0, 0.0), _square()),
+            body_ref=body,
+            body_refs=issuer,
+        )
+    object.__setattr__(occurrence, "run_interval", (math.nan, 1.0))
+
+    with pytest.raises(ValueError, match="finite and increasing"):
+        if target == "proposal":
+            occurrence_geometry_dict(occurrence, body_refs=issuer)
+        elif target == "passage":
+            occurrence_to_passage(occurrence, body_refs=issuer)
+        else:
+            occurrence_to_prismatic_pocket(occurrence, body_refs=issuer)
+
+
+@pytest.mark.parametrize("target", ["proposal", "passage", "pocket"])
+def test_every_occurrence_reader_rejects_a_mutated_offset_section(target: str) -> None:
+    issuer = BodyRefIssuer()
+    body = issuer.issue()
+    if target == "pocket":
+        occurrence = prismatic_pocket_to_occurrence(
+            PrismaticPocket("z", 4, 2.0, -1, (0.0, 0.0, 0.0), _square()),
+            body_ref=body,
+            body_refs=issuer,
+        )
+    else:
+        occurrence = passage_to_occurrence(
+            Passage("z", 4, 2.0, (0.0, 0.0, 0.0), _square()),
+            body_ref=body,
+            body_refs=issuer,
+        )
+    object.__setattr__(
+        occurrence,
+        "section",
+        PlanarSection(tuple(SectionVertex((x + 1.0, y)) for x, y in _square())),
+    )
+
+    with pytest.raises(ValueError, match="origin-centred"):
+        if target == "proposal":
+            occurrence_geometry_dict(occurrence, body_refs=issuer)
+        elif target == "passage":
+            occurrence_to_passage(occurrence, body_refs=issuer)
+        else:
+            occurrence_to_prismatic_pocket(occurrence, body_refs=issuer)
 
 
 def test_reverse_legacy_projection_refuses_wrong_ends_and_free_axis_frame() -> None:

@@ -14,6 +14,7 @@ from b123d_recognisers._sections import (
     SectionEnds,
     SectionOccurrence,
     SectionVertex,
+    validate_occurrence,
 )
 from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
@@ -118,7 +119,7 @@ def prismatic_pocket_to_occurrence(
 def _legacy_values(
     occurrence: SectionOccurrence, *, body_refs: BodyRefIssuer
 ) -> tuple[str, int, float, tuple[float, float, float], tuple[tuple[float, float], ...]]:
-    body_refs.validate(occurrence.body)
+    validate_occurrence(occurrence, body_refs=body_refs)
     if any(vertex.bulge != 0.0 for vertex in occurrence.section.boundary):
         raise ValueError("polygonal legacy records cannot represent arc sections")
     principal = {

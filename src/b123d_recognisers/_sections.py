@@ -92,10 +92,11 @@ class LocalFrame:
         """Construct the deterministic free-axis frame described by epic 0004."""
 
         direction = _unit(run)
-        components = tuple(abs(value) for value in direction)
+        serialized_direction = tuple(_round_clean(value, 6) for value in direction)
+        components = tuple(abs(value) for value in serialized_direction)
         peak = max(components)
-        dominant = next(index for index in (2, 1, 0) if peak - components[index] <= 1e-12)
-        if direction[dominant] < 0:
+        dominant = next(index for index in (2, 1, 0) if components[index] == peak)
+        if serialized_direction[dominant] < 0:
             direction = tuple(-value for value in direction)  # type: ignore[assignment]
         seeds: tuple[Vector3, ...] = (
             (0.0, 1.0, 0.0),  # x -> y
@@ -547,17 +548,64 @@ class SectionOccurrence:
     ends: SectionEnds
 
     def __post_init__(self) -> None:
-        lo, hi = self.run_interval
-        if not _finite((lo, hi)) or hi - lo <= _EPS:
-            raise ValueError("run interval must be finite and increasing")
-        _validate_occurrence_placement(self)
+        _validate_occurrence_value(self)
 
 
-def _validate_occurrence_placement(occurrence: SectionOccurrence) -> None:
+def _validate_occurrence_value(occurrence: SectionOccurrence) -> None:
+    if not isinstance(occurrence.frame, LocalFrame):
+        raise ValueError("section occurrence requires a LocalFrame")
+    validated_frame = LocalFrame(
+        occurrence.frame.origin,
+        occurrence.frame.run,
+        occurrence.frame.u,
+        occurrence.frame.v,
+    )
+    canonical_frame = LocalFrame.canonical(validated_frame.run, validated_frame.origin)
+    if any(
+        abs(actual - expected) > _EPS
+        for actual_vector, expected_vector in (
+            (validated_frame.run, canonical_frame.run),
+            (validated_frame.u, canonical_frame.u),
+            (validated_frame.v, canonical_frame.v),
+        )
+        for actual, expected in zip(actual_vector, expected_vector, strict=True)
+    ):
+        raise ValueError("section occurrence requires the canonical run and in-plane basis")
+
+    if not isinstance(occurrence.section, PlanarSection):
+        raise ValueError("section occurrence requires a PlanarSection")
+    try:
+        rebuilt_section = PlanarSection(
+            tuple(
+                SectionVertex(vertex.point, vertex.bulge)
+                for vertex in occurrence.section.boundary
+            )
+        )
+    except (AttributeError, TypeError) as exc:
+        raise ValueError("section occurrence contains an invalid section") from exc
+    if rebuilt_section != occurrence.section:
+        raise ValueError("section occurrence section is not canonical or was mutated")
+
+    if not isinstance(occurrence.ends, SectionEnds):
+        raise ValueError("section occurrence requires SectionEnds")
+    SectionEnds(occurrence.ends.low_capped, occurrence.ends.high_capped)
+
+    lo, hi = occurrence.run_interval
+    if not _finite((lo, hi)) or hi - lo <= _EPS:
+        raise ValueError("run interval must be finite and increasing")
     if math.hypot(*occurrence.section.centroid) > _EPS:
         raise ValueError("section occurrence requires an origin-centred intrinsic section")
     if abs(_dot(occurrence.frame.origin, occurrence.frame.run)) > _EPS:
         raise ValueError("section occurrence frame origin must be perpendicular to its run")
+
+
+def validate_occurrence(occurrence: SectionOccurrence, *, body_refs: BodyRefIssuer) -> None:
+    """Revalidate one private occurrence and its run-owned body at every read boundary."""
+
+    if not isinstance(occurrence, SectionOccurrence):
+        raise ValueError("expected a SectionOccurrence")
+    body_refs.validate(occurrence.body)
+    _validate_occurrence_value(occurrence)
 
 
 def section_vertex_dict(vertex: SectionVertex) -> dict[str, object]:
@@ -567,8 +615,8 @@ def section_vertex_dict(vertex: SectionVertex) -> dict[str, object]:
     return {"point": [x, y], "bulge": bulge}
 
 
-def _rounded_vector(vector: Vector3, digits: int) -> list[float]:
-    return [_round_clean(component, digits) for component in vector]
+def _rounded_vector(vector: Vector3, digits: int) -> Vector3:
+    return tuple(_round_clean(component, digits) for component in vector)  # type: ignore[return-value]
 
 
 def _round_clean(value: float, digits: int) -> float:
@@ -584,15 +632,48 @@ def occurrence_geometry_dict(
     Run-local body identity deliberately does not cross this value boundary.
     """
 
-    body_refs.validate(occurrence.body)
-    _validate_occurrence_placement(occurrence)
-    projected_origin = tuple(_rounded_vector(occurrence.frame.origin, 3))
-    projected_run = tuple(_rounded_vector(occurrence.frame.run, 6))
-    projected_u = tuple(_rounded_vector(occurrence.frame.u, 6))
-    projected_v = tuple(_rounded_vector(occurrence.frame.v, 6))
+    validate_occurrence(occurrence, body_refs=body_refs)
+    projected_origin = _rounded_vector(occurrence.frame.origin, 3)
+    projected_run = _rounded_vector(occurrence.frame.run, 6)
+    projected_u = _rounded_vector(occurrence.frame.u, 6)
+    projected_v = _rounded_vector(occurrence.frame.v, 6)
     projected_interval = tuple(_round_clean(value, 3) for value in occurrence.run_interval)
     if projected_interval[1] <= projected_interval[0]:
         raise ValueError("serialized run interval collapses")
+    projected_frame = LocalFrame.canonical(projected_run, (0.0, 0.0, 0.0))
+    if (
+        any(
+            abs(math.sqrt(_dot(vector, vector)) - 1.0) > 1e-6
+            for vector in (projected_run, projected_u, projected_v)
+        )
+        or any(
+            abs(_dot(left, right)) > 2e-6
+            for left, right in (
+                (projected_run, projected_u),
+                (projected_run, projected_v),
+                (projected_u, projected_v),
+            )
+        )
+        or math.dist(_cross(projected_run, projected_u), projected_v) > 3e-6
+        or math.dist(projected_run, projected_frame.run) > 1e-6
+        or math.dist(projected_u, projected_frame.u) > 3e-6
+        or math.dist(projected_v, projected_frame.v) > 3e-6
+    ):
+        raise ValueError("serialized frame exceeds its canonical validation tolerances")
+    perpendicular_bound = 0.000868 + 1e-6 * math.sqrt(_dot(projected_origin, projected_origin))
+    if abs(_dot(projected_origin, projected_run)) > perpendicular_bound:
+        raise ValueError("serialized frame origin exceeds its perpendicularity tolerance")
+    projected_section = PlanarSection(
+        tuple(
+            SectionVertex(
+                (_serialized(vertex)[0], _serialized(vertex)[1]),
+                _serialized(vertex)[2],
+            )
+            for vertex in occurrence.section.boundary
+        )
+    )
+    if math.hypot(*projected_section.centroid) > _POSITION_TOL:
+        raise ValueError("serialized section centroid exceeds its canonical tolerance")
 
     origin_error = math.dist(occurrence.frame.origin, projected_origin)
     run_error = math.dist(occurrence.frame.run, projected_run)
