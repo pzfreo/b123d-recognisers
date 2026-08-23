@@ -173,6 +173,20 @@ is independent:
 The registry is explicit and source-ordered. It drives internal orchestration and completeness
 tests, not public exports or schema publication.
 
+The implementation uses two discriminated definition types rather than one optional-field base:
+
+- `PhysicalDefinition` carries a `FamilyId`, accepted record types, result field, public entry
+  point, explicit upstream physical dependencies, context-only neutral applicability, aggregate
+  discovery adapter and an explicit counted/not-counted census disposition.
+- `DerivedDefinition` carries a closed derived id, accepted source families, result field, record
+  types, public entry point, derive adapter and census disposition. It never issues candidates.
+
+Dependency views expose only declared, already-completed values. Holes declare Countersinks;
+Plates declare TurnedSteps while retaining separate prismatic context applicability. Hole, Slot
+and Pocket patterns declare their corresponding accepted physical sources. Cylinder/graph facts
+remain context substrates, while chamfer and fillet include flags remain explicit discovery
+configuration rather than pretending the whole family is inapplicable.
+
 ## Standalone compatibility
 
 Existing public `recognise_*` functions remain facades that construct a standalone context and

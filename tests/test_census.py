@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
 from build123d import Box, Cylinder, Pos, Rotation
 
+import b123d_recognisers.census as census_module
 from b123d_recognisers.census import feature_census
 
 
@@ -36,3 +38,11 @@ class TestCensus:
         keys = set(feature_census(Box(40, 20, 10)))
         assert set(feature_census(_grooved_shaft())) == keys
         assert "groove" in keys and "slot" in keys and "flat" in keys and "pocket" in keys
+
+    def test_census_fails_closed_when_implementation_and_key_contract_drift(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(census_module, "CENSUS_KEYS", census_module.CENSUS_KEYS[:-1])
+
+        with pytest.raises(RuntimeError, match="implementation drifted"):
+            feature_census(Box(40, 20, 10))

@@ -33,8 +33,32 @@ from typing import cast
 
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._record import Record
+from b123d_recognisers._registry import validate_census_contract
 from b123d_recognisers._typing import Part
 from b123d_recognisers.result import _take_inventory
+
+# Publicly stable order remains an explicit census contract; registry metadata is checked against
+# it but does not generate, publish, or reorder keys.
+CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
+    ("hole", "holes"),
+    ("hole_pattern", "hole_patterns"),
+    ("boss", "bosses"),
+    ("step", "turned_steps"),
+    ("groove", "grooves"),
+    ("flat", "flats"),
+    ("slot", "slots"),
+    ("channel", "channels"),
+    ("pocket", "pockets"),
+    ("prismatic_pocket", "prismatic_pockets"),
+    ("passage", "passages"),
+    ("chamfer", "chamfers"),
+    ("angled_step", "angled_steps"),
+    ("fillet", "fillets"),
+    ("countersink", "countersinks"),
+    ("plate", "plates"),
+)
+CENSUS_KEYS: tuple[str, ...] = tuple(key for key, _source in CENSUS_BINDINGS)
+validate_census_contract({source: key for key, source in CENSUS_BINDINGS})
 
 
 def feature_census(part: Part) -> dict[str, int]:
@@ -86,4 +110,6 @@ def feature_census(part: Part) -> dict[str, int]:
         "countersink": found.countersinks,
         "plate": found.plates,
     }
+    if tuple(records) != CENSUS_KEYS:
+        raise RuntimeError("feature census implementation drifted from its stable key contract")
     return {kind: len(recs) for kind, recs in records.items()}

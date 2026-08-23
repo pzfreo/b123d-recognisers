@@ -32,48 +32,45 @@ from b123d_recognisers._features import (
     HoleRecord,
     LinearArray,
     RectGrid,
-    recognise_bosses,
-    recognise_hole_patterns,
-    recognise_holes,
 )
 from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
     reconcile_recess_candidates,
     reconcile_step_groove_candidates,
 )
+from b123d_recognisers._registry import (
+    DERIVED_DEFINITIONS,
+    PHYSICAL_DEFINITIONS,
+    AcceptedInputs,
+    CompletedInputs,
+    DerivedId,
+    DiscoveryServices,
+    validate_output,
+    validate_result_fields,
+)
 from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
-from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
-from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
-from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
-from b123d_recognisers.fillets import Fillet, recognise_fillets
-from b123d_recognisers.flats import Flat, recognise_flats
-from b123d_recognisers.grooves import Groove, recognise_grooves
+from b123d_recognisers.angled_steps import AngledStep
+from b123d_recognisers.chamfers import Chamfer
+from b123d_recognisers.countersinks import CounterSink
+from b123d_recognisers.fillets import Fillet
+from b123d_recognisers.flats import Flat
+from b123d_recognisers.grooves import Groove
 from b123d_recognisers.levels import (
     FaceLevel,
     RiserEvidence,
     bounded_end_margin,
-    recognise_risers,
-    step_level_records,
 )
-from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
-from b123d_recognisers.passages import Passage, recognise_passages
-from b123d_recognisers.plates import Plate, recognise_plates
+from b123d_recognisers.pads import RaisedPad
+from b123d_recognisers.passages import Passage
+from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
     PolygonalStock,
-    recognise_polygonal_bosses,
-    recognise_polygonal_stock,
 )
-from b123d_recognisers.prismatic_pockets import (
-    PrismaticPocket,
-    recognise_prismatic_pockets,
-)
-from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
-from b123d_recognisers.repeating_profiles import (
-    RepeatingRadialProfile,
-    recognise_repeating_radial_profiles,
-)
+from b123d_recognisers.prismatic_pockets import PrismaticPocket
+from b123d_recognisers.profiled_bores import DoubleDBore
+from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -82,49 +79,13 @@ from b123d_recognisers.slots import (
     Slot,
     SlotArray,
     SlotGrid,
-    recognise_channels,
-    recognise_pocket_patterns,
-    recognise_pockets,
-    recognise_slot_patterns,
-    recognise_slots,
 )
-from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
+from b123d_recognisers.turned import TurnedProfile, TurnedStep
 
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
-    {
-        "recognise_angled_steps",
-        "recognise_passages",
-        "recognise_prismatic_pockets",
-        "recognise_bosses",
-        "recognise_chamfers",
-        "recognise_channels",
-        "recognise_countersinks",
-        "recognise_double_d_bores",
-        "recognise_fillets",
-        "recognise_flats",
-        "recognise_grooves",
-        # Reached through `step_level_records`, the area-filtered gate over it. The aggregate
-        # retains those records because consumers need their support spans;
-        # `step_ladder_for_z_span()` gives sizing and critique their shared float projection.
-        # Previously deferred for lack of an independent consumer, it now supplies the geometry
-        # ladder to completeness checks without requiring a second scan.
-        "recognise_face_levels",
-        "recognise_hole_patterns",
-        "recognise_holes",
-        "recognise_pocket_patterns",
-        "recognise_plates",
-        "recognise_pockets",
-        "recognise_polygonal_bosses",
-        "recognise_polygonal_stock",
-        "recognise_rectangular_pads",
-        "recognise_repeating_radial_profiles",
-        "recognise_risers",
-        "recognise_slot_patterns",
-        "recognise_slots",
-        "recognise_turned_steps",
-    }
-)
+    definition.public_entrypoint for definition in PHYSICAL_DEFINITIONS
+) | frozenset(definition.public_entrypoint for definition in DERIVED_DEFINITIONS)
 
 
 class Deferral(Enum):
@@ -195,32 +156,9 @@ class Deferred:
 DEFERRED: dict[str, Deferred] = {}
 
 
-# Transitional explicit phase roster. The registry phase replaces this with recogniser
-# definitions only after
-# every family shares this lifecycle; ordering here is execution policy, never filesystem order.
-PHYSICAL_FAMILIES: tuple[FamilyId, ...] = (
-    FamilyId.COUNTERSINKS,
-    FamilyId.HOLES,
-    FamilyId.DOUBLE_D_BORES,
-    FamilyId.BOSSES,
-    FamilyId.POLYGONAL_BOSSES,
-    FamilyId.POLYGONAL_STOCK,
-    FamilyId.CHANNELS,
-    FamilyId.SLOTS,
-    FamilyId.GROOVES,
-    FamilyId.FLATS,
-    FamilyId.POCKETS,
-    FamilyId.PRISMATIC_POCKETS,
-    FamilyId.PADS,
-    FamilyId.REPEATING_RADIAL_PROFILES,
-    FamilyId.TURNED_STEPS,
-    FamilyId.STEP_LEVELS,
-    FamilyId.RISERS,
-    FamilyId.CHAMFERS,
-    FamilyId.ANGLED_STEPS,
-    FamilyId.PASSAGES,
-    FamilyId.FILLETS,
-    FamilyId.PLATES,
+# Internal execution order is derived from the explicit closed registry, never filesystem order.
+PHYSICAL_FAMILIES: tuple[FamilyId, ...] = tuple(
+    definition.family for definition in PHYSICAL_DEFINITIONS
 )
 
 
@@ -417,6 +355,11 @@ class RecognitionResult:
         return self.step_ladder_for_z_span(float(bb.min.Z), float(bb.max.Z))
 
 
+validate_result_fields(
+    frozenset(RecognitionResult.__dataclass_fields__) - {"cylinders", "rotational"}
+)
+
+
 def build_recognition_result(
     part: Part,
     *,
@@ -466,8 +409,7 @@ def _take_inventory(
     )
     reconciliation = _reconcile_existing(physical, evidence)
     accepted = CandidateInventory.complete(
-        reconciliation.accepted_set(physical.candidate_set(family))
-        for family in PHYSICAL_FAMILIES
+        reconciliation.accepted_set(physical.candidate_set(family)) for family in PHYSICAL_FAMILIES
     )
     derived = _derive_patterns(accepted)
     result = _project_result(context, accepted, derived)
@@ -484,77 +426,22 @@ def _take_inventory(
 def _discover_all(
     context: RecognitionContext, writer: EvidenceWriter
 ) -> tuple[tuple[FamilyId, list[object]], ...]:
-    """Complete every applicable physical proposal before any evidence read."""
+    """Complete registry-ordered physical proposals before any evidence read."""
 
-    part = context.part
-    cyls: CylinderInventory = (list(context.cylinders[0]), list(context.cylinders[1]))
-    face_edges = context.face_edges
-    graph = context.graph
-    prismatic = not context.rotational
-
-    countersinks = recognise_countersinks(part)
-    holes = recognise_holes(part, cyls=cyls, csinks=countersinks, face_edges=face_edges)
-    double_d_bores = recognise_double_d_bores(part)
-    bosses = recognise_bosses(part, cyls=cyls, face_edges=face_edges)
-    polygonal_bosses = recognise_polygonal_bosses(part, graph=graph)
-    polygonal_stock = recognise_polygonal_stock(part, graph=graph)
-    channels = recognise_channels(part, ledger=writer, face_edges=face_edges)
-    slots = recognise_slots(part, ledger=writer, face_edges=face_edges)
-    grooves = recognise_grooves(part, cyls=cyls, ledger=writer, face_edges=face_edges)
-    flats = recognise_flats(part, cyls=cyls, face_edges=face_edges)
-    pockets = recognise_pockets(part, ledger=writer, face_edges=face_edges)
-    ring_pockets = recognise_prismatic_pockets(part, ledger=writer, face_edges=face_edges)
-    pads = recognise_rectangular_pads(part)
-    radial_profiles = recognise_repeating_radial_profiles(part)
-    turned_steps = recognise_turned_steps(part, cyls=cyls, ledger=writer)
-    step_levels = step_level_records(part)
-    risers = recognise_risers(part)
-    chamfers = recognise_chamfers(
-        part,
-        cyls=cyls,
-        ledger=writer,
-        face_edges=face_edges,
-        include_planar=prismatic,
+    services = DiscoveryServices(
+        context=context,
+        writer=writer,
+        cylinders=(list(context.cylinders[0]), list(context.cylinders[1])),
     )
-    angled_steps = (
-        recognise_angled_steps(part, ledger=writer, face_edges=face_edges) if prismatic else []
-    )
-    passages = (
-        recognise_passages(part, ledger=writer, face_edges=face_edges) if prismatic else []
-    )
-    fillets = recognise_fillets(
-        part,
-        cyls=cyls,
-        face_edges=face_edges,
-        include_cylindrical=prismatic,
-    )
-    profile = TurnedProfile.from_steps(list(turned_steps))
-    plates = recognise_plates(part) if prismatic and profile is None else []
-
-    return (
-        (FamilyId.COUNTERSINKS, list(countersinks)),
-        (FamilyId.HOLES, list(holes)),
-        (FamilyId.DOUBLE_D_BORES, list(double_d_bores)),
-        (FamilyId.BOSSES, list(bosses)),
-        (FamilyId.POLYGONAL_BOSSES, list(polygonal_bosses)),
-        (FamilyId.POLYGONAL_STOCK, list(polygonal_stock)),
-        (FamilyId.CHANNELS, list(channels)),
-        (FamilyId.SLOTS, list(slots)),
-        (FamilyId.GROOVES, list(grooves)),
-        (FamilyId.FLATS, list(flats)),
-        (FamilyId.POCKETS, list(pockets)),
-        (FamilyId.PRISMATIC_POCKETS, list(ring_pockets)),
-        (FamilyId.PADS, list(pads)),
-        (FamilyId.REPEATING_RADIAL_PROFILES, list(radial_profiles)),
-        (FamilyId.TURNED_STEPS, list(turned_steps)),
-        (FamilyId.STEP_LEVELS, list(step_levels)),
-        (FamilyId.RISERS, list(risers)),
-        (FamilyId.CHAMFERS, list(chamfers)),
-        (FamilyId.ANGLED_STEPS, list(angled_steps)),
-        (FamilyId.PASSAGES, list(passages)),
-        (FamilyId.FILLETS, list(fillets)),
-        (FamilyId.PLATES, list(plates)),
-    )
+    completed: dict[FamilyId, tuple[object, ...]] = {}
+    discovered: list[tuple[FamilyId, list[object]]] = []
+    for definition in PHYSICAL_DEFINITIONS:
+        inputs = CompletedInputs.restricted(definition.dependencies, completed)
+        records = definition.discover(services, inputs) if definition.applicable(context) else []
+        validate_output(definition, records)
+        completed[definition.family] = tuple(records)
+        discovered.append((definition.family, records))
+    return tuple(discovered)
 
 
 def _bind_physical(
@@ -563,8 +450,7 @@ def _bind_physical(
     """Bind completed output occurrences to candidates outside discovery capability scope."""
 
     return CandidateInventory.complete(
-        ledger.candidate_set_for(family, family_records)
-        for family, family_records in records
+        ledger.candidate_set_for(family, family_records) for family, family_records in records
     )
 
 
@@ -614,15 +500,21 @@ def _reconcile_existing(
 def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
     """Derive pattern projections only from accepted member records."""
 
+    accepted_records = {family: tuple(accepted.records(family)) for family in PHYSICAL_FAMILIES}
+    derived: dict[DerivedId, tuple[object, ...]] = {}
+    for definition in DERIVED_DEFINITIONS:
+        inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
+        records = definition.derive(inputs)
+        validate_output(definition, records)
+        derived[definition.identifier] = tuple(records)
     return DerivedInventory(
-        hole_patterns=tuple(
-            recognise_hole_patterns(_records(accepted, FamilyId.HOLES, HoleRecord))
+        hole_patterns=cast(
+            tuple[BoltCircle | LinearArray | RectGrid, ...],
+            derived[DerivedId.HOLE_PATTERNS],
         ),
-        slot_patterns=tuple(
-            recognise_slot_patterns(_records(accepted, FamilyId.SLOTS, Slot))
-        ),
-        pocket_patterns=tuple(
-            recognise_pocket_patterns(_records(accepted, FamilyId.POCKETS, Pocket))
+        slot_patterns=cast(tuple[SlotArray | SlotGrid, ...], derived[DerivedId.SLOT_PATTERNS]),
+        pocket_patterns=cast(
+            tuple[PocketArray | PocketGrid, ...], derived[DerivedId.POCKET_PATTERNS]
         ),
     )
 
@@ -642,21 +534,15 @@ def _project_result(
         double_d_bores=tuple(_records(accepted, FamilyId.DOUBLE_D_BORES, DoubleDBore)),
         hole_patterns=derived.hole_patterns,
         bosses=tuple(_records(accepted, FamilyId.BOSSES, BossRecord)),
-        polygonal_bosses=tuple(
-            _records(accepted, FamilyId.POLYGONAL_BOSSES, PolygonalBoss)
-        ),
-        polygonal_stock=tuple(
-            _records(accepted, FamilyId.POLYGONAL_STOCK, PolygonalStock)
-        ),
+        polygonal_bosses=tuple(_records(accepted, FamilyId.POLYGONAL_BOSSES, PolygonalBoss)),
+        polygonal_stock=tuple(_records(accepted, FamilyId.POLYGONAL_STOCK, PolygonalStock)),
         channels=tuple(_records(accepted, FamilyId.CHANNELS, Channel)),
         slots=tuple(_records(accepted, FamilyId.SLOTS, Slot)),
         slot_patterns=derived.slot_patterns,
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
-        prismatic_pockets=tuple(
-            _records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
-        ),
+        prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),
         pocket_patterns=derived.pocket_patterns,
         pads=tuple(_records(accepted, FamilyId.PADS, RaisedPad)),
         repeating_radial_profiles=tuple(

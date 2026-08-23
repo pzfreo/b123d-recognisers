@@ -142,3 +142,23 @@ geometry module. `_reconcile` owns the family-specific predicates and emits part
 the orchestration coordinator supplies default acceptance and canonical physical source order.
 Projection, derived patterns and census consume computed reconciliation views and do not repeat
 family policy.
+
+## Amendment (framework consolidation, issue #160)
+
+`_registry` is the private orchestration-to-family integration layer. It owns the closed,
+source-ordered physical and derived definitions, their declared value dependencies, neutral
+context applicability, internal result-field coverage and explicit census participation. Its
+adapters may import family facades; family modules may not import the registry or sibling
+recognisers. The registry owns no geometry predicate and `_reconcile` remains registry-blind.
+
+Physical adapters receive neutral run services, the write-only evidence capability and a
+restricted view containing only declared, already-completed physical dependencies. Derived
+adapters receive only their declared accepted physical sources after reconciliation. The registry
+therefore makes orchestration dependencies executable without introducing a recogniser base class,
+filesystem discovery, dynamic imports or plugin behavior.
+
+The authority boundary is deliberately narrow. Registry definitions drive internal discovery
+order, applicability, physical completeness and derived pattern order. Typed `RecognitionResult`
+projection, public exports, capability/schema metadata and the stable census key order remain
+explicit independent review surfaces, with tests comparing them to registry coverage rather than
+generating them from metadata.

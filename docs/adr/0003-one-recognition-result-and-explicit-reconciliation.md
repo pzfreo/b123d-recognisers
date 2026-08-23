@@ -244,3 +244,18 @@ This protocol can disposition only proposals that discovery emitted. In particul
 subdivided-terminal miss has no AngledStep candidate and cannot honestly be labelled ambiguous or
 unsupported by reconciliation without rediscovering geometry. Bounded missing-candidate residual
 diagnosis remains assigned to issue #161 under ADR 0004.
+
+## Amendment (framework consolidation, issue #160)
+
+The aggregate's physical and derived execution rosters are now one closed internal registry rather
+than duplicated call lists. Definitions declare only value flow: Holes consume completed
+Countersinks, Plates consume completed TurnedSteps, and the three pattern projections consume
+accepted Hole, Slot or Pocket records after reconciliation. Restricted input views reject an
+undeclared sibling read. Reconciliation relationships and their order are not registry metadata;
+they remain named policy in `_reconcile` over the completed candidate inventory and terminal
+evidence.
+
+Every physical and derived definition also states whether it contributes to an existing census
+key or is deliberately not counted. This is completeness evidence, not authority to create or
+reorder public census keys. Public records, exports, schemas and result construction remain manual
+contracts so adding registry metadata cannot publish a capability accidentally.
