@@ -90,6 +90,12 @@ def test_registry_rejects_wrong_typed_dependency_values() -> None:
     with pytest.raises(TypeError, match="wrong record type"):
         completed.records(FamilyId.HOLES, public.HoleRecord)
 
+    accepted = AcceptedInputs.restricted(
+        (FamilyId.HOLES,), {FamilyId.HOLES: (object(),)}
+    )
+    with pytest.raises(TypeError, match="wrong record type"):
+        accepted.records(FamilyId.HOLES, public.HoleRecord)
+
 
 def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> None:
     result_fields = {item.name for item in fields(RecognitionResult)}
@@ -189,6 +195,81 @@ def test_registry_validation_rejects_duplicate_missing_and_late_dependencies() -
     )
     with pytest.raises(ValueError, match="reviewed neutral predicate"):
         validate_definitions(unreviewed_applicability, DERIVED_DEFINITIONS)
+
+
+def test_registry_validation_rejects_incomplete_physical_contract_metadata() -> None:
+    first = PHYSICAL_DEFINITIONS[0]
+    second = PHYSICAL_DEFINITIONS[1]
+
+    duplicate_field = tuple(
+        replace(item, result_field=first.result_field) if item is second else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="physical result fields must be unique"):
+        validate_definitions(duplicate_field, DERIVED_DEFINITIONS)
+
+    missing_record_contract = tuple(
+        replace(item, record_types=()) if item is first else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="record and public contracts"):
+        validate_definitions(missing_record_contract, DERIVED_DEFINITIONS)
+
+    missing_census = tuple(
+        replace(item, census=None) if item is first else item  # type: ignore[arg-type]
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="explicit census disposition"):
+        validate_definitions(missing_census, DERIVED_DEFINITIONS)
+
+    empty_reason = tuple(
+        replace(item, census=NotCounted("")) if item is first else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="reasons must be non-empty"):
+        validate_definitions(empty_reason, DERIVED_DEFINITIONS)
+
+
+def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> None:
+    first = DERIVED_DEFINITIONS[0]
+
+    with pytest.raises(ValueError, match="cover every derived id"):
+        validate_definitions(PHYSICAL_DEFINITIONS, DERIVED_DEFINITIONS[:-1])
+
+    overlapping_field = (
+        replace(first, result_field=PHYSICAL_DEFINITIONS[0].result_field),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="registry result fields must be unique"):
+        validate_definitions(PHYSICAL_DEFINITIONS, overlapping_field)
+
+    missing_record_contract = (
+        replace(first, public_entrypoint=""),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="record and public contracts"):
+        validate_definitions(PHYSICAL_DEFINITIONS, missing_record_contract)
+
+    missing_census = (
+        replace(first, census=None),  # type: ignore[arg-type]
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="explicit census disposition"):
+        validate_definitions(PHYSICAL_DEFINITIONS, missing_census)
+
+    empty_reason = (
+        replace(first, census=NotCounted("")),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="reasons must be non-empty"):
+        validate_definitions(PHYSICAL_DEFINITIONS, empty_reason)
+
+    invalid_source = (
+        replace(first, sources=(FamilyId.LEGACY,)),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="sources must be registered"):
+        validate_definitions(PHYSICAL_DEFINITIONS, invalid_source)
 
 
 def test_registry_result_field_validation_rejects_stale_contract() -> None:
