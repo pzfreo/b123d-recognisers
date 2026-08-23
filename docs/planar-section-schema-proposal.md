@@ -56,6 +56,38 @@ intrinsic bound, not a recognition tolerance. Direction rounding is multiplied b
 section/run extent, so sufficiently long geometry refuses rather than amplifying a tiny angular
 serialization error without limit.
 
+### Normative decoding and validation
+
+The future enclosing feature record supplies the model's length-unit contract. Under the current
+package capability contract, `frame.origin`, `run_interval`, and section-point coordinates are in
+millimetres; `run`, `u`, and `v` are dimensionless direction vectors, and `bulge` is dimensionless.
+A point on the placed boundary is reconstructed from serialized values exactly as
+
+```text
+world(t, x, y) = origin + t * run + x * u + y * v
+```
+
+where `t` lies in the closed increasing `run_interval`. A positive bulge and positive sweep are
+counter-clockwise in the right-handed `(u, v)` plane when viewed along positive `run`.
+
+A reader uses the rounded basis exactly as serialized. It must not re-orthonormalize or otherwise
+repair the frame: the producer's `0.002` whole-occurrence bound is measured against this exact
+rounded reconstruction, while an unspecified repair would establish different geometry. Because
+six-decimal component rounding does not preserve exact orthonormality, a reader validates the
+serialized frame with these closed tolerances:
+
+- each of `run`, `u`, and `v` has Euclidean norm within `1e-6` of one;
+- every pairwise absolute dot product is at most `2e-6`; and
+- `norm(cross(run, u) - v)` is at most `3e-6`.
+
+These are serialization-validation bounds, not recognition tolerances. Every vector and point is
+an exact-length JSON array (three and two elements respectively). Every numeric member must be a
+finite JSON number and not a boolean. `run_interval` contains exactly two numbers with
+`low < high`; end flags are actual JSON booleans; the boundary contains at least two vertices,
+has distinct adjacent points, is simple, has positive signed line-and-arc area, and follows the
+canonical winding/start rules. Keys shown in the proposed value are required, and unknown keys
+are rejected until an enclosing record schema explicitly adds them.
+
 ## End topology
 
 | Geometry | `low_capped` | `high_capped` |
@@ -80,6 +112,11 @@ rigid transform, reconstructing the section and applying the inverse transform m
 same boundary. Mirrors, reversed traversal, cyclic shifts, STEP round-trips, and equivalent arc
 subdivision must satisfy that rule.
 
+The placed encoding is unique within the private construction tolerance (`1e-9` model units): the
+analytic intrinsic-section centroid is `(0, 0)`, and `dot(frame.origin, frame.run) == 0`. A producer
+must reject rather than serialize an offset section compensated by the inverse frame-origin
+translation, or a run-parallel frame-origin shift compensated by the inverse interval shift.
+
 ## Migration matrix
 
 | Existing record | F4a conversion | Limitation | Public transition owner |
@@ -95,6 +132,13 @@ so there is no generic dual-read API to add. A later public feature record is ad
 0005 and requires a primary owning family, aggregate membership, manifest schema, golden evidence,
 compatibility window, and reviewed consumer declaration. F7 separately decides whether neutral
 frame/section primitives themselves become public records.
+
+“Planar-section schema version 1” is inherited normatively from the future enclosing feature
+record's capability-manifest `schema_version`; the nested geometry value has no independent
+version discriminator. The enclosing record schema must identify this version when it first
+publishes the value. Any incompatible change to the nested geometry increments that enclosing
+record's schema version and follows ADR 0005. This keeps version negotiation at Draftwright's
+existing family-record boundary rather than creating a second nested protocol.
 
 ## Rejection and compatibility rules
 

@@ -262,6 +262,8 @@ beyond the local tolerance.
 Exact public names are deferred, but the invariants are not:
 
 - `run`, `u` and `v` form a canonical right-handed orthonormal frame;
+- intrinsic sections are origin-centred and frame origins are perpendicular to `run`, so inverse
+  section/frame or origin/interval translations cannot create a second encoding of one geometry;
 - sign and basis tie-breaks are deterministic under equivalent topology;
 - sections have canonical winding and start vertex;
 - run-local occurrence identity includes an orchestration-owned body reference, frame, run
@@ -271,6 +273,14 @@ Exact public names are deferred, but the invariants are not:
 - oblique geometry is represented by a section record, never squeezed into `axis: str` spans;
 - reconciliation names when a complete section record supersedes an axis-span fragment;
 - schema/version/capability changes follow ADR 0005 and downstream golden migration.
+
+The version-1 proposal also owns a normative consumer contract: world reconstruction uses the
+rounded serialized basis directly (`origin + t*run + x*u + y*v`), never an unspecified
+re-orthonormalization; serialized frame residuals have explicit validation bounds; vector lengths,
+finite non-boolean numerics, end booleans, interval order and positive simple boundary winding are
+validated. Length values are millimetres under the current capability contract. The nested value
+inherits the future enclosing family record's capability-manifest `schema_version`; it does not
+start a second version-negotiation protocol.
 
 This package is explicitly split into two halves with different risk and different clocks:
 

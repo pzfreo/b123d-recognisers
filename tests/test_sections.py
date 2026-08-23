@@ -135,6 +135,23 @@ def test_proposal_projection_is_primitive_only_and_omits_run_identity() -> None:
     assert json.loads(json.dumps(projected)) == projected
 
 
+def test_schema_proposal_pins_the_normative_consumer_contract() -> None:
+    proposal = (
+        Path(__file__).parents[1] / "docs" / "planar-section-schema-proposal.md"
+    ).read_text(encoding="utf-8")
+    for contract in (
+        "world(t, x, y) = origin + t * run + x * u + y * v",
+        "counter-clockwise in the right-handed `(u, v)` plane",
+        "must not re-orthonormalize",
+        "Euclidean norm within `1e-6`",
+        "dot product is at most `2e-6`",
+        "at most `3e-6`",
+        "finite JSON number and not a boolean",
+        "capability-manifest `schema_version`",
+    ):
+        assert contract in proposal
+
+
 def test_proposal_projection_rejects_interval_collapse_and_amplified_frame_rounding() -> None:
     issuer = BodyRefIssuer()
     section = PlanarSection(tuple(SectionVertex(point) for point in _square()))
@@ -152,10 +169,23 @@ def test_proposal_projection_rejects_interval_collapse_and_amplified_frame_round
     with pytest.raises(ValueError, match="moves its geometry"):
         occurrence_geometry_dict(long, body_refs=issuer)
 
-    major = PlanarSection(
+    major_raw = PlanarSection(
         (
             SectionVertex((-1.0, 0.0), 5097.0924455409795),
             SectionVertex((1.0, 0.0), 1 / 5097.0924455409795),
+        )
+    )
+    major_centroid = major_raw.centroid
+    major = PlanarSection(
+        tuple(
+            SectionVertex(
+                (
+                    vertex.point[0] - major_centroid[0],
+                    vertex.point[1] - major_centroid[1],
+                ),
+                vertex.bulge,
+            )
+            for vertex in major_raw.boundary
         )
     )
     underestimated = SectionOccurrence(
@@ -197,7 +227,7 @@ def test_section_negative_zero_is_canonicalized() -> None:
         issuer.issue(),
         LocalFrame.principal("z", (0.0, 0.0, 0.0)),
         (-0.0004, 1.0),
-        near_zero,
+        PlanarSection(tuple(SectionVertex(point) for point in _square())),
         SectionEnds(False, False),
     )
     assert "-0.0" not in json.dumps(occurrence_geometry_dict(occurrence, body_refs=issuer))
@@ -516,6 +546,61 @@ def test_occurrence_body_and_end_value_invariants_fail_closed() -> None:
             PlanarSection(tuple(SectionVertex(point) for point in _square())),
             SectionEnds(False, False),
         )
+
+
+def test_equivalent_noncanonical_occurrence_encodings_fail_closed() -> None:
+    issuer = BodyRefIssuer()
+    body = issuer.issue()
+    ends = SectionEnds(False, False)
+    offset_section = PlanarSection(
+        tuple(SectionVertex((x + 2.0, y - 3.0)) for x, y in _square())
+    )
+    with pytest.raises(ValueError, match="origin-centred"):
+        SectionOccurrence(
+            body,
+            LocalFrame.principal("z", (-2.0, 3.0, 0.0)),
+            (-1.0, 1.0),
+            offset_section,
+            ends,
+        )
+
+    centred = PlanarSection(tuple(SectionVertex(point) for point in _square()))
+    with pytest.raises(ValueError, match="perpendicular to its run"):
+        SectionOccurrence(
+            body,
+            LocalFrame(
+                origin=(0.0, 0.0, 2.0),
+                run=(0.0, 0.0, 1.0),
+                u=(1.0, 0.0, 0.0),
+                v=(0.0, 1.0, 0.0),
+            ),
+            (-3.0, -1.0),
+            centred,
+            ends,
+        )
+
+
+def test_occurrence_projection_revalidates_canonical_placement() -> None:
+    issuer = BodyRefIssuer()
+    occurrence = SectionOccurrence(
+        issuer.issue(),
+        LocalFrame.principal("z", (0.0, 0.0, 0.0)),
+        (-1.0, 1.0),
+        PlanarSection(tuple(SectionVertex(point) for point in _square())),
+        SectionEnds(False, False),
+    )
+    object.__setattr__(
+        occurrence,
+        "frame",
+        LocalFrame(
+            origin=(0.0, 0.0, 1.0),
+            run=(0.0, 0.0, 1.0),
+            u=(1.0, 0.0, 0.0),
+            v=(0.0, 1.0, 0.0),
+        ),
+    )
+    with pytest.raises(ValueError, match="perpendicular to its run"):
+        occurrence_geometry_dict(occurrence, body_refs=issuer)
 
 
 def test_reverse_legacy_projection_refuses_wrong_ends_and_free_axis_frame() -> None:

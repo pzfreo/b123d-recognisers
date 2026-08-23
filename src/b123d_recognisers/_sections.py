@@ -550,6 +550,14 @@ class SectionOccurrence:
         lo, hi = self.run_interval
         if not _finite((lo, hi)) or hi - lo <= _EPS:
             raise ValueError("run interval must be finite and increasing")
+        _validate_occurrence_placement(self)
+
+
+def _validate_occurrence_placement(occurrence: SectionOccurrence) -> None:
+    if math.hypot(*occurrence.section.centroid) > _EPS:
+        raise ValueError("section occurrence requires an origin-centred intrinsic section")
+    if abs(_dot(occurrence.frame.origin, occurrence.frame.run)) > _EPS:
+        raise ValueError("section occurrence frame origin must be perpendicular to its run")
 
 
 def section_vertex_dict(vertex: SectionVertex) -> dict[str, object]:
@@ -577,6 +585,7 @@ def occurrence_geometry_dict(
     """
 
     body_refs.validate(occurrence.body)
+    _validate_occurrence_placement(occurrence)
     projected_origin = tuple(_rounded_vector(occurrence.frame.origin, 3))
     projected_run = tuple(_rounded_vector(occurrence.frame.run, 6))
     projected_u = tuple(_rounded_vector(occurrence.frame.u, 6))
