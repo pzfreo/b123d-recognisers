@@ -170,3 +170,13 @@ reconciliation. It may join issuer-validated Observations to accepted candidate 
 project primitive diagnostic values. It may not receive `Part`, a graph, a mutable evidence sink,
 or call discovery. Family-owned failed-predicate geometry remains in the family module that owns
 the successful predicate; the reducer contains no replacement geometry test.
+
+## Amendment (geometry foundation, issue #179)
+
+`_sections` is a private standard-library-only geometry-value leaf. It owns canonical frames,
+intrinsic line/arc section values, end topology, and run-local body-reference issuance; it imports
+no kernel, record, graph, candidate, recognition, or policy module. `_section_adapters` sits above
+that leaf and may import only `passages` and `prismatic_pockets` to prove exact principal-axis
+compatibility. Recognition, reconciliation, registry, and public projection do not import or invoke
+the adapters in F4a. This preserves the epic-0003 lifecycle while the public schema remains a
+proposal until its later ADR 0005 publication gate.

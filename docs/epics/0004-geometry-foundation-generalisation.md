@@ -215,37 +215,96 @@ class LocalFrame:
     v: tuple[float, float, float]
 
 @dataclass(frozen=True)
+class SectionVertex:
+    point: tuple[float, float]
+    bulge: float  # tan(signed circular sweep / 4); zero is a line
+
+@dataclass(frozen=True)
 class PlanarSection:
+    boundary: tuple[SectionVertex, ...]
+
+@dataclass(frozen=True)
+class SectionEnds:
+    low_capped: bool
+    high_capped: bool
+
+@dataclass(frozen=True, eq=False)
+class SectionOccurrence:
+    body: BodyRef
     frame: LocalFrame
-    boundary: tuple[tuple[float, float], ...]
+    run_interval: tuple[float, float]
+    section: PlanarSection
+    ends: SectionEnds
 ```
+
+The bulge form is the closed line/arc union: each vertex starts the segment ending at the next
+vertex; zero is a line and a finite non-zero value is the circular arc whose signed sweep is
+`4*atan(bulge)`. It represents the existing polygonal sections without loss and does not force
+obround slots/pockets into a false polygon. A full circle uses at least two arcs.
+
+`PlanarSection` is intrinsic 2-D geometry. Placement, run extent, end topology and run-owned body
+identity belong only to `SectionOccurrence`. `SectionEnds(False, False)` represents a through
+section; the current blind adapter requires exactly one capped end, preserving which end is open.
+An orchestration-owned issuer creates and validates `BodyRef`; records and callers cannot construct
+or copy one into another run.
+
+Canonical winding, area and centroid are analytic over the complete line-and-circular-arc loop,
+not over its chord polygon or vertex mean. For bulge `b`, sweep is `4*atan(b)` and the circular
+segment's signed area and Green-theorem first moments are included. Equivalent subdivision of an
+arc therefore leaves area, centroid, frame origin and reconstructed geometry unchanged within the
+named local geometry tolerance. Reversal maps each reversed edge to the negated bulge of the
+oppositely directed original edge before choosing the canonical cyclic start. Non-adjacent
+line/line, line/arc and arc/arc crossings, overlaps and tangencies are rejected; adjacent segments
+may meet only at their shared endpoint. Bulges use a separate dimensionless serialization
+precision, and serialization fails closed if a non-zero arc becomes zero or reconstruction moves
+beyond the local tolerance.
 
 Exact public names are deferred, but the invariants are not:
 
 - `run`, `u` and `v` form a canonical right-handed orthonormal frame;
+- intrinsic sections are origin-centred and frame origins are perpendicular to `run`, so inverse
+  section/frame or origin/interval translations cannot create a second encoding of one geometry;
 - sign and basis tie-breaks are deterministic under equivalent topology;
 - sections have canonical winding and start vertex;
-- record identity includes body, frame, run interval and section geometry;
+- run-local occurrence identity includes an orchestration-owned body reference, frame, run
+  interval, section geometry and end topology; the pure frame/section values do not contain
+  kernel objects;
 - principal-axis inputs continue to project byte-identical legacy records during migration;
 - oblique geometry is represented by a section record, never squeezed into `axis: str` spans;
 - reconciliation names when a complete section record supersedes an axis-span fragment;
 - schema/version/capability changes follow ADR 0005 and downstream golden migration.
 
+The version-1 proposal also owns a normative consumer contract: world reconstruction uses the
+rounded serialized basis directly (`origin + t*run + x*u + y*v`), never an unspecified
+re-orthonormalization; serialized frame residuals have explicit validation bounds; vector lengths,
+finite non-boolean numerics, end booleans, interval order and positive simple boundary winding are
+validated. Length values are millimetres under the current capability contract. The nested value
+inherits the future enclosing family record's capability-manifest `schema_version`; it does not
+start a second version-negotiation protocol.
+
+The discrete canonical-frame gauge is chosen from the six-decimal serialized run (positive
+dominant component, ties Z→Y→X), while analytic vectors remain full precision. A consumer derives
+the same expected basis for validation but reconstructs with the serialized vectors unchanged.
+Serialized intrinsic centring and origin/run perpendicularity have explicit projection-derived
+bounds. Every private occurrence read/projection revalidates the canonical frame, section, interval,
+end topology and run-owned body provenance so reflection or foreign-state mutation fails closed.
+
 This package is explicitly split into two halves with different risk and different clocks:
 
-- **F4a — the schema**: the versioned frame/section records, canonical tie-breaks, and
-  dual-read/dual-project parity for principal-axis inputs. Additive, requires no recogniser
-  changes, and is the only work in this epic with a deadline pressure — every release shipped
-  meanwhile pins the axis-span schemas deeper into the ADR 0005 compatibility window. F4a lands
-  early (see the recommended order) so the 1.0 corner is escaped even if later packages slip,
-  and so F1 fixtures, F5 evidence and the section-supersedes-fragment rule are written once
-  against the final schema.
+- **F4a — the schema**: private frame/section primitives, canonical tie-breaks, concrete
+  legacy→section→legacy parity adapters for records that already carry truthful sections, and an
+  independently reviewed versioned public proposal. It requires no recogniser changes. F4a lands
+  early (see the recommended order) so F1 fixtures, F5 evidence and later F4b records are written
+  once against the final geometry shape. The primitives remain private until F7; the first F4b
+  family that emits a richer feature record owns the ADR 0005 public-schema transition.
 - **F4b — the oblique predicates**: the hard geometry work in the `_recess_*` subsystem,
   delivered family-by-family whenever ready, with no shared cliff.
 
-Sequence within the halves: neutral frame primitives; versioned record proposal;
-dual-read/dual-project migration (F4a); then family-private oblique predicates; only then
-deprecation (F4b). Do not rewrite the whole `_recess_*` subsystem in one PR.
+Sequence within the halves: neutral private frame primitives; versioned public proposal; exact
+private compatibility adapters (F4a); then family-private oblique predicates and an authorised
+public record transition; only then deprecation (F4b). Do not rewrite the whole `_recess_*`
+subsystem in one PR. The package has no public deserializer, so "dual read" means consumer-owned
+reading of the proposal; this repository proves only pure legacy→section→legacy projection.
 
 Exit gate: all rotations, mirrors and traversal permutations give canonical frames; principal-axis
 goldens remain stable; a separately authorised oblique corpus set gains records with zero off-target
