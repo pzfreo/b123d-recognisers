@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "dataset": {
+    "kaggle_id": 4762595,
+    "ref": "xmy2000/mftrcad",
+    "version": 1,
+    "created_at": "2024-04-09T08:52:51.09Z",
+    "licence": "MIT",
+    "compressed_bytes_reported_by_list_api": 2380602881,
+    "expanded_bytes_reported_by_view_api": 41721064518,
+    "generator_repository": "https://github.com/xmy2000/MFTReNet",
+    "generator_commit_audited": "3ae17a43dde22e4f27c5d7df179838d92551c28c"
+  },
+  "identity": {
+    "model_id": "the filename prefix before _result.step",
+    "step": "steps/<model_id>_result.step",
+    "semantic_and_instance_labels": "labels/<model_id>_result.json",
+    "relationships": "labels/<model_id>_result_rel.json",
+    "face_index": "zero-based raw OCCT TopExp traversal order used by the audited generator; accepted only when annotation ids are canonical and contiguous, bottom covers the same ids, imported BRep is valid and build123d faces are IsSame position-by-position with an independent raw traversal"
+  },
+  "selection": {
+    "algorithm": "big-endian uint64(sha256(utf8(namespace + NUL + model_id))[0:8]) modulo 1000",
+    "namespace": "b123d-recognisers:mftrcad:v1",
+    "development_buckets": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "holdout_buckets": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    "unselected_buckets": "20..999",
+    "chosen_without": [
+      "opening a selected STEP model",
+      "reading selected annotations",
+      "running b123d-recognisers",
+      "inspecting an outcome"
+    ]
+  },
+  "policy": {
+    "development": "May be scanned to find and describe gaps. Counts are diagnostic, not a definition.",
+    "holdout": "Keep outcomes sealed until a semantic child has two independent pre-reveal ACCEPT verdicts. Both holdout and all-selection scans require an explicit reveal flag. After reveal it becomes regression evidence and must not be fitted.",
+    "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
+  }
+}

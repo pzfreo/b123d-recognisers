@@ -75,6 +75,12 @@ under the usual evidence requirements, not a tolerance adjustment.
 
 ## Measured against third-party labelled corpora
 
+MFTRCAD version 1 is also available as an external, relationship-labelled development source.
+Its provenance, deterministic development/holdout draw, malformed-model policy and deliberately
+non-authoritative taxonomy mapping are documented in
+[`docs/corpora/mftrcad.md`](corpora/mftrcad.md). Its counts remain separate from the vendored
+MFCAD++ evidence below and from real-part evidence.
+
 The exclusions above were written from this project's own fixtures. Two external per-face
 labelled corpora now test them against models nobody here authored — [MFCAD](https://github.com/hducg/MFCAD)
 (15,488 models) and [MFCAD++](https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823)

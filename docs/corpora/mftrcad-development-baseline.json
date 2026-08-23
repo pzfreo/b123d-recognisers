@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "dataset_ref": "xmy2000/mftrcad",
+  "dataset_version": 1,
+  "selection_namespace": "b123d-recognisers:mftrcad:v1",
+  "archive_inventory": {
+    "selected_step_entries": 301,
+    "complete_annotation_triples": 300,
+    "incomplete_model_ids": ["20240125_003844_9903"]
+  },
+  "selected_artifacts": {
+    "files": 901,
+    "sha256": "5383b0135da4705ffea3f27a27c30c090325ffa44645372448e2ef554ab22e83",
+    "digest_contract": "sha256(relative-path + NUL + bytes + NUL), sorted by path"
+  },
+  "scanner_summary": {
+    "valid_models": 294,
+    "invalid_models": 7,
+    "faces": 7702,
+    "present_instances": 1333,
+    "empty_instances": 1512,
+    "mixed_label_instances": 0,
+    "invalid_model_ids": [
+      "20240116_231044_5453",
+      "20240116_231044_9868",
+      "20240124_001736_6737",
+      "20240124_001736_6802",
+      "20240124_001736_7935",
+      "20240125_003844_4799",
+      "20240125_003844_9903"
+    ],
+    "relationship_groups_by_type": {
+      "circle_array": 50,
+      "general_paratactic": 77,
+      "intersecting": 20,
+      "line_array": 37,
+      "mirror": 80,
+      "superpose_on": 172,
+      "transition": 32
+    },
+    "physical_proposals_by_family": {
+      "angled_steps": 31,
+      "bosses": 272,
+      "chamfers": 48,
+      "channels": 9,
+      "countersinks": 1,
+      "fillets": 30,
+      "flats": 53,
+      "holes": 244,
+      "pads": 58,
+      "passages": 91,
+      "plates": 78,
+      "pockets": 85,
+      "prismatic_pockets": 86,
+      "risers": 159,
+      "slots": 35,
+      "step_levels": 780,
+      "turned_steps": 157
+    },
+    "attributed_proposals_by_family": {
+      "angled_steps": 31,
+      "chamfers": 48,
+      "passages": 91,
+      "pockets": 76,
+      "prismatic_pockets": 86,
+      "slots": 35,
+      "turned_steps": 157
+    },
+    "accepted_candidates_by_family": {
+      "angled_steps": 31,
+      "bosses": 272,
+      "chamfers": 27,
+      "channels": 9,
+      "countersinks": 1,
+      "fillets": 30,
+      "flats": 53,
+      "holes": 244,
+      "pads": 58,
+      "passages": 89,
+      "plates": 78,
+      "pockets": 85,
+      "prismatic_pockets": 72,
+      "risers": 159,
+      "slots": 28,
+      "step_levels": 780,
+      "turned_steps": 157
+    },
+    "attributed_candidates_by_family": {
+      "angled_steps": 31,
+      "chamfers": 27,
+      "passages": 89,
+      "pockets": 76,
+      "prismatic_pockets": 72,
+      "slots": 28,
+      "turned_steps": 157
+    },
+    "dispositions_by_outcome_and_reason": {
+      "accepted:default.accepted": 2173,
+      "rejected:bevel.chamfer_superseded_by_angled_step": 21,
+      "rejected:recess.passage_superseded_by_slot": 2,
+      "rejected:recess.prismatic_superseded_by_pocket": 14,
+      "rejected:recess.slot_superseded_by_pocket": 7
+    },
+    "contested_proposal_defining_faces": 78,
+    "contested_accepted_defining_faces": 5,
+    "taxonomy_alignment_diagnostic": {
+      "aligned_defining_faces": 811,
+      "off_mapping_defining_faces": 381,
+      "policy": "comparison only; never used for acceptance or reconciliation"
+    }
+  },
+  "holdout": {
+    "membership_count_inspected": false,
+    "models_opened": 0,
+    "outcomes_inspected": false
+  }
+}
