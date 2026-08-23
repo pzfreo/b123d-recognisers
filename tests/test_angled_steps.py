@@ -51,7 +51,10 @@ from b123d_recognisers._bevel import material_beyond_corner
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
-from b123d_recognisers.angled_steps import _effective_linear_sides
+from b123d_recognisers.angled_steps import (
+    _closed_by_a_triangular_flat,
+    _effective_linear_sides,
+)
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
@@ -110,6 +113,20 @@ def test_unreadable_diagnostic_boundary_fails_closed_without_changing_recognitio
             return BrokenWire()
 
     assert _effective_linear_sides(BrokenFace()) is None  # type: ignore[arg-type]
+
+
+def test_compatibility_terminal_boolean_reads_the_bounded_terminal_result() -> None:
+    blind_faces = list(_blind().faces())
+    blind_edges = edge_face_map(blind_faces)
+    through_faces = list(_through().faces())
+    through_edges = edge_face_map(through_faces)
+
+    assert any(
+        _closed_by_a_triangular_flat(face, blind_edges) for face in blind_faces
+    )
+    assert not any(
+        _closed_by_a_triangular_flat(face, through_edges) for face in through_faces
+    )
 
 
 def test_a_wedge_stopped_inside_the_part_is_an_angled_step():

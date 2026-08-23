@@ -154,6 +154,41 @@ def test_invalid_observations_are_rejected_atomically(failure: str) -> None:
     ) == ()
 
 
+@pytest.mark.parametrize("raw_edges,effective_sides", [(3, 3), (4, 4)])
+def test_split_terminal_fact_rejects_non_split_or_non_triangular_values(
+    raw_edges: int, effective_sides: int
+) -> None:
+    with pytest.raises(ValueError, match="raw > 3 and effective == 3"):
+        SplitTriangularTerminalFact(raw_edges, effective_sides)
+
+
+def test_observation_rejects_open_enums_and_foreign_context_atomically() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    other = FaceGraph(Box(4, 4, 4))
+    subject = ledger.graph.nodes[0]
+
+    with pytest.raises(ValueError, match="closed enums"):
+        ledger.sink.observe(
+            "angled_steps",  # type: ignore[arg-type]
+            PredicateId.ANGLED_STEP_TERMINAL,
+            subject=subject,
+            consulted=[ledger.graph.nodes[1]],
+            fact=SplitTriangularTerminalFact(4),
+        )
+    with pytest.raises(ValueError, match="not this graph's nodes"):
+        ledger.sink.observe(
+            FamilyId.ANGLED_STEPS,
+            PredicateId.ANGLED_STEP_TERMINAL,
+            subject=subject,
+            consulted=[other.nodes[0]],
+            fact=SplitTriangularTerminalFact(4),
+        )
+
+    assert ledger.snapshot_index().observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == ()
+
+
 def test_foreign_evidence_is_refused_atomically() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     other = FaceGraph(Box(4, 4, 4))
