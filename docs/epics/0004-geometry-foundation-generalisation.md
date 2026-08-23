@@ -13,7 +13,8 @@ orchestration. It is the geometry substrate exposed to family predicates and the
 available to describe what they find.
 
 This epic strengthens that substrate before feature-family expansion resumes. It addresses the
-foundational gaps identified by the 3D geometry scorecard:
+foundational gaps identified by the [3D geometry scorecard](../scorecard.md) (review feedback
+incorporated here is recorded in [`epic-0004-feedback.md`](../epic-0004-feedback.md)):
 
 1. exact analytic geometry exported as B-splines currently fails closed;
 2. the AAG cannot distinguish smooth joins by material side;
@@ -22,7 +23,9 @@ foundational gaps identified by the 3D geometry scorecard:
 4. several mature records and predicates encode world-axis spans rather than a free local frame;
 5. accepted records have run-local Candidate identity but no stable correspondence across runs;
 6. defining evidence remains absent for some physical families, limiting measured ownership and
-   future interaction rules.
+   future interaction rules;
+7. the neutral substrate is private, so a third party can build on this package's geometry
+   reasoning only by forking it.
 
 The work remains deterministic and rule-based. It does not add a learned recogniser, a plugin
 system, machining policy, defeaturing mutations, or a new public feature family.
@@ -139,6 +142,12 @@ effective-surface adapter. The chosen seam needs an ADR amendment because surfac
 currently distributed across family modules. A pre-pass is preferred only if it proves stable
 face provenance and does not mutate caller geometry.
 
+Torus is a known seam gap: OCCT's `ShapeAnalysis_CanonicalRecognition` documents plane, cylinder,
+cone and sphere fits only, so torus recovery — which turned-stock fillet and groove evidence
+depends on — needs its own fitting machinery. Torus recovery is therefore a separately gated
+increment of F1: the four documented primitives may land and exit first, and a torus slip narrows
+scope explicitly rather than failing the whole package.
+
 Exit gate: native-analytic and canonically equivalent B-spline fixtures return identical records
 and defining-face attribution; deliberately non-analytic B-splines still fail closed; existing
 goldens are byte-identical; runtime and memory remain within a newly recorded canonicalisation
@@ -222,9 +231,21 @@ Exact public names are deferred, but the invariants are not:
 - reconciliation names when a complete section record supersedes an axis-span fragment;
 - schema/version/capability changes follow ADR 0005 and downstream golden migration.
 
-Sequence this package internally: neutral frame primitives; family-private oblique predicates;
-versioned record proposal; dual-read/dual-project migration; only then deprecation. Do not rewrite
-the whole `_recess_*` subsystem in one PR.
+This package is explicitly split into two halves with different risk and different clocks:
+
+- **F4a — the schema**: the versioned frame/section records, canonical tie-breaks, and
+  dual-read/dual-project parity for principal-axis inputs. Additive, requires no recogniser
+  changes, and is the only work in this epic with a deadline pressure — every release shipped
+  meanwhile pins the axis-span schemas deeper into the ADR 0005 compatibility window. F4a lands
+  early (see the recommended order) so the 1.0 corner is escaped even if later packages slip,
+  and so F1 fixtures, F5 evidence and the section-supersedes-fragment rule are written once
+  against the final schema.
+- **F4b — the oblique predicates**: the hard geometry work in the `_recess_*` subsystem,
+  delivered family-by-family whenever ready, with no shared cliff.
+
+Sequence within the halves: neutral frame primitives; versioned record proposal;
+dual-read/dual-project migration (F4a); then family-private oblique predicates; only then
+deprecation (F4b). Do not rewrite the whole `_recess_*` subsystem in one PR.
 
 Exit gate: all rotations, mirrors and traversal permutations give canonical frames; principal-axis
 goldens remain stable; a separately authorised oblique corpus set gains records with zero off-target
@@ -276,6 +297,41 @@ requires its own ADR and downstream consumer before publication.
 
 Exit gate: edit-sequence fixtures pin identity through harmless re-export, translation and dimension
 changes, while split/merge ambiguity fails closed; recognition results remain unchanged.
+
+### F7 — Published substrate API
+
+Promote the neutral geometry substrate to a public, versioned framework contract so that
+third-party recognisers can build alongside this package without forking it. Adjudication
+remains closed: an external recogniser consumes the substrate and returns its own records; it
+does not enter `build_recognition_result`, reconciliation, the census, or the capability
+manifest.
+
+Required contract:
+
+- the published surface covers, at minimum: graph construction and queries (`FaceGraph`, the F2
+  smooth-sided arc kinds, `smooth_region`), the F1 effective-surface query with residual and
+  provenance, the F3 collapsed-view queries, and the F4a frame/section primitives;
+- the registry, disposition table, `FamilyId`, evidence sink/index and reconciliation remain
+  private; no dynamic registration, filesystem discovery or plugin import path is introduced;
+- the substrate API is versioned and manifest-declared under ADR 0005 discipline, with a
+  documented compatibility window, and its exports are enumerated by a completeness test the
+  same way recogniser exports are;
+- determinism guarantees are stated per query (same part, same facts, any platform) and pinned
+  by golden evidence, so external consumers inherit the contract internal families rely on;
+- a documented graduation path states what an out-of-tree family must present to enter the
+  closed registry: fixtures, semantic goldens, capability row, corpus evidence — the same bar
+  `adding-a-recogniser.md` sets internally.
+
+Sequencing: strictly after F1–F4a settle the APIs being published; freezing the substrate
+mid-epic would tax every subsequent package, while publishing at epic exit costs almost
+nothing. This package converts the governance ceiling — one maintainer's evidence throughput —
+into an ecosystem: external families become a nursery, proving themselves out-of-tree and
+graduating with evidence in hand.
+
+Exit gate: a demonstration out-of-tree recogniser (separate package, not vendored) builds a
+working family against only the published API and documented contracts; the substrate API is
+covered by the capability manifest and a versioned compatibility test; no internal adjudication
+symbol is reachable from the public surface.
 
 ## Review and delivery process
 
@@ -334,6 +390,8 @@ The epic is not complete until tests make these properties executable:
 - [ ] Cross-run correspondence is a sidecar and does not alter records or Candidate identity.
 - [ ] MFCAD++, MFTRCAD and real-part evidence is reported separately with provenance and limitations.
 - [ ] Public API, capability schema, census and Draftwright contracts follow ADR 0005 transitions.
+- [ ] The neutral substrate is published as a versioned public API with closed adjudication, a
+      completeness test, and a demonstrated out-of-tree consumer.
 - [ ] Full quality, package, cross-platform and performance gates pass at every semantic landing.
 - [ ] All child issues close with exact-head logic and architecture accepts.
 
@@ -353,6 +411,8 @@ The epic is not complete until tests make these properties executable:
 | Risk | Containment |
 | --- | --- |
 | Canonicalisation changes topology or face identity | analysis-only shape, explicit provenance, analytic-equivalence fixtures, fail closed |
+| Torus recovery exceeds the documented OCCT canonical seam | torus is a separately gated F1 increment; the four documented primitives exit independently |
+| Publishing the substrate freezes APIs still in motion | F7 runs strictly last; no public substrate export before F1–F4a settle |
 | Richer arc kinds silently alter existing predicates | neutral-only F2 PR; explicit any-smooth compatibility helper |
 | Collapse becomes hidden defeaturing policy | immutable opt-in view; no global automatic consumer |
 | Oblique migration creates two competing truths | versioned section record, named precedence, ADR 0005 migration |
@@ -364,14 +424,20 @@ The epic is not complete until tests make these properties executable:
 ## Recommended issue order
 
 1. F0 baseline and MFTRCAD ingestion/audit.
-2. F1 canonical analytic recovery design and neutral implementation.
-3. F2 smooth-sided AAG taxonomy.
-4. F3 immutable collapsed views.
-5. F5 defining-evidence migration, parallelised by independent family only after the neutral APIs
+2. F4a versioned frame/section schema with byte-identical principal-axis projection — first
+   because it is the only package whose cost grows with every release that pins the axis-span
+   schemas deeper, and because later fixtures and evidence should be written against the final
+   schema once rather than twice.
+3. F1 canonical analytic recovery design and neutral implementation (torus as a separately
+   gated increment).
+4. F2 smooth-sided AAG taxonomy.
+5. F3 immutable collapsed views.
+6. F5 defining-evidence migration, parallelised by independent family only after the neutral APIs
    settle.
-6. F4 local frames and section-schema migration, because it has the largest public-contract cost
-   and deserves a dedicated release transition.
-7. F6 persistent correspondence after canonical frames and attribution are stable.
+7. F4b family-by-family oblique predicates, and the axis-span deprecation window.
+8. F6 persistent correspondence after canonical frames and attribution are stable.
+9. F7 published substrate API, strictly last: it freezes the neutral APIs the earlier packages
+   are still shaping.
 
 The first implementation goal should stop after F0 and the design review for F1. Canonicalisation
 has the largest leverage, but it also sits beneath every recogniser; evidence and a reviewed seam
