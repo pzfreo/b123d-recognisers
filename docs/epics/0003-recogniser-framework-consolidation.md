@@ -1,6 +1,6 @@
 # Epic 0003 — Recogniser framework consolidation
 
-**Status:** implementation complete; awaiting integration gate and stacked merge  
+**Status:** implementation complete; awaiting integration gate and stacked merge
 **Owner:** @pzfreo  
 **Opened:** 2026-08-22  
 **Baseline:** `ccf3b8c` (0.3.1.dev0, after #149) — 800 tests collected; Ruff and mypy clean
@@ -289,12 +289,12 @@ Before merge, every child issue must have:
 
 ## Global acceptance criteria
 
-- [ ] No recogniser family or supported geometry is added during the epic.
-- [ ] Public standalone outputs, aggregate fields, schemas and semantic goldens remain stable
+- [x] No recogniser family or supported geometry is added during the epic.
+- [x] Public standalone outputs, aggregate fields, schemas and semantic goldens remain stable
       unless a separately reviewed correctness change authorises movement.
-- [ ] Every physical aggregate proposal has run-local identity-safe evidence and exactly one
+- [x] Every physical aggregate proposal has run-local identity-safe evidence and exactly one
       disposition; derived projection records are explicitly outside that set.
-- [ ] Discovery cannot read sibling evidence through its provided API.
+- [x] Discovery cannot read sibling evidence through its provided API.
 - [x] Reconcilers consume only completed candidates/frozen evidence and never run discovery.
 - [x] Patterns are explicitly post-reconciliation projections.
 - [x] Result, trace and evidence index form one authoritative inventory product.
