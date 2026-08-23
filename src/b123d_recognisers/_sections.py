@@ -633,9 +633,3 @@ def occurrence_geometry_dict(
             "high_capped": occurrence.ends.high_capped,
         },
     }
-
-
-def positional_tolerance() -> float:
-    """Return the private 2-D three-decimal rounding envelope."""
-
-    return _POSITION_TOL

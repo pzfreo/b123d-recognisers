@@ -14,7 +14,6 @@ from b123d_recognisers._sections import (
     SectionEnds,
     SectionOccurrence,
     SectionVertex,
-    positional_tolerance,
 )
 from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
@@ -51,11 +50,6 @@ def _validate_record(
     expected = (at[transverse[0]], at[transverse[1]])
     if any(round(left, 3) != right for left, right in zip(centroid, expected, strict=True)):
         raise ValueError("legacy centre disagrees with the section's analytic centroid")
-    if any(
-        abs(left - right) > positional_tolerance()
-        for left, right in zip(centroid, expected, strict=True)
-    ):
-        raise ValueError("legacy centre exceeds the section's positional tolerance")
     local = PlanarSection(
         tuple(
             SectionVertex((vertex.point[0] - centroid[0], vertex.point[1] - centroid[1]))

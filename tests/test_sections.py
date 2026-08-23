@@ -20,6 +20,7 @@ from build123d import (
     import_step,
 )
 
+import b123d_recognisers._sections as section_module
 from b123d_recognisers._section_adapters import (
     occurrence_to_passage,
     occurrence_to_prismatic_pocket,
@@ -344,6 +345,17 @@ def test_legacy_projection_refuses_arcs_and_inconsistent_records() -> None:
         (Passage("q", 4, 2.0, (0.0, 0.0, 0.0), _square()), "axis"),
         (Passage("z", 4, 0.0, (0.0, 0.0, 0.0), _square()), "span"),
         (Passage("z", 3, 2.0, (0.0, 0.0, 0.0), _square()), "side count"),
+        (Passage("z", 4, 2.0, (math.nan, 0.0, 0.0), _square()), "centre"),
+        (
+            Passage(
+                "z",
+                4,
+                2.0,
+                (0.0, 0.0, 0.0),
+                ((-2.0, -1.0, 0.0), (2.0, -1.0), (2.0, 1.0), (-2.0, 1.0)),  # type: ignore[arg-type]
+            ),
+            "finite pairs",
+        ),
     ],
 )
 def test_invalid_hand_built_passages_fail_closed(record: Passage, message: str) -> None:
@@ -357,6 +369,181 @@ def test_invalid_hand_built_pocket_open_sign_fails_closed() -> None:
     record = PrismaticPocket("z", 4, 2.0, 0, (0.0, 0.0, 0.0), _square())
     with pytest.raises(ValueError, match="open_sign"):
         prismatic_pocket_to_occurrence(record, body_ref=issuer.issue(), body_refs=issuer)
+
+
+@pytest.mark.parametrize(
+    "operation, message",
+    [
+        (lambda: LocalFrame.canonical((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), "nonzero"),
+        (
+            lambda: LocalFrame(
+                (math.inf, 0.0, 0.0),
+                (1.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0),
+                (0.0, 0.0, 1.0),
+            ),
+            "finite",
+        ),
+        (
+            lambda: LocalFrame(
+                (0.0, 0.0, 0.0),
+                (2.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0),
+                (0.0, 0.0, 1.0),
+            ),
+            "unit length",
+        ),
+        (
+            lambda: LocalFrame(
+                (0.0, 0.0, 0.0),
+                (1.0, 0.0, 0.0),
+                (1.0, 0.0, 0.0),
+                (0.0, 0.0, 1.0),
+            ),
+            "orthogonal",
+        ),
+        (
+            lambda: LocalFrame(
+                (0.0, 0.0, 0.0),
+                (1.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0),
+                (0.0, 0.0, -1.0),
+            ),
+            "right handed",
+        ),
+        (lambda: LocalFrame.principal("q", (0.0, 0.0, 0.0)), "axis"),
+        (lambda: LocalFrame.principal("z", (math.nan, 0.0, 0.0)), "finite"),
+        (lambda: LocalFrame.canonical((0.0, 0.0, 1.0), (math.nan, 0.0, 0.0)), "finite"),
+        (lambda: SectionVertex((math.nan, 0.0)), "finite"),
+    ],
+)
+def test_private_frame_and_vertex_values_fail_closed(operation, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        operation()
+
+
+def test_private_section_shape_and_serialization_refusals_are_closed() -> None:
+    with pytest.raises(ValueError, match="at least two"):
+        PlanarSection((SectionVertex((0.0, 0.0)),))
+    with pytest.raises(ValueError, match="distinct"):
+        PlanarSection(
+            (
+                SectionVertex((0.0, 0.0)),
+                SectionVertex((0.0, 0.0)),
+                SectionVertex((1.0, 0.0)),
+            )
+        )
+    with pytest.raises(ValueError, match="collapse distinct vertices"):
+        PlanarSection(
+            (
+                SectionVertex((0.0, 0.0)),
+                SectionVertex((0.0004, 0.0004)),
+                SectionVertex((1.0, 0.0)),
+            )
+        )
+    with pytest.raises(ValueError, match="nonzero area"):
+        section_module._moments(
+            (
+                SectionVertex((0.0, 0.0)),
+                SectionVertex((1.0, 0.0)),
+                SectionVertex((2.0, 0.0)),
+            )
+        )
+    with pytest.raises(ValueError, match="arc endpoints"):
+        section_module._arc(SectionVertex((0.0, 0.0), 1.0), SectionVertex((0.0, 0.0)))
+
+
+@pytest.mark.parametrize(
+    "a, b, c, d",
+    [
+        ((0.0, 0.0), (2.0, 0.0), (1.0, 0.0), (1.0, 1.0)),
+        ((0.0, 0.0), (2.0, 0.0), (1.0, 1.0), (1.0, 0.0)),
+        ((0.0, 0.0), (2.0, 0.0), (-1.0, -1.0), (1.0, 1.0)),
+        ((0.0, 0.0), (2.0, 0.0), (1.0, -1.0), (3.0, 1.0)),
+    ],
+)
+def test_line_intersection_includes_each_collinear_endpoint_case(a, b, c, d) -> None:
+    assert section_module._line_intersection(a, b, c, d)
+
+
+def test_arc_intersection_helpers_cover_disjoint_concentric_and_crossing_cases() -> None:
+    upper = section_module._Arc((0.0, 0.0), 1.0, 0.0, math.pi)
+    shifted = section_module._Arc((1.0, 0.0), 1.0, 0.0, math.pi)
+    distant = section_module._Arc((4.0, 0.0), 1.0, 0.0, math.pi)
+    concentric = section_module._Arc((0.0, 0.0), 2.0, 0.0, math.pi)
+
+    assert not section_module._point_on_arc((3.0, 0.0), upper)
+    assert section_module._line_arc_points((-2.0, 3.0), (2.0, 3.0), upper) == ()
+    assert section_module._arc_arc_points(upper, concentric) == ()
+    assert section_module._arc_arc_points(upper, distant) == ()
+    assert section_module._arc_arc_intersection(upper, shifted)
+
+
+def test_adjacent_line_and_arc_cannot_meet_again_away_from_shared_endpoint() -> None:
+    with pytest.raises(ValueError, match="away from"):
+        section_module._validate_adjacent(
+            SectionVertex((-2.0, 0.0)),
+            SectionVertex((2.0, 0.0), 1.0),
+            SectionVertex((-2.0, 0.0)),
+        )
+    with pytest.raises(ValueError, match="away from"):
+        section_module._validate_adjacent(
+            SectionVertex((-2.0, 0.0), 1.0),
+            SectionVertex((2.0, 0.0)),
+            SectionVertex((-2.0, 0.0)),
+        )
+    with pytest.raises(ValueError, match="overlap|backtrack"):
+        section_module._validate_adjacent(
+            SectionVertex((0.0, 0.0)),
+            SectionVertex((1.0, 0.0)),
+            SectionVertex((0.0, 0.0)),
+        )
+
+
+def test_occurrence_body_and_end_value_invariants_fail_closed() -> None:
+    with pytest.raises(ValueError, match="booleans"):
+        SectionEnds(1, False)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="both ends"):
+        SectionEnds(True, True)
+    issuer = BodyRefIssuer()
+    with pytest.raises(ValueError, match="nonempty string"):
+        issuer.issue(signature="")
+    with pytest.raises(ValueError, match="finite and increasing"):
+        SectionOccurrence(
+            issuer.issue(),
+            LocalFrame.principal("z", (0.0, 0.0, 0.0)),
+            (1.0, 1.0),
+            PlanarSection(tuple(SectionVertex(point) for point in _square())),
+            SectionEnds(False, False),
+        )
+
+
+def test_reverse_legacy_projection_refuses_wrong_ends_and_free_axis_frame() -> None:
+    issuer = BodyRefIssuer()
+    body = issuer.issue()
+    section = PlanarSection(tuple(SectionVertex(point) for point in _square()))
+    principal = LocalFrame.principal("z", (0.0, 0.0, 0.0))
+    with pytest.raises(ValueError, match="two open ends"):
+        occurrence_to_passage(
+            SectionOccurrence(body, principal, (-1.0, 1.0), section, SectionEnds(True, False)),
+            body_refs=issuer,
+        )
+    with pytest.raises(ValueError, match="exactly one capped end"):
+        occurrence_to_prismatic_pocket(
+            SectionOccurrence(body, principal, (-1.0, 1.0), section, SectionEnds(False, False)),
+            body_refs=issuer,
+        )
+    with pytest.raises(ValueError, match="principal-axis"):
+        occurrence_to_passage(
+            SectionOccurrence(
+                body,
+                LocalFrame.canonical((1.0, 2.0, 3.0), (0.0, 0.0, 0.0)),
+                (-1.0, 1.0),
+                section,
+                SectionEnds(False, False),
+            ),
+            body_refs=issuer,
+        )
 
 
 def test_legacy_centroid_double_rounding_keeps_exact_record_projection() -> None:
