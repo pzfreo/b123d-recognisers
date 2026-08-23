@@ -75,6 +75,7 @@ class Candidate(Generic[RecordT]):  # constructed only by this module's sink
 @dataclass(frozen=True, slots=True)
 class Evidence:
     defining: frozenset[FaceNode]
+    consulted: frozenset[FaceNode]
 
 @dataclass(frozen=True, slots=True)
 class CandidateSet(Generic[RecordT]):
@@ -83,15 +84,34 @@ class CandidateSet(Generic[RecordT]):
 
 class EvidenceSink(Protocol):
     def propose(
-        self, family: FamilyId, record: RecordT, *, defining: Iterable[FaceNode]
+        self,
+        family: FamilyId,
+        record: RecordT,
+        *,
+        defining: Iterable[FaceNode],
+        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]: ...
+
+    def observe(
+        self,
+        family: FamilyId,
+        predicate: PredicateId,
+        *,
+        subject: FaceNode,
+        consulted: Iterable[FaceNode],
+        fact: PredicateFact,
+    ) -> Observation: ...
 
 class CandidateIndex(Protocol):
     def by_family(self, family: FamilyId) -> tuple[Candidate[Any], ...]: ...
 
 class EvidenceIndex(Protocol):
     def defining_of(self, candidate: Candidate[Any]) -> frozenset[FaceNode]: ...
+    def consulted_of(self, candidate: Candidate[Any]) -> frozenset[FaceNode]: ...
     def claims_of(self, node: FaceNode) -> tuple[Candidate[Any], ...]: ...
+    def observations(
+        self, family: FamilyId, predicate: PredicateId
+    ) -> tuple[Observation, ...]: ...
 ```
 
 `EvidenceSink.propose` is the atomic identity boundary: it validates graph provenance and creates
@@ -100,9 +120,13 @@ sink/index retain a run-private issuance token so a manually forged or foreign-r
 rejected. `CandidateSet` validates that its family and every candidate's family agree. Empty
 defining evidence is represented deliberately but must never prove subset containment.
 
-`consulted` and `derived` evidence are reserved until #161 supplies a real consumer. Public
-records remain ordinary immutable value objects; candidate identity is run-local and never
-becomes persistent feature identity.
+`consulted` records graph-owned context without ownership semantics. It is never returned by
+`claims_of`, used for containment, or allowed to suppress a candidate. A failed predicate has no
+Candidate, so #161 records its one demonstrated case as a separate sink-issued `Observation` with
+an issuer-snapshotted subject, consulted nodes and one closed primitive `PredicateFact`.
+Observations are not proposals: they never enter CandidateSet, inventory completeness or
+dispositions. Public records remain ordinary immutable value objects; candidate and observation
+identity are run-local and never become persistent feature identity.
 
 The disposition layer is private:
 
@@ -132,16 +156,21 @@ never a second stored roster.
 
 ## Lifecycle
 
-The aggregate lifecycle has four visible internal phases:
+The aggregate lifecycle has five visible internal phases:
 
 1. **Physical discovery** receives immutable neutral context plus a write-only sink. Every
    applicable physical family runs at most once and cannot inspect sibling proposals.
 2. **Reconciliation** receives completed candidate sets and a frozen evidence index. Named
    reconcilers run in explicit source order and give every proposal exactly one final disposition.
-3. **Derived projection** builds patterns from accepted members. Pattern functions are registry
+3. **Residual diagnosis** joins frozen failed-predicate observations to accepted candidates by
+   exact graph identity. It performs no geometry discovery and emits only private serialisable
+   summaries. The bounded #161 consumer joins one subdivided-terminal AngledStep observation to
+   the accepted planar Chamfer defining the same slant; it neither creates an AngledStep nor
+   changes the Chamfer disposition.
+4. **Derived projection** builds patterns from accepted members. Pattern functions are registry
    definitions for orchestration completeness, but their returned records are not aggregate
    proposals or candidates until a real conflict consumer requires candidate semantics.
-4. **Projection** constructs the public `RecognitionResult` and the private inventory product.
+5. **Projection** constructs the public `RecognitionResult` and the private inventory product.
    It performs no discovery and hides no compatibility policy.
 
 Interdependent cascading rules stay inside one named reconciler. A coordinator rejects a second
@@ -204,6 +233,7 @@ Tests must make these violations visible:
 - a discoverer reads evidence or aliases a sibling discovery entry point;
 - a reconciler imports discovery, receives `Part`, builds graph facts or mutates evidence;
 - projection or census reruns discovery;
+- residual diagnosis scans the graph, receives `Part`/a sink, or changes a disposition;
 - registry order is inferred from filesystem/module discovery;
 - a registered family lacks result, census, record-contract or capability coverage;
 - a candidate receives zero or two final dispositions;
@@ -228,8 +258,10 @@ Tests must make these violations visible:
    #111's measured miss has no emitted candidate and therefore cannot truthfully receive a
    candidate disposition; its residual hypothesis remains explicitly owned by #161.
 5. #160 introduces the registry only after discoverers share a stable internal call shape.
-6. #161 adds consulted/derived evidence and one bounded residual diagnostic without publishing a
-   diagnostic API.
+6. #161 records successful AngledStep terminal faces as consulted evidence, records only the
+   failed subdivided-triangular terminal predicate as a sink-issued observation, and joins that
+   observation to an accepted same-slant Chamfer as one private unsupported residual diagnostic.
+   It does not fix #111 recognition, scan generic residual graph faces or publish a diagnostic API.
 
 Each step is independently reviewable and may retain compatibility adapters. Do not combine the
 whole sequence into one framework rewrite.

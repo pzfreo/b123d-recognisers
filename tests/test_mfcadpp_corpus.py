@@ -43,6 +43,7 @@ from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
 )
+from b123d_recognisers.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -141,6 +142,14 @@ def corpus():
         models.append((path.name, part, labels, faces, at_label))
     assert models, "the vendored MFCAD++ subset is missing"
     return models
+
+
+def test_bounded_residual_diagnostic_has_zero_development_corpus_noise(corpus) -> None:
+    assert {
+        name: product.diagnostics
+        for name, part, *_ in corpus
+        if (product := _take_inventory(part)).diagnostics
+    } == {}
 
 
 def test_the_selection_manifest_describes_what_is_actually_vendored():

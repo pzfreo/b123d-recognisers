@@ -20,6 +20,7 @@ from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
     ReasonCode,
 )
@@ -205,6 +206,7 @@ class InventoryProduct:
     evidence: EvidenceIndex
     physical: CandidateInventory
     reconciliation: CandidateReconciliation
+    diagnostics: tuple[ResidualDiagnostic, ...]
     derived: DerivedInventory
     result: RecognitionResult
 
@@ -408,6 +410,7 @@ def _take_inventory(
         tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES)
     )
     reconciliation = _reconcile_existing(physical, evidence)
+    diagnostics = diagnose_residuals(reconciliation, evidence)
     accepted = CandidateInventory.complete(
         reconciliation.accepted_set(physical.candidate_set(family)) for family in PHYSICAL_FAMILIES
     )
@@ -418,6 +421,7 @@ def _take_inventory(
         evidence=evidence,
         physical=physical,
         reconciliation=reconciliation,
+        diagnostics=diagnostics,
         derived=derived,
         result=result,
     )

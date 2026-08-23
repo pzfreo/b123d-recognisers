@@ -96,3 +96,15 @@ the angles are equal, and its own header records that `PopSubgraph()` does not c
 attributes up afterwards. What is wanted here is a query over an immutable graph — which is what
 the run-local face graph built for issue #92 already is.
 
+## Amendment (framework consolidation, issue #161)
+
+Evidence now distinguishes defining ownership from consulted predicate context. Consulted nodes
+never appear in claims and never prove containment. When the narrowly named AngledStep terminal
+predicate stops at a linear outer boundary whose more than three raw edges collapse to exactly
+three co-directed geometric sides, discovery may issue a failed-predicate Observation. It does
+not infer or emit the missing AngledStep. Observations carry closed primitive facts, freeze with
+the run's evidence and remain outside candidate completeness and dispositions.
+
+The private residual reducer is a bounded identity join over those observations and accepted
+candidates, not a residual graph scan or a second recogniser. Broader residual classification,
+other consulted roles and public diagnostic schemas remain future work.

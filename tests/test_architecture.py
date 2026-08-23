@@ -43,6 +43,7 @@ MODULE_SEAM_EDGES = {
     "_bevel": {"_geometry", "_typing"},
     "_candidates": {"_adjacency"},
     "_dispositions": {"_candidates"},
+    "_diagnostics": {"_candidates", "_dispositions", "chamfers"},
     "_claims": {"_adjacency", "_candidates"},
     # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
     # three other modules each derived separately before it was lifted.
@@ -178,6 +179,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     expected = {
         "_discover_all": {"context", "writer", "return"},
         "_reconcile_existing": {"physical", "evidence", "return"},
+        "diagnose_residuals": {"reconciliation", "evidence", "return"},
         "_derive_patterns": {"accepted", "return"},
         "_project_result": {"context", "accepted", "derived", "return"},
     }
@@ -199,7 +201,35 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
 
     product_fields = set(module.InventoryProduct.__dataclass_fields__)
     assert "reconciliation" in product_fields
+    assert "diagnostics" in product_fields
     assert "accepted" not in product_fields and "distinct_steps" not in product_fields
+
+
+def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:
+    module = importlib.import_module("b123d_recognisers._diagnostics")
+    hints = typing.get_type_hints(module.diagnose_residuals)
+    assert set(hints) == {"reconciliation", "evidence", "return"}
+
+    tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
+    imported = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    assert not ({"Part", "FaceGraph", "EvidenceSink"} & imported)
+    assert not any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, (ast.Name, ast.Attribute))
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id.startswith("recognise_"))
+            or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr.startswith("recognise_")
+            )
+        )
+        for node in ast.walk(tree)
+    )
 
 
 def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence() -> None:

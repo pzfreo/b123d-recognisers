@@ -24,10 +24,13 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Cylinder,
+    Face,
     Plane,
     Polygon,
     Pos,
     Rot,
+    Vector,
+    Wire,
     chamfer,
     extrude,
 )
@@ -45,8 +48,10 @@ from b123d_recognisers._adjacency import (
     nearest_axis_aligned_planes,
 )
 from b123d_recognisers._bevel import material_beyond_corner
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
+from b123d_recognisers.angled_steps import _effective_linear_sides
 from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
@@ -71,6 +76,42 @@ def _through():
     return _block() - Pos(0, 20, 6) * Rot(45, 0, 0) * Box(70, _WEDGE, _WEDGE)
 
 
+def _linear_face(points: list[tuple[float, float, float]]) -> Face:
+    return Face(Wire.make_polygon([Vector(*point) for point in points], close=True))
+
+
+def test_split_triangle_diagnostic_predicate_is_not_a_four_sided_relaxation() -> None:
+    split_triangle = _linear_face([(0, 0, 0), (2, 0, 0), (4, 0, 0), (0, 4, 0)])
+    split_rectangle = _linear_face(
+        [(0, 0, 0), (2, 0, 0), (4, 0, 0), (4, 4, 0), (0, 4, 0)]
+    )
+    near_collinear_quad = _linear_face(
+        [(0, 0, 0), (2, 1e-4, 0), (4, 0, 0), (0, 4, 0)]
+    )
+
+    assert _effective_linear_sides(split_triangle) == 3
+    assert _effective_linear_sides(split_rectangle) == 4
+    assert _effective_linear_sides(near_collinear_quad) == 4
+
+
+def test_unreadable_diagnostic_boundary_fails_closed_without_changing_recognition() -> None:
+    class BrokenEdge:
+        geom_type = type("Geometry", (), {"name": "LINE"})()
+
+        def tangent_at(self):
+            raise RuntimeError("kernel tangent unavailable")
+
+    class BrokenWire:
+        def edges(self):
+            return [BrokenEdge()]
+
+    class BrokenFace:
+        def outer_wire(self):
+            return BrokenWire()
+
+    assert _effective_linear_sides(BrokenFace()) is None  # type: ignore[arg-type]
+
+
 def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
     """The blind end is what makes it a step, and the record carries how far it runs.
 
@@ -88,6 +129,20 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
     assert step.angle == 45.0
     # The cutter spans x = -35..-5 and the block stops at -30, so 25 mm of it is inside.
     assert step.length == 25.0
+
+
+def test_successful_step_owns_the_slant_and_consults_its_terminal() -> None:
+    part = _blind()
+    ledger = ClaimLedger(FaceGraph(part))
+
+    step = recognise_angled_steps(part, ledger=ledger)[0]
+    candidate = ledger.candidate_set_for(FamilyId.ANGLED_STEPS, [step]).candidates[0]
+    evidence = ledger.snapshot_index()
+
+    assert len(evidence.defining_of(candidate)) == 1
+    assert len(evidence.consulted_of(candidate)) == 1
+    terminal = next(iter(evidence.consulted_of(candidate)))
+    assert ledger.claims_of(terminal) == ()
 
 
 def test_the_same_wedge_run_through_is_a_chamfer_and_not_a_step():

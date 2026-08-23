@@ -162,3 +162,11 @@ order, applicability, physical completeness and derived pattern order. Typed `Re
 projection, public exports, capability/schema metadata and the stable census key order remain
 explicit independent review surfaces, with tests comparing them to registry coverage rather than
 generating them from metadata.
+
+## Amendment (framework consolidation, issue #161)
+
+`_diagnostics` is a private policy-neutral consumer above frozen evidence and completed
+reconciliation. It may join issuer-validated Observations to accepted candidate identity and
+project primitive diagnostic values. It may not receive `Part`, a graph, a mutable evidence sink,
+or call discovery. Family-owned failed-predicate geometry remains in the family module that owns
+the successful predicate; the reducer contains no replacement geometry test.
