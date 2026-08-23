@@ -37,6 +37,7 @@ from b123d_recognisers._sections import (
     SectionVertex,
     occurrence_geometry_dict,
     section_vertex_dict,
+    validate_occurrence,
 )
 from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
@@ -701,6 +702,46 @@ def test_every_occurrence_reader_rejects_a_mutated_offset_section(target: str) -
             occurrence_to_passage(occurrence, body_refs=issuer)
         else:
             occurrence_to_prismatic_pocket(occurrence, body_refs=issuer)
+
+
+@pytest.mark.parametrize(
+    "mutation, message",
+    [
+        ("frame-type", "LocalFrame"),
+        ("section-type", "PlanarSection"),
+        ("section-content", "invalid section"),
+        ("section-order", "not canonical or was mutated"),
+        ("ends-type", "SectionEnds"),
+    ],
+)
+def test_occurrence_read_validation_rejects_mutated_nested_values(
+    mutation: str, message: str
+) -> None:
+    issuer = BodyRefIssuer()
+    occurrence = passage_to_occurrence(
+        Passage("z", 4, 2.0, (0.0, 0.0, 0.0), _square()),
+        body_ref=issuer.issue(),
+        body_refs=issuer,
+    )
+    if mutation == "frame-type":
+        object.__setattr__(occurrence, "frame", object())
+    elif mutation == "section-type":
+        object.__setattr__(occurrence, "section", object())
+    elif mutation == "section-content":
+        object.__setattr__(occurrence.section, "boundary", (object(),))
+    elif mutation == "section-order":
+        boundary = occurrence.section.boundary
+        object.__setattr__(occurrence.section, "boundary", boundary[1:] + boundary[:1])
+    else:
+        object.__setattr__(occurrence, "ends", object())
+
+    with pytest.raises(ValueError, match=message):
+        occurrence_geometry_dict(occurrence, body_refs=issuer)
+
+
+def test_occurrence_validator_rejects_the_wrong_value_type() -> None:
+    with pytest.raises(ValueError, match="SectionOccurrence"):
+        validate_occurrence(object(), body_refs=BodyRefIssuer())  # type: ignore[arg-type]
 
 
 def test_reverse_legacy_projection_refuses_wrong_ends_and_free_axis_frame() -> None:
