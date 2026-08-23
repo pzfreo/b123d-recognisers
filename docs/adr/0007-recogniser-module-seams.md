@@ -180,3 +180,17 @@ that leaf and may import only `passages` and `prismatic_pockets` to prove exact 
 compatibility. Recognition, reconciliation, registry, and public projection do not import or invoke
 the adapters in F4a. This preserves the epic-0003 lifecycle while the public schema remains a
 proposal until its later ADR 0005 publication gate.
+
+## Amendment (geometry foundation, issue #180)
+
+Private `_effective_surfaces` sits above `_adjacency`: it may import the graph and kernel geometry,
+while `_adjacency` and family modules must not import it. `RecognitionContext` owns the concrete
+run-scoped index. Later migrated family cores receive only a restricted read protocol; they cannot
+construct the index or invoke its fitter. Standalone wrappers reuse an injected ledger graph when
+present, avoiding a foreign `FaceNode` universe.
+
+A machine-checked reader roster accounts for every raw `BRepAdaptor_Surface.GetType`,
+`Face.geom_type`, `graph.is_planar` and equivalent classification. Each entry is migrated,
+topology-only raw with a named rationale, orientation-deferred, or torus-deferred. Raw
+classification cannot remain an undocumented family-acceptance path. The neutral F1 slice changes
+no public signature; ADR 0002 is amended when the first consumer injection lands.

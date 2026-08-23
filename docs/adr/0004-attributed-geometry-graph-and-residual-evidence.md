@@ -108,3 +108,16 @@ completeness and dispositions.
 The private residual reducer is a bounded identity join over those observations and accepted
 candidates, not a residual graph scan or a second recogniser. Broader residual classification,
 other consulted roles and public diagnostic schemas remain future work.
+
+## Amendment (geometry foundation, issue #180)
+
+Epic 0004 F1 adds one private lazy `EffectiveSurfaceIndex` above `FaceGraph`. It is keyed only by
+the original graph-issued `FaceNode`, reads that node's original face, derives at most one closed
+native/recovered/refused fact, and never creates a replacement topology or graph. Candidate
+defining and consulted evidence therefore continues to name the exact original node.
+
+Recovered facts are geometry-only and carry `RECOVERED_UNORIENTED`; canonical axis/frame signs are
+value conventions rather than material-side evidence. An oriented query refuses
+`ORIENTATION_UNPROVEN` until F2's separately reviewed material-side substrate exists. Original
+topology, adjacency, orientation and solid-side probing remain authoritative. The index cannot
+issue Candidates, classify features or mutate the graph.
