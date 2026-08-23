@@ -24,9 +24,11 @@ import pytest
 from build123d import Cylinder, Pos
 
 import b123d_recognisers as r
+import b123d_recognisers.result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._dispositions import Outcome, ReasonCode
 from b123d_recognisers._reconcile import steps_that_are_not_grooves
 
 
@@ -125,7 +127,8 @@ def test_the_ladder_keeps_the_rung_the_groove_is():
     """Both records survive in the result: a profile with a hole in it is a different shaft."""
 
     part = _grooved_shaft()
-    result = r.build_recognition_result(part)
+    product = result_module._take_inventory(part)
+    result = product.result
 
     (groove,) = result.grooves
     rungs = [step for step in result.turned_steps if step.diameter == groove.diameter]
@@ -134,6 +137,21 @@ def test_the_ladder_keeps_the_rung_the_groove_is():
     ladder = sorted(result.turned_steps, key=lambda step: step.lo)
     for lower, upper in zip(ladder, ladder[1:], strict=False):
         assert lower.hi == upper.lo, "and it is still contiguous"
+
+    step_relations = [
+        item
+        for item in product.reconciliation.for_family(FamilyId.TURNED_STEPS)
+        if item.reason is ReasonCode.TURNED_STEP_GROOVE_COMPATIBLE
+    ]
+    groove_relations = [
+        item
+        for item in product.reconciliation.for_family(FamilyId.GROOVES)
+        if item.reason is ReasonCode.GROOVE_TURNED_STEP_COMPATIBLE
+    ]
+    assert len(step_relations) == len(groove_relations) == 1
+    assert step_relations[0].outcome is groove_relations[0].outcome is Outcome.ACCEPTED
+    assert step_relations[0].related == (groove_relations[0].candidate,)
+    assert groove_relations[0].related == (step_relations[0].candidate,)
 
 
 def test_the_rule_does_not_care_what_order_or_how_many_records_it_is_given():

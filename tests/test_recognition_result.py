@@ -128,12 +128,34 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # and the point-in-time read capability rather than a Part or mutable ledger.
     def fake_recesses(found_slots, found_pockets, prismatic, found_passages, evidence):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
-        assert same_records(found_slots, slots) and same_records(found_pockets, pockets)
-        assert same_records(found_passages, passages)
+        assert same_records(
+            [candidate.record for candidate in found_slots.candidates], slots
+        ) and same_records(
+            [candidate.record for candidate in found_pockets.candidates], pockets
+        )
+        assert same_records(
+            [candidate.record for candidate in found_passages.candidates], passages
+        )
         assert isinstance(evidence, EvidenceIndex)
-        return found_slots, found_pockets, prismatic, found_passages
+        return ()
 
-    monkeypatch.setattr(result_module, "reconcile_recesses", fake_recesses)
+    def fake_policy(name):
+        def reconcile(*args):
+            calls[name] = calls.get(name, 0) + 1
+            assert isinstance(args[-1], EvidenceIndex)
+            return ()
+
+        return reconcile
+
+    monkeypatch.setattr(result_module, "reconcile_recess_candidates", fake_recesses)
+    monkeypatch.setattr(
+        result_module, "reconcile_bevel_candidates", fake_policy("reconcile_bevels")
+    )
+    monkeypatch.setattr(
+        result_module,
+        "reconcile_step_groove_candidates",
+        fake_policy("reconcile_step_grooves"),
+    )
     monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
     monkeypatch.setattr(result_module, "recognise_plates", counted("plates", []))
 
@@ -150,6 +172,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "angled_steps",
         "passages",
         "reconcile_recesses",
+        "reconcile_bevels",
+        "reconcile_step_grooves",
         "cylinders",
         "countersinks",
         "holes",

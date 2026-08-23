@@ -32,8 +32,15 @@ corpus.
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import cast
 
-from b123d_recognisers._candidates import EvidenceIndex, FamilyId
+from b123d_recognisers._candidates import Candidate, CandidateSet, EvidenceIndex, FamilyId
+from b123d_recognisers._dispositions import (
+    Disposition,
+    Outcome,
+    ReasonCode,
+    ReconciliationResult,
+)
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
@@ -43,44 +50,186 @@ from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.turned import TurnedStep
 
 
-def passages_that_are_not_slots(
-    passages: list[Passage], evidence: EvidenceIndex
-) -> list[Passage]:
-    """Drop four-sided Passage candidates already dimensioned as Slots.
+def reconcile_recess_candidates(
+    slots: CandidateSet[object],
+    pockets: CandidateSet[object],
+    prismatic: CandidateSet[object],
+    passages: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Disposition form of the existing cascading recess precedence policy."""
 
-    A through slot *is* a closed uncapped ring, so `recognise_passages` reports it too. Both
-    families record the faces they were built from, so "are these the same void" is asked of
-    those faces: **a passage whose ring contains both walls a slot was established by is that
-    slot, seen from inside.** The slot record wins, because it dimensions the void -- width,
-    length and the extent on the third axis -- where the passage would only count its sides.
+    decisions: list[Disposition] = []
+    pocket_candidates = list(pockets.candidates)
+    passage_candidates = list(passages.candidates)
 
-    Containment, and directional, rather than overlap. A slot claims its two opposed walls; the
-    ring is every wall, so the slot's claim sits inside the passage's and never the reverse.
-    Mere overlap would be too weak to be a verdict, which is what ADR 0003 means by overlapping
-    claims being evidence and not one: two records sharing a face may both be real, as a
-    pattern and its members are.
+    accepted_prismatic: list[Candidate[object]] = []
+    for ring in prismatic.candidates:
+        winners = tuple(
+            pocket
+            for pocket in pocket_candidates
+            if isinstance(ring.record, PrismaticPocket)
+            and ring.record.sides == 4
+            and (walls := evidence.defining_of(pocket))
+            and walls <= evidence.defining_of(ring)
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    ring,
+                    Outcome.REJECTED,
+                    ReasonCode.PRISMATIC_SUPERSEDED_BY_POCKET,
+                    winners,
+                )
+            )
+        else:
+            accepted_prismatic.append(ring)
 
-    The heuristic this replaced compared a ring's averaged centre with a slot record's centre in
-    X and Y within 1e-6. It ignored the run axis and Z, so an X-running passage and an unrelated
-    Z slot at the same XY were the same feature to it; the two centres were also derived by
-    different procedures, one averaging wall-face centres and the other reading slot extents.
-    """
+    nonrect_prismatic = tuple(
+        ring
+        for ring in accepted_prismatic
+        if isinstance(ring.record, PrismaticPocket) and ring.record.sides != 4
+    )
+    accepted_pockets: list[Candidate[object]] = []
+    for pocket in pocket_candidates:
+        pocket_evidence = evidence.defining_of(pocket)
+        if not pocket_evidence:
+            accepted_pockets.append(pocket)
+            continue
+        winners = tuple(
+            passage
+            for passage in passage_candidates
+            if pocket_evidence <= evidence.defining_of(passage)
+        )
+        reason = ReasonCode.POCKET_SUPERSEDED_BY_PASSAGE
+        if not winners:
+            winners = tuple(
+                ring
+                for ring in nonrect_prismatic
+                if pocket_evidence <= evidence.defining_of(ring)
+            )
+            reason = ReasonCode.POCKET_SUPERSEDED_BY_PRISMATIC
+        if winners:
+            decisions.append(Disposition(pocket, Outcome.REJECTED, reason, winners))
+        else:
+            accepted_pockets.append(pocket)
 
-    slot_walls = [
-        evidence.defining_of(candidate)
-        for candidate in evidence.candidate_set(FamilyId.SLOTS).candidates
-        if isinstance(candidate.record, Slot)
+    grouped_passages: dict[tuple, list[Candidate[object]]] = defaultdict(list)
+    grouped_evidence: dict[tuple, set] = defaultdict(set)
+    for passage in passage_candidates:
+        if isinstance(passage.record, Passage) and passage.record.sides != 4:
+            key = (passage.record.axis, passage.record.section)
+            grouped_passages[key].append(passage)
+            grouped_evidence[key].update(evidence.defining_of(passage))
+
+    accepted_slots: list[Candidate[object]] = []
+    for slot in slots.candidates:
+        walls = evidence.defining_of(slot)
+        if not walls:
+            accepted_slots.append(slot)
+            continue
+        winners = tuple(
+            pocket for pocket in accepted_pockets if walls <= evidence.defining_of(pocket)
+        )
+        reason = ReasonCode.SLOT_SUPERSEDED_BY_POCKET
+        if not winners:
+            winners = tuple(
+                ring for ring in accepted_prismatic if walls <= evidence.defining_of(ring)
+            )
+            reason = ReasonCode.SLOT_SUPERSEDED_BY_PRISMATIC
+        if not winners:
+            matching = [key for key, nodes in grouped_evidence.items() if walls <= nodes]
+            winners = tuple(passage for key in matching for passage in grouped_passages[key])
+            reason = ReasonCode.SLOT_SUPERSEDED_BY_PASSAGE
+        if winners:
+            decisions.append(Disposition(slot, Outcome.REJECTED, reason, winners))
+        else:
+            accepted_slots.append(slot)
+
+    for passage in passage_candidates:
+        if not isinstance(passage.record, Passage) or passage.record.sides != 4:
+            continue
+        winners = tuple(
+            slot
+            for slot in accepted_slots
+            if (walls := evidence.defining_of(slot)) and walls <= evidence.defining_of(passage)
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    passage,
+                    Outcome.REJECTED,
+                    ReasonCode.PASSAGE_SUPERSEDED_BY_SLOT,
+                    winners,
+                )
+            )
+    return tuple(decisions)
+
+
+def reconcile_bevel_candidates(
+    chamfers: CandidateSet[object],
+    angled_steps: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Reject only chamfers whose defining face is an accepted angled-step slant."""
+
+    decisions = []
+    for chamfer in chamfers.candidates:
+        winners = tuple(
+            step
+            for step in angled_steps.candidates
+            if not evidence.defining_of(chamfer).isdisjoint(evidence.defining_of(step))
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    chamfer,
+                    Outcome.REJECTED,
+                    ReasonCode.CHAMFER_SUPERSEDED_BY_ANGLED_STEP,
+                    winners,
+                )
+            )
+    return tuple(decisions)
+
+
+def reconcile_step_groove_candidates(
+    steps: CandidateSet[object],
+    grooves: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Relate compatible records while accepting both physical descriptions."""
+
+    step_relations: dict[int, list[Candidate[object]]] = defaultdict(list)
+    groove_relations: dict[int, list[Candidate[object]]] = defaultdict(list)
+    for groove in grooves.candidates:
+        floor = evidence.defining_of(groove)
+        if not floor:
+            continue
+        for step in steps.candidates:
+            if floor <= evidence.defining_of(step):
+                step_relations[id(step)].append(groove)
+                groove_relations[id(groove)].append(step)
+    decisions = [
+        Disposition(
+            step,
+            Outcome.ACCEPTED,
+            ReasonCode.TURNED_STEP_GROOVE_COMPATIBLE,
+            tuple(step_relations[id(step)]),
+        )
+        for step in steps.candidates
+        if id(step) in step_relations
     ]
-    return [
-        passage
-        for passage in passages
-        # A four-wall ring is the rectangular void a Slot measures more directly. A ring with
-        # any other side count is not made a slot merely because one opposed pair happens to
-        # sit inside it; that is the false candidate exposed on triangular,
-        # hexagonal and interrupted passage sections.
-        if passage.sides != 4
-        or not any(walls <= evidence.defining_of(passage) for walls in slot_walls)
-    ]
+    decisions.extend(
+        Disposition(
+            groove,
+            Outcome.ACCEPTED,
+            ReasonCode.GROOVE_TURNED_STEP_COMPATIBLE,
+            tuple(groove_relations[id(groove)]),
+        )
+        for groove in grooves.candidates
+        if id(groove) in groove_relations
+    )
+    return tuple(decisions)
 
 
 def reconcile_recesses(
@@ -106,61 +255,24 @@ def reconcile_recesses(
     matching the way slot reduction pools collinear wall arms into one record.
     """
 
-    accepted_prismatic = prismatic_pockets_that_are_not_pockets(
-        prismatic,
-        pockets,
+    groups = (
+        evidence.candidate_set_for(FamilyId.SLOTS, slots),
+        evidence.candidate_set_for(FamilyId.POCKETS, pockets),
+        evidence.candidate_set_for(FamilyId.PRISMATIC_POCKETS, prismatic),
+        evidence.candidate_set_for(FamilyId.PASSAGES, passages),
+    )
+    result = ReconciliationResult.complete(
+        groups,
+        reconcile_recess_candidates(*groups, evidence),
         evidence,
     )
-    non_rectangular_pockets = [
-        pocket for pocket in accepted_prismatic if pocket.sides != 4
-    ]
-    accepted_pockets = [
-        pocket
-        for pocket in pockets
-        if not any(
-            evidence.defining_of(pocket) <= evidence.defining_of(passage)
-            for passage in passages
-        )
-        and not any(
-            evidence.defining_of(pocket) <= evidence.defining_of(ring)
-            for ring in non_rectangular_pockets
-        )
-    ]
-
-    non_rectangular_rings: dict[tuple, set] = defaultdict(set)
-    for passage in passages:
-        if passage.sides != 4:
-            non_rectangular_rings[(passage.axis, passage.section)].update(
-                evidence.defining_of(passage)
-            )
-
-    accepted_slots = []
-    for slot in slots:
-        walls = evidence.defining_of(slot)
-        # Obround slots recovered from their cylindrical caps deliberately have no planar-wall
-        # claim. Missing evidence cannot prove containment: the empty set is mathematically a
-        # subset of every ring, but semantically it is not an ownership verdict.
-        if not walls:
-            accepted_slots.append(slot)
-            continue
-        if any(walls <= evidence.defining_of(pocket) for pocket in accepted_pockets):
-            continue
-        if any(walls <= evidence.defining_of(pocket) for pocket in accepted_prismatic):
-            continue
-        if any(walls <= ring for ring in non_rectangular_rings.values()):
-            continue
-        accepted_slots.append(slot)
-
-    accepted_passages = [
-        passage
-        for passage in passages
-        if passage.sides != 4
-        or not any(
-            evidence.defining_of(slot) <= evidence.defining_of(passage)
-            for slot in accepted_slots
-        )
-    ]
-    return accepted_slots, accepted_pockets, accepted_prismatic, accepted_passages
+    return cast(
+        tuple[list[Slot], list[Pocket], list[PrismaticPocket], list[Passage]],
+        tuple(
+            [candidate.record for candidate in result.accepted_set(group).candidates]
+            for group in groups
+        ),
+    )
 
 
 def steps_that_are_not_grooves(
@@ -201,12 +313,17 @@ def steps_that_are_not_grooves(
     and report no turned steps at all.
     """
 
-    floors = [floor for groove in grooves if (floor := evidence.defining_of(groove))]
-    return [
-        step
-        for step in steps
-        if not any(floor <= evidence.defining_of(step) for floor in floors)
-    ]
+    step_set = evidence.candidate_set_for(FamilyId.TURNED_STEPS, steps)
+    groove_set = evidence.candidate_set_for(FamilyId.GROOVES, grooves)
+    related = {
+        id(item.candidate)
+        for item in reconcile_step_groove_candidates(step_set, groove_set, evidence)
+        if item.reason is ReasonCode.TURNED_STEP_GROOVE_COMPATIBLE
+    }
+    return cast(
+        list[TurnedStep],
+        [candidate.record for candidate in step_set.candidates if id(candidate) not in related],
+    )
 
 
 def chamfers_that_are_not_angled_steps(
@@ -243,14 +360,17 @@ def chamfers_that_are_not_angled_steps(
     `build_recognition_result` both apply this rule, so the reconciled answer is unchanged.
     """
 
-    slants = {
-        node for step in angled_steps for node in evidence.defining_of(step)
-    }
-    return [
-        chamfer
-        for chamfer in chamfers
-        if evidence.defining_of(chamfer).isdisjoint(slants)
-    ]
+    chamfer_set = evidence.candidate_set_for(FamilyId.CHAMFERS, chamfers)
+    step_set = evidence.candidate_set_for(FamilyId.ANGLED_STEPS, angled_steps)
+    result = ReconciliationResult.complete(
+        (chamfer_set, step_set),
+        reconcile_bevel_candidates(chamfer_set, step_set, evidence),
+        evidence,
+    )
+    return cast(
+        list[Chamfer],
+        [candidate.record for candidate in result.accepted_set(chamfer_set).candidates],
+    )
 
 
 def prismatic_pockets_that_are_not_pockets(
@@ -279,14 +399,17 @@ def prismatic_pockets_that_are_not_pockets(
     than a verdict.
     """
 
-    walls = tuple(
-        defining
-        for pocket in pockets
-        if (defining := evidence.defining_of(pocket))
+    empty_slots = evidence.candidate_set_for(FamilyId.SLOTS, ())
+    pocket_set = evidence.candidate_set_for(FamilyId.POCKETS, pockets)
+    prismatic_set = evidence.candidate_set_for(FamilyId.PRISMATIC_POCKETS, prismatic)
+    empty_passages = evidence.candidate_set_for(FamilyId.PASSAGES, ())
+    groups = (empty_slots, pocket_set, prismatic_set, empty_passages)
+    result = ReconciliationResult.complete(
+        groups,
+        reconcile_recess_candidates(*groups, evidence),
+        evidence,
     )
-    return [
-        pocket
-        for pocket in prismatic
-        if pocket.sides != 4
-        or not any(paired <= evidence.defining_of(pocket) for paired in walls)
-    ]
+    return cast(
+        list[PrismaticPocket],
+        [candidate.record for candidate in result.accepted_set(prismatic_set).candidates],
+    )

@@ -224,3 +224,23 @@ take non-closing point-in-time snapshots, but aggregate census and attribution c
 The temporary physical-family roster is deliberately closed and explicit until issue #160 owns
 registry metadata; cylinders, graph facts, rotational classification and turned-profile
 applicability remain context or value dependencies, not physical candidates.
+
+## Amendment (framework consolidation, issue #158)
+
+Every emitted physical aggregate candidate now receives exactly one identity-preserving
+`Disposition`. Closed outcomes distinguish acceptance, rejection, ambiguity and unsupported
+proposals; closed namespaced reasons state the named policy, and `related` holds the actual
+same-run winning or compatible candidates in source order. The reconciliation result stores only
+the ordered dispositions. Accepted candidate sets, pattern inputs and the distinct-step census
+projection are derived views rather than synchronized inventories.
+
+The existing policies retain their order and meaning. Recess and bevel precedence reject the
+less expressive proposal and name its winner. A TurnedStep and Groove that describe the same band
+both remain accepted and name each other as compatible; only the census view excludes that step
+from a second physical-feature count. Empty defining evidence proves neither containment nor
+compatibility. Candidates untouched by a named conflict receive default acceptance.
+
+This protocol can disposition only proposals that discovery emitted. In particular, the #111
+subdivided-terminal miss has no AngledStep candidate and cannot honestly be labelled ambiguous or
+unsupported by reconciliation without rediscovering geometry. Bounded missing-candidate residual
+diagnosis remains assigned to issue #161 under ADR 0004.

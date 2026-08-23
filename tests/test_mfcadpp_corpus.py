@@ -37,6 +37,7 @@ import b123d_recognisers as recognition
 from b123d_recognisers import _recess_core as recess_core
 from b123d_recognisers import recognise_angled_steps, recognise_chamfers, recognise_slots
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
@@ -567,6 +568,13 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
         pockets = recognition.recognise_pockets(part, ledger=ledger)
         prismatic = recognition.recognise_prismatic_pockets(part, ledger=ledger)
         passages = recognition.recognise_passages(part, ledger=ledger)
+        for family, records in (
+            (FamilyId.SLOTS, slots),
+            (FamilyId.POCKETS, pockets),
+            (FamilyId.PRISMATIC_POCKETS, prismatic),
+            (FamilyId.PASSAGES, passages),
+        ):
+            ledger.candidate_set_for(family, records)
         accepted = reconcile_recesses(
             slots,
             pockets,
