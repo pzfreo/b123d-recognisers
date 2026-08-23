@@ -24,6 +24,7 @@ from OCP.Standard import Standard_Failure
 from OCP.TColgp import TColgp_Array2OfPnt
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._analytic_surfaces import validated_parameters
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
@@ -31,7 +32,6 @@ from b123d_recognisers._effective_surfaces import (
     SurfaceKind,
     SurfaceProvenance,
     SurfaceRefusalReason,
-    _validated_parameters,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -430,7 +430,7 @@ def test_standard_failure_during_native_primitive_read_refuses(monkeypatch) -> N
     def fail(_kind, _primitive):
         raise Standard_Failure("primitive read failure")
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces._validated_parameters", fail)
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.validated_parameters", fail)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -446,7 +446,7 @@ def test_standard_failure_during_recovered_primitive_read_refuses(monkeypatch) -
     def fail(_kind, _primitive):
         raise Standard_Failure("primitive read failure")
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces._validated_parameters", fail)
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.validated_parameters", fail)
 
     assert (
         EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
@@ -580,4 +580,4 @@ class _InvalidRadius:
 
 def test_nonpositive_sphere_radius_is_not_an_analytic_fact() -> None:
     with pytest.raises(ValueError, match="radius must be positive"):
-        _validated_parameters(SurfaceKind.SPHERE, _InvalidRadius())
+        validated_parameters(SurfaceKind.SPHERE, _InvalidRadius())

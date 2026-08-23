@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, TypeAlias
+from typing import Protocol, TypeAlias
 
 import OCP
 from OCP.BRep import BRep_Tool
@@ -31,18 +31,16 @@ from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition
 from OCP.Standard import Standard_Failure
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._analytic_surfaces import (
+    SurfaceKind,
+    native_primitive,
+    validated_parameters,
+)
 from b123d_recognisers._geometry import COORD_FLOOR
 
 _RECOVERY_REL = 1e-6
 _SUPPORTED_OCCT_CERTIFICATE_VERSIONS = frozenset({"7.9.3.1"})
 _CERTIFICATE_AUTHORITY = "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract"
-
-
-class SurfaceKind(Enum):
-    PLANE = "plane"
-    CYLINDER = "cylinder"
-    CONE = "cone"
-    SPHERE = "sphere"
 
 
 class SurfaceProvenance(Enum):
@@ -138,6 +136,18 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "_adjacency:surface:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base surface cache"),
     "_adjacency:is_planar:graph_surface:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base query"),
     "_adjacency:_normal_at:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base normal"),
+    "_adjacency:_native_continuation:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 original native analytic continuation fact",
+    ),
+    "_adjacency:_native_continuation:adaptor:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 paired original native analytic continuation fact",
+    ),
+    "_adjacency:_normal_curvature:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 original-surface second fundamental form",
+    ),
     "_adjacency:frame_points_outward:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "original-face material-side query waits for F2",
@@ -404,7 +414,7 @@ class EffectiveSurfaceIndex:
         native = _NATIVE_KINDS.get(kind)
         if native is not None:
             try:
-                parameters = _validated_parameters(native, _native_primitive(adaptor, native))
+                parameters = validated_parameters(native, native_primitive(adaptor, native))
             except (AttributeError, Standard_Failure, RuntimeError, ValueError):
                 return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_RESULT)
             return AnalyticSurfaceFact(
@@ -460,7 +470,7 @@ class EffectiveSurfaceIndex:
                 exceeded = True
                 continue
             try:
-                parameters = _validated_parameters(analytic_kind, primitive)
+                parameters = validated_parameters(analytic_kind, primitive)
             except (AttributeError, Standard_Failure, RuntimeError, ValueError):
                 invalid = True
                 continue
@@ -496,89 +506,3 @@ class EffectiveSurfaceIndex:
                 maximum_distance_bound=tolerance,
             ),
         )
-
-
-def _canonical_direction(direction) -> tuple[float, float, float]:
-    return _canonical_direction_and_sign(direction)[0]
-
-
-def _canonical_direction_and_sign(
-    direction,
-) -> tuple[tuple[float, float, float], float]:
-    values = (float(direction.X()), float(direction.Y()), float(direction.Z()))
-    dominant = max(range(3), key=lambda axis: (abs(values[axis]), axis))
-    sign = 1.0 if values[dominant] >= 0.0 else -1.0
-    return (sign * values[0], sign * values[1], sign * values[2]), sign
-
-
-def _native_primitive(adaptor: BRepAdaptor_Surface, kind: SurfaceKind) -> Any:
-    if kind is SurfaceKind.PLANE:
-        return adaptor.Plane()
-    if kind is SurfaceKind.CYLINDER:
-        return adaptor.Cylinder()
-    if kind is SurfaceKind.CONE:
-        return adaptor.Cone()
-    return adaptor.Sphere()
-
-
-def _closest_axis_point(
-    location, direction: tuple[float, float, float]
-) -> tuple[float, float, float]:
-    point = (float(location.X()), float(location.Y()), float(location.Z()))
-    along = sum(value * axis for value, axis in zip(point, direction, strict=True))
-    return (
-        point[0] - along * direction[0],
-        point[1] - along * direction[1],
-        point[2] - along * direction[2],
-    )
-
-
-def _primitive_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...]:
-    if kind is SurfaceKind.PLANE:
-        plane = primitive
-        direction = _canonical_direction(plane.Axis().Direction())
-        location = plane.Location()
-        offset = sum(
-            value * axis
-            for value, axis in zip(
-                (float(location.X()), float(location.Y()), float(location.Z())),
-                direction,
-                strict=True,
-            )
-        )
-        return (*direction, offset)
-    if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE):
-        conic = primitive
-        direction, sign = _canonical_direction_and_sign(conic.Axis().Direction())
-        if kind is SurfaceKind.CYLINDER:
-            point = _closest_axis_point(conic.Axis().Location(), direction)
-            return (*point, *direction, float(conic.Radius()))
-        apex = conic.Apex()
-        return (
-            float(apex.X()),
-            float(apex.Y()),
-            float(apex.Z()),
-            *direction,
-            sign * float(conic.SemiAngle()),
-        )
-    sphere = primitive
-    centre = sphere.Location()
-    return (float(centre.X()), float(centre.Y()), float(centre.Z()), float(sphere.Radius()))
-
-
-def _validated_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...]:
-    parameters = _primitive_parameters(kind, primitive)
-    if not parameters or not all(math.isfinite(value) for value in parameters):
-        raise ValueError("analytic primitive parameters must be finite")
-    direction = parameters[3:6] if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE) else None
-    if kind is SurfaceKind.PLANE:
-        direction = parameters[:3]
-    if direction is not None and not math.isclose(
-        math.sqrt(sum(value * value for value in direction)), 1.0, rel_tol=0.0, abs_tol=1e-9
-    ):
-        raise ValueError("analytic primitive axis must be unit length")
-    if kind in (SurfaceKind.CYLINDER, SurfaceKind.SPHERE) and parameters[-1] <= 0.0:
-        raise ValueError("analytic primitive radius must be positive")
-    if kind is SurfaceKind.CONE and not 0.0 < abs(parameters[-1]) < math.pi / 2.0:
-        raise ValueError("analytic cone angle must be strictly between zero and pi/2")
-    return tuple(0.0 if value == 0.0 else value for value in parameters)

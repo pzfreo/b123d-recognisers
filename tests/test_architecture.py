@@ -37,7 +37,8 @@ PUBLIC_MODULES = {
 
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
-    "_adjacency": {"_geometry", "_typing"},
+    "_analytic_surfaces": {"_geometry"},
+    "_adjacency": {"_analytic_surfaces", "_geometry", "_typing"},
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
     # Three recognisers begin with the same two questions of a face. Naming the layer is
@@ -140,8 +141,190 @@ MODULE_SEAM_EDGES = {
     "_sections": set(),
     "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
-    "_effective_surfaces": {"_adjacency", "_geometry"},
+    "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
 }
+
+ARC_READER_SITES = {
+    "src/b123d_recognisers/_adjacency:smooth_region:arc:1": "legacy-source",
+    "src/b123d_recognisers/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
+    "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",
+    "src/b123d_recognisers/_adjacency:smooth_side:is_any_smooth:1": "any-smooth",
+    "src/b123d_recognisers/_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:1": "opposed-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "opposed-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
+    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
+}
+
+# Tests are part of the reviewed reader surface: an assertion may intentionally pin the legacy
+# closed value, but it may not accidentally teach production-style code that truthiness or a
+# negative inference is meaningful.  One entry covers every occurrence in the test module; the
+# AST-derived ordinal makes additions fail visibly.
+for _site in (
+    "_arcs:arc:1",
+    "test_an_arc_reads_the_same_from_either_face:arc:1",
+    "test_an_arc_reads_the_same_from_either_face:arc:2",
+    "_smooth_pairs:arc:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:arc:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:arc:2",
+    "test_failed_differential_enrichment_never_rewrites_legacy_smooth:arc:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:arc:1",
+    "test_a_smooth_region_is_maximal_immutable_and_cached_for_each_member:arc:1",
+    "test_a_smooth_region_is_maximal_immutable_and_cached_for_each_member:arc:2",
+    "test_faces_that_do_not_meet_have_no_arc:arc:1",
+    "test_a_pair_meeting_along_several_edges_is_classified_from_all_of_them:arc:1",
+    "test_a_shallow_corner_is_not_smooth:arc:1",
+    "test_imported_step_geometry_classifies_without_unknowns:arc:1",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:1",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:2",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:3",
+    "test_shared_edges_that_disagree_give_no_single_answer:arc:1",
+    "test_shared_edges_that_disagree_give_no_single_answer:arc:2",
+    "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:1",
+    "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:2",
+    "test_open_topods_solid_cannot_authorize_material_side:arc:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:arc:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "legacy-contract"
+for _site in (
+    "_smooth_pairs:is_any_smooth:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:is_any_smooth:1",
+    "test_open_topods_solid_cannot_authorize_material_side:is_any_smooth:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:is_any_smooth:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "any-smooth"
+for _site in (
+    "test_external_and_internal_rounds_have_opposite_smooth_sides:smooth_side:1",
+    "test_external_and_internal_rounds_have_opposite_smooth_sides:smooth_side:2",
+    "test_equivalent_native_surface_splits_are_neutral:smooth_side:1",
+    "test_split_native_side_survives_step_round_trip:smooth_side:1",
+    "test_smooth_convex_side_is_rigid_transform_and_scale_invariant:smooth_side:1",
+    "test_smooth_side_is_symmetric_and_cached_once_per_edge:smooth_side:1",
+    "test_smooth_side_is_symmetric_and_cached_once_per_edge:smooth_side:2",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:smooth_side:1",
+    "test_disagreeing_samples_and_shared_edges_are_side_unproven:smooth_side:1",
+    "test_failed_differential_enrichment_never_rewrites_legacy_smooth:smooth_side:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:smooth_side:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:smooth_side:2",
+    "test_sided_rounds_survive_step_round_trip:smooth_side:1",
+    "test_open_smooth_join_remains_unproven_after_step_round_trip:smooth_side:1",
+    "keyed_sides:smooth_side:1",
+    "test_duplicate_solid_ownership_cannot_authorize_material_side:smooth_side:1",
+    "test_ownership_kernel_failures_are_side_unproven:smooth_side:1",
+    "test_a_disconnected_second_solid_does_not_poison_owned_sides:smooth_side:1",
+    "test_open_topods_solid_cannot_authorize_material_side:smooth_side:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:smooth_side:1",
+    "test_non_manifold_three_face_edge_is_side_unproven:smooth_side:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "side-read"
+
+
+def test_every_arc_reader_has_one_reviewed_disposition() -> None:
+    found: set[str] = set()
+    paths = [*PACKAGE.glob("*.py"), *(ROOT / "tools").glob("*.py"), *(ROOT / "tests").rglob("*.py")]
+    for path in paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        parents = {
+            child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
+        }
+        calls: list[tuple[int, int, str, str]] = []
+        for node in ast.walk(tree):
+            mechanism = None
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                    "arc",
+                    "smooth_side",
+                }:
+                    mechanism = node.func.attr
+                elif isinstance(node.func, ast.Name) and node.func.id == "is_any_smooth":
+                    mechanism = "is_any_smooth"
+            if mechanism is None:
+                continue
+            owner = node
+            function = "module"
+            while owner in parents:
+                owner = parents[owner]
+                if isinstance(owner, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    function = owner.name
+                    break
+            calls.append((node.lineno, node.col_offset, function, mechanism))
+        ordinals: dict[tuple[str, str], int] = {}
+        call_nodes = {
+            (node.lineno, node.col_offset): node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+        }
+        for line, column, function, mechanism in sorted(calls):
+            base = (function, mechanism)
+            ordinals[base] = ordinals.get(base, 0) + 1
+            source = path.relative_to(ROOT).with_suffix("").as_posix()
+            site = f"{source}:{function}:{mechanism}:{ordinals[base]}"
+            found.add(site)
+            disposition = ARC_READER_SITES.get(site)
+            if disposition is None:
+                continue
+            call = call_nodes[line, column]
+            parent = parents.get(call)
+            if mechanism in {"arc", "smooth_side"}:
+                assert not isinstance(parent, (ast.If, ast.UnaryOp)), site
+            if isinstance(parent, ast.Compare):
+                assert not any(isinstance(op, (ast.NotEq, ast.NotIn)) for op in parent.ops), site
+            if disposition == "any-smooth":
+                assert mechanism == "is_any_smooth", site
+            elif disposition == "side-read":
+                assert mechanism == "smooth_side", site
+            elif disposition == "legacy-source":
+                assert (
+                    isinstance(parent, ast.Call)
+                    and isinstance(parent.func, ast.Name)
+                    and parent.func.id == "is_any_smooth"
+                ), site
+            elif disposition == "exact-nonsmooth":
+                comparison = (
+                    parents.get(parent)
+                    if isinstance(parent, (ast.Set, ast.List, ast.Tuple))
+                    else parent
+                )
+                assert isinstance(comparison, ast.Compare), site
+                literals = {
+                    value.value
+                    for value in [comparison.left, *comparison.comparators]
+                    if isinstance(value, ast.Constant) and isinstance(value.value, str)
+                }
+                assert literals <= {"convex", "concave"} and literals, site
+            elif disposition == "opposed-nonsmooth":
+                assert isinstance(parent, ast.Call), site
+                assert isinstance(parent.func, ast.Name), site
+                assert parent.func.id == "is_opposed_nonsmooth", site
+            elif disposition == "pair-agreement":
+                assert isinstance(parent, ast.Call), site
+                assert isinstance(parent.func, ast.Name), site
+                assert parent.func.id == "same_arc_kind", site
+            elif disposition == "legacy-contract":
+                assert isinstance(
+                    parent,
+                    (ast.Assign, ast.Call, ast.Compare, ast.Expr, ast.SetComp, ast.Subscript),
+                ), site
+                if isinstance(parent, ast.Call):
+                    assert isinstance(parent.func, ast.Name), site
+                    assert parent.func.id == "is_any_smooth", site
+                if isinstance(parent, ast.Compare):
+                    assert all(isinstance(op, (ast.Eq, ast.Is, ast.In)) for op in parent.ops), site
+
+    assert found == set(ARC_READER_SITES)
+    assert set(ARC_READER_SITES.values()) <= {
+        "any-smooth",
+        "exact-nonsmooth",
+        "legacy-contract",
+        "legacy-source",
+        "opposed-nonsmooth",
+        "pair-agreement",
+        "side-read",
+    }
+    assert not any(
+        site.startswith("src/b123d_recognisers/_recess_core:") and disposition == "side-read"
+        for site, disposition in ARC_READER_SITES.items()
+    )
 
 
 def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:

@@ -194,3 +194,17 @@ A machine-checked reader roster accounts for every raw `BRepAdaptor_Surface.GetT
 topology-only raw with a named rationale, orientation-deferred, or torus-deferred. Raw
 classification cannot remain an undocumented family-acceptance path. The neutral F1 slice changes
 no public signature; ADR 0002 is amended when the first consumer injection lands.
+
+## Amendment (geometry foundation, issue #181)
+
+`_analytic_surfaces` is a topology-free private leaf imported by both `_adjacency` and
+`_effective_surfaces`. It is the sole owner of native plane/cylinder/cone/sphere canonical
+parameters, finite/domain validation and equivalence. It imports only OCP and `_geometry`; it owns
+no graph/node, recovery, orientation, evidence, cache or family policy. This avoids both an
+`_adjacency -> _effective_surfaces` cycle and duplicated analytic conventions.
+
+`_adjacency` remains the sole owner of legacy arcs, smooth-side observations, original-solid
+eligibility and both unordered-pair caches. Production and tool/test callers are frozen in an AST
+roster: compatibility traversal reads the legacy fact through `is_any_smooth`, exact nonsmooth
+callers retain their named comparisons, and no family consumes `SmoothSide` in the neutral F2
+slice. Family, orchestration, claim and reconciliation modules cannot be dependencies of the graph.
