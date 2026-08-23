@@ -207,7 +207,8 @@ class EffectiveSurfaceIndex:
 
     def _derive(self, node: FaceNode) -> EffectiveSurfaceFact:
         face = self._graph.face(node)
-        kind = BRepAdaptor_Surface(face.wrapped).GetType()
+        adaptor = BRepAdaptor_Surface(face.wrapped)
+        kind = adaptor.GetType()
         native = _NATIVE_KINDS.get(kind)
         if native is not None:
             return AnalyticSurfaceFact(
@@ -215,7 +216,7 @@ class EffectiveSurfaceIndex:
                 kind=native,
                 provenance=SurfaceProvenance.NATIVE,
                 orientation=OrientationCapability.NATIVE_ORIENTED,
-                parameters=(),
+                parameters=_primitive_parameters(native, _native_primitive(adaptor, native)),
                 requested_tolerance=0.0,
                 kernel_reported_gap=0.0,
             )
@@ -266,10 +267,26 @@ class EffectiveSurfaceIndex:
 
 
 def _canonical_direction(direction) -> tuple[float, float, float]:
+    return _canonical_direction_and_sign(direction)[0]
+
+
+def _canonical_direction_and_sign(
+    direction,
+) -> tuple[tuple[float, float, float], float]:
     values = (float(direction.X()), float(direction.Y()), float(direction.Z()))
     dominant = max(range(3), key=lambda axis: (abs(values[axis]), axis))
     sign = 1.0 if values[dominant] >= 0.0 else -1.0
-    return (sign * values[0], sign * values[1], sign * values[2])
+    return (sign * values[0], sign * values[1], sign * values[2]), sign
+
+
+def _native_primitive(adaptor: BRepAdaptor_Surface, kind: SurfaceKind) -> Any:
+    if kind is SurfaceKind.PLANE:
+        return adaptor.Plane()
+    if kind is SurfaceKind.CYLINDER:
+        return adaptor.Cylinder()
+    if kind is SurfaceKind.CONE:
+        return adaptor.Cone()
+    return adaptor.Sphere()
 
 
 def _closest_axis_point(
@@ -300,12 +317,12 @@ def _primitive_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...
         return (*direction, offset)
     if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE):
         conic = primitive
-        direction = _canonical_direction(conic.Axis().Direction())
+        direction, sign = _canonical_direction_and_sign(conic.Axis().Direction())
         location = conic.Apex() if kind is SurfaceKind.CONE else conic.Axis().Location()
         point = _closest_axis_point(location, direction)
         if kind is SurfaceKind.CYLINDER:
             return (*point, *direction, float(conic.Radius()))
-        return (*point, *direction, float(conic.SemiAngle()))
+        return (*point, *direction, sign * float(conic.SemiAngle()))
     sphere = primitive
     centre = sphere.Location()
     return (float(centre.X()), float(centre.Y()), float(centre.Z()), float(sphere.Radius()))

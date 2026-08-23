@@ -181,3 +181,24 @@ def test_kernel_errors_fail_closed(monkeypatch) -> None:
     fact = EffectiveSurfaceIndex(graph).fact(graph.nodes[0])
 
     assert fact.reason is SurfaceRefusalReason.FIT_UNAVAILABLE
+
+
+@pytest.mark.parametrize(
+    "native",
+    [
+        max(Box(10, 5, 2).faces(), key=lambda face: face.area),
+        max(Cylinder(5, 12).faces(), key=lambda face: face.area),
+        max(Cone(6, 3, 12).faces(), key=lambda face: face.area),
+        Sphere(7).faces()[0],
+    ],
+)
+def test_native_and_exact_bspline_use_the_same_canonical_parameters(native: Face) -> None:
+    native_graph = FaceGraph(native)
+    recovered_graph = FaceGraph(_as_bspline_face(native))
+    native_fact = EffectiveSurfaceIndex(native_graph).fact(native_graph.nodes[0])
+    recovered_fact = EffectiveSurfaceIndex(recovered_graph).fact(recovered_graph.nodes[0])
+
+    assert isinstance(native_fact, AnalyticSurfaceFact)
+    assert isinstance(recovered_fact, AnalyticSurfaceFact)
+    assert recovered_fact.kind is native_fact.kind
+    assert recovered_fact.parameters == pytest.approx(native_fact.parameters, abs=1e-9)
