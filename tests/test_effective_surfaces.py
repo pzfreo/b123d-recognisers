@@ -31,6 +31,7 @@ from b123d_recognisers._effective_surfaces import (
     SurfaceKind,
     SurfaceProvenance,
     SurfaceRefusalReason,
+    _validated_parameters,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -466,3 +467,117 @@ def test_exact_planar_bezier_recovers_with_canonical_zero() -> None:
     assert fact.kind is SurfaceKind.PLANE
     assert fact.provenance is SurfaceProvenance.RECOVERED
     assert all(math.copysign(1.0, value) > 0.0 for value in fact.parameters if value == 0.0)
+
+
+@pytest.mark.parametrize("area", [0.0, float("nan")])
+def test_recovery_nominal_refuses_invalid_trimmed_area(area: float) -> None:
+    class InvalidFace:
+        pass
+
+    face = InvalidFace()
+    face.area = area
+    face.edges = lambda: ()
+
+    with pytest.raises(ValueError, match="finite positive"):
+        recovery_nominal(face)
+
+
+@pytest.mark.parametrize("perimeter", [-1.0, float("nan")])
+def test_recovery_nominal_refuses_invalid_trim_perimeter(monkeypatch, perimeter: float) -> None:
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces._physical_boundary_length",
+        lambda _face: perimeter,
+    )
+    face = max(Box(1, 1, 1).faces(), key=lambda item: item.area)
+
+    with pytest.raises(ValueError, match="finite nonnegative"):
+        recovery_nominal(face)
+
+
+def test_oriented_query_reports_an_unavailable_surface() -> None:
+    graph = FaceGraph(Torus(10, 2))
+
+    with pytest.raises(ValueError, match="unsupported-torus-recovery"):
+        EffectiveSurfaceIndex(graph).oriented_fact(graph.nodes[0])
+
+
+@pytest.mark.parametrize("failure", [Standard_Failure("adaptor failure"), RuntimeError("failure")])
+def test_adaptor_failures_are_closed_invalid_inputs(monkeypatch, failure: Exception) -> None:
+    class FailedAdaptor:
+        def __init__(self, _shape) -> None:
+            raise failure
+
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor
+    )
+    graph = FaceGraph(Box(1, 1, 1))
+
+    assert (
+        EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
+        is SurfaceRefusalReason.INVALID_INPUT
+    )
+
+
+def test_unknown_native_surface_kind_is_explicitly_unsupported(monkeypatch) -> None:
+    class UnknownAdaptor:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def GetType(self) -> int:
+            return 999
+
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor
+    )
+    graph = FaceGraph(Box(1, 1, 1))
+
+    assert (
+        EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
+        is SurfaceRefusalReason.UNSUPPORTED_KIND
+    )
+
+
+def test_one_valid_fit_plus_kernel_failures_refuses_the_partial_result(monkeypatch) -> None:
+    class PartialRecognition:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def IsPlane(self, _tolerance, _result) -> bool:
+            return True
+
+        def IsCylinder(self, _tolerance, _result) -> bool:
+            raise RuntimeError("cylinder fit failed")
+
+        IsCone = IsCylinder
+        IsSphere = IsCylinder
+
+        def GetStatus(self) -> int:
+            return 0
+
+        def GetGap(self) -> float:
+            return 0.0
+
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        PartialRecognition,
+    )
+    native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
+    graph = FaceGraph(_as_bspline_face(native))
+
+    assert (
+        EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
+        is SurfaceRefusalReason.FIT_UNAVAILABLE
+    )
+
+
+class _InvalidRadius:
+    def Location(self):
+        return gp_Pnt()
+
+    def Radius(self) -> float:
+        return 0.0
+
+
+def test_nonpositive_sphere_radius_is_not_an_analytic_fact() -> None:
+    with pytest.raises(ValueError, match="radius must be positive"):
+        _validated_parameters(SurfaceKind.SPHERE, _InvalidRadius())
