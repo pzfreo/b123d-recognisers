@@ -19,7 +19,7 @@ import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from itertools import combinations
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Final, Literal, TypeAlias, cast
 
 DATASET_REF: Final = "xmy2000/mftrcad"
@@ -184,7 +184,7 @@ def _discover(root: Path, *, selection: Selection, record_invalid: bool) -> Disc
         relation = labels / f"{model_id}_result_rel.json"
         paths = (step, label, relation)
         selected_files.extend(path for path in paths if path.is_file())
-        missing = tuple(str(path.relative_to(root)) for path in paths if not path.is_file())
+        missing = tuple(path.relative_to(root).as_posix() for path in paths if not path.is_file())
         if missing:
             error = f"{model_id} is incomplete; missing {', '.join(missing)}"
             if not record_invalid:
@@ -547,7 +547,7 @@ def audit_model(files: ModelFiles, *, annotations_only: bool = False) -> JsonObj
 def _artifact_digest(root: Path, files: tuple[Path, ...]) -> str:
     digest = hashlib.sha256()
     for path in files:
-        digest.update(str(path.relative_to(root)).encode())
+        digest.update(path.relative_to(root).as_posix().encode())
         digest.update(b"\0")
         with path.open("rb") as stream:
             for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -561,6 +561,12 @@ def _merge_counts(target: Counter[str], values: dict[str, object]) -> None:
         if not isinstance(value, int):
             raise ValueError(f"count {key!r} must be an integer")
         target[key] += value
+
+
+def _portable_error(exc: BaseException, root: PurePath) -> str:
+    """Normalise selected-input diagnostics for byte-identical cross-platform reports."""
+
+    return str(exc).replace(str(root), "<root>").replace("\\", "/")
 
 
 def audit(
@@ -589,7 +595,7 @@ def audit(
             invalid_models.append(
                 {
                     "model_id": model.model_id,
-                    "error": str(exc).replace(str(root), "<root>"),
+                    "error": _portable_error(exc, root),
                 }
             )
     reports = tuple(reports_list)

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 from build123d import Box, export_step
@@ -403,6 +403,15 @@ def test_selected_artifact_digest_is_deterministic_and_content_bound(tmp_path: P
     relation_path = root / "labels" / f"{DEFAULT_MODEL_ID}_result_rel.json"
     relation_path.write_text(relation_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     assert audit(root, annotations_only=True)["selected_artifacts"]["sha256"] != first["sha256"]
+
+
+def test_report_errors_use_portable_paths() -> None:
+    root = PureWindowsPath(r"C:\external\mftrcad")
+    error = ValueError(r"C:\external\mftrcad\labels\model_result.json: malformed")
+
+    assert audit_module._portable_error(error, root) == (
+        "<root>/labels/model_result.json: malformed"
+    )
 
 
 def test_compact_baseline_is_an_exact_checked_projection(tmp_path: Path) -> None:
