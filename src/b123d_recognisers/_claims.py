@@ -46,6 +46,13 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._candidates import (
+    Candidate,
+    CandidateSet,
+    EvidenceSink,
+    FamilyId,
+    _CandidateIssuer,
+)
 
 
 @dataclass(frozen=True, eq=False, repr=False, slots=True)
@@ -63,6 +70,7 @@ class Claim:
 
     claimant: object
     defining: frozenset[FaceNode]
+    _candidate: Candidate[object]
 
     def __repr__(self) -> str:
         return f"Claim({self.claimant!r}, defining={len(self.defining)} faces)"
@@ -78,9 +86,18 @@ class ClaimLedger:
 
     def __init__(self, graph: FaceGraph) -> None:
         self._graph = graph
-        self._claims: list[Claim] = []
-        self._by_node: dict[FaceNode, list[Claim]] = {}
-        self._by_claimant: dict[int, Claim] = {}
+        self._claims: dict[int, Claim] = {}
+        self._issuer = _CandidateIssuer(graph, on_issued=self._candidate_issued)
+
+    def _candidate_issued(self, candidate: Candidate[object]) -> None:
+        """Maintain the legacy Claim view for every non-empty sink issuance."""
+
+        if candidate.evidence.defining:
+            self._claims[id(candidate)] = Claim(
+                candidate.record,
+                candidate.evidence.defining,
+                candidate,
+            )
 
     def __len__(self) -> int:
         return len(self._claims)
@@ -95,6 +112,22 @@ class ClaimLedger:
 
         return self._graph
 
+    @property
+    def sink(self) -> EvidenceSink:
+        """The write-only proposal capability for migrated discovery paths."""
+
+        return self._issuer.sink
+
+    def propose(
+        self,
+        family: FamilyId,
+        record: object,
+        nodes: Iterable[FaceNode] = (),
+    ) -> Candidate[object]:
+        """Issue one candidate and retain a legacy Claim view for non-empty evidence."""
+
+        return self.sink.propose(family, record, defining=nodes)
+
     def add_defining(self, claimant: object, nodes: Iterable[FaceNode]) -> Claim:
         """Record that *nodes* are what established *claimant*, and return the claim.
 
@@ -106,25 +139,26 @@ class ClaimLedger:
         family gives absence an explicit meaning.
         """
 
-        defining = frozenset(nodes)
+        defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        foreign = [node for node in defining if not self._graph.owns(node)]
-        if foreign:
-            raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
-
-        claim = Claim(claimant, defining)
-        self._claims.append(claim)
-        self._by_claimant[id(claimant)] = claim
-        for node in defining:
-            self._by_node.setdefault(node, []).append(claim)
-        return claim
+        candidate = self.propose(FamilyId.LEGACY, claimant, defining)
+        return self._claims[id(candidate)]
 
     @property
     def claims(self) -> tuple[Claim, ...]:
         """Every claim, in the order it was made."""
 
-        return tuple(self._claims)
+        return tuple(
+            self._claims[id(candidate)]
+            for candidate in self._issuer.candidates
+            if id(candidate) in self._claims
+        )
+
+    def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
+        """Candidates issued for *family*, preserving proposal order."""
+
+        return self._issuer.candidate_set(family)
 
     def defining_of(self, claimant: object) -> frozenset[FaceNode]:
         """The faces *this* candidate was established by, or empty when it claimed none.
@@ -151,8 +185,7 @@ class ClaimLedger:
         are inside this record's.
         """
 
-        claim = self._by_claimant.get(id(claimant))
-        return claim.defining if claim is not None else frozenset()
+        return self._issuer.defining_of(claimant)
 
     def claims_of(self, node: FaceNode) -> tuple[Claim, ...]:
         """Every claim naming *node* as defining, in claim order; empty for an unclaimed node.
@@ -168,6 +201,4 @@ class ClaimLedger:
         statistical rather than per-face.
         """
 
-        if not self._graph.owns(node):
-            raise ValueError(f"{node!r} is not this graph's node")
-        return tuple(self._by_node.get(node, ()))
+        return tuple(self._claims[id(candidate)] for candidate in self._issuer.candidates_of(node))
