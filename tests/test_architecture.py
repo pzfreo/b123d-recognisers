@@ -42,6 +42,7 @@ MODULE_SEAM_EDGES = {
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
     "_candidates": {"_adjacency"},
+    "_dispositions": {"_candidates"},
     "_claims": {"_adjacency", "_candidates"},
     # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
     # three other modules each derived separately before it was lifted.
@@ -96,6 +97,7 @@ MODULE_SEAM_EDGES = {
     "_reconcile": {
         "_candidates",
         "_claims",
+        "_dispositions",
         "_recess_records",
         "angled_steps",
         "chamfers",
@@ -171,6 +173,10 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         name for name in dir(writer_type) if not name.startswith("_")
     } == {"add_defining", "graph", "sink"}
 
+    product_fields = set(module.InventoryProduct.__dataclass_fields__)
+    assert "reconciliation" in product_fields
+    assert "accepted" not in product_fields and "distinct_steps" not in product_fields
+
 
 def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence() -> None:
     roots = (PACKAGE, ROOT / "tools", ROOT / "tests")
@@ -187,7 +193,6 @@ def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence()
             )
 
     assert {path for path, _ in calls} == {
-        "src/b123d_recognisers/result.py",
         "tests/test_mfcadpp_corpus.py",
     }
     for _path, call in calls:

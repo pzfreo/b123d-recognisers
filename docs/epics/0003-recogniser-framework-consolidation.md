@@ -209,9 +209,10 @@ Tests must make these violations visible:
    to produce accepted candidate sets, moves patterns to the derived phase, and makes the inventory
    product authoritative. Its transitional reconciled inventory has no complete disposition trace.
 4. #158 replaces those filtered rules with complete dispositions for recess and the other existing
-   named conflicts, gives non-conflicting candidates default accepted dispositions, and includes
-   one bounded #111 contested/unsupported outcome as a real trace consumer. At this step the
-   universal one-disposition invariant applies to every physical aggregate proposal.
+   named conflicts and gives non-conflicting candidates default accepted dispositions. At this
+   step the universal one-disposition invariant applies to every physical aggregate proposal.
+   #111's measured miss has no emitted candidate and therefore cannot truthfully receive a
+   candidate disposition; its residual hypothesis remains explicitly owned by #161.
 5. #160 introduces the registry only after discoverers share a stable internal call shape.
 6. #161 adds consulted/derived evidence and one bounded residual diagnostic without publishing a
    diagnostic API.
@@ -254,8 +255,8 @@ Before merge, every child issue must have:
       families and makes incomplete integration fail visibly.
 - [ ] At least recess, chamfer/angled-step, prismatic-pocket/Pocket and step/groove rules use the
       common disposition protocol; any conflict family added after this baseline must join it too.
-- [ ] One bounded contested/unsupported outcome and one bounded residual diagnostic have real
-      internal consumers without a public schema commitment.
+- [ ] Accepted, rejected and compatibility dispositions have real internal consumers; #161 adds
+      a bounded residual diagnostic for missing-candidate evidence without a public commitment.
 - [ ] Full quality, package, downstream and performance gates pass.
 - [ ] ADR 0003/0004 and capability documentation describe the final architecture.
 - [ ] #156–#161 close with evidence and #162 can close.

@@ -20,6 +20,12 @@ from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._dispositions import (
+    ReasonCode,
+)
+from b123d_recognisers._dispositions import (
+    ReconciliationResult as CandidateReconciliation,
+)
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
@@ -31,9 +37,9 @@ from b123d_recognisers._features import (
     recognise_holes,
 )
 from b123d_recognisers._reconcile import (
-    chamfers_that_are_not_angled_steps,
-    reconcile_recesses,
-    steps_that_are_not_grooves,
+    reconcile_bevel_candidates,
+    reconcile_recess_candidates,
+    reconcile_step_groove_candidates,
 )
 from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
@@ -260,10 +266,35 @@ class InventoryProduct:
     context: RecognitionContext
     evidence: EvidenceIndex
     physical: CandidateInventory
-    accepted: CandidateInventory
-    distinct_steps: CandidateSet[object]
+    reconciliation: CandidateReconciliation
     derived: DerivedInventory
     result: RecognitionResult
+
+    @property
+    def accepted(self) -> CandidateInventory:
+        return CandidateInventory.complete(
+            self.reconciliation.accepted_set(self.physical.candidate_set(family))
+            for family in PHYSICAL_FAMILIES
+        )
+
+    @property
+    def distinct_steps(self) -> CandidateSet[object]:
+        source = self.physical.candidate_set(FamilyId.TURNED_STEPS)
+        related = {
+            id(item.candidate)
+            for item in self.reconciliation.for_family(FamilyId.TURNED_STEPS)
+            if item.reason is ReasonCode.TURNED_STEP_GROOVE_COMPATIBLE
+        }
+        accepted = self.reconciliation.accepted_set(source)
+        result = object.__new__(CandidateSet)
+        object.__setattr__(result, "family", FamilyId.TURNED_STEPS)
+        object.__setattr__(
+            result,
+            "candidates",
+            tuple(candidate for candidate in accepted.candidates if id(candidate) not in related),
+        )
+        object.__setattr__(result, "_issuer", source._issuer)
+        return result
 
 
 @dataclass(frozen=True)
@@ -433,15 +464,18 @@ def _take_inventory(
     evidence.validate_complete_inventory(
         tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES)
     )
-    accepted, distinct_steps = _reconcile_existing(physical, evidence)
+    reconciliation = _reconcile_existing(physical, evidence)
+    accepted = CandidateInventory.complete(
+        reconciliation.accepted_set(physical.candidate_set(family))
+        for family in PHYSICAL_FAMILIES
+    )
     derived = _derive_patterns(accepted)
     result = _project_result(context, accepted, derived)
     return InventoryProduct(
         context=context,
         evidence=evidence,
         physical=physical,
-        accepted=accepted,
-        distinct_steps=distinct_steps,
+        reconciliation=reconciliation,
         derived=derived,
         result=result,
     )
@@ -550,36 +584,30 @@ def _records(
 
 def _reconcile_existing(
     physical: CandidateInventory, evidence: EvidenceIndex
-) -> tuple[CandidateInventory, CandidateSet[object]]:
+) -> CandidateReconciliation:
     """Apply existing policies to completed candidates and terminal evidence only."""
 
-    slots = _records(physical, FamilyId.SLOTS, Slot)
-    pockets = _records(physical, FamilyId.POCKETS, Pocket)
-    ring_pockets = _records(physical, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
-    passages = _records(physical, FamilyId.PASSAGES, Passage)
-    slots, pockets, ring_pockets, passages = reconcile_recesses(
-        slots, pockets, ring_pockets, passages, evidence
-    )
-    chamfers = chamfers_that_are_not_angled_steps(
-        _records(physical, FamilyId.CHAMFERS, Chamfer),
-        _records(physical, FamilyId.ANGLED_STEPS, AngledStep),
+    decisions = reconcile_recess_candidates(
+        physical.candidate_set(FamilyId.SLOTS),
+        physical.candidate_set(FamilyId.POCKETS),
+        physical.candidate_set(FamilyId.PRISMATIC_POCKETS),
+        physical.candidate_set(FamilyId.PASSAGES),
         evidence,
     )
-    distinct_steps = steps_that_are_not_grooves(
-        _records(physical, FamilyId.TURNED_STEPS, TurnedStep),
-        _records(physical, FamilyId.GROOVES, Groove),
+    decisions += reconcile_bevel_candidates(
+        physical.candidate_set(FamilyId.CHAMFERS),
+        physical.candidate_set(FamilyId.ANGLED_STEPS),
         evidence,
     )
-    replacements = (
-        evidence.candidate_set_for(FamilyId.SLOTS, slots),
-        evidence.candidate_set_for(FamilyId.POCKETS, pockets),
-        evidence.candidate_set_for(FamilyId.PRISMATIC_POCKETS, ring_pockets),
-        evidence.candidate_set_for(FamilyId.PASSAGES, passages),
-        evidence.candidate_set_for(FamilyId.CHAMFERS, chamfers),
+    decisions += reconcile_step_groove_candidates(
+        physical.candidate_set(FamilyId.TURNED_STEPS),
+        physical.candidate_set(FamilyId.GROOVES),
+        evidence,
     )
-    return (
-        physical.replacing(replacements),
-        evidence.candidate_set_for(FamilyId.TURNED_STEPS, distinct_steps),
+    return CandidateReconciliation.complete(
+        tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES),
+        decisions,
+        evidence,
     )
 
 

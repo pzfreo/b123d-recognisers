@@ -133,3 +133,12 @@ The private `InventoryProduct` is the sole bridge to census and attribution tool
 may inspect its accepted identities and frozen evidence but may not invoke recognisers or repeat a
 filter. This preserves the existing family-owned geometry predicates while making orchestration
 direction executable rather than conventional.
+
+## Amendment (framework consolidation, issue #158)
+
+`_dispositions` is a private policy-neutral layer above candidate identity. It defines closed
+outcomes/reasons, identity relationships and exact completion, but imports no recogniser record or
+geometry module. `_reconcile` owns the family-specific predicates and emits partial dispositions;
+the orchestration coordinator supplies default acceptance and canonical physical source order.
+Projection, derived patterns and census consume computed reconciliation views and do not repeat
+family policy.

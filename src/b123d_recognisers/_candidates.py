@@ -187,6 +187,16 @@ class EvidenceIndex:
         if seen != expected:
             raise ValueError("physical inventory does not exactly cover frozen candidates")
 
+    def validate_candidate_set(self, candidate_set: CandidateSet[object]) -> None:
+        """Validate one same-run subset against issuer-owned frozen snapshots."""
+
+        if candidate_set._issuer is not self._token:
+            raise ValueError("candidate set belongs to another evidence issuer")
+        for candidate in candidate_set.candidates:
+            issued = self._validate(candidate)
+            if issued.family is not candidate_set.family:
+                raise ValueError("candidate family does not match its candidate set")
+
     def defining_of(self, subject: object) -> frozenset[FaceNode]:
         """Return defining evidence by candidate identity.
 
