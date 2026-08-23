@@ -110,8 +110,8 @@ Deliverables:
 - document MFTRCAD licence, file/annotation identity, taxonomy mapping and known invalid-topology
   handling before any sample enters the repository;
 - select deterministic development and sealed holdout manifests by rule, not by observed success;
-- add equivalence fixtures for analytic primitives encoded natively and as B-splines;
-- add blend-chain, oblique-frame, traversal, mirror and scale adversaries;
+- inventory and freeze the existing native-analytic/B-spline, blend-chain, oblique-frame,
+  traversal, mirror and scale adversaries, adding a fixture only where that inventory finds a gap;
 - pin current empty output on unsupported variants so later gains are attributable.
 
 MFTRCAD is evidence, not an oracle. Its feature-instance and relationship labels can identify
