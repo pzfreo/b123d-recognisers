@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import copy
+import importlib.util
 import json
 import math
 from pathlib import Path
@@ -37,6 +39,7 @@ from b123d_recognisers._sections import (
 )
 from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
+from b123d_recognisers.result import build_recognition_result
 
 
 def _square() -> tuple[tuple[float, float], ...]:
@@ -96,6 +99,28 @@ def test_body_references_are_run_local_and_revalidated() -> None:
         occurrence_to_passage(occurrence, body_refs=first)
 
 
+def test_duplicate_nonempty_body_signatures_fail_within_one_run() -> None:
+    issuer = BodyRefIssuer()
+    first = issuer.issue(signature="coincident")
+    second = issuer.issue()
+    assert first is not second
+    with pytest.raises(ValueError, match="unambiguous"):
+        issuer.issue(signature="coincident")
+
+    for copied in (copy.copy(first), copy.deepcopy(first)):
+        with pytest.raises(ValueError, match="not issued"):
+            issuer.validate(copied)
+
+
+def test_coincident_bodies_keep_distinct_run_occurrences() -> None:
+    issuer = BodyRefIssuer()
+    record = Passage("z", 4, 2.0, (0.0, 0.0, 0.0), _square())
+    first = passage_to_occurrence(record, body_ref=issuer.issue(), body_refs=issuer)
+    second = passage_to_occurrence(record, body_ref=issuer.issue(), body_refs=issuer)
+    assert first is not second
+    assert first.body is not second.body
+
+
 def test_proposal_projection_is_primitive_only_and_omits_run_identity() -> None:
     issuer = BodyRefIssuer()
     body = issuer.issue(signature="private")
@@ -107,6 +132,36 @@ def test_proposal_projection_is_primitive_only_and_omits_run_identity() -> None:
     assert "body" not in projected
     assert projected["ends"] == {"low_capped": False, "high_capped": False}
     assert json.loads(json.dumps(projected)) == projected
+
+
+def test_proposal_projection_rejects_interval_collapse_and_amplified_frame_rounding() -> None:
+    issuer = BodyRefIssuer()
+    section = PlanarSection(tuple(SectionVertex(point) for point in _square()))
+    principal = LocalFrame.principal("z", (0.0, 0.0, 0.0))
+    collapsed = SectionOccurrence(
+        issuer.issue(), principal, (0.0, 0.0004), section, SectionEnds(False, False)
+    )
+    with pytest.raises(ValueError, match="interval collapses"):
+        occurrence_geometry_dict(collapsed, body_refs=issuer)
+
+    oblique = LocalFrame.canonical((1.0, 2.0, 3.0), (0.0, 0.0, 0.0))
+    long = SectionOccurrence(
+        issuer.issue(), oblique, (-1_000_000.0, 1_000_000.0), section, SectionEnds(False, False)
+    )
+    with pytest.raises(ValueError, match="moves its geometry"):
+        occurrence_geometry_dict(long, body_refs=issuer)
+
+
+def test_section_negative_zero_is_canonicalized() -> None:
+    section = PlanarSection(
+        (
+            SectionVertex((-0.0, -0.0)),
+            SectionVertex((1.0, -0.0)),
+            SectionVertex((-0.0, 1.0)),
+        )
+    )
+    encoded = json.dumps([section_vertex_dict(vertex) for vertex in section.boundary])
+    assert "-0.0" not in encoded
 
 
 def test_two_arc_circle_has_exact_arc_area_and_centroid() -> None:
@@ -124,6 +179,21 @@ def test_asymmetric_arc_loop_uses_circular_segment_centroid() -> None:
     half_disk = PlanarSection((SectionVertex((-1.0, 0.0), -1.0), SectionVertex((1.0, 0.0))))
     assert half_disk.area == pytest.approx(math.pi / 2)
     assert half_disk.centroid == pytest.approx((0.0, 4 / (3 * math.pi)), abs=1e-12)
+
+
+@pytest.mark.parametrize("offset", [1e9, 1e12])
+def test_area_and_centroid_are_stable_under_large_translation(offset: float) -> None:
+    polygon = PlanarSection(tuple(SectionVertex((offset + x, offset + y)) for x, y in _square()))
+    arc = PlanarSection(
+        (
+            SectionVertex((offset - 1.0, offset), -1.0),
+            SectionVertex((offset + 1.0, offset)),
+        )
+    )
+    assert polygon.area == pytest.approx(8.0)
+    assert polygon.centroid == pytest.approx((offset, offset), abs=1e-6)
+    assert arc.area == pytest.approx(math.pi / 2)
+    assert arc.centroid == pytest.approx((offset, offset + 4 / (3 * math.pi)), abs=1e-4)
 
 
 def test_equivalent_arc_subdivision_preserves_area_and_centroid() -> None:
@@ -169,6 +239,16 @@ def test_major_arc_and_primitive_projection_are_preserved() -> None:
     assert all(isinstance(value, float) for value in bulges)
     assert any(abs(value) > 1 for value in bulges if isinstance(value, float))
     json.dumps(projected)
+
+
+def test_major_arc_projection_uses_a_whole_curve_displacement_bound() -> None:
+    with pytest.raises(ValueError, match="moves its boundary"):
+        PlanarSection(
+            (
+                SectionVertex((2.9043848088529707, 0.6959148088332885), 4.861127260347701),
+                SectionVertex((-6.906520869503443, -0.4239503385675043)),
+            )
+        )
 
 
 def test_tiny_arc_that_serializes_as_zero_fails_closed() -> None:
@@ -343,6 +423,55 @@ def test_transformed_section_reconstructs_the_transformed_world_geometry(
     assert sorted(reconstructed) == pytest.approx(sorted(transformed), abs=1e-9)
 
 
+@pytest.mark.parametrize(
+    "matrix",
+    [
+        (
+            (1.0, 0.0, 0.0),
+            (0.0, math.cos(0.61), -math.sin(0.61)),
+            (0.0, math.sin(0.61), math.cos(0.61)),
+        ),
+        ((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+    ],
+    ids=("rotation", "mirror"),
+)
+def test_transformed_arc_section_preserves_world_geometry(matrix) -> None:
+    frame = LocalFrame.principal("z", (2.0, 3.0, 0.0))
+    source = PlanarSection((SectionVertex((-1.0, 0.0), -1.0), SectionVertex((1.0, 0.0), -1.0)))
+    world = tuple(
+        (
+            frame.origin[0] + frame.u[0] * vertex.point[0] + frame.v[0] * vertex.point[1],
+            frame.origin[1] + frame.u[1] * vertex.point[0] + frame.v[1] * vertex.point[1],
+            frame.origin[2] + frame.u[2] * vertex.point[0] + frame.v[2] * vertex.point[1],
+        )
+        for vertex in source.boundary
+    )
+    transformed = tuple(_mat_vec(matrix, point) for point in world)
+    transformed_run = _mat_vec(matrix, frame.run)
+    transformed_centroid = _mat_vec(matrix, frame.origin)
+    placed = LocalFrame.canonical(transformed_run, transformed_centroid)
+    transformed_u, transformed_v = _mat_vec(matrix, frame.u), _mat_vec(matrix, frame.v)
+    a = sum(transformed_u[index] * placed.u[index] for index in range(3))
+    b = sum(transformed_v[index] * placed.u[index] for index in range(3))
+    c = sum(transformed_u[index] * placed.v[index] for index in range(3))
+    d = sum(transformed_v[index] * placed.v[index] for index in range(3))
+    orientation = a * d - b * c
+    bulge_sign = 1.0 if orientation > 0 else -1.0
+    local = tuple(
+        SectionVertex(
+            (
+                sum((point[i] - placed.origin[i]) * placed.u[i] for i in range(3)),
+                sum((point[i] - placed.origin[i]) * placed.v[i] for i in range(3)),
+            ),
+            vertex.bulge * bulge_sign,
+        )
+        for point, vertex in zip(transformed, source.boundary, strict=True)
+    )
+    transformed_section = PlanarSection(local)
+    assert transformed_section.area == pytest.approx(source.area)
+    assert transformed_section.centroid == pytest.approx((0.0, 0.0), abs=1e-9)
+
+
 def _step_round_trip(part, path: Path):
     export_step(part, str(path))
     return import_step(str(path))
@@ -378,3 +507,44 @@ def test_step_records_pass_through_private_adapters_byte_identically(tmp_path: P
     )
     assert projected_passage.to_dict() == passage.to_dict()
     assert projected_pocket.to_dict() == pocket.to_dict()
+
+
+def test_all_existing_golden_polygonal_recess_records_round_trip() -> None:
+    golden_root = Path(__file__).parent / "golden"
+    checked = 0
+    for fixture_path in sorted(golden_root.glob("*/fixture.py")):
+        spec = importlib.util.spec_from_file_location(
+            f"section_adapter_{fixture_path.parent.name}", fixture_path
+        )
+        assert spec is not None and spec.loader is not None
+        fixture = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fixture)
+        part = fixture.build_fixture()
+        prismatic_result = build_recognition_result(part, rotational=False)
+        rotational_result = build_recognition_result(part, rotational=True)
+        collections = (
+            (recognise_passages(part), recognise_prismatic_pockets(part)),
+            (prismatic_result.passages, prismatic_result.prismatic_pockets),
+            (rotational_result.passages, rotational_result.prismatic_pockets),
+        )
+        issuer = BodyRefIssuer()
+        for passages, pockets in collections:
+            for passage in passages:
+                occurrence = passage_to_occurrence(
+                    passage, body_ref=issuer.issue(), body_refs=issuer
+                )
+                assert (
+                    occurrence_to_passage(occurrence, body_refs=issuer).to_dict()
+                    == passage.to_dict()
+                )
+                checked += 1
+            for pocket in pockets:
+                occurrence = prismatic_pocket_to_occurrence(
+                    pocket, body_ref=issuer.issue(), body_refs=issuer
+                )
+                assert (
+                    occurrence_to_prismatic_pocket(occurrence, body_refs=issuer).to_dict()
+                    == pocket.to_dict()
+                )
+                checked += 1
+    assert checked == 22

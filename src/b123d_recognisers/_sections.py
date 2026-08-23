@@ -18,6 +18,7 @@ Vector3: TypeAlias = tuple[float, float, float]
 
 _EPS = 1e-9
 _POSITION_TOL = 8e-4
+_OCCURRENCE_TOL = 2e-3
 _BULGE_DIGITS = 12
 
 
@@ -122,6 +123,11 @@ class SectionVertex:
     def __post_init__(self) -> None:
         if not _finite(self.point + (self.bulge,)):
             raise ValueError("section vertex must be finite")
+        object.__setattr__(
+            self,
+            "point",
+            tuple(0.0 if coordinate == 0.0 else coordinate for coordinate in self.point),
+        )
         if self.bulge == 0.0:
             object.__setattr__(self, "bulge", 0.0)
 
@@ -185,9 +191,14 @@ def _arc_moments(arc: _Arc) -> tuple[float, float, float]:
 
 
 def _moments(vertices: tuple[SectionVertex, ...]) -> tuple[float, Vector2]:
+    anchor = vertices[0].point
+    local = tuple(
+        SectionVertex((vertex.point[0] - anchor[0], vertex.point[1] - anchor[1]), vertex.bulge)
+        for vertex in vertices
+    )
     area = mx = my = 0.0
-    for index, vertex in enumerate(vertices):
-        following = vertices[(index + 1) % len(vertices)]
+    for index, vertex in enumerate(local):
+        following = local[(index + 1) % len(local)]
         contribution = (
             _line_moments(vertex.point, following.point)
             if vertex.bulge == 0.0
@@ -198,7 +209,7 @@ def _moments(vertices: tuple[SectionVertex, ...]) -> tuple[float, Vector2]:
         my += contribution[2]
     if not math.isfinite(area) or abs(area) <= _EPS:
         raise ValueError("section must enclose nonzero area")
-    return area, (mx / area, my / area)
+    return area, (mx / area + anchor[0], my / area + anchor[1])
 
 
 def _reverse(vertices: tuple[SectionVertex, ...]) -> tuple[SectionVertex, ...]:
@@ -221,26 +232,34 @@ def _canonical_start(vertices: tuple[SectionVertex, ...]) -> tuple[SectionVertex
     return min(candidates, key=lambda candidate: tuple(_serialized(vertex) for vertex in candidate))
 
 
-def _arc_midpoint(arc: _Arc) -> Vector2:
-    angle = arc.start + 0.5 * arc.sweep
-    return (
-        arc.centre[0] + arc.radius * math.cos(angle),
-        arc.centre[1] + arc.radius * math.sin(angle),
-    )
-
-
-def _validate_projection(vertices: tuple[SectionVertex, ...]) -> None:
+def _projection_bound(vertices: tuple[SectionVertex, ...]) -> float:
     serialized = tuple(_serialized(vertex) for vertex in vertices)
     projected = tuple(SectionVertex((value[0], value[1]), value[2]) for value in serialized)
+    bound = 0.0
     for index, vertex in enumerate(vertices):
-        if math.dist(vertex.point, projected[index].point) > _POSITION_TOL:
-            raise ValueError("serialized section moves a vertex beyond local tolerance")
+        bound = max(bound, math.dist(vertex.point, projected[index].point))
         if vertex.bulge != 0.0:
             original_arc = _arc(vertex, vertices[(index + 1) % len(vertices)])
             projected_arc = _arc(projected[index], projected[(index + 1) % len(vertices)])
             assert original_arc is not None and projected_arc is not None
-            if math.dist(_arc_midpoint(original_arc), _arc_midpoint(projected_arc)) > _POSITION_TOL:
-                raise ValueError("serialized section moves an arc beyond local tolerance")
+            start_delta = math.atan2(
+                math.sin(original_arc.start - projected_arc.start),
+                math.cos(original_arc.start - projected_arc.start),
+            )
+            end_delta = start_delta + original_arc.sweep - projected_arc.sweep
+            angular_bound = max(abs(start_delta), abs(end_delta))
+            displacement_bound = (
+                math.dist(original_arc.centre, projected_arc.centre)
+                + abs(original_arc.radius - projected_arc.radius)
+                + min(original_arc.radius, projected_arc.radius) * angular_bound
+            )
+            bound = max(bound, displacement_bound)
+    return bound
+
+
+def _validate_projection(vertices: tuple[SectionVertex, ...]) -> None:
+    if _projection_bound(vertices) > _POSITION_TOL:
+        raise ValueError("serialized section moves its boundary beyond local tolerance")
 
 
 def _line_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
@@ -489,14 +508,19 @@ class BodyRefIssuer:
     def __init__(self) -> None:
         self._token = object()
         self._issued: dict[int, _IssuedBodyRef] = {}
+        self._signatures: set[str] = set()
 
     def issue(self, *, signature: str | None = None) -> BodyRef:
         if signature is not None and (not isinstance(signature, str) or not signature):
             raise ValueError("body signature must be a nonempty string or None")
+        if signature is not None and signature in self._signatures:
+            raise ValueError("body signature must be unambiguous within one run")
         outward = object.__new__(BodyRef)
         object.__setattr__(outward, "signature", signature)
         object.__setattr__(outward, "_issuer", self._token)
         self._issued[id(outward)] = _IssuedBodyRef(outward, signature)
+        if signature is not None:
+            self._signatures.add(signature)
         return outward
 
     def validate(self, body: BodyRef) -> None:
@@ -544,14 +568,55 @@ def occurrence_geometry_dict(
     """
 
     body_refs.validate(occurrence.body)
+    projected_origin = tuple(_rounded_vector(occurrence.frame.origin, 3))
+    projected_run = tuple(_rounded_vector(occurrence.frame.run, 6))
+    projected_u = tuple(_rounded_vector(occurrence.frame.u, 6))
+    projected_v = tuple(_rounded_vector(occurrence.frame.v, 6))
+    projected_interval = tuple(round(value, 3) for value in occurrence.run_interval)
+    if projected_interval[1] <= projected_interval[0]:
+        raise ValueError("serialized run interval collapses")
+
+    origin_error = math.dist(occurrence.frame.origin, projected_origin)
+    run_error = math.dist(occurrence.frame.run, projected_run)
+    u_error = math.dist(occurrence.frame.u, projected_u)
+    v_error = math.dist(occurrence.frame.v, projected_v)
+    interval_error = max(
+        abs(value - projected)
+        for value, projected in zip(occurrence.run_interval, projected_interval, strict=True)
+    )
+    transverse_extent = max(
+        max(abs(vertex.point[0]), abs(vertex.point[1]))
+        + (
+            arc.radius
+            if (
+                arc := _arc(
+                    vertex,
+                    occurrence.section.boundary[(index + 1) % len(occurrence.section.boundary)],
+                )
+            )
+            is not None
+            else 0.0
+        )
+        for index, vertex in enumerate(occurrence.section.boundary)
+    )
+    world_bound = (
+        origin_error
+        + max(abs(value) for value in occurrence.run_interval) * run_error
+        + interval_error * math.sqrt(sum(value * value for value in projected_run))
+        + transverse_extent * (u_error + v_error)
+        + _projection_bound(occurrence.section.boundary)
+    )
+    if world_bound > _OCCURRENCE_TOL:
+        raise ValueError("serialized occurrence moves its geometry beyond local tolerance")
+
     return {
         "frame": {
-            "origin": _rounded_vector(occurrence.frame.origin, 3),
-            "run": _rounded_vector(occurrence.frame.run, 6),
-            "u": _rounded_vector(occurrence.frame.u, 6),
-            "v": _rounded_vector(occurrence.frame.v, 6),
+            "origin": list(projected_origin),
+            "run": list(projected_run),
+            "u": list(projected_u),
+            "v": list(projected_v),
         },
-        "run_interval": [round(value, 3) for value in occurrence.run_interval],
+        "run_interval": list(projected_interval),
         "section": {
             "boundary": [section_vertex_dict(vertex) for vertex in occurrence.section.boundary]
         },

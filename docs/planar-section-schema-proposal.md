@@ -1,7 +1,7 @@
 # Planar section schema proposal (version 1)
 
-**Status:** private implementation proposal; not a public package capability  
-**Owner:** epic #177, F4a / issue #179  
+**Status:** private implementation proposal; not a public package capability
+**Owner:** epic #177, F4a / issue #179
 **Publication gate:** F7, after the first emitting F4b feature record and ADR 0005 review
 
 ## Purpose and authority
@@ -50,7 +50,11 @@ in `(u,v)` and its start is the lexicographically least complete serialized cycl
 Positions and spans use three decimal places, directions six, and dimensionless bulges twelve.
 Canonicalisation occurs before serialization at full precision. Projection refuses non-finite or
 self-intersecting boundaries, collapsed vertices, a nonzero bulge rounded to zero, or reconstruction
-movement beyond the package's named local positional tolerance.
+movement beyond the named bounds: `0.0008` for the intrinsic 2-D boundary and `0.002` for the whole
+placed occurrence. The latter is the conservative envelope of three-decimal 3-D placement plus the
+intrinsic bound, not a recognition tolerance. Direction rounding is multiplied by the actual
+section/run extent, so sufficiently long geometry refuses rather than amplifying a tiny angular
+serialization error without limit.
 
 ## End topology
 
