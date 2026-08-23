@@ -135,6 +135,10 @@ MODULE_SEAM_EDGES = {
         "turned",
     },
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
+    # Epic 0004's private geometry values are a stdlib-only leaf. The adapter names exactly the
+    # two polygonal records whose legacy values round-trip; production recognition does not use it.
+    "_sections": set(),
+    "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
 }
 
 
@@ -207,6 +211,21 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     assert "accepted" not in product_fields and "distinct_steps" not in product_fields
 
 
+def test_private_section_adapters_are_not_used_by_production_orchestration() -> None:
+    importers: list[str] = []
+    for path in PACKAGE.glob("*.py"):
+        if path.name in {"_section_adapters.py", "_sections.py"}:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        if any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "b123d_recognisers._section_adapters"
+            for node in ast.walk(tree)
+        ):
+            importers.append(path.name)
+    assert importers == []
+
+
 def test_projection_family_bindings_match_the_registry() -> None:
     module = importlib.import_module("b123d_recognisers.result")
     source = inspect.getsource(module._project_result)
@@ -256,10 +275,7 @@ def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:
         and isinstance(node.func, (ast.Name, ast.Attribute))
         and (
             (isinstance(node.func, ast.Name) and node.func.id.startswith("recognise_"))
-            or (
-                isinstance(node.func, ast.Attribute)
-                and node.func.attr.startswith("recognise_")
-            )
+            or (isinstance(node.func, ast.Attribute) and node.func.attr.startswith("recognise_"))
         )
         for node in ast.walk(tree)
     )
