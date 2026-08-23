@@ -207,6 +207,16 @@ B-spline recovery runtime/peak RSS without rebasing existing ceilings. The two-r
 chronology applies separately to any slice that changes recovery acceptance. Torus remains named
 unsupported unless independently authorised.
 
+F1 neutral-slice delivery chronology: after the recovery contract was frozen, two independent
+exact-head reviews accepted it, the full non-holdout suite passed, and the composite budget passed,
+MFTRCAD buckets 10–19 were authorised for reveal. The run reached a pre-existing Slot-recognition
+`Standard_DomainError` while constructing a probe box and aborted before producing a complete
+report. The lazy F1 index has no production consumer in this slice and was not queried by that
+failure, so the attempt supplies no F1 score, pass, regression conclusion, or recovery-quality
+evidence. Those buckets are nevertheless revealed and permanently consumed. The only post-reveal
+implementation delta is generic refusal-branch test coverage; no recovery predicate, tolerance,
+certificate, or production source changed.
+
 ### F2 — Complete smooth-sided AAG semantics
 
 Replace the single `smooth` arc interpretation with the minimum material-side-aware taxonomy needed
