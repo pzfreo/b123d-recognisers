@@ -104,7 +104,7 @@ from b123d_recognisers._bevel import (
     material_beyond_corner,
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
 
@@ -167,7 +167,7 @@ def recognise_angled_steps(
     part: Part,
     *,
     face_edges: FaceEdges | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[AngledStep]:
     """Recognise the angled blind steps of *part* (see module docstring). Returns one
     :class:`AngledStep` per qualifying slant face, sorted deterministically. Empty when the

@@ -68,7 +68,8 @@ from b123d_recognisers._adjacency import (
     neighbours,
 )
 from b123d_recognisers._bevel import BevelReject, classify_bevel, convex_bevel
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import (
     AXIS_ALIGNED_COS,
@@ -131,7 +132,7 @@ def recognise_chamfers(
     tol: float | None = None,
     max_leg_frac: float = 0.45,
     face_edges: FaceEdges | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
     cyls: CylinderInventory | None = None,
     include_planar: bool = True,
 ) -> list[Chamfer]:
@@ -293,5 +294,9 @@ def recognise_chamfers(
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for chamfer, face in out:
-            ledger.add_defining(chamfer, [ledger.graph.require_node(face)])
+            ledger.add_defining(
+                chamfer,
+                [ledger.graph.require_node(face)],
+                family=FamilyId.CHAMFERS,
+            )
     return [chamfer for chamfer, _ in out]

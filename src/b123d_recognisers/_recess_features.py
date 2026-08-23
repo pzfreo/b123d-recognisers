@@ -7,7 +7,8 @@ from __future__ import annotations
 from functools import partial
 
 from b123d_recognisers._adjacency import FaceEdges
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
     _channel_sort_key,
     _recognise_channels_one,
@@ -20,7 +21,10 @@ from b123d_recognisers._typing import Part
 
 
 def recognise_slots(
-    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[Slot]:
     """Recognise enclosed through-slots independently within each solid in *part*.
 
@@ -66,12 +70,15 @@ def recognise_slots(
     if ledger is not None:
         for slot, nodes in pairs:
             if nodes:
-                ledger.add_defining(slot, nodes)
+                ledger.add_defining(slot, nodes, family=FamilyId.SLOTS)
     return [slot for slot, _ in pairs]
 
 
 def recognise_pockets(
-    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[Pocket]:
     """Recognise blind rectangular recesses independently within each solid.
 
@@ -111,12 +118,15 @@ def recognise_pockets(
     if ledger is not None:
         for pocket, nodes in pairs:
             if nodes:
-                ledger.add_defining(pocket, nodes)
+                ledger.add_defining(pocket, nodes, family=FamilyId.POCKETS)
     return [pocket for pocket, _ in pairs]
 
 
 def recognise_channels(
-    part: Part, *, face_edges: FaceEdges | None = None, ledger: ClaimLedger | None = None
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[Channel]:
     """Recognise full-span floored channels independently within each solid.
 

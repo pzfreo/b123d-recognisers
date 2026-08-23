@@ -193,6 +193,72 @@ def test_snapshot_refuses_foreign_nodes_and_candidates() -> None:
         snapshot.claims_of(other.graph.nodes[0])
 
 
+def test_terminal_freeze_closes_issuance_exactly_once() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    candidate = ledger.propose(FamilyId.HOLES, Record(1))
+
+    evidence = ledger.freeze_index()
+
+    assert evidence.defining_of(candidate) == frozenset()
+    with pytest.raises(RuntimeError, match="issuance is sealed"):
+        ledger.propose(FamilyId.HOLES, Record(2))
+    with pytest.raises(RuntimeError, match="already sealed"):
+        ledger.freeze_index()
+
+
+def test_family_binding_reuses_claimed_candidates_and_wraps_unclaimed_occurrences() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    claimed_record = Record(1)
+    claimed = ledger.propose(
+        FamilyId.SLOTS, claimed_record, [ledger.graph.nodes[0]]
+    )
+    unclaimed_record = Record(2)
+
+    slots = ledger.candidate_set_for(FamilyId.SLOTS, [claimed_record])
+    holes = ledger.candidate_set_for(
+        FamilyId.HOLES, [unclaimed_record, unclaimed_record]
+    )
+
+    assert slots.candidates == (claimed,)
+    assert slots.candidates[0].evidence.defining == frozenset({ledger.graph.nodes[0]})
+    assert len(holes.candidates) == 2
+    assert holes.candidates[0] is not holes.candidates[1]
+    assert all(candidate.record is unclaimed_record for candidate in holes.candidates)
+    assert all(not candidate.evidence.defining for candidate in holes.candidates)
+
+
+def test_family_binding_rejects_wrong_family_and_omitted_proposals() -> None:
+    wrong = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    wrong_record = Record(1)
+    wrong.propose(FamilyId.POCKETS, wrong_record)
+    with pytest.raises(ValueError, match="issued under pockets"):
+        wrong.candidate_set_for(FamilyId.SLOTS, [wrong_record])
+
+    omitted = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    first, second = Record(1), Record(2)
+    omitted.propose(FamilyId.SLOTS, first)
+    omitted.propose(FamilyId.SLOTS, second)
+    with pytest.raises(ValueError, match="absent from its returned inventory"):
+        omitted.candidate_set_for(FamilyId.SLOTS, [first])
+
+
+def test_terminal_inventory_rejects_foreign_or_incomplete_candidate_sets() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    record = Record(1)
+    ledger.propose(FamilyId.SLOTS, record)
+    slots = ledger.candidate_set_for(FamilyId.SLOTS, [record])
+    evidence = ledger.freeze_index()
+
+    other = ClaimLedger(FaceGraph(Box(4, 4, 4)))
+    foreign = other.candidate_set_for(FamilyId.HOLES, [Record(2)])
+    with pytest.raises(ValueError, match="another evidence issuer"):
+        evidence.validate_complete_inventory((foreign,))
+    with pytest.raises(ValueError, match="exactly cover"):
+        evidence.validate_complete_inventory(())
+
+    evidence.validate_complete_inventory((slots,))
+
+
 def test_the_same_record_object_can_back_distinct_proposals() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     record = Record(1)

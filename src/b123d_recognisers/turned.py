@@ -35,7 +35,8 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
@@ -142,7 +143,7 @@ def recognise_turned_steps(
     part: Part,
     *,
     cyls: CylinderInventory | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[TurnedStep]:
     """Recognise the axial steps of a stepped turned ``part``.
 
@@ -262,5 +263,9 @@ def recognise_turned_steps(
         return []
     if ledger is not None:
         for step, over in found:
-            ledger.add_defining(step, [ledger.graph.require_node(c["face"]) for c in over])
+            ledger.add_defining(
+                step,
+                [ledger.graph.require_node(c["face"]) for c in over],
+                family=FamilyId.TURNED_STEPS,
+            )
     return [step for step, _ in found]

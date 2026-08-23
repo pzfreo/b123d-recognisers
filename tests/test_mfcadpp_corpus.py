@@ -73,7 +73,13 @@ def _bevels(part):
     ledger = ClaimLedger(FaceGraph(part))
     proposed = recognise_chamfers(part, ledger=ledger)
     steps = recognise_angled_steps(part, ledger=ledger)
-    return proposed, chamfers_that_are_not_angled_steps(proposed, ledger), steps
+    return (
+        proposed,
+        chamfers_that_are_not_angled_steps(
+            proposed, steps, ledger.snapshot_index()
+        ),
+        steps,
+    )
 
 
 def test_slot_walls_must_turn_consistently_into_one_void(corpus, monkeypatch):

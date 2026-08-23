@@ -49,6 +49,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     pockets = [object()]
     passages = [object()]
 
+    def same_records(actual, expected):
+        return len(actual) == len(expected) and all(
+            left is right for left, right in zip(actual, expected, strict=True)
+        )
+
     def counted(name, returns):
         def fake(part, **kwargs):
             calls[name] = calls.get(name, 0) + 1
@@ -59,7 +64,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     def cyl_consumer(name, returns):
         def fake(part, *, cyls=None, **kwargs):
             calls[name] = calls.get(name, 0) + 1
-            assert cyls[0] is cylinders[0] and cyls[1] is cylinders[1]
+            assert cyls == cylinders and cyls is not cylinders
             return returns
 
         return fake
@@ -67,7 +72,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     def derived(name, source, returns):
         def fake(records):
             calls[name] = calls.get(name, 0) + 1
-            assert records is source
+            assert same_records(records, source)
             return returns
 
         return fake
@@ -78,7 +83,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
     def fake_holes(part, *, cyls=None, csinks=None, **kwargs):
         calls["holes"] = calls.get("holes", 0) + 1
-        assert cyls[0] is cylinders[0] and cyls[1] is cylinders[1]
+        assert cyls == cylinders and cyls is not cylinders
         assert csinks is countersinks
         return holes
 
@@ -123,8 +128,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # and the point-in-time read capability rather than a Part or mutable ledger.
     def fake_recesses(found_slots, found_pockets, prismatic, found_passages, evidence):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
-        assert found_slots is slots and found_pockets is pockets
-        assert found_passages is passages
+        assert same_records(found_slots, slots) and same_records(found_pockets, pockets)
+        assert same_records(found_passages, passages)
         assert isinstance(evidence, EvidenceIndex)
         return found_slots, found_pockets, prismatic, found_passages
 
@@ -188,6 +193,49 @@ def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
     monkeypatch.setattr(run_module, "analyse_cylinders", forbidden)
     result = result_module.build_recognition_result(Box(10, 10, 10), cylinders=cylinders)
     assert result.cylinders == ((), ())
+
+
+def test_aggregate_inventory_has_one_named_candidate_per_physical_output() -> None:
+    import b123d_recognisers.result as result_module
+    from b123d_recognisers._candidates import FamilyId
+
+    product = result_module._take_inventory(Box(10, 10, 10))
+
+    assert FamilyId.LEGACY not in result_module.PHYSICAL_FAMILIES
+    for family in result_module.PHYSICAL_FAMILIES:
+        candidate_set = product.physical.candidate_set(family)
+        assert candidate_set.family is family
+        assert tuple(candidate.record for candidate in candidate_set.candidates) == tuple(
+            product.physical.records(family)
+        )
+        assert all(candidate.family is family for candidate in candidate_set.candidates)
+        assert product.evidence.candidate_set_for(
+            family, product.physical.records(family)
+        ).candidates == candidate_set.candidates
+
+
+def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> None:
+    import b123d_recognisers.result as result_module
+    from b123d_recognisers._candidates import FamilyId
+
+    assert len(result_module.PHYSICAL_FAMILIES) == len(set(result_module.PHYSICAL_FAMILIES))
+    assert set(result_module.PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
+    nonphysical = {"cylinders", "rotational", "hole_patterns", "slot_patterns", "pocket_patterns"}
+    assert {family.value for family in result_module.PHYSICAL_FAMILIES} == (
+        set(RecognitionResult.__dataclass_fields__) - nonphysical
+    )
+
+
+def test_context_copies_caller_owned_cylinder_lists() -> None:
+    import b123d_recognisers._run as run_module
+
+    supplied = ([{"axis": "z"}], [{"axis": "x"}])
+    context = run_module.start(Box(10, 10, 10), supplied)
+    supplied[0].clear()
+    supplied[1].append({"axis": "y"})
+
+    assert tuple(item["axis"] for item in context.cylinders[0]) == ("z",)
+    assert tuple(item["axis"] for item in context.cylinders[1]) == ("x",)
 
 
 def _ladder_result(

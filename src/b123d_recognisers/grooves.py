@@ -33,7 +33,8 @@ from dataclasses import dataclass
 from build123d import GeomType
 
 from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
-from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
@@ -237,7 +238,7 @@ def recognise_grooves(
     part: Part,
     *,
     cyls: CylinderInventory | None = None,
-    ledger: ClaimLedger | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
     face_edges: FaceEdges | None = None,
 ) -> list[Groove]:
     """Recognise the turned grooves of *part* (see module docstring). Returns one
@@ -324,5 +325,9 @@ def recognise_grooves(
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
         for groove, face in out:
-            ledger.add_defining(groove, [ledger.graph.require_node(face)])
+            ledger.add_defining(
+                groove,
+                [ledger.graph.require_node(face)],
+                family=FamilyId.GROOVES,
+            )
     return [groove for groove, _ in out]

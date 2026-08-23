@@ -22,6 +22,7 @@ import pytest
 from build123d import Box, Cylinder, Pos
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 
 
@@ -136,6 +137,18 @@ def test_a_claim_with_no_defining_face_is_refused():
         ledger.add_defining(Candidate("slot"), [])
 
     assert len(ledger) == 0
+
+
+def test_write_only_evidence_adapter_refuses_an_empty_defining_claim():
+    """Aggregate discovery cannot bypass the ledger's non-vacuous claim invariant."""
+
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+
+    with pytest.raises(ValueError, match="claims no defining face"):
+        ledger.writer.add_defining(Candidate("slot"), [])
+
+    assert ledger.claims == ()
+    assert ledger.candidate_set(FamilyId.LEGACY).candidates == ()
 
 
 def test_claiming_changes_nothing_the_graph_answers():

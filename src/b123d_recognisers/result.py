@@ -12,9 +12,14 @@ from __future__ import annotations
 
 import math
 import warnings
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum
+from types import MappingProxyType
+from typing import TypeVar, cast
 
+from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import (
     BoltCircle,
     BossRecord,
@@ -28,8 +33,9 @@ from b123d_recognisers._features import (
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
+    steps_that_are_not_grooves,
 )
-from b123d_recognisers._run import RecognitionRun, start
+from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
@@ -183,6 +189,83 @@ class Deferred:
 DEFERRED: dict[str, Deferred] = {}
 
 
+# Transitional explicit phase roster. The registry phase replaces this with recogniser
+# definitions only after
+# every family shares this lifecycle; ordering here is execution policy, never filesystem order.
+PHYSICAL_FAMILIES: tuple[FamilyId, ...] = (
+    FamilyId.COUNTERSINKS,
+    FamilyId.HOLES,
+    FamilyId.DOUBLE_D_BORES,
+    FamilyId.BOSSES,
+    FamilyId.POLYGONAL_BOSSES,
+    FamilyId.POLYGONAL_STOCK,
+    FamilyId.CHANNELS,
+    FamilyId.SLOTS,
+    FamilyId.GROOVES,
+    FamilyId.FLATS,
+    FamilyId.POCKETS,
+    FamilyId.PRISMATIC_POCKETS,
+    FamilyId.PADS,
+    FamilyId.REPEATING_RADIAL_PROFILES,
+    FamilyId.TURNED_STEPS,
+    FamilyId.STEP_LEVELS,
+    FamilyId.RISERS,
+    FamilyId.CHAMFERS,
+    FamilyId.ANGLED_STEPS,
+    FamilyId.PASSAGES,
+    FamilyId.FILLETS,
+    FamilyId.PLATES,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateInventory:
+    """One source-ordered candidate set for every physical family."""
+
+    _sets: Mapping[FamilyId, CandidateSet[object]]
+
+    @classmethod
+    def complete(cls, sets: Iterable[CandidateSet[object]]) -> CandidateInventory:
+        by_family = {candidate_set.family: candidate_set for candidate_set in sets}
+        if tuple(by_family) != PHYSICAL_FAMILIES or len(by_family) != len(PHYSICAL_FAMILIES):
+            raise ValueError("physical candidate inventory is incomplete or out of order")
+        return cls(MappingProxyType(by_family))
+
+    def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
+        return self._sets[family]
+
+    def records(self, family: FamilyId) -> tuple[object, ...]:
+        return tuple(candidate.record for candidate in self.candidate_set(family).candidates)
+
+    def replacing(self, replacements: Iterable[CandidateSet[object]]) -> CandidateInventory:
+        changed = dict(self._sets)
+        for candidate_set in replacements:
+            changed[candidate_set.family] = candidate_set
+        return CandidateInventory.complete(changed[family] for family in PHYSICAL_FAMILIES)
+
+
+@dataclass(frozen=True, slots=True)
+class DerivedInventory:
+    """Post-reconciliation projections; these are not physical candidates."""
+
+    hole_patterns: tuple[BoltCircle | LinearArray | RectGrid, ...]
+    slot_patterns: tuple[SlotArray | SlotGrid, ...]
+    pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryProduct:
+    """The one internal inventory consumed by result, census and attribution views."""
+
+    context: RecognitionContext
+    evidence: EvidenceIndex
+    physical: CandidateInventory
+    accepted: CandidateInventory
+    distinct_steps: CandidateSet[object]
+    derived: DerivedInventory
+    result: RecognitionResult
+
+
 @dataclass(frozen=True)
 class RecognitionResult:
     """The immutable feature inventory produced by one recognition orchestration run.
@@ -331,7 +414,7 @@ def build_recognition_result(
     time, under-recognising reports a real feature as absent.
     """
 
-    return _take_inventory(part, cylinders=cylinders, rotational=rotational)[1]
+    return _take_inventory(part, cylinders=cylinders, rotational=rotational).result
 
 
 def _take_inventory(
@@ -339,134 +422,229 @@ def _take_inventory(
     *,
     cylinders: CylinderInventory | None = None,
     rotational: bool = False,
-) -> tuple[RecognitionRun, RecognitionResult]:
-    """The one inventory, and the run it was taken over. Internal to this package.
+) -> InventoryProduct:
+    """Run the explicit physical, reconciliation, derived and projection phases once."""
 
-    `build_recognition_result` is this without the run, and `feature_census` is this counted.
-    They were two hand-maintained sequences of the same recogniser calls before, differing in
-    ways nobody had decided: the census injected a face-edge memo and the aggregate did not,
-    the aggregate injected countersinks into the hole recogniser and the census did not, and
-    the two gated plates on different halves of the same condition -- which is how one turned
-    screw came to be a plate to one entry point and not to the other. Every such difference is
-    a divergence waiting to be a wrong number, and none of them was written down as a choice.
+    context = start(part, cylinders, rotational=rotational)
+    ledger = ClaimLedger(context.graph)
+    discovered = _discover_all(context, ledger.writer)
+    physical = _bind_physical(discovered, ledger)
+    evidence = ledger.freeze_index()
+    evidence.validate_complete_inventory(
+        tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES)
+    )
+    accepted, distinct_steps = _reconcile_existing(physical, evidence)
+    derived = _derive_patterns(accepted)
+    result = _project_result(context, accepted, derived)
+    return InventoryProduct(
+        context=context,
+        evidence=evidence,
+        physical=physical,
+        accepted=accepted,
+        distinct_steps=distinct_steps,
+        derived=derived,
+        result=result,
+    )
 
-    So there is one sequence, and the census counts what it returns. The run comes back with
-    the result because the census needs the ledger: `steps_that_are_not_grooves` is a
-    *counting* rule under ADR 0003, applied by the census alone, and it asks the ledger which
-    faces a step and a groove were each built from.
 
-    The census now pays for the families it does not count -- pads, polygonal stock, step
-    levels and the rest. Two measurements, because one of them alone misleads:
+def _discover_all(
+    context: RecognitionContext, writer: EvidenceWriter
+) -> tuple[tuple[FamilyId, list[object]], ...]:
+    """Complete every applicable physical proposal before any evidence read."""
 
-    - `feature_census` on its own, over nine NIST and real-world STEP parts: 39.5 s to 53.4 s,
-      about **35% more**. Spread across seven families with no hot spot to fix -- step levels
-      are the largest single contributor at about a third of the added time.
-    - The pinned parity benchmark, the composite release workload (two results and one census
-      over four fixtures): **about 4% more**, 1.849 s to 1.931 s, best of five over three
-      interleaved blocks.
+    part = context.part
+    cyls: CylinderInventory = (list(context.cylinders[0]), list(context.cylinders[1]))
+    face_edges = context.face_edges
+    graph = context.graph
+    prismatic = not context.rotational
 
-    The composite figure is the one that bears on release, and the census-only figure is the
-    one that bears on corpus sweeps. Both are the price of the two entry points being unable to
-    disagree, and it is the right way round -- a measurement tool that is fast and quietly wrong
-    is worth less than one that is slower and says what the library says.
-
-    Recoverable without reopening the divergence, if a consumer ever needs both: this function
-    returns the run, so one inventory can serve a result and a count. Left private until
-    something asks, rather than published on the chance that it will. Both figures are held to a
-    budget, tracked as a named follow-up rather than left as a number in a docstring.
-    """
-
-    # One run, one set of shared facts, derived once here rather than by whichever family asks
-    # first -- see `RecognitionRun`.
-    run = start(part, cylinders)
-    z_cyls, cross_cyls = run.cylinders
-    cyls = run.cylinders
-    face_edges = run.face_edges
     countersinks = recognise_countersinks(part)
     holes = recognise_holes(part, cyls=cyls, csinks=countersinks, face_edges=face_edges)
     double_d_bores = recognise_double_d_bores(part)
-    # The two families that describe a void by the faces bounding it both write into one
-    # ledger, so the reconciliation below is a question about faces rather than about
-    # coordinates each of them derived its own way.
-    ledger = run.ledger
-    slots = recognise_slots(part, ledger=ledger, face_edges=face_edges)
-    channels = recognise_channels(part, ledger=ledger, face_edges=face_edges)
-    # Into the same ledger. No rule reads pocket claims today, and that is the reason to write
-    # them rather than to wait: a partial ledger is the trap this whole mechanism exists to
-    # close, since a future rule reading one would find no pocket claim and conclude there is
-    # no overlap -- silently, which is the failure `require_node` and `claims_of` both refuse
-    # to allow anywhere else.
-    pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
-    ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
-    passages = recognise_passages(part, ledger=ledger, face_edges=face_edges)
-    recess_evidence = ledger.snapshot_index()
-    slots, pockets, ring_pockets, passages = reconcile_recesses(
-        slots, pockets, ring_pockets, passages, recess_evidence
-    )
-    # Into the ledger for the same reason, though the rule that reads these two runs in the
-    # census rather than here: a groove is a rung of the step ladder, and both records survive
-    # into the result because a consumer dimensioning the shaft needs the feature and the
-    # profile. Only a count of *distinct machined features* has to choose.
-    turned_steps = recognise_turned_steps(part, cyls=cyls, ledger=ledger)
-    # ONE place decides, from the classification the result then carries. Per-family
-    # conditionals at each call site are what the aggregate single-scan design removes; this
-    # decides once for every consumer rather than each consumer deciding again.
-    prismatic = not rotational
-    # Both bevel families write into the same ledger, and both run before the result is built:
-    # the rule below needs the step claims, and the field order of `RecognitionResult` puts
-    # `chamfers` first. Only angled steps are prismatic; chamfers also cover the external cones
-    # that a lathe makes at a turned shoulder or free end.
+    bosses = recognise_bosses(part, cyls=cyls, face_edges=face_edges)
+    polygonal_bosses = recognise_polygonal_bosses(part, graph=graph)
+    polygonal_stock = recognise_polygonal_stock(part, graph=graph)
+    channels = recognise_channels(part, ledger=writer, face_edges=face_edges)
+    slots = recognise_slots(part, ledger=writer, face_edges=face_edges)
+    grooves = recognise_grooves(part, cyls=cyls, ledger=writer, face_edges=face_edges)
+    flats = recognise_flats(part, cyls=cyls, face_edges=face_edges)
+    pockets = recognise_pockets(part, ledger=writer, face_edges=face_edges)
+    ring_pockets = recognise_prismatic_pockets(part, ledger=writer, face_edges=face_edges)
+    pads = recognise_rectangular_pads(part)
+    radial_profiles = recognise_repeating_radial_profiles(part)
+    turned_steps = recognise_turned_steps(part, cyls=cyls, ledger=writer)
+    step_levels = step_level_records(part)
+    risers = recognise_risers(part)
     chamfers = recognise_chamfers(
         part,
         cyls=cyls,
-        ledger=ledger,
+        ledger=writer,
         face_edges=face_edges,
         include_planar=prismatic,
     )
     angled_steps = (
-        recognise_angled_steps(part, ledger=ledger, face_edges=face_edges) if prismatic else []
+        recognise_angled_steps(part, ledger=writer, face_edges=face_edges) if prismatic else []
     )
-    prof = TurnedProfile.from_steps(list(turned_steps))
-    return run, RecognitionResult(
-        cylinders=(tuple(z_cyls), tuple(cross_cyls)),
-        countersinks=tuple(countersinks),
-        holes=tuple(holes),
-        double_d_bores=tuple(double_d_bores),
-        hole_patterns=tuple(recognise_hole_patterns(holes)),
-        bosses=tuple(recognise_bosses(part, cyls=cyls, face_edges=face_edges)),
-        polygonal_bosses=tuple(recognise_polygonal_bosses(part, graph=run.graph)),
-        polygonal_stock=tuple(recognise_polygonal_stock(part, graph=run.graph)),
-        channels=tuple(channels),
-        slots=tuple(slots),
-        # Derived from the accepted members, like the other two pattern families — the
-        # recogniser must not rediscover the slots it groups.
-        slot_patterns=tuple(recognise_slot_patterns(slots)),
-        # Also into the ledger, and the census's step count depends on it: the rule it applies
-        # after this returns asks which faces a groove was built from, and an unclaimed groove
-        # would subtract nothing and be counted twice, silently.
-        grooves=tuple(
-            recognise_grooves(part, cyls=cyls, ledger=ledger, face_edges=face_edges)
+    passages = (
+        recognise_passages(part, ledger=writer, face_edges=face_edges) if prismatic else []
+    )
+    fillets = recognise_fillets(
+        part,
+        cyls=cyls,
+        face_edges=face_edges,
+        include_cylindrical=prismatic,
+    )
+    profile = TurnedProfile.from_steps(list(turned_steps))
+    plates = recognise_plates(part) if prismatic and profile is None else []
+
+    return (
+        (FamilyId.COUNTERSINKS, list(countersinks)),
+        (FamilyId.HOLES, list(holes)),
+        (FamilyId.DOUBLE_D_BORES, list(double_d_bores)),
+        (FamilyId.BOSSES, list(bosses)),
+        (FamilyId.POLYGONAL_BOSSES, list(polygonal_bosses)),
+        (FamilyId.POLYGONAL_STOCK, list(polygonal_stock)),
+        (FamilyId.CHANNELS, list(channels)),
+        (FamilyId.SLOTS, list(slots)),
+        (FamilyId.GROOVES, list(grooves)),
+        (FamilyId.FLATS, list(flats)),
+        (FamilyId.POCKETS, list(pockets)),
+        (FamilyId.PRISMATIC_POCKETS, list(ring_pockets)),
+        (FamilyId.PADS, list(pads)),
+        (FamilyId.REPEATING_RADIAL_PROFILES, list(radial_profiles)),
+        (FamilyId.TURNED_STEPS, list(turned_steps)),
+        (FamilyId.STEP_LEVELS, list(step_levels)),
+        (FamilyId.RISERS, list(risers)),
+        (FamilyId.CHAMFERS, list(chamfers)),
+        (FamilyId.ANGLED_STEPS, list(angled_steps)),
+        (FamilyId.PASSAGES, list(passages)),
+        (FamilyId.FILLETS, list(fillets)),
+        (FamilyId.PLATES, list(plates)),
+    )
+
+
+def _bind_physical(
+    records: tuple[tuple[FamilyId, list[object]], ...], ledger: ClaimLedger
+) -> CandidateInventory:
+    """Bind completed output occurrences to candidates outside discovery capability scope."""
+
+    return CandidateInventory.complete(
+        ledger.candidate_set_for(family, family_records)
+        for family, family_records in records
+    )
+
+
+RecordT = TypeVar("RecordT")
+
+
+def _records(
+    inventory: CandidateInventory,
+    family: FamilyId,
+    record_type: type[RecordT],
+) -> list[RecordT]:
+    # The closed phase roster and record-contract tests establish the type. Keeping this cast
+    # non-validating also lets orchestration tests replace families with opaque sentinel records.
+    del record_type
+    return cast(list[RecordT], list(inventory.records(family)))
+
+
+def _reconcile_existing(
+    physical: CandidateInventory, evidence: EvidenceIndex
+) -> tuple[CandidateInventory, CandidateSet[object]]:
+    """Apply existing policies to completed candidates and terminal evidence only."""
+
+    slots = _records(physical, FamilyId.SLOTS, Slot)
+    pockets = _records(physical, FamilyId.POCKETS, Pocket)
+    ring_pockets = _records(physical, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
+    passages = _records(physical, FamilyId.PASSAGES, Passage)
+    slots, pockets, ring_pockets, passages = reconcile_recesses(
+        slots, pockets, ring_pockets, passages, evidence
+    )
+    chamfers = chamfers_that_are_not_angled_steps(
+        _records(physical, FamilyId.CHAMFERS, Chamfer),
+        _records(physical, FamilyId.ANGLED_STEPS, AngledStep),
+        evidence,
+    )
+    distinct_steps = steps_that_are_not_grooves(
+        _records(physical, FamilyId.TURNED_STEPS, TurnedStep),
+        _records(physical, FamilyId.GROOVES, Groove),
+        evidence,
+    )
+    replacements = (
+        evidence.candidate_set_for(FamilyId.SLOTS, slots),
+        evidence.candidate_set_for(FamilyId.POCKETS, pockets),
+        evidence.candidate_set_for(FamilyId.PRISMATIC_POCKETS, ring_pockets),
+        evidence.candidate_set_for(FamilyId.PASSAGES, passages),
+        evidence.candidate_set_for(FamilyId.CHAMFERS, chamfers),
+    )
+    return (
+        physical.replacing(replacements),
+        evidence.candidate_set_for(FamilyId.TURNED_STEPS, distinct_steps),
+    )
+
+
+def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
+    """Derive pattern projections only from accepted member records."""
+
+    return DerivedInventory(
+        hole_patterns=tuple(
+            recognise_hole_patterns(_records(accepted, FamilyId.HOLES, HoleRecord))
         ),
-        flats=tuple(recognise_flats(part, cyls=cyls, face_edges=face_edges)),
-        pockets=tuple(pockets),
-        prismatic_pockets=tuple(ring_pockets),
-        pocket_patterns=tuple(recognise_pocket_patterns(pockets)),
-        pads=tuple(recognise_rectangular_pads(part)),
-        repeating_radial_profiles=tuple(recognise_repeating_radial_profiles(part)),
-        turned_steps=tuple(turned_steps),
-        rotational=rotational,
-        step_levels=tuple(step_level_records(part)),
-        risers=tuple(recognise_risers(part)),
-        chamfers=tuple(chamfers_that_are_not_angled_steps(chamfers, ledger)),
-        angled_steps=tuple(angled_steps),
-        passages=tuple(passages) if prismatic else (),
-        fillets=tuple(
-            recognise_fillets(
-                part,
-                cyls=cyls,
-                face_edges=face_edges,
-                include_cylindrical=prismatic,
+        slot_patterns=tuple(
+            recognise_slot_patterns(_records(accepted, FamilyId.SLOTS, Slot))
+        ),
+        pocket_patterns=tuple(
+            recognise_pocket_patterns(_records(accepted, FamilyId.POCKETS, Pocket))
+        ),
+    )
+
+
+def _project_result(
+    context: RecognitionContext,
+    accepted: CandidateInventory,
+    derived: DerivedInventory,
+) -> RecognitionResult:
+    """Project accepted and derived inventories without discovery or policy."""
+
+    z_cyls, cross_cyls = context.cylinders
+    return RecognitionResult(
+        cylinders=(tuple(z_cyls), tuple(cross_cyls)),
+        countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
+        holes=tuple(_records(accepted, FamilyId.HOLES, HoleRecord)),
+        double_d_bores=tuple(_records(accepted, FamilyId.DOUBLE_D_BORES, DoubleDBore)),
+        hole_patterns=derived.hole_patterns,
+        bosses=tuple(_records(accepted, FamilyId.BOSSES, BossRecord)),
+        polygonal_bosses=tuple(
+            _records(accepted, FamilyId.POLYGONAL_BOSSES, PolygonalBoss)
+        ),
+        polygonal_stock=tuple(
+            _records(accepted, FamilyId.POLYGONAL_STOCK, PolygonalStock)
+        ),
+        channels=tuple(_records(accepted, FamilyId.CHANNELS, Channel)),
+        slots=tuple(_records(accepted, FamilyId.SLOTS, Slot)),
+        slot_patterns=derived.slot_patterns,
+        grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
+        flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
+        pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
+        prismatic_pockets=tuple(
+            _records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
+        ),
+        pocket_patterns=derived.pocket_patterns,
+        pads=tuple(_records(accepted, FamilyId.PADS, RaisedPad)),
+        repeating_radial_profiles=tuple(
+            _records(
+                accepted,
+                FamilyId.REPEATING_RADIAL_PROFILES,
+                RepeatingRadialProfile,
             )
         ),
-        plates=tuple(recognise_plates(part)) if prismatic and prof is None else (),
+        turned_steps=tuple(_records(accepted, FamilyId.TURNED_STEPS, TurnedStep)),
+        rotational=context.rotational,
+        step_levels=tuple(_records(accepted, FamilyId.STEP_LEVELS, FaceLevel)),
+        risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
+        chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
+        angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
+        passages=tuple(_records(accepted, FamilyId.PASSAGES, Passage)),
+        fillets=tuple(_records(accepted, FamilyId.FILLETS, Fillet)),
+        plates=tuple(_records(accepted, FamilyId.PLATES, Plate)),
     )
