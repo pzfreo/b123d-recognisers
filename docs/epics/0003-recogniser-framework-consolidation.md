@@ -1,6 +1,6 @@
 # Epic 0003 — Recogniser framework consolidation
 
-**Status:** proposed  
+**Status:** implementation complete; awaiting integration gate and stacked merge  
 **Owner:** @pzfreo  
 **Opened:** 2026-08-22  
 **Baseline:** `ccf3b8c` (0.3.1.dev0, after #149) — 800 tests collected; Ruff and mypy clean
@@ -295,18 +295,18 @@ Before merge, every child issue must have:
 - [ ] Every physical aggregate proposal has run-local identity-safe evidence and exactly one
       disposition; derived projection records are explicitly outside that set.
 - [ ] Discovery cannot read sibling evidence through its provided API.
-- [ ] Reconcilers consume only completed candidates/frozen evidence and never run discovery.
-- [ ] Patterns are explicitly post-reconciliation projections.
-- [ ] Result, trace and evidence index form one authoritative inventory product.
-- [ ] Context-owned substrates are derived at most once per aggregate run.
-- [ ] The registry distinguishes neutral applicability, discovery dependencies and derived
+- [x] Reconcilers consume only completed candidates/frozen evidence and never run discovery.
+- [x] Patterns are explicitly post-reconciliation projections.
+- [x] Result, trace and evidence index form one authoritative inventory product.
+- [x] Context-owned substrates are derived at most once per aggregate run.
+- [x] The registry distinguishes neutral applicability, discovery dependencies and derived
       families and makes incomplete integration fail visibly.
-- [ ] At least recess, chamfer/angled-step, prismatic-pocket/Pocket and step/groove rules use the
+- [x] At least recess, chamfer/angled-step, prismatic-pocket/Pocket and step/groove rules use the
       common disposition protocol; any conflict family added after this baseline must join it too.
-- [ ] Accepted, rejected and compatibility dispositions have real internal consumers; #161 adds
+- [x] Accepted, rejected and compatibility dispositions have real internal consumers; #161 adds
       a bounded residual diagnostic for missing-candidate evidence without a public commitment.
 - [ ] Full quality, package, downstream and performance gates pass.
-- [ ] ADR 0003/0004 and capability documentation describe the final architecture.
+- [x] ADR 0003/0004 and capability documentation describe the final architecture.
 - [ ] #156–#161 close with evidence and #162 can close.
 
 ## Non-goals
