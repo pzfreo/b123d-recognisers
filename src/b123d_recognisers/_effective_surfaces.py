@@ -131,28 +131,172 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     ),
 }
 
-# AST-derived occurrence counts freeze every raw classification site without depending on line
-# numbers. A new alias, variable spelling, or additional call changes this independent inventory.
-SURFACE_READER_COUNTS: dict[str, dict[str, int]] = {
-    "_adjacency": {"adaptor": 4, "graph_surface": 1},
-    "_bevel": {"adaptor": 1},
-    "_cylinder_substrate": {"adaptor": 1},
-    "_hole_features": {"adaptor": 3},
-    "_recess_core": {"is_planar": 2},
-    "_recess_faces": {"adaptor": 1, "is_planar": 1, "geom_type": 1},
-    "_rings": {"is_planar": 1},
-    "angled_steps": {"geom_type": 1},
-    "chamfers": {"adaptor": 3},
-    "countersinks": {"adaptor": 2},
-    "fillets": {"adaptor": 4},
-    "flats": {"adaptor": 1},
-    "grooves": {"adaptor": 3, "geom_type": 1},
-    "levels": {"adaptor": 2},
-    "pads": {"adaptor": 2},
-    "plates": {"adaptor": 2},
-    "polygonal_bosses": {"is_planar": 2},
-    "profiled_bores": {"geom_type": 3},
-    "repeating_profiles": {"geom_type": 3},
+# Function/role/ordinal identities freeze every decision without depending on source line numbers.
+# Every site has its own disposition and rationale, including mixed modules whose reads cannot be
+# truthfully covered by one module-level label.
+SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_adjacency:surface:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base surface cache"),
+    "_adjacency:is_planar:graph_surface:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base query"),
+    "_adjacency:_normal_at:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base normal"),
+    "_adjacency:frame_points_outward:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "original-face material-side query waits for F2",
+    ),
+    "_adjacency:axis_aligned_axis:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "primitive-axis query",
+    ),
+    "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
+    "_cylinder_substrate:analyse_cylinders:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cylinder geometry plus material side waits for F2",
+    ),
+    "_hole_features:_classify_end_uncached:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "end plane/sphere/cylinder classification uses oriented topology",
+    ),
+    "_hole_features:_classify_end_uncached:adaptor:2": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "neighbour plane/cylinder classification uses oriented topology",
+    ),
+    "_hole_features:_shared_transition:adaptor:1": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "cone-or-torus transition rule includes unsupported torus",
+    ),
+    "_recess_core:_uninterrupted_long_span:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar recess boundary gate",
+    ),
+    "_recess_core:_bounds_one_void:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar recess boundary gate",
+    ),
+    "_recess_faces:_is_wall:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind, not a face surface",
+    ),
+    "_recess_faces:_planar_faces:is_planar:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "planar wall normal participates in material-side geometry",
+    ),
+    "_recess_faces:_cylinder_faces:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "cylindrical recess boundary gate",
+    ),
+    "_rings:rings:is_planar:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar ring gate"),
+    "angled_steps:_effective_linear_sides:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind, not a face surface",
+    ),
+    "chamfers:recognise_chamfers:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cone family gate uses oriented neighbours",
+    ),
+    "chamfers:recognise_chamfers:adaptor:2": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cone parameter read uses oriented frame",
+    ),
+    "chamfers:recognise_chamfers:adaptor:3": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "neighbour plane direction uses oriented frame",
+    ),
+    "countersinks:cone_rims:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cone rim direction uses oriented frame",
+    ),
+    "countersinks:recognise_countersinks:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cylinder direction uses oriented frame",
+    ),
+    "fillets:recognise_fillets:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "analytic anchor uses oriented frame",
+    ),
+    "fillets:recognise_fillets:adaptor:2": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "torus family gate",
+    ),
+    "fillets:recognise_fillets:adaptor:3": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "torus parameter read",
+    ),
+    "fillets:recognise_fillets:adaptor:4": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "neighbour plane/sphere rule uses oriented topology",
+    ),
+    "flats:recognise_flats:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
+    "grooves:_cone_joins:adaptor:1": (
+        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
+        "cone-axis join uses oriented frame",
+    ),
+    "grooves:transition:adaptor:1": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "torus transition parameter read",
+    ),
+    "grooves:_torus_joined:adaptor:1": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "torus adjacency family gate",
+    ),
+    "grooves:recognise_grooves:geom_type:1": (
+        SurfaceReaderDisposition.TORUS_DEFERRED,
+        "torus family applicability gate",
+    ),
+    "levels:recognise_face_levels:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar face-level gate",
+    ),
+    "levels:recognise_risers:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar riser gate",
+    ),
+    "pads:_recognise_rectangular_pads_one:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar cap gate",
+    ),
+    "pads:_recognise_rectangular_pads_one:adaptor:2": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar wall gate",
+    ),
+    "plates:recognise_plates:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar plate inventory gate",
+    ),
+    "plates:recognise_plates:adaptor:2": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "plate normal/offset read",
+    ),
+    "polygonal_bosses:_cap_z:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar cap gate",
+    ),
+    "polygonal_bosses:_vertical_side_faces:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar side gate",
+    ),
+    "profiled_bores:principal_boundary_plane:geom_type:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "planar profile face gate",
+    ),
+    "profiled_bores:double_d_profile:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "line boundary edge gate",
+    ),
+    "profiled_bores:double_d_profile:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "circle boundary edge gate",
+    ),
+    "repeating_profiles:_sample_wire:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind extraction",
+    ),
+    "repeating_profiles:_sample_wire:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind fallback",
+    ),
+    "repeating_profiles:_prove_boundary:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "circular boundary edge proof",
+    ),
 }
 
 
@@ -252,13 +396,16 @@ class EffectiveSurfaceIndex:
 
     def _derive(self, node: FaceNode) -> EffectiveSurfaceFact:
         face = self._graph.face(node)
-        adaptor = BRepAdaptor_Surface(face.wrapped)
-        kind = adaptor.GetType()
+        try:
+            adaptor = BRepAdaptor_Surface(face.wrapped)
+            kind = adaptor.GetType()
+        except (Standard_Failure, RuntimeError, ValueError):
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_INPUT)
         native = _NATIVE_KINDS.get(kind)
         if native is not None:
             try:
                 parameters = _validated_parameters(native, _native_primitive(adaptor, native))
-            except (AttributeError, RuntimeError, ValueError):
+            except (AttributeError, Standard_Failure, RuntimeError, ValueError):
                 return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_RESULT)
             return AnalyticSurfaceFact(
                 node=node,
@@ -314,7 +461,7 @@ class EffectiveSurfaceIndex:
                 continue
             try:
                 parameters = _validated_parameters(analytic_kind, primitive)
-            except (AttributeError, RuntimeError, ValueError):
+            except (AttributeError, Standard_Failure, RuntimeError, ValueError):
                 invalid = True
                 continue
             passed.append((analytic_kind, parameters, gap))
@@ -434,4 +581,4 @@ def _validated_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...
         raise ValueError("analytic primitive radius must be positive")
     if kind is SurfaceKind.CONE and not 0.0 < abs(parameters[-1]) < math.pi / 2.0:
         raise ValueError("analytic cone angle must be strictly between zero and pi/2")
-    return parameters
+    return tuple(0.0 if value == 0.0 else value for value in parameters)

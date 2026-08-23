@@ -20,6 +20,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
 from OCP.Geom import Geom_BezierSurface, Geom_RectangularTrimmedSurface
 from OCP.GeomConvert import GeomConvert
 from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt
+from OCP.Standard import Standard_Failure
 from OCP.TColgp import TColgp_Array2OfPnt
 
 from b123d_recognisers._adjacency import FaceGraph
@@ -422,3 +423,46 @@ def test_torus_recovery_is_explicitly_unsupported() -> None:
         EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
         is SurfaceRefusalReason.UNSUPPORTED_TORUS_RECOVERY
     )
+
+
+def test_standard_failure_during_native_primitive_read_refuses(monkeypatch) -> None:
+    def fail(_kind, _primitive):
+        raise Standard_Failure("primitive read failure")
+
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces._validated_parameters", fail)
+    graph = FaceGraph(Box(1, 1, 1))
+
+    assert (
+        EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
+        is SurfaceRefusalReason.INVALID_RESULT
+    )
+
+
+def test_standard_failure_during_recovered_primitive_read_refuses(monkeypatch) -> None:
+    native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
+    graph = FaceGraph(_as_bspline_face(native))
+
+    def fail(_kind, _primitive):
+        raise Standard_Failure("primitive read failure")
+
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces._validated_parameters", fail)
+
+    assert (
+        EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
+        is SurfaceRefusalReason.INVALID_RESULT
+    )
+
+
+def test_exact_planar_bezier_recovers_with_canonical_zero() -> None:
+    poles = TColgp_Array2OfPnt(1, 2, 1, 2)
+    for u in range(1, 3):
+        for v in range(1, 3):
+            poles.SetValue(u, v, gp_Pnt(u - 1, v - 1, 0))
+    made = BRepBuilderAPI_MakeFace(Geom_BezierSurface(poles), 1e-7)
+    graph = FaceGraph(Face(made.Face()))
+    fact = EffectiveSurfaceIndex(graph).fact(graph.nodes[0])
+
+    assert isinstance(fact, AnalyticSurfaceFact)
+    assert fact.kind is SurfaceKind.PLANE
+    assert fact.provenance is SurfaceProvenance.RECOVERED
+    assert all(math.copysign(1.0, value) > 0.0 for value in fact.parameters if value == 0.0)

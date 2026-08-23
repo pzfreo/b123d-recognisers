@@ -146,11 +146,11 @@ MODULE_SEAM_EDGES = {
 
 def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:
     from b123d_recognisers._effective_surfaces import (
-        SURFACE_READER_COUNTS,
         SURFACE_READER_ROSTER,
+        SURFACE_READER_SITES,
     )
 
-    readers: dict[str, dict[str, int]] = {}
+    reader_sites: set[str] = set()
     for path in PACKAGE.glob("*.py"):
         if path.name == "_effective_surfaces.py":
             continue
@@ -162,24 +162,41 @@ def test_effective_surface_reader_roster_covers_every_raw_classification() -> No
             for alias in node.names
             if alias.name == "BRepAdaptor_Surface"
         }
-        counts = {"adaptor": 0, "graph_surface": 0, "is_planar": 0, "geom_type": 0}
+        parents = {
+            child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
+        }
+        found: list[tuple[int, int, str, str]] = []
         for node in ast.walk(tree):
+            kind = None
             if isinstance(node, ast.Call):
                 if isinstance(node.func, ast.Name) and node.func.id in adaptor_aliases:
-                    counts["adaptor"] += 1
+                    kind = "adaptor"
                 if isinstance(node.func, ast.Attribute) and node.func.attr == "surface":
-                    counts["graph_surface"] += 1
+                    kind = "graph_surface"
                 if isinstance(node.func, ast.Attribute) and node.func.attr == "is_planar":
-                    counts["is_planar"] += 1
+                    kind = "is_planar"
             if isinstance(node, ast.Attribute) and node.attr == "geom_type":
-                counts["geom_type"] += 1
-        nonzero = {kind: count for kind, count in counts.items() if count}
-        if nonzero:
-            readers[path.stem] = nonzero
+                kind = "geom_type"
+            if kind is None:
+                continue
+            owner = node
+            function = "module"
+            while owner in parents:
+                owner = parents[owner]
+                if isinstance(owner, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    function = owner.name
+                    break
+            found.append((node.lineno, node.col_offset, function, kind))
+        ordinal: dict[tuple[str, str], int] = {}
+        for _, _, function, kind in sorted(found):
+            base = (function, kind)
+            ordinal[base] = ordinal.get(base, 0) + 1
+            reader_sites.add(f"{path.stem}:{function}:{kind}:{ordinal[base]}")
 
-    assert readers == SURFACE_READER_COUNTS
-    assert set(readers) == set(SURFACE_READER_ROSTER)
+    assert reader_sites == set(SURFACE_READER_SITES)
+    assert {site.split(":", 1)[0] for site in reader_sites} == set(SURFACE_READER_ROSTER)
     assert all(rationale.strip() for _, rationale in SURFACE_READER_ROSTER.values())
+    assert all(rationale.strip() for _, rationale in SURFACE_READER_SITES.values())
 
 
 def test_reconciler_never_imports_or_calls_discovery() -> None:
