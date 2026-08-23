@@ -1,0 +1,199 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+
+import inspect
+import types
+import typing
+from dataclasses import fields, replace
+from inspect import signature
+
+import pytest
+
+import b123d_recognisers as public
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._record import Record
+from b123d_recognisers._registry import (
+    DERIVED_DEFINITIONS,
+    PHYSICAL_DEFINITIONS,
+    AcceptedInputs,
+    CompletedInputs,
+    Counted,
+    DerivedId,
+    NotCounted,
+    validate_census_contract,
+    validate_definitions,
+    validate_output,
+    validate_result_fields,
+)
+from b123d_recognisers.census import CENSUS_BINDINGS, CENSUS_KEYS
+from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionResult
+
+
+def test_registry_is_the_closed_ordered_internal_roster() -> None:
+    assert len(PHYSICAL_DEFINITIONS) == 22
+    assert len(DERIVED_DEFINITIONS) == 3
+    assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
+    assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
+    assert tuple(item.identifier for item in DERIVED_DEFINITIONS) == tuple(DerivedId)
+    assert all(isinstance(item.census, Counted | NotCounted) for item in PHYSICAL_DEFINITIONS)
+    assert all(isinstance(item.census, Counted | NotCounted) for item in DERIVED_DEFINITIONS)
+    assert PHYSICAL_FAMILIES == (
+        FamilyId.COUNTERSINKS,
+        FamilyId.HOLES,
+        FamilyId.DOUBLE_D_BORES,
+        FamilyId.BOSSES,
+        FamilyId.POLYGONAL_BOSSES,
+        FamilyId.POLYGONAL_STOCK,
+        FamilyId.CHANNELS,
+        FamilyId.SLOTS,
+        FamilyId.GROOVES,
+        FamilyId.FLATS,
+        FamilyId.POCKETS,
+        FamilyId.PRISMATIC_POCKETS,
+        FamilyId.PADS,
+        FamilyId.REPEATING_RADIAL_PROFILES,
+        FamilyId.TURNED_STEPS,
+        FamilyId.STEP_LEVELS,
+        FamilyId.RISERS,
+        FamilyId.CHAMFERS,
+        FamilyId.ANGLED_STEPS,
+        FamilyId.PASSAGES,
+        FamilyId.FILLETS,
+        FamilyId.PLATES,
+    )
+
+
+def test_registry_dependencies_are_explicit_and_restricted() -> None:
+    dependencies = {
+        item.family: item.dependencies for item in PHYSICAL_DEFINITIONS if item.dependencies
+    }
+    assert dependencies == {
+        FamilyId.HOLES: (FamilyId.COUNTERSINKS,),
+        FamilyId.PLATES: (FamilyId.TURNED_STEPS,),
+    }
+    sources = {item.identifier: item.sources for item in DERIVED_DEFINITIONS}
+    assert sources == {
+        DerivedId.HOLE_PATTERNS: (FamilyId.HOLES,),
+        DerivedId.SLOT_PATTERNS: (FamilyId.SLOTS,),
+        DerivedId.POCKET_PATTERNS: (FamilyId.POCKETS,),
+    }
+    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: ()})
+    accepted = AcceptedInputs.restricted((FamilyId.SLOTS,), {FamilyId.SLOTS: ()})
+    with pytest.raises(ValueError, match="not a declared"):
+        completed.records(FamilyId.SLOTS, object)
+    with pytest.raises(ValueError, match="not a declared"):
+        accepted.records(FamilyId.HOLES, object)
+
+
+def test_registry_rejects_wrong_typed_dependency_values() -> None:
+    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: (object(),)})
+    with pytest.raises(TypeError, match="wrong record type"):
+        completed.records(FamilyId.HOLES, public.HoleRecord)
+
+
+def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> None:
+    result_fields = {item.name for item in fields(RecognitionResult)}
+    orchestration_context = {"cylinders", "rotational"}
+    validate_result_fields(frozenset(result_fields - orchestration_context))
+    assert {
+        item.public_entrypoint for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+    } == MIGRATED
+    assert all(hasattr(public, item.public_entrypoint) for item in PHYSICAL_DEFINITIONS)
+    assert all(hasattr(public, item.public_entrypoint) for item in DERIVED_DEFINITIONS)
+    manifest_entrypoints = {
+        recogniser["entry_point"].removeprefix("b123d_recognisers.")
+        for family in public.capability_manifest()["families"]
+        for recogniser in family["recognisers"]
+    }
+    assert manifest_entrypoints == MIGRATED
+
+
+def _record_types(annotation: object) -> set[type[Record]]:
+    if inspect.isclass(annotation) and issubclass(typing.cast(type, annotation), Record):
+        return {typing.cast(type[Record], annotation)}
+    origin = typing.get_origin(annotation)
+    if origin in {tuple, list, typing.Union, types.UnionType}:
+        return set().union(*(_record_types(item) for item in typing.get_args(annotation)), set())
+    return set()
+
+
+def test_registry_record_types_match_public_entrypoints_and_result_fields() -> None:
+    result_hints = typing.get_type_hints(RecognitionResult)
+    for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS):
+        declared = set(definition.record_types)
+        public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
+            "return"
+        ]
+        assert declared == _record_types(public_return), definition.public_entrypoint
+        assert declared == _record_types(result_hints[definition.result_field]), (
+            definition.result_field
+        )
+
+
+def test_registry_rejects_runtime_output_outside_the_record_contract() -> None:
+    holes = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    with pytest.raises(TypeError, match="undeclared record type"):
+        validate_output(holes, [object()])
+
+
+def test_registry_census_dispositions_cover_the_existing_manual_keys() -> None:
+    counted = {
+        definition.result_field: definition.census.key
+        for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+        if isinstance(definition.census, Counted)
+    }
+    assert counted == {source: key for key, source in CENSUS_BINDINGS}
+    assert tuple(key for key, _source in CENSUS_BINDINGS) == CENSUS_KEYS
+
+    swapped = tuple(
+        replace(definition, census=Counted("boss"))
+        if definition.family is FamilyId.HOLES
+        else replace(definition, census=Counted("hole"))
+        if definition.family is FamilyId.BOSSES
+        else definition
+        for definition in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="census bindings"):
+        validate_census_contract(
+            {source: key for key, source in CENSUS_BINDINGS}, swapped, DERIVED_DEFINITIONS
+        )
+
+
+def test_registry_applicability_is_context_only() -> None:
+    for definition in PHYSICAL_DEFINITIONS:
+        assert tuple(signature(definition.applicable).parameters) == ("context",)
+
+
+def test_registry_validation_rejects_duplicate_missing_and_late_dependencies() -> None:
+    with pytest.raises(ValueError, match="cover every non-legacy family"):
+        validate_definitions(PHYSICAL_DEFINITIONS[:-1], DERIVED_DEFINITIONS)
+    duplicate = (*PHYSICAL_DEFINITIONS[:-1], PHYSICAL_DEFINITIONS[0])
+    with pytest.raises(ValueError, match="cover every non-legacy family"):
+        validate_definitions(duplicate, DERIVED_DEFINITIONS)
+    holes = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    invalid = tuple(
+        replace(item, dependencies=(FamilyId.PLATES,)) if item is holes else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="dependencies must exist before"):
+        validate_definitions(invalid, DERIVED_DEFINITIONS)
+    duplicate_census = tuple(
+        replace(item, census=Counted("hole")) if item.family is FamilyId.DOUBLE_D_BORES else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="census keys must be non-empty and unique"):
+        validate_definitions(duplicate_census, DERIVED_DEFINITIONS)
+    unreviewed_applicability = tuple(
+        replace(item, applicable=lambda context: True) if item.family is FamilyId.BOSSES else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="reviewed neutral predicate"):
+        validate_definitions(unreviewed_applicability, DERIVED_DEFINITIONS)
+
+
+def test_registry_result_field_validation_rejects_stale_contract() -> None:
+    fields_without_one = frozenset(
+        item.result_field for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+    ) - {"holes"}
+    with pytest.raises(ValueError, match="do not exactly cover"):
+        validate_result_fields(fields_without_one)

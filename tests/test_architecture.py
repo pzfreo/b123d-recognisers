@@ -106,6 +106,31 @@ MODULE_SEAM_EDGES = {
         "prismatic_pockets",
         "turned",
     },
+    # Internal orchestration registry: it names family adapters but owns no geometry or policy.
+    # Family modules never import it, so the edge remains one-way from orchestration to families.
+    "_registry": {
+        "_candidates",
+        "_claims",
+        "_features",
+        "_run",
+        "_typing",
+        "angled_steps",
+        "chamfers",
+        "countersinks",
+        "fillets",
+        "flats",
+        "grooves",
+        "levels",
+        "pads",
+        "passages",
+        "plates",
+        "polygonal_bosses",
+        "prismatic_pockets",
+        "profiled_bores",
+        "repeating_profiles",
+        "slots",
+        "turned",
+    },
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
 }
 
@@ -127,10 +152,7 @@ def test_reconciler_never_imports_or_calls_discovery() -> None:
         and isinstance(node.func, (ast.Name, ast.Attribute))
         and (
             (isinstance(node.func, ast.Name) and node.func.id.startswith("recognise_"))
-            or (
-                isinstance(node.func, ast.Attribute)
-                and node.func.attr.startswith("recognise_")
-            )
+            or (isinstance(node.func, ast.Attribute) and node.func.attr.startswith("recognise_"))
         )
     ]
     qualified_references = [
@@ -169,9 +191,11 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
 
     writer_type = typing.get_type_hints(module._discover_all)["writer"]
     assert writer_type.__name__ == "EvidenceWriter"
-    assert {
-        name for name in dir(writer_type) if not name.startswith("_")
-    } == {"add_defining", "graph", "sink"}
+    assert {name for name in dir(writer_type) if not name.startswith("_")} == {
+        "add_defining",
+        "graph",
+        "sink",
+    }
 
     product_fields = set(module.InventoryProduct.__dataclass_fields__)
     assert "reconciliation" in product_fields
@@ -425,9 +449,7 @@ def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() 
         (PACKAGE / "_recess_core.py").read_text(encoding="utf-8"),
         filename="_recess_core.py",
     )
-    functions = {
-        node.name: node for node in core.body if isinstance(node, ast.FunctionDef)
-    }
+    functions = {node.name: node for node in core.body if isinstance(node, ast.FunctionDef)}
     for name in ("_recognise_slots_one", "_recognise_pockets_one", "_recognise_channels_one"):
         scans = [
             node
@@ -439,13 +461,10 @@ def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() 
         assert len(scans) == 1, name
 
     for module_name in ("_hole_patterns.py", "_pattern_geometry.py", "_recess_patterns.py"):
-        tree = ast.parse(
-            (PACKAGE / module_name).read_text(encoding="utf-8"), filename=module_name
-        )
+        tree = ast.parse((PACKAGE / module_name).read_text(encoding="utf-8"), filename=module_name)
         topology_reads = [
             node.attr
             for node in ast.walk(tree)
-            if isinstance(node, ast.Attribute)
-            and node.attr in {"edges", "faces", "solids"}
+            if isinstance(node, ast.Attribute) and node.attr in {"edges", "faces", "solids"}
         ]
         assert topology_reads == [], module_name

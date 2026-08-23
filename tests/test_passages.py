@@ -35,7 +35,6 @@ from b123d_recognisers import (
     recognise_passages,
     recognise_slots,
 )
-from b123d_recognisers import result as result_module
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -336,7 +335,9 @@ def test_a_passage_records_the_ring_it_was_built_from():
 
 
 def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) -> None:
-    original = result_module.recognise_passages
+    import b123d_recognisers._registry as registry_module
+
+    original = registry_module.recognise_passages
     calls = 0
 
     def counted(*args, **kwargs):
@@ -344,7 +345,7 @@ def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) ->
         calls += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(result_module, "recognise_passages", counted)
+    monkeypatch.setattr(registry_module, "recognise_passages", counted)
 
     build_recognition_result(_hexagonal_passage())
 
@@ -376,8 +377,14 @@ def test_an_interior_point_is_inside_the_polygon_and_not_merely_near_it():
 
     triangle = ((-8.0, -6.0), (8.0, -6.0), (0.0, 8.0))
     u_shape = (
-        (-15.0, -15.0), (15.0, -15.0), (15.0, 15.0), (9.0, 15.0),
-        (9.0, -9.0), (-9.0, -9.0), (-9.0, 15.0), (-15.0, 15.0),
+        (-15.0, -15.0),
+        (15.0, -15.0),
+        (15.0, 15.0),
+        (9.0, 15.0),
+        (9.0, -9.0),
+        (-9.0, -9.0),
+        (-9.0, 15.0),
+        (-15.0, 15.0),
     )
     for polygon in (triangle, u_shape):
         assert _winds_around(polygon, _interior_point(polygon)), polygon

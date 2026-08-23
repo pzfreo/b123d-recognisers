@@ -10,8 +10,13 @@ from build123d import Align, Box, Cylinder, Pos
 
 from b123d_recognisers import (
     STEP_LADDER_BOUNDARY_MARGIN,
+    CounterSink,
     FaceLevel,
+    HoleRecord,
+    Passage,
+    Pocket,
     RecognitionResult,
+    Slot,
     TurnedStep,
     build_recognition_result,
 )
@@ -37,17 +42,20 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
 
 
 def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
+    import b123d_recognisers._registry as registry_module
     import b123d_recognisers._run as run_module
     import b123d_recognisers.result as result_module
     from b123d_recognisers._candidates import EvidenceIndex
 
     calls: dict[str, int] = {}
     cylinders = ([{"axis": "z"}], [{"axis": "x"}])
-    countersinks = [object()]
-    holes = [object()]
-    slots = [object()]
-    pockets = [object()]
-    passages = [object()]
+    countersinks = [CounterSink((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 6.0, 3.0, 90.0, 1.5)]
+    holes = [HoleRecord((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 3.0, 10.0, "through")]
+    slots = [Slot("x", "y", 3.0, 10.0, 0.0, -5.0, 5.0, -1.0, 1.0)]
+    pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
+    passages = [
+        Passage("z", 4, 10.0, (0.0, 0.0, 0.0), ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)))
+    ]
 
     def same_records(actual, expected):
         return len(actual) == len(expected) and all(
@@ -84,45 +92,48 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     def fake_holes(part, *, cyls=None, csinks=None, **kwargs):
         calls["holes"] = calls.get("holes", 0) + 1
         assert cyls == cylinders and cyls is not cylinders
-        assert csinks is countersinks
+        assert same_records(csinks, countersinks)
         return holes
 
     # Patched where the run derives it, not where the aggregate used to. The cylinder scan is
     # one of the facts `RecognitionRun` owns, so `_run` is the only place that asks for it.
     monkeypatch.setattr(run_module, "analyse_cylinders", fake_cylinders)
     monkeypatch.setattr(
-        result_module, "recognise_countersinks", counted("countersinks", countersinks)
+        registry_module, "recognise_countersinks", counted("countersinks", countersinks)
     )
-    monkeypatch.setattr(result_module, "recognise_holes", fake_holes)
-    monkeypatch.setattr(result_module, "recognise_double_d_bores", counted("double_d_bores", []))
-    monkeypatch.setattr(result_module, "recognise_hole_patterns", derived("patterns", holes, []))
-    monkeypatch.setattr(result_module, "recognise_bosses", cyl_consumer("bosses", []))
+    monkeypatch.setattr(registry_module, "recognise_holes", fake_holes)
+    monkeypatch.setattr(registry_module, "recognise_double_d_bores", counted("double_d_bores", []))
+    monkeypatch.setattr(registry_module, "recognise_hole_patterns", derived("patterns", holes, []))
+    monkeypatch.setattr(registry_module, "recognise_bosses", cyl_consumer("bosses", []))
     monkeypatch.setattr(
-        result_module, "recognise_polygonal_bosses", counted("polygonal_bosses", [])
+        registry_module, "recognise_polygonal_bosses", counted("polygonal_bosses", [])
     )
-    monkeypatch.setattr(result_module, "recognise_polygonal_stock", counted("polygonal_stock", []))
-    monkeypatch.setattr(result_module, "recognise_channels", counted("channels", []))
-    monkeypatch.setattr(result_module, "recognise_slots", counted("slots", slots))
     monkeypatch.setattr(
-        result_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
+        registry_module, "recognise_polygonal_stock", counted("polygonal_stock", [])
     )
-    monkeypatch.setattr(result_module, "recognise_grooves", cyl_consumer("grooves", []))
-    monkeypatch.setattr(result_module, "recognise_flats", cyl_consumer("flats", []))
-    monkeypatch.setattr(result_module, "recognise_pockets", counted("pockets", pockets))
-    monkeypatch.setattr(result_module, "recognise_passages", counted("passages", passages))
+    monkeypatch.setattr(registry_module, "recognise_channels", counted("channels", []))
+    monkeypatch.setattr(registry_module, "recognise_slots", counted("slots", slots))
     monkeypatch.setattr(
-        result_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
+        registry_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
     )
-    monkeypatch.setattr(result_module, "recognise_rectangular_pads", counted("pads", []))
+    monkeypatch.setattr(registry_module, "recognise_grooves", cyl_consumer("grooves", []))
+    monkeypatch.setattr(registry_module, "recognise_flats", cyl_consumer("flats", []))
+    monkeypatch.setattr(registry_module, "recognise_pockets", counted("pockets", pockets))
+    monkeypatch.setattr(registry_module, "recognise_passages", counted("passages", passages))
     monkeypatch.setattr(
-        result_module, "recognise_repeating_radial_profiles", counted("radial_profiles", [])
+        registry_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
     )
-    monkeypatch.setattr(result_module, "recognise_turned_steps", cyl_consumer("turned_steps", []))
+    monkeypatch.setattr(registry_module, "recognise_rectangular_pads", counted("pads", []))
+    monkeypatch.setattr(
+        registry_module, "recognise_repeating_radial_profiles", counted("radial_profiles", [])
+    )
+    monkeypatch.setattr(registry_module, "recognise_turned_steps", cyl_consumer("turned_steps", []))
     levels = [FaceLevel(4.0, (0.0, 8.0), (0.0, 6.0)), FaceLevel(9.0)]
-    monkeypatch.setattr(result_module, "step_level_records", counted("step_levels", levels))
-    monkeypatch.setattr(result_module, "recognise_risers", counted("risers", []))
-    monkeypatch.setattr(result_module, "recognise_chamfers", counted("chamfers", []))
-    monkeypatch.setattr(result_module, "recognise_angled_steps", counted("angled_steps", []))
+    monkeypatch.setattr(registry_module, "step_level_records", counted("step_levels", levels))
+    monkeypatch.setattr(registry_module, "recognise_risers", counted("risers", []))
+    monkeypatch.setattr(registry_module, "recognise_chamfers", counted("chamfers", []))
+    monkeypatch.setattr(registry_module, "recognise_angled_steps", counted("angled_steps", []))
+
     # All four recess families are proposed before one reconciler decides among them. Passage
     # discovery is a counted family call of its own; the reconciler receives completed records
     # and the point-in-time read capability rather than a Part or mutable ledger.
@@ -130,12 +141,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
         assert same_records(
             [candidate.record for candidate in found_slots.candidates], slots
-        ) and same_records(
-            [candidate.record for candidate in found_pockets.candidates], pockets
-        )
-        assert same_records(
-            [candidate.record for candidate in found_passages.candidates], passages
-        )
+        ) and same_records([candidate.record for candidate in found_pockets.candidates], pockets)
+        assert same_records([candidate.record for candidate in found_passages.candidates], passages)
         assert isinstance(evidence, EvidenceIndex)
         return ()
 
@@ -156,8 +163,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "reconcile_step_groove_candidates",
         fake_policy("reconcile_step_grooves"),
     )
-    monkeypatch.setattr(result_module, "recognise_fillets", counted("fillets", []))
-    monkeypatch.setattr(result_module, "recognise_plates", counted("plates", []))
+    monkeypatch.setattr(registry_module, "recognise_fillets", counted("fillets", []))
+    monkeypatch.setattr(registry_module, "recognise_plates", counted("plates", []))
 
     # A part rather than a bare object: the orchestrator now builds one face graph for the
     # families that record which faces they were built from, and an empty inventory is all this
@@ -233,9 +240,10 @@ def test_aggregate_inventory_has_one_named_candidate_per_physical_output() -> No
             product.physical.records(family)
         )
         assert all(candidate.family is family for candidate in candidate_set.candidates)
-        assert product.evidence.candidate_set_for(
-            family, product.physical.records(family)
-        ).candidates == candidate_set.candidates
+        assert (
+            product.evidence.candidate_set_for(family, product.physical.records(family)).candidates
+            == candidate_set.candidates
+        )
 
 
 def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> None:

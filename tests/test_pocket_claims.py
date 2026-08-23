@@ -23,7 +23,6 @@ from __future__ import annotations
 from build123d import Box, Cylinder, Pos
 
 import b123d_recognisers as r
-from b123d_recognisers import result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 
@@ -119,9 +118,11 @@ def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypa
     both calls proves the two families write through one issuer without weakening that boundary.
     """
 
+    import b123d_recognisers._registry as registry_module
+
     seen = {}
-    real_pockets = result_module.recognise_pockets
-    real_slots = result_module.recognise_slots
+    real_pockets = registry_module.recognise_pockets
+    real_slots = registry_module.recognise_slots
 
     def capture_pockets(part, **kwargs):
         seen["pockets"] = kwargs.get("ledger")
@@ -131,8 +132,8 @@ def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypa
         seen["slots"] = kwargs.get("ledger")
         return real_slots(part, **kwargs)
 
-    monkeypatch.setattr(result_module, "recognise_pockets", capture_pockets)
-    monkeypatch.setattr(result_module, "recognise_slots", capture_slots)
+    monkeypatch.setattr(registry_module, "recognise_pockets", capture_pockets)
+    monkeypatch.setattr(registry_module, "recognise_slots", capture_slots)
 
     part = (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)) - Pos(0, -14, 0) * Box(8, 12, 40)
     result = r.build_recognition_result(part)
