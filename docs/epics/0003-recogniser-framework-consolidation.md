@@ -1,6 +1,6 @@
 # Epic 0003 — Recogniser framework consolidation
 
-**Status:** implementation complete; awaiting integration gate and stacked merge
+**Status:** complete (2026-08-23)
 **Owner:** @pzfreo
 **Opened:** 2026-08-22
 **Baseline:** `ccf3b8c` (0.3.1.dev0, after #149) — 800 tests collected; Ruff and mypy clean
@@ -305,9 +305,38 @@ Before merge, every child issue must have:
       common disposition protocol; any conflict family added after this baseline must join it too.
 - [x] Accepted, rejected and compatibility dispositions have real internal consumers; #161 adds
       a bounded residual diagnostic for missing-candidate evidence without a public commitment.
-- [ ] Full quality, package, downstream and performance gates pass.
+- [x] Full quality, package, current delivery-ownership and performance gates pass.
 - [x] ADR 0003/0004 and capability documentation describe the final architecture.
-- [ ] #156–#161 close with evidence and #162 can close.
+- [x] #156–#161 close with evidence and #162 can close.
+
+## Completion evidence
+
+The bounded stack merged in the reviewed migration order:
+
+| Issue | PR | Merge commit |
+| --- | --- | --- |
+| framework proposal | [#165](https://github.com/pzfreo/b123d-recognisers/pull/165) | `4570a4d` |
+| #156 | [#166](https://github.com/pzfreo/b123d-recognisers/pull/166) | `933177b` |
+| #157 | [#167](https://github.com/pzfreo/b123d-recognisers/pull/167) | `22b445d` |
+| #159 | [#168](https://github.com/pzfreo/b123d-recognisers/pull/168) | `d185aee` |
+| #158 | [#169](https://github.com/pzfreo/b123d-recognisers/pull/169) | `7f92791` |
+| #160 | [#170](https://github.com/pzfreo/b123d-recognisers/pull/170) | `b58a8cb` |
+| #161 | [#171](https://github.com/pzfreo/b123d-recognisers/pull/171) | `1c3b2d8` |
+
+Every implementation PR received independent exact-revision logic and architecture ACCEPTs after
+its concrete review findings were resolved. The final cumulative revision passed Ruff, mypy, both
+Codecov gates and the full test suite on Python 3.10, 3.12 and 3.14 across Linux, macOS and Windows.
+The package contract passed before a candidate wheel was built and installed; manifest, semantic
+golden and corpus contracts remained in the full suite. The composite five-sample minimum was
+2.646 seconds against the recorded 2.698-second ceiling. The #161 predicate was revealed only
+after two accepts and pinned at zero diagnostics over all 33 holdout models, with no post-reveal
+predicate change.
+
+The obsolete cross-repository development-wheel Draftwright canary was removed separately by
+reviewed [#164](https://github.com/pzfreo/b123d-recognisers/pull/164). The accepted delivery
+protocol is stable-package-first: this repository proves its package contract before publication;
+Draftwright remains on its previous exact artifact until its own PR pins and validates a new stable
+artifact. This epic published no release and moved no downstream production pin.
 
 ## Non-goals
 
