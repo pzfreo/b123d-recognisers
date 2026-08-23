@@ -22,6 +22,7 @@ import pytest
 from build123d import Box, Cylinder, Pos
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 
 
@@ -147,6 +148,7 @@ def test_write_only_evidence_adapter_refuses_an_empty_defining_claim():
         ledger.writer.add_defining(Candidate("slot"), [])
 
     assert ledger.claims == ()
+    assert ledger.candidate_set(FamilyId.LEGACY).candidates == ()
 
 
 def test_claiming_changes_nothing_the_graph_answers():
