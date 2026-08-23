@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from build123d import Axis, Box, Cylinder, Face, Sphere
+from build123d import Axis, Box, Cone, Cylinder, Face, Sphere
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
@@ -15,6 +15,7 @@ from b123d_recognisers._effective_surfaces import (
     OrientationCapability,
     SurfaceKind,
     SurfaceProvenance,
+    SurfaceRefusalReason,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -100,3 +101,83 @@ def test_exact_bspline_plane_recovers_as_unoriented_original_node() -> None:
 
     with pytest.raises(ValueError, match="ORIENTATION_UNPROVEN"):
         EffectiveSurfaceIndex(graph).oriented_fact(node)
+
+
+@pytest.mark.parametrize(
+    ("native", "kind"),
+    [
+        (max(Cylinder(5, 12).faces(), key=lambda face: face.area), SurfaceKind.CYLINDER),
+        (max(Cone(6, 3, 12).faces(), key=lambda face: face.area), SurfaceKind.CONE),
+        (Sphere(7).faces()[0], SurfaceKind.SPHERE),
+    ],
+)
+def test_exact_bspline_curved_primitives_recover_without_orientation(
+    native: Face, kind: SurfaceKind
+) -> None:
+    graph = FaceGraph(_as_bspline_face(native))
+    node = graph.nodes[0]
+    fact = EffectiveSurfaceIndex(graph).fact(node)
+
+    assert isinstance(fact, AnalyticSurfaceFact)
+    assert fact.node is node
+    assert fact.kind is kind
+    assert fact.provenance is SurfaceProvenance.RECOVERED
+    assert fact.orientation is OrientationCapability.RECOVERED_UNORIENTED
+    assert fact.parameters
+
+
+def test_multiple_passing_fits_refuse_instead_of_using_call_order(monkeypatch) -> None:
+    class AmbiguousRecognition:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def IsPlane(self, _tolerance, _result) -> bool:
+            return True
+
+        def IsCylinder(self, _tolerance, _result) -> bool:
+            return True
+
+        def IsCone(self, _tolerance, _result) -> bool:
+            return False
+
+        def IsSphere(self, _tolerance, _result) -> bool:
+            return False
+
+        def GetStatus(self) -> int:
+            return 0
+
+        def GetGap(self) -> float:
+            return 0.0
+
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        AmbiguousRecognition,
+    )
+    native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
+    graph = FaceGraph(_as_bspline_face(native))
+    fact = EffectiveSurfaceIndex(graph).fact(graph.nodes[0])
+
+    assert fact.reason is SurfaceRefusalReason.AMBIGUOUS_PRIMITIVE
+
+
+def test_kernel_errors_fail_closed(monkeypatch) -> None:
+    class FailedRecognition:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def IsPlane(self, _tolerance, _result) -> bool:
+            raise RuntimeError("kernel failure")
+
+        IsCylinder = IsPlane
+        IsCone = IsPlane
+        IsSphere = IsPlane
+
+    monkeypatch.setattr(
+        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        FailedRecognition,
+    )
+    native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
+    graph = FaceGraph(_as_bspline_face(native))
+    fact = EffectiveSurfaceIndex(graph).fact(graph.nodes[0])
+
+    assert fact.reason is SurfaceRefusalReason.FIT_UNAVAILABLE
