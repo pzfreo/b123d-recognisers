@@ -210,6 +210,7 @@ for _site in (
     "test_open_smooth_join_remains_unproven_after_step_round_trip:smooth_side:1",
     "keyed_sides:smooth_side:1",
     "test_duplicate_solid_ownership_cannot_authorize_material_side:smooth_side:1",
+    "test_ownership_kernel_failures_are_side_unproven:smooth_side:1",
     "test_a_disconnected_second_solid_does_not_poison_owned_sides:smooth_side:1",
     "test_open_topods_solid_cannot_authorize_material_side:smooth_side:1",
     "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:smooth_side:1",

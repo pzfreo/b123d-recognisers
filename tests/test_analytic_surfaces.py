@@ -3,6 +3,7 @@ from build123d import Axis, Box, Cylinder
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 import b123d_recognisers._adjacency as adjacency_module
+import b123d_recognisers._analytic_surfaces as analytic_module
 import b123d_recognisers._effective_surfaces as effective_module
 from b123d_recognisers._analytic_surfaces import (
     SurfaceKind,
@@ -74,3 +75,18 @@ def test_analytic_equivalence_refuses_invalid_local_scale(local: float) -> None:
         equivalent_parameters(
             SurfaceKind.PLANE, (0, 0, 1, 0), (0, 0, 1, 0), local=local
         )
+
+
+@pytest.mark.parametrize(
+    ("kind", "parameters", "message"),
+    [
+        (SurfaceKind.PLANE, (float("nan"), 0, 1, 0), "finite"),
+        (SurfaceKind.CYLINDER, (0, 0, 0, 2, 0, 0, 5), "unit length"),
+        (SurfaceKind.SPHERE, (0, 0, 0, 0), "positive"),
+        (SurfaceKind.CONE, (0, 0, 0, 0, 0, 1, 0), "strictly between"),
+    ],
+)
+def test_analytic_parameter_domains_fail_closed(monkeypatch, kind, parameters, message) -> None:
+    monkeypatch.setattr(analytic_module, "_primitive_parameters", lambda *_: parameters)
+    with pytest.raises(ValueError, match=message):
+        validated_parameters(kind, object())

@@ -284,6 +284,17 @@ def test_tangent_higher_order_bezier_is_not_a_neutral_continuation(monkeypatch) 
     assert graph.smooth_side(a, b) == "unproven"
 
 
+def test_native_continuation_primitive_failure_is_unproven(monkeypatch) -> None:
+    graph = FaceGraph(_split_native_solids()[1])
+    a, b = _smooth_pairs(graph)[0]
+    monkeypatch.setattr(
+        "b123d_recognisers._adjacency.validated_parameters",
+        lambda *_: (_ for _ in ()).throw(ValueError("invalid primitive")),
+    )
+
+    assert not graph._native_continuation(a, b, local=1.0)
+
+
 def test_split_native_side_survives_step_round_trip(tmp_path) -> None:
     cylinder = _split_native_solids()[1]
     path = tmp_path / "split-cylinder.step"
@@ -360,6 +371,21 @@ def test_smooth_side_is_symmetric_and_cached_once_per_edge(monkeypatch) -> None:
     assert graph.smooth_side(b, a) == first
     assert len(calls) == len(graph.shared_edges(a, b))
 
+    edge = graph.shared_edges(a, b)[0]
+    cached = graph._smooth_side_edge(a, b, edge)
+    assert graph._smooth_side_edge(b, a, edge) is cached
+
+
+def test_invalid_local_side_scale_fails_closed(monkeypatch) -> None:
+    graph = FaceGraph(_filleted())
+    a, b = _smooth_pairs(graph)[0]
+    monkeypatch.setattr(graph, "_eligible_side_edge", lambda *_: True)
+
+    class InvalidLength:
+        length = float("nan")
+
+    assert graph._derive_smooth_side_edge(a, b, InvalidLength()).result == "unproven"
+
 
 def test_smooth_side_is_independent_of_fresh_face_and_edge_order() -> None:
     part = _filleted()
@@ -428,6 +454,29 @@ def test_duplicate_solid_ownership_cannot_authorize_material_side() -> None:
     assert {graph.smooth_side(a, b) for a, b in pairs} == {"unproven"}
 
 
+@pytest.mark.parametrize("failure", ["part", "solid"])
+def test_ownership_kernel_failures_are_side_unproven(failure) -> None:
+    part = _filleted()
+
+    class BrokenSolid:
+        @property
+        def is_valid(self):
+            raise RuntimeError("BRepCheck failed")
+
+    class BrokenOwnership:
+        def faces(self):
+            return part.faces()
+
+        def solids(self):
+            if failure == "part":
+                raise RuntimeError("solid traversal failed")
+            return [BrokenSolid()]
+
+    graph = FaceGraph(BrokenOwnership())
+    a, b = _smooth_pairs(graph)[0]
+    assert graph.smooth_side(a, b) == "unproven"
+
+
 def test_a_disconnected_second_solid_does_not_poison_owned_sides() -> None:
     graph = FaceGraph(Compound(children=[_filleted(), Pos(100, 0, 0) * Box(5, 5, 5)]))
     pairs = _smooth_pairs(graph)
@@ -479,6 +528,25 @@ def test_normal_curvature_ignores_the_input_edge_wrapper_orientation() -> None:
         assert backward == pytest.approx(forward)
 
 
+def test_edge_orientation_lookup_refuses_a_foreign_edge() -> None:
+    graph = FaceGraph(_plain())
+    foreign = Box(3, 3, 3).edges()[0]
+    with pytest.raises(ValueError, match="absent from its original face"):
+        graph._edge_reversed_in_face(graph.nodes[0], foreign)
+
+
+def test_normal_curvature_kernel_failure_is_unproven(monkeypatch) -> None:
+    graph = FaceGraph(_filleted())
+    a, b = _smooth_pairs(graph)[0]
+    edge = graph.shared_edges(a, b)[0]
+    monkeypatch.setattr(
+        "b123d_recognisers._adjacency.BRepAdaptor_Curve",
+        lambda *_: (_ for _ in ()).throw(RuntimeError("curve adaptor failed")),
+    )
+
+    assert graph._normal_curvature(a, edge, 0.5) is None
+
+
 def test_non_manifold_three_face_edge_is_side_unproven() -> None:
     faces = [
         Face.make_rect(1, 1, Plane(origin=(-0.5, 0.5, 0))),
@@ -523,6 +591,7 @@ def test_open_faces_can_be_legacy_smooth_but_side_unproven() -> None:
         ((0.0, True), (0.25, False), "concave"),
         ((-0.1, False), (-0.2, False), "convex"),
         ((0.1, False), (0.2, False), "concave"),
+        ((0.1, False), (0.1, False), "unproven"),
         ((0.5e-6, False), (-0.5e-6, False), "unproven"),
         ((-0.25, False), (0.25, False), "unproven"),
         ((0.0, False), (0.0, False), "unproven"),
