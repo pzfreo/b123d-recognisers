@@ -262,6 +262,8 @@ Tests must make these violations visible:
    failed subdivided-triangular terminal predicate as a sink-issued observation, and joins that
    observation to an accepted same-slant Chamfer as one private unsupported residual diagnostic.
    It does not fix #111 recognition, scan generic residual graph faces or publish a diagnostic API.
+   After implementation and two independent accepts, the frozen 33-model holdout was revealed
+   once and pinned at zero diagnostics; no predicate changed after reveal.
 
 Each step is independently reviewable and may retain compatibility adapters. Do not combine the
 whole sequence into one framework rewrite.
