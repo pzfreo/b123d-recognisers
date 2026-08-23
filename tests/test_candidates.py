@@ -162,25 +162,44 @@ def test_split_terminal_fact_rejects_non_split_or_non_triangular_values(
         SplitTriangularTerminalFact(raw_edges, effective_sides)
 
 
-def test_observation_rejects_open_enums_and_foreign_context_atomically() -> None:
+@pytest.mark.parametrize("role", ["family", "predicate"])
+def test_observation_rejects_open_enums_atomically(role: str) -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
-    other = FaceGraph(Box(4, 4, 4))
     subject = ledger.graph.nodes[0]
+    family = "angled_steps" if role == "family" else FamilyId.ANGLED_STEPS
+    predicate = (
+        "angled_step_terminal"
+        if role == "predicate"
+        else PredicateId.ANGLED_STEP_TERMINAL
+    )
 
     with pytest.raises(ValueError, match="closed enums"):
         ledger.sink.observe(
-            "angled_steps",  # type: ignore[arg-type]
-            PredicateId.ANGLED_STEP_TERMINAL,
+            family,  # type: ignore[arg-type]
+            predicate,  # type: ignore[arg-type]
             subject=subject,
             consulted=[ledger.graph.nodes[1]],
             fact=SplitTriangularTerminalFact(4),
         )
+
+    assert ledger.snapshot_index().observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == ()
+
+
+@pytest.mark.parametrize("role", ["subject", "consulted"])
+def test_observation_rejects_foreign_nodes_atomically(role: str) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    other = FaceGraph(Box(4, 4, 4))
+    subject = other.nodes[0] if role == "subject" else ledger.graph.nodes[0]
+    terminal = other.nodes[0] if role == "consulted" else ledger.graph.nodes[1]
+
     with pytest.raises(ValueError, match="not this graph's nodes"):
         ledger.sink.observe(
             FamilyId.ANGLED_STEPS,
             PredicateId.ANGLED_STEP_TERMINAL,
             subject=subject,
-            consulted=[other.nodes[0]],
+            consulted=[terminal],
             fact=SplitTriangularTerminalFact(4),
         )
 
