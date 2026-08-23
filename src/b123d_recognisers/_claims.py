@@ -24,12 +24,10 @@ Aggregate orchestration instead seals once after every physical family has compl
 that declined a face because another family had claimed it would make output order-dependent, and
 that stays forbidden by ADR 0003.
 
-**A claim is a role, not a fact of ownership.** A feature's faces do not all relate to it the same
-way: a pocket is defined by its floor and walls, while a fillet is defined by the blend face and
-merely *consults* the two faces it bridges. Treating every face a recogniser touched as consumed
-would manufacture conflicts between features that legitimately share context. The `defining`
-role establishes ownership. `consulted` records context used by a predicate but never appears in
-a Claim or participates in containment.
+**A claim is defining ownership, not every face a predicate touched.** Treating contextual stock
+as consumed would manufacture conflicts between features that legitimately share it. Candidate
+evidence therefore records only defining nodes. The one demonstrated failed-predicate diagnostic
+uses a separate Observation for its subject and terminal context.
 
 **A claim is an object, not an index into a table.** `add_defining` hands back the claim
 itself, so it carries its own claimant and its own defining faces and there is no id to look up
@@ -95,16 +93,13 @@ class EvidenceWriter:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
-        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[object]:
         """Issue defining evidence without exposing any read or freeze operation."""
 
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        return self.sink.propose(
-            family, claimant, defining=defining, consulted=consulted
-        )
+        return self.sink.propose(family, claimant, defining=defining)
 
 
 class ClaimLedger:
@@ -160,14 +155,10 @@ class ClaimLedger:
         family: FamilyId,
         record: object,
         nodes: Iterable[FaceNode] = (),
-        *,
-        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[object]:
         """Issue one candidate and retain a legacy Claim view for non-empty evidence."""
 
-        return self.sink.propose(
-            family, record, defining=nodes, consulted=consulted
-        )
+        return self.sink.propose(family, record, defining=nodes)
 
     def add_defining(
         self,
@@ -175,7 +166,6 @@ class ClaimLedger:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
-        consulted: Iterable[FaceNode] = (),
     ) -> Claim:
         """Record that *nodes* are what established *claimant*, and return the claim.
 
@@ -190,9 +180,7 @@ class ClaimLedger:
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        candidate = self.propose(
-            family, claimant, defining, consulted=consulted
-        )
+        candidate = self.propose(family, claimant, defining)
         return self._claims[id(candidate)]
 
     @property
@@ -233,6 +221,9 @@ class ClaimLedger:
 
     def defining_of(self, claimant: object) -> frozenset[FaceNode]:
         """The faces *this* candidate was established by, or empty when it claimed none.
+
+        Record lookup fails closed when the same record object backs multiple candidates; callers
+        at that boundary must use Candidate identity instead.
 
         **By identity, deliberately**, and it is the direction a reconciler reads. A rule holds a
         record and needs its evidence; the alternative it replaces was pairing the returned list

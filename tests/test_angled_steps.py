@@ -96,6 +96,18 @@ def test_split_triangle_diagnostic_predicate_is_not_a_four_sided_relaxation() ->
     assert _effective_linear_sides(split_rectangle) == 4
     assert _effective_linear_sides(near_collinear_quad) == 4
 
+    with BuildPart() as prism:
+        with BuildSketch():
+            Polygon((0, 0), (10, 0), (0, 6))
+        extrude(amount=2)
+    reversed_triangle = next(
+        face
+        for face in prism.faces()
+        if len(face.outer_wire().edges()) == 3
+        and all(not edge.is_forward for edge in face.outer_wire().edges())
+    )
+    assert _effective_linear_sides(reversed_triangle) == 3
+
 
 def test_unreadable_diagnostic_boundary_fails_closed_without_changing_recognition() -> None:
     class BrokenEdge:
@@ -148,7 +160,7 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
     assert step.length == 25.0
 
 
-def test_successful_step_owns_the_slant_and_consults_its_terminal() -> None:
+def test_successful_step_owns_only_the_slant() -> None:
     part = _blind()
     ledger = ClaimLedger(FaceGraph(part))
 
@@ -157,9 +169,7 @@ def test_successful_step_owns_the_slant_and_consults_its_terminal() -> None:
     evidence = ledger.snapshot_index()
 
     assert len(evidence.defining_of(candidate)) == 1
-    assert len(evidence.consulted_of(candidate)) == 1
-    terminal = next(iter(evidence.consulted_of(candidate)))
-    assert ledger.claims_of(terminal) == ()
+    assert len(ledger.claims) == 1
 
 
 def test_the_same_wedge_run_through_is_a_chamfer_and_not_a_step():

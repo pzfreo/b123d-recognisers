@@ -152,9 +152,8 @@ def recognise_chamfers(
     principal-axis external cones.
 
     *ledger* records the face a chamfer was **established by**: the bevel, and only that. The
-    two axis-aligned planes it bridges are *consulted* — they locate the virtual sharp corner
-    the convexity probe tests — and each belongs to whatever feature owns it, which is exactly
-    the fillet case :mod:`b123d_recognisers._claims` draws the line on.
+    two axis-aligned planes it bridges remain unclaimed: they locate the virtual sharp corner
+    the convexity probe tests, and each belongs to whatever feature owns it.
 
     A blind step's slant clears every gate here, because on the face alone it is a bevel; pass
     the ledger ``recognise_angled_steps`` wrote into and

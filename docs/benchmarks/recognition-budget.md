@@ -71,3 +71,14 @@ when it legitimately does — with the reason recorded in the commit that moves 
 The baseline is tied to the machine it was taken on. Re-measure both workloads on any other
 box before comparing against it; the *ratio* between two arms measured back to back on the same
 box is the portable part, not the seconds.
+
+## Issue #173 post-consolidation A/B
+
+Measured on the same shared development host, alternating the pre-epic baseline `ccf3b8c` and
+post-epic `d73f612` processes. Two five-sample composite runs crossed directions: current was
+3.5% faster by minimum in one pair (2.628 s versus 2.725 s) and 1.8% slower in the other
+(2.938 s versus 2.887 s). That is host noise, not a reproducible regression.
+
+The trustworthy census arm was also alternated. Current was faster in the first pair
+(133.253 s versus 152.556 s) and effectively tied in the second (146.100 s versus 146.137 s).
+No budget or implementation change is justified by these measurements.

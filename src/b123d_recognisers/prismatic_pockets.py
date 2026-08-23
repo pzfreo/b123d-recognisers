@@ -103,8 +103,8 @@ def recognise_prismatic_pockets(
     the claims rather than by either family second-guessing the other.
 
     *ledger* records the faces the pocket was **established by**: its ring walls. The floor is
-    *consulted* -- it is what makes the recess blind, and `depth` is the walls' own span rather
-    than a measurement off it -- so it is not claimed, the same line
+    inspected but remains unclaimed -- it is what makes the recess blind, and `depth` is the
+    walls' own span rather than a measurement off it -- the same line
     :func:`b123d_recognisers.recognise_pockets` draws for the recess it finds by pairing.
     """
 

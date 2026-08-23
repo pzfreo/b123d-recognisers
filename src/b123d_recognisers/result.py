@@ -289,7 +289,9 @@ class RecognitionResult:
     #: Prismatic-only: an angled blind step is the same planar oblique-bevel read as a
     #: chamfer, while the conical bevel on a rotational part cannot establish one.
     angled_steps: tuple[AngledStep, ...]
-    #: Prismatic voids running through the material, one record per closed ring.
+    #: Prismatic voids running through the material, one record per closed ring. Discovery still
+    #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
+    #: proposals, but this public tuple is then projected as ``()``.
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
@@ -441,9 +443,11 @@ def _discover_all(
     discovered: list[tuple[FamilyId, list[object]]] = []
     for definition in PHYSICAL_DEFINITIONS:
         inputs = CompletedInputs.restricted(definition.dependencies, completed)
-        records = definition.discover(services, inputs) if definition.applicable(context) else []
+        applicable = definition.applicable(context)
+        records = definition.discover(services, inputs) if applicable else []
         validate_output(definition, records)
-        completed[definition.family] = tuple(records)
+        if applicable:
+            completed[definition.family] = tuple(records)
         discovered.append((definition.family, records))
     return tuple(discovered)
 
@@ -466,10 +470,10 @@ def _records(
     family: FamilyId,
     record_type: type[RecordT],
 ) -> list[RecordT]:
-    # The closed phase roster and record-contract tests establish the type. Keeping this cast
-    # non-validating also lets orchestration tests replace families with opaque sentinel records.
-    del record_type
-    return cast(list[RecordT], list(inventory.records(family)))
+    records = list(inventory.records(family))
+    if not all(isinstance(record, record_type) for record in records):
+        raise TypeError(f"{family.value} inventory has the wrong record type")
+    return cast(list[RecordT], records)
 
 
 def _reconcile_existing(
@@ -528,9 +532,14 @@ def _project_result(
     accepted: CandidateInventory,
     derived: DerivedInventory,
 ) -> RecognitionResult:
-    """Project accepted and derived inventories without discovery or policy."""
+    """Project accepted and derived inventories without discovery or reconciliation."""
 
     z_cyls, cross_cyls = context.cylinders
+    passage_definition = next(
+        definition
+        for definition in PHYSICAL_DEFINITIONS
+        if definition.family is FamilyId.PASSAGES
+    )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
@@ -562,7 +571,11 @@ def _project_result(
         risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
         chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
-        passages=tuple(_records(accepted, FamilyId.PASSAGES, Passage)),
+        passages=(
+            tuple(_records(accepted, FamilyId.PASSAGES, Passage))
+            if passage_definition.projected(context)
+            else ()
+        ),
         fillets=tuple(_records(accepted, FamilyId.FILLETS, Fillet)),
         plates=tuple(_records(accepted, FamilyId.PLATES, Plate)),
     )

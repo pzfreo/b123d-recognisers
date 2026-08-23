@@ -8,6 +8,17 @@ from __future__ import annotations
 from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos, Rot, extrude
 
 import b123d_recognisers as r
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._dispositions import Outcome
+
+
+def _obround(length: float, width: float, height: float):
+    end = Cylinder(width / 2, height)
+    return (
+        Box(length, width, height)
+        + Pos(-length / 2, 0, 0) * end
+        + Pos(length / 2, 0, 0) * end
+    )
 
 
 def _u_void(*, blind: bool):
@@ -43,6 +54,78 @@ def test_a_non_rectangular_passage_beats_slots_assembled_from_its_wall_pairs():
     result = r.build_recognition_result(part)
     assert result.slots == ()
     assert [passage.sides for passage in result.passages] == [8]
+
+
+def test_rotational_projection_still_uses_passage_evidence_for_reconciliation():
+    """Classification hides the public Passage, not the evidence that resolves recesses."""
+
+    result = r.build_recognition_result(_u_void(blind=False), rotational=True)
+
+    assert result.passages == ()
+    assert result.slots == ()
+
+
+def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypatch):
+    """Rejected pockets cannot author a pattern after a projection-hidden Passage wins."""
+
+    import b123d_recognisers._registry as registry_module
+    import b123d_recognisers.result as result_module
+
+    pocket = r.Pocket("x", "y", 4, 8, 3, 0, -4, 4, -3, 0)
+    passage = r.Passage("z", 4, 10, (0, 0, 0), ((-2, -4), (2, -4), (2, 4), (-2, 4)))
+    pattern_inputs: list[tuple[r.Pocket, ...]] = []
+
+    def fake_pockets(part, *, ledger, face_edges):
+        del part, face_edges
+        ledger.add_defining(pocket, [ledger.graph.nodes[0]], family=FamilyId.POCKETS)
+        return [pocket]
+
+    def fake_passages(part, *, ledger, face_edges):
+        del part, face_edges
+        ledger.add_defining(passage, [ledger.graph.nodes[0]], family=FamilyId.PASSAGES)
+        return [passage]
+
+    def fake_patterns(pockets):
+        pattern_inputs.append(tuple(pockets))
+        return []
+
+    monkeypatch.setattr(registry_module, "recognise_pockets", fake_pockets)
+    monkeypatch.setattr(registry_module, "recognise_passages", fake_passages)
+    monkeypatch.setattr(registry_module, "recognise_pocket_patterns", fake_patterns)
+
+    product = result_module._take_inventory(Box(20, 20, 10), rotational=True)
+
+    assert product.result.passages == ()
+    assert product.result.pockets == ()
+    assert product.result.pocket_patterns == ()
+    assert pattern_inputs == [()]
+    (passage_disposition,) = product.reconciliation.for_family(FamilyId.PASSAGES)
+    assert passage_disposition.outcome is Outcome.ACCEPTED
+
+
+def test_empty_evidence_obround_slot_does_not_suppress_an_unrelated_passage():
+    stock = Box(120, 70, 20)
+    part = (
+        stock
+        - Pos(-30, 0, 0) * _obround(3, 12, 20)
+        - Pos(30, 0, -5) * Box(10, 10, 30)
+    )
+
+    result = r.build_recognition_result(part)
+
+    assert len(result.slots) == 1
+    assert len(result.passages) == 1
+
+
+def test_empty_evidence_obround_pocket_survives_an_unrelated_passage():
+    stock = Box(120, 70, 20)
+    blind = _obround(6, 10, 8)
+    part = stock - Pos(-30, 0, 12) * blind - Pos(30, 0, -5) * Box(10, 10, 30)
+
+    result = r.build_recognition_result(part)
+
+    assert len(result.pockets) == 1
+    assert len(result.passages) == 1
 
 
 def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():

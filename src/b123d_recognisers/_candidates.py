@@ -7,17 +7,16 @@ during one run, and two equal records may have been established by different fac
 therefore compare by identity and can only be issued through :class:`EvidenceSink`, which validates
 every face node against the run's graph before candidate and evidence become visible together.
 
-Consulted evidence is distinct from defining ownership and cannot participate in claims or
-containment. A failed predicate has no Candidate, so its bounded diagnostic evidence is a separate
-sink-issued Observation rather than a fabricated proposal. The sink intentionally has no lookup
-API; reconciliation receives an immutable index only after aggregate discovery has issued every
+A failed predicate has no Candidate, so its bounded diagnostic evidence is a separate sink-issued
+Observation rather than a fabricated proposal. The sink intentionally has no lookup API;
+reconciliation receives an immutable index only after aggregate discovery has issued every
 physical proposal and the issuer has been terminally sealed. Standalone compatibility paths may
 still take non-closing point-in-time snapshots.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
@@ -66,13 +65,23 @@ class Evidence:
     """The graph nodes that establish one proposal."""
 
     defining: frozenset[FaceNode]
-    consulted: frozenset[FaceNode] = frozenset()
 
 
 class PredicateId(Enum):
     """Closed failed-predicate observations with demonstrated diagnostic consumers."""
 
     ANGLED_STEP_TERMINAL = "angled_step_terminal"
+
+
+def _record_candidate(
+    by_record: Mapping[int, Sequence[Candidate[object]]], record: object
+) -> Candidate[object] | None:
+    """Resolve the private record adapter only when proposal identity is unambiguous."""
+
+    candidates = by_record.get(id(record), ())
+    if len(candidates) > 1:
+        raise ValueError(f"{record!r} has multiple candidates; use candidate identity")
+    return candidates[0] if candidates else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,13 +141,10 @@ class EvidenceSink:
         record: RecordT,
         *,
         defining: Iterable[FaceNode] = (),
-        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]:
         """Atomically validate evidence and issue one identity-safe candidate."""
 
-        return self.__issuer.propose(
-            family, record, defining=defining, consulted=consulted
-        )
+        return self.__issuer.propose(family, record, defining=defining)
 
     def observe(
         self,
@@ -256,20 +262,14 @@ class EvidenceIndex:
     def defining_of(self, subject: object) -> frozenset[FaceNode]:
         """Return defining evidence by candidate identity.
 
-        Record-object lookup is a private migration adapter for legacy filters.  It deliberately
-        preserves the ledger's identity-based, last-proposal-wins behaviour and disappears once
-        every physical output is a candidate.
+        Record-object lookup is a private migration adapter. It fails closed when one record
+        object backs multiple proposals; only Candidate identity is unambiguous in that case.
         """
 
         if isinstance(subject, Candidate):
             return self._validate(subject).defining
-        candidates = self._by_record.get(id(subject), ())
-        return self._validate(candidates[-1]).defining if candidates else frozenset()
-
-    def consulted_of(self, candidate: Candidate[object]) -> frozenset[FaceNode]:
-        """Return context nodes without giving them defining ownership semantics."""
-
-        return self._validate(candidate).consulted
+        candidate = _record_candidate(self._by_record, subject)
+        return self._validate(candidate).defining if candidate is not None else frozenset()
 
     def observations(
         self, family: FamilyId, predicate: PredicateId
@@ -303,7 +303,6 @@ class EvidenceIndex:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
-            or candidate.evidence.consulted is not issued.consulted
         ):
             raise ValueError("candidate no longer matches its issued state")
         return issued
@@ -335,7 +334,6 @@ class _IssuedCandidate:
     record: object
     evidence: Evidence
     defining: frozenset[FaceNode]
-    consulted: frozenset[FaceNode]
 
 
 @dataclass(frozen=True, slots=True)
@@ -377,21 +375,17 @@ class _CandidateIssuer:
         record: RecordT,
         *,
         defining: Iterable[FaceNode],
-        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]:
         if self._sealed:
             raise RuntimeError("evidence issuance is sealed")
         nodes = frozenset(defining)
-        context = frozenset(consulted)
-        if nodes & context:
-            raise ValueError("defining and consulted evidence roles must be disjoint")
-        foreign = [node for node in nodes | context if not self._graph.owns(node)]
+        foreign = [node for node in nodes if not self._graph.owns(node)]
         if foreign:
             raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
         candidate = object.__new__(Candidate)
         object.__setattr__(candidate, "family", family)
         object.__setattr__(candidate, "record", record)
-        object.__setattr__(candidate, "evidence", Evidence(nodes, context))
+        object.__setattr__(candidate, "evidence", Evidence(nodes))
         object.__setattr__(candidate, "_issuer", self._token)
         self._candidates.append(candidate)
         self._issued[id(candidate)] = _IssuedCandidate(
@@ -400,7 +394,6 @@ class _CandidateIssuer:
             record,
             candidate.evidence,
             candidate.evidence.defining,
-            candidate.evidence.consulted,
         )
         self._by_record.setdefault(id(record), []).append(candidate)
         for node in nodes:
@@ -479,7 +472,10 @@ class _CandidateIssuer:
         Named candidates already issued by a claim-writing recogniser are reused.  An output
         with no issued candidate receives one deliberate empty-evidence candidate.  Wrong-family
         issuance and candidates omitted from the returned inventory fail closed rather than being
-        relabelled or silently retained.
+        relabelled or silently retained. A recogniser that proposes explicitly must return the
+        same record object: binding is by occurrence identity, not record value. A returned record
+        that was never proposed is still bound to an empty-evidence Candidate and therefore still
+        receives a disposition.
         """
 
         ordered_records = tuple(records)
@@ -574,8 +570,8 @@ class _CandidateIssuer:
     def defining_of(self, subject: object) -> frozenset[FaceNode]:
         if isinstance(subject, Candidate):
             return self._validate(subject).evidence.defining
-        candidates = self._by_record.get(id(subject), ())
-        return self._validate(candidates[-1]).evidence.defining if candidates else frozenset()
+        candidate = _record_candidate(self._by_record, subject)
+        return self._validate(candidate).evidence.defining if candidate is not None else frozenset()
 
     def candidates_of(self, node: FaceNode) -> tuple[Candidate[object], ...]:
         if not self._graph.owns(node):
@@ -595,7 +591,6 @@ class _CandidateIssuer:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
-            or candidate.evidence.consulted is not issued.consulted
         ):
             raise ValueError("candidate no longer matches its issued state")
         return issued

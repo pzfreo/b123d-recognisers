@@ -8,8 +8,10 @@ from dataclasses import fields, replace
 from inspect import signature
 
 import pytest
+from build123d import Box
 
 import b123d_recognisers as public
+import b123d_recognisers.result as result_module
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._record import Record
 from b123d_recognisers._registry import (
@@ -20,6 +22,8 @@ from b123d_recognisers._registry import (
     Counted,
     DerivedId,
     NotCounted,
+    always,
+    prismatic,
     validate_census_contract,
     validate_definitions,
     validate_output,
@@ -97,6 +101,28 @@ def test_registry_rejects_wrong_typed_dependency_values() -> None:
         accepted.records(FamilyId.HOLES, public.HoleRecord)
 
 
+def test_registry_distinguishes_an_empty_dependency_from_one_not_run() -> None:
+    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: ()})
+    assert completed.records(FamilyId.HOLES, public.HoleRecord) == ()
+
+    with pytest.raises(ValueError, match="has not completed"):
+        CompletedInputs.restricted((FamilyId.HOLES,), {})
+
+
+def test_inapplicable_family_is_not_published_as_a_completed_dependency(monkeypatch) -> None:
+    turned = next(
+        item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.TURNED_STEPS
+    )
+    definitions = tuple(
+        replace(item, applicable=prismatic) if item is turned else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
+
+    with pytest.raises(ValueError, match="turned_steps"):
+        result_module.build_recognition_result(Box(20, 20, 10), rotational=True)
+
+
 def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> None:
     result_fields = {item.name for item in fields(RecognitionResult)}
     orchestration_context = {"cylinders", "rotational"}
@@ -168,6 +194,12 @@ def test_registry_census_dispositions_cover_the_existing_manual_keys() -> None:
 def test_registry_applicability_is_context_only() -> None:
     for definition in PHYSICAL_DEFINITIONS:
         assert tuple(signature(definition.applicable).parameters) == ("context",)
+        assert tuple(signature(definition.projected).parameters) == ("context",)
+    assert {
+        definition.family: definition.projected
+        for definition in PHYSICAL_DEFINITIONS
+        if definition.projected is not always
+    } == {FamilyId.PASSAGES: prismatic}
 
 
 def test_registry_validation_rejects_duplicate_missing_and_late_dependencies() -> None:
@@ -195,6 +227,14 @@ def test_registry_validation_rejects_duplicate_missing_and_late_dependencies() -
     )
     with pytest.raises(ValueError, match="reviewed neutral predicate"):
         validate_definitions(unreviewed_applicability, DERIVED_DEFINITIONS)
+    unreviewed_projection = tuple(
+        replace(item, projected=lambda context: True)
+        if item.family is FamilyId.BOSSES
+        else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="projection must use a reviewed neutral predicate"):
+        validate_definitions(unreviewed_projection, DERIVED_DEFINITIONS)
 
 
 def test_registry_validation_rejects_incomplete_physical_contract_metadata() -> None:

@@ -236,9 +236,8 @@ def recognise_angled_steps(
     *ledger* records the face a step was **established by**: its slant, and only that. Every
     number on the record is read off that one face — both legs from its in-plane extents,
     ``length`` from its span along the edge, ``at`` from its centre. The triangular flat that
-    closes the blind end is *consulted*, not consumed, for the same reason a groove does not
-    claim the shaft either side of it: it belongs to whatever feature owns it, and claiming it
-    would have every step contest its own end cap.
+    closes the blind end remains unclaimed: it belongs to whatever feature owns it, and claiming
+    it would have every step contest its own end cap.
 
     ``recognise_chamfers`` reads the same slant as a bevel and proposes it too, because on the
     face alone it is one. Which of the two survives is
@@ -262,7 +261,7 @@ def _discover_angled_steps(
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
-    out: list[tuple[AngledStep, FaceLike, tuple[FaceLike, ...]]] = []
+    out: list[tuple[AngledStep, FaceLike]] = []
     for f in all_faces:
         try:
             edge_i, _nv, span, leg_hi, leg_lo = classify_bevel(f)
@@ -315,18 +314,16 @@ def _discover_angled_steps(
                     at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
                 ),
                 f,
-                tuple(terminals),
             )
         )
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if sink is not None:
         if graph is None:
             raise ValueError("an evidence sink requires its graph")
-        for step, face, terminal_faces in out:
+        for step, face in out:
             sink.propose(
                 FamilyId.ANGLED_STEPS,
                 step,
                 defining=[graph.require_node(face)],
-                consulted=[graph.require_node(terminal) for terminal in terminal_faces],
             )
-    return [step for step, _, _ in out]
+    return [step for step, _ in out]

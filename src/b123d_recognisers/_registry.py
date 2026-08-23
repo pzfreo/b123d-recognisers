@@ -119,6 +119,12 @@ class CompletedInputs:
         allowed: tuple[FamilyId, ...],
         completed: Mapping[FamilyId, tuple[object, ...]],
     ) -> CompletedInputs:
+        missing = tuple(family for family in allowed if family not in completed)
+        if missing:
+            raise ValueError(
+                "declared physical dependency has not completed: "
+                + ", ".join(family.value for family in missing)
+            )
         return cls(
             frozenset(allowed),
             MappingProxyType({family: completed[family] for family in allowed}),
@@ -165,6 +171,15 @@ Applicability: TypeAlias = Callable[[RecognitionContext], bool]
 DerivedDiscoverer: TypeAlias = Callable[[AcceptedInputs], list[object]]
 
 
+def always(context: RecognitionContext) -> bool:
+    del context
+    return True
+
+
+def prismatic(context: RecognitionContext) -> bool:
+    return not context.rotational
+
+
 @dataclass(frozen=True, slots=True)
 class PhysicalDefinition:
     family: FamilyId
@@ -175,6 +190,7 @@ class PhysicalDefinition:
     applicable: Applicability
     discover: PhysicalDiscoverer
     census: CensusSpec
+    projected: Applicability = always
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,15 +202,6 @@ class DerivedDefinition:
     sources: tuple[FamilyId, ...]
     derive: DerivedDiscoverer
     census: CensusSpec
-
-
-def always(context: RecognitionContext) -> bool:
-    del context
-    return True
-
-
-def prismatic(context: RecognitionContext) -> bool:
-    return not context.rotational
 
 
 def _simple(call: Callable[[DiscoveryServices], list[object]]) -> PhysicalDiscoverer:
@@ -488,13 +495,14 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "passages",
         "recognise_passages",
         (),
-        prismatic,
+        always,
         _simple(
             lambda s: list(
                 recognise_passages(s.context.part, ledger=s.writer, face_edges=s.context.face_edges)
             )
         ),
         Counted("passage"),
+        projected=prismatic,
     ),
     PhysicalDefinition(
         FamilyId.FILLETS,
@@ -587,6 +595,8 @@ def validate_definitions(
             raise ValueError("not-counted census reasons must be non-empty")
         if definition.applicable not in {always, prismatic}:
             raise ValueError("physical applicability must use a reviewed neutral predicate")
+        if definition.projected not in {always, prismatic}:
+            raise ValueError("physical projection must use a reviewed neutral predicate")
         if any(
             dependency not in positions or positions[dependency] >= index
             for dependency in definition.dependencies

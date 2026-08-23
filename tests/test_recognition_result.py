@@ -20,6 +20,7 @@ from b123d_recognisers import (
     TurnedStep,
     build_recognition_result,
 )
+from b123d_recognisers._candidates import FamilyId
 
 
 def _plate_with_holes():
@@ -39,6 +40,20 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
     )
     with pytest.raises(FrozenInstanceError):
         result.holes = ()
+
+
+def test_projection_rejects_a_record_from_the_wrong_family_contract():
+    import b123d_recognisers.result as result_module
+
+    class WrongInventory:
+        def records(self, family):
+            del family
+            return (object(),)
+
+    with pytest.raises(TypeError, match="inventory has the wrong record type"):
+        result_module._records(  # type: ignore[arg-type]
+            WrongInventory(), FamilyId.HOLES, HoleRecord
+        )
 
 
 def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):

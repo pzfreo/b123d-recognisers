@@ -75,7 +75,6 @@ class Candidate(Generic[RecordT]):  # constructed only by this module's sink
 @dataclass(frozen=True, slots=True)
 class Evidence:
     defining: frozenset[FaceNode]
-    consulted: frozenset[FaceNode]
 
 @dataclass(frozen=True, slots=True)
 class CandidateSet(Generic[RecordT]):
@@ -89,7 +88,6 @@ class EvidenceSink(Protocol):
         record: RecordT,
         *,
         defining: Iterable[FaceNode],
-        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]: ...
 
     def observe(
@@ -107,7 +105,6 @@ class CandidateIndex(Protocol):
 
 class EvidenceIndex(Protocol):
     def defining_of(self, candidate: Candidate[Any]) -> frozenset[FaceNode]: ...
-    def consulted_of(self, candidate: Candidate[Any]) -> frozenset[FaceNode]: ...
     def claims_of(self, node: FaceNode) -> tuple[Candidate[Any], ...]: ...
     def observations(
         self, family: FamilyId, predicate: PredicateId
@@ -120,10 +117,9 @@ sink/index retain a run-private issuance token so a manually forged or foreign-r
 rejected. `CandidateSet` validates that its family and every candidate's family agree. Empty
 defining evidence is represented deliberately but must never prove subset containment.
 
-`consulted` records graph-owned context without ownership semantics. It is never returned by
-`claims_of`, used for containment, or allowed to suppress a candidate. A failed predicate has no
-Candidate, so #161 records its one demonstrated case as a separate sink-issued `Observation` with
-an issuer-snapshotted subject, consulted nodes and one closed primitive `PredicateFact`.
+Candidate evidence records defining ownership only. A failed predicate has no Candidate, so #161
+records its one demonstrated context-bearing case as a separate sink-issued `Observation` with an
+issuer-snapshotted subject, consulted nodes and one closed primitive `PredicateFact`.
 Observations are not proposals: they never enter CandidateSet, inventory completeness or
 dispositions. Public records remain ordinary immutable value objects; candidate and observation
 identity are run-local and never become persistent feature identity.
@@ -131,7 +127,7 @@ identity are run-local and never become persistent feature identity.
 The disposition layer is private:
 
 ```python
-Outcome = Literal["accepted", "rejected", "ambiguous", "unsupported"]
+Outcome = Literal["accepted", "rejected"]
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Disposition:
@@ -193,7 +189,8 @@ most once per aggregate run; migrating every family-private scan is separate mea
 The registry introduced by #160 distinguishes three categories rather than pretending every call
 is independent:
 
-- **physical candidate definitions** have neutral applicability that reads context only;
+- **physical candidate definitions** have neutral discovery applicability and public-projection
+  applicability that read context only;
 - **dependent physical definitions** receive declared completed upstream values where current
   semantics require them, such as countersinks feeding hole discovery;
 - **derived projection definitions** consume accepted records after reconciliation, such as
@@ -258,9 +255,9 @@ Tests must make these violations visible:
    #111's measured miss has no emitted candidate and therefore cannot truthfully receive a
    candidate disposition; its residual hypothesis remains explicitly owned by #161.
 5. #160 introduces the registry only after discoverers share a stable internal call shape.
-6. #161 records successful AngledStep terminal faces as consulted evidence, records only the
-   failed subdivided-triangular terminal predicate as a sink-issued observation, and joins that
-   observation to an accepted same-slant Chamfer as one private unsupported residual diagnostic.
+6. #161 records only the failed subdivided-triangular terminal predicate as a sink-issued
+   observation, and joins that observation to an accepted same-slant Chamfer as one private
+   unsupported residual diagnostic.
    It does not fix #111 recognition, scan generic residual graph faces or publish a diagnostic API.
    After implementation and two independent accepts, the frozen 33-model holdout was revealed
    once and pinned at zero diagnostics; no predicate changed after reveal.

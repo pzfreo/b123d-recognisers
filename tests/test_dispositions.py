@@ -78,7 +78,14 @@ def test_duplicate_foreign_and_invalid_related_dispositions_fail_closed() -> Non
         ReconciliationResult(())  # type: ignore[call-arg]
 
     with pytest.raises(ValueError, match="more than one"):
-        ReconciliationResult.complete((slots,), (decision, decision), ledger.snapshot_index())
+        ReconciliationResult.complete(
+            (slots,),
+            (
+                decision,
+                Disposition(candidate, Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED),
+            ),
+            ledger.snapshot_index(),
+        )
     with pytest.raises(ValueError, match="not self-related"):
         ReconciliationResult.complete(
             (slots,),
@@ -98,7 +105,6 @@ def test_duplicate_foreign_and_invalid_related_dispositions_fail_closed() -> Non
             (Disposition(candidate, Outcome.REJECTED, "free form"),),  # type: ignore[arg-type]
             ledger.snapshot_index(),
         )
-
     other = ClaimLedger(FaceGraph(Box(4, 4, 4)))
     foreign_record = Record(2)
     foreign = other.propose(FamilyId.POCKETS, foreign_record)
