@@ -146,6 +146,7 @@ def test_evidence_index_is_a_point_in_time_snapshot_while_legacy_writes_continue
 
     assert snapshot.candidate_set(FamilyId.LEGACY).candidates == (first,)
     assert snapshot.defining_of(first_record) == frozenset({ledger.graph.nodes[0]})
+    assert snapshot.claims_of(ledger.graph.nodes[0]) == (first,)
     assert snapshot.claims_of(ledger.graph.nodes[1]) == ()
     with pytest.raises(ValueError, match="not present in this evidence snapshot"):
         snapshot.defining_of(second)
