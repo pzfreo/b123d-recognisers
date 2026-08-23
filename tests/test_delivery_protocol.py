@@ -2,18 +2,9 @@
 
 from __future__ import annotations
 
-import json
-import runpy
-import subprocess
-import sys
-import zipfile
-from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 
 ROOT = Path(__file__).parents[1]
-_HARNESS = runpy.run_path(str(ROOT / "tools/check_downstream.py"))
-_wheel_version = cast(Callable[[Path], str], _HARNESS["_wheel_version"])
 
 
 def test_recogniser_issue_template_requires_independent_delivery_evidence() -> None:
@@ -66,85 +57,33 @@ def test_boss_walkthrough_proves_each_intermediate_state() -> None:
     assert walkthrough.count("Both repositories green:") >= 4
 
 
-def test_two_checkout_harness_exposes_bounded_candidate_plan() -> None:
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(ROOT / "tools/check_downstream.py"),
-            "--draftwright",
-            str(ROOT),
-            "--plan",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    plan = json.loads(result.stdout)
-    assert [step["name"] for step in plan] == [
-        "package-contract",
-        "build-candidate-wheel",
-        "prepare-draftwright",
-        "install-candidate-wheel",
-        "draftwright-contract",
-    ]
-    joined = "\n".join(" ".join(step["command"]) for step in plan)
-    assert "test_capability_manifest.py" in joined
-    assert "test_recogniser_capabilities.py" in joined
-    assert "-k" not in plan[-1]["command"]
-    assert "--no-deps" in joined
-    assert plan[-1]["environment"] == {
-        "DRAFTWRIGHT_RECOGNISER_CANDIDATE_VERSION": "<candidate-version>"
-    }
-
-
-def test_candidate_harness_reads_the_exact_wheel_identity_without_rewriting_consumer(
-    tmp_path: Path,
-) -> None:
-    wheel = tmp_path / "candidate.whl"
-    with zipfile.ZipFile(wheel, "w") as archive:
-        archive.writestr(
-            "b123d_recognisers-0.2.1.dist-info/METADATA",
-            "Metadata-Version: 2.4\nName: b123d-recognisers\nVersion: 0.2.1\n",
-        )
-    version = _wheel_version(wheel)
-    assert version == "0.2.1"
-
-
 def test_contributor_and_pr_surfaces_link_the_protocol() -> None:
     for path in ("CONTRIBUTING.md", ".github/pull_request_template.md"):
         text = (ROOT / path).read_text(encoding="utf-8")
         assert "docs/delivery-protocol.md" in text
 
 
-def test_hosted_downstream_canary_is_narrow_reproducible_and_auditable() -> None:
-    workflow = (ROOT / ".github/workflows/downstream-canary.yml").read_text(encoding="utf-8")
-    assert "pull_request:" in workflow and "schedule:" in workflow
-    assert workflow.count("runs-on:") == 1, "the canary is one job, not another platform matrix"
-    assert "repository: pzfreo/draftwright" in workflow
-    assert "ref: main" in workflow
-    assert "tools/check_downstream.py --draftwright ../draftwright" in workflow
-    assert "git -C ../draftwright rev-parse HEAD" in workflow
-    assert "capability_manifest(format_version=1)" in workflow
-    assert "GITHUB_STEP_SUMMARY" in workflow
-    assert "Wall time" in workflow
-    assert "matrix:" not in workflow
-    assert "tools/check_post_release_bump.py" in workflow
-    assert "post_release_tag:" in workflow and "post_release_bump_sha:" in workflow
-    assert '"$EVENT_NAME" == workflow_dispatch' in workflow
-    assert '"$BASE_BRANCH" == main' in workflow
-    assert '"$PR_AUTHOR" == \'github-actions[bot]\'' in workflow
-    assert '"$PR_AUTHOR_ASSOCIATION" == OWNER' in workflow
-    assert '"$PR_AUTHOR_ASSOCIATION" == MEMBER' in workflow
-    assert '"$PR_AUTHOR_ASSOCIATION" == COLLABORATOR' in workflow
-    assert '"$HEAD_REPOSITORY" == "$REPOSITORY"' in workflow
-    assert 'git checkout --detach "$PR_HEAD_SHA"' in workflow
-    assert "ref: ${{ github.event.pull_request.head.sha || github.sha }}" not in workflow
-    assert "git merge-base refs/remotes/origin/main HEAD" in workflow
-    ancestry = 'git merge-base --is-ancestor "$bump_parent" "$main_commit"'
-    trusted_load = 'git show "$bump_parent:tools/check_post_release_bump.py"'
-    assert ancestry in workflow and trusted_load in workflow
-    assert workflow.index(ancestry) < workflow.index(trusted_load)
-    assert "steps.bump.outputs.bump_sha" in workflow
+def test_active_delivery_docs_do_not_reference_the_removed_canary_or_harness() -> None:
+    active_surfaces = (
+        ROOT / "CONTRIBUTING.md",
+        ROOT / "docs/delivery-protocol.md",
+        ROOT / "docs/releasing.md",
+        ROOT / "scripts/update-recogniser-version",
+        ROOT / ".github/pull_request_template.md",
+        ROOT / ".github/workflows/publish.yml",
+    )
+    stale_terms = (
+        "downstream-canary.yml",
+        "check_downstream.py",
+        "check_post_release_bump.py",
+        "locally built wheel from the harness",
+        "0.2.NrcK",
+        "X.Y.Z[rcN][.devN]",
+    )
+    for path in active_surfaces:
+        text = path.read_text(encoding="utf-8")
+        for stale in stale_terms:
+            assert stale not in text, f"{path.relative_to(ROOT)} still references {stale}"
 
 
 def test_package_branch_runs_one_full_matrix_not_push_and_pr_duplicates() -> None:

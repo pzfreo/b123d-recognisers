@@ -28,9 +28,9 @@ from pathlib import Path
 
 #: ``X.Y.Z`` or a ``.devN`` snapshot, matching the upstream script this is ported from.
 #:
-#: Deliberately **not** ``rcN``, even though ``docs/delivery-protocol.md`` makes ``0.2.NrcK``
-#: the paired prerelease Draftwright validates a new public record against. Accepting it here
-#: produced an artifact that fails its own ADR 0005 contract: ``capabilities.py``'s version
+#: Deliberately **not** ``rcN``: the supported delivery protocol is stable-package-first and does
+#: not publish prereleases. Accepting ``rcN`` here also produced an artifact that fails its own
+#: ADR 0005 contract: ``capabilities.py``'s version
 #: pattern requires any suffix to begin with ``.``, ``+`` or ``-``, so ``capability_manifest()``
 #: and the console script both raise on a wheel built at ``0.2.6rc1``. Half-supporting the form
 #: is worse than refusing it, because the refusal happens before anything is published.
