@@ -304,6 +304,75 @@ prior-art page's conclusions:
 6. **Persistent feature identity** across re-recognition of edited models — the Analysis Situs
    capability a STEP *editor* (the stated consumer) will want first.
 
+## Can the foundation scale to these, or is it boxed in?
+
+Mostly the former. Five of the six changes above land on foundations the epic-0003 framework
+visibly built for; the one genuine corner-in-progress is oblique-axis generality, and it lives
+in the public record schemas rather than the architecture — which means it gets more expensive
+with every release and is cheapest to fix now, before 1.0.
+
+**Canonical recognition — a clean slot, not a wall.** The whole-package B-spline exclusion is
+the right corner *not* to have cut: because recognition fails closed to *nothing*, canonical
+recognition can be added as a pre-pass that rewrites B-spline faces to analytic surfaces before
+`FaceGraph` construction, and nothing downstream changes. That routing matters because surface
+typing is scattered — 42 `GeomAbs_` call sites across 12 modules — so a per-face
+"effective surface" adapter would touch everything, while a shape-level rewrite touches
+nothing. OCCT ships `ShapeAnalysis_CanonicalRecognition` (7.7+, reachable through OCP), the
+fit is deterministic given a tolerance so ADR 0002 holds, and ADR 0008 already supplies the
+vocabulary for bounding the residual. The D+ in geometric generality is a missing pre-pass,
+not a rearchitecture.
+
+**Claims in remaining families, and through steps — green by construction.** This is what
+epic 0003 and PR #174 paid for up front: the write-only sink, sealed index and registry make
+migrating a family to claims mechanical, `adding-a-recogniser.md` is the recipe for a new
+family, and the framework's cost was measured at zero performance regression.
+
+**Blend collapse — amber, and the local version can improve on the precedent.** The immutable
+per-run `FaceGraph` has no `Collapse()`, but `smooth_region` already demonstrates the right
+idiom: derived *views* over an immutable graph rather than Analysis Situs's mutating collapse,
+whose own header warns that collapsed attributes are not cleaned up by `PopSubgraph`. A
+collapsed view is additive, and the evidence model survives it — defining evidence names real
+faces, which a recogniser working through a view can still claim. The prerequisite is
+enriching `ArcKind` from four to seven values (the smooth-sided pair), and the `"smooth"`
+literal does not leak outside `_adjacency.py`, so that is a contained internal refactor rather
+than a contract change.
+
+**Persistent feature identity — green, as a layer.** Records-are-values means identity cannot
+live inside records, but ADR 0004 already concluded face indices are not persistent identity
+anyway. Cross-run correspondence — fingerprint-matching quantised records between runs — is a
+sidecar consistent with the recognition-versus-policy split. Not blocked; just not free.
+
+**Oblique axes — the real one, in two layers of different health.** The *machinery* is
+axis-agnostic: `FaceGraph` arcs are classified from surface normals, not world axes, and
+ADR 0009 already moved the axis-aligned filtering out of shared reductions and into the
+families that own it, so relaxing predicates is normal work. The *contract* is not: roughly
+twenty `axis: str` (`"x"`/`"y"`/`"z"`) fields across the public records, and
+`Slot`/`Pocket`/`Channel` parameterised as axis-aligned spans (`lo`/`hi`, `d_lo`/`d_hi`,
+`w_center`). An oblique pocket is inexpressible in that schema at any tolerance — no predicate
+change fixes it. The escape route is already demonstrated in the newer families:
+`PrismaticPocket`/`Passage` carry a free axis plus a `section` polygon, and `BossRecord` takes
+a free vector. The path is therefore **supersession, not extension** — section-based records
+grow to cover what span-based ones cannot, and the reconciliation precedence machinery for
+"richer record defeats fragment" already exists and is tested. The cost is real (the
+`_recess_*` machinery is the largest code mass, ~2,500 lines built around axis-aligned spans),
+but it is a planned migration, not a rewrite. The trap is shipping 1.0 with the span-based
+schemas as the frozen contract.
+
+Two cross-cutting notes. **Performance is a tax, not a wall**: per-solid and per-family
+parallelism composes with determinism (discover concurrently, sort canonically), though
+canonical recovery and oblique axes will both multiply candidate spaces and deserve a budget
+line. And **the actual scaling ceiling is not architectural**: the closed registry means the
+vocabulary grows only as fast as one maintainer can produce goldens, corpus figures and
+capability rows per family. That evidence bar plus a bus factor of one bounds the roadmap, not
+the code — and it is also the moat, because the honesty machinery is the one thing no
+competitor has.
+
+**Verdict:** the epic-0003 foundation reads as if designed against exactly this scorecard's
+gaps — the fail-closed boundaries, evidence model and reconciliation are extension points, not
+walls. The single most corner-avoiding move available is migrating the recess families to
+section-based records before 1.0 freezes the axis-aligned worldview into the compatibility
+contract.
+
 ## Sources
 
 In-repo: [`capabilities.md`](capabilities.md), [`prior-art-feature-recognition.md`](prior-art-feature-recognition.md),
