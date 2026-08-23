@@ -151,6 +151,25 @@ def test_proposal_projection_rejects_interval_collapse_and_amplified_frame_round
     with pytest.raises(ValueError, match="moves its geometry"):
         occurrence_geometry_dict(long, body_refs=issuer)
 
+    major = PlanarSection(
+        (
+            SectionVertex((-1.0, 0.0), 5097.0924455409795),
+            SectionVertex((1.0, 0.0), 1 / 5097.0924455409795),
+        )
+    )
+    underestimated = SectionOccurrence(
+        issuer.issue(),
+        LocalFrame.canonical(
+            (0.8606375331162682, 0.9646329473090614, 0.9046959845122367),
+            (0.0, 0.0, 0.0),
+        ),
+        (-1.0, 1.0),
+        major,
+        SectionEnds(False, False),
+    )
+    with pytest.raises(ValueError, match="moves its geometry"):
+        occurrence_geometry_dict(underestimated, body_refs=issuer)
+
 
 def test_section_negative_zero_is_canonicalized() -> None:
     section = PlanarSection(
@@ -162,6 +181,25 @@ def test_section_negative_zero_is_canonicalized() -> None:
     )
     encoded = json.dumps([section_vertex_dict(vertex) for vertex in section.boundary])
     assert "-0.0" not in encoded
+
+    near_zero = PlanarSection(
+        (
+            SectionVertex((-1e-7, 0.0)),
+            SectionVertex((1.0, 0.0)),
+            SectionVertex((1.0, 1.0)),
+        )
+    )
+    assert "-0.0" not in json.dumps([section_vertex_dict(vertex) for vertex in near_zero.boundary])
+
+    issuer = BodyRefIssuer()
+    occurrence = SectionOccurrence(
+        issuer.issue(),
+        LocalFrame.principal("z", (0.0, 0.0, 0.0)),
+        (-0.0004, 1.0),
+        near_zero,
+        SectionEnds(False, False),
+    )
+    assert "-0.0" not in json.dumps(occurrence_geometry_dict(occurrence, body_refs=issuer))
 
 
 def test_two_arc_circle_has_exact_arc_area_and_centroid() -> None:
@@ -363,6 +401,50 @@ def _mat_vec(
     return (float(values[0]), float(values[1]), float(values[2]))
 
 
+def _sample_section_world(
+    section: PlanarSection, frame: LocalFrame, *, samples: int = 17
+) -> tuple[tuple[float, float, float], ...]:
+    points: list[tuple[float, float, float]] = []
+    for index, vertex in enumerate(section.boundary):
+        following = section.boundary[(index + 1) % len(section.boundary)]
+        if vertex.bulge == 0.0:
+            local = tuple(
+                (
+                    vertex.point[0] + fraction * (following.point[0] - vertex.point[0]),
+                    vertex.point[1] + fraction * (following.point[1] - vertex.point[1]),
+                )
+                for fraction in (step / samples for step in range(samples))
+            )
+        else:
+            dx = following.point[0] - vertex.point[0]
+            dy = following.point[1] - vertex.point[1]
+            chord = math.hypot(dx, dy)
+            offset = chord * (1 - vertex.bulge**2) / (4 * vertex.bulge)
+            centre = (
+                (vertex.point[0] + following.point[0]) / 2 - dy * offset / chord,
+                (vertex.point[1] + following.point[1]) / 2 + dx * offset / chord,
+            )
+            radius = chord * (1 + vertex.bulge**2) / (4 * abs(vertex.bulge))
+            start = math.atan2(vertex.point[1] - centre[1], vertex.point[0] - centre[0])
+            sweep = 4 * math.atan(vertex.bulge)
+            local = tuple(
+                (
+                    centre[0] + radius * math.cos(start + sweep * step / samples),
+                    centre[1] + radius * math.sin(start + sweep * step / samples),
+                )
+                for step in range(samples)
+            )
+        points.extend(
+            (
+                frame.origin[0] + frame.u[0] * point[0] + frame.v[0] * point[1],
+                frame.origin[1] + frame.u[1] * point[0] + frame.v[1] * point[1],
+                frame.origin[2] + frame.u[2] * point[0] + frame.v[2] * point[1],
+            )
+            for point in local
+        )
+    return tuple(points)
+
+
 @pytest.mark.parametrize(
     "matrix",
     [
@@ -470,6 +552,18 @@ def test_transformed_arc_section_preserves_world_geometry(matrix) -> None:
     transformed_section = PlanarSection(local)
     assert transformed_section.area == pytest.approx(source.area)
     assert transformed_section.centroid == pytest.approx((0.0, 0.0), abs=1e-9)
+    expected_curve = tuple(
+        _mat_vec(matrix, point) for point in _sample_section_world(source, frame)
+    )
+    actual_curve = _sample_section_world(transformed_section, placed)
+    assert (
+        max(min(math.dist(point, other) for other in actual_curve) for point in expected_curve)
+        < 1e-9
+    )
+    assert (
+        max(min(math.dist(point, other) for other in expected_curve) for point in actual_curve)
+        < 1e-9
+    )
 
 
 def _step_round_trip(part, path: Path):

@@ -224,7 +224,11 @@ def _serialized(vertex: SectionVertex) -> tuple[float, float, float]:
     bulge = round(vertex.bulge, _BULGE_DIGITS)
     if vertex.bulge != 0.0 and bulge == 0.0:
         raise ValueError("serialization would collapse a nonzero arc")
-    return (round(vertex.point[0], 3), round(vertex.point[1], 3), bulge)
+    return (
+        _round_clean(vertex.point[0], 3),
+        _round_clean(vertex.point[1], 3),
+        0.0 if bulge == 0.0 else bulge,
+    )
 
 
 def _canonical_start(vertices: tuple[SectionVertex, ...]) -> tuple[SectionVertex, ...]:
@@ -556,7 +560,12 @@ def section_vertex_dict(vertex: SectionVertex) -> dict[str, object]:
 
 
 def _rounded_vector(vector: Vector3, digits: int) -> list[float]:
-    return [0.0 if (value := round(component, digits)) == 0.0 else value for component in vector]
+    return [_round_clean(component, digits) for component in vector]
+
+
+def _round_clean(value: float, digits: int) -> float:
+    rounded = round(value, digits)
+    return 0.0 if rounded == 0.0 else rounded
 
 
 def occurrence_geometry_dict(
@@ -572,7 +581,7 @@ def occurrence_geometry_dict(
     projected_run = tuple(_rounded_vector(occurrence.frame.run, 6))
     projected_u = tuple(_rounded_vector(occurrence.frame.u, 6))
     projected_v = tuple(_rounded_vector(occurrence.frame.v, 6))
-    projected_interval = tuple(round(value, 3) for value in occurrence.run_interval)
+    projected_interval = tuple(_round_clean(value, 3) for value in occurrence.run_interval)
     if projected_interval[1] <= projected_interval[0]:
         raise ValueError("serialized run interval collapses")
 
@@ -584,27 +593,26 @@ def occurrence_geometry_dict(
         abs(value - projected)
         for value, projected in zip(occurrence.run_interval, projected_interval, strict=True)
     )
-    transverse_extent = max(
-        max(abs(vertex.point[0]), abs(vertex.point[1]))
-        + (
-            arc.radius
-            if (
-                arc := _arc(
-                    vertex,
-                    occurrence.section.boundary[(index + 1) % len(occurrence.section.boundary)],
-                )
-            )
-            is not None
-            else 0.0
+    extents: list[float] = []
+    for index, vertex in enumerate(occurrence.section.boundary):
+        arc = _arc(
+            vertex,
+            occurrence.section.boundary[(index + 1) % len(occurrence.section.boundary)],
         )
-        for index, vertex in enumerate(occurrence.section.boundary)
-    )
+        extents.append(
+            math.hypot(*vertex.point) if arc is None else math.hypot(*arc.centre) + arc.radius
+        )
+    transverse_extent = max(extents)
     world_bound = (
         origin_error
         + max(abs(value) for value in occurrence.run_interval) * run_error
         + interval_error * math.sqrt(sum(value * value for value in projected_run))
         + transverse_extent * (u_error + v_error)
         + _projection_bound(occurrence.section.boundary)
+        * (
+            math.sqrt(sum(value * value for value in projected_u))
+            + math.sqrt(sum(value * value for value in projected_v))
+        )
     )
     if world_bound > _OCCURRENCE_TOL:
         raise ValueError("serialized occurrence moves its geometry beyond local tolerance")
