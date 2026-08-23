@@ -318,11 +318,17 @@ def _primitive_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...
     if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE):
         conic = primitive
         direction, sign = _canonical_direction_and_sign(conic.Axis().Direction())
-        location = conic.Apex() if kind is SurfaceKind.CONE else conic.Axis().Location()
-        point = _closest_axis_point(location, direction)
         if kind is SurfaceKind.CYLINDER:
+            point = _closest_axis_point(conic.Axis().Location(), direction)
             return (*point, *direction, float(conic.Radius()))
-        return (*point, *direction, sign * float(conic.SemiAngle()))
+        apex = conic.Apex()
+        return (
+            float(apex.X()),
+            float(apex.Y()),
+            float(apex.Z()),
+            *direction,
+            sign * float(conic.SemiAngle()),
+        )
     sphere = primitive
     centre = sphere.Location()
     return (float(centre.X()), float(centre.Y()), float(centre.Z()), float(sphere.Radius()))

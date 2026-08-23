@@ -5,8 +5,10 @@ from build123d import Axis, Box, Cone, Cylinder, Face, Sphere
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
-from OCP.Geom import Geom_RectangularTrimmedSurface
+from OCP.Geom import Geom_BezierSurface, Geom_RectangularTrimmedSurface
 from OCP.GeomConvert import GeomConvert
+from OCP.gp import gp_Pnt
+from OCP.TColgp import TColgp_Array2OfPnt
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._effective_surfaces import (
@@ -202,3 +204,29 @@ def test_native_and_exact_bspline_use_the_same_canonical_parameters(native: Face
     assert isinstance(recovered_fact, AnalyticSurfaceFact)
     assert recovered_fact.kind is native_fact.kind
     assert recovered_fact.parameters == pytest.approx(native_fact.parameters, abs=1e-9)
+
+
+def test_locally_bumped_bezier_surface_fails_closed() -> None:
+    poles = TColgp_Array2OfPnt(1, 3, 1, 3)
+    for u in range(1, 4):
+        for v in range(1, 4):
+            poles.SetValue(u, v, gp_Pnt(u - 1, v - 1, 0.2 if (u, v) == (2, 2) else 0.0))
+    made = BRepBuilderAPI_MakeFace(Geom_BezierSurface(poles), 1e-7)
+    graph = FaceGraph(Face(made.Face()))
+    fact = EffectiveSurfaceIndex(graph).fact(graph.nodes[0])
+
+    assert fact.reason is SurfaceRefusalReason.FIT_UNAVAILABLE
+
+
+def test_cone_parameters_retain_apex_position_along_the_axis() -> None:
+    lower = max(Cone(6, 3, 12).faces(), key=lambda face: face.area)
+    upper = lower.translate((0, 0, 5))
+    lower_graph = FaceGraph(lower)
+    upper_graph = FaceGraph(upper)
+    lower_fact = EffectiveSurfaceIndex(lower_graph).fact(lower_graph.nodes[0])
+    upper_fact = EffectiveSurfaceIndex(upper_graph).fact(upper_graph.nodes[0])
+
+    assert isinstance(lower_fact, AnalyticSurfaceFact)
+    assert isinstance(upper_fact, AnalyticSurfaceFact)
+    assert upper_fact.parameters[2] - lower_fact.parameters[2] == pytest.approx(5.0)
+    assert upper_fact.parameters != lower_fact.parameters
