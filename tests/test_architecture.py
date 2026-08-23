@@ -145,21 +145,40 @@ MODULE_SEAM_EDGES = {
 
 
 def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:
-    from b123d_recognisers._effective_surfaces import SURFACE_READER_ROSTER
+    from b123d_recognisers._effective_surfaces import (
+        SURFACE_READER_COUNTS,
+        SURFACE_READER_ROSTER,
+    )
 
-    readers: set[str] = set()
+    readers: dict[str, dict[str, int]] = {}
     for path in PACKAGE.glob("*.py"):
         if path.name == "_effective_surfaces.py":
             continue
-        source = path.read_text(encoding="utf-8")
-        surface_read = "BRepAdaptor_Surface" in source or ".is_planar(" in source
-        face_geom_read = any(
-            token in source for token in ("face.geom_type", "f.geom_type", "other.geom_type")
-        )
-        if surface_read or face_geom_read:
-            readers.add(path.stem)
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        adaptor_aliases = {
+            alias.asname or alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module == "OCP.BRepAdaptor"
+            for alias in node.names
+            if alias.name == "BRepAdaptor_Surface"
+        }
+        counts = {"adaptor": 0, "graph_surface": 0, "is_planar": 0, "geom_type": 0}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name) and node.func.id in adaptor_aliases:
+                    counts["adaptor"] += 1
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "surface":
+                    counts["graph_surface"] += 1
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "is_planar":
+                    counts["is_planar"] += 1
+            if isinstance(node, ast.Attribute) and node.attr == "geom_type":
+                counts["geom_type"] += 1
+        nonzero = {kind: count for kind, count in counts.items() if count}
+        if nonzero:
+            readers[path.stem] = nonzero
 
-    assert readers == set(SURFACE_READER_ROSTER)
+    assert readers == SURFACE_READER_COUNTS
+    assert set(readers) == set(SURFACE_READER_ROSTER)
     assert all(rationale.strip() for _, rationale in SURFACE_READER_ROSTER.values())
 
 

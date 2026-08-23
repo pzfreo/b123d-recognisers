@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Protocol, TypeAlias
 
+import OCP
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import (
@@ -33,6 +34,8 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._geometry import COORD_FLOOR
 
 _RECOVERY_REL = 1e-6
+_SUPPORTED_OCCT_CERTIFICATE_VERSIONS = frozenset({"7.9.3.1"})
+_CERTIFICATE_AUTHORITY = "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract"
 
 
 class SurfaceKind(Enum):
@@ -57,8 +60,10 @@ class SurfaceRefusalReason(Enum):
     UNSUPPORTED_TORUS_RECOVERY = "unsupported-torus-recovery"
     FIT_UNAVAILABLE = "fit-unavailable"
     INVALID_INPUT = "invalid-input"
+    INVALID_RESULT = "invalid-result"
     RESIDUAL_EXCEEDED = "residual-exceeded"
     AMBIGUOUS_PRIMITIVE = "ambiguous-primitive"
+    UNSUPPORTED_OCCT_CONTRACT = "unsupported-occt-contract"
 
 
 class SurfaceReaderDisposition(Enum):
@@ -75,6 +80,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "_adjacency": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "base graph caches original surface/topology facts; it cannot import this layer",
+    ),
+    "angled_steps": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge geom_type validates a split terminal boundary, not a face surface",
     ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
@@ -116,7 +125,42 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         "planar polygonal-side membership gate",
     ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
+    "repeating_profiles": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge geom_type classifies profile boundary curves, not face surfaces",
+    ),
 }
+
+# AST-derived occurrence counts freeze every raw classification site without depending on line
+# numbers. A new alias, variable spelling, or additional call changes this independent inventory.
+SURFACE_READER_COUNTS: dict[str, dict[str, int]] = {
+    "_adjacency": {"adaptor": 4, "graph_surface": 1},
+    "_bevel": {"adaptor": 1},
+    "_cylinder_substrate": {"adaptor": 1},
+    "_hole_features": {"adaptor": 3},
+    "_recess_core": {"is_planar": 2},
+    "_recess_faces": {"adaptor": 1, "is_planar": 1, "geom_type": 1},
+    "_rings": {"is_planar": 1},
+    "angled_steps": {"geom_type": 1},
+    "chamfers": {"adaptor": 3},
+    "countersinks": {"adaptor": 2},
+    "fillets": {"adaptor": 4},
+    "flats": {"adaptor": 1},
+    "grooves": {"adaptor": 3, "geom_type": 1},
+    "levels": {"adaptor": 2},
+    "pads": {"adaptor": 2},
+    "plates": {"adaptor": 2},
+    "polygonal_bosses": {"is_planar": 2},
+    "profiled_bores": {"geom_type": 3},
+    "repeating_profiles": {"geom_type": 3},
+}
+
+
+@dataclass(frozen=True, slots=True)
+class RecoveryCertificate:
+    occt_version: str
+    authority: str
+    maximum_distance_bound: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +172,7 @@ class AnalyticSurfaceFact:
     parameters: tuple[float, ...]
     requested_tolerance: float
     kernel_reported_gap: float
+    certificate: RecoveryCertificate | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,14 +256,19 @@ class EffectiveSurfaceIndex:
         kind = adaptor.GetType()
         native = _NATIVE_KINDS.get(kind)
         if native is not None:
+            try:
+                parameters = _validated_parameters(native, _native_primitive(adaptor, native))
+            except (AttributeError, RuntimeError, ValueError):
+                return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_RESULT)
             return AnalyticSurfaceFact(
                 node=node,
                 kind=native,
                 provenance=SurfaceProvenance.NATIVE,
                 orientation=OrientationCapability.NATIVE_ORIENTED,
-                parameters=_primitive_parameters(native, _native_primitive(adaptor, native)),
+                parameters=parameters,
                 requested_tolerance=0.0,
                 kernel_reported_gap=0.0,
+                certificate=None,
             )
         if kind == GeomAbs_Torus:
             return RefusedSurfaceFact(node, SurfaceRefusalReason.UNSUPPORTED_TORUS_RECOVERY)
@@ -227,6 +277,9 @@ class EffectiveSurfaceIndex:
         return RefusedSurfaceFact(node, SurfaceRefusalReason.UNSUPPORTED_KIND)
 
     def _recover(self, node: FaceNode, face) -> EffectiveSurfaceFact:
+        occt_version = getattr(OCP, "__version__", "")
+        if occt_version not in _SUPPORTED_OCCT_CERTIFICATE_VERSIONS:
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.UNSUPPORTED_OCCT_CONTRACT)
         try:
             tolerance = recovery_tolerance(face)
         except ValueError:
@@ -238,31 +291,63 @@ class EffectiveSurfaceIndex:
             (SurfaceKind.CONE, "IsCone", gp_Cone()),
             (SurfaceKind.SPHERE, "IsSphere", gp_Sphere()),
         )
-        passed: list[tuple[SurfaceKind, object, float]] = []
+        passed: list[tuple[SurfaceKind, tuple[float, ...], float]] = []
+        unavailable = False
+        invalid = False
+        exceeded = False
         for analytic_kind, method, primitive in attempts:
-            recogniser = ShapeAnalysis_CanonicalRecognition(face.wrapped)
             try:
+                recogniser = ShapeAnalysis_CanonicalRecognition(face.wrapped)
                 accepted = bool(getattr(recogniser, method)(tolerance, primitive))
                 status = recogniser.GetStatus()
                 gap = float(recogniser.GetGap())
             except (Standard_Failure, RuntimeError, ValueError):
+                unavailable = True
                 continue
-            if accepted and status == 0 and math.isfinite(gap) and 0.0 <= gap <= tolerance:
-                passed.append((analytic_kind, primitive, gap))
+            if not accepted:
+                continue
+            if status != 0 or not math.isfinite(gap) or gap < 0.0:
+                invalid = True
+                continue
+            if gap > tolerance:
+                exceeded = True
+                continue
+            try:
+                parameters = _validated_parameters(analytic_kind, primitive)
+            except (AttributeError, RuntimeError, ValueError):
+                invalid = True
+                continue
+            passed.append((analytic_kind, parameters, gap))
 
-        if not passed:
-            return RefusedSurfaceFact(node, SurfaceRefusalReason.FIT_UNAVAILABLE)
         if len(passed) != 1:
-            return RefusedSurfaceFact(node, SurfaceRefusalReason.AMBIGUOUS_PRIMITIVE)
-        analytic_kind, primitive, gap = passed[0]
+            if len(passed) > 1:
+                return RefusedSurfaceFact(node, SurfaceRefusalReason.AMBIGUOUS_PRIMITIVE)
+            if invalid:
+                return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_RESULT)
+            if exceeded:
+                return RefusedSurfaceFact(node, SurfaceRefusalReason.RESIDUAL_EXCEEDED)
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.FIT_UNAVAILABLE)
+        if unavailable or invalid:
+            return RefusedSurfaceFact(
+                node,
+                SurfaceRefusalReason.INVALID_RESULT
+                if invalid
+                else SurfaceRefusalReason.FIT_UNAVAILABLE,
+            )
+        analytic_kind, parameters, gap = passed[0]
         return AnalyticSurfaceFact(
             node=node,
             kind=analytic_kind,
             provenance=SurfaceProvenance.RECOVERED,
             orientation=OrientationCapability.RECOVERED_UNORIENTED,
-            parameters=_primitive_parameters(analytic_kind, primitive),
+            parameters=parameters,
             requested_tolerance=tolerance,
             kernel_reported_gap=gap,
+            certificate=RecoveryCertificate(
+                occt_version=occt_version,
+                authority=_CERTIFICATE_AUTHORITY,
+                maximum_distance_bound=tolerance,
+            ),
         )
 
 
@@ -332,3 +417,21 @@ def _primitive_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...
     sphere = primitive
     centre = sphere.Location()
     return (float(centre.X()), float(centre.Y()), float(centre.Z()), float(sphere.Radius()))
+
+
+def _validated_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...]:
+    parameters = _primitive_parameters(kind, primitive)
+    if not parameters or not all(math.isfinite(value) for value in parameters):
+        raise ValueError("analytic primitive parameters must be finite")
+    direction = parameters[3:6] if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE) else None
+    if kind is SurfaceKind.PLANE:
+        direction = parameters[:3]
+    if direction is not None and not math.isclose(
+        math.sqrt(sum(value * value for value in direction)), 1.0, rel_tol=0.0, abs_tol=1e-9
+    ):
+        raise ValueError("analytic primitive axis must be unit length")
+    if kind in (SurfaceKind.CYLINDER, SurfaceKind.SPHERE) and parameters[-1] <= 0.0:
+        raise ValueError("analytic primitive radius must be positive")
+    if kind is SurfaceKind.CONE and not 0.0 < abs(parameters[-1]) < math.pi / 2.0:
+        raise ValueError("analytic cone angle must be strictly between zero and pi/2")
+    return parameters

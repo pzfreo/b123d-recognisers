@@ -329,3 +329,13 @@ construction is invariant under rigid transforms and equivalent seam parameteris
 Requested tolerance, OCCT's reported gap and the upstream face-recognition acceptance certificate
 are distinct full-precision facts. Record rounding never feeds recovery, and corpus measurement
 cannot change these coefficients without another ADR amendment.
+
+Recovery is enabled only for the reviewed OCP/OCCT binding version `7.9.3.1`. The certificate
+authority is OCCT's official shape-healing contract for
+[`ShapeAnalysis_CanonicalRecognition`](https://github.com/Open-Cascade-SAS/OCCT/wiki/shape_healing#analysis-of-shape-underlined-geometry):
+recognition uses the maximal-deviation criterion over the input face and the maximum distance to
+the canonical object must be below the requested value. Each primitive attempt uses a fresh
+recogniser, requires success and status zero, records `GetGap()` separately, and requires that gap
+to be finite, nonnegative and no greater than the requested tolerance. An unreviewed OCP version
+returns `UNSUPPORTED_OCCT_CONTRACT` for every recoverable face rather than assuming that the
+upstream semantics stayed stable.
