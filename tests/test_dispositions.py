@@ -111,9 +111,101 @@ def test_duplicate_foreign_and_invalid_related_dispositions_fail_closed() -> Non
             (Disposition(foreign, Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED),),
             ledger.snapshot_index(),
         )
+    with pytest.raises(ValueError, match="related candidate is not"):
+        ReconciliationResult.complete(
+            (slots,),
+            (
+                Disposition(
+                    candidate,
+                    Outcome.REJECTED,
+                    ReasonCode.SLOT_SUPERSEDED_BY_POCKET,
+                    (foreign,),
+                ),
+            ),
+            ledger.snapshot_index(),
+        )
     complete = ReconciliationResult.complete((slots,), (), ledger.snapshot_index())
     with pytest.raises(ValueError, match="another evidence issuer"):
         complete.accepted_set(foreign_set)
+
+
+def test_completion_rejects_invalid_inventory_and_reason_shapes() -> None:
+    """The coordinator fail-closes every semantic boundary, not only provenance."""
+
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    slot_record = Record(1)
+    other_slot_record = Record(3)
+    pocket_record = Record(2)
+    slot = ledger.propose(FamilyId.SLOTS, slot_record)
+    other_slot = ledger.propose(FamilyId.SLOTS, other_slot_record)
+    pocket = ledger.propose(FamilyId.POCKETS, pocket_record)
+    slots = ledger.candidate_set_for(
+        FamilyId.SLOTS, [slot_record, other_slot_record]
+    )
+    pockets = ledger.candidate_set_for(FamilyId.POCKETS, [pocket_record])
+    evidence = ledger.snapshot_index()
+
+    with pytest.raises(ValueError, match="more than once"):
+        ReconciliationResult.complete((slots, slots), (), evidence)
+    with pytest.raises(ValueError, match="does not match its outcome"):
+        ReconciliationResult.complete(
+            (slots, pockets),
+            (
+                Disposition(
+                    slot,
+                    Outcome.ACCEPTED,
+                    ReasonCode.SLOT_SUPERSEDED_BY_POCKET,
+                    (pocket,),
+                ),
+            ),
+            evidence,
+        )
+    with pytest.raises(ValueError, match="invalid related"):
+        ReconciliationResult.complete(
+            (slots,),
+            (
+                Disposition(
+                    slot,
+                    Outcome.REJECTED,
+                    ReasonCode.SLOT_SUPERSEDED_BY_POCKET,
+                ),
+            ),
+            evidence,
+        )
+    with pytest.raises(ValueError, match="related family"):
+        ReconciliationResult.complete(
+            (slots,),
+            (
+                Disposition(
+                    slot,
+                    Outcome.REJECTED,
+                    ReasonCode.SLOT_SUPERSEDED_BY_POCKET,
+                    (other_slot,),
+                ),
+            ),
+            evidence,
+        )
+
+
+def test_legacy_and_uncovered_sets_cannot_enter_or_escape_reconciliation() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    legacy_record = Record(1)
+    slot_record = Record(2)
+    pocket_record = Record(3)
+    ledger.propose(FamilyId.LEGACY, legacy_record)
+    ledger.propose(FamilyId.SLOTS, slot_record)
+    ledger.propose(FamilyId.POCKETS, pocket_record)
+    legacy = ledger.candidate_set_for(FamilyId.LEGACY, [legacy_record])
+    slots = ledger.candidate_set_for(FamilyId.SLOTS, [slot_record])
+    pockets = ledger.candidate_set_for(FamilyId.POCKETS, [pocket_record])
+    evidence = ledger.snapshot_index()
+
+    with pytest.raises(ValueError, match="legacy candidates"):
+        ReconciliationResult.complete((legacy,), (), evidence)
+
+    result = ReconciliationResult.complete((slots,), (), evidence)
+    with pytest.raises(ValueError, match="not covered"):
+        result.accepted_set(pockets)
 
 
 def test_policy_execution_order_cannot_change_final_disposition_order() -> None:
