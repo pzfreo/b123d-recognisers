@@ -219,26 +219,84 @@ certificate, or production source changed.
 
 ### F2 — Complete smooth-sided AAG semantics
 
-Replace the single `smooth` arc interpretation with the minimum material-side-aware taxonomy needed
-by collapse and family predicates. The intended distinction is smooth-neutral, smooth-concave and
-smooth-convex; exact names require design review.
+Preserve the current closed `ArcKind = convex | concave | smooth | unknown` and `None`-for-
+non-adjacency contract byte-for-byte. Add a separate private closed `SmoothSide = neutral | convex |
+concave | unproven`, queried only when the legacy pair arc is `smooth`. A named `is_any_smooth`
+reads only the legacy first-order fact. `smooth_region` and every existing direct smooth caller
+migrate through that helper, while exact nonsmooth callers keep their present comparison. No family
+consumes `SmoothSide` in F2, so unavailable enrichment cannot tighten or relax recognition.
 
-Required contract:
+Sidedness is certified only from original closed-solid topology; F1 recovered facts remain
+`RECOVERED_UNORIENTED`, and `oriented_fact` continues to refuse them. At each shared edge the graph
+requires exactly two distinct incident faces owned by exactly one same original closed manifold
+solid. Open faces/shells, cross-solid pairs, seams/self-adjacency, duplicate or ambiguous face
+ownership, non-manifold incidence and ownership lookup failure make only `SmoothSide` unproven;
+they never rewrite the legacy pair arc.
 
-- arc classification is symmetric and traversal-order invariant;
-- unknown orientation or failed normal evaluation remains `unknown`, never guessed;
-- every existing caller explicitly chooses whether it needs any-smooth or one smooth-sided kind;
-- `smooth_region` preserves its current behaviour through a named any-smooth predicate;
-- graph construction caches each geometric query once and exposes immutable results;
-- split tangent faces, reversed edges, seams, closed surfaces and degenerate normals have
-  adversarial tests.
+The legacy pair result is computed and cached first by today's exact midpoint/all-shared-edge
+algorithm. Closed-solid eligibility and every second-order check gate only `SmoothSide`; they can
+never veto or rewrite that legacy result. If the legacy result is `smooth`, then for each regular
+nondegenerate shared edge sample deterministic arc-length fractions 1/4, 1/2 and 3/4. At each
+sample, obtain each original face's outward normal and its inward boundary co-normal from the
+face-oriented edge walk. Project that co-normal into the surface's first derivatives and evaluate
+signed normal curvature from the second fundamental form:
 
-This package changes neutral facts only. No recogniser may tighten or relax acceptance in the same
-PR. Any observed output delta is a blocker until explained as an existing classification defect and
-approved separately.
+`k = dot(n, a*a*duu + 2*a*b*duv + b*b*dvv) / |a*du + b*dv|^2`.
 
-Exit gate: all public recognition output is unchanged; the richer arc matrix is independently
-verified on synthetic and imported STEP topology.
+The sign convention is frozen by constructed geometry: negative outward-normal curvature is
+smooth-convex and positive is smooth-concave. Curvature is made dimensionless with local length
+`L = min(edge_length, sqrt(face_a_area), sqrt(face_b_area))`. `L` must be finite and positive.
+With ADR-0008 constant `SMOOTH_CURVATURE_GAP = 1e-6`, `neutral` requires a stronger continuation
+certificate: the two original surfaces must both be native analytic and have equivalent canonical
+plane/cylinder/cone/sphere parameters. A new topology-free private `_analytic_surfaces` leaf owns
+canonicalisation, finite/domain validation and equivalence; both `_effective_surfaces` and
+`_adjacency` depend on it, and it imports only OCP plus `_geometry`. It owns no graph/node,
+recovery, orientation, evidence or cache. This refactors F1 authority without changing recovery.
+
+For local `L`, equivalence length tolerance is `1e-9 * L + COORD_FLOOR`; axis equivalence requires
+`1 - abs(dot) <= 1e-9`; cone semi-angle difference is at most `1e-9` radians. Plane offsets use
+the length tolerance. Cylinders require axis, closest-axis-line distance and radius agreement;
+cones require axis, apex and semi-angle agreement; spheres require centre and radius agreement.
+No kernel-handle identity shortcut is allowed because one surface may be instanced with different
+placements. Curvature equality alone never proves neutral; a plane joined to a quartic tangent
+surface is therefore `unproven` even when both boundary curvatures are zero.
+
+Without that continuation certificate, each sample can prove a side only when the normalized
+curvatures are materially unequal. A zero is omitted from sign unanimity only when its source is a
+proven plane. Any other `abs(k*L) <= gap`, `abs((k_a-k_b)*L) <= gap`, empty remaining sign set, or
+opposite strict signs is `unproven`. All remaining values strictly negative prove `convex`; all
+strictly positive prove `concave`. Unavailable/degenerate D2 data, projection failure,
+contradictory samples, seam/pole instability or unreliable orientation are also `unproven`.
+
+Each immutable per-edge sided observation is cached against the exact original unordered node pair
+and shared-edge identity, including `unproven`. The authoritative legacy pair arc remains in its
+existing unordered-pair cache; the `SmoothSide` reduction has its own unordered-pair cache. All
+three sided observations on every shared edge must agree, and multiple shared edges must agree;
+otherwise the side is `unproven`. Swapping nodes, reversing edge traversal, kernel face order and
+shared-edge order cannot change either fact.
+
+Freeze an AST caller roster before migration. Current production dispositions are exact
+nonsmooth comparisons in `_recess_core` and any-smooth traversal in `FaceGraph.smooth_region`;
+tests/tools are classified too. Compatibility traversal uses `is_any_smooth(arc)`; sided reads use
+only `smooth_side`. Truthiness and negative inference from `unknown`/`None` are forbidden after F2.
+`_adjacency` retains ownership of both facts, observations and caches and may not import F1,
+families, orchestration, claims or reconciliation.
+
+Required evidence includes coplanar and same-cylinder/sphere/cone neutral splits; a plane-to-quartic
+tangent false-neutral refusal; external boss and internal pocket rounds; unequal same-sign
+curvature; an inflection/opposite-sign refusal;
+mirror, rigid transform, scale, node/edge permutation and reversed orientation; periodic seams,
+poles, degenerate edges/D2, open Face, two-solid Compound and non-manifold refusal; agreeing and
+disagreeing multi-edge pairs; STEP round-trip; and mutation tests for all four `SmoothSide`
+branches. Exact public records/order/to_dict, Candidate defining-node identities, full goldens and
+performance remain unchanged. Close #129 as satisfied/superseded, retaining only this richer
+smooth residual in #181.
+
+Because F2 has no sided consumer and must preserve recognition output, it does not spend another
+recognition holdout. Freeze algorithm and ADR-0008 constants before development-arc inspection,
+then require synthetic/imported-development arc matrices, full/static/package/performance evidence
+and two exact-head accepts. A future F3 or first sided consumer owns a separately predeclared
+untouched holdout; consumed MFTRCAD buckets 10–19 may never be reused.
 
 ### F3 — Immutable blend-collapsed graph views
 
