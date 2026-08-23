@@ -118,7 +118,9 @@ defining and consulted evidence therefore continues to name the exact original n
 
 Recovered facts are geometry-only and carry `RECOVERED_UNORIENTED`; canonical axis/frame signs are
 value conventions rather than material-side evidence. An oriented query refuses
-`ORIENTATION_UNPROVEN` until F2's separately reviewed material-side substrate exists. Original
+`ORIENTATION_UNPROVEN` until a separately reviewed recovered-orientation capability and consumer
+slice exists. F2 deliberately classifies only original native surfaces and does not unlock
+recovered orientation. Original
 topology, adjacency, orientation and solid-side probing remain authoritative. The index cannot
 issue Candidates, classify features or mutate the graph.
 
@@ -129,6 +131,9 @@ The existing pair-level `ArcKind` and its unordered cache remain authoritative f
 compatibility traversal. A legacy `smooth` pair may additionally expose `SmoothSide` as neutral,
 convex, concave or unproven. Failure to establish original closed-solid ownership, regular D2 data
 or one agreeing side never rewrites the legacy arc.
+For this private enrichment, build123d's ``Solid.is_valid``—its ``BRepCheck`` validity
+certificate—is the closed-manifold ownership authority; an open or invalid ``TopoDS_Solid``, no
+solid, or more than one owning solid is unproven.
 
 Side observations belong to exact original shared edges and graph-issued face nodes. Every sample
 on every shared edge must agree before the unordered pair receives a proved side; disagreement is

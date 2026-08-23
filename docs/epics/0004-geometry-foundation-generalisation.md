@@ -161,7 +161,8 @@ Topology, boundaries, adjacency, `TopAbs_Orientation`, material-side probes and 
 always use the original face/solid/graph. F1 deliberately recovers **unoriented primitive
 geometry**: canonical axis/frame signs are serialization conventions, not material-side facts.
 Recovered geometry may not answer normals, concavity, outwardness or any orientation-dependent
-family rule. Those readers remain classified raw/deferred until F2 supplies its separately reviewed
+family rule. Those readers remain classified raw/deferred until a separately reviewed
+recovered-orientation capability and consumer slice supplies
 material-side semantics; a request for oriented recovered geometry returns
 `ORIENTATION_UNPROVEN`. This removes the unsafe one-anchor/global-parity claim while preserving
 current original-face behaviour. Effective facts cannot replace topology or decide a family

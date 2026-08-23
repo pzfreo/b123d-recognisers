@@ -99,13 +99,12 @@ def _uninterrupted_long_span(
         if graph.is_planar(node):
             continue
         turns = {graph.arc(fa.node, node), graph.arc(fb.node, node)}
-        if turns != {"convex", "concave"}:
-            continue
-        bounds = graph.bounds(node)[_AXES[long_axis]]
-        if bounds[0] <= lo + COORD_FLOOR:
-            lo = max(lo, bounds[1])
-        if bounds[1] >= hi - COORD_FLOOR:
-            hi = min(hi, bounds[0])
+        if turns == {"convex", "concave"}:
+            bounds = graph.bounds(node)[_AXES[long_axis]]
+            if bounds[0] <= lo + COORD_FLOOR:
+                lo = max(lo, bounds[1])
+            if bounds[1] >= hi - COORD_FLOOR:
+                hi = min(hi, bounds[0])
     return (lo, hi) if hi - lo > COORD_FLOOR else None
 
 

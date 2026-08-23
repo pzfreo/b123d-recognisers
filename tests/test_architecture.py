@@ -145,21 +145,79 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
-    "_adjacency:smooth_region:arc:1": "continuity-compatibility-source",
-    "_adjacency:smooth_region:is_any_smooth:1": "continuity-compatibility",
-    "_adjacency:smooth_side:arc:1": "side-enrichment-prerequisite",
-    "_adjacency:smooth_side:is_any_smooth:1": "side-enrichment-prerequisite",
-    "_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
-    "_recess_core:_uninterrupted_long_span:arc:1": "exact-nonsmooth",
-    "_recess_core:_uninterrupted_long_span:arc:2": "exact-nonsmooth",
-    "_recess_core:_bounds_one_void:arc:1": "pair-agreement",
-    "_recess_core:_bounds_one_void:arc:2": "pair-agreement",
+    "src/b123d_recognisers/_adjacency:smooth_region:arc:1": "legacy-source",
+    "src/b123d_recognisers/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
+    "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",
+    "src/b123d_recognisers/_adjacency:smooth_side:is_any_smooth:1": "any-smooth",
+    "src/b123d_recognisers/_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:1": "exact-nonsmooth-set",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "exact-nonsmooth-set",
+    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
+    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
 }
 
+# Tests are part of the reviewed reader surface: an assertion may intentionally pin the legacy
+# closed value, but it may not accidentally teach production-style code that truthiness or a
+# negative inference is meaningful.  One entry covers every occurrence in the test module; the
+# AST-derived ordinal makes additions fail visibly.
+for _site in (
+    "_arcs:arc:1",
+    "test_an_arc_reads_the_same_from_either_face:arc:1",
+    "test_an_arc_reads_the_same_from_either_face:arc:2",
+    "_smooth_pairs:arc:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:arc:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:arc:2",
+    "test_failed_differential_enrichment_never_rewrites_legacy_smooth:arc:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:arc:1",
+    "test_a_smooth_region_is_maximal_immutable_and_cached_for_each_member:arc:1",
+    "test_a_smooth_region_is_maximal_immutable_and_cached_for_each_member:arc:2",
+    "test_faces_that_do_not_meet_have_no_arc:arc:1",
+    "test_a_pair_meeting_along_several_edges_is_classified_from_all_of_them:arc:1",
+    "test_a_shallow_corner_is_not_smooth:arc:1",
+    "test_imported_step_geometry_classifies_without_unknowns:arc:1",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:1",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:2",
+    "test_a_repeated_query_does_not_recompute_the_kernel_work:arc:3",
+    "test_shared_edges_that_disagree_give_no_single_answer:arc:1",
+    "test_shared_edges_that_disagree_give_no_single_answer:arc:2",
+    "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:1",
+    "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:2",
+    "test_open_topods_solid_cannot_authorize_material_side:arc:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "legacy-contract"
+for _site in (
+    "_smooth_pairs:is_any_smooth:1",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:is_any_smooth:1",
+    "test_open_topods_solid_cannot_authorize_material_side:is_any_smooth:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "any-smooth"
+for _site in (
+    "test_external_and_internal_rounds_have_opposite_smooth_sides:smooth_side:1",
+    "test_external_and_internal_rounds_have_opposite_smooth_sides:smooth_side:2",
+    "test_equivalent_native_surface_splits_are_neutral:smooth_side:1",
+    "test_split_native_side_survives_step_round_trip:smooth_side:1",
+    "test_smooth_convex_side_is_rigid_transform_and_scale_invariant:smooth_side:1",
+    "test_smooth_side_is_symmetric_and_cached_once_per_edge:smooth_side:1",
+    "test_smooth_side_is_symmetric_and_cached_once_per_edge:smooth_side:2",
+    "test_open_faces_can_be_legacy_smooth_but_side_unproven:smooth_side:1",
+    "test_disagreeing_samples_and_shared_edges_are_side_unproven:smooth_side:1",
+    "test_failed_differential_enrichment_never_rewrites_legacy_smooth:smooth_side:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:smooth_side:1",
+    "test_non_smooth_and_foreign_side_queries_fail_intentionally:smooth_side:2",
+    "test_sided_rounds_survive_step_round_trip:smooth_side:1",
+    "test_open_smooth_join_remains_unproven_after_step_round_trip:smooth_side:1",
+    "test_smooth_side_is_independent_of_fresh_face_and_edge_order:smooth_side:1",
+    "test_smooth_side_is_independent_of_fresh_face_and_edge_order:smooth_side:2",
+    "test_duplicate_solid_ownership_cannot_authorize_material_side:smooth_side:1",
+    "test_open_topods_solid_cannot_authorize_material_side:smooth_side:1",
+):
+    ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "side-read"
 
-def test_every_production_arc_reader_has_one_reviewed_disposition() -> None:
+
+def test_every_arc_reader_has_one_reviewed_disposition() -> None:
     found: set[str] = set()
-    for path in [*PACKAGE.glob("*.py"), *(ROOT / "tools").glob("*.py")]:
+    paths = [*PACKAGE.glob("*.py"), *(ROOT / "tools").glob("*.py"), *(ROOT / "tests").rglob("*.py")]
+    for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         parents = {
             child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
@@ -186,15 +244,76 @@ def test_every_production_arc_reader_has_one_reviewed_disposition() -> None:
                     break
             calls.append((node.lineno, node.col_offset, function, mechanism))
         ordinals: dict[tuple[str, str], int] = {}
-        for _, _, function, mechanism in sorted(calls):
+        call_nodes = {
+            (node.lineno, node.col_offset): node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+        }
+        for line, column, function, mechanism in sorted(calls):
             base = (function, mechanism)
             ordinals[base] = ordinals.get(base, 0) + 1
-            found.add(f"{path.stem}:{function}:{mechanism}:{ordinals[base]}")
+            source = path.relative_to(ROOT).with_suffix("").as_posix()
+            site = f"{source}:{function}:{mechanism}:{ordinals[base]}"
+            found.add(site)
+            disposition = ARC_READER_SITES.get(site)
+            if disposition is None:
+                continue
+            call = call_nodes[line, column]
+            parent = parents.get(call)
+            if mechanism in {"arc", "smooth_side"}:
+                assert not isinstance(parent, (ast.If, ast.UnaryOp)), site
+            if isinstance(parent, ast.Compare):
+                assert not any(isinstance(op, (ast.NotEq, ast.NotIn)) for op in parent.ops), site
+            if disposition == "any-smooth":
+                assert mechanism == "is_any_smooth", site
+            elif disposition == "side-read":
+                assert mechanism == "smooth_side", site
+            elif disposition == "legacy-source":
+                assert (
+                    isinstance(parent, ast.Call)
+                    and isinstance(parent.func, ast.Name)
+                    and parent.func.id == "is_any_smooth"
+                ), site
+            elif disposition == "exact-nonsmooth":
+                comparison = (
+                    parents.get(parent)
+                    if isinstance(parent, (ast.Set, ast.List, ast.Tuple))
+                    else parent
+                )
+                assert isinstance(comparison, ast.Compare), site
+                literals = {
+                    value.value
+                    for value in [comparison.left, *comparison.comparators]
+                    if isinstance(value, ast.Constant) and isinstance(value.value, str)
+                }
+                assert literals <= {"convex", "concave"} and literals, site
+            elif disposition == "exact-nonsmooth-set":
+                assert isinstance(parent, ast.Set), site
+                assignment = parents.get(parent)
+                assert isinstance(assignment, ast.Assign), site
+                assert any(
+                    isinstance(target, ast.Name) and target.id == "turns"
+                    for target in assignment.targets
+                ), site
+            elif disposition == "pair-agreement":
+                assert isinstance(parent, ast.Compare), site
+                assert (
+                    sum(isinstance(value, ast.Call) for value in [parent.left, *parent.comparators])
+                    == 2
+                ), site
 
     assert found == set(ARC_READER_SITES)
-    assert all(ARC_READER_SITES.values())
+    assert set(ARC_READER_SITES.values()) <= {
+        "any-smooth",
+        "exact-nonsmooth",
+        "exact-nonsmooth-set",
+        "legacy-contract",
+        "legacy-source",
+        "pair-agreement",
+        "side-read",
+    }
     assert not any(
-        site.startswith("_recess_core:") and disposition == "side-consumer"
+        site.startswith("src/b123d_recognisers/_recess_core:") and disposition == "side-read"
         for site, disposition in ARC_READER_SITES.items()
     )
 
