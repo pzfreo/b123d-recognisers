@@ -30,7 +30,7 @@ from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Sphere
 from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition
 from OCP.Standard import Standard_Failure
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken
 from b123d_recognisers._analytic_surfaces import (
     SurfaceKind,
     native_primitive,
@@ -339,6 +339,9 @@ EffectiveSurfaceFact: TypeAlias = AnalyticSurfaceFact | RefusedSurfaceFact
 
 
 class EffectiveSurfaceQuery(Protocol):
+    @property
+    def run_token(self) -> GraphRunToken: ...
+
     def fact(self, node: FaceNode) -> EffectiveSurfaceFact: ...
 
 
@@ -386,6 +389,10 @@ class EffectiveSurfaceIndex:
     def __init__(self, graph: FaceGraph) -> None:
         self._graph = graph
         self._facts: dict[FaceNode, EffectiveSurfaceFact] = {}
+
+    @property
+    def run_token(self) -> GraphRunToken:
+        return self._graph.run_token
 
     def fact(self, node: FaceNode) -> EffectiveSurfaceFact:
         if not self._graph.owns(node):

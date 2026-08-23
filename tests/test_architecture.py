@@ -142,6 +142,8 @@ MODULE_SEAM_EDGES = {
     "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
+    # Neutral opt-in support bridges consume only original graph and effective-surface facts.
+    "_blend_view": {"_adjacency", "_analytic_surfaces", "_effective_surfaces"},
 }
 
 ARC_READER_SITES = {
@@ -154,6 +156,12 @@ ARC_READER_SITES = {
     "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "opposed-nonsmooth",
     "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
     "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
+    "src/b123d_recognisers/_blend_view:_native_neutral:arc:1": "legacy-contract",
+    "src/b123d_recognisers/_blend_view:_native_neutral:smooth_side:1": "side-read",
+    "src/b123d_recognisers/_blend_view:_classify:smooth_side:1": "side-read",
+    "src/b123d_recognisers/_blend_view:_classify:arc:1": "legacy-contract",
+    "src/b123d_recognisers/_blend_view:_classify:arc:2": "legacy-contract",
+    "src/b123d_recognisers/_blend_view:__init__:arc:1": "legacy-contract",
 }
 
 # Tests are part of the reviewed reader surface: an assertion may intentionally pin the legacy
@@ -670,6 +678,13 @@ def test_internal_module_seams_match_adr_0007() -> None:
         if graph[module] - allowed
     }
     assert crossings == {}
+
+
+def test_neutral_blend_view_has_no_production_consumer() -> None:
+    graph = _package_import_graph()
+    assert {
+        module for module, dependencies in graph.items() if "_blend_view" in dependencies
+    } == set()
 
 
 def test_no_accidental_public_modules() -> None:
