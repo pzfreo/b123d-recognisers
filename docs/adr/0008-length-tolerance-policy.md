@@ -301,3 +301,41 @@ minimum is *correctly* not scale-invariant: a 1 mm chamfer shrunk to 0.05 mm is 
 Absolute constants remain **legal but justified**. A new one needs a comment naming the physical
 constant it encodes and a proportional term beside it. Anything else is a defect this ADR exists to
 catch in review.
+## Amendment (geometry foundation, issue #180)
+
+Canonical analytic recovery is a same-geometry tolerance, not a minimum feature threshold. Before
+recovery was measured on either development corpus, F1 fixed its private requested tolerance as:
+
+```python
+fit_tol = 1e-6 * local_nominal + COORD_FLOOR
+```
+
+For original trimmed-face area `A > 0` and physical trim-boundary length `P >= 0`:
+
+```python
+local_nominal = min(sqrt(A), 2 * A / P) if P > 0 else sqrt(A)
+```
+
+`P` counts each physical trim boundary once and excludes periodic seam pairs and degenerate
+representation edges. A topologically closed face therefore has `P == 0` regardless of surface
+parameterisation. `A` and `P` are measured on the original face in model units. Nonfinite or
+nonpositive area, or nonfinite/negative perimeter, refuses recovery.
+
+The relative `1e-6` requires six significant digits at the controlling local scale;
+`COORD_FLOOR` retains the existing kernel coincidence floor. `2*A/P` makes a long thin patch
+width-controlled, while `sqrt(A)` handles a closed face without a world-axis bounding box. The
+construction is invariant under rigid transforms and equivalent seam parameterisation.
+
+Requested tolerance, OCCT's reported gap and the upstream face-recognition acceptance certificate
+are distinct full-precision facts. Record rounding never feeds recovery, and corpus measurement
+cannot change these coefficients without another ADR amendment.
+
+Recovery is enabled only for the reviewed OCP/OCCT binding version `7.9.3.1`. The certificate
+authority is OCCT's official shape-healing contract for
+[`ShapeAnalysis_CanonicalRecognition`](https://github.com/Open-Cascade-SAS/OCCT/wiki/shape_healing#analysis-of-shape-underlined-geometry):
+recognition uses the maximal-deviation criterion over the input face and the maximum distance to
+the canonical object must be below the requested value. Each primitive attempt uses a fresh
+recogniser, requires success and status zero, records `GetGap()` separately, and requires that gap
+to be finite, nonnegative and no greater than the requested tolerance. An unreviewed OCP version
+returns `UNSUPPORTED_OCCT_CONTRACT` for every recoverable face rather than assuming that the
+upstream semantics stayed stable.
