@@ -339,3 +339,25 @@ recogniser, requires success and status zero, records `GetGap()` separately, and
 to be finite, nonnegative and no greater than the requested tolerance. An unreviewed OCP version
 returns `UNSUPPORTED_OCCT_CONTRACT` for every recoverable face rather than assuming that the
 upstream semantics stayed stable.
+
+## Amendment (geometry foundation, issue #181)
+
+Smooth-side enrichment uses dimensionless signed normal curvature fixed before development-arc
+inspection. At each 1/4, 1/2 and 3/4 arc-length sample on an eligible shared edge:
+
+```python
+local = min(edge_length, sqrt(face_a_area), sqrt(face_b_area))
+normalised_curvature = normal_curvature * local
+SMOOTH_CURVATURE_GAP = 1e-6
+```
+
+Nonfinite or nonpositive `local` refuses side enrichment. A proven planar zero may be omitted from
+sign unanimity; any other magnitude within the gap, a pair difference within the gap without an
+analytic-continuation certificate, an empty sign set or opposite signs is unproven. These are
+same-geometry/differential tolerances, not minimum feature thresholds.
+
+Native analytic equivalence is owned by `_analytic_surfaces`. With the same local value, length,
+offset, centre, closest-axis-line, apex and radius comparisons use
+`1e-9 * local + COORD_FLOOR`; axis comparison uses `1 - abs(dot) <= 1e-9`; cone semi-angle uses
+`1e-9` radians. Kernel-handle identity is not evidence because one surface may be instanced under
+different placements. Record rounding never enters either certificate.
