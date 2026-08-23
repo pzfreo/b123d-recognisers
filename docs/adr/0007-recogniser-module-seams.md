@@ -109,3 +109,13 @@ one family cannot quietly become substrate for the other two without the import 
 No public symbol, signature, record value or `__module__` changed, and the split is verified
 byte-identical over the whole corpus. It remains an internal patch-level change, exactly as
 this record's consequences describe.
+
+## Amendment (framework consolidation, issues #156 and #157)
+
+`_candidates` is the private run-local identity/evidence layer and depends only on immutable AAG
+facts from `_adjacency`. `_claims` sits above it as a temporary compatibility facade for existing
+families. Reconciliation may read the frozen `EvidenceIndex` and name the record families whose
+conflicts it decides, but it may not import discovery entry points, accept `Part`, or construct
+graph facts. Migrated discovery cores receive `FaceGraph` plus `EvidenceSink`, never the readable
+legacy ledger. Architecture tests enforce these edges and capability shapes while later epic
+stages migrate the remaining families.

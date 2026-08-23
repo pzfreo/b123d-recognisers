@@ -148,16 +148,28 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)
 
     assert len(pockets) == 1 and len(prismatic) == 1, "both families see this recess"
-    assert prismatic_pockets_that_are_not_pockets(prismatic, ledger) == []
+    assert (
+        prismatic_pockets_that_are_not_pockets(
+            prismatic, pockets, ledger.snapshot_index()
+        )
+        == []
+    )
 
     # And the rule is not simply "drop everything": a shape `Pocket` cannot express survives it.
     # One part, built once -- a second `_triangular()` is a different solid, and the ledger
     # would refuse its faces rather than quietly answering about the wrong one.
     triangle = _triangular()
     tri_ledger = ClaimLedger(FaceGraph(triangle))
-    r.recognise_pockets(triangle, ledger=tri_ledger)
+    tri_pockets = r.recognise_pockets(triangle, ledger=tri_ledger)
     tri = r.recognise_prismatic_pockets(triangle, ledger=tri_ledger)
-    assert len(prismatic_pockets_that_are_not_pockets(tri, tri_ledger)) == 1
+    assert (
+        len(
+            prismatic_pockets_that_are_not_pockets(
+                tri, tri_pockets, tri_ledger.snapshot_index()
+            )
+        )
+        == 1
+    )
 
 
 def test_an_obround_recess_is_the_other_family_s_to_find():

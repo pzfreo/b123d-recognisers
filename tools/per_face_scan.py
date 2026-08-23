@@ -90,8 +90,13 @@ def scan_part(part, labels):
     slots = r.recognise_slots(part, ledger=ledger)
     pockets = r.recognise_pockets(part, ledger=ledger)
     ring_pockets = r.recognise_prismatic_pockets(part, ledger=ledger)
+    passages = r.recognise_passages(part, ledger=ledger)
     slots, pockets, ring_pockets, passages = reconcile_recesses(
-        part, slots, pockets, ring_pockets, ledger
+        slots,
+        pockets,
+        ring_pockets,
+        passages,
+        ledger.snapshot_index(),
     )
     proposed = r.recognise_chamfers(part, ledger=ledger)
     steps = r.recognise_angled_steps(part, ledger=ledger)

@@ -45,7 +45,7 @@ from b123d_recognisers.levels import (
     step_level_records,
 )
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -398,8 +398,10 @@ def _take_inventory(
     # to allow anywhere else.
     pockets = recognise_pockets(part, ledger=ledger, face_edges=face_edges)
     ring_pockets = recognise_prismatic_pockets(part, ledger=ledger, face_edges=face_edges)
+    passages = recognise_passages(part, ledger=ledger, face_edges=face_edges)
+    recess_evidence = ledger.snapshot_index()
     slots, pockets, ring_pockets, passages = reconcile_recesses(
-        part, slots, pockets, ring_pockets, ledger
+        slots, pockets, ring_pockets, passages, recess_evidence
     )
     # Into the ledger for the same reason, though the rule that reads these two runs in the
     # census rather than here: a groove is a rung of the step ladder, and both records survive

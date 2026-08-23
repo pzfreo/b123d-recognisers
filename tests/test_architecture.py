@@ -93,9 +93,9 @@ MODULE_SEAM_EDGES = {
     # The reconciler names both families it decides between, so it sits above them and neither
     # sits above it -- a recogniser importing this is the order dependence ADR 0003 forbids.
     "_reconcile": {
+        "_candidates",
         "_claims",
         "_recess_records",
-        "_typing",
         "angled_steps",
         "chamfers",
         "grooves",
@@ -105,6 +105,99 @@ MODULE_SEAM_EDGES = {
     },
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
 }
+
+
+def test_reconciler_never_imports_or_calls_discovery() -> None:
+    path = PACKAGE / "_reconcile.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    imported = [
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+        if alias.name.startswith("recognise_")
+    ]
+    called = [
+        node.func.id if isinstance(node.func, ast.Name) else node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, (ast.Name, ast.Attribute))
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id.startswith("recognise_"))
+            or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr.startswith("recognise_")
+            )
+        )
+    ]
+    qualified_references = [
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and node.attr.startswith("recognise_")
+    ]
+    assert imported == []
+    assert called == []
+    assert qualified_references == []
+
+
+def test_recess_reconciler_accepts_completed_records_and_frozen_evidence_only() -> None:
+    module = importlib.import_module("b123d_recognisers._reconcile")
+    hints = typing.get_type_hints(module.reconcile_recesses)
+
+    assert set(hints) == {"slots", "pockets", "prismatic", "passages", "evidence", "return"}
+    assert hints["evidence"].__name__ == "EvidenceIndex"
+
+
+def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence() -> None:
+    roots = (PACKAGE, ROOT / "tools", ROOT / "tests")
+    calls = []
+    for root in roots:
+        for path in sorted(root.glob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            calls.extend(
+                (path.relative_to(ROOT).as_posix(), node)
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "reconcile_recesses"
+            )
+
+    assert {path for path, _ in calls} == {
+        "src/b123d_recognisers/result.py",
+        "tests/test_mfcadpp_corpus.py",
+        "tools/per_face_scan.py",
+    }
+    for _path, call in calls:
+        assert len(call.args) == 5 and not call.keywords
+        assert "passage" in ast.unparse(call.args[3]).lower()
+        evidence = ast.unparse(call.args[4]).lower()
+        assert "evidence" in evidence or "snapshot_index" in evidence
+
+
+def test_migrated_discovery_cores_receive_write_only_evidence() -> None:
+    for module_name, function_name in (
+        ("angled_steps", "_discover_angled_steps"),
+        ("passages", "_discover_passages"),
+    ):
+        module = importlib.import_module(f"b123d_recognisers.{module_name}")
+        hints = typing.get_type_hints(getattr(module, function_name))
+        assert "ClaimLedger" not in {getattr(hint, "__name__", "") for hint in hints.values()}
+        assert "EvidenceSink" in repr(hints["sink"])
+
+        path = PACKAGE / f"{module_name}.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        function = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == function_name
+        )
+        read_names = {"candidate_set", "defining_of", "claims_of", "claims", "ledger"}
+        used = {
+            node.attr
+            for node in ast.walk(function)
+            if isinstance(node, ast.Attribute) and node.attr in read_names
+        }
+        assert used == set()
 
 
 def _package_import_graph() -> dict[str, set[str]]:

@@ -193,3 +193,19 @@ connectivity to prove geometry it cannot prove. Emptiness is evaluated within th
 material belonging to that same solid, including a connected island or bridge, is not representable
 by the simple record; disconnected compound members are recognised independently and do not
 suppress it.
+
+## Amendment (framework consolidation, issue #157)
+
+Discovery and reconciliation now receive structurally different evidence capabilities on the
+first migrated paths. `EvidenceSink` can append a candidate and its defining evidence atomically
+but cannot look anything up. `EvidenceIndex` can look up only a copied, immutable issuance prefix
+and has no append route. Passage discovery therefore completes before recess reconciliation;
+the rule receives completed records and the point-in-time index, not a `Part`, mutable ledger, or
+recogniser it could invoke.
+
+This is deliberately not yet the one aggregate-wide freeze. Several unmigrated physical families
+still discover after recess reconciliation, so the private legacy ledger may append after an index
+snapshot; those later writes cannot change the earlier index. The sole terminal freeze follows
+only when all physical discovery moves ahead of reconciliation under epic 0003. Public standalone
+recognisers keep their existing ledger-compatible facades while their migrated discovery cores
+receive only neutral graph facts and the write-only sink.

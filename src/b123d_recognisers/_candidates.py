@@ -8,15 +8,17 @@ therefore compare by identity and can only be issued through :class:`EvidenceSin
 every face node against the run's graph before candidate and evidence become visible together.
 
 Only defining evidence exists in this first slice.  Consulted and derived roles remain reserved
-until real diagnostic consumers exist.  The sink intentionally has no lookup API; a later
-migration will expose a separately frozen read view once the aggregate phase boundary is ready.
+until real diagnostic consumers exist.  The sink intentionally has no lookup API; reconciliation
+receives a separately frozen point-in-time index.  The sole aggregate-wide freeze remains a later
+phase migration because unmigrated physical discovery still follows the first reconciliation.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
+from types import MappingProxyType
 from typing import Generic, TypeVar
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
@@ -34,6 +36,7 @@ class FamilyId(Enum):
 
     LEGACY = "legacy"
     ANGLED_STEPS = "angled_steps"
+    PASSAGES = "passages"
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +83,75 @@ class EvidenceSink:
         """Atomically validate evidence and issue one identity-safe candidate."""
 
         return self.__issuer.propose(family, record, defining=defining)
+
+
+@dataclass(frozen=True, init=False, slots=True)
+class EvidenceIndex:
+    """Immutable point-in-time evidence issued by one recognition run.
+
+    This is a copied prefix, not a live read-only facade.  The temporary legacy ledger may keep
+    accepting proposals after a snapshot while aggregate phase migration is incomplete; those
+    later proposals cannot appear here.  The one terminal freeze belongs to the later phase
+    extraction, not this transitional capability.
+    """
+
+    _graph: FaceGraph = field(repr=False)
+    _token: object = field(repr=False)
+    _candidates: tuple[Candidate[object], ...] = field(repr=False)
+    _issued: Mapping[int, _IssuedCandidate] = field(repr=False)
+    _by_record: Mapping[int, tuple[Candidate[object], ...]] = field(repr=False)
+    _by_node: Mapping[FaceNode, tuple[Candidate[object], ...]] = field(repr=False)
+
+    def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
+        """Return the source-ordered candidates for *family* in this snapshot."""
+
+        candidates = tuple(
+            issued.candidate
+            for candidate in self._candidates
+            if (issued := self._validate(candidate)).family is family
+        )
+        result = object.__new__(CandidateSet)
+        object.__setattr__(result, "family", family)
+        object.__setattr__(result, "candidates", candidates)
+        object.__setattr__(result, "_issuer", self._token)
+        return result
+
+    def defining_of(self, subject: object) -> frozenset[FaceNode]:
+        """Return defining evidence by candidate identity.
+
+        Record-object lookup is a private migration adapter for legacy filters.  It deliberately
+        preserves the ledger's identity-based, last-proposal-wins behaviour and disappears once
+        every physical output is a candidate.
+        """
+
+        if isinstance(subject, Candidate):
+            return self._validate(subject).defining
+        candidates = self._by_record.get(id(subject), ())
+        return self._validate(candidates[-1]).defining if candidates else frozenset()
+
+    def claims_of(self, node: FaceNode) -> tuple[Candidate[object], ...]:
+        """Return candidates naming *node*, in proposal order."""
+
+        if not self._graph.owns(node):
+            raise ValueError(f"{node!r} is not this graph's node")
+        candidates = self._by_node.get(node, ())
+        for candidate in candidates:
+            self._validate(candidate)
+        return candidates
+
+    def _validate(self, candidate: Candidate[object]) -> _IssuedCandidate:
+        issued = self._issued.get(id(candidate))
+        if issued is None or issued.candidate is not candidate:
+            raise ValueError("candidate is not present in this evidence snapshot")
+        if (
+            candidate._issuer is not self._token
+            or candidate.family is not issued.family
+            or candidate.record is not issued.record
+            or candidate.evidence is not issued.evidence
+            or candidate.evidence.defining is not issued.defining
+        ):
+            raise ValueError("candidate no longer matches its issued state")
+        return issued
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +230,30 @@ class _CandidateIssuer:
         object.__setattr__(result, "family", family)
         object.__setattr__(result, "candidates", candidates)
         object.__setattr__(result, "_issuer", self._token)
+        return result
+
+    def snapshot_index(self) -> EvidenceIndex:
+        """Copy the currently issued prefix into an immutable read capability."""
+
+        for candidate in self._candidates:
+            self._validate(candidate)
+        result = object.__new__(EvidenceIndex)
+        object.__setattr__(result, "_graph", self._graph)
+        object.__setattr__(result, "_token", self._token)
+        object.__setattr__(result, "_candidates", tuple(self._candidates))
+        object.__setattr__(result, "_issued", MappingProxyType(dict(self._issued)))
+        object.__setattr__(
+            result,
+            "_by_record",
+            MappingProxyType(
+                {key: tuple(value) for key, value in self._by_record.items()}
+            ),
+        )
+        object.__setattr__(
+            result,
+            "_by_node",
+            MappingProxyType({key: tuple(value) for key, value in self._by_node.items()}),
+        )
         return result
 
     def defining_of(self, subject: object) -> frozenset[FaceNode]:

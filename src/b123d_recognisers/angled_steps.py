@@ -91,6 +91,7 @@ from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
+    FaceGraph,
     axis_aligned_axis,
     edge_face_map,
     nearest_axis_aligned_planes,
@@ -102,7 +103,7 @@ from b123d_recognisers._bevel import (
     convex_bevel,
     material_beyond_corner,
 )
-from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -187,6 +188,20 @@ def recognise_angled_steps(
     :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps`, decided from these
     claims rather than by each family second-guessing the other."""
 
+    graph = None if ledger is None else ledger.graph
+    sink = None if ledger is None else ledger.sink
+    return _discover_angled_steps(part, face_edges=face_edges, graph=graph, sink=sink)
+
+
+def _discover_angled_steps(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None,
+    graph: FaceGraph | None,
+    sink: EvidenceSink | None,
+) -> list[AngledStep]:
+    """Discover from geometry and append through a capability with no evidence reads."""
+
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
@@ -231,11 +246,13 @@ def recognise_angled_steps(
             )
         )
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
-    if ledger is not None:
+    if sink is not None:
+        if graph is None:
+            raise ValueError("an evidence sink requires its graph")
         for step, face in out:
-            ledger.propose(
+            sink.propose(
                 FamilyId.ANGLED_STEPS,
                 step,
-                [ledger.graph.require_node(face)],
+                defining=[graph.require_node(face)],
             )
     return [step for step, _ in out]
