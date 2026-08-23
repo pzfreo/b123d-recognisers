@@ -721,7 +721,7 @@ class FaceGraph:
         while explorer.More():
             current = explorer.Current()
             if current.IsSame(edge.wrapped):
-                return current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
+                return bool(current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED)
             explorer.Next()
         raise ValueError("shared edge is absent from its original face")
 
