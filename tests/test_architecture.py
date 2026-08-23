@@ -37,7 +37,8 @@ PUBLIC_MODULES = {
 
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
-    "_adjacency": {"_geometry", "_typing"},
+    "_analytic_surfaces": {"_geometry"},
+    "_adjacency": {"_analytic_surfaces", "_geometry", "_typing"},
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
     # Three recognisers begin with the same two questions of a face. Naming the layer is
@@ -140,7 +141,7 @@ MODULE_SEAM_EDGES = {
     "_sections": set(),
     "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
-    "_effective_surfaces": {"_adjacency", "_geometry"},
+    "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
 }
 
 
