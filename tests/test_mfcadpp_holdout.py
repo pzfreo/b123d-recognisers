@@ -39,6 +39,9 @@ import sys
 from pathlib import Path
 
 import pytest
+from build123d import import_step
+
+from b123d_recognisers.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -109,3 +112,13 @@ def test_every_angled_step_on_unseen_geometry_is_a_triangular_blind_step(scored)
         if LABELS[int(label)] != TRIANGULAR_BLIND_STEP
     }
     assert off_target == {}
+
+
+def test_bounded_residual_diagnostic_has_zero_holdout_noise() -> None:
+    """Post-review reveal: the private #161 diagnostic emits nothing on all 33 models."""
+
+    assert {
+        path.name: product.diagnostics
+        for path in sorted(CORPUS.glob("*.step"))
+        if (product := _take_inventory(import_step(str(path)))).diagnostics
+    } == {}

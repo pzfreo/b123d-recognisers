@@ -7,11 +7,12 @@ during one run, and two equal records may have been established by different fac
 therefore compare by identity and can only be issued through :class:`EvidenceSink`, which validates
 every face node against the run's graph before candidate and evidence become visible together.
 
-Only defining evidence exists in this slice.  Consulted and derived roles remain reserved until
-real diagnostic consumers exist.  The sink intentionally has no lookup API; reconciliation
-receives an immutable index only after aggregate discovery has issued every physical proposal and
-the issuer has been terminally sealed.  Standalone compatibility paths may still take non-closing
-point-in-time snapshots.
+Consulted evidence is distinct from defining ownership and cannot participate in claims or
+containment. A failed predicate has no Candidate, so its bounded diagnostic evidence is a separate
+sink-issued Observation rather than a fabricated proposal. The sink intentionally has no lookup
+API; reconciliation receives an immutable index only after aggregate discovery has issued every
+physical proposal and the issuer has been terminally sealed. Standalone compatibility paths may
+still take non-closing point-in-time snapshots.
 """
 
 from __future__ import annotations
@@ -65,6 +66,37 @@ class Evidence:
     """The graph nodes that establish one proposal."""
 
     defining: frozenset[FaceNode]
+    consulted: frozenset[FaceNode] = frozenset()
+
+
+class PredicateId(Enum):
+    """Closed failed-predicate observations with demonstrated diagnostic consumers."""
+
+    ANGLED_STEP_TERMINAL = "angled_step_terminal"
+
+
+@dataclass(frozen=True, slots=True)
+class SplitTriangularTerminalFact:
+    """A linear outer boundary split topologically but still having three geometric sides."""
+
+    raw_outer_edges: int
+    effective_outer_sides: int = 3
+
+    def __post_init__(self) -> None:
+        if self.raw_outer_edges <= 3 or self.effective_outer_sides != 3:
+            raise ValueError("a split triangular terminal requires raw > 3 and effective == 3")
+
+
+@dataclass(frozen=True, eq=False, init=False, slots=True)
+class Observation:
+    """One sink-issued failed predicate attempt; never a physical proposal."""
+
+    family: FamilyId
+    predicate: PredicateId
+    subject: FaceNode
+    consulted: frozenset[FaceNode]
+    fact: SplitTriangularTerminalFact
+    _issuer: object = field(repr=False)
 
 
 @dataclass(frozen=True, eq=False, init=False, slots=True)
@@ -100,10 +132,32 @@ class EvidenceSink:
         record: RecordT,
         *,
         defining: Iterable[FaceNode] = (),
+        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]:
         """Atomically validate evidence and issue one identity-safe candidate."""
 
-        return self.__issuer.propose(family, record, defining=defining)
+        return self.__issuer.propose(
+            family, record, defining=defining, consulted=consulted
+        )
+
+    def observe(
+        self,
+        family: FamilyId,
+        predicate: PredicateId,
+        *,
+        subject: FaceNode,
+        consulted: Iterable[FaceNode],
+        fact: SplitTriangularTerminalFact,
+    ) -> Observation:
+        """Atomically issue one failed-predicate observation."""
+
+        return self.__issuer.observe(
+            family,
+            predicate,
+            subject=subject,
+            consulted=consulted,
+            fact=fact,
+        )
 
 
 @dataclass(frozen=True, init=False, slots=True)
@@ -123,6 +177,8 @@ class EvidenceIndex:
     _issued: Mapping[int, _IssuedCandidate] = field(repr=False)
     _by_record: Mapping[int, tuple[Candidate[object], ...]] = field(repr=False)
     _by_node: Mapping[FaceNode, tuple[Candidate[object], ...]] = field(repr=False)
+    _observations: tuple[Observation, ...] = field(repr=False)
+    _issued_observations: Mapping[int, _IssuedObservation] = field(repr=False)
 
     def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
         """Return the source-ordered candidates for *family* in this snapshot."""
@@ -210,6 +266,23 @@ class EvidenceIndex:
         candidates = self._by_record.get(id(subject), ())
         return self._validate(candidates[-1]).defining if candidates else frozenset()
 
+    def consulted_of(self, candidate: Candidate[object]) -> frozenset[FaceNode]:
+        """Return context nodes without giving them defining ownership semantics."""
+
+        return self._validate(candidate).consulted
+
+    def observations(
+        self, family: FamilyId, predicate: PredicateId
+    ) -> tuple[Observation, ...]:
+        """Return validated failed attempts in issuance order."""
+
+        issued = tuple(self._validate_observation(item) for item in self._observations)
+        return tuple(
+            item.observation
+            for item in issued
+            if item.family is family and item.predicate is predicate
+        )
+
     def claims_of(self, node: FaceNode) -> tuple[Candidate[object], ...]:
         """Return candidates naming *node*, in proposal order."""
 
@@ -230,8 +303,26 @@ class EvidenceIndex:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
+            or candidate.evidence.consulted is not issued.consulted
         ):
             raise ValueError("candidate no longer matches its issued state")
+        return issued
+
+    def _validate_observation(self, observation: Observation) -> _IssuedObservation:
+        issued = self._issued_observations.get(id(observation))
+        if issued is None or issued.observation is not observation:
+            raise ValueError("observation is not present in this evidence snapshot")
+        if (
+            observation._issuer is not self._token
+            or observation.family is not issued.family
+            or observation.predicate is not issued.predicate
+            or observation.subject is not issued.subject
+            or observation.consulted is not issued.consulted
+            or observation.fact is not issued.fact
+            or observation.fact.raw_outer_edges != issued.raw_outer_edges
+            or observation.fact.effective_outer_sides != issued.effective_outer_sides
+        ):
+            raise ValueError("observation no longer matches its issued state")
         return issued
 
 
@@ -244,6 +335,19 @@ class _IssuedCandidate:
     record: object
     evidence: Evidence
     defining: frozenset[FaceNode]
+    consulted: frozenset[FaceNode]
+
+
+@dataclass(frozen=True, slots=True)
+class _IssuedObservation:
+    observation: Observation
+    family: FamilyId
+    predicate: PredicateId
+    subject: FaceNode
+    consulted: frozenset[FaceNode]
+    fact: SplitTriangularTerminalFact
+    raw_outer_edges: int
+    effective_outer_sides: int
 
 
 class _CandidateIssuer:
@@ -261,6 +365,8 @@ class _CandidateIssuer:
         self._issued: dict[int, _IssuedCandidate] = {}
         self._by_record: dict[int, list[Candidate[object]]] = {}
         self._by_node: dict[FaceNode, list[Candidate[object]]] = {}
+        self._observations: list[Observation] = []
+        self._issued_observations: dict[int, _IssuedObservation] = {}
         self._on_issued = on_issued
         self._sealed = False
         self.sink = EvidenceSink(self)
@@ -271,17 +377,21 @@ class _CandidateIssuer:
         record: RecordT,
         *,
         defining: Iterable[FaceNode],
+        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[RecordT]:
         if self._sealed:
-            raise RuntimeError("candidate issuance is sealed")
+            raise RuntimeError("evidence issuance is sealed")
         nodes = frozenset(defining)
-        foreign = [node for node in nodes if not self._graph.owns(node)]
+        context = frozenset(consulted)
+        if nodes & context:
+            raise ValueError("defining and consulted evidence roles must be disjoint")
+        foreign = [node for node in nodes | context if not self._graph.owns(node)]
         if foreign:
             raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
         candidate = object.__new__(Candidate)
         object.__setattr__(candidate, "family", family)
         object.__setattr__(candidate, "record", record)
-        object.__setattr__(candidate, "evidence", Evidence(nodes))
+        object.__setattr__(candidate, "evidence", Evidence(nodes, context))
         object.__setattr__(candidate, "_issuer", self._token)
         self._candidates.append(candidate)
         self._issued[id(candidate)] = _IssuedCandidate(
@@ -290,6 +400,7 @@ class _CandidateIssuer:
             record,
             candidate.evidence,
             candidate.evidence.defining,
+            candidate.evidence.consulted,
         )
         self._by_record.setdefault(id(record), []).append(candidate)
         for node in nodes:
@@ -298,10 +409,58 @@ class _CandidateIssuer:
             self._on_issued(candidate)
         return candidate
 
+    def observe(
+        self,
+        family: FamilyId,
+        predicate: PredicateId,
+        *,
+        subject: FaceNode,
+        consulted: Iterable[FaceNode],
+        fact: SplitTriangularTerminalFact,
+    ) -> Observation:
+        if self._sealed:
+            raise RuntimeError("evidence issuance is sealed")
+        if not isinstance(family, FamilyId) or not isinstance(predicate, PredicateId):
+            raise ValueError("observation family and predicate must use closed enums")
+        if not isinstance(fact, SplitTriangularTerminalFact):
+            raise ValueError("observation fact must use the closed predicate fact type")
+        context = frozenset(consulted)
+        if family is not FamilyId.ANGLED_STEPS or predicate is not PredicateId.ANGLED_STEP_TERMINAL:
+            raise ValueError("unsupported observation family/predicate combination")
+        if len(context) != 1:
+            raise ValueError("an angled-step terminal observation requires exactly one terminal")
+        if subject in context:
+            raise ValueError("observation subject and consulted context must be disjoint")
+        foreign = [node for node in context | {subject} if not self._graph.owns(node)]
+        if foreign:
+            raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
+        observation = object.__new__(Observation)
+        object.__setattr__(observation, "family", family)
+        object.__setattr__(observation, "predicate", predicate)
+        object.__setattr__(observation, "subject", subject)
+        object.__setattr__(observation, "consulted", context)
+        object.__setattr__(observation, "fact", fact)
+        object.__setattr__(observation, "_issuer", self._token)
+        issued = _IssuedObservation(
+            observation,
+            family,
+            predicate,
+            subject,
+            context,
+            fact,
+            fact.raw_outer_edges,
+            fact.effective_outer_sides,
+        )
+        self._observations.append(observation)
+        self._issued_observations[id(observation)] = issued
+        return observation
+
     @property
     def candidates(self) -> tuple[Candidate[object], ...]:
         for candidate in self._candidates:
             self._validate(candidate)
+        for observation in self._observations:
+            self._validate_observation(observation)
         return tuple(self._candidates)
 
     def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
@@ -367,6 +526,8 @@ class _CandidateIssuer:
 
         for candidate in self._candidates:
             self._validate(candidate)
+        for observation in self._observations:
+            self._validate_observation(observation)
         result = object.__new__(EvidenceIndex)
         object.__setattr__(result, "_graph", self._graph)
         object.__setattr__(result, "_token", self._token)
@@ -383,6 +544,12 @@ class _CandidateIssuer:
             result,
             "_by_node",
             MappingProxyType({key: tuple(value) for key, value in self._by_node.items()}),
+        )
+        object.__setattr__(result, "_observations", tuple(self._observations))
+        object.__setattr__(
+            result,
+            "_issued_observations",
+            MappingProxyType(dict(self._issued_observations)),
         )
         return result
 
@@ -428,6 +595,24 @@ class _CandidateIssuer:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
+            or candidate.evidence.consulted is not issued.consulted
         ):
             raise ValueError("candidate no longer matches its issued state")
+        return issued
+
+    def _validate_observation(self, observation: Observation) -> _IssuedObservation:
+        issued = self._issued_observations.get(id(observation))
+        if issued is None or issued.observation is not observation:
+            raise ValueError("observation was not issued by this run")
+        if (
+            observation._issuer is not self._token
+            or observation.family is not issued.family
+            or observation.predicate is not issued.predicate
+            or observation.subject is not issued.subject
+            or observation.consulted is not issued.consulted
+            or observation.fact is not issued.fact
+            or observation.fact.raw_outer_edges != issued.raw_outer_edges
+            or observation.fact.effective_outer_sides != issued.effective_outer_sides
+        ):
+            raise ValueError("observation no longer matches its issued state")
         return issued

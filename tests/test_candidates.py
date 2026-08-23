@@ -12,7 +12,15 @@ from build123d import Box, Pos, Rot
 
 from b123d_recognisers import recognise_angled_steps
 from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import Candidate, CandidateSet, Evidence, FamilyId
+from b123d_recognisers._candidates import (
+    Candidate,
+    CandidateSet,
+    Evidence,
+    FamilyId,
+    Observation,
+    PredicateId,
+    SplitTriangularTerminalFact,
+)
 from b123d_recognisers._claims import ClaimLedger
 
 
@@ -47,6 +55,157 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.claims == ()
     assert ledger.candidate_set(FamilyId.LEGACY).candidates == (candidate,)
     assert ledger.snapshot_index().defining_of(candidate) == frozenset()
+
+
+def test_consulted_evidence_is_context_and_never_a_claim() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    candidate = ledger.propose(
+        FamilyId.ANGLED_STEPS,
+        Record(1),
+        [ledger.graph.nodes[0]],
+        consulted=[ledger.graph.nodes[1]],
+    )
+    evidence = ledger.snapshot_index()
+
+    assert evidence.defining_of(candidate) == frozenset({ledger.graph.nodes[0]})
+    assert evidence.consulted_of(candidate) == frozenset({ledger.graph.nodes[1]})
+    assert ledger.claims_of(ledger.graph.nodes[1]) == ()
+    assert evidence.claims_of(ledger.graph.nodes[1]) == ()
+
+
+def test_defining_and_consulted_roles_must_be_disjoint() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    node = ledger.graph.nodes[0]
+
+    with pytest.raises(ValueError, match="roles must be disjoint"):
+        ledger.propose(FamilyId.LEGACY, Record(1), [node], consulted=[node])
+
+
+def test_observations_freeze_without_becoming_candidates_or_claims() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    observation = ledger.sink.observe(
+        FamilyId.ANGLED_STEPS,
+        PredicateId.ANGLED_STEP_TERMINAL,
+        subject=ledger.graph.nodes[0],
+        consulted=[ledger.graph.nodes[1]],
+        fact=SplitTriangularTerminalFact(4),
+    )
+    evidence = ledger.freeze_index()
+
+    assert ledger.claims == ()
+    assert ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates == ()
+    assert evidence.observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == (observation,)
+    with pytest.raises(RuntimeError, match="sealed"):
+        ledger.sink.observe(
+            FamilyId.ANGLED_STEPS,
+            PredicateId.ANGLED_STEP_TERMINAL,
+            subject=ledger.graph.nodes[0],
+            consulted=[ledger.graph.nodes[1]],
+            fact=SplitTriangularTerminalFact(5),
+        )
+
+
+def test_observation_forgery_and_post_issuance_mutation_fail_closed() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    observation = ledger.sink.observe(
+        FamilyId.ANGLED_STEPS,
+        PredicateId.ANGLED_STEP_TERMINAL,
+        subject=ledger.graph.nodes[0],
+        consulted=[ledger.graph.nodes[1]],
+        fact=SplitTriangularTerminalFact(4),
+    )
+    evidence = ledger.snapshot_index()
+    forged = object.__new__(Observation)
+    for field in ("family", "predicate", "subject", "consulted", "fact", "_issuer"):
+        object.__setattr__(forged, field, getattr(observation, field))
+    with pytest.raises(ValueError, match="not present"):
+        evidence._validate_observation(forged)
+
+    object.__setattr__(observation, "subject", ledger.graph.nodes[2])
+    with pytest.raises(ValueError, match="no longer matches"):
+        ledger.snapshot_index()
+    with pytest.raises(ValueError, match="no longer matches"):
+        evidence.observations(
+            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+        )
+
+
+@pytest.mark.parametrize("failure", ["empty", "overlap", "family", "fact"])
+def test_invalid_observations_are_rejected_atomically(failure: str) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    subject, terminal = ledger.graph.nodes[:2]
+    family = FamilyId.HOLES if failure == "family" else FamilyId.ANGLED_STEPS
+    consulted = [] if failure == "empty" else [subject if failure == "overlap" else terminal]
+    fact = object() if failure == "fact" else SplitTriangularTerminalFact(4)
+
+    with pytest.raises(ValueError):
+        ledger.sink.observe(
+            family,
+            PredicateId.ANGLED_STEP_TERMINAL,
+            subject=subject,
+            consulted=consulted,
+            fact=fact,  # type: ignore[arg-type]
+        )
+
+    assert ledger.snapshot_index().observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == ()
+
+
+@pytest.mark.parametrize("raw_edges,effective_sides", [(3, 3), (4, 4)])
+def test_split_terminal_fact_rejects_non_split_or_non_triangular_values(
+    raw_edges: int, effective_sides: int
+) -> None:
+    with pytest.raises(ValueError, match="raw > 3 and effective == 3"):
+        SplitTriangularTerminalFact(raw_edges, effective_sides)
+
+
+@pytest.mark.parametrize("role", ["family", "predicate"])
+def test_observation_rejects_open_enums_atomically(role: str) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    subject = ledger.graph.nodes[0]
+    family = "angled_steps" if role == "family" else FamilyId.ANGLED_STEPS
+    predicate = (
+        "angled_step_terminal"
+        if role == "predicate"
+        else PredicateId.ANGLED_STEP_TERMINAL
+    )
+
+    with pytest.raises(ValueError, match="closed enums"):
+        ledger.sink.observe(
+            family,  # type: ignore[arg-type]
+            predicate,  # type: ignore[arg-type]
+            subject=subject,
+            consulted=[ledger.graph.nodes[1]],
+            fact=SplitTriangularTerminalFact(4),
+        )
+
+    assert ledger.snapshot_index().observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == ()
+
+
+@pytest.mark.parametrize("role", ["subject", "consulted"])
+def test_observation_rejects_foreign_nodes_atomically(role: str) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    other = FaceGraph(Box(4, 4, 4))
+    subject = other.nodes[0] if role == "subject" else ledger.graph.nodes[0]
+    terminal = other.nodes[0] if role == "consulted" else ledger.graph.nodes[1]
+
+    with pytest.raises(ValueError, match="not this graph's nodes"):
+        ledger.sink.observe(
+            FamilyId.ANGLED_STEPS,
+            PredicateId.ANGLED_STEP_TERMINAL,
+            subject=subject,
+            consulted=[terminal],
+            fact=SplitTriangularTerminalFact(4),
+        )
+
+    assert ledger.snapshot_index().observations(
+        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+    ) == ()
 
 
 def test_foreign_evidence_is_refused_atomically() -> None:

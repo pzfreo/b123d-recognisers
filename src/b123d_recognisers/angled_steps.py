@@ -103,8 +103,14 @@ from b123d_recognisers._bevel import (
     convex_bevel,
     material_beyond_corner,
 )
-from b123d_recognisers._candidates import EvidenceSink, FamilyId
+from b123d_recognisers._candidates import (
+    EvidenceSink,
+    FamilyId,
+    PredicateId,
+    SplitTriangularTerminalFact,
+)
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._geometry import SMOOTH_ARC_GAP
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
 
@@ -148,19 +154,70 @@ def _closed_by_a_triangular_flat(
     nothing now, so the one caller keeps it.
     """
 
+    terminals, _near_misses = _terminal_read(
+        face, edge_faces, face_edges=face_edges
+    )
+    return bool(terminals)
+
+
+def _effective_linear_sides(face: FaceLike) -> int | None:
+    """Count cyclic, co-directed linear runs on one outer boundary."""
+
+    try:
+        edges = list(face.outer_wire().edges())
+        if not edges or any(edge.geom_type.name != "LINE" for edge in edges):
+            return None
+        directions = [edge.tangent_at().normalized() for edge in edges]
+    except Exception:  # pragma: no cover - defensive kernel boundary
+        # This is diagnostic evidence only. An unreadable imported boundary must not change
+        # recognition behavior by raising where the existing terminal predicate returned false.
+        return None
+    return sum(
+        1
+        for previous, current in zip(
+            directions, directions[1:] + directions[:1], strict=True
+        )
+        if 1.0 - previous.dot(current) > SMOOTH_ARC_GAP
+    )
+
+
+def _terminal_read(
+    face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
+) -> tuple[
+    list[FaceLike],
+    list[tuple[FaceLike, SplitTriangularTerminalFact]],
+]:
+    """Return accepted triangular terminals and the one bounded diagnostic near miss."""
+
+    terminals: list[FaceLike] = []
+    near_misses: list[tuple[FaceLike, SplitTriangularTerminalFact]] = []
     for other in neighbours(face, edge_faces, face_edges=face_edges):
         if axis_aligned_axis(other.wrapped) is None:
             continue
         edges = face_edges.of(other) if face_edges is not None else other.edges()
         if len(edges) == 3:
-            return True
+            terminals.append(other)
+            continue
         # Four edges is either a rectangle -- a chamfer strip's own end cap, which has to stay
         # rejected -- or a triangle with a hole through it, which is a blind end with a bolt
         # hole in it. The outer wire separates them and the memo cannot, so it is consulted
         # only when the plain count has already failed.
-        if len(other.outer_wire().edges()) == 3:
-            return True
-    return False
+        outer_edges = list(other.outer_wire().edges())
+        if len(outer_edges) == 3:
+            terminals.append(other)
+            continue
+        effective_sides = _effective_linear_sides(other)
+        if len(outer_edges) > 3 and effective_sides == 3:
+            near_misses.append(
+                (
+                    other,
+                    SplitTriangularTerminalFact(
+                        raw_outer_edges=len(outer_edges),
+                        effective_outer_sides=effective_sides,
+                    ),
+                )
+            )
+    return terminals, near_misses
 
 
 def recognise_angled_steps(
@@ -205,7 +262,7 @@ def _discover_angled_steps(
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
-    out: list[tuple[AngledStep, FaceLike]] = []
+    out: list[tuple[AngledStep, FaceLike, tuple[FaceLike, ...]]] = []
     for f in all_faces:
         try:
             edge_i, _nv, span, leg_hi, leg_lo = classify_bevel(f)
@@ -229,7 +286,22 @@ def _discover_angled_steps(
         # `convex_bevel` is reached by so few faces that it is 1% of this function, while the
         # companion walk costs a `.edges()` per axis-aligned neighbour. The cost lives in the
         # unavoidable scan above — `edge_face_map` and `classify_bevel` are two thirds of it.
-        if not _closed_by_a_triangular_flat(f, edge_faces, face_edges=face_edges):
+        terminals, near_misses = _terminal_read(
+            f, edge_faces, face_edges=face_edges
+        )
+        if not terminals:
+            if sink is not None and near_misses:
+                if graph is None:
+                    raise ValueError("an evidence sink requires its graph")
+                subject = graph.require_node(f)
+                for terminal, fact in near_misses:
+                    sink.observe(
+                        FamilyId.ANGLED_STEPS,
+                        PredicateId.ANGLED_STEP_TERMINAL,
+                        subject=subject,
+                        consulted=[graph.require_node(terminal)],
+                        fact=fact,
+                    )
             continue  # runs edge to edge — a chamfer, and the reconciler leaves it to them
         fctr = f.center()
         out.append(
@@ -243,16 +315,18 @@ def _discover_angled_steps(
                     at=(round(fctr.X, 3), round(fctr.Y, 3), round(fctr.Z, 3)),
                 ),
                 f,
+                tuple(terminals),
             )
         )
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if sink is not None:
         if graph is None:
             raise ValueError("an evidence sink requires its graph")
-        for step, face in out:
+        for step, face, terminal_faces in out:
             sink.propose(
                 FamilyId.ANGLED_STEPS,
                 step,
                 defining=[graph.require_node(face)],
+                consulted=[graph.require_node(terminal) for terminal in terminal_faces],
             )
-    return [step for step, _ in out]
+    return [step for step, _, _ in out]

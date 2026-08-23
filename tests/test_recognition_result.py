@@ -163,6 +163,13 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "reconcile_step_groove_candidates",
         fake_policy("reconcile_step_grooves"),
     )
+    def fake_diagnostics(reconciliation, evidence):
+        calls["diagnose_residuals"] = calls.get("diagnose_residuals", 0) + 1
+        assert isinstance(evidence, EvidenceIndex)
+        assert reconciliation.dispositions
+        return ()
+
+    monkeypatch.setattr(result_module, "diagnose_residuals", fake_diagnostics)
     monkeypatch.setattr(registry_module, "recognise_fillets", counted("fillets", []))
     monkeypatch.setattr(registry_module, "recognise_plates", counted("plates", []))
 
@@ -181,6 +188,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "reconcile_recesses",
         "reconcile_bevels",
         "reconcile_step_grooves",
+        "diagnose_residuals",
         "cylinders",
         "countersinks",
         "holes",

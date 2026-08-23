@@ -259,3 +259,12 @@ Every physical and derived definition also states whether it contributes to an e
 key or is deliberately not counted. This is completeness evidence, not authority to create or
 reorder public census keys. Public records, exports, schemas and result construction remain manual
 contracts so adding registry metadata cannot publish a capability accidentally.
+
+## Amendment (framework consolidation, issue #161)
+
+Reconciliation remains strictly candidate-only. A failed predicate emits no Candidate and cannot
+honestly receive a disposition. The bounded residual phase therefore consumes separately issued
+failed-predicate observations only after reconciliation; it neither changes accepted candidates
+nor searches geometry. The first consumer diagnoses a subdivided AngledStep terminal only when
+the same slant survives as an accepted planar Chamfer. Diagnostics remain private and do not alter
+`RecognitionResult`, census, capabilities or public family precedence.

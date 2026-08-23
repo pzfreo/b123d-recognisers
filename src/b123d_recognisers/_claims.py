@@ -19,17 +19,17 @@ family, gets a fresh ledger.
 **Write-only during discovery.** Migrated recogniser cores receive only `EvidenceSink`, so they
 cannot read what another family proposed. Once all participants in one current conflict have run,
 orchestration may copy their issued prefix into an immutable `EvidenceIndex` for that reconciler.
-The temporary legacy ledger can still append for later unmigrated families, but those writes are
-invisible to the earlier index. The one aggregate-wide freeze remains deferred until all physical
-discovery moves ahead of reconciliation. A recogniser that declined a face because another family
-had claimed it would make output order-dependent, and that stays forbidden by ADR 0003.
+Standalone compatibility code may still take a point-in-time snapshot without closing issuance.
+Aggregate orchestration instead seals once after every physical family has completed. A recogniser
+that declined a face because another family had claimed it would make output order-dependent, and
+that stays forbidden by ADR 0003.
 
 **A claim is a role, not a fact of ownership.** A feature's faces do not all relate to it the same
 way: a pocket is defined by its floor and walls, while a fillet is defined by the blend face and
 merely *consults* the two faces it bridges. Treating every face a recogniser touched as consumed
-would manufacture conflicts between features that legitimately share context. Only the
-`defining` role exists today, and it is named rather than implied so that adding `boundary` or
-`consulted` later is a new method rather than a reinterpretation of this one.
+would manufacture conflicts between features that legitimately share context. The `defining`
+role establishes ownership. `consulted` records context used by a predicate but never appears in
+a Claim or participates in containment.
 
 **A claim is an object, not an index into a table.** `add_defining` hands back the claim
 itself, so it carries its own claimant and its own defining faces and there is no id to look up
@@ -95,13 +95,16 @@ class EvidenceWriter:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
+        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[object]:
         """Issue defining evidence without exposing any read or freeze operation."""
 
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        return self.sink.propose(family, claimant, defining=defining)
+        return self.sink.propose(
+            family, claimant, defining=defining, consulted=consulted
+        )
 
 
 class ClaimLedger:
@@ -157,10 +160,14 @@ class ClaimLedger:
         family: FamilyId,
         record: object,
         nodes: Iterable[FaceNode] = (),
+        *,
+        consulted: Iterable[FaceNode] = (),
     ) -> Candidate[object]:
         """Issue one candidate and retain a legacy Claim view for non-empty evidence."""
 
-        return self.sink.propose(family, record, defining=nodes)
+        return self.sink.propose(
+            family, record, defining=nodes, consulted=consulted
+        )
 
     def add_defining(
         self,
@@ -168,6 +175,7 @@ class ClaimLedger:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
+        consulted: Iterable[FaceNode] = (),
     ) -> Claim:
         """Record that *nodes* are what established *claimant*, and return the claim.
 
@@ -182,7 +190,9 @@ class ClaimLedger:
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        candidate = self.propose(family, claimant, defining)
+        candidate = self.propose(
+            family, claimant, defining, consulted=consulted
+        )
         return self._claims[id(candidate)]
 
     @property
@@ -210,9 +220,8 @@ class ClaimLedger:
     def snapshot_index(self) -> EvidenceIndex:
         """Freeze the evidence issued so far into a point-in-time read capability.
 
-        This does not close the temporary legacy append path.  Later proposals remain visible to
-        a later snapshot but cannot change this one; the aggregate-wide terminal freeze is owned
-        by the phase migration rather than this compatibility ledger.
+        This does not close issuance. Later proposals remain visible to a later snapshot but
+        cannot change this one; aggregate orchestration uses :meth:`freeze_index` instead.
         """
 
         return self._issuer.snapshot_index()
