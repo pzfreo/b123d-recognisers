@@ -136,6 +136,18 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "_adjacency:surface:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base surface cache"),
     "_adjacency:is_planar:graph_surface:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base query"),
     "_adjacency:_normal_at:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base normal"),
+    "_adjacency:_native_continuation:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 original native analytic continuation fact",
+    ),
+    "_adjacency:_native_continuation:adaptor:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 paired original native analytic continuation fact",
+    ),
+    "_adjacency:_normal_curvature:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F2 original-surface second fundamental form",
+    ),
     "_adjacency:frame_points_outward:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "original-face material-side query waits for F2",

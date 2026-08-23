@@ -144,6 +144,60 @@ MODULE_SEAM_EDGES = {
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
 }
 
+ARC_READER_SITES = {
+    "_adjacency:smooth_region:arc:1": "continuity-compatibility-source",
+    "_adjacency:smooth_region:is_any_smooth:1": "continuity-compatibility",
+    "_adjacency:smooth_side:arc:1": "side-enrichment-prerequisite",
+    "_adjacency:smooth_side:is_any_smooth:1": "side-enrichment-prerequisite",
+    "_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
+    "_recess_core:_uninterrupted_long_span:arc:1": "exact-nonsmooth",
+    "_recess_core:_uninterrupted_long_span:arc:2": "exact-nonsmooth",
+    "_recess_core:_bounds_one_void:arc:1": "pair-agreement",
+    "_recess_core:_bounds_one_void:arc:2": "pair-agreement",
+}
+
+
+def test_every_production_arc_reader_has_one_reviewed_disposition() -> None:
+    found: set[str] = set()
+    for path in [*PACKAGE.glob("*.py"), *(ROOT / "tools").glob("*.py")]:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        parents = {
+            child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
+        }
+        calls: list[tuple[int, int, str, str]] = []
+        for node in ast.walk(tree):
+            mechanism = None
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                    "arc",
+                    "smooth_side",
+                }:
+                    mechanism = node.func.attr
+                elif isinstance(node.func, ast.Name) and node.func.id == "is_any_smooth":
+                    mechanism = "is_any_smooth"
+            if mechanism is None:
+                continue
+            owner = node
+            function = "module"
+            while owner in parents:
+                owner = parents[owner]
+                if isinstance(owner, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    function = owner.name
+                    break
+            calls.append((node.lineno, node.col_offset, function, mechanism))
+        ordinals: dict[tuple[str, str], int] = {}
+        for _, _, function, mechanism in sorted(calls):
+            base = (function, mechanism)
+            ordinals[base] = ordinals.get(base, 0) + 1
+            found.add(f"{path.stem}:{function}:{mechanism}:{ordinals[base]}")
+
+    assert found == set(ARC_READER_SITES)
+    assert all(ARC_READER_SITES.values())
+    assert not any(
+        site.startswith("_recess_core:") and disposition == "side-consumer"
+        for site, disposition in ARC_READER_SITES.items()
+    )
+
 
 def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:
     from b123d_recognisers._effective_surfaces import (

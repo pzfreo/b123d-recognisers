@@ -21,18 +21,26 @@ predicates induce the same partition of the edges *and* the faces of every pinne
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Literal, TypeVar
 
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere
+from OCP.GCPnts import GCPnts_AbscissaPoint
+from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere
 from OCP.gp import gp_Pnt, gp_Vec
 from OCP.ShapeAnalysis import ShapeAnalysis_Surface
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_Orientation
 from OCP.TopExp import TopExp_Explorer
 
+from b123d_recognisers._analytic_surfaces import (
+    SurfaceKind,
+    equivalent_parameters,
+    native_primitive,
+    validated_parameters,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
@@ -50,6 +58,28 @@ _T = TypeVar("_T")
 #: the difference matters -- a traversal rule reading "not smooth" from an absence would be
 #: concluding from silence, which `require_node` and `claims_of` both refuse to allow elsewhere.
 ArcKind = Literal["convex", "concave", "smooth", "unknown"]
+SmoothSide = Literal["neutral", "convex", "concave", "unproven"]
+
+_SMOOTH_CURVATURE_GAP = 1e-6
+_SIDE_SAMPLES = (0.25, 0.5, 0.75)
+_ANALYTIC_KINDS = {
+    GeomAbs_Plane: SurfaceKind.PLANE,
+    GeomAbs_Cylinder: SurfaceKind.CYLINDER,
+    GeomAbs_Cone: SurfaceKind.CONE,
+    GeomAbs_Sphere: SurfaceKind.SPHERE,
+}
+
+
+def is_any_smooth(kind: ArcKind | None) -> bool:
+    """Whether the legacy first-order arc fact proves tangent continuity."""
+
+    return kind == "smooth"
+
+
+@dataclass(frozen=True, slots=True)
+class _SmoothSideObservation:
+    samples: tuple[SmoothSide, ...]
+    result: SmoothSide
 
 
 class FaceEdges:
@@ -146,6 +176,7 @@ class FaceGraph:
     """
 
     def __init__(self, part, *, face_edges: FaceEdges | None = None) -> None:
+        self._part = part
         self._faces: list[FaceLike] = list(part.faces())
         self._nodes = tuple(FaceNode(at) for at in range(len(self._faces)))
         self._index = {face: at for at, face in enumerate(self._faces)}
@@ -158,6 +189,10 @@ class FaceGraph:
         self._neighbours: dict[int, tuple[FaceNode, ...]] = {}
         self._arcs: dict[tuple[int, int], ArcKind | None] = {}
         self._smooth_regions: dict[int, frozenset[FaceNode]] = {}
+        self._face_solids: tuple[tuple[int, ...], ...] | None = None
+        self._closed_solids: frozenset[int] | None = None
+        self._smooth_side_edges: dict[tuple[int, int, EdgeLike], _SmoothSideObservation] = {}
+        self._smooth_sides: dict[tuple[int, int], SmoothSide | None] = {}
 
     def __len__(self) -> int:
         return len(self._faces)
@@ -383,7 +418,7 @@ class FaceGraph:
         while pending:
             current = pending.pop()
             for neighbour in self.neighbours(current):
-                if neighbour in found or self.arc(current, neighbour) != "smooth":
+                if neighbour in found or not is_any_smooth(self.arc(current, neighbour)):
                     continue
                 found.add(neighbour)
                 pending.append(neighbour)
@@ -391,6 +426,194 @@ class FaceGraph:
         for member in region:
             self._smooth_regions[member.index] = region
         return region
+
+    def smooth_side(self, a: FaceNode, b: FaceNode) -> SmoothSide | None:
+        """The proved material side of a legacy-smooth pair, else None or unproven.
+
+        ``None`` means the pair is not a legacy first-order smooth join.  Enrichment never
+        rewrites :meth:`arc`; every unavailable ownership or differential fact is ``unproven``.
+        """
+
+        key_a, key_b = self._at(a), self._at(b)
+        key = (min(key_a, key_b), max(key_a, key_b))
+        if key in self._smooth_sides:
+            return self._smooth_sides[key]
+        if not is_any_smooth(self.arc(a, b)):
+            self._smooth_sides[key] = None
+            return None
+        shared = self.shared_edges(a, b)
+        observations = tuple(self._smooth_side_edge(a, b, edge) for edge in shared)
+        answers = {observation.result for observation in observations}
+        result: SmoothSide = answers.pop() if len(answers) == 1 else "unproven"
+        self._smooth_sides[key] = result
+        return result
+
+    def _smooth_side_edge(
+        self, a: FaceNode, b: FaceNode, edge: EdgeLike
+    ) -> _SmoothSideObservation:
+        key_a, key_b = self._at(a), self._at(b)
+        key = (min(key_a, key_b), max(key_a, key_b), edge)
+        cached = self._smooth_side_edges.get(key)
+        if cached is not None:
+            return cached
+        result = self._derive_smooth_side_edge(a, b, edge)
+        self._smooth_side_edges[key] = result
+        return result
+
+    def _derive_smooth_side_edge(
+        self, a: FaceNode, b: FaceNode, edge: EdgeLike
+    ) -> _SmoothSideObservation:
+        if not self._eligible_side_edge(a, b, edge):
+            return _SmoothSideObservation((), "unproven")
+        local = min(
+            float(edge.length),
+            math.sqrt(float(self.face(a).area)),
+            math.sqrt(float(self.face(b).area)),
+        )
+        if not math.isfinite(local) or local <= 0.0:
+            return _SmoothSideObservation((), "unproven")
+        if self._native_continuation(a, b, local=local):
+            neutral: SmoothSide = "neutral"
+            return _SmoothSideObservation((neutral,) * len(_SIDE_SAMPLES), neutral)
+        samples = tuple(
+            self._smooth_side_sample(a, b, edge, fraction, local)
+            for fraction in _SIDE_SAMPLES
+        )
+        answers = set(samples)
+        result: SmoothSide = answers.pop() if len(answers) == 1 else "unproven"
+        return _SmoothSideObservation(samples, result)
+
+    def _eligible_side_edge(self, a: FaceNode, b: FaceNode, edge: EdgeLike) -> bool:
+        self._build_solid_ownership()
+        assert self._face_solids is not None
+        assert self._closed_solids is not None
+        owned_a = self._face_solids[a.index]
+        owned_b = self._face_solids[b.index]
+        if len(owned_a) != 1 or owned_a != owned_b or owned_a[0] not in self._closed_solids:
+            return False
+        incident = self._edge_face_map().get(edge, ())
+        nodes = tuple(self.node_of(face) for face in incident)
+        return len(nodes) == 2 and None not in nodes and set(nodes) == {a, b}
+
+    def _build_solid_ownership(self) -> None:
+        if self._face_solids is not None:
+            return
+        owned: list[list[int]] = [[] for _ in self._nodes]
+        closed: set[int] = set()
+        try:
+            solids = tuple(self._part.solids())
+        except Exception:  # noqa: BLE001 - open/non-solid input has no ownership proof
+            solids = ()
+        for solid_at, solid in enumerate(solids):
+            try:
+                # A valid TopoDS_Solid is the closed ownership unit.  The shape's optional
+                # ``Closed`` cache flag is not reliably populated by OCCT booleans.
+                if solid.is_valid:
+                    closed.add(solid_at)
+                faces = solid.faces()
+            except Exception:  # noqa: BLE001 - invalid topology cannot prove material side
+                continue
+            for face in faces:
+                node_at = self._index.get(face)
+                if node_at is not None:
+                    owned[node_at].append(solid_at)
+        self._face_solids = tuple(tuple(entries) for entries in owned)
+        self._closed_solids = frozenset(closed)
+
+    def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
+        try:
+            left = BRepAdaptor_Surface(self.face(a).wrapped)
+            right = BRepAdaptor_Surface(self.face(b).wrapped)
+            left_kind = _ANALYTIC_KINDS.get(left.GetType())
+            right_kind = _ANALYTIC_KINDS.get(right.GetType())
+            if left_kind is None or left_kind is not right_kind:
+                return False
+            left_parameters = validated_parameters(left_kind, native_primitive(left, left_kind))
+            right_parameters = validated_parameters(right_kind, native_primitive(right, right_kind))
+            return equivalent_parameters(
+                left_kind, left_parameters, right_parameters, local=local
+            )
+        except Exception:  # noqa: BLE001 - no analytic continuation proof
+            return False
+
+    def _smooth_side_sample(
+        self, a: FaceNode, b: FaceNode, edge: EdgeLike, fraction: float, local: float
+    ) -> SmoothSide:
+        left = self._normal_curvature(a, edge, fraction)
+        right = self._normal_curvature(b, edge, fraction)
+        if left is None or right is None:
+            return "unproven"
+        values = []
+        for curvature, planar in (left, right):
+            scaled = curvature * local
+            if abs(scaled) <= _SMOOTH_CURVATURE_GAP:
+                if planar:
+                    continue
+                return "unproven"
+            values.append(scaled)
+        if not values or abs((left[0] - right[0]) * local) <= _SMOOTH_CURVATURE_GAP:
+            return "unproven"
+        if all(value < 0.0 for value in values):
+            return "convex"
+        if all(value > 0.0 for value in values):
+            return "concave"
+        return "unproven"
+
+    def _normal_curvature(
+        self, node: FaceNode, edge: EdgeLike, fraction: float
+    ) -> tuple[float, bool] | None:
+        try:
+            curve = BRepAdaptor_Curve(edge.wrapped)
+            parameter = GCPnts_AbscissaPoint(
+                curve, fraction * float(edge.length), curve.FirstParameter()
+            ).Parameter()
+            point, tangent = gp_Pnt(), gp_Vec()
+            curve.D1(parameter, point, tangent)
+            if tangent.Magnitude() < 1e-12:
+                return None
+            tangent.Normalize()
+            if self._edge_reversed_in_face(node, edge):
+                tangent.Reverse()
+
+            face = self.face(node)
+            surface = BRepAdaptor_Surface(face.wrapped)
+            uv = ShapeAnalysis_Surface(BRep_Tool.Surface_s(face.wrapped)).ValueOfUV(point, 1e-6)
+            here, du, dv = gp_Pnt(), gp_Vec(), gp_Vec()
+            duu, dvv, duv = gp_Vec(), gp_Vec(), gp_Vec()
+            surface.D2(uv.X(), uv.Y(), here, du, dv, duu, dvv, duv)
+            normal = du.Crossed(dv)
+            if normal.Magnitude() < 1e-12:
+                return None
+            normal.Normalize()
+            if face.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
+                normal.Reverse()
+            inward = normal.Crossed(tangent)
+            if inward.Magnitude() < 1e-12:
+                return None
+            inward.Normalize()
+
+            e, f, g = du.Dot(du), du.Dot(dv), dv.Dot(dv)
+            det = e * g - f * f
+            if not math.isfinite(det) or abs(det) < 1e-18:
+                return None
+            rhs_u, rhs_v = inward.Dot(du), inward.Dot(dv)
+            along_u = (rhs_u * g - rhs_v * f) / det
+            along_v = (rhs_v * e - rhs_u * f) / det
+            first = du.Multiplied(along_u).Added(dv.Multiplied(along_v))
+            denominator = first.SquareMagnitude()
+            if not math.isfinite(denominator) or denominator < 1e-18:
+                return None
+            second = (
+                duu.Multiplied(along_u * along_u)
+                .Added(duv.Multiplied(2.0 * along_u * along_v))
+                .Added(dvv.Multiplied(along_v * along_v))
+            )
+            curvature = normal.Dot(second) / denominator
+            if not math.isfinite(curvature):
+                return None
+            return curvature, surface.GetType() == GeomAbs_Plane
+        except Exception:  # noqa: BLE001 - differential failure is side-unproven
+            return None
 
     def _classify_arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None:
         """:meth:`arc` without the cache: every shared edge classified, and made to agree."""
@@ -474,19 +697,11 @@ class FaceGraph:
         opposite-directions property on exactly half a box's edges.
         """
 
-        face = self._faces[self._at(node)]
         # No "edge not found" branch: every caller reaches this through `shared_edges`, which
         # returns edges of *this* face, so the explorer always finds it. A guard for a case the
         # call graph excludes is a branch no test can reach, which this epic has removed twice
         # already rather than carry.
-        reversed_here = False
-        explorer = TopExp_Explorer(face.wrapped, TopAbs_EDGE)
-        while explorer.More():
-            current = explorer.Current()
-            if current.IsSame(edge.wrapped):
-                reversed_here = current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
-                break
-            explorer.Next()
+        reversed_here = self._edge_reversed_in_face(node, edge)
         curve = BRepAdaptor_Curve(edge.wrapped)
         middle = 0.5 * (curve.FirstParameter() + curve.LastParameter())
         point, tangent = gp_Pnt(), gp_Vec()
@@ -497,6 +712,18 @@ class FaceGraph:
             return None  # a degenerate edge has no direction to walk
         sign = -1.0 / length if reversed_here else 1.0 / length
         return tuple(x * sign for x in raw), (point.X(), point.Y(), point.Z())
+
+    def _edge_reversed_in_face(self, node: FaceNode, edge: EdgeLike) -> bool:
+        """Whether the shared edge walks backward in this original face."""
+
+        face = self._faces[self._at(node)]
+        explorer = TopExp_Explorer(face.wrapped, TopAbs_EDGE)
+        while explorer.More():
+            current = explorer.Current()
+            if current.IsSame(edge.wrapped):
+                return current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED
+            explorer.Next()
+        raise ValueError("shared edge is absent from its original face")
 
     def shared_edges(self, a: FaceNode, b: FaceNode) -> tuple[EdgeLike, ...]:
         """The edges along which two faces meet, which an arc's classification will need.
