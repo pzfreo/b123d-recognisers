@@ -208,3 +208,14 @@ eligibility and both unordered-pair caches. Production and tool/test callers are
 roster: compatibility traversal reads the legacy fact through `is_any_smooth`, exact nonsmooth
 callers retain their named comparisons, and no family consumes `SmoothSide` in the neutral F2
 slice. Family, orchestration, claim and reconciliation modules cannot be dependencies of the graph.
+
+## Amendment (geometry foundation, issue #182)
+
+Private `_blend_view` sits above `_adjacency` and `_effective_surfaces`. It may consume only their
+restricted graph-issued ownership/occurrence and analytic-fact capabilities. It may not import
+families, orchestration, claims, candidates, reconciliation or records, construct another graph or
+surface index, re-walk solids, or issue evidence. Both inputs bind atomically to one graph/run.
+
+`CollapsedGraphView` is a distinct bounded support-bridge API, not a `FaceGraph` subtype, duck type
+or global context substitute. No production recogniser receives it in neutral F3a. ADR 0002 and
+ADR 0009 are amended only when issue #192 authorises one named direct/aggregate family consumer.

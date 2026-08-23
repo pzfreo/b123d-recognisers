@@ -268,3 +268,11 @@ failed-predicate observations only after reconciliation; it neither changes acce
 nor searches geometry. The first consumer diagnoses a subdivided AngledStep terminal only when
 the same slant survives as an accepted planar Chamfer. Diagnostics remain private and do not alter
 `RecognitionResult`, census, capabilities or public family precedence.
+
+## Amendment (geometry foundation, issue #182)
+
+The neutral blend-collapsed view cannot issue Candidates and is not part of aggregate discovery.
+Logical handles are never accepted by `EvidenceSink`. A future named consumer must first expand a
+logical occurrence to same-run original `FaceNode`s, then explicitly classify the complete
+provenance into defining and consulted evidence. Existing candidate identity, terminal freeze and
+reconciliation remain unchanged; complete geometric provenance alone does not establish ownership.
