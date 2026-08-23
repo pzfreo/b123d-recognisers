@@ -502,7 +502,15 @@ def test_transformed_section_reconstructs_the_transformed_world_geometry(
         for vertex in section.boundary
     )
 
-    assert sorted(reconstructed) == pytest.approx(sorted(transformed), abs=1e-9)
+    def point_key(point: tuple[float, ...]) -> tuple[float, ...]:
+        return tuple(round(component, 9) for component in point)
+
+    for actual, expected in zip(
+        sorted(reconstructed, key=point_key),
+        sorted(transformed, key=point_key),
+        strict=True,
+    ):
+        assert actual == pytest.approx(expected, abs=1e-9)
 
 
 @pytest.mark.parametrize(
