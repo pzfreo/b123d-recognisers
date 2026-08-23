@@ -6,7 +6,7 @@ graph/hint/volumetric methods, the 2021–2026 learned branch (UV-Net, BRepNet, 
 CADNet, AAGNet, BrepMFR, BRepFormer), and commercial recognisers (CADfix, Spatial CGM, HOOPS,
 Siemens NX, CAMWorks/FeatureWorks, Autodesk Fusion).
 
-**Assessed:** August 2026, at `main` (`d73f612`) **plus [PR #174](https://github.com/pzfreo/b123d-recognisers/pull/174)**
+**Assessed:** 23 August 2026, at `main` (`d73f612`) **plus [PR #174](https://github.com/pzfreo/b123d-recognisers/pull/174)**
 (`a387c44`, "Close framework follow-up gaps from #173"), which completes the epic-0003
 recogniser framework — fail-closed recess reconciliation, validated disposition reasons,
 registry/projection binding checks, and `docs/adding-a-recogniser.md`. Quality figures quoted
@@ -144,8 +144,18 @@ distinction the prior-art page itself flags as "the thing a recogniser needs"); 
 `Collapse()` blend-suppression primitive (`smooth_region` sees *through* a blend for coherence
 queries but recognisers cannot analyse the joined faces as if the blend were absent — issue
 #60's chamfered groove is this gap); no subgraph stack. The execution registry is deliberately
-closed — a defensible determinism choice, but it means third parties cannot add families
-without forking, where Analysis Situs offers Tcl plugins and C++ extension.
+closed, and that is really two decisions fused together. **Closed adjudication** — the finite
+`FamilyId` enum, the 13-reason disposition table bound to family pairs, the sealed evidence
+index, registry-declared execution order — is load-bearing for every A-grade row above and
+should stay closed: a runtime plugin would break determinism, the capability manifest and the
+census contract at once. **The private substrate** is the part that actually costs points:
+`FaceGraph`, the arc queries and `smooth_region` are underscore-private, so the only way to
+build on this project's geometry reasoning is to fork it — where Analysis Situs's standing as
+"the only open-source feature-recognition *framework*" comes precisely from its substrate
+being the product. Publishing the neutral substrate as a versioned API — third-party
+recognisers building alongside, returning their own records, simply not part of the closed
+aggregate — captures the framework value without touching the moat; see recommendation 7
+below.
 
 ### 6. Feature-interaction handling — B−
 
@@ -303,6 +313,14 @@ prior-art page's conclusions:
    property to its whole surface.
 6. **Persistent feature identity** across re-recognition of edited models — the Analysis Situs
    capability a STEP *editor* (the stated consumer) will want first.
+7. **A published framework API** — promote the neutral substrate (`FaceGraph`, arc and
+   smooth-region queries, and once epic 0004 lands, the canonical-surface view, collapsed views
+   and `LocalFrame`/`PlanarSection`) to a public, versioned contract under ADR 0005 discipline.
+   Adjudication stays closed; extension moves out-of-tree. This is the one lever that moves
+   ecosystem reach, and it doubles as the bus-factor mitigation: external recognisers become a
+   nursery, proving themselves out-of-tree and graduating into the registry with the evidence
+   bar already met. Timing matters — publish only after the epic's F1–F4 stop churning exactly
+   these APIs, or the freeze taxes every package after it.
 
 ## Can the foundation scale to these, or is it boxed in?
 
@@ -366,13 +384,62 @@ line. And **the actual scaling ceiling is not architectural**: the closed regist
 vocabulary grows only as fast as one maintainer can produce goldens, corpus figures and
 capability rows per family. That evidence bar plus a bus factor of one bounds the roadmap, not
 the code — and it is also the moat, because the honesty machinery is the one thing no
-competitor has.
+competitor has. The structural mitigation is recommendation 7's published substrate API:
+adjudication stays closed, but external recognisers can then prove themselves out-of-tree and
+graduate into the registry with the evidence bar already met, so the ceiling scales with the
+ecosystem rather than with one maintainer.
 
 **Verdict:** the epic-0003 foundation reads as if designed against exactly this scorecard's
 gaps — the fail-closed boundaries, evidence model and reconciliation are extension points, not
 walls. The single most corner-avoiding move available is migrating the recess families to
 section-based records before 1.0 freezes the axis-aligned worldview into the compatibility
 contract.
+
+## Projected scores if epic 0004 completes
+
+[Epic 0004 — Geometry foundation generalisation](epics/0004-geometry-foundation-generalisation.md)
+(reviewed at `479fed6`; feedback in
+[`epic-0004-feedback.md`](epic-0004-feedback.md)) operationalises gaps 1–3, 5 and 6 above into
+work packages F0–F6. Estimated re-grades **assuming every exit gate is met**, including F1's
+torus fit:
+
+| Dimension | Now | Post-epic | Driver |
+| --- | :---: | :---: | --- |
+| Geometric generality | D+ | **B** | F1 canonical recovery removes the B-spline wall; F4 frames/sections remove the principal-axis wall; F3 recovers blend-obscured features. Free-form surfaces and assemblies stay out (non-goals) |
+| Architecture | B+ | **A−** | F1–F3 close every substrate deficit named against Analysis Situs; adjudication stays deliberately closed |
+| Feature coverage | C+ | **B−** | Vocabulary frozen (no new families, by non-goal), but the excluded oblique and blend-obscured variants of recognised classes come in |
+| Feature-interaction handling | B− | **B** | F5 completes defining evidence everywhere — the prerequisite for interaction rules — but the rules themselves need observed overlaps and separate review |
+| Validation honesty | A | **A** | Already at ceiling; F0's MFTRCAD scanning and sealed draws extend the lead |
+| Determinism & explainability | A | **A** | Maintained by construction — byte-identical goldens gate every neutral change |
+| Parametric record quality | A | **A** | Section records are richer; F6 correspondence stays a private diagnostic, so the persistent-ID gap only half-closes |
+| Engineering quality | A− | **A−** | Still alpha, still bus factor one; the two-independent-reviews process tightens dependence on scarce reviewer attention |
+| Performance | C+ | **C+** | Held by budgets, not improved: canonicalisation, views and oblique candidate spaces all add per-part work; parallelism is out of scope |
+| Ecosystem reach | C | **C+** | B-spline tolerance removes the biggest barrier to arbitrary third-party STEP; structure (no framework API yet, alpha) otherwise unchanged |
+
+Overall: from a B+ special-purpose utility to roughly an **A− utility with A-grade engineering
+and B-grade generality**, leaving coverage breadth and performance as the remaining C-shaped
+edges. The head-to-head with Analysis Situs becomes near-parity on recognition substrate,
+with Analysis Situs ahead only on product surface (workbench, defeaturing, sheet metal, DFM,
+maturity) and this project ahead on measurement discipline and the typed Python contract.
+
+Two amendments would raise the *expected* value of these projections (both argued in
+[`epic-0004-feedback.md`](epic-0004-feedback.md)):
+
+1. **Split F4 and land its schema half early.** F4 carries the oblique half of the generality
+   jump plus the whole coverage move, yet sits sixth of seven — the package most likely to
+   slip is the one with a clock on it, since every release pins the axis-span schemas deeper.
+   Landing the versioned `LocalFrame`/`PlanarSection` schema (with byte-identical
+   principal-axis projection) right after F0 defuses the 1.0 corner even if the epic stalls,
+   and lets F1/F5 write their fixtures against the final schema once instead of twice.
+2. **Add a published framework API as the epic's exit deliverable (adopted — see
+   recommendation 7).** Once F1–F4 stop churning the neutral APIs, promote the substrate
+   (graph, canonical view, collapsed views, frames/sections) to a public versioned contract.
+   This is the one lever that moves ecosystem reach (C+ → B) and mitigates the bus-factor
+   ceiling, and it costs almost nothing *after* the epic while taxing every package if done
+   before.
+
+These are grades for capability the exit gates prove, so they inherit the epic's own evidence
+standard: re-score after the holdout reveals, not before.
 
 ## Sources
 
