@@ -83,9 +83,9 @@ def is_opposed_nonsmooth(left: ArcKind | None, right: ArcKind | None) -> bool:
 
 
 def same_arc_kind(left: ArcKind | None, right: ArcKind | None) -> bool:
-    """Whether two proved pair facts agree, never concluding from absence or unknown."""
+    """Whether two legacy pair facts agree, preserving every closed/absent state exactly."""
 
-    return left in {"convex", "concave", "smooth"} and left == right
+    return left == right
 
 
 @dataclass(frozen=True, slots=True)

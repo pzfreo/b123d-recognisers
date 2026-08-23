@@ -80,8 +80,8 @@ def test_closed_arc_helpers_never_infer_a_turn_from_absence() -> None:
     assert not is_opposed_nonsmooth("convex", "unknown")
     assert not is_opposed_nonsmooth("concave", None)
     assert same_arc_kind("convex", "convex")
-    assert not same_arc_kind(None, None)
-    assert not same_arc_kind("unknown", "unknown")
+    assert same_arc_kind(None, None)
+    assert same_arc_kind("unknown", "unknown")
     assert not same_arc_kind("unknown", None)
 
 
@@ -380,7 +380,8 @@ def test_smooth_side_is_independent_of_fresh_face_and_edge_order() -> None:
 
     def keyed_sides(graph):
         found = {}
-        for a, b in _smooth_pairs(graph):
+        pairs = _smooth_pairs(graph)
+        for a, b in pairs:
             faces = tuple(
                 sorted(
                     (
@@ -404,6 +405,7 @@ def test_smooth_side_is_independent_of_fresh_face_and_edge_order() -> None:
                 )
             )
             found[(faces, edges)] = graph.smooth_side(a, b)
+        assert len(found) == len(pairs), "the test signature must identify each pair uniquely"
         return found
 
     assert keyed_sides(baseline) == keyed_sides(reordered)
@@ -424,6 +426,14 @@ def test_duplicate_solid_ownership_cannot_authorize_material_side() -> None:
     pairs = _smooth_pairs(graph)
     assert pairs
     assert {graph.smooth_side(a, b) for a, b in pairs} == {"unproven"}
+
+
+def test_a_disconnected_second_solid_does_not_poison_owned_sides() -> None:
+    graph = FaceGraph(Compound(children=[_filleted(), Pos(100, 0, 0) * Box(5, 5, 5)]))
+    pairs = _smooth_pairs(graph)
+
+    assert len(pairs) == 8
+    assert {graph.smooth_side(a, b) for a, b in pairs} == {"convex"}
 
 
 def test_open_topods_solid_cannot_authorize_material_side() -> None:
@@ -511,12 +521,21 @@ def test_open_faces_can_be_legacy_smooth_but_side_unproven() -> None:
     [
         ((0.0, True), (-0.25, False), "convex"),
         ((0.0, True), (0.25, False), "concave"),
+        ((-0.1, False), (-0.2, False), "convex"),
+        ((0.1, False), (0.2, False), "concave"),
         ((0.5e-6, False), (-0.5e-6, False), "unproven"),
         ((-0.25, False), (0.25, False), "unproven"),
         ((0.0, False), (0.0, False), "unproven"),
     ],
 )
 def test_smooth_side_reducer_is_total_and_fail_closed(monkeypatch, left, right, expected) -> None:
+    """Exercise closed sign states absent from the checked-in geometry matrix.
+
+    The frozen semantic-fixture scan found 36 regular plane/curve samples and zero curved/curved
+    same-sign or opposite-sign samples. Real external/internal rounds own the available production
+    signs; these exact curvature observations own only the otherwise unavailable reducer states.
+    """
+
     graph = FaceGraph(_filleted())
     a, b = _smooth_pairs(graph)[0]
     edge = graph.shared_edges(a, b)[0]

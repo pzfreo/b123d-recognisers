@@ -282,6 +282,9 @@ evidence may use real kernel observations up to the unavailable boundary and a n
 frozen observation for only the reducer state. The test must name the scan result and the exact
 boundary it substitutes; it may not replace an available end-to-end convex, concave, neutral,
 unproven, imported, ownership, seam/pole or non-manifold fixture.
+The frozen F2 scan also found 36 regular plane/curve samples and no curved/curved same-sign or
+opposite-sign sample in the semantic fixtures. Those two algebraic sign reductions therefore use
+direct curvature observations; the available plane/round signs remain end-to-end fixtures.
 
 Freeze an AST caller roster before migration. Current production dispositions are exact
 nonsmooth comparisons in `_recess_core` and any-smooth traversal in `FaceGraph.smooth_region`;
