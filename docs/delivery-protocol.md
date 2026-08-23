@@ -39,18 +39,18 @@ unchanged.
 
 Implement and test geometry recognition in the package. Add the immutable record, public typing,
 schema version, manifest entry, documentation, functional tests, provenance and performance bound
-together.
-Before general availability, publish a package prerelease when Draftwright needs to validate a new
-public record. A prerelease is test evidence, never a production lock. **Both repositories green:**
-Draftwright still consumes its previous exact release; the package candidate validates on its own.
+together. Publish the stable additive package only after its own contract and release gates pass.
+The current release path does not support prereleases, so this protocol does not claim a pre-release
+consumer join. **Both repositories green:** Draftwright still consumes its previous exact release;
+the new package artifact is independently valid but not yet consumed there.
 
 ### 3. Add consumer support
 
-On a Draftwright branch, update the immutable package version and hashes in the lockfile. Declare
-every downstream state and add independent IR, DSL, code-generation, drawing and completeness tests
-that apply. Use `deferred` with a tracking issue or `not-applicable`/`unsupported` with evidence when
-support is not valid. Draftwright's own CI proves the join against the candidate branch. Then publish
-the package's stable patch release and replace the prerelease lock with that registry artifact.
+After the additive package release exists, open a Draftwright branch that updates the immutable
+package version and hashes in the lockfile to that exact stable artifact. Declare every downstream
+state and add independent IR, DSL, code-generation, drawing and completeness tests that apply. Use
+`deferred` with a tracking issue or `not-applicable`/`unsupported` with evidence when support is not
+valid. Draftwright's own CI proves the join before its pin-bump PR merges.
 **Both repositories green:** package behavior is additive; released Draftwright ignores it, while
 candidate Draftwright fails closed against exactly the new contract.
 
@@ -66,25 +66,31 @@ the new immutable artifact.
 
 Remove compatibility scaffolding only after all supported consumers have moved. Keep deprecated
 family/record aliases for the period required by ADR 0005, with replacement and removal versions.
-Breaking schema or identifier changes require a major package release; additive work normally uses
-a patch release on the current minor line. **Both repositories green:** aliases and version ranges
-remain valid until the documented removal release.
+Release levels follow ADR 0005: prose/evidence-only fixes use a patch; a supported family, additive
+optional record field or additive schema version uses a minor; a required-field change or removal
+uses the next minor before 1.0 and otherwise a major, with aliases and deprecation where
+representable. **Both repositories green:** aliases and version ranges remain valid until the
+documented removal release.
 
 Do not merge a mutable Git/path dependency, duplicate a recogniser in Draftwright, or widen a
 production range merely to make paired branches pass.
 
 ## Versions, rollback and failure ownership
 
-- While the package remains on the 0.2 line, compatible additive work and fixes publish as
-  `0.2.N`; no minor bump is required by this protocol. A paired prerelease is `0.2.NrcK`.
-- Draftwright's declared and locked production range is deliberately the singleton `==0.2.N`, not
+- Release levels follow ADR 0005's transition table: prose/evidence-only fixes use a stable patch;
+  new supported families and additive optional public fields or schemas use a stable minor; required
+  or removed contract elements use the next minor before 1.0 and otherwise a major, with the
+  prescribed migration evidence.
+- Draftwright's declared and locked production range is deliberately a singleton stable version, not
   an open interval. Its tested compatibility window is therefore the exact artifact named by the
   consumer declaration; widening that window requires evidence against every newly admitted version.
 - Production Draftwright uses an exact stable package version and checked `uv.lock` artifact hashes.
-- Candidate testing may use a PEP 440 prerelease or the locally built wheel from the harness. Neither
-  changes the committed production lock until the artifact is published and its hash is reviewed.
-- Additive records land package-first. Breaking changes require a new manifest format or record
-  schema, a major package version, a deprecation window, and consumer support before removal.
+- The current package release path does not support prereleases. Cross-repository compatibility is
+  therefore established stable-package-first: the additive artifact is published from green
+  package evidence, then Draftwright pins and tests it before changing its production dependency.
+- Additive records land package-first. Breaking changes require the ADR 0005 release level and
+  migration evidence: the next minor before 1.0 and otherwise a major, plus a deprecation window
+  and consumer support before removal where the change is representable by an alias.
 - Roll back Draftwright by reverting its dependency/overlay commit to the last known registry hash.
   Roll back package behavior with a new patch release; never replace an existing PyPI file or tag.
 - A package geometry/fixture/manifest failure belongs to `b123d-recognisers`. An IR, DSL, generated
@@ -102,11 +108,12 @@ make the capability table look complete.
 ## Upgrading Draftwright
 
 Compatibility is proven where the upgrade happens: on a Draftwright branch that moves the exact
-lockfile pin to the released package artifact. Draftwright's own CI runs its capability/import
-contract tests, drawing regressions and completeness checks against that release before the bump
-merges. This package's CI does not run Draftwright's tests; the pin guarantees production only
-ever consumes a release Draftwright has tested, and the bump PR is the review point for any
-semantic transition the release notes declare.
+lockfile pin to the stable package artifact. Draftwright's own CI runs its capability/import contract
+tests, drawing regressions and completeness checks before the pin-bump PR merges. This package's CI
+does not run Draftwright's tests. The package-first order is safe for additive contracts because the
+existing Draftwright release remains locked to its previous artifact; the new artifact becomes a
+production dependency only after Draftwright has tested and reviewed the exact pin. The consumer PR
+is the review point for any semantic transition the release notes declare.
 
 ## BossRecord walkthrough
 

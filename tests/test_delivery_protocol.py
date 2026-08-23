@@ -63,6 +63,29 @@ def test_contributor_and_pr_surfaces_link_the_protocol() -> None:
         assert "docs/delivery-protocol.md" in text
 
 
+def test_active_delivery_docs_do_not_reference_the_removed_canary_or_harness() -> None:
+    active_surfaces = (
+        ROOT / "CONTRIBUTING.md",
+        ROOT / "docs/delivery-protocol.md",
+        ROOT / "docs/releasing.md",
+        ROOT / "scripts/update-recogniser-version",
+        ROOT / ".github/pull_request_template.md",
+        ROOT / ".github/workflows/publish.yml",
+    )
+    stale_terms = (
+        "downstream-canary.yml",
+        "check_downstream.py",
+        "check_post_release_bump.py",
+        "locally built wheel from the harness",
+        "0.2.NrcK",
+        "X.Y.Z[rcN][.devN]",
+    )
+    for path in active_surfaces:
+        text = path.read_text(encoding="utf-8")
+        for stale in stale_terms:
+            assert stale not in text, f"{path.relative_to(ROOT)} still references {stale}"
+
+
 def test_package_branch_runs_one_full_matrix_not_push_and_pr_duplicates() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "push:\n    branches: [main]" in workflow
