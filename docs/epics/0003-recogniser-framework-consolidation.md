@@ -1,8 +1,8 @@
 # Epic 0003 — Recogniser framework consolidation
 
 **Status:** implementation complete; awaiting integration gate and stacked merge
-**Owner:** @pzfreo  
-**Opened:** 2026-08-22  
+**Owner:** @pzfreo
+**Opened:** 2026-08-22
 **Baseline:** `ccf3b8c` (0.3.1.dev0, after #149) — 800 tests collected; Ruff and mypy clean
 
 This epic pauses feature-family expansion and gives every aggregate recogniser one minimum
