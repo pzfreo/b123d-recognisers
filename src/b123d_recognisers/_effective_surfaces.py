@@ -12,17 +12,22 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import (
+    GeomAbs_BezierSurface,
+    GeomAbs_BSplineSurface,
     GeomAbs_Cone,
     GeomAbs_Cylinder,
     GeomAbs_Plane,
     GeomAbs_Sphere,
     GeomAbs_Torus,
 )
+from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Sphere
+from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition
+from OCP.Standard import Standard_Failure
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._geometry import COORD_FLOOR
@@ -120,6 +125,7 @@ class AnalyticSurfaceFact:
     kind: SurfaceKind
     provenance: SurfaceProvenance
     orientation: OrientationCapability
+    parameters: tuple[float, ...]
     requested_tolerance: float
     kernel_reported_gap: float
 
@@ -209,9 +215,97 @@ class EffectiveSurfaceIndex:
                 kind=native,
                 provenance=SurfaceProvenance.NATIVE,
                 orientation=OrientationCapability.NATIVE_ORIENTED,
+                parameters=(),
                 requested_tolerance=0.0,
                 kernel_reported_gap=0.0,
             )
         if kind == GeomAbs_Torus:
             return RefusedSurfaceFact(node, SurfaceRefusalReason.UNSUPPORTED_TORUS_RECOVERY)
+        if kind in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface):
+            return self._recover(node, face)
         return RefusedSurfaceFact(node, SurfaceRefusalReason.UNSUPPORTED_KIND)
+
+    def _recover(self, node: FaceNode, face) -> EffectiveSurfaceFact:
+        try:
+            tolerance = recovery_tolerance(face)
+        except ValueError:
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.INVALID_INPUT)
+
+        attempts = (
+            (SurfaceKind.PLANE, "IsPlane", gp_Pln()),
+            (SurfaceKind.CYLINDER, "IsCylinder", gp_Cylinder()),
+            (SurfaceKind.CONE, "IsCone", gp_Cone()),
+            (SurfaceKind.SPHERE, "IsSphere", gp_Sphere()),
+        )
+        passed: list[tuple[SurfaceKind, object, float]] = []
+        for analytic_kind, method, primitive in attempts:
+            recogniser = ShapeAnalysis_CanonicalRecognition(face.wrapped)
+            try:
+                accepted = bool(getattr(recogniser, method)(tolerance, primitive))
+                status = recogniser.GetStatus()
+                gap = float(recogniser.GetGap())
+            except (Standard_Failure, RuntimeError, ValueError):
+                continue
+            if accepted and status == 0 and math.isfinite(gap) and 0.0 <= gap <= tolerance:
+                passed.append((analytic_kind, primitive, gap))
+
+        if not passed:
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.FIT_UNAVAILABLE)
+        if len(passed) != 1:
+            return RefusedSurfaceFact(node, SurfaceRefusalReason.AMBIGUOUS_PRIMITIVE)
+        analytic_kind, primitive, gap = passed[0]
+        return AnalyticSurfaceFact(
+            node=node,
+            kind=analytic_kind,
+            provenance=SurfaceProvenance.RECOVERED,
+            orientation=OrientationCapability.RECOVERED_UNORIENTED,
+            parameters=_primitive_parameters(analytic_kind, primitive),
+            requested_tolerance=tolerance,
+            kernel_reported_gap=gap,
+        )
+
+
+def _canonical_direction(direction) -> tuple[float, float, float]:
+    values = (float(direction.X()), float(direction.Y()), float(direction.Z()))
+    dominant = max(range(3), key=lambda axis: (abs(values[axis]), axis))
+    sign = 1.0 if values[dominant] >= 0.0 else -1.0
+    return (sign * values[0], sign * values[1], sign * values[2])
+
+
+def _closest_axis_point(
+    location, direction: tuple[float, float, float]
+) -> tuple[float, float, float]:
+    point = (float(location.X()), float(location.Y()), float(location.Z()))
+    along = sum(value * axis for value, axis in zip(point, direction, strict=True))
+    return (
+        point[0] - along * direction[0],
+        point[1] - along * direction[1],
+        point[2] - along * direction[2],
+    )
+
+
+def _primitive_parameters(kind: SurfaceKind, primitive: Any) -> tuple[float, ...]:
+    if kind is SurfaceKind.PLANE:
+        plane = primitive
+        direction = _canonical_direction(plane.Axis().Direction())
+        location = plane.Location()
+        offset = sum(
+            value * axis
+            for value, axis in zip(
+                (float(location.X()), float(location.Y()), float(location.Z())),
+                direction,
+                strict=True,
+            )
+        )
+        return (*direction, offset)
+    if kind in (SurfaceKind.CYLINDER, SurfaceKind.CONE):
+        conic = primitive
+        direction = _canonical_direction(conic.Axis().Direction())
+        location = conic.Apex() if kind is SurfaceKind.CONE else conic.Axis().Location()
+        point = _closest_axis_point(location, direction)
+        if kind is SurfaceKind.CYLINDER:
+            return (*point, *direction, float(conic.Radius()))
+        return (*point, *direction, float(conic.SemiAngle()))
+    sphere = primitive
+    centre = sphere.Location()
+    return (float(centre.X()), float(centre.Y()), float(centre.Z()), float(sphere.Radius()))

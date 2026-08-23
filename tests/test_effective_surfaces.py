@@ -1,7 +1,12 @@
 import math
 
 import pytest
-from build123d import Axis, Box, Cylinder, Sphere
+from build123d import Axis, Box, Cylinder, Face, Sphere
+from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCP.Geom import Geom_RectangularTrimmedSurface
+from OCP.GeomConvert import GeomConvert
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._effective_surfaces import (
@@ -9,6 +14,7 @@ from b123d_recognisers._effective_surfaces import (
     EffectiveSurfaceIndex,
     OrientationCapability,
     SurfaceKind,
+    SurfaceProvenance,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -54,3 +60,43 @@ def test_effective_surface_index_rejects_foreign_nodes() -> None:
 
     with pytest.raises(ValueError, match="not issued"):
         left.fact(foreign)
+
+
+def _as_bspline_face(face: Face) -> Face:
+    adaptor = BRepAdaptor_Surface(face.wrapped)
+    surface = BRep_Tool.Surface_s(face.wrapped)
+    trimmed = Geom_RectangularTrimmedSurface(
+        surface,
+        adaptor.FirstUParameter(),
+        adaptor.LastUParameter(),
+        adaptor.FirstVParameter(),
+        adaptor.LastVParameter(),
+    )
+    bspline = GeomConvert.SurfaceToBSplineSurface_s(trimmed)
+    made = BRepBuilderAPI_MakeFace(
+        bspline,
+        adaptor.FirstUParameter(),
+        adaptor.LastUParameter(),
+        adaptor.FirstVParameter(),
+        adaptor.LastVParameter(),
+        1e-7,
+    )
+    return Face(made.Face())
+
+
+def test_exact_bspline_plane_recovers_as_unoriented_original_node() -> None:
+    native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
+    graph = FaceGraph(_as_bspline_face(native))
+    node = graph.nodes[0]
+    fact = EffectiveSurfaceIndex(graph).fact(node)
+
+    assert isinstance(fact, AnalyticSurfaceFact)
+    assert fact.node is node
+    assert fact.kind is SurfaceKind.PLANE
+    assert fact.provenance is SurfaceProvenance.RECOVERED
+    assert fact.orientation is OrientationCapability.RECOVERED_UNORIENTED
+    assert fact.kernel_reported_gap == 0.0
+    assert fact.requested_tolerance > 0.0
+
+    with pytest.raises(ValueError, match="ORIENTATION_UNPROVEN"):
+        EffectiveSurfaceIndex(graph).oriented_fact(node)
