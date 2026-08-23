@@ -22,7 +22,13 @@ share nothing above them.
 
 from __future__ import annotations
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    FaceGraph,
+    FaceNode,
+    is_opposed_nonsmooth,
+    same_arc_kind,
+)
 from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_faces import (
     _AXES,
@@ -98,8 +104,7 @@ def _uninterrupted_long_span(
     for node in common:
         if graph.is_planar(node):
             continue
-        turns = {graph.arc(fa.node, node), graph.arc(fb.node, node)}
-        if turns == {"convex", "concave"}:
+        if is_opposed_nonsmooth(graph.arc(fa.node, node), graph.arc(fb.node, node)):
             bounds = graph.bounds(node)[_AXES[long_axis]]
             if bounds[0] <= lo + COORD_FLOOR:
                 lo = max(lo, bounds[1])
@@ -163,7 +168,7 @@ def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
         # voids. Keep curved neighbours as the fallback for boundaries with no planar member.
         boundary = {neighbour for neighbour in common if graph.is_planar(neighbour)} or common
         return all(
-            graph.arc(fa.node, neighbour) == graph.arc(fb.node, neighbour)
+            same_arc_kind(graph.arc(fa.node, neighbour), graph.arc(fb.node, neighbour))
             for neighbour in boundary
         )
 

@@ -276,6 +276,13 @@ three sided observations on every shared edge must agree, and multiple shared ed
 otherwise the side is `unproven`. Swapping nodes, reversing edge traversal, kernel face order and
 shared-edge order cannot change either fact.
 
+Some fail-closed reducer states need not be representable by a valid development solid. When an
+exhaustive checked-in-fixture scan finds no smooth multi-edge pair (as at F2), the acceptance
+evidence may use real kernel observations up to the unavailable boundary and a narrowly injected
+frozen observation for only the reducer state. The test must name the scan result and the exact
+boundary it substitutes; it may not replace an available end-to-end convex, concave, neutral,
+unproven, imported, ownership, seam/pole or non-manifold fixture.
+
 Freeze an AST caller roster before migration. Current production dispositions are exact
 nonsmooth comparisons in `_recess_core` and any-smooth traversal in `FaceGraph.smooth_region`;
 tests/tools are classified too. Compatibility traversal uses `is_any_smooth(arc)`; sided reads use

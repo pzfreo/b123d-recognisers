@@ -150,8 +150,8 @@ ARC_READER_SITES = {
     "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",
     "src/b123d_recognisers/_adjacency:smooth_side:is_any_smooth:1": "any-smooth",
     "src/b123d_recognisers/_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:1": "exact-nonsmooth-set",
-    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "exact-nonsmooth-set",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:1": "opposed-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "opposed-nonsmooth",
     "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
     "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
 }
@@ -183,12 +183,14 @@ for _site in (
     "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:1",
     "test_a_warm_cache_still_refuses_another_graph_s_nodes:arc:2",
     "test_open_topods_solid_cannot_authorize_material_side:arc:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:arc:1",
 ):
     ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "legacy-contract"
 for _site in (
     "_smooth_pairs:is_any_smooth:1",
     "test_open_faces_can_be_legacy_smooth_but_side_unproven:is_any_smooth:1",
     "test_open_topods_solid_cannot_authorize_material_side:is_any_smooth:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:is_any_smooth:1",
 ):
     ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "any-smooth"
 for _site in (
@@ -206,10 +208,11 @@ for _site in (
     "test_non_smooth_and_foreign_side_queries_fail_intentionally:smooth_side:2",
     "test_sided_rounds_survive_step_round_trip:smooth_side:1",
     "test_open_smooth_join_remains_unproven_after_step_round_trip:smooth_side:1",
-    "test_smooth_side_is_independent_of_fresh_face_and_edge_order:smooth_side:1",
-    "test_smooth_side_is_independent_of_fresh_face_and_edge_order:smooth_side:2",
+    "keyed_sides:smooth_side:1",
     "test_duplicate_solid_ownership_cannot_authorize_material_side:smooth_side:1",
     "test_open_topods_solid_cannot_authorize_material_side:smooth_side:1",
+    "test_tangent_higher_order_bezier_is_not_a_neutral_continuation:smooth_side:1",
+    "test_non_manifold_three_face_edge_is_side_unproven:smooth_side:1",
 ):
     ARC_READER_SITES[f"tests/test_arcs:{_site}"] = "side-read"
 
@@ -287,28 +290,32 @@ def test_every_arc_reader_has_one_reviewed_disposition() -> None:
                     if isinstance(value, ast.Constant) and isinstance(value.value, str)
                 }
                 assert literals <= {"convex", "concave"} and literals, site
-            elif disposition == "exact-nonsmooth-set":
-                assert isinstance(parent, ast.Set), site
-                assignment = parents.get(parent)
-                assert isinstance(assignment, ast.Assign), site
-                assert any(
-                    isinstance(target, ast.Name) and target.id == "turns"
-                    for target in assignment.targets
-                ), site
+            elif disposition == "opposed-nonsmooth":
+                assert isinstance(parent, ast.Call), site
+                assert isinstance(parent.func, ast.Name), site
+                assert parent.func.id == "is_opposed_nonsmooth", site
             elif disposition == "pair-agreement":
-                assert isinstance(parent, ast.Compare), site
-                assert (
-                    sum(isinstance(value, ast.Call) for value in [parent.left, *parent.comparators])
-                    == 2
+                assert isinstance(parent, ast.Call), site
+                assert isinstance(parent.func, ast.Name), site
+                assert parent.func.id == "same_arc_kind", site
+            elif disposition == "legacy-contract":
+                assert isinstance(
+                    parent,
+                    (ast.Assign, ast.Call, ast.Compare, ast.Expr, ast.SetComp, ast.Subscript),
                 ), site
+                if isinstance(parent, ast.Call):
+                    assert isinstance(parent.func, ast.Name), site
+                    assert parent.func.id == "is_any_smooth", site
+                if isinstance(parent, ast.Compare):
+                    assert all(isinstance(op, (ast.Eq, ast.Is, ast.In)) for op in parent.ops), site
 
     assert found == set(ARC_READER_SITES)
     assert set(ARC_READER_SITES.values()) <= {
         "any-smooth",
         "exact-nonsmooth",
-        "exact-nonsmooth-set",
         "legacy-contract",
         "legacy-source",
+        "opposed-nonsmooth",
         "pair-agreement",
         "side-read",
     }

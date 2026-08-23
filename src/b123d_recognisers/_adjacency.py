@@ -76,6 +76,18 @@ def is_any_smooth(kind: ArcKind | None) -> bool:
     return kind == "smooth"
 
 
+def is_opposed_nonsmooth(left: ArcKind | None, right: ArcKind | None) -> bool:
+    """Whether two proved joins are exactly one convex and one concave turn."""
+
+    return {left, right} == {"convex", "concave"}
+
+
+def same_arc_kind(left: ArcKind | None, right: ArcKind | None) -> bool:
+    """Whether two proved pair facts agree, never concluding from absence or unknown."""
+
+    return left in {"convex", "concave", "smooth"} and left == right
+
+
 @dataclass(frozen=True, slots=True)
 class _SmoothSideObservation:
     samples: tuple[SmoothSide, ...]

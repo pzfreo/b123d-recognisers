@@ -30,6 +30,7 @@ from build123d import (
     Compound,
     Cone,
     Cylinder,
+    Edge,
     Face,
     Plane,
     Pos,
@@ -41,16 +42,19 @@ from build123d import (
     fillet,
     import_step,
 )
-from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing
 from OCP.Geom import Geom_BezierSurface
 from OCP.gp import gp_Pnt
 from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TopoDS import TopoDS
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
     _SmoothSideObservation,
     is_any_smooth,
+    is_opposed_nonsmooth,
+    same_arc_kind,
 )
 from b123d_recognisers._geometry import SMOOTH_ARC_GAP
 from tests.golden._common import load_fixture
@@ -68,6 +72,17 @@ def _arcs(part):
             if b.index > a.index:
                 found[graph.arc(a, b)] += 1
     return found
+
+
+def test_closed_arc_helpers_never_infer_a_turn_from_absence() -> None:
+    assert is_opposed_nonsmooth("convex", "concave")
+    assert is_opposed_nonsmooth("concave", "convex")
+    assert not is_opposed_nonsmooth("convex", "unknown")
+    assert not is_opposed_nonsmooth("concave", None)
+    assert same_arc_kind("convex", "convex")
+    assert not same_arc_kind(None, None)
+    assert not same_arc_kind("unknown", "unknown")
+    assert not same_arc_kind("unknown", None)
 
 
 def _plain():
@@ -226,7 +241,7 @@ def test_equivalent_native_surface_splits_are_neutral(part) -> None:
     assert {graph.smooth_side(a, b) for a, b in pairs} == {"neutral"}
 
 
-def test_tangent_higher_order_bezier_is_not_a_neutral_continuation() -> None:
+def test_tangent_higher_order_bezier_is_not_a_neutral_continuation(monkeypatch) -> None:
     """Equal tangent and boundary curvature do not prove the surfaces continue.
 
     The Bezier height is ``u**4``: at ``u == 0`` it shares a plane's position, tangent and
@@ -242,10 +257,31 @@ def test_tangent_higher_order_bezier_is_not_a_neutral_continuation() -> None:
                 v,
                 gp_Pnt((u - 1) / 4, v - 1, 1.0 if u == 5 else 0.0),
             )
-    made = BRepBuilderAPI_MakeFace(Geom_BezierSurface(poles), 1e-7)
-    graph = FaceGraph(Compound(children=[Face(made.Face()), Face.make_rect(1, 1, Plane.XY)]))
+    curved = Face(BRepBuilderAPI_MakeFace(Geom_BezierSurface(poles), 1e-7).Face())
+    plane = Face.make_rect(1, 1, Plane(origin=(-0.5, 0.5, 0)))
+    sewing = BRepBuilderAPI_Sewing(1e-6)
+    sewing.Add(curved.wrapped)
+    sewing.Add(plane.wrapped)
+    sewing.Perform()
+    graph = FaceGraph(Shell(TopoDS.Shell_s(sewing.SewedShape())))
+    a, b = graph.nodes
+    (edge,) = graph.shared_edges(a, b)
 
-    assert not graph._native_continuation(graph.nodes[0], graph.nodes[1], local=1.0)
+    assert is_any_smooth(graph.arc(a, b))
+    assert not graph._native_continuation(a, b, local=1.0)
+    observations = [
+        graph._normal_curvature(node, edge, fraction)
+        for node in (a, b)
+        for fraction in (0.25, 0.5, 0.75)
+    ]
+    assert all(observation is not None for observation in observations)
+    assert all(abs(observation[0]) < 1e-12 for observation in observations if observation)
+    assert {observation[1] for observation in observations if observation} == {False, True}
+
+    # The shell deliberately has no material-side authority. Bypass only that already-tested
+    # ownership gate so this adversary reaches the real shared-edge D2 reducer.
+    monkeypatch.setattr(graph, "_eligible_side_edge", lambda *_: True)
+    assert graph.smooth_side(a, b) == "unproven"
 
 
 def test_split_native_side_survives_step_round_trip(tmp_path) -> None:
@@ -341,9 +377,36 @@ def test_smooth_side_is_independent_of_fresh_face_and_edge_order() -> None:
 
     baseline = FaceGraph(part)
     reordered = FaceGraph(ReorderedPart(), face_edges=ReversedFaceEdges())
-    assert Counter(
-        baseline.smooth_side(a, b) for a, b in _smooth_pairs(baseline)
-    ) == Counter(reordered.smooth_side(a, b) for a, b in _smooth_pairs(reordered))
+
+    def keyed_sides(graph):
+        found = {}
+        for a, b in _smooth_pairs(graph):
+            faces = tuple(
+                sorted(
+                    (
+                        round(graph.face(node).center().X, 9),
+                        round(graph.face(node).center().Y, 9),
+                        round(graph.face(node).center().Z, 9),
+                        round(float(graph.face(node).area), 9),
+                    )
+                    for node in (a, b)
+                )
+            )
+            edges = tuple(
+                sorted(
+                    (
+                        round(edge.center().X, 9),
+                        round(edge.center().Y, 9),
+                        round(edge.center().Z, 9),
+                        round(float(edge.length), 9),
+                    )
+                    for edge in graph.shared_edges(a, b)
+                )
+            )
+            found[(faces, edges)] = graph.smooth_side(a, b)
+        return found
+
+    assert keyed_sides(baseline) == keyed_sides(reordered)
 
 
 def test_duplicate_solid_ownership_cannot_authorize_material_side() -> None:
@@ -389,6 +452,47 @@ def test_periodic_self_seam_never_becomes_a_pair_side() -> None:
 
     assert graph.edges(node), "the sphere must retain its periodic representation edge"
     assert graph.neighbours(node) == ()
+    edge = graph.edges(node)[0]
+    assert graph._normal_curvature(node, edge, 0.0) is None
+    assert graph._normal_curvature(node, edge, 1.0) is None
+
+
+def test_normal_curvature_ignores_the_input_edge_wrapper_orientation() -> None:
+    graph = FaceGraph(_filleted())
+    a, b = _smooth_pairs(graph)[0]
+    edge = graph.shared_edges(a, b)[0]
+    reversed_edge = Edge(TopoDS.Edge_s(edge.wrapped.Reversed()))
+
+    for node in (a, b):
+        forward = graph._normal_curvature(node, edge, 0.5)
+        backward = graph._normal_curvature(node, reversed_edge, 0.5)
+        assert backward == pytest.approx(forward)
+
+
+def test_non_manifold_three_face_edge_is_side_unproven() -> None:
+    faces = [
+        Face.make_rect(1, 1, Plane(origin=(-0.5, 0.5, 0))),
+        Face.make_rect(1, 1, Plane(origin=(0.5, 0.5, 0))),
+        Face.make_rect(
+            1,
+            1,
+            Plane(origin=(0, 0.5, 0.5), x_dir=(0, 1, 0), z_dir=(1, 0, 0)),
+        ),
+    ]
+    sewing = BRepBuilderAPI_Sewing(1e-6)
+    sewing.SetNonManifoldMode(True)
+    for face in faces:
+        sewing.Add(face.wrapped)
+    sewing.Perform()
+    graph = FaceGraph(Shell(TopoDS.Shell_s(sewing.SewedShape())))
+    pair = next((a, b) for a, b in _smooth_pairs(graph))
+    (edge,) = graph.shared_edges(*pair)
+    assert len(graph._edge_face_map()[edge]) == 3
+
+    # Bypass only the separately tested solid-ownership gate to isolate the real three-face edge.
+    graph._face_solids = ((0,),) * len(graph.nodes)
+    graph._closed_solids = frozenset({0})
+    assert graph.smooth_side(*pair) == "unproven"
 
 
 def test_open_faces_can_be_legacy_smooth_but_side_unproven() -> None:
