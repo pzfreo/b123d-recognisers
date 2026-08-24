@@ -47,7 +47,7 @@ from b123d_recognisers.polygonal_bosses import (
     recognise_polygonal_stock,
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
-from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
+from b123d_recognisers.profiled_bores import DoubleDBore, _discover_double_d_bores
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
@@ -294,10 +294,18 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_double_d_bores",
         (),
         always,
-        _simple(lambda s: list(recognise_double_d_bores(s.context.part))),
+        _simple(
+            lambda s: list(
+                _discover_double_d_bores(
+                    s.context.part,
+                    face_edges=s.context.face_edges,
+                    writer=s.writer,
+                )
+            )
+        ),
         NotCounted("not a distinct census key"),
-        IncompleteAttribution(
-            "no defining evidence is issued", "migrate profiled-bore owner faces"
+        FullyAttributed(
+            "every returned Double-D bore claims its complete original lateral wall faces"
         ),
     ),
     PhysicalDefinition(

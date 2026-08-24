@@ -99,10 +99,12 @@ and all mechanical gates. The selection contained 32 model triples (96 files), b
 aborted when model `20240124_001736_209` imported as an invalid B-rep, before a complete report or
 Bosses attribution result existed. The allocation is therefore inconclusive and cannot be rerun,
 replaced, reused, or fitted. No alternate scanner mode was attempted.
-`F5-DOUBLE-D-BORES-H1` is bucket 24 and is `sealed_unrevealed`. It was designated for #213 without
-opening the archive or inspecting bucket-24 membership, geometry, annotations, or outcomes. It
-remains excluded from `unselected`, accepts only its exact allocation acknowledgement, and may be
-revealed once only after the frozen Double-D implementation passes its pre-reveal gates.
+`F5-DOUBLE-D-BORES-H1` is bucket 24 and is now `consumed`. It was designated for #213 without
+opening the archive or inspecting bucket-24 membership, geometry, annotations, or outcomes, then
+selected exactly once at accepted PR #215 head `80def7f`. No model matched the allocation, so the
+scanner stopped before STEP import, annotation reading, recognition or complete report creation.
+The zero-population draw is permanently inconclusive and is not regression evidence. It cannot be
+rerun, replaced, reused or fitted; no alternate selection or scanner mode was attempted.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become

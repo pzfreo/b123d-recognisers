@@ -64,7 +64,7 @@ ALLOCATION_SPECS: Final = (
         F5_DOUBLE_D_BORES_H1,
         "f5_double_d_bores_h1",
         frozenset({24}),
-        "sealed_unrevealed",
+        "consumed",
     ),
 )
 

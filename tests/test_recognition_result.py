@@ -120,7 +120,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         registry_module, "_discover_countersinks", counted("countersinks", countersinks)
     )
     monkeypatch.setattr(registry_module, "recognise_holes", fake_holes)
-    monkeypatch.setattr(registry_module, "recognise_double_d_bores", counted("double_d_bores", []))
+    monkeypatch.setattr(
+        registry_module,
+        "_discover_double_d_bores",
+        counted("double_d_bores", []),
+    )
     monkeypatch.setattr(registry_module, "recognise_hole_patterns", derived("patterns", holes, []))
     monkeypatch.setattr(registry_module, "_discover_bosses", cyl_consumer("bosses", []))
     monkeypatch.setattr(

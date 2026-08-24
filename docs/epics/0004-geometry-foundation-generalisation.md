@@ -806,6 +806,30 @@ without archive access. The allocation starts `sealed_unrevealed`, is permanentl
 unselected complement to 25..999. Its sole purpose is the later one-shot Double-D attribution
 chronology; the neutral seal creates no recognition, evidence, result, or corpus-outcome claim.
 
+The F5g implementation uses one private `profiled_bores._discover_double_d_bores` core. Each exact
+low/high four-edge opening pair seeds four role-labelled chains of original planar chord-wall and
+cylindrical arc-wall faces. Same-support inward continuations must pair one low seed to one high
+seed, cover the serialized interval without overlap/gap, remain nonbranching and stay disjoint
+across roles and occurrences. Every complete union is resolved in graph order and proved to have
+one valid SolidRef before publication; only those lateral faces are defining. End planes, opening
+wires, per-solid extrema and the empty-prism boolean remain consulted facts establishing eligibility,
+throughness, high-end location and depth. The public facade remains writer-free and output-identical.
+
+OCCT healing of native and ordinary STEP Double-D tools retains one full-span face per logical wall;
+the current development fixture therefore cannot supply a positive middle axial patch. The
+production chain grammar and interval checks admit consecutive disjoint/meeting axial patches, while
+the imported ordinary fixture proves role correspondence. A future valid one-solid axial subdivision
+must add an exact all-patch regression before it can be claimed as observed positive evidence.
+
+The authorised F5g reveal ran exactly once at accepted pre-reveal PR #215 head `80def7f`, after two
+exact-head ACCEPTs, green focused/static/package/CI/Codecov gates, a passing composite budget, and
+crossed same-host census neutrality evidence. Selection `f5_double_d_bores_h1` contained no models;
+the scanner raised `no models match selection 'f5_double_d_bores_h1'` before importing STEP,
+reading annotations, running recognition or producing a complete JSON report. No retry,
+replacement, alternate mode, fitting or treatment change followed. Bucket 24 is permanently
+`consumed`, the result is inconclusive and not regression evidence, and exact Double-D ownership
+remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
