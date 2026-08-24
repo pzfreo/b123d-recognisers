@@ -56,7 +56,7 @@ def test_generic_attribution_report_covers_all_physical_families_from_one_produc
         for definition in PHYSICAL_DEFINITIONS
         if isinstance(definition.attribution, FullyAttributed)
     )
-    assert report[FamilyId.HOLES.value]["status"] == "incomplete_attribution"
+    assert report[FamilyId.HOLES.value]["status"] == "fully_attributed"
 
 
 def test_generic_report_counts_partial_attribution_without_calling_it_complete() -> None:
