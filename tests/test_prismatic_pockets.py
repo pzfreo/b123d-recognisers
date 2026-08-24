@@ -26,6 +26,7 @@ from build123d import (
     Polygon,
     Pos,
     extrude,
+    mirror,
 )
 
 import b123d_recognisers as r
@@ -88,6 +89,16 @@ def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():
     assert r.recognise_pockets(part) == [], "the pairing family must be blind to this"
 
 
+def test_both_cap_orientations_issue_complete_wall_evidence() -> None:
+    low_ledger, (low,) = _claimed(_triangular())
+    high_ledger, (high,) = _claimed(mirror(_triangular(), about=Plane.XY))
+
+    assert (low.open_sign, high.open_sign) == (1, -1)
+    for ledger, pocket in ((low_ledger, low), (high_ledger, high)):
+        (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+        assert len(ledger.defining_of(candidate)) == pocket.sides
+
+
 def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
     """`sides` alone would not, and neither would depth.
 
@@ -113,7 +124,9 @@ def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():
     """The cap count is the whole discriminator, so it is tested at both ends of its range."""
 
     part = _through()
-    assert r.recognise_prismatic_pockets(part) == []
+    from attribution_audit import unattributed_run
+
+    unattributed_run(part, FamilyId.PRISMATIC_POCKETS, r.recognise_prismatic_pockets)
     assert r.recognise_passages(part), "the same void must still be a passage"
 
 

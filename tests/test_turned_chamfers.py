@@ -6,6 +6,7 @@
 from pathlib import Path
 
 import pytest
+from attribution_audit import attributed_run, unattributed_run
 from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet, import_step
 
 from b123d_recognisers import (
@@ -15,6 +16,7 @@ from b123d_recognisers import (
     recognise_chamfers,
     recognise_fillets,
 )
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._geometry import _coaxial_axis_lines
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
@@ -35,13 +37,17 @@ def _filleted_stepped_shaft():
 
 
 def test_direct_reader_recognises_conical_turned_chamfers():
-    found = recognise_chamfers(_chamfered_stepped_shaft())
+    part = _chamfered_stepped_shaft()
+    ledger, found = attributed_run(part, FamilyId.CHAMFERS, recognise_chamfers)
 
     assert len(found) == 4
     assert {(chamfer.axis, chamfer.leg1, chamfer.leg2, chamfer.angle) for chamfer in found} == {
         ("z", 0.8, 0.8, 45.0)
     }
     assert all(chamfer.turned for chamfer in found)
+    for candidate in ledger.candidate_set(FamilyId.CHAMFERS).candidates:
+        (node,) = ledger.defining_of(candidate)
+        assert ledger.graph.face(node).geom_type == GeomType.CONE
 
 
 def test_rotational_inventory_keeps_turned_chamfers():
@@ -66,7 +72,9 @@ def test_real_turned_inventory_keeps_dimensioned_three_tenths_chamfers():
 
 
 def test_two_tenths_turned_edge_break_stays_below_evidence_floor():
-    assert recognise_chamfers(_chamfered_stepped_shaft(0.2)) == []
+    unattributed_run(
+        _chamfered_stepped_shaft(0.2), FamilyId.CHAMFERS, recognise_chamfers
+    )
 
 
 def test_rotational_inventory_keeps_toroidal_turned_fillets():

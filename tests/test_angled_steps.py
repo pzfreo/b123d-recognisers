@@ -17,6 +17,7 @@ two on size, the equal-legs assertions here would keep passing and
 
 from __future__ import annotations
 
+from attribution_audit import attributed_run, unattributed_run
 from build123d import (
     Align,
     Axis,
@@ -162,9 +163,8 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
 
 def test_successful_step_owns_only_the_slant() -> None:
     part = _blind()
-    ledger = ClaimLedger(FaceGraph(part))
-
-    step = recognise_angled_steps(part, ledger=ledger)[0]
+    ledger, steps = attributed_run(part, FamilyId.ANGLED_STEPS, recognise_angled_steps)
+    step = steps[0]
     candidate = ledger.candidate_set_for(FamilyId.ANGLED_STEPS, [step]).candidates[0]
     evidence = ledger.snapshot_index()
 
@@ -436,7 +436,11 @@ def test_records_are_ordered_deterministically_and_are_plain_data():
 def test_a_part_with_no_oblique_face_has_no_angled_steps():
     """The empty case, on geometry that exercises the scan rather than skipping it."""
 
-    assert recognise_angled_steps(_block() - Pos(0, 0, 0) * Cylinder(6, 12)) == []
+    unattributed_run(
+        _block() - Pos(0, 0, 0) * Cylinder(6, 12),
+        FamilyId.ANGLED_STEPS,
+        recognise_angled_steps,
+    )
 
 
 def test_a_shared_face_edge_memo_does_not_change_the_result():
