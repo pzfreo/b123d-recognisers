@@ -1079,3 +1079,18 @@ Selected-artifact SHA-256: `20a25c12b9da60142c60526cf20fcd1e1435b7a2b0c2f9dae4d6
 report SHA-256: `3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1f`.
 Bucket 26 is permanently consumed; the temporary selection/report were deleted and no rerun after
 corpus access, alternate selection or fitting occurred.
+
+### F5i Hole attribution (#220)
+
+Bucket 27 (`F5-HOLES-H1`) remains independently sealed and must not be accessed during development.
+Hole discovery uses one private optional-writer core while preserving the public signature and
+geometry-only path. Each issuable Hole owns all and only the original internal cylindrical patches
+that establish its bore/deep span and selected near-side counterbore or spotface lands. End and
+bottom faces, transition cones/tori, crossing faces, skipped grooves and through-hole far-side steps
+remain consulted. A composed countersink is linked through the restricted completed-predecessor
+capability introduced by #219; its cone stays defining solely for COUNTERSINKS. Every face,
+common-solid and optional predecessor identity/body check completes before first Hole issuance.
+Promotion to `FullyAttributed` and any one-shot bucket reveal require the same exact head to prove
+the complete lifecycle, independent topology-first role oracle, static/package/full/performance/CI
+gates and two independent accepts. Zero, invalid input, abort or completion consumes the allocation
+without retry or fitting and without implying geometry the scanner does not reconstruct.

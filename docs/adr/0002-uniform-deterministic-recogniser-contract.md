@@ -136,3 +136,12 @@ issuable occurrence owns exactly five pairwise-distinct original faces: the acce
 unique maximal-base x0, x1, y0 and y1 wall-role faces. Tier regions, stock extrema and unselected
 wall/top candidates remain consulted. Equal values with conflicting ordered role identities refuse
 aggregate publication rather than being rematched by value.
+
+## Amendment (Hole attribution, issue #220)
+
+`recognise_holes` follows the private optional-writer contract. A completed Hole occurrence owns
+the complete graph-deduplicated set of original internal cylindrical patches that establish its
+bore, selected near-side counterbore/spotface lands, and any blind deep-extension span. End planes,
+drill-point cones, shoulder transitions, skipped grooves, crossing faces and far-side steps remain
+consulted. A nested countersink is an identity-linked completed COUNTERSINKS predecessor: its cone
+remains defining only for that predecessor and is never copied into HOLES evidence.

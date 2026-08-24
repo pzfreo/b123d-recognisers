@@ -297,3 +297,11 @@ without a writer. The core may import only the record/type leaves plus `_geometr
 and the graph-bound `_claims` writer. It carries the exact returned record, top and ordered four
 wall-role snapshots through current per-solid dedup, tier suppression and sorting; it cannot read
 claims, completed evidence, sibling output, disposition, inventory or reconciliation.
+
+For the F5 Hole migration, `_hole_features._discover_holes` is the sole private writer-enabled core
+and `_registry._holes` its sole production writer caller. The public facade delegates without a
+writer and keeps its existing signature. The registry may pass only the shared cylinder/edge
+products and restricted completed COUNTERSINKS occurrences declared by the Hole definition. The
+core may validate those opaque predecessor handles and their SolidRefs, but cannot inspect a
+Candidate set, EvidenceIndex, inventory, disposition, reconciliation result, or another family's
+global output. CounterSink cones remain predecessor-owned consulted context.
