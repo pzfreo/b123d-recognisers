@@ -1024,3 +1024,18 @@ The epic is not complete until tests make these properties executable:
 The first implementation goal should stop after F0 and the design review for F1. Canonicalisation
 has the largest leverage, but it also sits beneath every recogniser; evidence and a reviewed seam
 must precede code.
+### F5h Polygonal Boss original-side attribution (#218)
+
+The Polygonal Boss migration is independently sealed by `F5-POLYGONAL-BOSSES-H1` (bucket 25).
+Its neutral implementation preserves the public Z-axis regular-hexagon recognition path and
+promotes only `POLYGONAL_BOSSES`.  Every returned occurrence carries exactly its six original
+vertical ring faces through stable sorting and binds them to one run-owned `SolidRef` before the
+first Candidate is issued.  Support, terminal and transition caps are independently rederived
+consulted facts for attachment and Z extent and are excluded from defining evidence.  Equal-valued
+occurrences remain identity-distinct across valid solids; `POLYGONAL_STOCK` remains unchanged.
+
+The sealed allocation is not accessed during implementation.  Reveal requires the frozen
+development matrix, full/static/package/performance/CI gates, two exact-head accepts and explicit
+one-shot authority.  A zero or aborted draw is permanently consumed and inconclusive; a generic
+scanner cannot establish the side-versus-cap geometric role unless that projection was frozen
+before reveal.

@@ -43,7 +43,7 @@ from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
     PolygonalStock,
-    recognise_polygonal_bosses,
+    _discover_polygonal_bosses,
     recognise_polygonal_stock,
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
@@ -302,9 +302,19 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_polygonal_bosses",
         (),
         always,
-        _simple(lambda s: list(recognise_polygonal_bosses(s.context.part, graph=s.context.graph))),
+        _simple(
+            lambda s: list(
+                _discover_polygonal_bosses(
+                    s.context.part,
+                    graph=s.context.graph,
+                    writer=s.writer,
+                )
+            )
+        ),
         NotCounted("not a distinct census key"),
-        IncompleteAttribution("no defining evidence is issued", "migrate polygonal boss faces"),
+        FullyAttributed(
+            "every returned Polygonal Boss claims its six original side faces"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.POLYGONAL_STOCK,

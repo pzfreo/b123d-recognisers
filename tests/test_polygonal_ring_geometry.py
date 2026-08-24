@@ -81,6 +81,20 @@ class TestRegularRingOrder:
 
         assert _regular_ring_order(tuple(range(6)), nudged, math.radians(3)) is not None
 
+    def test_gap_and_opposition_just_inside_angle_boundary_is_accepted(self):
+        delta = ANGLE_TOL - 1e-8
+        degrees = math.degrees(delta)
+        nudged = _hexagon_normals(headings_deg=[0, 60 + degrees, 120, 180, 240, 300])
+
+        assert _regular_ring_order(tuple(range(6)), nudged, ANGLE_TOL) is not None
+
+    @pytest.mark.parametrize("delta", [ANGLE_TOL, ANGLE_TOL + 1e-8])
+    def test_constructed_at_or_outside_angle_boundary_refuses(self, delta):
+        degrees = math.degrees(delta)
+        nudged = _hexagon_normals(headings_deg=[0, 60 + degrees, 120, 180, 240, 300])
+
+        assert _regular_ring_order(tuple(range(6)), nudged, ANGLE_TOL) is None
+
 
 class TestRingProfile:
     def test_a_centred_hexagon_reports_its_axis_and_across_flats(self):
@@ -112,6 +126,21 @@ class TestRingProfile:
         inward = [Vector(-p.X, -p.Y, 0.0) for p in _centres(normals, order, across_flats=34.0)]
 
         assert _ring_profile(order, normals, inward, TOL) is None
+
+    @pytest.mark.parametrize("support", [TOL - 1e-8, TOL])
+    def test_support_at_or_below_tolerance_refuses(self, support):
+        normals = _hexagon_normals()
+        order = _regular_ring_order(tuple(range(6)), normals, ANGLE_TOL)
+        centres = _centres(normals, order, across_flats=2 * support)
+
+        assert _ring_profile(order, normals, centres, TOL) is None
+
+    def test_support_just_above_tolerance_is_accepted(self):
+        normals = _hexagon_normals()
+        order = _regular_ring_order(tuple(range(6)), normals, ANGLE_TOL)
+        centres = _centres(normals, order, across_flats=2 * (TOL + 1e-8))
+
+        assert _ring_profile(order, normals, centres, TOL) is not None
 
     def test_opposed_pairs_at_different_widths_are_not_one_prism(self):
         """A hexagon stretched on one axis has no single across-flats to report."""
