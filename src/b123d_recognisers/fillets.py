@@ -49,10 +49,12 @@ from b123d_recognisers._adjacency import (
     neighbours,
 )
 from b123d_recognisers._bevel import convex_bevel
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, _coaxial_axis_lines, length_tol
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderInventory, Part, SurfaceAdaptor
+from b123d_recognisers._typing import CylinderInventory, FaceLike, Part, SurfaceAdaptor
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -89,10 +91,18 @@ class Fillet(Record):
     turned: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class _FilletProposal:
+    record: Fillet
+    face: FaceLike
+    turned_context: tuple[FaceLike, ...]
+
+
 def fillet_anchor(s: SurfaceAdaptor) -> tuple[float, float, float]:
-    """A leader-tip point **on** the trimmed cylindrical blend face *s* (a
-    ``BRepAdaptor_Surface``) — the middle of its angular (U) and axial (V) parameter spans.
-    Never the bbox centre, which sits off the round near the virtual sharp corner.
+    """A leader-tip point on the analytic surface at the middle of *s*'s trimmed
+    U/V parameter bounds. An interior trimming hole can exclude that point from the retained
+    topological face. Never use the bbox centre, which sits off the analytic round near the
+    virtual sharp corner.
     The implementation is shared by :func:`recognise_fillets` and explicit-face readers,
     so both paths select the same leader anchor."""
     u_mid = 0.5 * (s.FirstUParameter() + s.LastUParameter())
@@ -121,13 +131,35 @@ def recognise_fillets(
     rather than an internal bore round. Set *include_cylindrical* to ``False`` for a part
     already classified as rotational, retaining that aggregate's policy for incidental
     prismatic blends while recognising its toroidal fillets."""
+    return _discover_fillets(
+        part,
+        min_radius=min_radius,
+        max_radius_frac=max_radius_frac,
+        face_edges=face_edges,
+        cyls=cyls,
+        include_cylindrical=include_cylindrical,
+    )
+
+
+def _discover_fillets(
+    part: Part,
+    *,
+    min_radius: float | None,
+    max_radius_frac: float,
+    face_edges: FaceEdges | None,
+    cyls: CylinderInventory | None,
+    include_cylindrical: bool,
+    writer: EvidenceWriter | None = None,
+) -> list[Fillet]:
+    """Discover Fillets and validate every defining-face binding before publication."""
+
     bb = part.bounding_box()
     min_radius = _MIN_RADIUS if min_radius is None else min_radius
     max_ext = max(bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)
 
-    out: list[Fillet] = []
+    out: list[_FilletProposal] = []
     for f in all_faces if include_cylindrical else ():
         fw = f.wrapped
         s = BRepAdaptor_Surface(fw)
@@ -175,13 +207,12 @@ def recognise_fillets(
         # interior hole through its centre could still land mid-UV in that void — rare,
         # and no worse than the bbox centre it replaces.
         p = fillet_anchor(s)
-        out.append(
-            Fillet(
-                axis="xyz"[edge_i],
-                radius=round(radius, 3),
-                at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
-            )
+        record = Fillet(
+            axis="xyz"[edge_i],
+            radius=round(radius, 3),
+            at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
         )
+        out.append(_FilletProposal(record, f, ()))
 
     # A lathe sweeps an ordinary edge fillet around its axis, producing a torus rather than a
     # partial cylinder. The minor radius is the callout radius. An adjacent external cylinder
@@ -190,9 +221,7 @@ def recognise_fillets(
     tori = [f for f in all_faces if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Torus]
     if tori:
         z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
-        external_cylinders = {
-            c["face"]: c for c in (*z_cyls, *cross_cyls) if c["external"]
-        }
+        external_cylinders = {c["face"]: c for c in (*z_cyls, *cross_cyls) if c["external"]}
         for f in tori:
             s = BRepAdaptor_Surface(f.wrapped)
             torus = s.Torus()
@@ -220,44 +249,57 @@ def recognise_fillets(
                     direction,
                     external_cylinders[n]["axis_xyz"],
                     external_cylinders[n]["dir_xyz"],
-                    tol=length_tol(
-                        external_cylinders[n]["diameter"], rel=_COAXIAL_FRAC
-                    ),
+                    tol=length_tol(external_cylinders[n]["diameter"], rel=_COAXIAL_FRAC),
                 )
             ]
             if not coaxial_cylinders:
                 continue
-            transverse_plane = False
-            continues_round = False
+            branch_context: list[FaceLike] = []
+            transverse_planes: list[FaceLike] = []
+            round_continuations: list[FaceLike] = []
             for neighbour in torus_neighbours:
                 neighbour_surface = BRepAdaptor_Surface(neighbour.wrapped)
                 if neighbour_surface.GetType() == GeomAbs_Sphere:
                     # A compound turned fillet can continue into its spherical corner cap.
                     # This is distinct from a rolled bead, whose two quarter-torus patches
                     # continue into one another without reaching a second stock face.
-                    continues_round = True
+                    round_continuations.append(neighbour)
                     continue
                 if neighbour_surface.GetType() != GeomAbs_Plane:
                     continue
                 nd = neighbour_surface.Plane().Axis().Direction()
-                normal_dot = (
-                    nd.X() * direction[0]
-                    + nd.Y() * direction[1]
-                    + nd.Z() * direction[2]
-                )
+                normal_dot = nd.X() * direction[0] + nd.Y() * direction[1] + nd.Z() * direction[2]
                 if abs(normal_dot) > AXIS_ALIGNED_COS:
-                    transverse_plane = True
-                    break
+                    transverse_planes.append(neighbour)
             bridges_two_bands = len({c["diameter"] for c in coaxial_cylinders}) >= 2
-            if not transverse_plane and not bridges_two_bands and not continues_round:
+            if not transverse_planes and not bridges_two_bands and not round_continuations:
                 continue  # a toroidal bead meeting one band, not a rounded edge
+            branch_context.extend(c["face"] for c in coaxial_cylinders)
+            branch_context.extend(transverse_planes)
+            branch_context.extend(round_continuations)
             p = fillet_anchor(s)
-            out.append(
-                Fillet(
-                    axis="xyz"[edge_i],
-                    radius=round(radius, 3),
-                    at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
-                    turned=True,
-                )
+            record = Fillet(
+                axis="xyz"[edge_i],
+                radius=round(radius, 3),
+                at=(round(p[0], 3), round(p[1], 3), round(p[2], 3)),
+                turned=True,
             )
-    return sorted(out, key=lambda c: (c.axis, c.at))
+            out.append(_FilletProposal(record, f, tuple(dict.fromkeys(branch_context))))
+    out.sort(key=lambda proposal: (proposal.record.axis, proposal.record.at))
+    if writer is not None:
+        pending = tuple(
+            (
+                proposal.record,
+                writer.graph.require_node(proposal.face),
+                tuple(writer.graph.require_node(face) for face in proposal.turned_context),
+            )
+            for proposal in out
+        )
+        if any(
+            writer.graph.common_valid_solid((node, *consulted)) is None
+            for _record, node, consulted in pending
+        ):
+            raise ValueError("fillet defining face has no unambiguous valid solid")
+        for record, node, _consulted in pending:
+            writer.sink.propose(FamilyId.FILLETS, record, defining=(node,))
+    return [proposal.record for proposal in out]

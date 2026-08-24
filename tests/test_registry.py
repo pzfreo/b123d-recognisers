@@ -55,6 +55,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.CHAMFERS,
         FamilyId.ANGLED_STEPS,
         FamilyId.FLATS,
+        FamilyId.FILLETS,
     }
     assert all(
         isinstance(item.attribution, FullyAttributed | IncompleteAttribution)

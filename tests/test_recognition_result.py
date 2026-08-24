@@ -179,6 +179,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "reconcile_step_groove_candidates",
         fake_policy("reconcile_step_grooves"),
     )
+
     def fake_diagnostics(reconciliation, evidence):
         calls["diagnose_residuals"] = calls.get("diagnose_residuals", 0) + 1
         assert isinstance(evidence, EvidenceIndex)
@@ -186,7 +187,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         return ()
 
     monkeypatch.setattr(result_module, "diagnose_residuals", fake_diagnostics)
-    monkeypatch.setattr(registry_module, "recognise_fillets", counted("fillets", []))
+    monkeypatch.setattr(registry_module, "_discover_fillets", counted("fillets", []))
     monkeypatch.setattr(registry_module, "recognise_plates", counted("plates", []))
 
     # A part rather than a bare object: the orchestrator now builds one face graph for the

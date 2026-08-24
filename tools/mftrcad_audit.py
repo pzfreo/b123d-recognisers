@@ -49,7 +49,7 @@ class AllocationSpec:
 
 ALLOCATION_SPECS: Final = (
     AllocationSpec(F5_FLATS_H1, "f5_flats_h1", frozenset({20}), "consumed"),
-    AllocationSpec(F5_FILLETS_H1, "f5_fillets_h1", frozenset({21}), "sealed_unrevealed"),
+    AllocationSpec(F5_FILLETS_H1, "f5_fillets_h1", frozenset({21}), "consumed"),
 )
 
 

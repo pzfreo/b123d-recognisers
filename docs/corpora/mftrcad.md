@@ -83,12 +83,13 @@ implementation begins. `F5-FLATS-H1` is bucket 20 and is now `consumed`; it rema
 ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
 `all` closed whenever named allocations exist, including consumed allocations; exact named
 selection remains mandatory and generic holdout authority cannot reveal one.
-`F5-FILLETS-H1` is bucket 21 and is `sealed_unrevealed`; it was designated without opening the
-external archive or inspecting bucket-21 membership or outcomes, and only its exact acknowledgement
-can authorize its later semantic-child reveal.
-Repository chronology records no earlier unselected scan, which is an attestation about recorded
-runs rather than a claim that external access was impossible. A later authorised family issue owns
-the one reveal and the transition to consumed regression evidence. The authorised F5c reveal at
+`F5-FILLETS-H1` is bucket 21 and is now `consumed`; it was designated without opening the external
+archive or inspecting bucket-21 membership or outcomes, then revealed once only after #201's frozen
+exact-head implementation had two independent accepts and all mechanical gates. It remains excluded
+from `unselected`, requires its exact acknowledgement, and cannot be reused as sealed evidence.
+Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
+runs rather than a claim that external access was impossible. Each authorised family issue owned
+its one reveal and transition to consumed regression evidence. The authorised F5c reveal at
 PR #199 head `8796a86` contained 23 complete models and 69 files with no invalid models. It produced
 10 Flat proposals, 10 accepted Flats and 10 attributed Flats. The selected-artifact digest was
 `a2e045e3d6eb2b1ecd454fcbd12c04aaf5a4fb1ad85519891d8bcc48cd86356b`; this summary is regression
@@ -96,6 +97,14 @@ evidence, not a taxonomy-derived acceptance rule. The completed report contains 
 faces, so nonempty-evidence arithmetic proves one defining face per attributed Candidate. The
 scanner did not independently reconstruct the planar owner, stock cylinder or opposition geometry;
 those exact role semantics remain established by the frozen development adversary matrix, not H1.
+
+The authorised F5d reveal at PR #203 head `71be0b0` contained 21 complete models and 63 files with
+no invalid models. It produced 6 Fillet proposals, 6 accepted Fillets and 6 attributed Fillets
+across four models. The selected-artifact digest was
+`6323bd2af053ada35952e8e7af4172a7da14bc0ec04ec4b3ec5b7b1275206f5a`. Six claimed
+Fillet faces prove one defining face per Candidate by nonempty-evidence arithmetic. The generic
+scanner did not reconstruct analytic owner/trim or turned-context geometry; exact role correctness
+remains development-matrix evidence rather than an H1 claim.
 
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression
