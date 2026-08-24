@@ -7,6 +7,7 @@ import copy
 import math
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from build123d import (
@@ -16,10 +17,12 @@ from build123d import (
     Cone,
     Cylinder,
     GeomType,
+    Plane,
     Pos,
     Rectangle,
     Rot,
     Shell,
+    Vector,
     chamfer,
     export_step,
     extrude,
@@ -30,13 +33,15 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_holes
-from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef, frame_points_outward
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
 from b123d_recognisers._hole_features import (
     CounterBore,
     HoleRecord,
+    SegmentEvidence,
+    _bore_depth,
     _discover_holes,
     _near_side_steps,
     _same_diameter,
@@ -93,7 +98,7 @@ def _line_distance(point, line, direction) -> float:
 
 @dataclass(frozen=True)
 class _CylinderFact:
-    node: object
+    node: FaceNode
     direction: tuple[float, float, float]
     line: tuple[float, float, float]
     diameter: float
@@ -106,6 +111,13 @@ class _ExpectedHole:
     record: HoleRecord
     nodes: frozenset
     solid: object
+
+
+@dataclass(frozen=True)
+class _ExpectedCounterSink:
+    record: CounterSink
+    node: FaceNode
+    solid: SolidRef
 
 
 def _canonical_direction(direction) -> tuple[float, float, float]:
@@ -161,6 +173,30 @@ def _line_groups(facts: list[_CylinderFact]) -> list[list[_CylinderFact]]:
     return groups
 
 
+def _connected_stacks(solid, facts: list[_CylinderFact]) -> list[list[_CylinderFact]]:
+    """Split coaxial facts when original material separates their axial voids."""
+
+    ordered = sorted(facts, key=lambda fact: (fact.lo, fact.hi, fact.diameter))
+    stacks: list[list[_CylinderFact]] = []
+    for fact in ordered:
+        if not stacks:
+            stacks.append([fact])
+            continue
+        previous_hi = max(item.hi for item in stacks[-1])
+        if fact.lo <= previous_hi + 1e-5:
+            stacks[-1].append(fact)
+            continue
+        midpoint = (previous_hi + fact.lo) / 2
+        point = _point_on_line(fact.line, fact.direction, midpoint)
+        if solid.is_inside(Vector(*point)):
+            stacks.append([fact])
+        else:
+            # A transverse interruption, relief, or transition leaves the centreline
+            # void and therefore belongs to this same logical axial occurrence.
+            stacks[-1].append(fact)
+    return stacks
+
+
 def _point_on_line(
     line: tuple[float, float, float],
     direction: tuple[float, float, float],
@@ -192,6 +228,43 @@ def _deep_end_is_conical(solid, line, direction, deep) -> bool:
     return False
 
 
+def _fresh_expected_countersinks(part, graph: FaceGraph) -> list[_ExpectedCounterSink]:
+    """Reconstruct conical predecessor occurrences from original faces alone."""
+
+    expected = []
+    for solid in part.solids() or [part]:
+        for face in solid.faces():
+            surface = BRepAdaptor_Surface(face.wrapped)
+            if surface.GetType() != GeomAbs_Cone:
+                continue
+            circles = sorted(face.edges().filter_by(GeomType.CIRCLE), key=lambda edge: edge.radius)
+            if len(circles) < 2:
+                continue
+            minor, major = circles[0], circles[-1]
+            if major.radius < 1.5 * minor.radius:
+                continue
+            included = round(2 * abs(math.degrees(surface.Cone().SemiAngle())), 2)
+            if included > 160:
+                continue
+            opening, inner = major.arc_center, minor.arc_center
+            delta = (inner.X - opening.X, inner.Y - opening.Y, inner.Z - opening.Z)
+            depth = math.sqrt(sum(value * value for value in delta))
+            assert depth > 0
+            record = CounterSink(
+                axis=tuple(round(value / depth, 4) for value in delta),
+                location=tuple(round(value, 4) for value in (opening.X, opening.Y, opening.Z)),
+                major_diameter=round(2 * major.radius, 4),
+                drill_diameter=round(2 * minor.radius, 4),
+                included_angle=included,
+                depth=round(depth, 4),
+            )
+            node = graph.require_node(face)
+            solid_ref = graph.common_valid_solid((node,))
+            assert solid_ref is not None
+            expected.append(_ExpectedCounterSink(record, node, solid_ref))
+    return expected
+
+
 def _record_matches(expected: HoleRecord, actual: HoleRecord) -> bool:
     return (
         expected.bottom == actual.bottom
@@ -220,7 +293,10 @@ def _fresh_expected_holes(part, graph: FaceGraph) -> list[_ExpectedHole]:
     for solid in sources:
         solid_ref = graph.common_valid_solid(graph.require_node(face) for face in solid.faces())
         assert solid_ref is not None
-        for group in _line_groups(_raw_internal_cylinders(graph, solid)):
+        line_groups = _line_groups(_raw_internal_cylinders(graph, solid))
+        for group in (
+            stack for line_group in line_groups for stack in _connected_stacks(solid, line_group)
+        ):
             direction = group[0].direction
             line = group[0].line
             lo = min(fact.lo for fact in group)
@@ -365,6 +441,17 @@ def test_split_and_interrupted_bore_retains_every_original_patch() -> None:
         assert ledger.defining_of(candidate)
 
 
+def test_opposed_blind_holes_remain_two_independent_axial_stacks() -> None:
+    part = Box(60, 60, 40) - Pos(0, 0, 15) * Cylinder(5, 10) - Pos(0, 0, -15) * Cylinder(5, 10)
+    records, candidates, ledger = _claimed(part)
+    assert len(records) == 2
+    assert {record.bottom for record in records} == {"flat"}
+    assert {record.axis for record in records} == {(0.0, 0.0, -1.0), (0.0, 0.0, 1.0)}
+    first, second = (ledger.defining_of(candidate) for candidate in candidates)
+    assert first.isdisjoint(second)
+    assert ledger.graph.common_valid_solid(first) == ledger.graph.common_valid_solid(second)
+
+
 def test_near_step_and_bottom_relief_roles_exclude_transition_context() -> None:
     grooved = (
         Box(60, 60, 20)
@@ -412,6 +499,43 @@ def test_spotface_and_same_diameter_boundaries_are_strict() -> None:
     assert not _same_diameter(10.0, math.nextafter(boundary, math.inf))
 
 
+def test_bore_depth_boundary_excludes_far_step_but_owns_blind_relief() -> None:
+    bore_face, far_face, relief_face = object(), object(), object()
+    bore = cast(
+        SegmentEvidence,
+        {
+            "diameter": 10.0,
+            "s_lo": 0.0,
+            "s_hi": 10.0,
+            "faces": [bore_face],
+        },
+    )
+    far_step = cast(
+        SegmentEvidence,
+        {
+            "diameter": 18.0,
+            "s_lo": -3.0,
+            "s_hi": 0.0,
+            "faces": [far_face],
+        },
+    )
+    through = _bore_depth([far_step, bore], bore, bottom="through", from_hi=True)
+    assert through.depth == 10.0 and through.faces == (bore_face,)
+
+    relief = cast(
+        SegmentEvidence,
+        {
+            "diameter": 12.0,
+            "s_lo": -2.0,
+            "s_hi": 0.0,
+            "faces": [relief_face],
+        },
+    )
+    blind = _bore_depth([relief, bore], bore, bottom="flat", from_hi=True)
+    assert blind.depth == 12.0
+    assert blind.faces == (bore_face, relief_face)
+
+
 def test_double_counterbore_excludes_equal_diameter_far_side_land() -> None:
     part = (
         Box(60, 60, 20)
@@ -444,14 +568,49 @@ def test_drill_point_cone_is_context_not_hole_evidence() -> None:
     )
 
 
-def test_nested_countersink_stays_predecessor_owned_and_hole_consulted() -> None:
-    product = _take_inventory(_countersunk())
+@pytest.mark.parametrize(
+    ("part", "end"),
+    [(_countersunk(), "near"), (Rot(180, 0, 0) * _countersunk(), "far")],
+)
+def test_nested_countersink_stays_predecessor_owned_and_hole_consulted(part, end) -> None:
+    product = _take_inventory(part)
     holes = product.physical.candidate_set(FamilyId.HOLES).candidates
     countersinks = product.physical.candidate_set(FamilyId.COUNTERSINKS).candidates
     assert len(holes) == len(countersinks) == 1
     hole, countersink = holes[0], countersinks[0]
     assert isinstance(hole.record, HoleRecord)
     assert isinstance(countersink.record, CounterSink)
+    (expected_cone,) = _fresh_expected_countersinks(part, product.context.graph)
+    assert countersink.record == expected_cone.record
+    assert product.evidence.defining_of(countersink) == frozenset((expected_cone.node,))
+    assert product.context.graph.common_valid_solid((expected_cone.node,)) == expected_cone.solid
+
+    (solid,) = part.solids()
+    (bore,) = _raw_internal_cylinders(product.context.graph, solid)
+    assert product.evidence.defining_of(hole) == frozenset((bore.node,))
+    assert product.context.graph.common_valid_solid((bore.node,)) == expected_cone.solid
+    expected_hole = HoleRecord(
+        axis=(-bore.direction[0], -bore.direction[1], -bore.direction[2]),
+        location=_point_on_line(bore.line, bore.direction, bore.hi),
+        diameter=bore.diameter,
+        depth=round(bore.hi - bore.lo, 2),
+        bottom="through",
+        csink=None,
+    )
+    assert _record_matches(expected_hole, replace(hole.record, csink=None))
+    inner = tuple(
+        expected_cone.record.location[index]
+        + expected_cone.record.axis[index] * expected_cone.record.depth
+        for index in range(3)
+    )
+    projected = sum(
+        (inner[index] - expected_hole.location[index]) * expected_hole.axis[index]
+        for index in range(3)
+    )
+    if end == "near":
+        assert math.isclose(projected, 0, abs_tol=0.01)
+    else:
+        assert math.isclose(projected, expected_hole.depth, abs_tol=0.01)
     assert hole.record.csink is countersink.record
     hole_nodes = product.evidence.defining_of(hole)
     cone_nodes = product.evidence.defining_of(countersink)
@@ -597,6 +756,19 @@ def test_equal_holes_keep_occurrence_and_body_identity() -> None:
     assert ledger.graph.common_valid_solid(first) != ledger.graph.common_valid_solid(second)
 
 
+def test_same_body_equal_bores_keep_distinct_occurrence_roles() -> None:
+    part = Box(70, 40, 20) - Pos(-18, 0, 0) * Cylinder(5, 20) - Pos(18, 0, 0) * Cylinder(5, 20)
+    records, candidates, ledger = _claimed(part)
+    assert len(records) == 2
+    assert records[0].diameter == records[1].diameter
+    assert records[0].depth == records[1].depth
+    defining = [ledger.defining_of(candidate) for candidate in candidates]
+    assert defining[0].isdisjoint(defining[1])
+    assert ledger.graph.common_valid_solid(defining[0]) == ledger.graph.common_valid_solid(
+        defining[1]
+    )
+
+
 def test_coincident_equal_full_records_keep_distinct_occurrence_bodies() -> None:
     original = _through()
     part = Compound([original, copy.deepcopy(original)])
@@ -615,6 +787,10 @@ def test_coincident_equal_full_records_keep_distinct_occurrence_bodies() -> None
 @pytest.mark.parametrize("transform", [Rot(0, 90, 0), Rot(31, 17, 43)])
 def test_cross_and_nonprincipal_axes_keep_exact_roles(transform) -> None:
     _claimed(transform * _through())
+
+
+def test_mirror_preserves_counterbore_occurrence_and_roles() -> None:
+    _claimed(_counterbore().mirror(Plane.YZ))
 
 
 def test_scale_traversal_step_and_supplied_dependencies_preserve_roles(
@@ -691,6 +867,13 @@ def test_rounded_slot_and_unrelated_wider_groove_issue_no_surplus_roles() -> Non
     assert recognise_holes(part) == []
     ledger = ClaimLedger(FaceGraph(part))
     assert _discover_holes(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    partial_cylinder = Cylinder(5, 20) & Pos(2.5, 0, 0) * Box(5, 20, 20)
+    partial = Box(60, 60, 20) - partial_cylinder
+    assert recognise_holes(partial) == []
+    ledger = ClaimLedger(FaceGraph(partial))
+    assert _discover_holes(partial, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
 
     grooved = Box(60, 60, 20) - Cylinder(5, 20) - Cylinder(6, 3)
