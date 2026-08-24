@@ -25,6 +25,9 @@ from mftrcad_audit import (  # noqa: E402
     F5_DOUBLE_D_BORES_H1,
     F5_FILLETS_H1,
     F5_FLATS_H1,
+    F5_HOLES_H1,
+    F5_PADS_H1,
+    F5_POLYGONAL_BOSSES_H1,
     FEATURE_LABELS,
     HOLDOUT_BUCKETS,
     NAMED_ALLOCATIONS,
@@ -98,6 +101,9 @@ def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
         "f5_countersinks_h1",
         "f5_bosses_h1",
         "f5_double_d_bores_h1",
+        "f5_polygonal_bosses_h1",
+        "f5_pads_h1",
+        "f5_holes_h1",
     }
     assert not (
         {name for name, value in selected.items() if value == "development"}
@@ -147,12 +153,24 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_DOUBLE_D_BORES_H1]),
             "status": "consumed",
         },
+        F5_POLYGONAL_BOSSES_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_BOSSES_H1]),
+            "status": "sealed_unrevealed",
+        },
+        F5_PADS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_PADS_H1]),
+            "status": "sealed_unrevealed",
+        },
+        F5_HOLES_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_HOLES_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 25
-    assert partition.isdisjoint(set(range(25, 1000)))
-    assert partition | set(range(25, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[25, 999]]
+    assert len(partition) == 28
+    assert partition.isdisjoint(set(range(28, 1000)))
+    assert partition | set(range(28, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[28, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -217,6 +235,14 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         ("f5_countersinks_h1", F5_COUNTERSINKS_H1, 22, "consumed"),
         ("f5_bosses_h1", F5_BOSSES_H1, 23, "consumed"),
         ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, 24, "consumed"),
+        (
+            "f5_polygonal_bosses_h1",
+            F5_POLYGONAL_BOSSES_H1,
+            25,
+            "sealed_unrevealed",
+        ),
+        ("f5_pads_h1", F5_PADS_H1, 26, "sealed_unrevealed"),
+        ("f5_holes_h1", F5_HOLES_H1, 27, "sealed_unrevealed"),
     ],
 )
 def test_named_allocation_requires_exact_nontransferable_authority(
@@ -264,6 +290,13 @@ def test_named_allocation_requires_exact_nontransferable_authority(
         ("f5_countersinks_h1", F5_COUNTERSINKS_H1, F5_FILLETS_H1),
         ("f5_bosses_h1", F5_BOSSES_H1, F5_COUNTERSINKS_H1),
         ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, F5_BOSSES_H1),
+        (
+            "f5_polygonal_bosses_h1",
+            F5_POLYGONAL_BOSSES_H1,
+            F5_DOUBLE_D_BORES_H1,
+        ),
+        ("f5_pads_h1", F5_PADS_H1, F5_POLYGONAL_BOSSES_H1),
+        ("f5_holes_h1", F5_HOLES_H1, F5_PADS_H1),
     ],
 )
 def test_named_allocation_requires_its_own_exact_authority(
@@ -295,6 +328,9 @@ def test_named_allocation_requires_its_own_exact_authority(
         "f5_countersinks_h1",
         "f5_bosses_h1",
         "f5_double_d_bores_h1",
+        "f5_polygonal_bosses_h1",
+        "f5_pads_h1",
+        "f5_holes_h1",
     ],
 )
 def test_named_allocation_refuses_before_touching_the_root(
@@ -321,6 +357,9 @@ def test_named_allocation_refuses_before_touching_the_root(
         "f5_countersinks_h1",
         "f5_bosses_h1",
         "f5_double_d_bores_h1",
+        "f5_polygonal_bosses_h1",
+        "f5_pads_h1",
+        "f5_holes_h1",
     ],
 )
 def test_cli_named_allocation_refuses_before_touching_the_root(
@@ -447,6 +486,9 @@ def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> 
         "f5_countersinks_h1",
         "f5_bosses_h1",
         "f5_double_d_bores_h1",
+        "f5_polygonal_bosses_h1",
+        "f5_pads_h1",
+        "f5_holes_h1",
     ],
 )
 def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
