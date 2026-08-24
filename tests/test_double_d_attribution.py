@@ -13,17 +13,20 @@ import pytest
 from build123d import (
     Align,
     Box,
+    Circle,
     Compound,
     Cylinder,
     Face,
     GeomType,
     Pos,
+    Rectangle,
     Rot,
     Shell,
     Solid,
     Vector,
     export_step,
     import_step,
+    loft,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
@@ -84,6 +87,12 @@ def test_pure_wall_chain_reducer_accepts_full_and_consecutive_patch_roles() -> N
             ("a0", "a1", "a2"),
             {"a0": (-5, -1), "a1": (-1, 2), "a2": (2, 5)},
             (("a0", "a1"), ("a1", "a2"), ("a0", "a2")),
+            (0, 1, 2, 3),
+        ),
+        (
+            ("a0", "a1", "a2", "a3"),
+            {"a0": (-5, -2), "a1": (-2, 0), "a2": (0, 2), "a3": (2, 5)},
+            (("a0", "a1"), ("a1", "a2"), ("a1", "a3")),
             (0, 1, 2, 3),
         ),
         (
@@ -538,9 +547,14 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
         )
 
     def same_support(left, right):
-        return left[0] == right[0] and len(left) == len(right) and all(
-            abs(a - b) <= metric_tol
-            for a, b in zip(left[1:], right[1:], strict=True)
+        return (
+            left[0] == right[0]
+            and len(left) == len(right)
+            and all(abs(left[i] - right[i]) <= 1e-4 for i in range(1, 4))
+            and all(
+                abs(left[i] - right[i]) <= metric_tol
+                for i in range(4, len(left))
+            )
         )
 
     memo = FaceEdges()
@@ -599,6 +613,7 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
             cursor = end
         assert abs(cursor - high) <= metric_tol
         internal_edges = []
+        degrees = {node: 0 for node in chain}
         for node in chain:
             for edge in memo.of(ledger.graph.face(node)):
                 partners = {
@@ -608,8 +623,16 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
                 }
                 if len(partners) == 2:
                     internal_edges.append(edge)
+                    for node in partners:
+                        degrees[node] += 1
         # Each seam is encountered twice, once from each incident face.
         assert len(internal_edges) // 2 == max(0, len(chain) - 1)
+        if len(chain) == 1:
+            assert next(iter(degrees.values())) == 0
+        else:
+            # Each seam was visited from both faces, so graph degree is doubled here.
+            assert all(degree <= 4 for degree in degrees.values())
+            assert list(degrees.values()).count(2) == 2
     expected = frozenset().union(*chains)
     defining = ledger.defining_of(candidate)
     assert expected == defining
@@ -733,6 +756,32 @@ def test_rejected_geometry_issues_no_candidate(part) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     assert _discover_double_d_bores(part, writer=ledger.writer) == []
     assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
+def test_profile_throughness_and_constant_wall_negatives_issue_no_candidate() -> None:
+    plate = Box(30, 30, 10, align=_CENTRE)
+    opposed_blind = (
+        plate
+        - Pos(0, 0, 3) * _tool(4)
+        - Pos(0, 0, -3) * _tool(4)
+    )
+    straight = 8.0
+    obround = (
+        Box(straight, 6, 20, align=_CENTRE)
+        + Pos(straight / 2, 0, 0) * Cylinder(3, 20, align=_CENTRE)
+        + Pos(-straight / 2, 0, 0) * Cylinder(3, 20, align=_CENTRE)
+    )
+    low = Circle(5) & Rectangle(7.2, 20, align=(Align.CENTER, Align.CENTER))
+    high = Pos(0, 0, 20) * (
+        Circle(6) & Rectangle(8, 20, align=(Align.CENTER, Align.CENTER))
+    )
+    tapered = Pos(0, 0, -10) * loft([low, high])
+
+    for part in (opposed_blind, plate - obround, plate - tapered):
+        assert recognise_double_d_bores(part) == []
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_double_d_bores(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.DOUBLE_D_BORES).candidates == ()
 
 
 def test_late_body_validation_failure_leaves_no_prefix(monkeypatch) -> None:
