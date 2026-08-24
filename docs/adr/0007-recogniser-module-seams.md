@@ -290,3 +290,10 @@ deliberately retains one local graph per solid and carries the six original side
 whole-run graph for issuance.  Terminal/support/transition caps remain transient consulted context.
 The core may issue only the six side nodes and cannot read claims, frozen evidence, inventory,
 reconciliation or another family output.  `POLYGONAL_STOCK` remains outside this migration.
+
+For the F5 rectangular-Pad migration, `pads._discover_rectangular_pads` is the sole private
+writer-enabled core and `_registry` its sole production writer caller. The public facade delegates
+without a writer. The core may import only the record/type leaves plus `_geometry`, `_candidates`
+and the graph-bound `_claims` writer. It carries the exact returned record, top and ordered four
+wall-role snapshots through current per-solid dedup, tier suppression and sorting; it cannot read
+claims, completed evidence, sibling output, disposition, inventory or reconciliation.

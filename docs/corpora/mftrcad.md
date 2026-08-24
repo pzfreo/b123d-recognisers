@@ -113,9 +113,18 @@ or side-versus-cap claim. The selected-artifact SHA-256 is
 `caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; the report SHA-256 was
 `43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, alternate
 selection or fitting was performed, and the temporary extracted selection/report were deleted.
-`F5-PADS-H1` and `F5-HOLES-H1` remain independently `sealed_unrevealed` at buckets 26 and 27.
-All three were designated by neutral #216 without outcome access; authority remains exact and
-non-transferable between them.
+`F5-PADS-H1` bucket 26 is now `consumed`. It was selected exactly once at accepted PR #224 head
+`f8322bd`: 24 complete models, 72 selected files, 572 faces and zero invalid models. The completed
+report contained four physical, four accepted and four attributed Pad Candidates, with 20 claimed
+face occurrences. This proves zero reconciliation loss and an average of five defining occurrences
+per Candidate, not a per-Candidate cardinality vector; the generic scanner did not independently
+reconstruct the top-versus-wall roles, maximal-base choice or tier context. The selected-artifact SHA-256 is
+`20a25c12b9da60142c60526cf20fcd1e1435b7a2b0c2f9dae4d665e38561c611`; the report SHA-256 was
+`3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1f`. No selected-scan rerun
+after corpus access, alternate selection or fitting was performed, and the temporary extracted
+selection/report were deleted.
+`F5-HOLES-H1` remains independently `sealed_unrevealed` at bucket 27. All three allocations were
+designated by neutral #216 without outcome access; authority remains exact and non-transferable.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become

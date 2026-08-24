@@ -1043,3 +1043,26 @@ ownership evidence. Selected-artifact SHA-256:
 `caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; report SHA-256:
 `43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, replacement,
 alternate selection or fitting occurred, and the temporary extracted selection/report were deleted.
+
+### F5i rectangular Pad attribution (#217)
+
+Bucket 26 (`F5-PADS-H1`) was independently sealed and remained unaccessed throughout development.
+The implementation uses one private optional-writer core while preserving the public geometry path.
+Each attributed Pad owns the exact accepted +Z top and one unique maximal-base original wall for
+each ordered x0/x1/y0/y1 role. These five nodes must be pairwise distinct, belong to one SolidRef
+and remain disjoint across occurrences; all proposals validate before first issuance. Stock bounds,
+tier/ledge regions and other scanned faces are consulted only. The existing unsigned wall-normal,
+three-decimal top rounding, absolute `_TOL`, area-fill tolerance, z0 highest-role rule, per-solid
+value dedup and final ordering are unchanged. A later one-shot reveal requires two exact-head accepts
+and every mechanical/performance gate. At accepted head `f8322bd`, 1,505 full tests passed with
+96.22% coverage, the composite benchmark minimum was 2.388 seconds under the 2.698-second ceiling,
+all 12 CI/Codecov checks passed, and two independent reviews accepted the exact head. The one-shot
+selection then completed over 24 models (72 files, 572 faces, zero invalid), producing four
+physical, four accepted and four attributed Pads with 20 claimed face occurrences. This is positive
+regression evidence for occurrence retention, zero reconciliation loss and 20 total defining
+occurrences (average five per Candidate), but it contains no per-Candidate cardinality vector and
+the generic scanner did not independently prove which occurrence is the top or each ordered wall role.
+Selected-artifact SHA-256: `20a25c12b9da60142c60526cf20fcd1e1435b7a2b0c2f9dae4d665e38561c611`;
+report SHA-256: `3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1f`.
+Bucket 26 is permanently consumed; the temporary selection/report were deleted and no rerun after
+corpus access, alternate selection or fitting occurred.
