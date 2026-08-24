@@ -160,8 +160,12 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
-    "tests/test_channel_attribution:_fresh_expected_channels:arc:1": "legacy-contract",
-    "tests/test_channel_attribution:_fresh_expected_channels:arc:2": "legacy-contract",
+    "tests/test_channel_attribution:_bounds_one_void:arc:1": "pair-agreement",
+    "tests/test_channel_attribution:_bounds_one_void:arc:2": "pair-agreement",
+    "tests/test_channel_attribution:_bounds_one_void:arc:3": "exact-nonsmooth",
+    "tests/test_channel_attribution:_bounds_one_void:arc:4": "exact-nonsmooth",
+    "tests/test_channel_attribution:_uninterrupted_span:arc:1": "opposed-nonsmooth",
+    "tests/test_channel_attribution:_uninterrupted_span:arc:2": "opposed-nonsmooth",
     "src/b123d_recognisers/_adjacency:smooth_region:arc:1": "legacy-source",
     "src/b123d_recognisers/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
     "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",

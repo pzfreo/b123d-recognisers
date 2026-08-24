@@ -17,7 +17,6 @@ from build123d import (
     Plane,
     Pos,
     Rot,
-    Vector,
     export_step,
     import_step,
 )
@@ -26,9 +25,18 @@ from OCP.GeomAbs import GeomAbs_Plane
 
 import b123d_recognisers._recess_features as feature_module
 from b123d_recognisers import recognise_channels
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._recess_faces import (
+    _AXIS_ALIGNED_TOL,
+    _FLOOR_COVER_FRAC,
+    _FLOOR_TOL,
+    _MERGE_TOL,
+    _dominant_axis,
+    _end_capped,
+    _Face,
+)
 from b123d_recognisers._recess_features import _discover_channels
 from b123d_recognisers._recess_records import Channel
 from b123d_recognisers.result import _take_inventory
@@ -39,6 +47,72 @@ ROOT = Path(__file__).parents[1]
 
 def _coordinate(point, axis: str) -> float:
     return (point.X, point.Y, point.Z)["xyz".index(axis)]
+
+
+def _bbox_center(face, axis: str) -> float:
+    bounds = face.bounding_box()
+    return (_coordinate(bounds.min, axis) + _coordinate(bounds.max, axis)) / 2
+
+
+def same_arc_kind(left, right) -> bool:
+    return left == right
+
+
+def is_opposed_nonsmooth(left, right) -> bool:
+    return {left, right} == {"convex", "concave"}
+
+
+def _bounds_one_void(graph: FaceGraph, left, right) -> bool:
+    common = set(graph.neighbours(left)) & set(graph.neighbours(right))
+    if common:
+        boundary = {node for node in common if graph.is_planar(node)} or common
+        return all(
+            same_arc_kind(graph.arc(left, node), graph.arc(right, node)) for node in boundary
+        )
+    left_regions = {
+        graph.smooth_region(node)
+        for node in graph.neighbours(left)
+        if graph.arc(left, node) == "concave"
+    }
+    right_regions = {
+        graph.smooth_region(node)
+        for node in graph.neighbours(right)
+        if graph.arc(right, node) == "concave"
+    }
+    return bool(left_regions & right_regions) or right in graph.smooth_region(left)
+
+
+def _uninterrupted_span(graph: FaceGraph, left, right, axis: str, span):
+    lo, hi = span
+    for node in set(graph.neighbours(left)) & set(graph.neighbours(right)):
+        if graph.is_planar(node):
+            continue
+        if not is_opposed_nonsmooth(graph.arc(left, node), graph.arc(right, node)):
+            continue
+        node_lo, node_hi = graph.bounds(node)["xyz".index(axis)]
+        if node_lo <= lo + 1e-6:
+            lo = max(lo, node_hi)
+        if node_hi >= hi - 1e-6:
+            hi = min(hi, node_lo)
+    return (lo, hi) if hi - lo > 1e-6 else None
+
+
+def _whole_inset_prism_is_empty(part, spans) -> bool:
+    size, centre = {}, {}
+    for axis, (lo, hi) in spans.items():
+        inset = min(1e-6, (hi - lo) / 4)
+        size[axis] = hi - lo - 2 * inset
+        centre[axis] = (lo + hi) / 2
+    assert min(size.values()) > 0
+    probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(size["x"], size["y"], size["z"])
+    intersection = part.intersect(probe)
+    if intersection is None:
+        volume = 0.0
+    elif hasattr(intersection, "volume"):
+        volume = intersection.volume
+    else:
+        volume = sum(shape.volume for shape in intersection)
+    return volume == 0.0
 
 
 def _fresh_expected_channels(part, graph: FaceGraph):
@@ -80,19 +154,14 @@ def _fresh_expected_channels(part, graph: FaceGraph):
             walls = [fact for fact in facts if fact[3] == width_axis and fact[4]]
             for left_index, left in enumerate(walls):
                 for right in walls[left_index + 1 :]:
-                    left_c = _coordinate(left[1].center(), width_axis)
-                    right_c = _coordinate(right[1].center(), width_axis)
+                    left_c = _bbox_center(left[1], width_axis)
+                    right_c = _bbox_center(right[1], width_axis)
                     if left_c > right_c:
                         left, right = right, left
                         left_c, right_c = right_c, left_c
                     if not (left[2][wi] > 0 and right[2][wi] < 0):
                         continue
-                    common = set(graph.neighbours(left[0])) & set(graph.neighbours(right[0]))
-                    if not common or not all(
-                        graph.arc(left[0], node) == graph.arc(right[0], node)
-                        for node in common
-                        if graph.is_planar(node)
-                    ):
+                    if not _bounds_one_void(graph, left[0], right[0]):
                         continue
                     other_axes = [axis for axis in "xyz" if axis != width_axis]
                     ranges = {}
@@ -120,13 +189,13 @@ def _fresh_expected_channels(part, graph: FaceGraph):
                         capped = []
                         for end, wanted in ((d_lo, 1), (d_hi, -1)):
                             covered = 0.0
-                            for _node, face, normal, axis, _wall in facts:
+                            for _node, face, normal, face_axis, _wall in facts:
                                 if (
-                                    axis != depth_axis
+                                    face_axis != depth_axis
                                     or normal["xyz".index(depth_axis)] * wanted <= 0
                                 ):
                                     continue
-                                if abs(_coordinate(face.center(), depth_axis) - end) > 0.3:
+                                if abs(_bbox_center(face, depth_axis) - end) > 0.3:
                                     continue
                                 area = 1.0
                                 face_bb = face.bounding_box()
@@ -144,11 +213,17 @@ def _fresh_expected_channels(part, graph: FaceGraph):
                             and math.isclose(hi, bounds[long_axis][1], abs_tol=0.3)
                         ):
                             continue
-                        sample = {axis: sum(ranges[axis]) / 2 for axis in other_axes}
-                        sample[width_axis] = (left_c + right_c) / 2
-                        if solid.is_inside(
-                            Vector(sample["x"], sample["y"], sample["z"]), tolerance=1e-7
-                        ):
+                        long_span = _uninterrupted_span(
+                            graph, left[0], right[0], long_axis, (lo, hi)
+                        )
+                        if long_span is None:
+                            continue
+                        spans = {
+                            width_axis: (left_c, right_c),
+                            long_axis: long_span,
+                            depth_axis: (d_lo, d_hi),
+                        }
+                        if not _whole_inset_prism_is_empty(solid, spans):
                             continue
                         proposals.append(
                             (
@@ -166,7 +241,7 @@ def _fresh_expected_channels(part, graph: FaceGraph):
                                 frozenset((left[0], right[0])),
                             )
                         )
-        by_record = {}
+        by_record: dict[Channel, set[frozenset[FaceNode]]] = {}
         for record, nodes in proposals:
             by_record.setdefault(record, set()).add(nodes)
         for record, node_sets in by_record.items():
@@ -302,12 +377,89 @@ def test_real_nonchannel_predicates_issue_no_evidence() -> None:
     enclosed = Box(60, 60, 20) - Box(20, 20, 10)
     through_slot = Box(60, 60, 20) - Box(20, 60, 20)
     bridged = build_fixture() + Pos(0, 0, 13) * Box(4, 30, 6)
+    off_centre_membrane = build_fixture() + Pos(0, 8, 13) * Box(4, 2, 16)
+    capped_both_ends = build_fixture() + Pos(0, 0, 21) * Box(60, 30, 2)
+    no_floor = Pos(0, -20, 13) * Box(60, 10, 16) + Pos(0, 20, 13) * Box(60, 10, 16)
+    short_walls = (
+        Box(60, 50, 10) + Pos(0, -20, 13) * Box(50, 10, 16) + Pos(0, 20, 13) * Box(50, 10, 16)
+    )
     oblique = Rot(17, 23, 11) * build_fixture()
-    for part in (Box(30, 30, 30), enclosed, through_slot, bridged, oblique):
+    for part in (
+        Box(30, 30, 30),
+        enclosed,
+        through_slot,
+        bridged,
+        off_centre_membrane,
+        capped_both_ends,
+        no_floor,
+        short_walls,
+        oblique,
+    ):
         assert recognise_channels(part) == []
         ledger = ClaimLedger(FaceGraph(part))
         assert _discover_channels(part, writer=ledger.writer) == []
         assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+
+def test_closed_channel_threshold_and_projection_contract() -> None:
+    assert (_AXIS_ALIGNED_TOL, _MERGE_TOL, _FLOOR_TOL, _FLOOR_COVER_FRAC) == (
+        1e-3,
+        0.5,
+        0.3,
+        0.5,
+    )
+    at = 1 - _AXIS_ALIGNED_TOL
+    assert _dominant_axis((math.nextafter(at, 1), 0, 0)) == "x"
+    assert _dominant_axis((math.nextafter(at, 0), 0, 0)) is None
+    assert round(1.2349, 2) == 1.23 and round(1.2351, 2) == 1.24
+
+    ordered = [
+        Channel("y", "x", 2, 3, -5, 5, 0, 2, 1),
+        Channel("x", "z", 2, 0, -4, 4, 1, 3, -1),
+        Channel("x", "x", 4, 0, -5, 5, 0, 2, 1),
+    ]
+    assert sorted(ordered, key=feature_module._channel_sort_key) == [
+        ordered[2],
+        ordered[0],
+        ordered[1],
+    ]
+
+    reference = Box(10, 10, 1).faces().sort_by().last
+    cap = _Face((0, 0, 1), "z", reference.bounding_box(), True)
+    centre = _bbox_center(reference, "z")
+    foot = {"x": (-5, 5), "y": (-5, 5)}
+    assert _end_capped([cap], foot, 200.0, "z", centre, 1)
+    assert not _end_capped([cap], foot, math.nextafter(200.0, math.inf), "z", centre, 1)
+    accepted_end = math.nextafter(centre + _FLOOR_TOL, centre)
+    refused_end = math.nextafter(centre + _FLOOR_TOL, math.inf)
+    assert _end_capped([cap], foot, 100.0, "z", accepted_end, 1)
+    assert not _end_capped([cap], foot, 100.0, "z", refused_end, 1)
+
+
+def test_open_shell_and_late_second_body_refuse_atomically(monkeypatch) -> None:
+    from build123d import Shell
+
+    shell = Shell(build_fixture().faces())
+    assert recognise_channels(shell)
+    ledger = ClaimLedger(FaceGraph(shell))
+    with pytest.raises(ValueError, match="one valid solid"):
+        _discover_channels(shell, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+    part = Compound([Pos(-80, 0, 0) * build_fixture(), Pos(80, 0, 0) * build_fixture()])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.common_valid_solid
+    calls = 0
+
+    def fail_second(nodes):
+        nonlocal calls
+        calls += 1
+        return None if calls == 2 else original(nodes)
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
+    with pytest.raises(ValueError, match="one valid solid"):
+        _discover_channels(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
 
 def test_step_traversal_and_supplied_edges_preserve_roles(monkeypatch, tmp_path: Path) -> None:
@@ -372,6 +524,11 @@ def test_foreign_graph_copied_node_and_late_body_failure_are_atomic(monkeypatch)
     with pytest.raises(ValueError):
         _discover_channels(part, writer=foreign.writer)
     assert foreign.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+    local = ClaimLedger(FaceGraph(part))
+    with pytest.raises(ValueError, match="one authority"):
+        _discover_channels(part, graph=foreign.graph, writer=local.writer)
+    assert local.candidate_set(FamilyId.CHANNELS).candidates == ()
 
     ledger = ClaimLedger(FaceGraph(part))
     original = feature_module._channel_proposals_one
@@ -456,9 +613,22 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     (call,) = public_calls
     assert all(keyword.arg != "writer" for keyword in call.keywords)
     graph = {keyword.arg: keyword.value for keyword in call.keywords}["graph"]
-    assert isinstance(graph, ast.IfExp) and isinstance(graph.orelse, ast.Attribute)
+    assert (
+        isinstance(graph, ast.IfExp)
+        and isinstance(graph.test, ast.Compare)
+        and isinstance(graph.test.left, ast.Name)
+        and graph.test.left.id == "ledger"
+        and len(graph.test.ops) == 1
+        and isinstance(graph.test.ops[0], ast.Is)
+        and isinstance(graph.test.comparators[0], ast.Constant)
+        and graph.test.comparators[0].value is None
+        and isinstance(graph.orelse, ast.Attribute)
+        and isinstance(graph.orelse.value, ast.Name)
+        and graph.orelse.value.id == "ledger"
+        and graph.orelse.attr == "graph"
+    )
 
-    constructors = []
+    constructors: list[tuple[str, str]] = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         constructors.extend(
@@ -500,6 +670,13 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
         for alias in node.names
     }
     assert imported.isdisjoint(forbidden)
+    discover = next(
+        node
+        for node in feature_tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_discover_channels"
+    )
+    referenced = {node.id for node in ast.walk(discover) if isinstance(node, ast.Name)}
+    assert referenced.isdisjoint(forbidden)
 
     from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
 
