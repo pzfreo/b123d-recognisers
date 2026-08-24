@@ -16,7 +16,8 @@ Heuristic limits (``recognised`` tier): an edge-break / deburr / lead-in chamfer
 mouth is geometrically a shallow countersink, so a **flare-ratio floor** (``_MIN_MAJOR_RATIO``)
 excludes it — a screw seat flares to roughly twice the bore, an edge break barely widens
 it; a near-flat cone above ``_MAX_INCLUDED_ANGLE`` (a draft / relief) is excluded; a
-countersink clipped by another feature (its edges no longer full circles) is missed.
+  countersink whose trimmed rims cease to be circular is missed. A side clip may retain circular
+  arc geometry and remains a documented standalone false positive in this neutral attribution slice.
 
 Known limitations (edge geometries; the common one-face countersink is exact):
 

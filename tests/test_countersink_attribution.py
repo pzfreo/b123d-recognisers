@@ -31,6 +31,28 @@ from b123d_recognisers.countersinks import _discover_countersinks
 from b123d_recognisers.result import _take_inventory
 
 
+def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                aliases[local] = alias.name if alias.asname else alias.name.split(".")[0]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+
+    def name(node: ast.expr) -> str:
+        if isinstance(node, ast.Name):
+            return aliases.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            base = name(node.value)
+            return f"{base}.{node.attr}" if base else node.attr
+        return ""
+
+    return [(name(node.func), node) for node in ast.walk(tree) if isinstance(node, ast.Call)]
+
+
 def _plate(points=((0, 0),)):
     part = Box(90, 60, 12)
     for x, y in points:
@@ -88,7 +110,12 @@ def _assert_role(ledger, candidate, record) -> None:
         distance = math.sqrt(
             sum((offset[index] - along * line_direction[index]) ** 2 for index in range(3))
         )
-        if abs(2 * cylinder.Radius() - record.drill_diameter) <= 0.001 and distance <= 0.001:
+        radius_tolerance = 0.0167 * (record.drill_diameter / 2)
+        line_tolerance = 0.0167 * record.drill_diameter
+        if (
+            abs(2 * cylinder.Radius() - record.drill_diameter) <= 2 * radius_tolerance + 1e-9
+            and distance <= line_tolerance + 1e-9
+        ):
             matching_cylinders.append(other)
     assert matching_cylinders
     assert all(context not in defining for context in matching_cylinders)
@@ -106,6 +133,17 @@ def _claimed(part):
         assert candidate.record is record
         _assert_role(ledger, candidate, record)
     return ledger, measured
+
+
+def _boundary_claimed(part, accepted: bool) -> None:
+    if accepted:
+        _ledger, records = _claimed(part)
+        assert records
+        return
+    assert recognise_countersinks(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_countersinks(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
 
 
 @pytest.mark.parametrize(
@@ -194,41 +232,25 @@ def test_standard_and_inclusive_maximum_angles_keep_exact_owner(angle: float) ->
 
 @pytest.mark.parametrize(("ratio", "accepted"), [(1.499, False), (1.5, True), (1.501, True)])
 def test_flare_ratio_boundary_is_inclusive(ratio: float, accepted: bool) -> None:
-    part = _external_cone_and_cylinder(major=3 * ratio)
-    ledger = ClaimLedger(FaceGraph(part))
-    records = _discover_countersinks(part, writer=ledger.writer)
-    assert bool(records) is accepted
-    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+    _boundary_claimed(_external_cone_and_cylinder(major=3 * ratio), accepted)
 
 
 @pytest.mark.parametrize(("delta", "accepted"), [(0.049, True), (0.0501, True), (0.051, False)])
 def test_minor_radius_match_boundary_is_inclusive(delta: float, accepted: bool) -> None:
-    part = _external_cone_and_cylinder(bore=3 + delta)
-    ledger = ClaimLedger(FaceGraph(part))
-    records = _discover_countersinks(part, writer=ledger.writer)
-    assert bool(records) is accepted
-    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+    _boundary_claimed(_external_cone_and_cylinder(bore=3 + delta), accepted)
 
 
 @pytest.mark.parametrize(("offset", "accepted"), [(0.099, True), (0.1002, True), (0.101, False)])
 def test_axis_line_offset_boundary_is_inclusive(offset: float, accepted: bool) -> None:
-    part = _external_cone_and_cylinder(offset=offset)
-    ledger = ClaimLedger(FaceGraph(part))
-    records = _discover_countersinks(part, writer=ledger.writer)
-    assert bool(records) is accepted
-    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+    _boundary_claimed(_external_cone_and_cylinder(offset=offset), accepted)
 
 
 @pytest.mark.parametrize(("tilt", "accepted"), [(2.5, True), (2.56, True), (2.57, False)])
 def test_parallel_angular_boundary_is_strict(tilt: float, accepted: bool) -> None:
-    part = _external_cone_and_cylinder(tilt=tilt)
-    ledger = ClaimLedger(FaceGraph(part))
-    records = _discover_countersinks(part, writer=ledger.writer)
-    assert bool(records) is accepted
-    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+    _boundary_claimed(_external_cone_and_cylinder(tilt=tilt), accepted)
 
 
-def test_documented_external_centre_drill_false_positive_remains_attributed() -> None:
+def test_cross_solid_borrowed_cylinder_behavior_remains_attributed() -> None:
     ledger, records = _claimed(_external_cone_and_cylinder())
     assert len(records) == 1
     candidate = ledger.candidate_set(FamilyId.COUNTERSINKS).candidates[0]
@@ -242,6 +264,17 @@ def test_documented_external_centre_drill_false_positive_remains_attributed() ->
     assert all(
         ledger.graph.common_valid_solid((node,)) is not owner_solid for node in cylinder_nodes
     )
+
+
+def test_connected_external_stepped_shaft_false_positive_remains_attributed() -> None:
+    shaft = Cylinder(3, 4) + Pos(0, 0, 3.5) * Cone(3, 6, 3)
+    _ledger, records = _claimed(shaft)
+    assert len(records) == 1
+
+
+def test_centre_drill_geometry_false_positive_remains_attributed() -> None:
+    _ledger, records = _claimed(_angle_plate(60.0))
+    assert len(records) == 1
 
 
 def test_translation_and_uniform_scale_keep_owner_correspondence() -> None:
@@ -264,6 +297,24 @@ def test_rejected_shapes_issue_no_countersink_candidate(part) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     assert _discover_countersinks(part, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Compound([Cone(0, 6, 3), Cylinder(3, 4)]),
+        Cone(3, 6, 3),
+        Box(40, 40, 12) - Cylinder(5, 4) - Cylinder(3, 12),
+    ],
+)
+def test_distinct_rim_and_context_refusals_issue_no_candidate(part) -> None:
+    _boundary_claimed(part, False)
+
+
+def test_side_clipped_circular_arc_cone_remains_a_regression_positive() -> None:
+    clipped = Cone(3, 6, 3) - Pos(3, 0, 0) * Box(4, 20, 20)
+    _ledger, records = _claimed(Compound([clipped, Cylinder(3, 4)]))
+    assert len(records) == 1
 
 
 def test_geometry_only_open_shell_result_has_no_aggregate_publication() -> None:
@@ -405,45 +456,24 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
         if path.name == "countersinks.py":
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        direct = {"_discover_countersinks"}
-        modules: set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module == "b123d_recognisers.countersinks":
-                direct.update(
-                    alias.asname or alias.name
-                    for alias in node.names
-                    if alias.name == "_discover_countersinks"
-                )
-            if isinstance(node, ast.Import):
-                modules.update(
-                    alias.asname or alias.name
-                    for alias in node.names
-                    if alias.name == "b123d_recognisers.countersinks"
-                )
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            is_call = isinstance(node.func, ast.Name) and node.func.id in direct
-            is_call |= (
-                isinstance(node.func, ast.Attribute)
-                and node.func.attr == "_discover_countersinks"
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id in modules
-            )
-            if is_call:
+        for qualified, node in _qualified_calls(tree):
+            if qualified == "b123d_recognisers.countersinks._discover_countersinks":
                 sites.append(
                     (
                         path.name,
-                        "<module>",
+                        "<lambda>"
+                        if any(
+                            isinstance(parent, ast.Lambda) and node in ast.walk(parent)
+                            for parent in ast.walk(tree)
+                        )
+                        else "<module>",
                         any(
-                            keyword.arg == "writer"
-                            and isinstance(keyword.value, ast.Attribute)
-                            and keyword.value.attr == "writer"
+                            keyword.arg == "writer" and ast.unparse(keyword.value) == "s.writer"
                             for keyword in node.keywords
                         ),
                     )
                 )
-    assert sites == [("_registry.py", "<module>", True)]
+    assert sites == [("_registry.py", "<lambda>", True)]
 
 
 def test_counter_sink_constructor_roster_is_closed() -> None:
@@ -451,32 +481,11 @@ def test_counter_sink_constructor_roster_is_closed() -> None:
     sites: list[tuple[str, str]] = []
     for path in (root / "src" / "b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        direct = {"CounterSink"} if path.name == "countersinks.py" else set()
-        modules: set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module == "b123d_recognisers.countersinks":
-                direct.update(
-                    alias.asname or alias.name
-                    for alias in node.names
-                    if alias.name == "CounterSink"
-                )
-            if isinstance(node, ast.Import):
-                modules.update(
-                    alias.asname or alias.name
-                    for alias in node.names
-                    if alias.name == "b123d_recognisers.countersinks"
-                )
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            is_call = isinstance(node.func, ast.Name) and node.func.id in direct
-            is_call |= (
-                isinstance(node.func, ast.Attribute)
-                and node.func.attr == "CounterSink"
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id in modules
-            )
-            if is_call:
+        for qualified, node in _qualified_calls(tree):
+            if (path.name == "countersinks.py" and qualified == "CounterSink") or qualified in {
+                "b123d_recognisers.countersinks.CounterSink",
+                "b123d_recognisers.CounterSink",
+            }:
                 function = next(
                     (
                         parent.name

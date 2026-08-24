@@ -743,6 +743,11 @@ negative/no-leak shapes and late validation refusal. The raw cylinder adaptor re
 to the private core without changing its orientation-deferred disposition; `cone_rims` remains a
 separate reader authority. `COUNTERSINKS` becomes `FullyAttributed` on that same reviewed head.
 
+Development construction also corrected one inherited prose assumption: a side-clipped cone can
+retain circular-arc boundary geometry and remains accepted. F5e pins that as a regression positive;
+only non-circular or insufficient rim geometry is negative. Tightening trim/full-circle semantics is
+a separate behavior-changing prerequisite, not an attribution fix.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
