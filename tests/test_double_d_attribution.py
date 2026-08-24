@@ -20,18 +20,76 @@ from build123d import (
     export_step,
     import_step,
 )
-from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.profiled_bores import (
     _discover_double_d_bores,
+    _valid_wall_chain_facts,
     recognise_double_d_bores,
 )
 from b123d_recognisers.result import _take_inventory
 
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)
+
+
+def _chain_facts(
+    first: tuple[str, ...] = ("a",),
+    *,
+    first_intervals: dict[str, tuple[float, float]] | None = None,
+    first_edges: tuple[tuple[str, str], ...] = (),
+    high: tuple[int, ...] = (0, 1, 2, 3),
+) -> bool:
+    chains = (first, ("b",), ("c",), ("d",))
+    intervals = {"b": (-5, 5), "c": (-5, 5), "d": (-5, 5)}
+    intervals.update(first_intervals or {"a": (-5, 5)})
+    ids = {name: at for at, name in enumerate(intervals)}
+    return _valid_wall_chain_facts(
+        tuple(tuple(ids[name] for name in chain) for chain in chains),
+        high,
+        {ids[name]: interval for name, interval in intervals.items()},
+        tuple((ids[left], ids[right]) for left, right in first_edges),
+        lo=-5,
+        hi=5,
+        tol=1e-6,
+    )
+
+
+def test_pure_wall_chain_reducer_accepts_full_and_consecutive_patch_roles() -> None:
+    assert _chain_facts()
+    assert _chain_facts(
+        ("a0", "a1", "a2"),
+        first_intervals={"a0": (-5, -1), "a1": (-1, 2), "a2": (2, 5)},
+        first_edges=(("a0", "a1"), ("a1", "a2")),
+    )
+
+
+@pytest.mark.parametrize(
+    ("first", "intervals", "edges", "high"),
+    [
+        (("a0", "a1"), {"a0": (-5, -1), "a1": (0, 5)}, (("a0", "a1"),), (0, 1, 2, 3)),
+        (("a0", "a1"), {"a0": (-5, 1), "a1": (0, 5)}, (("a0", "a1"),), (0, 1, 2, 3)),
+        (
+            ("a0", "a1", "a2"),
+            {"a0": (-5, -1), "a1": (-1, 2), "a2": (2, 5)},
+            (("a0", "a1"), ("a1", "a2"), ("a0", "a2")),
+            (0, 1, 2, 3),
+        ),
+        (
+            ("a0", "a1"),
+            {"a0": (-5, 0), "a1": (0, 5)},
+            (("a0", "a1"), ("a0", "a1")),
+            (0, 1, 2, 3),
+        ),
+        (("a",), {"a": (-5, 5)}, (), (0, 0, 2, 3)),
+        (("a", "b"), {"a": (-5, 0)}, (("a", "b"),), (0, 1, 2, 3)),
+    ],
+)
+def test_pure_wall_chain_reducer_refuses_gap_overlap_cycle_and_role_ambiguity(
+    first, intervals, edges, high
+) -> None:
+    assert not _chain_facts(first, first_intervals=intervals, first_edges=edges, high=high)
 
 
 def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
@@ -87,61 +145,56 @@ def _assert_wall_role(ledger, record, candidate) -> None:
     axis = next(at for at, value in enumerate(record.axis) if value)
     low = record.location[axis] - record.depth
     high = record.location[axis]
-    flat = record.flat_direction
     metric_tol = record.major_diameter * 1e-3
+    owner = ledger.graph.common_valid_solid(defining)
+    assert owner is not None
+    faces = [ledger.graph.face(node) for node in ledger.graph.nodes]
+    incidence = edge_face_map(faces, face_edges=FaceEdges())
 
-    def establishes(node) -> bool:
-        face = ledger.graph.face(node)
-        if face.geom_type not in (GeomType.PLANE, GeomType.CYLINDER):
-            return False
-        bounds = ledger.graph.bounds(node)[axis]
-        if bounds[0] < low - metric_tol or bounds[1] > high + metric_tol:
-            return False
-        surface = BRepAdaptor_Surface(face.wrapped)
-        if face.geom_type == GeomType.PLANE:
-            plane = surface.Plane()
-            normal = plane.Axis().Direction()
-            values = (normal.X(), normal.Y(), normal.Z())
-            if abs(abs(sum(values[i] * flat[i] for i in range(3))) - 1.0) > 1e-4:
-                return False
-            location = plane.Location()
-            offset = abs(
-                sum(
-                    ((location.X(), location.Y(), location.Z())[i] - record.location[i])
-                    * flat[i]
-                    for i in range(3)
-                )
-            )
-            valid = abs(offset - record.across_flats / 2) <= metric_tol
-        else:
-            cylinder = surface.Cylinder()
-            direction = cylinder.Axis().Direction()
-            components = (direction.X(), direction.Y(), direction.Z())
-            location = cylinder.Axis().Location()
-            axis_point = (location.X(), location.Y(), location.Z())
-            valid = (
-                abs(abs(components[axis]) - 1.0) <= 1e-4
-                and abs(cylinder.Radius() - record.major_diameter / 2) <= metric_tol
-                and all(
-                    abs(axis_point[i] - record.location[i]) <= metric_tol
+    def opening_sets(at: float) -> list[frozenset]:
+        found: list[frozenset] = []
+        for node in ledger.graph.nodes:
+            if ledger.graph.common_valid_solid((node,)) is not owner:
+                continue
+            face = ledger.graph.face(node)
+            if face.geom_type != GeomType.PLANE:
+                continue
+            bounds = ledger.graph.bounds(node)[axis]
+            if abs(bounds[0] - at) > metric_tol or abs(bounds[1] - at) > metric_tol:
+                continue
+            for wire in face.inner_wires():
+                edges = wire.edges()
+                if len(edges) != 4:
+                    continue
+                center = wire.bounding_box().center()
+                point = (float(center.X), float(center.Y), float(center.Z))
+                if any(
+                    abs(point[i] - record.location[i]) > metric_tol
                     for i in range(3)
                     if i != axis
-                )
-            )
-        if not valid:
-            return False
-        center = face.center()
-        normal = face.normal_at()
-        radial = [record.location[i] - (center.X, center.Y, center.Z)[i] for i in range(3)]
-        radial[axis] = 0.0
-        return sum(radial[i] * (normal.X, normal.Y, normal.Z)[i] for i in range(3)) > metric_tol
+                ):
+                    continue
+                partners = []
+                for edge in edges:
+                    others = [
+                        other
+                        for other in incidence.get(edge, ())
+                        if not other.wrapped.IsSame(face.wrapped)
+                    ]
+                    assert len(others) == 1
+                    partners.append(ledger.graph.require_node(others[0]))
+                found.append(frozenset(partners))
+        return found
 
-    expected = frozenset(node for node in ledger.graph.nodes if establishes(node))
+    low_sets = opening_sets(low)
+    high_sets = opening_sets(high)
+    assert len(low_sets) == len(high_sets) == 1
+    assert low_sets[0] == high_sets[0]
+    expected = low_sets[0]
     assert expected == defining
-    faces = [ledger.graph.face(node) for node in expected]
-    assert [face.geom_type for face in faces].count(GeomType.PLANE) >= 2
-    assert [face.geom_type for face in faces].count(GeomType.CYLINDER) >= 2
-    assert ledger.graph.common_valid_solid(defining) is not None
+    wall_faces = [ledger.graph.face(node) for node in expected]
+    assert [face.geom_type for face in wall_faces].count(GeomType.PLANE) == 2
+    assert [face.geom_type for face in wall_faces].count(GeomType.CYLINDER) == 2
 
 
 @pytest.mark.parametrize("rotation", [Rot(), Rot(0, 90, 0), Rot(90, 0, 0)])
@@ -174,6 +227,8 @@ def test_equal_full_records_from_distinct_solids_remain_identity_distinct() -> N
     assert records[0] == records[1] and records[0] is not records[1]
     assert candidates[0].record is records[0]
     assert candidates[1].record is records[1]
+    for record, candidate in zip(records, candidates, strict=True):
+        _assert_wall_role(ledger, record, candidate)
     assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
     owners = [
         ledger.graph.common_valid_solid(ledger.defining_of(candidate))

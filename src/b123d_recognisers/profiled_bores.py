@@ -69,6 +69,52 @@ class _ProposalContext:
     proposals: list[_DoubleDBoreProposal]
 
 
+def _valid_wall_chain_facts(
+    chains: tuple[tuple[int, ...], ...],
+    high_assignments: tuple[int, ...],
+    intervals: dict[int, tuple[float, float]],
+    edges: tuple[tuple[int, int], ...],
+    *,
+    lo: float,
+    hi: float,
+    tol: float,
+) -> bool:
+    """Validate the immutable topology facts behind four logical lateral-wall chains."""
+
+    if len(chains) != 4 or any(not chain for chain in chains):
+        return False
+    if sorted(high_assignments) != list(range(4)):
+        return False
+    flattened = [patch for chain in chains for patch in chain]
+    if len(flattened) != len(set(flattened)):
+        return False
+    for chain in chains:
+        ordered = sorted(intervals[patch] for patch in chain)
+        cursor = lo
+        for start, end in ordered:
+            if start > cursor + tol or start < cursor - tol or end <= start:
+                return False
+            cursor = end
+        if abs(cursor - hi) > tol:
+            return False
+        if len(chain) == 1:
+            if any(left in chain and right in chain for left, right in edges):
+                return False
+            continue
+        chain_edges = [(left, right) for left, right in edges if left in chain and right in chain]
+        if len(chain_edges) != len(chain) - 1:
+            return False
+        degrees = {patch: 0 for patch in chain}
+        for left, right in chain_edges:
+            if left == right:
+                return False
+            degrees[left] += 1
+            degrees[right] += 1
+        if any(degree > 2 for degree in degrees.values()) or list(degrees.values()).count(1) != 2:
+            return False
+    return True
+
+
 def _same_shape(left, right) -> bool:
     return bool(left.wrapped.IsSame(right.wrapped))
 
@@ -166,7 +212,11 @@ def _complete_wall_component(
             )
         if not valid_support:
             return False
-        point = face.center()
+        native_point = surface.Value(
+            0.5 * (surface.FirstUParameter() + surface.LastUParameter()),
+            0.5 * (surface.FirstVParameter() + surface.LastVParameter()),
+        )
+        point = Vector(native_point.X(), native_point.Y(), native_point.Z())
         normal = face.normal_at(point)
         point_values = (float(point.X), float(point.Y), float(point.Z))
         normal_values = (float(normal.X), float(normal.Y), float(normal.Z))
@@ -189,7 +239,7 @@ def _complete_wall_component(
             if next(value for value in values if abs(value) > 1e-9) < 0:
                 values = tuple(-value for value in values)
                 offset = -offset
-            return ("plane", *(round(value, 8) for value in values), round(offset, 8))
+            return ("plane", *values, offset)
         cylinder = surface.Cylinder()
         direction = cylinder.Axis().Direction()
         components = [direction.X(), direction.Y(), direction.Z()]
@@ -200,9 +250,21 @@ def _complete_wall_component(
         axis_point = (location.X(), location.Y(), location.Z())
         return (
             "cylinder",
-            *(round(value, 8) for value in components),
-            *(round(axis_point[i], 8) for i in range(3) if i != axis_i),
-            round(cylinder.Radius(), 8),
+            *components,
+            *(axis_point[i] for i in range(3) if i != axis_i),
+            cylinder.Radius(),
+        )
+
+    def same_support(left, right) -> bool:
+        if left[0] != right[0] or len(left) != len(right):
+            return False
+        if left[0] == "plane":
+            return all(abs(left[i] - right[i]) <= 1e-4 for i in range(1, 4)) and abs(
+                left[4] - right[4]
+            ) <= metric_tol
+        return (
+            all(abs(left[i] - right[i]) <= 1e-4 for i in range(1, 4))
+            and all(abs(left[i] - right[i]) <= metric_tol for i in range(4, len(left)))
         )
 
     def chain(seed) -> tuple[FaceLike, ...]:
@@ -215,7 +277,7 @@ def _complete_wall_component(
             face = pending.pop()
             if any(_same_shape(face, known) for known in found):
                 continue
-            if not lateral(face) or support(face) != role:
+            if not lateral(face) or not same_support(support(face), role):
                 continue
             found.append(face)
             for edge in face_edges.of(face):
@@ -238,48 +300,47 @@ def _complete_wall_component(
         if len(matches) != 1:
             return ()
         high_assignments.append(matches[0])
-    if len(set(high_assignments)) != 4:
-        return ()
-
-    seen: list[FaceLike] = []
+    intervals: dict[int, tuple[float, float]] = {}
+    edge_pairs: list[tuple[int, int]] = []
+    visited_edges: set = set()
     for chain_faces in chains:
-        if any(any(_same_shape(face, prior) for prior in seen) for face in chain_faces):
-            return ()
-        intervals = sorted(
-            (
-                float(getattr(face.bounding_box().min, attr)),
-                float(getattr(face.bounding_box().max, attr)),
+        for face in chain_faces:
+            key = id(face)
+            bbox = face.bounding_box()
+            intervals[key] = (
+                float(getattr(bbox.min, attr)),
+                float(getattr(bbox.max, attr)),
             )
-            for face in chain_faces
-        )
-        cursor = lo
-        for start, end in intervals:
-            if start > cursor + metric_tol or start < cursor - metric_tol:
-                return ()
-            cursor = end
-        if abs(cursor - hi) > metric_tol:
-            return ()
-        # Same-support adjacency must be one path, not a branch or cycle.
-        if len(chain_faces) > 1:
-            degrees = []
-            connection_edges: set = set()
-            for face in chain_faces:
-                adjacent_edges = {
-                    edge
-                    for edge in face_edges.of(face)
+            for edge in face_edges.of(face):
+                if edge in visited_edges:
+                    continue
+                partners = [
+                    other
                     for other in incidence.get(edge, ())
                     if any(_same_shape(other, candidate) for candidate in chain_faces)
                     and not _same_shape(other, face)
-                }
-                connection_edges.update(adjacent_edges)
-                degrees.append(len(adjacent_edges))
-            if (
-                len(connection_edges) != len(chain_faces) - 1
-                or any(degree > 2 for degree in degrees)
-                or degrees.count(1) != 2
-            ):
-                return ()
-        seen.extend(chain_faces)
+                ]
+                if partners:
+                    visited_edges.add(edge)
+                    other = next(
+                        candidate
+                        for candidate in chain_faces
+                        if _same_shape(candidate, partners[0])
+                    )
+                    edge_pairs.append((key, id(other)))
+    chain_ids = tuple(tuple(id(face) for face in chain_faces) for chain_faces in chains)
+    if not _valid_wall_chain_facts(
+        chain_ids,
+        tuple(high_assignments),
+        intervals,
+        tuple(edge_pairs),
+        lo=lo,
+        hi=hi,
+        tol=metric_tol,
+    ):
+        return ()
+
+    seen = [face for chain_faces in chains for face in chain_faces]
 
     return tuple(face for face in faces if any(_same_shape(face, wall) for wall in seen))
 
