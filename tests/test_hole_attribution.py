@@ -8,17 +8,27 @@ import math
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cone, Cylinder, Pos, Rot, Shell
+from build123d import Box, Compound, Cone, Cylinder, Pos, Rot, Shell, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_holes
-from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
+from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._hole_features import HoleRecord, _discover_holes
+from b123d_recognisers._cylinder_substrate import analyse_cylinders, full_cylinders
+from b123d_recognisers._hole_features import (
+    HoleRecord,
+    _discover_holes,
+    _near_side_steps,
+    _same_diameter,
+)
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-from b123d_recognisers.countersinks import _discover_countersinks, recognise_countersinks
+from b123d_recognisers.countersinks import (
+    CounterSink,
+    _discover_countersinks,
+    recognise_countersinks,
+)
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
@@ -49,13 +59,21 @@ def _countersunk():
     return Box(60, 60, 20) - Cylinder(2.5, 20) - Pos(0, 0, 7.5) * Cone(2.5, 5, 5)
 
 
+def _drill_tool(radius, depth, top_z):
+    tip = radius / math.tan(math.radians(59))
+    bottom = top_z - depth
+    return Pos(0, 0, top_z - depth / 2) * Cylinder(radius, depth) + Pos(
+        0, 0, bottom - tip / 2
+    ) * Cone(0, radius, tip)
+
+
 def _line_distance(point, line, direction) -> float:
     offset = tuple(point[i] - line[i] for i in range(3))
     along = sum(offset[i] * direction[i] for i in range(3))
     return math.sqrt(sum((offset[i] - along * direction[i]) ** 2 for i in range(3)))
 
 
-def _expected_cylindrical_nodes(graph: FaceGraph, record: HoleRecord):
+def _expected_cylindrical_nodes(part, graph: FaceGraph, record: HoleRecord):
     """Fresh topology-first oracle for the fixtures in this module.
 
     It reads original surfaces directly, before Candidate evidence, and selects internal,
@@ -63,46 +81,38 @@ def _expected_cylindrical_nodes(graph: FaceGraph, record: HoleRecord):
     end planes, external cylinders and unrelated axes cannot enter the result.
     """
 
-    diameters = {record.diameter}
-    if record.cbore is not None:
-        diameters.add(record.cbore.diameter)
-    if record.spotface is not None:
-        diameters.add(record.spotface.diameter)
+    axial, cross = analyse_cylinders(part)
+    facts = full_cylinders(axial) + full_cylinders(cross)
     expected = []
-    for node in graph.nodes:
-        face = graph.face(node)
-        surface = BRepAdaptor_Surface(face.wrapped)
-        if surface.GetType() != GeomAbs_Cylinder or frame_points_outward(face):
+    for fact in facts:
+        if fact["external"]:
             continue
-        cylinder = surface.Cylinder()
-        axis = cylinder.Axis()
-        direction = axis.Direction()
-        unit = (direction.X(), direction.Y(), direction.Z())
+        face = fact["face"]
+        unit = fact["dir_xyz"]
         if abs(sum(a * b for a, b in zip(record.axis, unit, strict=True))) < 0.999999:
             continue
-        origin = axis.Location()
-        line = (origin.X(), origin.Y(), origin.Z())
+        line = fact["axis_xyz"]
         if _line_distance(record.location, line, unit) > 1e-5:
             continue
-        diameter = 2 * cylinder.Radius()
-        serialized_land = any(
-            diameter == pytest.approx(value, rel=1e-5, abs=1e-7) for value in diameters
+        opening_s = sum(record.location[i] * unit[i] for i in range(3))
+        axis_sign = 1 if sum(record.axis[i] * unit[i] for i in range(3)) > 0 else -1
+        deep_s = opening_s + axis_sign * record.depth
+        lo, hi = sorted((opening_s, deep_s))
+        within_serialized_depth = fact["s_hi"] >= lo - 1e-6 and fact["s_lo"] <= hi + 1e-6
+        bore_land = math.isclose(fact["diameter"], record.diameter, rel_tol=1e-5) and (
+            within_serialized_depth
         )
-        bounds = face.bounding_box()
-        corners = [
-            (x, y, z)
-            for x in (bounds.min.X, bounds.max.X)
-            for y in (bounds.min.Y, bounds.max.Y)
-            for z in (bounds.min.Z, bounds.max.Z)
-        ]
-        deep = tuple(record.location[i] + record.depth * record.axis[i] for i in range(3))
-        deep_s = sum(deep[i] * unit[i] for i in range(3))
-        projections = [sum(point[i] * unit[i] for i in range(3)) for point in corners]
-        blind_deep_extension = record.bottom != "through" and (
-            min(projections) - 1e-5 <= deep_s <= max(projections) + 1e-5
+        step_diameters = tuple(
+            spec.diameter for spec in (record.cbore, record.spotface) if spec is not None
         )
-        if serialized_land or blind_deep_extension:
-            expected.append(node)
+        selected_step = within_serialized_depth and any(
+            math.isclose(fact["diameter"], diameter, rel_tol=1e-5) for diameter in step_diameters
+        )
+        blind_extension = (
+            record.bottom != "through" and fact["s_lo"] - 1e-6 <= deep_s <= fact["s_hi"] + 1e-6
+        )
+        if bore_land or selected_step or blind_extension:
+            expected.append(graph.require_node(face))
     return frozenset(expected)
 
 
@@ -116,7 +126,7 @@ def _claimed(part, **kwargs):
     assert len(candidates) == len(records)
     for record, candidate in zip(records, candidates, strict=True):
         assert candidate.record is record
-        expected = _expected_cylindrical_nodes(ledger.graph, record)
+        expected = _expected_cylindrical_nodes(part, ledger.graph, record)
         assert expected
         assert ledger.defining_of(candidate) == expected
         assert ledger.graph.common_valid_solid(expected) is not None
@@ -143,29 +153,88 @@ def test_split_and_interrupted_bore_retains_every_original_patch() -> None:
     records, candidates, ledger = _claimed(crossed)
     assert len(records) == len(candidates) == 2
     for record, candidate in zip(records, candidates, strict=True):
-        assert ledger.defining_of(candidate) == _expected_cylindrical_nodes(ledger.graph, record)
+        assert ledger.defining_of(candidate) == _expected_cylindrical_nodes(
+            crossed, ledger.graph, record
+        )
 
 
 def test_near_step_and_bottom_relief_roles_exclude_transition_context() -> None:
-    grooved = Box(60, 60, 20) - Cylinder(5, 20) - Pos(0, 0, 7) * Cylinder(9, 6) - Pos(
-        0, 0, 7
-    ) * Cylinder(10, 2)
+    grooved = (
+        Box(60, 60, 20)
+        - Cylinder(5, 20)
+        - Pos(0, 0, 7) * Cylinder(9, 6)
+        - Pos(0, 0, 7) * Cylinder(10, 2)
+    )
     records, candidates, ledger = _claimed(grooved)
     (record,) = records
     assert record.cbore is not None and record.spotface is None
     defining = ledger.defining_of(candidates[0])
+    cbore_nodes = [
+        node
+        for node in defining
+        if math.isclose(
+            BRepAdaptor_Surface(ledger.graph.face(node).wrapped).Cylinder().Radius() * 2,
+            record.cbore.diameter,
+        )
+    ]
+    assert len(cbore_nodes) == 2
     assert all(
         BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
         for node in defining
     )
 
-    relief = Box(60, 60, 40) - Pos(0, 0, 12.5) * Cylinder(4.25, 15) - Pos(
-        0, 0, 6
-    ) * Cylinder(5, 2)
+    relief = Box(60, 60, 40) - Pos(0, 0, 12.5) * Cylinder(4.25, 15) - Pos(0, 0, 6) * Cylinder(5, 2)
     records, candidates, ledger = _claimed(relief)
     assert records[0].bottom == "flat"
-    assert {round(BRepAdaptor_Surface(ledger.graph.face(node).wrapped).Cylinder().Radius() * 2, 2)
-            for node in ledger.defining_of(candidates[0])} == {8.5, 10.0}
+    assert {
+        round(BRepAdaptor_Surface(ledger.graph.face(node).wrapped).Cylinder().Radius() * 2, 2)
+        for node in ledger.defining_of(candidates[0])
+    } == {8.5, 10.0}
+
+
+def test_spotface_and_same_diameter_boundaries_are_strict() -> None:
+    def segment(diameter, depth):
+        return {"diameter": diameter, "s_lo": 0.0, "s_hi": depth, "faces": [object()]}
+
+    below = _near_side_steps([segment(10.0, 1.994)])
+    at = _near_side_steps([segment(10.0, 1.995)])
+    assert below.spotface is not None and below.cbore is None
+    assert at.cbore is not None and at.spotface is None
+    boundary = 10.0 / (1.0 - 1e-4)
+    assert _same_diameter(10.0, math.nextafter(boundary, 0.0))
+    assert not _same_diameter(10.0, math.nextafter(boundary, math.inf))
+
+
+def test_double_counterbore_excludes_equal_diameter_far_side_land() -> None:
+    part = (
+        Box(60, 60, 20)
+        - Cylinder(5, 20)
+        - Pos(0, 0, 7) * Cylinder(9, 6)
+        - Pos(0, 0, -7) * Cylinder(9, 6)
+    )
+    (record,), (candidate,), ledger = _claimed(part)
+    assert record.bottom == "through" and record.cbore is not None
+    defining = ledger.defining_of(candidate)
+    step_nodes = [
+        node
+        for node in ledger.graph.nodes
+        if BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
+        and math.isclose(
+            BRepAdaptor_Surface(ledger.graph.face(node).wrapped).Cylinder().Radius() * 2,
+            record.cbore.diameter,
+        )
+    ]
+    assert len(step_nodes) == 2 and sum(node in defining for node in step_nodes) == 1
+
+
+def test_drill_point_cone_is_context_not_hole_evidence() -> None:
+    part = Box(60, 60, 20) - _drill_tool(5, 12, 10)
+    (record,), (candidate,), ledger = _claimed(part)
+    assert record.bottom == "drill_point"
+    assert all(
+        BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
+        for node in ledger.defining_of(candidate)
+    )
 
 
 def test_nested_countersink_stays_predecessor_owned_and_hole_consulted() -> None:
@@ -174,6 +243,8 @@ def test_nested_countersink_stays_predecessor_owned_and_hole_consulted() -> None
     countersinks = product.physical.candidate_set(FamilyId.COUNTERSINKS).candidates
     assert len(holes) == len(countersinks) == 1
     hole, countersink = holes[0], countersinks[0]
+    assert isinstance(hole.record, HoleRecord)
+    assert isinstance(countersink.record, CounterSink)
     assert hole.record.csink is countersink.record
     hole_nodes = product.evidence.defining_of(hole)
     cone_nodes = product.evidence.defining_of(countersink)
@@ -209,8 +280,8 @@ def test_matched_countersink_requires_exact_completed_predecessor() -> None:
 
     # An injected sibling record which does not match this Hole remains irrelevant context.
     unrelated = recognise_countersinks(Pos(100, 0, 0) * _countersunk())
-    records = _discover_holes(part, csinks=unrelated, writer=ledger.writer)
-    assert records and records[0].csink is None
+    hole_records = _discover_holes(part, csinks=unrelated, writer=ledger.writer)
+    assert hole_records and hole_records[0].csink is None
     assert ledger.candidate_set(FamilyId.HOLES).candidates
 
 
@@ -223,6 +294,68 @@ def test_completed_countersink_from_another_run_refuses_body_link_atomically() -
         _discover_holes(
             part,
             csinks=records,
+            predecessor_occurrences=occurrences,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+
+def test_ambiguous_or_empty_countersink_predecessor_refuses_atomically() -> None:
+    part = _countersunk()
+    ledger, records, occurrences = _completed_countersinks(part)
+    with pytest.raises(ValueError, match="ambiguous matching"):
+        _discover_holes(
+            part,
+            csinks=[records[0], records[0]],
+            predecessor_occurrences=occurrences,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    empty = ClaimLedger(FaceGraph(part), definitions=PHYSICAL_DEFINITIONS)
+    public_record = recognise_countersinks(part)[0]
+    empty.candidate_set_for(FamilyId.COUNTERSINKS, (public_record,))
+    holes_definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    empty_occurrences = empty.restricted_inputs(holes_definition).occurrences(
+        FamilyId.COUNTERSINKS, type(public_record)
+    )
+    with pytest.raises(ValueError, match="different solids"):
+        _discover_holes(
+            part,
+            csinks=(public_record,),
+            predecessor_occurrences=empty_occurrences,
+            writer=empty.writer,
+        )
+    assert empty.candidate_set(FamilyId.HOLES).candidates == ()
+
+
+def test_cross_solid_or_reused_countersink_predecessor_refuses_prefix_free(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as module
+
+    left, right = Pos(-50, 0, 0) * _countersunk(), Pos(50, 0, 0) * _countersunk()
+    part = Compound([left, right])
+    ledger, countersinks, occurrences = _completed_countersinks(part)
+    first = min(countersinks, key=lambda item: item.location[0])
+
+    monkeypatch.setattr(
+        module,
+        "countersink_matches_hole",
+        lambda csink, hole: csink is first and hole.location[0] > 0,
+    )
+    with pytest.raises(ValueError, match="different solids"):
+        _discover_holes(
+            part,
+            csinks=(first,),
+            predecessor_occurrences=occurrences,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    monkeypatch.setattr(module, "countersink_matches_hole", lambda _csink, _hole: True)
+    with pytest.raises(ValueError, match="shared by Hole"):
+        _discover_holes(
+            part,
+            csinks=(first,),
             predecessor_occurrences=occurrences,
             writer=ledger.writer,
         )
@@ -257,9 +390,57 @@ def test_equal_holes_keep_occurrence_and_body_identity() -> None:
     assert ledger.graph.common_valid_solid(first) != ledger.graph.common_valid_solid(second)
 
 
+def test_coincident_equal_full_records_keep_distinct_occurrence_bodies() -> None:
+    original = _through()
+    part = Compound([original, copy.deepcopy(original)])
+    public = recognise_holes(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_holes(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.HOLES).candidates
+    assert len(records) == 2 and records[0] == records[1] and records[0] is not records[1]
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
+    defining = [ledger.defining_of(candidate) for candidate in candidates]
+    assert defining[0].isdisjoint(defining[1])
+    assert ledger.graph.common_valid_solid(defining[0]) != ledger.graph.common_valid_solid(
+        defining[1]
+    )
+    assert all(
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
+    )
+
+
 @pytest.mark.parametrize("transform", [Rot(0, 90, 0), Rot(31, 17, 43)])
 def test_cross_and_nonprincipal_axes_keep_exact_roles(transform) -> None:
     _claimed(transform * _through())
+
+
+def test_scale_traversal_step_and_supplied_dependencies_preserve_roles(
+    monkeypatch, tmp_path: Path
+) -> None:
+    for part in (_through().scale(0.2), _through().scale(5)):
+        _claimed(part)
+
+    part = _counterbore()
+    solid_type = type(part)
+    original_faces = solid_type.faces
+
+    def reversed_faces(self):
+        faces = original_faces(self)
+        return type(faces)(reversed(faces))
+
+    monkeypatch.setattr(solid_type, "faces", reversed_faces)
+    _claimed(part)
+    monkeypatch.undo()
+
+    target = tmp_path / "hole.step"
+    assert export_step(_counterbore(), target)
+    _claimed(import_step(target))
+
+    supplied_part = _spotface_stack()
+    cylinders = analyse_cylinders(supplied_part)
+    from b123d_recognisers._adjacency import FaceEdges
+
+    _claimed(supplied_part, cyls=cylinders, face_edges=FaceEdges())
 
 
 def test_open_shell_public_compatibility_refuses_aggregate_without_prefix() -> None:
@@ -327,7 +508,7 @@ def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
 
 
 def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> None:
-    sites = []
+    sites: list[tuple[str, ast.Call]] = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         sites.extend(
