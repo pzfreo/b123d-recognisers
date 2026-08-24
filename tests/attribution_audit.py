@@ -73,13 +73,31 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
         if item["external"] and item["axis"] == record.axis
     ]
     main = max(axis_bands, key=lambda item: item["diameter"])
+    midpoint = 0.5 * (record.lo + record.hi)
+
+    def midpoint_distance(item) -> float:
+        node = ledger.graph.require_node(item["face"])
+        low, high = ledger.graph.bounds(node)[axis]
+        return max(low - midpoint, midpoint - high, 0.0)
+
+    matching = [
+        item
+        for item in axis_bands
+        if abs(item["diameter"] - record.diameter) <= 1e-6
+        and _coaxial_axis_lines(
+            main["axis_xyz"],
+            main["dir_xyz"],
+            item["axis_xyz"],
+            item["dir_xyz"],
+            tol=1e-6,
+        )
+    ]
+    nearest = min(midpoint_distance(item) for item in matching)
 
     def establishes(item) -> bool:
         if not item["external"]:
             return False
-        node = ledger.graph.require_node(item["face"])
-        low, high = ledger.graph.bounds(node)[axis]
-        if low > record.lo + 1e-6 or high < record.hi - 1e-6:
+        if abs(midpoint_distance(item) - nearest) > 1e-6:
             return False
         components = item["dir_xyz"]
         return (
@@ -100,14 +118,6 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
         if establishes(item)
     )
     assert expected
-    intervals = sorted(
-        ledger.graph.bounds(node)[axis] for node in expected
-    )
-    covered = record.lo
-    for low, high in intervals:
-        assert low <= covered + 1e-6
-        covered = max(covered, high)
-    assert covered >= record.hi - 1e-6
     assert ledger.defining_of(candidate) == expected
 
 

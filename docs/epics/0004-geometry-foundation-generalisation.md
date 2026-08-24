@@ -581,7 +581,9 @@ F5b is a frozen tests-and-documentation audit with this exact path matrix:
 - grooves: sharp-band, conical/chamfered-lead-in and toroidal/radiused-lead-in joins, plus multiple
   grooves; only each floor band defines its record, never shaft bands, walls, cones or tori;
 - turned steps: ordinary and groove rungs, supported principal axes and a split/multiple-widest-band
-  case; all and only diameter-establishing external bands define the rung, not shoulder planes;
+  case; all and only the nearest widest external bands establishing the rung's midpoint OD define
+  it, not shoulder planes. Those planes establish the serialized interval as consulted context, so
+  an edge-break-imported band may be narrower than the shoulder-delimited rung;
 - chamfers: planar bevel and turned conical constructors, including rotational projection; only the
   bevel/cone defines the record, not bridged planes or the external cylinder;
 - angled steps: ordinary and drilled triangular terminals, multiple/reversed ordering, and the
