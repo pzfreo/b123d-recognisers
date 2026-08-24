@@ -43,13 +43,14 @@ both legitimately do — is the reconciler's policy under ADR 0003, and is not d
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import (
     Candidate,
     CandidateSet,
+    CompletedInputs,
     EvidenceIndex,
     EvidenceSink,
     FamilyId,
@@ -110,10 +111,12 @@ class ClaimLedger:
     faces of different solids.
     """
 
-    def __init__(self, graph: FaceGraph) -> None:
+    def __init__(self, graph: FaceGraph, *, definitions: Sequence[object] = ()) -> None:
         self._graph = graph
         self._claims: dict[int, Claim] = {}
-        self._issuer = _CandidateIssuer(graph, on_issued=self._candidate_issued)
+        self._issuer = _CandidateIssuer(
+            graph, on_issued=self._candidate_issued, definitions=definitions
+        )
 
     def _candidate_issued(self, candidate: Candidate[object]) -> None:
         """Maintain the legacy Claim view for every non-empty sink issuance."""
@@ -204,6 +207,11 @@ class ClaimLedger:
         """Bind returned record occurrences to their one family candidate."""
 
         return self._issuer.candidate_set_for(family, records)
+
+    def restricted_inputs(self, definition: object) -> CompletedInputs:
+        """Issue an opaque view of exactly one consumer's completed predecessors."""
+
+        return self._issuer.restricted_inputs(definition)
 
     def snapshot_index(self) -> EvidenceIndex:
         """Freeze the evidence issued so far into a point-in-time read capability.

@@ -840,6 +840,17 @@ outcome evidence. Each later semantic child owns its own two-review/mechanical g
 authorization and independent consumed chronology; zero, abort, invalid or completed outcomes may
 not be retried, replaced or fitted.
 
+F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
+registry family now completes atomically immediately after discovery: returned occurrences bind to
+one exact CandidateSet, deliberate empty Candidates are staged without prefix leakage, later writes
+under that family close, and the same set feeds terminal inventory. The issuer exposes opaque,
+read-time-validated occurrence handles only through an equally opaque input capability bound to the
+consumer's exact declared predecessor roster. Handles carry exact record identity, original defining
+nodes and recomputed common-SolidRef provenance, but no global inventory, EvidenceIndex, disposition,
+acceptance or reconciliation state. This neutral seam changes no family output/status and consumes
+no holdout; it permits the later COUNTERSINKS-to-HOLES adapter to prove nested occurrence/body identity
+without cone re-recognition or double ownership.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

@@ -19,7 +19,7 @@ from types import MappingProxyType
 from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
-from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
     ReasonCode,
@@ -43,7 +43,6 @@ from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
-    CompletedInputs,
     DerivedId,
     DiscoveryServices,
     FullyAttributed,
@@ -405,9 +404,8 @@ def _take_inventory(
     """Run the explicit physical, reconciliation, derived and projection phases once."""
 
     context = start(part, cylinders, rotational=rotational)
-    ledger = ClaimLedger(context.graph)
-    discovered = _discover_all(context, ledger.writer)
-    physical = _bind_physical(discovered, ledger)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    physical = CandidateInventory.complete(_discover_all(context, ledger))
     evidence = ledger.freeze_index()
     evidence.validate_complete_inventory(
         tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES)
@@ -432,36 +430,23 @@ def _take_inventory(
 
 
 def _discover_all(
-    context: RecognitionContext, writer: EvidenceWriter
-) -> tuple[tuple[FamilyId, list[object]], ...]:
-    """Complete registry-ordered physical proposals before any evidence read."""
+    context: RecognitionContext, ledger: ClaimLedger
+) -> tuple[CandidateSet[object], ...]:
+    """Discover and atomically complete each physical family in registry order."""
 
     services = DiscoveryServices(
         context=context,
-        writer=writer,
+        writer=ledger.writer,
         cylinders=(list(context.cylinders[0]), list(context.cylinders[1])),
     )
-    completed: dict[FamilyId, tuple[object, ...]] = {}
-    discovered: list[tuple[FamilyId, list[object]]] = []
+    completed: list[CandidateSet[object]] = []
     for definition in PHYSICAL_DEFINITIONS:
-        inputs = CompletedInputs.restricted(definition.dependencies, completed)
+        inputs = ledger.restricted_inputs(definition)
         applicable = definition.applicable(context)
         records = definition.discover(services, inputs) if applicable else []
         validate_output(definition, records)
-        if applicable:
-            completed[definition.family] = tuple(records)
-        discovered.append((definition.family, records))
-    return tuple(discovered)
-
-
-def _bind_physical(
-    records: tuple[tuple[FamilyId, list[object]], ...], ledger: ClaimLedger
-) -> CandidateInventory:
-    """Bind completed output occurrences to candidates outside discovery capability scope."""
-
-    return CandidateInventory.complete(
-        ledger.candidate_set_for(family, family_records) for family, family_records in records
-    )
+        completed.append(ledger.candidate_set_for(definition.family, records))
+    return tuple(completed)
 
 
 def _validate_attribution(
