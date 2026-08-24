@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import ast
 import copy
+from math import inf, nan, sqrt
 from pathlib import Path
+from typing import cast
 
 import pytest
 from build123d import (
@@ -13,10 +15,13 @@ from build123d import (
     Box,
     Compound,
     Cylinder,
+    Face,
     GeomType,
     Pos,
     Rot,
     Shell,
+    Solid,
+    Vector,
     export_step,
     import_step,
 )
@@ -42,7 +47,11 @@ def _chain_facts(
     high: tuple[int, ...] = (0, 1, 2, 3),
 ) -> bool:
     chains = (first, ("b",), ("c",), ("d",))
-    intervals = {"b": (-5, 5), "c": (-5, 5), "d": (-5, 5)}
+    intervals: dict[str, tuple[float, float]] = {
+        "b": (-5.0, 5.0),
+        "c": (-5.0, 5.0),
+        "d": (-5.0, 5.0),
+    }
     intervals.update(first_intervals or {"a": (-5, 5)})
     ids = {name: at for at, name in enumerate(intervals)}
     return _valid_wall_chain_facts(
@@ -90,6 +99,147 @@ def test_pure_wall_chain_reducer_refuses_gap_overlap_cycle_and_role_ambiguity(
     first, intervals, edges, high
 ) -> None:
     assert not _chain_facts(first, first_intervals=intervals, first_edges=edges, high=high)
+
+
+@pytest.mark.parametrize(
+    ("intervals", "edges", "lo", "hi", "tol"),
+    [
+        ({0: (-5, 5), 1: (-5, 5), 2: (-5, 5)}, (), -5, 5, 1e-6),
+        ({0: (-5, 5), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5), 4: (0, 1)}, (), -5, 5, 1e-6),
+        ({0: (-5, nan), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, (), -5, 5, 1e-6),
+        ({0: (-5, inf), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, (), -5, 5, 1e-6),
+        ({0: (5, -5), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, (), -5, 5, 1e-6),
+        ({0: (-5, 5), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, ((0, 9),), -5, 5, 1e-6),
+        ({0: (-5, 5), 1: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, (), -5, 5, nan),
+    ],
+)
+def test_wall_chain_fact_boundary_fails_closed_on_malformed_snapshots(
+    intervals, edges, lo, hi, tol
+) -> None:
+    assert not _valid_wall_chain_facts(
+        ((0,), (1,), (2,), (3,)),
+        (0, 1, 2, 3),
+        intervals,
+        edges,
+        lo=lo,
+        hi=hi,
+        tol=tol,
+    )
+
+
+def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_issuance(
+    monkeypatch,
+) -> None:
+    """Exercise geometry-to-facts adaptation where OCCT normally heals the wall."""
+    import b123d_recognisers.profiled_bores as module
+
+    part = _plate()
+    bbox = part.bounding_box()
+    boundary = [
+        face
+        for face in part.faces()
+        if face.geom_type == GeomType.PLANE
+        and abs(face.bounding_box().min.Z - face.bounding_box().max.Z) < 1e-9
+    ]
+    low_face = next(face for face in boundary if face.bounding_box().min.Z < 0)
+    high_face = next(face for face in boundary if face.bounding_box().min.Z > 0)
+    low_wire = low_face.inner_wires()[0]
+    high_wire = high_face.inner_wires()[0]
+    profile = module.double_d_profile(low_wire, ("x", "y"), tol=1e-5)
+    assert profile is not None
+
+    native_incidence = edge_face_map(part.faces(), face_edges=FaceEdges())
+    low_owners = [
+        next(face for face in native_incidence[edge] if not face.wrapped.IsSame(low_face.wrapped))
+        for edge in low_wire.edges()
+    ]
+    high_owners = [
+        next(face for face in native_incidence[edge] if not face.wrapped.IsSame(high_face.wrapped))
+        for edge in high_wire.edges()
+    ]
+    split_at = next(at for at, face in enumerate(low_owners) if face.geom_type == GeomType.PLANE)
+    original = low_owners[split_at]
+    cutters = [
+        Pos(0, 0, -3.5) * Box(20, 20, 3, align=_CENTRE),
+        Box(20, 20, 4, align=_CENTRE),
+        Pos(0, 0, 3.5) * Box(20, 20, 3, align=_CENTRE),
+    ]
+    patches = tuple(original & cutter for cutter in cutters)
+    assert [(face.bounding_box().min.Z, face.bounding_box().max.Z) for face in patches] == [
+        (-5.0, -2.0),
+        (-2.0, 2.0),
+        (2.0, 5.0),
+    ]
+    seam_a = next(
+        edge
+        for edge in patches[0].edges()
+        if abs(edge.bounding_box().min.Z + 2.0) < 1e-9
+        and abs(edge.bounding_box().max.Z + 2.0) < 1e-9
+    )
+    seam_b = next(
+        edge
+        for edge in patches[1].edges()
+        if abs(edge.bounding_box().min.Z - 2.0) < 1e-9
+        and abs(edge.bounding_box().max.Z - 2.0) < 1e-9
+    )
+    low_edges = low_wire.edges()
+    high_edges = high_wire.edges()
+    controlled: dict = {}
+    for at, (low_edge, low_owner) in enumerate(zip(low_edges, low_owners, strict=True)):
+        high_at = next(
+            index
+            for index, high_owner in enumerate(high_owners)
+            if low_owner.wrapped.IsSame(high_owner.wrapped)
+        )
+        high_edge = high_edges[high_at]
+        if at == split_at:
+            controlled[low_edge] = (low_face, patches[0])
+            controlled[high_edge] = (high_face, patches[2])
+        else:
+            controlled[low_edge] = (low_face, low_owner)
+            controlled[high_edge] = (high_face, low_owner)
+    controlled[seam_a] = (patches[0], patches[1])
+    controlled[seam_b] = (patches[1], patches[2])
+
+    class ControlledEdges:
+        def of(self, face):
+            return tuple(
+                edge
+                for edge, owners in controlled.items()
+                if any(owner.wrapped.IsSame(face.wrapped) for owner in owners)
+            )
+
+    class ControlledPart:
+        def faces(self):
+            ordinary = [
+                face
+                for face in part.faces()
+                if not face.wrapped.IsSame(original.wrapped)
+            ]
+            return [*ordinary, *patches]
+
+    monkeypatch.setattr(module, "edge_face_map", lambda *_args, **_kwargs: controlled)
+    walls = module._complete_wall_component(
+        ControlledPart(),
+        low_wire,
+        high_wire,
+        low_face,
+        high_face,
+        "z",
+        profile,
+        bbox.min.Z,
+        bbox.max.Z,
+        1e-5,
+        face_edges=cast(FaceEdges, ControlledEdges()),
+    )
+    assert all(any(face.wrapped.IsSame(patch.wrapped) for face in walls) for patch in patches)
+    assert len(walls) == 6
+
+    ledger = ClaimLedger(FaceGraph(part))
+    monkeypatch.setattr(module, "_complete_wall_component", lambda *_args, **_kwargs: walls)
+    with pytest.raises(ValueError):
+        _discover_double_d_bores(part, writer=ledger.writer)
+    assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
 
 
 def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
@@ -141,18 +291,77 @@ def _claimed(part):
 
 
 def _assert_wall_role(ledger, record, candidate) -> None:
-    defining = ledger.defining_of(candidate)
     axis = next(at for at, value in enumerate(record.axis) if value)
     low = record.location[axis] - record.depth
     high = record.location[axis]
     metric_tol = record.major_diameter * 1e-3
-    owner = ledger.graph.common_valid_solid(defining)
-    assert owner is not None
     faces = [ledger.graph.face(node) for node in ledger.graph.nodes]
     incidence = edge_face_map(faces, face_edges=FaceEdges())
 
-    def opening_sets(at: float) -> list[frozenset]:
-        found: list[frozenset] = []
+    owners = []
+    for node in ledger.graph.nodes:
+        owner = ledger.graph.common_valid_solid((node,))
+        if owner is not None and owner not in owners:
+            owners.append(owner)
+
+    family_candidates = ledger.candidate_set(FamilyId.DOUBLE_D_BORES).candidates
+    occurrence = next(
+        at for at, known in enumerate(family_candidates) if known is candidate
+    )
+    equal_before = sum(
+        known.record == record for known in family_candidates[:occurrence]
+    )
+
+    def profile_of(wire):
+        edges = wire.edges()
+        lines = [edge for edge in edges if edge.geom_type == GeomType.LINE]
+        arcs = [edge for edge in edges if edge.geom_type == GeomType.CIRCLE]
+        if len(edges) != 4 or len(lines) != 2 or len(arcs) != 2:
+            return None
+        radius = float(arcs[0].radius)
+        centre = arcs[0].arc_center
+        centre_xyz = (float(centre.X), float(centre.Y), float(centre.Z))
+        if any(
+            abs(float(arc.radius) - radius) > metric_tol
+            or (arc.arc_center - centre).length > metric_tol
+            for arc in arcs[1:]
+        ):
+            return None
+        midpoints = []
+        directions = []
+        for line in lines:
+            vertices = line.vertices()
+            if len(vertices) != 2:
+                return None
+            ends = [
+                (float(vertex.X), float(vertex.Y), float(vertex.Z))
+                for vertex in vertices
+            ]
+            delta = tuple(ends[1][i] - ends[0][i] for i in range(3))
+            length = sqrt(sum(value * value for value in delta))
+            directions.append(tuple(value / length for value in delta))
+            midpoints.append(tuple((ends[0][i] + ends[1][i]) / 2 for i in range(3)))
+        direction = directions[0]
+        flat = [0.0, 0.0, 0.0]
+        plane = [at for at in range(3) if at != axis]
+        flat[plane[0]] = -direction[plane[1]]
+        flat[plane[1]] = direction[plane[0]]
+        first = next(value for value in flat if abs(value) > 1e-12)
+        if first < 0:
+            flat = [-value for value in flat]
+        offsets = sorted(
+            sum((point[i] - centre_xyz[i]) * flat[i] for i in range(3))
+            for point in midpoints
+        )
+        across = offsets[1] - offsets[0]
+        expected_chord = 2 * sqrt(radius * radius - (across / 2) ** 2)
+        assert all(abs(float(line.length) - expected_chord) <= metric_tol for line in lines)
+        return centre_xyz, round(2 * radius, 4), round(across, 4), tuple(
+            0.0 if abs(value) < 1e-12 else round(value, 12) for value in flat
+        )
+
+    def opening_sets(owner, at: float):
+        found = []
         for node in ledger.graph.nodes:
             if ledger.graph.common_valid_solid((node,)) is not owner:
                 continue
@@ -183,14 +392,48 @@ def _assert_wall_role(ledger, record, candidate) -> None:
                     ]
                     assert len(others) == 1
                     partners.append(ledger.graph.require_node(others[0]))
-                found.append(frozenset(partners))
+                profile = profile_of(wire)
+                if profile is not None:
+                    found.append((frozenset(partners), wire, profile))
         return found
 
-    low_sets = opening_sets(low)
-    high_sets = opening_sets(high)
+    matching = []
+    for owner in owners:
+        lows = opening_sets(owner, low)
+        highs = opening_sets(owner, high)
+        if (
+            len(lows) == len(highs) == 1
+            and lows[0][2][1:] == highs[0][2][1:]
+            and all(
+                abs(lows[0][2][0][i] - highs[0][2][0][i]) <= metric_tol
+                for i in range(3)
+                if i != axis
+            )
+        ):
+            matching.append((owner, lows[0], highs[0]))
+    assert len(matching) > equal_before
+    owner, low_opening, high_opening = matching[equal_before]
+    low_sets = [low_opening[0]]
+    high_sets = [high_opening[0]]
     assert len(low_sets) == len(high_sets) == 1
     assert low_sets[0] == high_sets[0]
+    centre, diameter, across, flat = high_opening[2]
+    assert record.major_diameter == diameter
+    assert record.across_flats == across
+    assert record.flat_direction == flat
+    assert record.depth == round(high - low, 4)
+    assert record.through is True
+    assert all(abs(record.location[i] - centre[i]) <= metric_tol for i in range(3) if i != axis)
+    owner_solid = ledger.graph._part.solids()[owner.ordinal]
+    prism = Solid.extrude(
+        Face(low_opening[1]),
+        Vector(*(record.axis[i] * record.depth for i in range(3))),
+    )
+    overlap = owner_solid & prism
+    assert overlap is None or float(overlap.volume) <= max(1e-15, float(prism.volume) * 1e-6)
+
     expected = low_sets[0]
+    defining = ledger.defining_of(candidate)
     assert expected == defining
     wall_faces = [ledger.graph.face(node) for node in expected]
     assert [face.geom_type for face in wall_faces].count(GeomType.PLANE) == 2

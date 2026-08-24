@@ -13,7 +13,7 @@ masquerade as one through feature.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import asin, sqrt
+from math import asin, isfinite, sqrt
 
 from build123d import Face, GeomType, Solid, Vector
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -81,12 +81,25 @@ def _valid_wall_chain_facts(
 ) -> bool:
     """Validate the immutable topology facts behind four logical lateral-wall chains."""
 
+    if not all(isfinite(value) for value in (lo, hi, tol)) or tol < 0 or hi <= lo:
+        return False
     if len(chains) != 4 or any(not chain for chain in chains):
         return False
     if sorted(high_assignments) != list(range(4)):
         return False
     flattened = [patch for chain in chains for patch in chain]
     if len(flattened) != len(set(flattened)):
+        return False
+    required = set(flattened)
+    if set(intervals) != required:
+        return False
+    if any(
+        not all(isfinite(value) for value in interval)
+        or interval[1] <= interval[0]
+        for interval in intervals.values()
+    ):
+        return False
+    if any(left not in required or right not in required for left, right in edges):
         return False
     for chain in chains:
         ordered = sorted(intervals[patch] for patch in chain)
