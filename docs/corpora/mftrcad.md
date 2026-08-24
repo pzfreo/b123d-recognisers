@@ -95,7 +95,8 @@ report or Countersinks attribution result existed. The allocation is therefore i
 cannot be rerun, replaced, reused, or fitted. No alternate scanner mode was attempted.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
-its one reveal and transition to consumed regression evidence. The authorised F5c reveal at
+its one reveal and transition to a permanently consumed allocation. Completed reveals become
+regression evidence; an aborted reveal remains consumed and inconclusive. The authorised F5c reveal at
 PR #199 head `8796a86` contained 23 complete models and 69 files with no invalid models. It produced
 10 Flat proposals, 10 accepted Flats and 10 attributed Flats. The selected-artifact digest was
 `a2e045e3d6eb2b1ecd454fcbd12c04aaf5a4fb1ad85519891d8bcc48cd86356b`; this summary is regression
@@ -112,9 +113,10 @@ Fillet faces prove one defining face per Candidate by nonempty-evidence arithmet
 scanner did not reconstruct analytic owner/trim or turned-context geometry; exact role correctness
 remains development-matrix evidence rather than an H1 claim.
 
-The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
-until a semantic child has two independent pre-reveal accepts; after reveal they become regression
-evidence and cannot be fitted. Buckets 23–999 remain unselected; buckets 20, 21, and 22 are the named
+The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
+outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
+reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
+may be fitted. Buckets 23–999 remain unselected; buckets 20, 21, and 22 are the named
 Flat, Fillet, and Countersink allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`

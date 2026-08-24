@@ -847,8 +847,8 @@ Every child follows the evidence gate used for recent recogniser work:
    substrate PR.
 
 MFTRCAD development and holdout partitions must be disjoint by published dataset identity or a
-deterministic manifest rule. Once revealed, a holdout becomes regression evidence; further fitting
-requires a fresh draw.
+deterministic manifest rule. A completed reveal becomes regression evidence; an aborted reveal is
+permanently consumed but remains inconclusive. Further fitting requires a fresh draw.
 
 ## Architecture guards
 
