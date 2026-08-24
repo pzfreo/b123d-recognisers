@@ -311,26 +311,113 @@ untouched holdout; consumed MFTRCAD buckets 10–19 may never be reused.
 
 ### F3 — Immutable blend-collapsed graph views
 
-Add a derived graph view that lets a family analyse logical neighbours as though an eligible blend
-chain were absent while retaining all original nodes and evidence provenance.
+F3a adds a private derived topology without changing recognition. `_blend_view` sits above
+`_adjacency` and `_effective_surfaces`, receives restricted graph/surface queries, and may not import
+families, run orchestration, claims, Candidates, reconciliation or records. The base `FaceGraph`
+remains immutable and complete. F3a promotes F2's existing private same-solid/two-face proof into
+one immutable graph-owned `EdgeOwnershipFact` rather
+than re-walking `Part.solids()` in the view. The fact contains an opaque run-issued `SolidRef`, the
+exact two graph-issued incident `FaceNode`s and a graph-issued `SharedEdgeOccurrenceRef`. That
+adjacency occurrence pairs exactly two `EdgeOccurrenceRef` half-edges, one per incident node; each
+half-edge contains its owning node, face-wire occurrence ordinal/orientation, underlying topological
+edge identity and issuer snapshot. The pair is unordered by endpoint and issued once, so traversal
+cannot duplicate it while periodic seams and repeated oriented occurrences stay distinct. The fact is available
+only for one valid closed manifold solid with exactly two incident faces; open, ambiguous,
+cross-solid, duplicate and nonmanifold ownership are closed refusals. Issuer snapshots are
+revalidated on every read.
 
-Required contract:
+The first closed grammar supports only original **native constant-radius cylindrical** blend
+patches. Sphere, cone, torus, B-spline/Bezier and recovered-unoriented surfaces refuse. Radius is
+finite/positive and compared through `_analytic_surfaces`. Discovery starts from maximal connected
+native-cylinder blend components and maximal native-neutral support regions; it never proposes an
+eligible subset of a refused maximal component. The split-invariant local nominal is
+`L = min(radius, total physical length of each complete spring/terminal group,
+sqrt(aggregate area) of the blend component and each support region)`; seam and degenerate
+representation edges are excluded and every term must be finite and positive. Radius and
+closest-axis-line distance use
+`1e-9 * L + COORD_FLOOR`, while cylinder-axis equality uses
+`1 - abs(dot(left, right)) <= 1e-9`. Edge roles and coverage use exact original shared-edge
+topology, not coordinate proximity. Part/world bounds, rounded record values and fitted or
+recovered radii never set this policy. ADR-0008 owns these constants before development inspection.
+Candidate blend nodes form one nonbranching strip/path in one exact closed manifold solid. Every
+blend patch has exactly one nonempty (possibly split-edge) spring group to each of the same two
+distinct support regions and no other smooth-sided neighbour. A singleton component has internal
+blend degree zero; a multi-patch path has exactly two degree-one ends and every other patch degree
+two. Their spring
+boundaries are legacy-smooth blend-to-support arcs with one uniform proved F2 side, convex or
+concave. Equivalent split supports are regions joined only by native-analytic neutral continuation.
+Internal blend-to-blend cross arcs require legacy smoothness, neutral continuation and equal
+cylinder parameters/radius. Remaining terminal cross arcs are non-spring boundaries from a blend
+end to retained nonblend faces. A terminal group is a maximal connected component of those exact
+edge occurrences plus their incident retained faces; exactly two nonbranching groups must exist and
+are retained as provenance only. Vertex-only contact is never an edge. Every original boundary edge
+must be exactly spring, internal cross, terminal cross or an identified periodic seam. Unaccounted
+edges, partial support, periodic closed chains without two terminal groups, cycles, branch degree
+greater than two, mixed side/radius/body, ambiguous
+ownership, nonmanifold incidence or overlap refuse the complete component. Convex and concave strips
+are both eligible, but never mixed.
 
-- the base `FaceGraph` remains immutable and complete;
-- collapse consumes only neutral arc/surface/boundary facts and emits no feature label;
-- eligible chains require complete smooth-sided support, unambiguous spring/cross boundaries and
-  one-solid ownership;
-- branching, mixed-radius, partial, vertex-only, ambiguous-side and cross-solid chains refuse;
-- a logical arc maps to the exact original arcs and faces it represents;
-- push/pop mutation, hidden global state and destructive face removal are forbidden;
-- families opt into the view explicitly; no global automatic collapse changes all predicates;
-- defining evidence always expands to original nodes before Candidate issuance.
+`BlendCollapseIndex(base, surfaces)` atomically binds both restricted capabilities to the same
+graph-issued run token, then discovers and caches issuer-owned frozen `BlendChain` occurrences once;
+construction itself changes nothing. Empty graphs still validate the binding. Every returned
+surface fact is revalidated against its requested original node. A foreign or mixed capability is a
+construction error, not a geometric refusal. A caller must explicitly pass selected
+same-index chains to `index.view(selected)`. There is no collapse-all default. Selection is validated
+atomically: foreign/copied/mutated/stale chains or overlap in any blend face/spring/cross occurrence
+refuse the whole selection and create no half-view. Otherwise disjoint parallel chains may share the
+same two support regions and remain distinct arc occurrences. Incompatible overlapping support
+partitions refuse the whole deterministic conflict component before any chain is issued; discovery
+order never selects a winner.
 
-The first production consumer should be an existing family with a known blend-obscured fixture,
-but consumer enablement is a separate PR after two independent accepts of the neutral view.
+`CollapsedGraphView` is explicitly a bounded support-bridge abstraction, not replacement topology,
+a `FaceGraph` subclass or a duck type. Frozen
+issuer-owned `LogicalNode` and `LogicalArc` occurrences validate on every cold/warm read. A logical
+node is one selected maximal support region or a singleton retained face, and expands to a nonempty
+immutable set of exact original graph-issued `FaceNode`s. Selected blend faces have no logical node
+and exist only in provenance. Every base edge occurrence whose retained endpoints map to distinct
+logical nodes is projected once; occurrences internal to an aggregated support are stored in that
+node's provenance, while every occurrence incident to a hidden blend node is deliberately absent.
+No synthetic support-terminal incidence is invented. `view(())` therefore has singleton nodes and
+every original base occurrence. Each selected chain adds one synthetic sharp `LogicalArc` between
+its two distinct support regions, with `convex`/`concave` derived from the uniform spring side. It
+claims no kernel curve. `arcs_between` returns a tuple of occurrences, preserving parallel chains
+and any existing support adjacency rather than collapsing them to one pair value.
 
-Exit gate: collapse construction is order-, mirror- and split-invariant; refusing a chain gives the
-same base graph; non-consuming families and all existing goldens remain unchanged.
+`OriginalArcRef` is an issuer-owned unordered original-node pair plus exact graph-owned
+`SharedEdgeOccurrenceRef`. `FrozenProvenance` for a synthetic arc contains both support regions, every hidden blend
+node, and every original spring/internal/terminal arc. Expansion is deterministic and complete.
+Occurrence tuples use the original graph's run-local node/wire/edge order solely as a stable
+presentation order; tuple position and node index carry no geometry, ownership or cross-run
+identity. A
+future consumer must expand the selected logical occurrence, then #192 must explicitly classify the
+original nodes as defining or consulted evidence under the existing evidence semantics before
+Candidate issuance. Complete provenance does not itself imply ownership. Logical handles themselves
+are never sink-compatible, and `_blend_view` cannot issue evidence.
+
+Refused discovery attempts are closed values with named reasons; selecting one is impossible.
+`view(())` is the exact base projection, and a refused component cannot alter retained node identity,
+neighbours, base arc occurrences or caches. Cache surface/radius reads, per-edge roles, component
+classification (including refusal), selection validation and expansion once. Invariance compares
+logical incidence and exact original provenance under an explicit face/edge correspondence—not node
+indices, traversal order or aggregate counts.
+
+F3a lands only this neutral private index/view, ADRs and synthetic/imported-development matrices,
+with zero registry/context/public/output change and no holdout. After two exact-head ACCEPTs, a
+separate F3b issue #192/PR names one existing family, one development fixture, its exact chain-selection
+rule, direct/aggregate injection and defining-versus-consulted classification. F3b alone owns output/reconciliation/corpus
+changes and a predeclared untouched holdout; consumed buckets 10–19 remain forbidden.
+
+Required evidence includes convex/concave single and split strips; ordinary cylinders that must not
+collapse; mixed radius/side, partial, branch, cycle, seam, vertex-only, duplicate support, open,
+cross-solid and nonmanifold refusal; overlap and parallel/existing-arc multiplicity; foreign/copied/
+mutated/stale handles; exact expansion; mirror/rotation/scale/traversal/STEP; refusal identity and
+cache counts. Measure view-not-constructed, constructed-unqueried and queried costs separately.
+
+ADR-0004 owns logical-to-original node/arc provenance and whole-component conflict refusal;
+ADR-0007 owns the one-way module/capability seam and forbids `FaceGraph` substitution; ADR-0008 owns
+the numerical policy above; and ADR-0003 owns expansion and explicit classification as original
+defining/consulted evidence before sink issuance. ADR-0002 and ADR-0009 change only in the separately
+authorised F3b consumer slice.
 
 ### F4 — Free-axis local frames and section records
 

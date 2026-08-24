@@ -361,3 +361,24 @@ offset, centre, closest-axis-line, apex and radius comparisons use
 `1e-9 * local + COORD_FLOOR`; axis comparison uses `1 - abs(dot) <= 1e-9`; cone semi-angle uses
 `1e-9` radians. Kernel-handle identity is not evidence because one surface may be instanced under
 different placements. Record rounding never enters either certificate.
+
+## Amendment (geometry foundation, issue #182)
+
+Native cylindrical blend-chain equality uses one split-invariant local nominal fixed before
+development inspection:
+
+```python
+local = min(
+    radius,
+    *(total_physical_length(group) for group in complete_spring_and_terminal_groups),
+    sqrt(aggregate_blend_area),
+    *(sqrt(aggregate_support_area) for support in the_two_support_regions),
+)
+```
+
+Periodic seams and degenerate representation edges do not contribute to group length; topological
+subdivision changes neither total length nor aggregate area. Every term must be finite and positive.
+Radius and closest-axis-line distance use `1e-9 * local + COORD_FLOOR`; axis equality uses
+`1 - abs(dot(left, right)) <= 1e-9`, through `_analytic_surfaces`. Edge roles and coverage use exact
+graph-issued occurrences and no coordinate tolerance. Part/world bounds, rounded records and
+fitted/recovered radii are forbidden authorities.

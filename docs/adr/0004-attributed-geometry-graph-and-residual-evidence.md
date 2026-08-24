@@ -140,3 +140,20 @@ on every shared edge must agree before the unordered pair receives a proved side
 unproven. Neutral requires equivalent original native analytic surfaces through the shared
 `_analytic_surfaces` authority. Recovered F1 geometry remains unoriented and cannot authorize a
 material-side fact. Candidate evidence continues to name only the original face nodes.
+
+## Amendment (geometry foundation, issue #182)
+
+F3a adds an opt-in immutable support-bridge abstraction above the original graph. `FaceGraph`
+promotes its existing closed-solid/two-face proof into issuer-owned `SolidRef`, paired
+`SharedEdgeOccurrenceRef` and `EdgeOwnershipFact` values. A shared occurrence contains both exact
+oriented face half-edge occurrences and preserves repeated/seam multiplicity; it is never inferred
+from coordinates or traversal indices.
+
+Selected cylindrical blend faces may be hidden from logical incidence, but every logical node and
+arc expands to complete original-node and original-occurrence provenance. The base graph is never
+mutated or substituted. Overlapping discovery components refuse before issuance, and selection is
+atomic. Complete provenance does not imply Candidate ownership: the separately reviewed consumer
+must classify expanded original nodes as defining or consulted evidence before sink issuance.
+Run-local node/wire/edge ordinals provide deterministic tuple presentation only; they are not
+geometric identity and invariance remains defined through explicit original-face/edge
+correspondence.

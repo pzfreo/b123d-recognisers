@@ -24,16 +24,18 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Literal, TypeVar
+from typing import Literal, Protocol, TypeVar
 
+from build123d import Edge
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.GCPnts import GCPnts_AbscissaPoint
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere
 from OCP.gp import gp_Pnt, gp_Vec
 from OCP.ShapeAnalysis import ShapeAnalysis_Surface
-from OCP.TopAbs import TopAbs_EDGE, TopAbs_Orientation
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_Orientation, TopAbs_WIRE
 from OCP.TopExp import TopExp_Explorer
+from OCP.TopoDS import TopoDS
 
 from b123d_recognisers._analytic_surfaces import (
     SurfaceKind,
@@ -156,6 +158,72 @@ class FaceNode:
     index: int
 
 
+@dataclass(frozen=True, eq=False, slots=True)
+class GraphRunToken:
+    """Opaque identity of one graph/run; equality is deliberately object identity."""
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class SolidRef:
+    """Opaque run-local identity of one graph-owned valid solid."""
+
+    ordinal: int
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class EdgeOccurrenceRef:
+    """One exact oriented edge occurrence in one original face wire traversal."""
+
+    owner: FaceNode
+    wire_ordinal: int
+    ordinal: int
+    reversed: bool
+    edge: EdgeLike
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class SharedEdgeOccurrenceRef:
+    """One adjacency occurrence paired from the two original oriented half-edges."""
+
+    endpoints: tuple[FaceNode, FaceNode]
+    halves: tuple[EdgeOccurrenceRef, EdgeOccurrenceRef]
+    edge: EdgeLike
+
+
+@dataclass(frozen=True, slots=True)
+class EdgeOwnershipFact:
+    """Closed same-solid/two-face proof for one original adjacency occurrence."""
+
+    solid: SolidRef
+    occurrence: SharedEdgeOccurrenceRef
+
+
+class FaceGraphQuery(Protocol):
+    @property
+    def run_token(self) -> GraphRunToken: ...
+
+    @property
+    def nodes(self) -> tuple[FaceNode, ...]: ...
+
+    def owns(self, node: FaceNode) -> bool: ...
+
+    def face(self, node: FaceNode) -> FaceLike: ...
+
+    def neighbours(self, node: FaceNode) -> tuple[FaceNode, ...]: ...
+
+    def arc(self, a: FaceNode, b: FaceNode) -> ArcKind | None: ...
+
+    def smooth_side(self, a: FaceNode, b: FaceNode) -> SmoothSide | None: ...
+
+    def shared_occurrences(
+        self, a: FaceNode, b: FaceNode
+    ) -> tuple[SharedEdgeOccurrenceRef, ...]: ...
+
+    def edge_occurrences(self, node: FaceNode) -> tuple[EdgeOccurrenceRef, ...]: ...
+
+    def ownership(self, occurrence: SharedEdgeOccurrenceRef) -> EdgeOwnershipFact | None: ...
+
+
 class FaceGraph:
     """One node per face of one part, for the length of one recognition run.
 
@@ -170,8 +238,10 @@ class FaceGraph:
     gains a field. Not sampled UV geometry or anything a learned recogniser would want. Not a
     subgraph-matching engine; the recognisers stay procedural.
 
-    **It carries no ownership.** Which recogniser claimed which face is an interpretation of
-    these facts, not one of them, and it lives in :class:`b123d_recognisers._claims.ClaimLedger`
+    **It carries no recogniser ownership.** Original solid/edge incidence is a neutral topology
+    fact, now exposed through issuer-owned private references. Which recogniser claimed which face
+    is an interpretation of these facts, not one of them, and it lives in
+    :class:`b123d_recognisers._claims.ClaimLedger`
     instead -- an append-only sidecar built against one graph. Keeping them apart is what lets
     this object stay immutable after construction and be reused across a whole census while
     each run, or a rerun of one recogniser, keeps its own ledger. Analysis Situs writes
@@ -188,6 +258,7 @@ class FaceGraph:
     """
 
     def __init__(self, part, *, face_edges: FaceEdges | None = None) -> None:
+        self._run_token = GraphRunToken()
         self._part = part
         self._faces: list[FaceLike] = list(part.faces())
         self._nodes = tuple(FaceNode(at) for at in range(len(self._faces)))
@@ -205,6 +276,16 @@ class FaceGraph:
         self._closed_solids: frozenset[int] | None = None
         self._smooth_side_edges: dict[tuple[int, int, EdgeLike], _SmoothSideObservation] = {}
         self._smooth_sides: dict[tuple[int, int], SmoothSide | None] = {}
+        self._solid_refs: tuple[SolidRef, ...] | None = None
+        self._issued_solid_refs: dict[SolidRef, int] = {}
+        self._edge_occurrences: dict[FaceNode, tuple[EdgeOccurrenceRef, ...]] = {}
+        self._issued_edge_occurrences: dict[EdgeOccurrenceRef, tuple] = {}
+        self._shared_occurrences: dict[tuple[int, int], tuple[SharedEdgeOccurrenceRef, ...]] = {}
+        self._issued_shared_occurrences: dict[SharedEdgeOccurrenceRef, tuple] = {}
+
+    @property
+    def run_token(self) -> GraphRunToken:
+        return self._run_token
 
     def __len__(self) -> int:
         return len(self._faces)
@@ -460,9 +541,7 @@ class FaceGraph:
         self._smooth_sides[key] = result
         return result
 
-    def _smooth_side_edge(
-        self, a: FaceNode, b: FaceNode, edge: EdgeLike
-    ) -> _SmoothSideObservation:
+    def _smooth_side_edge(self, a: FaceNode, b: FaceNode, edge: EdgeLike) -> _SmoothSideObservation:
         key_a, key_b = self._at(a), self._at(b)
         key = (min(key_a, key_b), max(key_a, key_b), edge)
         cached = self._smooth_side_edges.get(key)
@@ -488,8 +567,7 @@ class FaceGraph:
             neutral: SmoothSide = "neutral"
             return _SmoothSideObservation((neutral,) * len(_SIDE_SAMPLES), neutral)
         samples = tuple(
-            self._smooth_side_sample(a, b, edge, fraction, local)
-            for fraction in _SIDE_SAMPLES
+            self._smooth_side_sample(a, b, edge, fraction, local) for fraction in _SIDE_SAMPLES
         )
         answers = set(samples)
         result: SmoothSide = answers.pop() if len(answers) == 1 else "unproven"
@@ -531,6 +609,8 @@ class FaceGraph:
                     owned[node_at].append(solid_at)
         self._face_solids = tuple(tuple(entries) for entries in owned)
         self._closed_solids = frozenset(closed)
+        self._solid_refs = tuple(SolidRef(at) for at in range(len(solids)))
+        self._issued_solid_refs = {solid: solid.ordinal for solid in self._solid_refs}
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:
@@ -542,9 +622,7 @@ class FaceGraph:
                 return False
             left_parameters = validated_parameters(left_kind, native_primitive(left, left_kind))
             right_parameters = validated_parameters(right_kind, native_primitive(right, right_kind))
-            return equivalent_parameters(
-                left_kind, left_parameters, right_parameters, local=local
-            )
+            return equivalent_parameters(left_kind, left_parameters, right_parameters, local=local)
         except Exception:  # noqa: BLE001 - no analytic continuation proof
             return False
 
@@ -737,6 +815,166 @@ class FaceGraph:
             explorer.Next()
         raise ValueError("shared edge is absent from its original face")
 
+    def _face_edge_occurrences(self, node: FaceNode) -> tuple[EdgeOccurrenceRef, ...]:
+        self._at(node)
+        cached = self._edge_occurrences.get(node)
+        if cached is not None:
+            for occurrence in cached:
+                self._validate_edge_occurrence(occurrence)
+            return cached
+        found: list[EdgeOccurrenceRef] = []
+        wires = TopExp_Explorer(self.face(node).wrapped, TopAbs_WIRE)
+        wire_ordinal = 0
+        while wires.More():
+            edges = TopExp_Explorer(wires.Current(), TopAbs_EDGE)
+            ordinal = 0
+            while edges.More():
+                current = edges.Current()
+                edge = Edge(TopoDS.Edge_s(current))
+                occurrence = EdgeOccurrenceRef(
+                    owner=node,
+                    wire_ordinal=wire_ordinal,
+                    ordinal=ordinal,
+                    reversed=current.Orientation() == TopAbs_Orientation.TopAbs_REVERSED,
+                    edge=edge,
+                )
+                snapshot = (node, wire_ordinal, ordinal, occurrence.reversed, edge)
+                self._issued_edge_occurrences[occurrence] = snapshot
+                found.append(occurrence)
+                ordinal += 1
+                edges.Next()
+            wire_ordinal += 1
+            wires.Next()
+        result = tuple(found)
+        self._edge_occurrences[node] = result
+        return result
+
+    def edge_occurrences(self, node: FaceNode) -> tuple[EdgeOccurrenceRef, ...]:
+        """Every exact oriented edge occurrence in the original face-wire traversal."""
+
+        return self._face_edge_occurrences(node)
+
+    def _validate_edge_occurrence(self, occurrence: EdgeOccurrenceRef) -> None:
+        snapshot = self._issued_edge_occurrences.get(occurrence)
+        if snapshot is None:
+            raise ValueError("edge occurrence was not issued by this graph")
+        owner, wire_ordinal, ordinal, reversed_here, edge = snapshot
+        if (
+            occurrence.owner is not owner
+            or occurrence.wire_ordinal != wire_ordinal
+            or occurrence.ordinal != ordinal
+            or occurrence.reversed is not reversed_here
+            or occurrence.edge is not edge
+            or not self.owns(owner)
+        ):
+            raise ValueError("edge occurrence changed after issuance")
+
+    def _validate_shared_occurrence(self, occurrence: SharedEdgeOccurrenceRef) -> None:
+        snapshot = self._issued_shared_occurrences.get(occurrence)
+        if snapshot is None:
+            raise ValueError("shared-edge occurrence was not issued by this graph")
+        endpoints, halves, edge = snapshot
+        if (
+            occurrence.endpoints != endpoints
+            or any(
+                actual is not expected
+                for actual, expected in zip(occurrence.endpoints, endpoints, strict=True)
+            )
+            or occurrence.halves != halves
+            or any(
+                actual is not expected
+                for actual, expected in zip(occurrence.halves, halves, strict=True)
+            )
+            or occurrence.edge is not edge
+        ):
+            raise ValueError("shared-edge occurrence changed after issuance")
+        for half in halves:
+            self._validate_edge_occurrence(half)
+
+    def shared_occurrences(self, a: FaceNode, b: FaceNode) -> tuple[SharedEdgeOccurrenceRef, ...]:
+        """Exact paired oriented occurrences shared by two original nodes."""
+
+        at_a, at_b = self._at(a), self._at(b)
+        if at_a == at_b:
+            return ()
+        left, right = (a, b) if at_a < at_b else (b, a)
+        key = (min(at_a, at_b), max(at_a, at_b))
+        cached = self._shared_occurrences.get(key)
+        if cached is not None:
+            for occurrence in cached:
+                self._validate_shared_occurrence(occurrence)
+            return cached
+        left_halves = self._face_edge_occurrences(left)
+        right_halves = self._face_edge_occurrences(right)
+        pairs: list[SharedEdgeOccurrenceRef] = []
+        pending_left = list(left_halves)
+        while pending_left:
+            seed = pending_left.pop(0)
+            left_group = [seed]
+            for half in tuple(pending_left):
+                if half.edge.wrapped.IsSame(seed.edge.wrapped):
+                    pending_left.remove(half)
+                    left_group.append(half)
+            right_group = [
+                half for half in right_halves if half.edge.wrapped.IsSame(seed.edge.wrapped)
+            ]
+            candidate_pairs = {
+                left_half: tuple(
+                    right_half
+                    for right_half in right_group
+                    if right_half.reversed is not left_half.reversed
+                )
+                for left_half in left_group
+            }
+            reverse_counts = {
+                right_half: sum(right_half in matches for matches in candidate_pairs.values())
+                for right_half in right_group
+            }
+            if (
+                len(left_group) != len(right_group)
+                or any(len(matches) != 1 for matches in candidate_pairs.values())
+                or any(count != 1 for count in reverse_counts.values())
+            ):
+                continue  # no traversal-independent unique pairing
+            for left_half, matches in candidate_pairs.items():
+                right_half = matches[0]
+                occurrence = SharedEdgeOccurrenceRef(
+                    endpoints=(left, right),
+                    halves=(left_half, right_half),
+                    edge=left_half.edge,
+                )
+                self._issued_shared_occurrences[occurrence] = (
+                    occurrence.endpoints,
+                    occurrence.halves,
+                    occurrence.edge,
+                )
+                pairs.append(occurrence)
+        result = tuple(pairs)
+        self._shared_occurrences[key] = result
+        return result
+
+    def ownership(self, occurrence: SharedEdgeOccurrenceRef) -> EdgeOwnershipFact | None:
+        """Same-valid-solid/two-incident-face proof for one issued adjacency occurrence."""
+
+        self._validate_shared_occurrence(occurrence)
+        a, b = occurrence.endpoints
+        self._build_solid_ownership()
+        assert self._face_solids is not None
+        assert self._closed_solids is not None
+        assert self._solid_refs is not None
+        owned_a = self._face_solids[a.index]
+        owned_b = self._face_solids[b.index]
+        if len(owned_a) != 1 or owned_a != owned_b or owned_a[0] not in self._closed_solids:
+            return None
+        incident = self._edge_face_map().get(occurrence.edge, ())
+        nodes = tuple(self.node_of(face) for face in incident)
+        if len(nodes) != 2 or None in nodes or set(nodes) != {a, b}:
+            return None
+        solid = self._solid_refs[owned_a[0]]
+        if self._issued_solid_refs.get(solid) != solid.ordinal:
+            raise ValueError("solid reference changed after issuance")
+        return EdgeOwnershipFact(solid, occurrence)
+
     def shared_edges(self, a: FaceNode, b: FaceNode) -> tuple[EdgeLike, ...]:
         """The edges along which two faces meet, which an arc's classification will need.
 
@@ -842,7 +1080,7 @@ def neighbours(face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None
 
     seen = {face}
     out = []
-    for edge in (face_edges.of(face) if face_edges is not None else face.edges()):
+    for edge in face_edges.of(face) if face_edges is not None else face.edges():
         for other in edge_faces.get(edge, ()):
             if other in seen:
                 continue
