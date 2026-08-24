@@ -93,10 +93,12 @@ accepts and all mechanical gates. The selection contained 36 model triples (108 
 audit aborted when model `20240116_231044_6899` imported as an invalid B-rep, before a complete
 report or Countersinks attribution result existed. The allocation is therefore inconclusive and
 cannot be rerun, replaced, reused, or fitted. No alternate scanner mode was attempted.
-`F5-BOSSES-H1` is bucket 23 and is `sealed_unrevealed`. It was designated for #209 without opening
-the archive or inspecting bucket-23 membership, geometry, annotations, or outcomes. It remains
-excluded from `unselected`, accepts only its exact allocation acknowledgement, and may be revealed
-once only after the frozen Bosses implementation passes its pre-reveal gates.
+`F5-BOSSES-H1` is bucket 23 and is now `consumed`. It was designated for #209 without opening the
+archive, then revealed exactly once after the frozen implementation passed two independent accepts
+and all mechanical gates. The selection contained 32 model triples (96 files), but the audit
+aborted when model `20240124_001736_209` imported as an invalid B-rep, before a complete report or
+Bosses attribution result existed. The allocation is therefore inconclusive and cannot be rerun,
+replaced, reused, or fitted. No alternate scanner mode was attempted.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become

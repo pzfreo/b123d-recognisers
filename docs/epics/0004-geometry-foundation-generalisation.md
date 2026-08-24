@@ -773,6 +773,33 @@ public facade; no recognition, output, reconciliation, or capability-format chan
 neutral seal. Bucket 23 may be revealed once only after the semantic child passes full gates and two
 independent exact-head accepts; a zero or aborted result still consumes it and remains inconclusive.
 
+The F5f implementation seam is one private `_discover_bosses` core. It preserves the current
+unsorted segment emission order, carries each `BossRecord` with an immutable original segment-face
+snapshot, resolves/deduplicates nodes in graph-owned run order, and validates every complete set
+against one `SolidRef` before the first Candidate is issued. The public facade remains writer-free.
+End-classification partners are transient context and the shared Hole/Boss classifier and its raw
+surface-reader roster stay in place. A mandatory coincident-valid-solids adversary proves two
+equal-valued Boss records retain distinct record identities, Candidate occurrences, defining sets
+and body ownership rather than being value-rematched.
+
+The F5f construction audit found that fusing two touching equal-radius native cylinders is healed by
+OCCT into one cylindrical face, with or without glue, so it cannot prove an axial original-face
+split. The executable matrix instead uses a valid keyway-interrupted solid whose one segment has
+two distinct original circumferential cylinder faces and proves both are defining. A supplied
+real-face aggregation adversary exercises axial union-span grouping but is refused at the body gate
+when its faces come from different solids; it is not misreported as a positive Candidate. A future
+imported valid one-solid axial subdivision must add an exact all-patch regression. Native zero-span
+cylinders and a valid closed nonmanifold Solid likewise could not be constructed: degenerate shapes
+are rejected before Boss discovery, while open Shell and injected ambiguous/body failures exercise
+the nearest non-vacuous aggregate refusal boundaries.
+
+The authorised one-shot F5f reveal at exact pre-reveal PR #211 head `f3e7dd9` selected 32 model
+triples/96 files, then aborted when `20240124_001736_209` imported as an invalid B-rep. It produced
+no complete scanner report and therefore no Bosses attribution or output-retention claim. The
+failure did not authorize an alternate scanner mode, rerun, replacement, predicate change, or role
+change. Bucket 23 is permanently consumed and the holdout result is explicitly inconclusive; the
+exact ownership claim remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
