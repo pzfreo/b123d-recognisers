@@ -8,7 +8,7 @@ from dataclasses import fields, replace
 from inspect import signature
 
 import pytest
-from build123d import Box, Cylinder
+from build123d import Box, Pos
 
 import b123d_recognisers as public
 import b123d_recognisers.result as result_module
@@ -114,19 +114,19 @@ def test_registry_rejects_empty_attribution_contracts(attribution) -> None:
 def test_terminal_validator_enforces_fully_attributed_all_occurrence_promise(
     monkeypatch,
 ) -> None:
-    product = _take_inventory(Box(30, 30, 10) - Cylinder(3, 10))
-    assert product.physical.candidate_set(FamilyId.HOLES).candidates
+    product = _take_inventory(Box(60, 60, 10) + Pos(0, 0, 10) * Box(20, 20, 5))
+    assert product.physical.candidate_set(FamilyId.STEP_LEVELS).candidates
     definitions = tuple(
         replace(
             item,
             attribution=FullyAttributed("adversarially false completeness declaration"),
         )
-        if item.family is FamilyId.HOLES
+        if item.family is FamilyId.STEP_LEVELS
         else item
         for item in PHYSICAL_DEFINITIONS
     )
     monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
-    with pytest.raises(ValueError, match="holes promises complete"):
+    with pytest.raises(ValueError, match="step_levels promises complete"):
         result_module._validate_attribution(product.context, product.physical, product.evidence)
 
 
