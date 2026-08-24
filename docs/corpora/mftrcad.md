@@ -78,6 +78,14 @@ development = buckets 0..9
 holdout     = buckets 10..19
 ```
 
+Named semantic-family allocations are carved out of the remaining partition before their
+implementation begins. `F5-FLATS-H1` is bucket 20 and is `sealed_unrevealed`; it is excluded from
+ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
+`all` closed while named sealed allocations exist, so generic holdout authority cannot reveal one.
+Repository chronology records no earlier unselected scan, which is an attestation about recorded
+runs rather than a claim that external access was impossible. A later authorised family issue owns
+the one reveal and the transition to consumed regression evidence.
+
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression
 evidence and cannot be fitted. Buckets 20–999 are outside both draws. This keeps each draw near one

@@ -23,7 +23,13 @@
     "namespace": "b123d-recognisers:mftrcad:v1",
     "development_buckets": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "holdout_buckets": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-    "unselected_buckets": "20..999",
+    "named_allocations": {
+      "F5-FLATS-H1": {
+        "buckets": [20],
+        "status": "sealed_unrevealed"
+      }
+    },
+    "unselected_buckets": "21..999",
     "chosen_without": [
       "opening a selected STEP model",
       "reading selected annotations",
@@ -34,6 +40,7 @@
   "policy": {
     "development": "May be scanned to find and describe gaps. Counts are diagnostic, not a definition.",
     "holdout": "Keep outcomes sealed until a semantic child has two independent pre-reveal ACCEPT verdicts. Both holdout and all-selection scans require an explicit reveal flag. After reveal it becomes regression evidence and must not be fitted.",
+    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 was designated before any recorded bucket-20 membership or outcome access; repository chronology cannot prove external impossibility.",
     "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
   }
 }

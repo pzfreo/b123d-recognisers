@@ -32,6 +32,60 @@ SELECTION_NAMESPACE: Final = "b123d-recognisers:mftrcad:v1"
 SELECTION_MODULUS: Final = 1000
 DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 10))
 HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
+F5_FLATS_H1: Final = "F5-FLATS-H1"
+SELECTION_POLICY_PATH: Final = (
+    Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class AllocationSpec:
+    policy_id: str
+    selection_token: str
+    buckets: frozenset[int]
+    status: str
+
+
+ALLOCATION_SPECS: Final = (
+    AllocationSpec(F5_FLATS_H1, "f5_flats_h1", frozenset({20}), "sealed_unrevealed"),
+)
+
+
+def _validate_allocation_specs(
+    specs: tuple[AllocationSpec, ...],
+) -> tuple[AllocationSpec, ...]:
+    ids = [spec.policy_id for spec in specs]
+    tokens = [spec.selection_token for spec in specs]
+    if len(ids) != len(set(ids)) or len(tokens) != len(set(tokens)):
+        raise ValueError("allocation policy ids and selection tokens must be unique")
+    if any(
+        not spec.policy_id.replace("-", "").isalnum()
+        or spec.policy_id.upper() != spec.policy_id
+        or not spec.selection_token.isidentifier()
+        or spec.selection_token.lower() != spec.selection_token
+        for spec in specs
+    ):
+        raise ValueError("allocation policy ids or selection tokens are not canonical")
+    if any(spec.status not in {"sealed_unrevealed", "consumed"} for spec in specs):
+        raise ValueError("allocation status is not closed")
+    if any(
+        not spec.buckets
+        or any(
+            not isinstance(bucket, int) or isinstance(bucket, bool) or not 0 <= bucket < 1000
+            for bucket in spec.buckets
+        )
+        for spec in specs
+    ):
+        raise ValueError("allocation buckets must be nonempty exact integers in range")
+    return specs
+
+
+_validate_allocation_specs(ALLOCATION_SPECS)
+NAMED_ALLOCATIONS: Final = {spec.policy_id: spec.buckets for spec in ALLOCATION_SPECS}
+ALLOCATION_SELECTIONS: Final = {
+    spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS
+}
+ALLOCATION_STATUSES: Final = {spec.policy_id: spec.status for spec in ALLOCATION_SPECS}
 
 FEATURE_LABELS: Final = {
     0: "chamfer",
@@ -108,7 +162,10 @@ PACKAGE_FAMILIES_BY_LABEL: Final = {
     26: (),
 }
 
-Selection = Literal["all", "development", "holdout", "unselected"]
+Selection = Literal["all", "development", "holdout", "unselected", "f5_flats_h1"]
+SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
+    ALLOCATION_SELECTIONS
+)
 JsonObject: TypeAlias = dict[str, Any]
 
 
@@ -132,6 +189,62 @@ class AuditInputError(ValueError):
     """A closed external-corpus refusal safe to retain under ``--record-invalid``."""
 
 
+def _validate_selection_policy(value: object) -> JsonObject:
+    """Validate the reviewed manifest against the scanner's complete closed mirror."""
+
+    if not isinstance(value, dict) or value.get("schema_version") != 1:
+        raise ValueError("selection policy must use schema version 1")
+    selection = value.get("selection")
+    if not isinstance(selection, dict):
+        raise ValueError("selection policy must contain a selection object")
+    expected_allocations = {
+        allocation: {
+            "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
+            "status": ALLOCATION_STATUSES[allocation],
+        }
+        for allocation in sorted(NAMED_ALLOCATIONS)
+    }
+    if selection.get("algorithm") != (
+        "big-endian uint64(sha256(utf8(namespace + NUL + model_id))[0:8]) modulo 1000"
+    ):
+        raise ValueError("selection policy algorithm differs from the scanner mirror")
+    if selection.get("namespace") != SELECTION_NAMESPACE:
+        raise ValueError("selection policy namespace differs from the scanner mirror")
+    if selection.get("development_buckets") != sorted(DEVELOPMENT_BUCKETS):
+        raise ValueError("selection policy development buckets differ from the scanner mirror")
+    if selection.get("holdout_buckets") != sorted(HOLDOUT_BUCKETS):
+        raise ValueError("selection policy holdout buckets differ from the scanner mirror")
+    if selection.get("named_allocations") != expected_allocations:
+        raise ValueError("selection policy named allocations differ from the scanner mirror")
+    for allocation, spec in expected_allocations.items():
+        if not allocation.replace("-", "").isalnum() or allocation.upper() != allocation:
+            raise ValueError(f"invalid allocation id {allocation!r}")
+        if spec["status"] not in {"sealed_unrevealed", "consumed"}:
+            raise ValueError(f"invalid allocation status for {allocation!r}")
+        buckets = spec["buckets"]
+        if not buckets or any(
+            not isinstance(bucket, int) or isinstance(bucket, bool) or not 0 <= bucket < 1000
+            for bucket in buckets
+        ):
+            raise ValueError(f"invalid allocation buckets for {allocation!r}")
+    selected = set(DEVELOPMENT_BUCKETS) | set(HOLDOUT_BUCKETS)
+    for buckets in NAMED_ALLOCATIONS.values():
+        if selected & buckets:
+            raise ValueError("selection policy bucket groups overlap")
+        selected.update(buckets)
+    complement = set(range(SELECTION_MODULUS)) - selected
+    if selection.get("unselected_buckets") != f"{min(complement)}..{max(complement)}":
+        raise ValueError("selection policy unselected complement differs from the scanner mirror")
+    if selected | complement != set(range(SELECTION_MODULUS)):
+        raise ValueError("selection policy does not partition the selection modulus")
+    return cast(JsonObject, value)
+
+
+def _selection_policy() -> tuple[JsonObject, str]:
+    raw = SELECTION_POLICY_PATH.read_bytes()
+    return _validate_selection_policy(json.loads(raw)), hashlib.sha256(raw).hexdigest()
+
+
 def selection_bucket(model_id: str) -> int:
     """The stable bucket for *model_id*, independent of its labels and recognition output."""
 
@@ -145,7 +258,38 @@ def selection_of(model_id: str) -> Selection:
         return "development"
     if bucket in HOLDOUT_BUCKETS:
         return "holdout"
+    if bucket in NAMED_ALLOCATIONS[F5_FLATS_H1]:
+        return "f5_flats_h1"
     return "unselected"
+
+
+def _preflight(
+    selection: Selection,
+    *,
+    allow_holdout: bool,
+    reveal_allocations: frozenset[str],
+) -> None:
+    """Authorise a selection before any filesystem or report boundary is crossed."""
+
+    if selection not in SELECTIONS:
+        raise ValueError(f"unknown selection {selection!r}")
+    _selection_policy()
+    unknown = reveal_allocations - NAMED_ALLOCATIONS.keys()
+    if unknown:
+        raise ValueError(f"unknown sealed allocation acknowledgement {sorted(unknown)!r}")
+    if selection == "all":
+        raise ValueError("selection 'all' is closed while sealed allocations exist")
+    if selection == "holdout":
+        if not allow_holdout or reveal_allocations:
+            raise ValueError("selection 'holdout' requires only its explicit holdout authority")
+        return
+    allocation = ALLOCATION_SELECTIONS.get(selection)
+    if allocation is not None:
+        if not allow_holdout and reveal_allocations == frozenset({allocation}):
+            return
+        raise ValueError(f"selection {selection!r} requires exact acknowledgement {allocation!r}")
+    if allow_holdout or reveal_allocations:
+        raise ValueError(f"selection {selection!r} does not accept reveal authority")
 
 
 def _role_model_ids(steps: Path, labels: Path) -> dict[str, set[str]]:
@@ -162,9 +306,21 @@ def _role_model_ids(steps: Path, labels: Path) -> dict[str, set[str]]:
     }
 
 
-def _discover(root: Path, *, selection: Selection, record_invalid: bool) -> Discovery:
+def _discover(
+    root: Path,
+    *,
+    selection: Selection,
+    record_invalid: bool,
+    allow_holdout: bool = False,
+    reveal_allocations: frozenset[str] = frozenset(),
+) -> Discovery:
     """Inventory selected triples before opening them; never let another split block this one."""
 
+    _preflight(
+        selection,
+        allow_holdout=allow_holdout,
+        reveal_allocations=reveal_allocations,
+    )
     steps = root / "steps"
     labels = root / "labels"
     if not steps.is_dir() or not labels.is_dir():
@@ -207,12 +363,22 @@ def discover_models(
     *,
     selection: Selection = "development",
     allow_holdout: bool = False,
+    reveal_allocations: frozenset[str] = frozenset(),
 ) -> tuple[ModelFiles, ...]:
     """Return selected complete triples without exposing sealed holdout inventory by default."""
 
-    if selection in ("holdout", "all") and not allow_holdout:
-        raise ValueError(f"selection {selection!r} can include the sealed holdout")
-    return _discover(root, selection=selection, record_invalid=False).models
+    _preflight(
+        selection,
+        allow_holdout=allow_holdout,
+        reveal_allocations=reveal_allocations,
+    )
+    return _discover(
+        root,
+        selection=selection,
+        record_invalid=False,
+        allow_holdout=allow_holdout,
+        reveal_allocations=reveal_allocations,
+    ).models
 
 
 def _read_object(path: Path) -> JsonObject:
@@ -576,13 +742,20 @@ def audit(
     annotations_only: bool = False,
     record_invalid: bool = False,
     allow_holdout: bool = False,
+    reveal_allocations: frozenset[str] = frozenset(),
 ) -> JsonObject:
-    if selection in ("holdout", "all") and not allow_holdout:
-        raise ValueError(
-            f"selection {selection!r} can include the sealed holdout; pass allow_holdout=True "
-            "only after the authorised two-review reveal gate"
-        )
-    discovery = _discover(root, selection=selection, record_invalid=record_invalid)
+    _preflight(
+        selection,
+        allow_holdout=allow_holdout,
+        reveal_allocations=reveal_allocations,
+    )
+    discovery = _discover(
+        root,
+        selection=selection,
+        record_invalid=record_invalid,
+        allow_holdout=allow_holdout,
+        reveal_allocations=reveal_allocations,
+    )
     models = discovery.models
     reports_list: list[JsonObject] = []
     invalid_models: list[JsonObject] = list(discovery.invalid)
@@ -694,7 +867,7 @@ def audit(
             },
         }
 
-    return {
+    report: JsonObject = {
         "schema_version": 1,
         "dataset": {
             "ref": DATASET_REF,
@@ -728,6 +901,19 @@ def audit(
         "models": list(reports),
         "invalid": invalid_models,
     }
+    allocation = ALLOCATION_SELECTIONS.get(selection)
+    if allocation is not None:
+        policy, policy_digest = _selection_policy()
+        report["sealed_allocation"] = {
+            "id": allocation,
+            "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
+            "policy_status": ALLOCATION_STATUSES[allocation],
+            "selection_policy_schema_version": policy["schema_version"],
+            "selection_namespace": SELECTION_NAMESPACE,
+            "selection_modulus": SELECTION_MODULUS,
+            "selection_policy_sha256": policy_digest,
+        }
+    return report
 
 
 def compact_baseline(report: JsonObject) -> JsonObject:
@@ -790,7 +976,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--selection",
-        choices=("all", "development", "holdout", "unselected"),
+        choices=("all", "development", "holdout", "unselected", "f5_flats_h1"),
         default="development",
         help="stable selection to scan (default: development; holdout must stay sealed)",
     )
@@ -798,6 +984,13 @@ def main() -> None:
         "--annotations-only",
         action="store_true",
         help="validate/summarise annotations without importing STEP or running recognition",
+    )
+    parser.add_argument(
+        "--reveal-allocation",
+        choices=tuple(NAMED_ALLOCATIONS),
+        action="append",
+        default=[],
+        help="explicitly acknowledge one exact named sealed allocation",
     )
     parser.add_argument(
         "--record-invalid",
@@ -828,6 +1021,7 @@ def main() -> None:
         annotations_only=args.annotations_only,
         record_invalid=args.record_invalid,
         allow_holdout=args.reveal_holdout,
+        reveal_allocations=frozenset(args.reveal_allocation),
     )
     if args.check_baseline is not None:
         result = check_compact_baseline(result, args.check_baseline)
