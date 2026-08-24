@@ -263,3 +263,11 @@ partners visited by the shared Hole/Boss end classifier remain transient context
 classifier trace is introduced, and the existing `_classify_end_uncached` surface-reader roster
 does not move. The core may issue original segment nodes but cannot read claims, frozen evidence,
 inventory, reconciliation or another family output.
+
+For F5g, `profiled_bores._discover_double_d_bores` is the sole private writer-enabled Double-D
+core and `_registry` its sole production writer caller. The public facade delegates without a
+writer. The core uses the shared adjacency incidence authority to seed the four lateral wall roles
+from both exact openings and retain their original connected patches; it does not create another
+edge-owner store. Every complete graph-ordered wall set binds to one valid SolidRef before the first
+Candidate is issued. End planes, opening profiles, bbox extrema and void-prism results remain
+consulted, and the core cannot read claims, frozen evidence, inventory or reconciliation.

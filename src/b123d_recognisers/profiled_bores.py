@@ -16,10 +16,14 @@ from dataclasses import dataclass
 from math import asin, sqrt
 
 from build123d import Face, GeomType, Solid, Vector
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 
 
 @dataclass(frozen=True)
@@ -50,6 +54,128 @@ class DoubleDProfile:
     major_diameter: float
     across_flats: float
     flat_direction: tuple[float, float, float]
+
+
+@dataclass(frozen=True, slots=True)
+class _DoubleDBoreProposal:
+    record: DoubleDBore
+    wall_faces: tuple[FaceLike, ...]
+
+
+@dataclass(slots=True)
+class _ProposalContext:
+    opening_faces: dict[int, FaceLike]
+    face_edges: FaceEdges
+    proposals: list[_DoubleDBoreProposal]
+
+
+def _same_shape(left, right) -> bool:
+    return bool(left.wrapped.IsSame(right.wrapped))
+
+
+def _complete_wall_component(
+    part,
+    low_wire,
+    high_wire,
+    low_face,
+    high_face,
+    axis: str,
+    profile: DoubleDProfile,
+    lo: float,
+    hi: float,
+    tol: float,
+    *,
+    face_edges: FaceEdges,
+) -> tuple[FaceLike, ...]:
+    """Return the connected original lateral wall patches between two exact openings.
+
+    Opening edges seed both ends. Traversal never crosses either consulted extremal plane,
+    so middle axial subdivisions are retained while exterior stock reachable only through an
+    end plane is excluded. The four-edge profile grammar has already been proved by
+    :func:`double_d_profile`.
+    """
+
+    faces = list(part.faces())
+    incidence = edge_face_map(faces, face_edges=face_edges)
+
+    def seeds(wire, boundary_face) -> list:
+        found: list = []
+        for edge in wire.edges():
+            partners = [
+                face
+                for face in incidence.get(edge, ())
+                if not _same_shape(face, boundary_face)
+            ]
+            if len(partners) != 1:
+                return []
+            found.append(partners[0])
+        return found
+
+    low_seeds = seeds(low_wire, low_face)
+    high_seeds = seeds(high_wire, high_face)
+    if len(low_seeds) != 4 or len(high_seeds) != 4:
+        return ()
+
+    axis_i = "xyz".index(axis)
+    attr = axis.upper()
+    centre = profile.centre
+    flat_direction = profile.flat_direction
+    metric_tol = max(tol, profile.major_diameter * 1e-3)
+
+    def lateral(face) -> bool:
+        if _same_shape(face, low_face) or _same_shape(face, high_face):
+            return False
+        if face.geom_type not in (GeomType.PLANE, GeomType.CYLINDER):
+            return False
+        bbox = face.bounding_box()
+        face_lo = float(getattr(bbox.min, attr))
+        face_hi = float(getattr(bbox.max, attr))
+        if face_hi - face_lo <= 1e-9 or face_lo < lo - metric_tol or face_hi > hi + metric_tol:
+            return False
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if face.geom_type == GeomType.PLANE:
+            plane = surface.Plane()
+            normal = plane.Axis().Direction()
+            values = (normal.X(), normal.Y(), normal.Z())
+            if abs(abs(sum(values[i] * flat_direction[i] for i in range(3))) - 1.0) > 1e-4:
+                return False
+            location = plane.Location()
+            offset = abs(
+                sum(
+                    ((location.X(), location.Y(), location.Z())[i] - centre[i])
+                    * flat_direction[i]
+                    for i in range(3)
+                )
+            )
+            return abs(offset - profile.across_flats / 2.0) <= metric_tol
+        cylinder = surface.Cylinder()
+        direction = cylinder.Axis().Direction()
+        components = (direction.X(), direction.Y(), direction.Z())
+        if abs(abs(components[axis_i]) - 1.0) > 1e-4:
+            return False
+        location = cylinder.Axis().Location()
+        axis_point = (location.X(), location.Y(), location.Z())
+        return abs(cylinder.Radius() - profile.major_diameter / 2.0) <= metric_tol and all(
+            abs(axis_point[i] - centre[i]) <= metric_tol for i in range(3) if i != axis_i
+        )
+
+    pending = list(low_seeds)
+    component: list = []
+    while pending:
+        face = pending.pop()
+        if any(_same_shape(face, known) for known in component):
+            continue
+        if not lateral(face):
+            return ()
+        component.append(face)
+        for edge in face_edges.of(face):
+            for other in incidence.get(edge, ()):
+                if lateral(other) and not any(_same_shape(other, known) for known in component):
+                    pending.append(other)
+
+    if not all(any(_same_shape(seed, face) for face in component) for seed in high_seeds):
+        return ()
+    return tuple(face for face in faces if any(_same_shape(face, wall) for wall in component))
 
 
 def principal_boundary_plane(face, bbox) -> tuple[str, tuple[str, str], float] | None:
@@ -204,7 +330,12 @@ def _profiles_correspond(
 
 
 def double_d_bores_from_openings(
-    openings: list[tuple[str, float, DoubleDProfile, object]], bbox, *, part, tol: float
+    openings: list[tuple[str, float, DoubleDProfile, object]],
+    bbox,
+    *,
+    part,
+    tol: float,
+    proposal_context: _ProposalContext | None = None,
 ) -> list[DoubleDBore]:
     """Pair extremal openings and prove their entire profile prism is void.
 
@@ -223,16 +354,17 @@ def double_d_bores_from_openings(
         in_plane = [candidate for candidate in "xyz" if candidate != axis]
         plane_axes = (in_plane[0], in_plane[1])
         for _lo_at, low_profile, low_wire in low:
-            high_profile = next(
+            high_match = next(
                 (
-                    profile
-                    for _hi_at, profile, _high_wire in high
+                    (profile, high_wire)
+                    for _hi_at, profile, high_wire in high
                     if _profiles_correspond(profile, low_profile, plane_axes, tol=tol)
                 ),
                 None,
             )
-            if high_profile is None:
+            if high_match is None:
                 continue
+            high_profile, high_wire = high_match
             axis_vector = (
                 1.0 if axis == "x" else 0.0,
                 1.0 if axis == "y" else 0.0,
@@ -254,25 +386,51 @@ def double_d_bores_from_openings(
                 continue
             location = list(high_profile.centre)
             location["xyz".index(axis)] = hi
-            out.append(
-                DoubleDBore(
-                    axis=axis_vector,
-                    location=(location[0], location[1], location[2]),
-                    major_diameter=high_profile.major_diameter,
-                    across_flats=high_profile.across_flats,
-                    depth=round(hi - lo, 4),
-                    through=True,
-                    flat_direction=high_profile.flat_direction,
-                )
+            record = DoubleDBore(
+                axis=axis_vector,
+                location=(location[0], location[1], location[2]),
+                major_diameter=high_profile.major_diameter,
+                across_flats=high_profile.across_flats,
+                depth=round(hi - lo, 4),
+                through=True,
+                flat_direction=high_profile.flat_direction,
             )
+            out.append(record)
+            if proposal_context is not None:
+                low_face = proposal_context.opening_faces.get(id(low_wire))
+                high_face = proposal_context.opening_faces.get(id(high_wire))
+                if low_face is None or high_face is None:
+                    proposal_context.proposals.append(_DoubleDBoreProposal(record, ()))
+                else:
+                    walls = _complete_wall_component(
+                        part,
+                        low_wire,
+                        high_wire,
+                        low_face,
+                        high_face,
+                        axis,
+                        low_profile,
+                        lo,
+                        hi,
+                        tol,
+                        face_edges=proposal_context.face_edges,
+                    )
+                    proposal_context.proposals.append(_DoubleDBoreProposal(record, walls))
     return sorted(out, key=lambda bore: (bore.axis, bore.location, bore.major_diameter))
 
 
-def _recognise_double_d_bores_one(part, *, tol: float) -> list[DoubleDBore]:
+def _recognise_double_d_bores_one(
+    part,
+    *,
+    tol: float,
+    face_edges: FaceEdges | None = None,
+    proposals: list[_DoubleDBoreProposal] | None = None,
+) -> list[DoubleDBore]:
     """Recognise double-D bores within one solid's own boundary."""
     bbox = part.bounding_box()
     scan_tol = max(tol, part_scale(bbox) * 1e-5)
     openings: list[tuple[str, float, DoubleDProfile, object]] = []
+    opening_faces: dict[int, FaceLike] = {}
     for face in part.faces():
         boundary = principal_boundary_plane(face, bbox)
         if boundary is None:
@@ -282,7 +440,17 @@ def _recognise_double_d_bores_one(part, *, tol: float) -> list[DoubleDBore]:
             profile = double_d_profile(wire, plane_axes, tol=scan_tol)
             if profile is not None:
                 openings.append((axis, at, profile, wire))
-    return double_d_bores_from_openings(openings, bbox, part=part, tol=scan_tol)
+                opening_faces[id(wire)] = face
+    context = None
+    if proposals is not None:
+        context = _ProposalContext(opening_faces, face_edges or FaceEdges(), proposals)
+    return double_d_bores_from_openings(
+        openings,
+        bbox,
+        part=part,
+        tol=scan_tol,
+        proposal_context=context,
+    )
 
 
 def recognise_double_d_bores(part: Part, *, tol: float = 1e-5) -> list[DoubleDBore]:
@@ -293,10 +461,51 @@ def recognise_double_d_bores(part: Part, *, tol: float = 1e-5) -> list[DoubleDBo
     separate proof before it can be called a bore. Each solid owns its own extrema so two
     components in an assembly cannot be paired into one fictitious bore across their gap.
     """
+    return _discover_double_d_bores(part, tol=tol)
+
+
+def _discover_double_d_bores(
+    part: Part,
+    *,
+    tol: float = 1e-5,
+    face_edges: FaceEdges | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[DoubleDBore]:
+    """Shared public/aggregate discovery with optional write-only wall evidence."""
+
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    bores = [bore for solid in sources for bore in _recognise_double_d_bores_one(solid, tol=tol)]
-    return sorted(bores, key=lambda bore: (bore.axis, bore.location, bore.major_diameter))
+    proposals: list[_DoubleDBoreProposal] | None = [] if writer is not None else None
+    bores = [
+        bore
+        for solid in sources
+        for bore in _recognise_double_d_bores_one(
+            solid,
+            tol=tol,
+            face_edges=face_edges,
+            proposals=proposals,
+        )
+    ]
+    ordered = sorted(bores, key=lambda bore: (bore.axis, bore.location, bore.major_diameter))
+    if writer is None:
+        return ordered
+
+    assert proposals is not None
+    by_occurrence = {id(proposal.record): proposal for proposal in proposals}
+    ordered_proposals = [by_occurrence[id(record)] for record in ordered]
+    pending: list[tuple[DoubleDBore, tuple]] = []
+    for proposal in ordered_proposals:
+        if not proposal.wall_faces:
+            raise ValueError("Double-D bore has no complete original wall component")
+        resolved = tuple(writer.graph.require_node(face) for face in proposal.wall_faces)
+        node_ids = {id(node) for node in resolved}
+        nodes = tuple(node for node in writer.graph.nodes if id(node) in node_ids)
+        if not nodes or writer.graph.common_valid_solid(nodes) is None:
+            raise ValueError("Double-D wall evidence has no one valid owner solid")
+        pending.append((proposal.record, nodes))
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.DOUBLE_D_BORES)
+    return ordered
 
 
 def read_double_d_tool(obj, *, tol: float = 1e-5) -> tuple:

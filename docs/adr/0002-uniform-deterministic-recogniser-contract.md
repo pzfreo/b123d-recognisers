@@ -114,3 +114,10 @@ same-run Candidate is identity-bound to that returned occurrence and contains th
 graph-deduplicated set of original external cylinder faces in its producing segment. Every pending
 set binds to one valid solid before the first publication; end-classification faces remain transient
 consulted context. Equal-valued Boss records from distinct valid bodies remain distinct occurrences.
+
+`recognise_double_d_bores` likewise delegates to one private optional-writer core without changing
+its public signature or geometry-only behavior. On valid issuable solids, writer-free and aggregate
+runs preserve record type, value and current sorted order; each aggregate Candidate is identity-bound
+to the exact returned occurrence. The defining set contains every original planar/cylindrical
+lateral wall patch in the proven constant Double-D extrusion. Extremal stock planes, opening wires,
+per-solid extrema and the empty-prism boolean remain consulted throughness/serialization facts.

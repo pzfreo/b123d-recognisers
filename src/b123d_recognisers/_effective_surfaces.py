@@ -287,6 +287,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar profile face gate",
     ),
+    "profiled_bores:lateral:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "Double-D lateral wall component plane/cylinder gate",
+    ),
     "profiled_bores:double_d_profile:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "line boundary edge gate",
