@@ -655,11 +655,12 @@ def validate_definitions(
             raise ValueError("physical definitions require an attribution disposition")
         if (
             isinstance(definition.attribution, FullyAttributed)
-            and not definition.attribution.proof_contract
+            and not definition.attribution.proof_contract.strip()
         ):
             raise ValueError("fully-attributed proof contracts must be non-empty")
         if isinstance(definition.attribution, IncompleteAttribution) and (
-            not definition.attribution.reason or not definition.attribution.follow_up_or_exclusion
+            not definition.attribution.reason.strip()
+            or not definition.attribution.follow_up_or_exclusion.strip()
         ):
             raise ValueError("incomplete-attribution reasons and dispositions must be non-empty")
         if definition.applicable not in {always, prismatic}:

@@ -7,14 +7,25 @@ import ast
 import sys
 from pathlib import Path
 
-from build123d import Box, Cylinder, Pos
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Cylinder,
+    Plane,
+    Pos,
+    RegularPolygon,
+    Rot,
+    extrude,
+)
 
 from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
-from per_face_scan import inventory_attribution  # noqa: E402
+from per_face_scan import _scan_part, inventory_attribution  # noqa: E402
 
 
 def test_generic_attribution_report_covers_all_physical_families_from_one_product() -> None:
@@ -28,7 +39,8 @@ def test_generic_attribution_report_covers_all_physical_families_from_one_produc
             "records",
             "candidates",
             "accepted",
-            "attributed",
+            "attributed_candidates",
+            "attributed_accepted",
             "defining_face_occurrences",
             "distinct_defining_faces",
             "status",
@@ -36,8 +48,14 @@ def test_generic_attribution_report_covers_all_physical_families_from_one_produc
         }
         for row in report.values()
     )
-    assert all(row["records"] == row["candidates"] for row in report.values())
-    assert all(row["attributed"] <= row["accepted"] for row in report.values())
+    assert all(row["attributed_candidates"] <= row["candidates"] for row in report.values())
+    assert all(row["attributed_accepted"] <= row["accepted"] for row in report.values())
+    assert all(
+        report[definition.family.value]["attributed_candidates"]
+        == report[definition.family.value]["candidates"]
+        for definition in PHYSICAL_DEFINITIONS
+        if isinstance(definition.attribution, FullyAttributed)
+    )
     assert report[FamilyId.HOLES.value]["status"] == "incomplete_attribution"
 
 
@@ -49,7 +67,31 @@ def test_generic_report_counts_partial_attribution_without_calling_it_complete()
     slots = report[FamilyId.SLOTS.value]
 
     assert slots["status"] == "incomplete_attribution"
-    assert slots["attributed"] <= slots["accepted"]
+    assert slots["attributed_candidates"] <= slots["candidates"]
+
+
+def test_generic_report_keeps_rejected_physical_attribution_separate() -> None:
+    wedge = 5.657
+    part = Box(60, 40, 12) - Pos(-20, 20, 6) * Rot(45, 0, 0) * Box(30, wedge, wedge)
+    chamfers = inventory_attribution(_take_inventory(part))[FamilyId.CHAMFERS.value]
+
+    assert chamfers["candidates"] == chamfers["attributed_candidates"] == 1
+    assert chamfers["accepted"] == chamfers["attributed_accepted"] == 0
+    claimed, _records, _covered, _generic = _scan_part(part, [0] * len(part.faces()))
+    assert "Chamfer" not in claimed
+
+
+def test_generic_report_distinguishes_projected_records_from_inventory() -> None:
+    with BuildPart() as bore:
+        with BuildSketch(Plane.XY):
+            RegularPolygon(9, 6)
+        extrude(amount=40, both=True)
+    product = _take_inventory(Box(60, 40, 20) - bore.part, rotational=True)
+    passages = inventory_attribution(product)[FamilyId.PASSAGES.value]
+
+    assert passages["records"] == 0
+    assert passages["candidates"] == passages["accepted"] == 1
+    assert passages["attributed_candidates"] == passages["attributed_accepted"] == 1
 
 
 def test_per_face_tool_has_one_inventory_path_and_no_recogniser_rerun() -> None:

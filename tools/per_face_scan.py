@@ -71,18 +71,24 @@ def inventory_attribution(product):
     for definition in PHYSICAL_DEFINITIONS:
         proposed = product.physical.candidate_set(definition.family).candidates
         accepted = product.accepted.candidate_set(definition.family).candidates
-        attributed = tuple(
+        attributed_candidates = tuple(
+            candidate for candidate in proposed if product.evidence.defining_of(candidate)
+        )
+        attributed_accepted = tuple(
             candidate for candidate in accepted if product.evidence.defining_of(candidate)
         )
         defining = tuple(
-            node for candidate in attributed for node in product.evidence.defining_of(candidate)
+            node
+            for candidate in attributed_candidates
+            for node in product.evidence.defining_of(candidate)
         )
         disposition = definition.attribution
         result[definition.family.value] = {
-            "records": len(proposed),
+            "records": len(getattr(product.result, definition.result_field)),
             "candidates": len(proposed),
             "accepted": len(accepted),
-            "attributed": len(attributed),
+            "attributed_candidates": len(attributed_candidates),
+            "attributed_accepted": len(attributed_accepted),
             "defining_face_occurrences": len(defining),
             "distinct_defining_faces": len(set(defining)),
             "status": (
@@ -189,7 +195,8 @@ def scan(corpus: Path):
                     "records": 0,
                     "candidates": 0,
                     "accepted": 0,
-                    "attributed": 0,
+                    "attributed_candidates": 0,
+                    "attributed_accepted": 0,
                     "defining_face_occurrences": 0,
                     "distinct_defining_faces": 0,
                     "status": row["status"],
@@ -202,7 +209,8 @@ def scan(corpus: Path):
                 "records",
                 "candidates",
                 "accepted",
-                "attributed",
+                "attributed_candidates",
+                "attributed_accepted",
                 "defining_face_occurrences",
                 "distinct_defining_faces",
             ):
@@ -233,7 +241,8 @@ def report(result) -> str:
 
     lines.append("PER-FAMILY -- frozen inventory attribution and corpus labels")
     lines.append(
-        f"{'family':<24}{'records':>8}{'accepted':>10}{'attributed':>12}"
+        f"{'family':<24}{'records':>8}{'candidates':>12}{'accepted':>10}"
+        f"{'attr cand':>11}{'attr acc':>10}"
         f"{'faces':>7}  status / labels"
     )
     for family in sorted(result["records"]):
@@ -243,7 +252,8 @@ def report(result) -> str:
         registry_family = registry_family_for[family]
         row = result["attribution"][registry_family]
         lines.append(
-            f"{family:<24}{row['records']:>8}{row['accepted']:>10}{row['attributed']:>12}"
+            f"{family:<24}{row['records']:>8}{row['candidates']:>12}{row['accepted']:>10}"
+            f"{row['attributed_candidates']:>11}{row['attributed_accepted']:>10}"
             f"{n:>7}  {row['status']} / {dist or '-'}"
         )
 

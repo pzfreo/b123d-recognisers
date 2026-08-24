@@ -89,8 +89,11 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
     "attribution",
     [
         FullyAttributed(""),
+        FullyAttributed("   "),
         IncompleteAttribution("", "follow-up"),
+        IncompleteAttribution("   ", "follow-up"),
         IncompleteAttribution("reason", ""),
+        IncompleteAttribution("reason", "   "),
     ],
 )
 def test_registry_rejects_empty_attribution_contracts(attribution) -> None:
@@ -115,9 +118,7 @@ def test_terminal_validator_enforces_fully_attributed_all_occurrence_promise(
     )
     monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
     with pytest.raises(ValueError, match="pads promises complete"):
-        result_module._validate_attribution(
-            product.context, product.physical, product.evidence
-        )
+        result_module._validate_attribution(product.context, product.physical, product.evidence)
 
 
 def test_terminal_validator_rechecks_partial_family_body_provenance(monkeypatch) -> None:
@@ -127,9 +128,16 @@ def test_terminal_validator_rechecks_partial_family_body_provenance(monkeypatch)
     monkeypatch.setattr(product.context.graph, "common_valid_solid", lambda nodes: None)
 
     with pytest.raises(ValueError, match="lost its common valid solid"):
-        result_module._validate_attribution(
-            product.context, product.physical, product.evidence
-        )
+        result_module._validate_attribution(product.context, product.physical, product.evidence)
+
+
+def test_terminal_validator_reads_issuer_snapshots_not_mutated_candidate_state() -> None:
+    product = _take_inventory(Box(30, 30, 10) - Box(12, 5, 20))
+    slot = product.physical.candidate_set(FamilyId.SLOTS).candidates[0]
+    object.__setattr__(slot.evidence, "defining", frozenset())
+
+    with pytest.raises(ValueError, match="no longer matches its issued state"):
+        result_module._validate_attribution(product.context, product.physical, product.evidence)
 
 
 def test_registry_dependencies_are_explicit_and_restricted() -> None:
@@ -159,9 +167,7 @@ def test_registry_rejects_wrong_typed_dependency_values() -> None:
     with pytest.raises(TypeError, match="wrong record type"):
         completed.records(FamilyId.HOLES, public.HoleRecord)
 
-    accepted = AcceptedInputs.restricted(
-        (FamilyId.HOLES,), {FamilyId.HOLES: (object(),)}
-    )
+    accepted = AcceptedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: (object(),)})
     with pytest.raises(TypeError, match="wrong record type"):
         accepted.records(FamilyId.HOLES, public.HoleRecord)
 
@@ -175,9 +181,7 @@ def test_registry_distinguishes_an_empty_dependency_from_one_not_run() -> None:
 
 
 def test_inapplicable_family_is_not_published_as_a_completed_dependency(monkeypatch) -> None:
-    turned = next(
-        item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.TURNED_STEPS
-    )
+    turned = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.TURNED_STEPS)
     definitions = tuple(
         replace(item, applicable=prismatic) if item is turned else item
         for item in PHYSICAL_DEFINITIONS
@@ -293,9 +297,7 @@ def test_registry_validation_rejects_duplicate_missing_and_late_dependencies() -
     with pytest.raises(ValueError, match="reviewed neutral predicate"):
         validate_definitions(unreviewed_applicability, DERIVED_DEFINITIONS)
     unreviewed_projection = tuple(
-        replace(item, projected=lambda context: True)
-        if item.family is FamilyId.BOSSES
-        else item
+        replace(item, projected=lambda context: True) if item.family is FamilyId.BOSSES else item
         for item in PHYSICAL_DEFINITIONS
     )
     with pytest.raises(ValueError, match="projection must use a reviewed neutral predicate"):
@@ -314,8 +316,7 @@ def test_registry_validation_rejects_incomplete_physical_contract_metadata() -> 
         validate_definitions(duplicate_field, DERIVED_DEFINITIONS)
 
     missing_record_contract = tuple(
-        replace(item, record_types=()) if item is first else item
-        for item in PHYSICAL_DEFINITIONS
+        replace(item, record_types=()) if item is first else item for item in PHYSICAL_DEFINITIONS
     )
     with pytest.raises(ValueError, match="record and public contracts"):
         validate_definitions(missing_record_contract, DERIVED_DEFINITIONS)
