@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import sys
+from copy import deepcopy
 from pathlib import Path, PureWindowsPath
 
 import pytest
@@ -203,11 +204,14 @@ def test_named_allocation_requires_exact_nontransferable_authority(tmp_path: Pat
         annotations_only=True,
         reveal_allocations=frozenset({F5_FLATS_H1}),
     )
-    assert report["sealed_allocation"] == {
-        "id": F5_FLATS_H1,
-        "buckets": [20],
-        "policy_status": "sealed_unrevealed",
-    }
+    allocation = report["sealed_allocation"]
+    assert allocation["id"] == F5_FLATS_H1
+    assert allocation["buckets"] == [20]
+    assert allocation["policy_status"] == "sealed_unrevealed"
+    assert allocation["selection_policy_schema_version"] == 1
+    assert allocation["selection_namespace"] == audit_module.SELECTION_NAMESPACE
+    assert allocation["selection_modulus"] == audit_module.SELECTION_MODULUS
+    assert len(allocation["selection_policy_sha256"]) == 64
 
 
 def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path) -> None:
@@ -245,6 +249,53 @@ def test_unknown_allocation_acknowledgement_fails_closed(tmp_path: Path) -> None
             tmp_path / "must-not-be-read",
             reveal_allocations=frozenset({"F5-UNKNOWN-H1"}),
         )
+
+
+@pytest.mark.parametrize("entry", ["_discover", "discover_models", "audit"])
+def test_unknown_selection_fails_before_touching_the_root(tmp_path: Path, entry: str) -> None:
+    root = tmp_path / "must-not-be-read"
+    call = getattr(audit_module, entry)
+    kwargs = {"selection": "unknown"}
+    if entry == "_discover":
+        kwargs["record_invalid"] = False
+    with pytest.raises(ValueError, match="unknown selection 'unknown'"):
+        call(root, **kwargs)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda policy: policy.update(schema_version=2), "schema version 1"),
+        (
+            lambda policy: policy["selection"].update(namespace="wrong"),
+            "namespace differs",
+        ),
+        (
+            lambda policy: policy["selection"]["named_allocations"].update(
+                {"F5-EXTRA-H1": {"buckets": [21], "status": "sealed_unrevealed"}}
+            ),
+            "named allocations differ",
+        ),
+        (
+            lambda policy: policy["selection"]["named_allocations"][F5_FLATS_H1].update(
+                status="unknown"
+            ),
+            "named allocations differ",
+        ),
+        (
+            lambda policy: policy["selection"].update(unselected_buckets="20..999"),
+            "unselected complement differs",
+        ),
+    ],
+)
+def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
+    policy = json.loads(
+        (ROOT / "docs/corpora/mftrcad-selection.json").read_text(encoding="utf-8")
+    )
+    changed = deepcopy(policy)
+    mutate(changed)
+    with pytest.raises(ValueError, match=message):
+        audit_module._validate_selection_policy(changed)
 
 
 def test_unselected_excludes_a_named_allocation(tmp_path: Path) -> None:

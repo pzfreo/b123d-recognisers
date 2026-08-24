@@ -35,6 +35,10 @@ HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
 F5_FLATS_H1: Final = "F5-FLATS-H1"
 NAMED_ALLOCATIONS: Final = {F5_FLATS_H1: frozenset({20})}
 ALLOCATION_SELECTIONS: Final = {"f5_flats_h1": F5_FLATS_H1}
+ALLOCATION_STATUSES: Final = {F5_FLATS_H1: "sealed_unrevealed"}
+SELECTION_POLICY_PATH: Final = (
+    Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
+)
 
 FEATURE_LABELS: Final = {
     0: "chamfer",
@@ -112,6 +116,9 @@ PACKAGE_FAMILIES_BY_LABEL: Final = {
 }
 
 Selection = Literal["all", "development", "holdout", "unselected", "f5_flats_h1"]
+SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
+    ALLOCATION_SELECTIONS
+)
 JsonObject: TypeAlias = dict[str, Any]
 
 
@@ -133,6 +140,62 @@ class Discovery:
 
 class AuditInputError(ValueError):
     """A closed external-corpus refusal safe to retain under ``--record-invalid``."""
+
+
+def _validate_selection_policy(value: object) -> JsonObject:
+    """Validate the reviewed manifest against the scanner's complete closed mirror."""
+
+    if not isinstance(value, dict) or value.get("schema_version") != 1:
+        raise ValueError("selection policy must use schema version 1")
+    selection = value.get("selection")
+    if not isinstance(selection, dict):
+        raise ValueError("selection policy must contain a selection object")
+    expected_allocations = {
+        allocation: {
+            "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
+            "status": ALLOCATION_STATUSES[allocation],
+        }
+        for allocation in sorted(NAMED_ALLOCATIONS)
+    }
+    if selection.get("algorithm") != (
+        "big-endian uint64(sha256(utf8(namespace + NUL + model_id))[0:8]) modulo 1000"
+    ):
+        raise ValueError("selection policy algorithm differs from the scanner mirror")
+    if selection.get("namespace") != SELECTION_NAMESPACE:
+        raise ValueError("selection policy namespace differs from the scanner mirror")
+    if selection.get("development_buckets") != sorted(DEVELOPMENT_BUCKETS):
+        raise ValueError("selection policy development buckets differ from the scanner mirror")
+    if selection.get("holdout_buckets") != sorted(HOLDOUT_BUCKETS):
+        raise ValueError("selection policy holdout buckets differ from the scanner mirror")
+    if selection.get("named_allocations") != expected_allocations:
+        raise ValueError("selection policy named allocations differ from the scanner mirror")
+    for allocation, spec in expected_allocations.items():
+        if not allocation.replace("-", "").isalnum() or allocation.upper() != allocation:
+            raise ValueError(f"invalid allocation id {allocation!r}")
+        if spec["status"] not in {"sealed_unrevealed", "consumed"}:
+            raise ValueError(f"invalid allocation status for {allocation!r}")
+        buckets = spec["buckets"]
+        if not buckets or any(
+            not isinstance(bucket, int) or isinstance(bucket, bool) or not 0 <= bucket < 1000
+            for bucket in buckets
+        ):
+            raise ValueError(f"invalid allocation buckets for {allocation!r}")
+    selected = set(DEVELOPMENT_BUCKETS) | set(HOLDOUT_BUCKETS)
+    for buckets in NAMED_ALLOCATIONS.values():
+        if selected & buckets:
+            raise ValueError("selection policy bucket groups overlap")
+        selected.update(buckets)
+    complement = set(range(SELECTION_MODULUS)) - selected
+    if selection.get("unselected_buckets") != f"{min(complement)}..{max(complement)}":
+        raise ValueError("selection policy unselected complement differs from the scanner mirror")
+    if selected | complement != set(range(SELECTION_MODULUS)):
+        raise ValueError("selection policy does not partition the selection modulus")
+    return cast(JsonObject, value)
+
+
+def _selection_policy() -> tuple[JsonObject, str]:
+    raw = SELECTION_POLICY_PATH.read_bytes()
+    return _validate_selection_policy(json.loads(raw)), hashlib.sha256(raw).hexdigest()
 
 
 def selection_bucket(model_id: str) -> int:
@@ -161,6 +224,9 @@ def _preflight(
 ) -> None:
     """Authorise a selection before any filesystem or report boundary is crossed."""
 
+    if selection not in SELECTIONS:
+        raise ValueError(f"unknown selection {selection!r}")
+    _selection_policy()
     unknown = reveal_allocations - NAMED_ALLOCATIONS.keys()
     if unknown:
         raise ValueError(f"unknown sealed allocation acknowledgement {sorted(unknown)!r}")
@@ -790,10 +856,15 @@ def audit(
     }
     allocation = ALLOCATION_SELECTIONS.get(selection)
     if allocation is not None:
+        policy, policy_digest = _selection_policy()
         report["sealed_allocation"] = {
             "id": allocation,
             "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
-            "policy_status": "sealed_unrevealed",
+            "policy_status": ALLOCATION_STATUSES[allocation],
+            "selection_policy_schema_version": policy["schema_version"],
+            "selection_namespace": SELECTION_NAMESPACE,
+            "selection_modulus": SELECTION_MODULUS,
+            "selection_policy_sha256": policy_digest,
         }
     return report
 
