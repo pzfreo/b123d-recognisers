@@ -549,6 +549,44 @@ def test_foreign_graph_copied_node_and_late_body_failure_are_atomic(monkeypatch)
     assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
 
+def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> None:
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = feature_module._channel_proposals_one
+    stale_part = Pos(1, 0, 0) * build_fixture()
+    stale_graph = FaceGraph(stale_part)
+    stale = original(stale_part, None, stale_graph)[0].low_wall
+
+    def translated(*args, **kwargs):
+        proposals = original(*args, **kwargs)
+        return [replace(proposals[0], low_wall=stale)]
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", translated)
+    with pytest.raises(ValueError):
+        _discover_channels(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", original)
+    compound = Compound([Pos(-80, 0, 0) * build_fixture(), Pos(80, 0, 0) * build_fixture()])
+    ledger = ClaimLedger(FaceGraph(compound))
+    solids = list(compound.solids())
+    proposals = [original(solid, None, ledger.graph)[0] for solid in solids]
+    calls = 0
+
+    def mixed(*_args, **_kwargs):
+        nonlocal calls
+        proposal = proposals[calls]
+        calls += 1
+        if calls == 1:
+            proposal = replace(proposal, high_wall=proposals[1].high_wall)
+        return [proposal]
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", mixed)
+    with pytest.raises(ValueError, match="one valid solid"):
+        _discover_channels(compound, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+
 def test_terminal_inventory_retains_channel_identity() -> None:
     product = _take_inventory(build_fixture())
     candidates = product.physical.candidate_set(FamilyId.CHANNELS).candidates
