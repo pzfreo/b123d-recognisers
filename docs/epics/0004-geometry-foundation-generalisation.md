@@ -1034,8 +1034,12 @@ first Candidate is issued.  Support, terminal and transition caps are independen
 consulted facts for attachment and Z extent and are excluded from defining evidence.  Equal-valued
 occurrences remain identity-distinct across valid solids; `POLYGONAL_STOCK` remains unchanged.
 
-The sealed allocation is not accessed during implementation.  Reveal requires the frozen
-development matrix, full/static/package/performance/CI gates, two exact-head accepts and explicit
-one-shot authority.  A zero or aborted draw is permanently consumed and inconclusive; a generic
-scanner cannot establish the side-versus-cap geometric role unless that projection was frozen
-before reveal.
+The one-shot reveal ran only after the frozen `ff3ce83` implementation had two independent accepts,
+full/static/package checks, the composite performance gate and 12/12 CI/Codecov. It selected 22
+complete models (66 files, 599 faces), found zero invalid models and returned zero physical,
+accepted or attributed Polygonal Boss Candidates. Bucket 25 is permanently consumed; this completed
+negative draw is regression evidence for zero output only and supplies no positive side-versus-cap
+ownership evidence. Selected-artifact SHA-256:
+`caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; report SHA-256:
+`43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, replacement,
+alternate selection or fitting occurred, and the temporary extracted selection/report were deleted.

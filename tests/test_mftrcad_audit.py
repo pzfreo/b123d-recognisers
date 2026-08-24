@@ -155,7 +155,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F5_POLYGONAL_BOSSES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_BOSSES_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
         F5_PADS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_PADS_H1]),
@@ -239,7 +239,7 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
             "f5_polygonal_bosses_h1",
             F5_POLYGONAL_BOSSES_H1,
             25,
-            "sealed_unrevealed",
+            "consumed",
         ),
         ("f5_pads_h1", F5_PADS_H1, 26, "sealed_unrevealed"),
         ("f5_holes_h1", F5_HOLES_H1, 27, "sealed_unrevealed"),
