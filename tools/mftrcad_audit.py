@@ -55,7 +55,7 @@ ALLOCATION_SPECS: Final = (
         F5_COUNTERSINKS_H1,
         "f5_countersinks_h1",
         frozenset({22}),
-        "sealed_unrevealed",
+        "consumed",
     ),
 )
 

@@ -732,6 +732,37 @@ The matrix includes arbitrary compound rotations because Countersinks have no pr
 and separately pins radius, axis-line, and fixed angular tolerances. Bucket 22 may be revealed once
 only after full gates and two independent exact-head accepts; zero occurrences still consume it.
 
+The private `_discover_countersinks` core carries each sorted `(CounterSink, original cone face)`
+occurrence through final output ordering. With the registry's graph-bound writer it resolves and
+validates every final owner before the first proposal, then issues only that cone as defining
+evidence; the public facade calls the same geometry path without a writer. A fresh adaptor/rim
+oracle reconstructs axis, location, both diameters, included angle and depth independently. The
+matrix covers X/Y/Z and arbitrary compound orientations, translation/mirror/scale, standard and
+inclusive maximum angles, multiple occurrences, STEP, geometry-only open-shell compatibility,
+negative/no-leak shapes and late validation refusal. The raw cylinder adaptor reader roster moves
+to the private core without changing its orientation-deferred disposition; `cone_rims` remains a
+separate reader authority. `COUNTERSINKS` becomes `FullyAttributed` on that same reviewed head.
+
+Development construction also corrected one inherited prose assumption: a side-clipped cone can
+retain circular-arc boundary geometry and remains accepted. F5e pins that as a regression positive;
+only non-circular or insufficient rim geometry is negative. Tightening trim/full-circle semantics is
+a separate behavior-changing prerequisite, not an attribution fix.
+
+The negative matrix separately constructs a cone trimmed between two oblique non-circular
+boundaries and proves empty public/writer output, while an apex drill-point proves the insufficient
+rim branch. A real turned workpiece with pilot bore and 60-degree end cone pins the documented
+centre-drill false positive. As in F5c/F5d, OCCT does not provide a valid closed nonmanifold Solid
+with one unambiguous owner cone: attempted extra edge incidence becomes open/invalid or ambiguous.
+The real open Shell plus late graph/body refusal is the bounded family evidence; a vacuous
+nonmanifold no-output shape is not counted as a distinct execution path.
+
+The authorised one-shot F5e reveal at exact pre-reveal PR #207 head `8c0462a` selected 36 model
+triples/108 files, then aborted when `20240116_231044_6899` imported as an invalid B-rep. It produced
+no complete scanner report and therefore no Countersinks attribution or output-retention claim.
+The failure did not authorize an alternate scanner mode, rerun, replacement, predicate change, or
+role change. Bucket 22 is permanently consumed and the holdout result is explicitly inconclusive;
+the exact ownership claim remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
@@ -816,8 +847,8 @@ Every child follows the evidence gate used for recent recogniser work:
    substrate PR.
 
 MFTRCAD development and holdout partitions must be disjoint by published dataset identity or a
-deterministic manifest rule. Once revealed, a holdout becomes regression evidence; further fitting
-requires a fresh draw.
+deterministic manifest rule. A completed reveal becomes regression evidence; an aborted reveal is
+permanently consumed but remains inconclusive. Further fitting requires a fresh draw.
 
 ## Architecture guards
 

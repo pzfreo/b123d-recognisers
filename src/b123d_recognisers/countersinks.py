@@ -16,7 +16,8 @@ Heuristic limits (``recognised`` tier): an edge-break / deburr / lead-in chamfer
 mouth is geometrically a shallow countersink, so a **flare-ratio floor** (``_MIN_MAJOR_RATIO``)
 excludes it — a screw seat flares to roughly twice the bore, an edge break barely widens
 it; a near-flat cone above ``_MAX_INCLUDED_ANGLE`` (a draft / relief) is excluded; a
-countersink clipped by another feature (its edges no longer full circles) is missed.
+  countersink whose trimmed rims cease to be circular is missed. A side clip may retain circular
+  arc geometry and remains a documented standalone false positive in this neutral attribution slice.
 
 Known limitations (edge geometries; the common one-face countersink is exact):
 
@@ -43,6 +44,8 @@ from typing import Protocol
 
 from build123d import GeomType
 
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import EdgeLike, FaceLike, Part
@@ -83,6 +86,12 @@ class CounterSink(Record):
     depth: float
 
 
+@dataclass(frozen=True, slots=True)
+class _CounterSinkProposal:
+    record: CounterSink
+    face: FaceLike
+
+
 class _HoleLike(Protocol):
     @property
     def axis(self) -> tuple[float, float, float]: ...
@@ -115,11 +124,9 @@ def countersink_matches_hole(countersink: CounterSink, hole: _HoleLike) -> bool:
     offset = tuple(minor[index] - hole.location[index] for index in range(3))
     axial = sum(offset[index] * hole.axis[index] for index in range(3))
     perpendicular = math.hypot(*(offset[index] - axial * hole.axis[index] for index in range(3)))
-    if (
-        perpendicular > length_tol(hole.diameter, rel=_HOLE_AXIS_FRAC)
-        or abs(countersink.drill_diameter - hole.diameter)
-        > length_tol(hole.diameter, rel=_HOLE_DIA_FRAC)
-    ):
+    if perpendicular > length_tol(hole.diameter, rel=_HOLE_AXIS_FRAC) or abs(
+        countersink.drill_diameter - hole.diameter
+    ) > length_tol(hole.diameter, rel=_HOLE_DIA_FRAC):
         return False
     mouth_tol = length_tol(hole.diameter, rel=_HOLE_MOUTH_FRAC)
     return bool(
@@ -161,6 +168,13 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
     """Recognise the countersinks of *part* (see module docstring). One
     :class:`CounterSink` per qualifying cone, sorted deterministically; empty when the
     part has none."""
+    return _discover_countersinks(part)
+
+
+def _discover_countersinks(
+    part: Part, *, writer: EvidenceWriter | None = None
+) -> list[CounterSink]:
+    """Discover Countersinks and validate every owner before publishing evidence."""
     from OCP.BRepAdaptor import BRepAdaptor_Surface
 
     cones = list(part.faces().filter_by(GeomType.CONE))
@@ -179,7 +193,7 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
         p, d = ax.Location(), ax.Direction()
         cyls.append((cylinder.Radius(), (p.X(), p.Y(), p.Z()), (d.X(), d.Y(), d.Z())))
 
-    out: list[CounterSink] = []
+    out: list[_CounterSinkProposal] = []
     for f in cones:
         rims = cone_rims(f)  # the shared single-face cone read
         if rims is None:
@@ -212,17 +226,29 @@ def recognise_countersinks(part: Part) -> list[CounterSink]:
         ):
             continue
         out.append(
-            CounterSink(
-                axis=(round(axis[0], 4), round(axis[1], 4), round(axis[2], 4)),
-                location=(
-                    round(opening_pt[0], 4),
-                    round(opening_pt[1], 4),
-                    round(opening_pt[2], 4),
+            _CounterSinkProposal(
+                CounterSink(
+                    axis=(round(axis[0], 4), round(axis[1], 4), round(axis[2], 4)),
+                    location=(
+                        round(opening_pt[0], 4),
+                        round(opening_pt[1], 4),
+                        round(opening_pt[2], 4),
+                    ),
+                    major_diameter=round(2 * major_r, 4),
+                    drill_diameter=round(2 * minor_r, 4),
+                    included_angle=included_angle,
+                    depth=round(alen, 4),
                 ),
-                major_diameter=round(2 * major_r, 4),
-                drill_diameter=round(2 * minor_r, 4),
-                included_angle=included_angle,
-                depth=round(alen, 4),
+                f,
             )
         )
-    return sorted(out, key=lambda c: (c.location, c.major_diameter))
+    out.sort(key=lambda proposal: (proposal.record.location, proposal.record.major_diameter))
+    if writer is not None:
+        pending = tuple(
+            (proposal.record, writer.graph.require_node(proposal.face)) for proposal in out
+        )
+        if any(writer.graph.common_valid_solid((node,)) is None for _record, node in pending):
+            raise ValueError("countersink defining face has no unambiguous valid solid")
+        for record, node in pending:
+            writer.sink.propose(FamilyId.COUNTERSINKS, record, defining=(node,))
+    return [proposal.record for proposal in out]

@@ -64,7 +64,9 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
     calls: dict[str, int] = {}
     cylinders = ([{"axis": "z"}], [{"axis": "x"}])
-    countersinks = [CounterSink((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 6.0, 3.0, 90.0, 1.5)]
+    # Fully-attributed Countersinks cannot be fabricated without original cone evidence in this
+    # dependency-injection test; the dedicated lifecycle matrix owns nonempty attribution.
+    countersinks: list[CounterSink] = []
     holes = [HoleRecord((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 3.0, 10.0, "through")]
     slots = [Slot("x", "y", 3.0, 10.0, 0.0, -5.0, 5.0, -1.0, 1.0)]
     pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
@@ -115,7 +117,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # one of the facts `RecognitionRun` owns, so `_run` is the only place that asks for it.
     monkeypatch.setattr(run_module, "analyse_cylinders", fake_cylinders)
     monkeypatch.setattr(
-        registry_module, "recognise_countersinks", counted("countersinks", countersinks)
+        registry_module, "_discover_countersinks", counted("countersinks", countersinks)
     )
     monkeypatch.setattr(registry_module, "recognise_holes", fake_holes)
     monkeypatch.setattr(registry_module, "recognise_double_d_bores", counted("double_d_bores", []))

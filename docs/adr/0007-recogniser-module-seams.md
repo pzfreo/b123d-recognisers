@@ -246,3 +246,11 @@ and the plane/sphere faces that authorize the torus branch are validated with th
 neighbour coordinates and the convex material probe are transient scalar/topology decisions in the
 existing algorithm; the independent role matrix rederives them, but the proposal does not claim a
 complete prismatic context-node roster.
+
+For F5e, `countersinks._discover_countersinks` is the sole private writer-enabled core and
+`_registry` its sole production writer caller. The public `recognise_countersinks` facade retains
+its exact signature and calls the core without a writer. The core may issue only the original
+conical seat face; coaxial bore-cylinder and line/radius facts remain transient consulted geometry.
+It cannot read claims, evidence, inventory, reconciliation, or another family output. Moving the
+raw cylinder adaptor loop changes only its machine-owned surface-reader roster key; the existing
+orientation-deferred disposition remains unchanged.
