@@ -1080,7 +1080,7 @@ report SHA-256: `3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1
 Bucket 26 is permanently consumed; the temporary selection/report were deleted and no rerun after
 corpus access, alternate selection or fitting occurred.
 
-### F5i Hole attribution (#220)
+### F5j Hole attribution (#220)
 
 Bucket 27 (`F5-HOLES-H1`) remains independently sealed and must not be accessed during development.
 Hole discovery uses one private optional-writer core while preserving the public signature and
