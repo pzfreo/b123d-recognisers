@@ -132,6 +132,9 @@ def test_a_passage_crossing_a_slot_only_in_projection_survives():
     result = build_recognition_result(part)
     assert result.slots, "the Z slot"
     assert [p.axis for p in result.passages] == ["x"], "the X passage, at the same XY, survives"
+    ledger, passages = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    assert "x" in {passage.axis for passage in passages}
+    assert len(ledger.candidate_set(FamilyId.PASSAGES).candidates) == len(passages)
 
 
 def test_the_same_void_with_a_floor_is_a_pocket_and_not_a_passage():

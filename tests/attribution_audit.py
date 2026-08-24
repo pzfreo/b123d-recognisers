@@ -3,11 +3,106 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from math import hypot
 from typing import Any
+
+from build123d import GeomType
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+
+
+def assert_ring_role(ledger, candidate, record) -> None:
+    """Derive the exact planar ring faces independently from the serialized section."""
+
+    axis = "xyz".index(record.axis)
+    others = [index for index in range(3) if index != axis]
+    run_length = getattr(record, "depth", getattr(record, "length", None))
+    section = record.section
+
+    def on_boundary(node) -> bool:
+        if not ledger.graph.is_planar(node):
+            return False
+        normal = ledger.graph.normal(node)
+        if normal is None or abs(normal[axis]) > 1e-6:
+            return False
+        bounds = ledger.graph.bounds(node)
+        if abs((bounds[axis][1] - bounds[axis][0]) - run_length) > 1e-6:
+            return False
+        center = ledger.graph.face(node).center()
+        point = (
+            (center.X, center.Y, center.Z)[others[0]],
+            (center.X, center.Y, center.Z)[others[1]],
+        )
+        for at, start in enumerate(section):
+            end = section[(at + 1) % len(section)]
+            dx, dy = end[0] - start[0], end[1] - start[1]
+            cross = abs(dx * (point[1] - start[1]) - dy * (point[0] - start[0]))
+            dot = (point[0] - start[0]) * dx + (point[1] - start[1]) * dy
+            length = hypot(dx, dy)
+            if cross <= 0.002 * length and -0.002 <= dot <= length * length + 0.002:
+                return True
+        return False
+
+    expected = frozenset(node for node in ledger.graph.nodes if on_boundary(node))
+    assert expected
+    assert ledger.defining_of(candidate) == expected
+
+
+def assert_turned_step_role(ledger, candidate, record) -> None:
+    """Derive all cylindrical bands that establish one turned rung."""
+
+    axis = "xyz".index(record.axis)
+    midpoint = 0.5 * (record.lo + record.hi)
+
+    def establishes(node) -> bool:
+        face = ledger.graph.face(node)
+        if face.geom_type != GeomType.CYLINDER:
+            return False
+        low, high = ledger.graph.bounds(node)[axis]
+        if not low - 1e-6 <= midpoint <= high + 1e-6:
+            return False
+        cylinder = BRepAdaptor_Surface(face.wrapped).Cylinder()
+        direction = cylinder.Axis().Direction()
+        components = (direction.X(), direction.Y(), direction.Z())
+        return (
+            abs(abs(components[axis]) - 1.0) <= 1e-6
+            and abs(2 * cylinder.Radius() - record.diameter) <= 1e-6
+        )
+
+    expected = frozenset(node for node in ledger.graph.nodes if establishes(node))
+    assert expected
+    assert ledger.defining_of(candidate) == expected
+
+
+def assert_groove_role(ledger, candidate, record) -> None:
+    """Derive the one cylindrical floor band from the record dimensions."""
+
+    axis = "xyz".index(record.axis)
+
+    def establishes(node) -> bool:
+        face = ledger.graph.face(node)
+        if face.geom_type != GeomType.CYLINDER:
+            return False
+        bounds = ledger.graph.bounds(node)
+        if abs((bounds[axis][1] - bounds[axis][0]) - record.width) > 1e-6:
+            return False
+        center = ledger.graph.face(node).center()
+        if abs((center.X, center.Y, center.Z)[axis] - record.at[axis]) > 1e-6:
+            return False
+        cylinder = BRepAdaptor_Surface(face.wrapped).Cylinder()
+        direction = cylinder.Axis().Direction()
+        components = (direction.X(), direction.Y(), direction.Z())
+        return (
+            abs(abs(components[axis]) - 1.0) <= 1e-6
+            and abs(2 * cylinder.Radius() - record.diameter) <= 1e-6
+        )
+
+    expected = frozenset(node for node in ledger.graph.nodes if establishes(node))
+    assert len(expected) == 1
+    assert ledger.defining_of(candidate) == expected
 
 
 def attributed_run(
@@ -35,6 +130,12 @@ def attributed_run(
         defining = ledger.defining_of(candidate)
         assert defining
         assert ledger.graph.common_valid_solid(defining) is not None
+        if family in {FamilyId.PRISMATIC_POCKETS, FamilyId.PASSAGES}:
+            assert_ring_role(ledger, candidate, record)
+        if family is FamilyId.TURNED_STEPS:
+            assert_turned_step_role(ledger, candidate, record)
+        if family is FamilyId.GROOVES:
+            assert_groove_role(ledger, candidate, record)
     return ledger, list(measured)
 
 

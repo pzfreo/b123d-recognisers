@@ -16,7 +16,7 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
-from attribution_audit import attributed_run
+from attribution_audit import assert_ring_role, attributed_run
 from build123d import (
     Box,
     BuildPart,
@@ -186,6 +186,7 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
     assert candidate.record is prismatic[0]
     assert len(ledger.defining_of(candidate)) == prismatic[0].sides == 4
+    assert_ring_role(ledger, candidate, prismatic[0])
     assert (
         prismatic_pockets_that_are_not_pockets(
             prismatic, pockets, ledger.snapshot_index()
