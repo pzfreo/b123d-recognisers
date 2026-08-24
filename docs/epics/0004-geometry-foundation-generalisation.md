@@ -572,11 +572,11 @@ overlap, a named geometry relation and separate review.
 
 F5b is a frozen tests-and-documentation audit with this exact path matrix:
 
-- prismatic pockets: triangle, rectangle and hexagon rings, either cap/open sign, segmented shared
-  edges and multi-ring ordering; every ring wall defines the record while the sole cap/floor does
+- prismatic pockets: triangle, rectangle and hexagon rings, either cap/open sign and multi-ring
+  ordering; every ring wall defines the record while the sole cap/floor does
   not;
-- passages: triangle, rectangle, hexagon and concave-U rings across supported principal axes,
-  segmented shared edges and multi-passage ordering; the uncapped ring defines the record while
+- passages: triangle, rectangle, hexagon and concave-U rings across supported principal axes and
+  multi-passage ordering; the uncapped ring defines the record while
   mouth/stock faces do not;
 - grooves: sharp-band, conical/chamfered-lead-in and toroidal/radiused-lead-in joins, plus multiple
   grooves; only each floor band defines its record, never shaft bands, walls, cones or tori;
@@ -605,9 +605,10 @@ review-owned because a test-name or AST-body assertion would be tautological.
 
 Coplanar subdivision of one logical wall into several face nodes is not a current output path: the
 ring grammar requires one degree-two graph node per polygon side and refuses that topology rather
-than merging it. F5b audits the supported multiple-edge segmentation at wall junctions; adding
-logical wall-face merging is a future semantic recogniser change with its own attribution contract,
-not retrospective evidence for the current family.
+than merging it. A bounded fixture search also found no recognised ring with a multi-segment shared
+wall junction, so F5b makes no representation claim for that topology. Adding either form of wall
+merging is a future semantic recogniser change with its own attribution contract, not retrospective
+evidence for the current family.
 
 F5b changes no `src`, registry disposition, predicate, defining role, output, reconciliation,
 capability manifest or golden. If the audit finds a production defect, it stops and opens a semantic

@@ -178,6 +178,13 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     """
 
     part = _rectangular()
+    rect_ledger, rect_records = _claimed(part)
+    assert len(rect_records) == 1
+    (rect_candidate,) = rect_ledger.candidate_set(
+        FamilyId.PRISMATIC_POCKETS
+    ).candidates
+    assert_ring_role(rect_ledger, rect_candidate, rect_records[0])
+
     ledger = ClaimLedger(FaceGraph(part))
     pockets = r.recognise_pockets(part, ledger=ledger)
     prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)

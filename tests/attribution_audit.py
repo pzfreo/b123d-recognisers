@@ -10,8 +10,12 @@ from build123d import GeomType
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._bevel import classify_bevel
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._geometry import _coaxial_axis_lines
+from b123d_recognisers.countersinks import cone_rims
 
 
 def assert_ring_role(ledger, candidate, record) -> None:
@@ -29,7 +33,12 @@ def assert_ring_role(ledger, candidate, record) -> None:
         if normal is None or abs(normal[axis]) > 1e-6:
             return False
         bounds = ledger.graph.bounds(node)
-        if abs((bounds[axis][1] - bounds[axis][0]) - run_length) > 1e-6:
+        expected_low = record.at[axis] - run_length / 2
+        expected_high = record.at[axis] + run_length / 2
+        if (
+            abs(bounds[axis][0] - expected_low) > 0.002
+            or abs(bounds[axis][1] - expected_high) > 0.002
+        ):
             return False
         center = ledger.graph.face(node).center()
         point = (
@@ -51,30 +60,100 @@ def assert_ring_role(ledger, candidate, record) -> None:
     assert ledger.defining_of(candidate) == expected
 
 
-def assert_turned_step_role(ledger, candidate, record) -> None:
+def assert_turned_step_role(part, ledger, candidate, record) -> None:
     """Derive all cylindrical bands that establish one turned rung."""
 
     axis = "xyz".index(record.axis)
     midpoint = 0.5 * (record.lo + record.hi)
 
-    def establishes(node) -> bool:
-        face = ledger.graph.face(node)
-        if face.geom_type != GeomType.CYLINDER:
+    inventory = (*analyse_cylinders(part)[0], *analyse_cylinders(part)[1])
+    axis_bands = [
+        item
+        for item in inventory
+        if item["external"] and item["axis"] == record.axis
+    ]
+    main = max(axis_bands, key=lambda item: item["diameter"])
+
+    def establishes(item) -> bool:
+        if not item["external"]:
             return False
+        node = ledger.graph.require_node(item["face"])
         low, high = ledger.graph.bounds(node)[axis]
         if not low - 1e-6 <= midpoint <= high + 1e-6:
             return False
-        cylinder = BRepAdaptor_Surface(face.wrapped).Cylinder()
-        direction = cylinder.Axis().Direction()
-        components = (direction.X(), direction.Y(), direction.Z())
+        components = item["dir_xyz"]
         return (
             abs(abs(components[axis]) - 1.0) <= 1e-6
-            and abs(2 * cylinder.Radius() - record.diameter) <= 1e-6
+            and abs(item["diameter"] - record.diameter) <= 1e-6
+            and _coaxial_axis_lines(
+                main["axis_xyz"],
+                main["dir_xyz"],
+                item["axis_xyz"],
+                item["dir_xyz"],
+                tol=1e-6,
+            )
         )
 
-    expected = frozenset(node for node in ledger.graph.nodes if establishes(node))
+    expected = frozenset(
+        ledger.graph.require_node(item["face"])
+        for item in inventory
+        if establishes(item)
+    )
     assert expected
     assert ledger.defining_of(candidate) == expected
+
+
+def assert_chamfer_role(ledger, candidate, record) -> None:
+    """Derive the exact bevel or cone that establishes a Chamfer."""
+
+    defining = ledger.defining_of(candidate)
+    assert len(defining) == 1
+    (node,) = defining
+    face = ledger.graph.face(node)
+    center = face.center()
+    assert tuple(round(value, 3) for value in (center.X, center.Y, center.Z)) == record.at
+    axis = "xyz".index(record.axis)
+    if record.turned:
+        surface = BRepAdaptor_Surface(face.wrapped)
+        assert face.geom_type == GeomType.CONE
+        rims = cone_rims(face)
+        assert rims is not None
+        minor, major, _ = rims
+        direction = surface.Cone().Axis().Direction()
+        components = (direction.X(), direction.Y(), direction.Z())
+        major_center = (major.arc_center.X, major.arc_center.Y, major.arc_center.Z)
+        minor_center = (minor.arc_center.X, minor.arc_center.Y, minor.arc_center.Z)
+        axial = abs(
+            sum(
+                (major_center[at] - minor_center[at]) * components[at]
+                for at in range(3)
+            )
+        )
+        radial = major.radius - minor.radius
+        assert abs(abs(components[axis]) - 1.0) <= 1e-6
+        assert (round(max(axial, radial), 3), round(min(axial, radial), 3)) == (
+            record.leg1,
+            record.leg2,
+        )
+    else:
+        edge_i, _normal, _span, leg_hi, leg_lo = classify_bevel(face)
+        assert edge_i == axis
+        assert (round(leg_hi, 3), round(leg_lo, 3)) == (record.leg1, record.leg2)
+
+
+def assert_angled_step_role(ledger, candidate, record) -> None:
+    """Derive the oblique slant and all serialized dimensions from its face."""
+
+    defining = ledger.defining_of(candidate)
+    assert len(defining) == 1
+    (node,) = defining
+    face = ledger.graph.face(node)
+    edge_i, _normal, span, leg_hi, leg_lo = classify_bevel(face)
+    center = face.center()
+    assert edge_i == "xyz".index(record.axis)
+    assert (round(leg_hi, 3), round(leg_lo, 3)) == (record.leg1, record.leg2)
+    assert round(span[edge_i][1] - span[edge_i][0], 3) == record.length
+    assert tuple(round(value, 3) for value in (center.X, center.Y, center.Z)) == record.at
 
 
 def assert_groove_role(ledger, candidate, record) -> None:
@@ -133,9 +212,13 @@ def attributed_run(
         if family in {FamilyId.PRISMATIC_POCKETS, FamilyId.PASSAGES}:
             assert_ring_role(ledger, candidate, record)
         if family is FamilyId.TURNED_STEPS:
-            assert_turned_step_role(ledger, candidate, record)
+            assert_turned_step_role(part, ledger, candidate, record)
         if family is FamilyId.GROOVES:
             assert_groove_role(ledger, candidate, record)
+        if family is FamilyId.CHAMFERS:
+            assert_chamfer_role(ledger, candidate, record)
+        if family is FamilyId.ANGLED_STEPS:
+            assert_angled_step_role(ledger, candidate, record)
     return ledger, list(measured)
 
 
