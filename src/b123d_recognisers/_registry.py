@@ -27,6 +27,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
 )
 from b123d_recognisers._hole_features import _discover_bosses, _discover_holes
+from b123d_recognisers._recess_features import _discover_channels
 from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
@@ -59,7 +60,6 @@ from b123d_recognisers.slots import (
     Slot,
     SlotArray,
     SlotGrid,
-    recognise_channels,
     recognise_pocket_patterns,
     recognise_pockets,
     recognise_slot_patterns,
@@ -338,11 +338,15 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                recognise_channels(s.context.part, ledger=s.writer, face_edges=s.context.face_edges)
+                _discover_channels(
+                    s.context.part,
+                    face_edges=s.context.face_edges,
+                    writer=s.writer,
+                )
             )
         ),
         Counted("channel"),
-        IncompleteAttribution("writer is deliberately not used", "define channel owner faces"),
+        FullyAttributed("every returned Channel owns its exact two opposed side-wall faces"),
     ),
     PhysicalDefinition(
         FamilyId.SLOTS,

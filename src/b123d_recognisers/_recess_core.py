@@ -22,6 +22,8 @@ share nothing above them.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
@@ -457,6 +459,15 @@ def _channel_sort_key(channel: Channel) -> tuple:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _ChannelProposal:
+    """One exact Channel occurrence and its ordered original side walls."""
+
+    record: Channel
+    low_wall: FaceNode
+    high_wall: FaceNode
+
+
 def _recognise_pockets_one(
     part: Part,
     face_edges: FaceEdges | None = None,
@@ -510,6 +521,17 @@ def _recognise_channels_one(
     part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
 ) -> list[Channel]:
     """Recognise channels using one solid's faces and bounds."""
+    return sorted(
+        {proposal.record for proposal in _channel_proposals_one(part, face_edges, graph)},
+        key=_channel_sort_key,
+    )
+
+
+def _channel_proposals_one(
+    part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
+) -> list[_ChannelProposal]:
+    """Discover one solid's Channels while retaining exact ordered wall identity."""
+
     owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
     faces = _planar_faces(part, face_edges, owner)
     pbb = part.bounding_box()
@@ -525,7 +547,7 @@ def _recognise_channels_one(
     for face in faces:
         if face.wall and face.axis is not None:
             by_axis.setdefault(face.axis, []).append(face)  # oblique declined here -- see slots
-    candidates: list[Channel] = []
+    proposals: list[_ChannelProposal] = []
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
@@ -533,11 +555,18 @@ def _recognise_channels_one(
                     walls[i], walls[j], part, faces, part_ext, part_bounds, axis, owner
                 )
                 if channel is not None:
-                    candidates.append(channel)
-    return sorted(
-        set(candidates),
-        key=_channel_sort_key,
-    )
+                    first, second = walls[i], walls[j]
+                    if first.node is None or second.node is None:
+                        raise ValueError("Channel walls require graph nodes")
+                    first_node, second_node = first.node, second.node
+                    k = _AXES[axis]
+                    low_node, high_node = (
+                        (first_node, second_node)
+                        if _center(first.bb, k) <= _center(second.bb, k)
+                        else (second_node, first_node)
+                    )
+                    proposals.append(_ChannelProposal(channel, low_node, high_node))
+    return proposals
 
 
 def _recognise_corner_notches(
