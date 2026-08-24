@@ -149,14 +149,15 @@ Three limits on how far this evidence reaches:
   of them *Stock*. Any per-face score against these labels therefore understates a family that is
   right about an intersecting feature, and a recogniser tuned to raise such a score would be
   fitted to the corpus rather than to the geometry.
-- **Attribution is per-face where a family writes claims, and statistical elsewhere.** A
-  recogniser handed a claim ledger records the faces each record was established by, so its
-  records can be scored against the labels of the faces they actually consumed rather than
-  fitted. `tools/per_face_scan.py` does exactly that, over the six claiming families these
-  corpora can reach — `recognise_slots`, `recognise_pockets`, `recognise_prismatic_pockets`,
-  `recognise_passages`, `recognise_chamfers` and `recognise_angled_steps`. Grooves and turned
-  steps write claims too and are absent from these figures for a different reason: all 50
-  vendored MFCAD++ and NIST parts are milled prismatic and report no turned steps at all. The
+- **Attribution is reported separately from corpus labels.** `tools/per_face_scan.py` reads one
+  completed frozen inventory and reports records, physical Candidates, accepted Candidates and
+  measured defining faces for all 22 physical families, alongside each registry attribution
+  status. The MFCAD++ label comparison is a separate accepted-only view. These corpora contain
+  measured output from six prismatic families — slots, pockets, prismatic pockets, passages,
+  chamfers and angled steps — while grooves and turned steps also write defining evidence but do
+  not occur in the 50 vendored milled parts. Families still migrating may have partial or no
+  measured face attribution; their registry status says so rather than replacing it with a
+  statistical ownership claim. The
   figures quoted as precision — 100% for angled steps, 44% → 78% for chamfers over 120 models —
   are counted per face rather than fitted. The chamfer figure is the *reconciled* answer, which is what the
   aggregate and the census report; called directly the recogniser proposes a blind step's slant

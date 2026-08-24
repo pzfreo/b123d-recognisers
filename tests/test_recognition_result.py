@@ -68,9 +68,10 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     holes = [HoleRecord((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 3.0, 10.0, "through")]
     slots = [Slot("x", "y", 3.0, 10.0, 0.0, -5.0, 5.0, -1.0, 1.0)]
     pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
-    passages = [
-        Passage("z", 4, 10.0, (0.0, 0.0, 0.0), ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)))
-    ]
+    # Fully-attributed families cannot be faked with output records but no original-face
+    # evidence. This orchestration test owns dependency injection, so keep that separate
+    # contract represented by an empty (but still invoked and bound) Passage family.
+    passages: list[Passage] = []
 
     def same_records(actual, expected):
         return len(actual) == len(expected) and all(
