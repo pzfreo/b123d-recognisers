@@ -70,6 +70,7 @@ MODULE_SEAM_EDGES = {
         "_record",
         "_typing",
     },
+    "pads": {"_candidates", "_claims", "_geometry", "_record", "_typing"},
     "_hole_patterns": {"_hole_features", "_pattern_geometry", "_record", "_typing"},
     # Ring geometry: `passages` owned it while it was the only family walking rings.
     "_rings": {"_adjacency", "_geometry", "_typing"},

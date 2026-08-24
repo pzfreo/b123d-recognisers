@@ -37,7 +37,7 @@ from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
-from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
+from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.plates import Plate, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
@@ -442,9 +442,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_rectangular_pads",
         (),
         always,
-        _simple(lambda s: list(recognise_rectangular_pads(s.context.part))),
+        _simple(lambda s: list(_discover_rectangular_pads(s.context.part, writer=s.writer))),
         NotCounted("not a distinct census key"),
-        IncompleteAttribution("no defining evidence is issued", "migrate raised-pad owner faces"),
+        FullyAttributed("every returned Pad owns its exact top and four perimeter-wall faces"),
     ),
     PhysicalDefinition(
         FamilyId.REPEATING_RADIAL_PROFILES,

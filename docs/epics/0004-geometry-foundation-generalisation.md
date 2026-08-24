@@ -1043,3 +1043,16 @@ ownership evidence. Selected-artifact SHA-256:
 `caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; report SHA-256:
 `43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, replacement,
 alternate selection or fitting occurred, and the temporary extracted selection/report were deleted.
+
+### F5i rectangular Pad attribution (#217)
+
+Bucket 26 (`F5-PADS-H1`) remains independently sealed and must not be accessed during development.
+The implementation uses one private optional-writer core while preserving the public geometry path.
+Each attributed Pad owns the exact accepted +Z top and one unique maximal-base original wall for
+each ordered x0/x1/y0/y1 role. These five nodes must be pairwise distinct, belong to one SolidRef
+and remain disjoint across occurrences; all proposals validate before first issuance. Stock bounds,
+tier/ledge regions and other scanned faces are consulted only. The existing unsigned wall-normal,
+three-decimal top rounding, absolute `_TOL`, area-fill tolerance, z0 highest-role rule, per-solid
+value dedup and final ordering are unchanged. A later one-shot reveal requires two exact-head accepts
+and every mechanical/performance gate; zero or abort consumes the allocation without becoming
+positive ownership evidence.

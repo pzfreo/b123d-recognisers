@@ -8,7 +8,7 @@ from dataclasses import fields, replace
 from inspect import signature
 
 import pytest
-from build123d import Box, Pos
+from build123d import Box, Cylinder
 
 import b123d_recognisers as public
 import b123d_recognisers.result as result_module
@@ -61,6 +61,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.BOSSES,
         FamilyId.DOUBLE_D_BORES,
         FamilyId.POLYGONAL_BOSSES,
+        FamilyId.PADS,
     }
     assert all(
         isinstance(item.attribution, FullyAttributed | IncompleteAttribution)
@@ -112,19 +113,19 @@ def test_registry_rejects_empty_attribution_contracts(attribution) -> None:
 def test_terminal_validator_enforces_fully_attributed_all_occurrence_promise(
     monkeypatch,
 ) -> None:
-    product = _take_inventory(Box(30, 30, 5) + Pos(10, 10, 5) * Box(10, 10, 5))
-    assert product.physical.candidate_set(FamilyId.PADS).candidates
+    product = _take_inventory(Box(30, 30, 10) - Cylinder(3, 10))
+    assert product.physical.candidate_set(FamilyId.HOLES).candidates
     definitions = tuple(
         replace(
             item,
             attribution=FullyAttributed("adversarially false completeness declaration"),
         )
-        if item.family is FamilyId.PADS
+        if item.family is FamilyId.HOLES
         else item
         for item in PHYSICAL_DEFINITIONS
     )
     monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
-    with pytest.raises(ValueError, match="pads promises complete"):
+    with pytest.raises(ValueError, match="holes promises complete"):
         result_module._validate_attribution(product.context, product.physical, product.evidence)
 
 

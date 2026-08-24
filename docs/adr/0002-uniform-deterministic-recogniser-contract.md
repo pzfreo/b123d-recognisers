@@ -129,3 +129,10 @@ aggregate Candidates retain the exact returned record occurrences rather than re
 values.  A Polygonal Boss owns exactly the six original vertical side faces in its accepted ring.
 Terminal, support and transition caps remain consulted geometry and are never defining evidence.
 `PolygonalStock` remains a separate public record and attribution family.
+
+`recognise_rectangular_pads` follows the same private-core contract. Its public facade remains
+geometry-only and preserves the existing per-solid value deduplication and global record sort. Each
+issuable occurrence owns exactly five pairwise-distinct original faces: the accepted +Z top and the
+unique maximal-base x0, x1, y0 and y1 wall-role faces. Tier regions, stock extrema and unselected
+wall/top candidates remain consulted. Equal values with conflicting ordered role identities refuse
+aggregate publication rather than being rematched by value.

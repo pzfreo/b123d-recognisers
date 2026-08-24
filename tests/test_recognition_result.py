@@ -145,7 +145,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(
         registry_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
     )
-    monkeypatch.setattr(registry_module, "recognise_rectangular_pads", counted("pads", []))
+    monkeypatch.setattr(registry_module, "_discover_rectangular_pads", counted("pads", []))
     monkeypatch.setattr(
         registry_module, "recognise_repeating_radial_profiles", counted("radial_profiles", [])
     )
