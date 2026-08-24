@@ -8,7 +8,18 @@ import math
 from pathlib import Path
 
 import pytest
-from build123d import Box, Cone, Cylinder, GeomType, Pos, Rot, Shell, export_step, import_step
+from build123d import (
+    Box,
+    Compound,
+    Cone,
+    Cylinder,
+    GeomType,
+    Pos,
+    Rot,
+    Shell,
+    export_step,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
@@ -124,11 +135,113 @@ def test_multiple_countersinks_keep_sorted_occurrence_identity() -> None:
     )
 
 
+@pytest.mark.parametrize("bore_depth", [8.0, 12.0])
+def test_blind_and_through_bores_keep_conical_owner(bore_depth: float) -> None:
+    part = Box(40, 40, 12) - Cylinder(3, bore_depth) - Pos(0, 0, 4) * Cone(3, 7, 4)
+    _ledger, records = _claimed(part)
+    assert len(records) == 1
+
+
+def test_opposite_mouth_orientation_keeps_conical_owner() -> None:
+    part = Box(40, 40, 12) - Cylinder(3, 12) - Pos(0, 0, -4) * Rot(180, 0, 0) * Cone(3, 7, 4)
+    _ledger, records = _claimed(part)
+    assert len(records) == 1
+    assert records[0].axis[2] > 0
+
+
+def test_both_face_through_hole_issues_two_distinct_cone_owners() -> None:
+    part = (
+        Box(40, 40, 12)
+        - Cylinder(3, 12)
+        - Pos(0, 0, 4) * Cone(3, 7, 4)
+        - Pos(0, 0, -4) * Rot(180, 0, 0) * Cone(3, 7, 4)
+    )
+    ledger, records = _claimed(part)
+    assert len(records) == 2
+    candidates = ledger.candidate_set(FamilyId.COUNTERSINKS).candidates
+    assert len({next(iter(ledger.defining_of(candidate))) for candidate in candidates}) == 2
+    assert {record.axis[2] for record in records} == {-1.0, 1.0}
+
+
+def test_unequal_countersinks_keep_deterministic_occurrence_order() -> None:
+    part = Box(80, 40, 12)
+    part -= Pos(-20, 0, 0) * Cylinder(3, 12)
+    part -= Pos(-20, 0, 4) * Cone(3, 7, 4)
+    part -= Pos(20, 0, 0) * Cylinder(2, 12)
+    part -= Pos(20, 0, 3) * Cone(2, 5, 3)
+    _ledger, records = _claimed(part)
+    assert len(records) == 2
+    assert records == sorted(records, key=lambda record: (record.location, record.major_diameter))
+    assert {record.major_diameter for record in records} == {10.0, 14.0}
+
+
+def _external_cone_and_cylinder(
+    *, major: float = 6.0, bore: float = 3.0, offset: float = 0.0, tilt: float = 0.0
+):
+    """The documented external/centre-drill false-positive geometry, in separate solids."""
+
+    cone = Cone(3, major, max(major - 3, 1.0))
+    cylinder = Pos(offset, 0, 0) * Rot(tilt, 0, 0) * Cylinder(bore, 4)
+    return Compound([cone, cylinder])
+
+
 @pytest.mark.parametrize("angle", [60.0, 82.0, 90.0, 100.0, 120.0, 160.0])
 def test_standard_and_inclusive_maximum_angles_keep_exact_owner(angle: float) -> None:
     _ledger, records = _claimed(_angle_plate(angle))
     assert len(records) == 1
     assert records[0].included_angle == pytest.approx(angle, abs=0.02)
+
+
+@pytest.mark.parametrize(("ratio", "accepted"), [(1.499, False), (1.5, True), (1.501, True)])
+def test_flare_ratio_boundary_is_inclusive(ratio: float, accepted: bool) -> None:
+    part = _external_cone_and_cylinder(major=3 * ratio)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_countersinks(part, writer=ledger.writer)
+    assert bool(records) is accepted
+    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+
+
+@pytest.mark.parametrize(("delta", "accepted"), [(0.049, True), (0.0501, True), (0.051, False)])
+def test_minor_radius_match_boundary_is_inclusive(delta: float, accepted: bool) -> None:
+    part = _external_cone_and_cylinder(bore=3 + delta)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_countersinks(part, writer=ledger.writer)
+    assert bool(records) is accepted
+    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+
+
+@pytest.mark.parametrize(("offset", "accepted"), [(0.099, True), (0.1002, True), (0.101, False)])
+def test_axis_line_offset_boundary_is_inclusive(offset: float, accepted: bool) -> None:
+    part = _external_cone_and_cylinder(offset=offset)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_countersinks(part, writer=ledger.writer)
+    assert bool(records) is accepted
+    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+
+
+@pytest.mark.parametrize(("tilt", "accepted"), [(2.5, True), (2.56, True), (2.57, False)])
+def test_parallel_angular_boundary_is_strict(tilt: float, accepted: bool) -> None:
+    part = _external_cone_and_cylinder(tilt=tilt)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_countersinks(part, writer=ledger.writer)
+    assert bool(records) is accepted
+    assert bool(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) is accepted
+
+
+def test_documented_external_centre_drill_false_positive_remains_attributed() -> None:
+    ledger, records = _claimed(_external_cone_and_cylinder())
+    assert len(records) == 1
+    candidate = ledger.candidate_set(FamilyId.COUNTERSINKS).candidates[0]
+    owner_solid = ledger.graph.common_valid_solid(ledger.defining_of(candidate))
+    cylinder_nodes = [
+        node
+        for node in ledger.graph.nodes
+        if BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
+    ]
+    assert cylinder_nodes
+    assert all(
+        ledger.graph.common_valid_solid((node,)) is not owner_solid for node in cylinder_nodes
+    )
 
 
 def test_translation_and_uniform_scale_keep_owner_correspondence() -> None:
@@ -164,10 +277,25 @@ def test_geometry_only_open_shell_result_has_no_aggregate_publication() -> None:
 
 def test_step_round_trip_preserves_conical_owner_role(tmp_path: Path) -> None:
     path = tmp_path / "countersink.step"
+    source_ledger, source_records = _claimed(_plate())
     export_step(_plate(), path)
     imported = import_step(path)
-    _ledger, records = _claimed(imported)
+    imported_ledger, records = _claimed(imported)
     assert len(records) == 1
+    source_candidate = source_ledger.candidate_set(FamilyId.COUNTERSINKS).candidates[0]
+    imported_candidate = imported_ledger.candidate_set(FamilyId.COUNTERSINKS).candidates[0]
+    assert source_records[0].to_dict() == records[0].to_dict()
+    assert BRepAdaptor_Surface(
+        source_ledger.graph.face(next(iter(source_ledger.defining_of(source_candidate)))).wrapped
+    ).Cone().SemiAngle() == pytest.approx(
+        BRepAdaptor_Surface(
+            imported_ledger.graph.face(
+                next(iter(imported_ledger.defining_of(imported_candidate)))
+            ).wrapped
+        )
+        .Cone()
+        .SemiAngle()
+    )
 
 
 def test_aggregate_inventory_publishes_terminal_countersink_evidence() -> None:
@@ -272,23 +400,50 @@ def test_reversed_face_traversal_preserves_occurrence_roles(
 
 def test_only_registry_may_call_writer_enabled_core() -> None:
     root = Path(__file__).parents[1]
-    references: list[str] = []
+    sites: list[tuple[str, str, bool]] = []
     for path in (root / "src").rglob("*.py"):
         if path.name == "countersinks.py":
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        if any(
-            isinstance(node, ast.Name | ast.Attribute)
-            and (
-                isinstance(node, ast.Name)
-                and node.id == "_discover_countersinks"
-                or isinstance(node, ast.Attribute)
-                and node.attr == "_discover_countersinks"
+        direct = {"_discover_countersinks"}
+        modules: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "b123d_recognisers.countersinks":
+                direct.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name == "_discover_countersinks"
+                )
+            if isinstance(node, ast.Import):
+                modules.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name == "b123d_recognisers.countersinks"
+                )
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            is_call = isinstance(node.func, ast.Name) and node.func.id in direct
+            is_call |= (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "_discover_countersinks"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in modules
             )
-            for node in ast.walk(tree)
-        ):
-            references.append(path.name)
-    assert references == ["_registry.py"]
+            if is_call:
+                sites.append(
+                    (
+                        path.name,
+                        "<module>",
+                        any(
+                            keyword.arg == "writer"
+                            and isinstance(keyword.value, ast.Attribute)
+                            and keyword.value.attr == "writer"
+                            for keyword in node.keywords
+                        ),
+                    )
+                )
+    assert sites == [("_registry.py", "<module>", True)]
 
 
 def test_counter_sink_constructor_roster_is_closed() -> None:
@@ -296,12 +451,32 @@ def test_counter_sink_constructor_roster_is_closed() -> None:
     sites: list[tuple[str, str]] = []
     for path in (root / "src" / "b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
+        direct = {"CounterSink"} if path.name == "countersinks.py" else set()
+        modules: set[str] = set()
         for node in ast.walk(tree):
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "CounterSink"
-            ):
+            if isinstance(node, ast.ImportFrom) and node.module == "b123d_recognisers.countersinks":
+                direct.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name == "CounterSink"
+                )
+            if isinstance(node, ast.Import):
+                modules.update(
+                    alias.asname or alias.name
+                    for alias in node.names
+                    if alias.name == "b123d_recognisers.countersinks"
+                )
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            is_call = isinstance(node.func, ast.Name) and node.func.id in direct
+            is_call |= (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "CounterSink"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in modules
+            )
+            if is_call:
                 function = next(
                     (
                         parent.name
