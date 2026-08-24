@@ -160,6 +160,8 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    "tests/test_channel_attribution:_fresh_expected_channels:arc:1": "legacy-contract",
+    "tests/test_channel_attribution:_fresh_expected_channels:arc:2": "legacy-contract",
     "src/b123d_recognisers/_adjacency:smooth_region:arc:1": "legacy-source",
     "src/b123d_recognisers/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
     "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",
