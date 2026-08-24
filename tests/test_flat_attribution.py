@@ -314,6 +314,26 @@ def test_deep_copied_face_binding_refuses_before_publication(monkeypatch) -> Non
     assert ledger.candidate_set(FamilyId.FLATS).candidates == ()
 
 
+def test_mutated_face_binding_refuses_before_publication(monkeypatch) -> None:
+    part = _double_d()
+    ledger = ClaimLedger(FaceGraph(part))
+    real_require = ledger.graph.require_node
+
+    def mutated(face):
+        changed = copy.deepcopy(face).translate((1, 0, 0))
+        return real_require(changed)
+
+    monkeypatch.setattr(ledger.graph, "require_node", mutated)
+    with pytest.raises(ValueError):
+        _discover_flats(
+            part,
+            cyls=analyse_cylinders(part),
+            face_edges=None,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.FLATS).candidates == ()
+
+
 def test_reversed_face_traversal_preserves_flat_roles(monkeypatch) -> None:
     part = Cylinder(20, 40) & extrude(RegularPolygon(22, 6), 40)
     baseline = [record.to_dict() for record in recognise_flats(part)]

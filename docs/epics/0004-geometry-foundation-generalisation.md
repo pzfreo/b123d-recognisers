@@ -647,6 +647,13 @@ invariance with a six-flat face-traversal reversal and treats open, duplicated, 
 ownership as a pre-publication refusal; it does not fabricate a second opposition by bypassing the
 recogniser. If a future valid fixture contains multiple eligible oppositions, F5c stops and opens a
 semantic prerequisite rather than choosing by traversal order under this attribution-only slice.
+An open Shell carrying the real Flat faces is the executable family-level body-refusal case.
+OCCT cannot construct a valid closed nonmanifold Solid with one unambiguous owning Flat face:
+three-face edge incidence is either an open/invalid shell or ambiguous ownership, both rejected by
+the same graph-owned `common_valid_solid` authority before publication. F5c records that bounded
+kernel construction result instead of treating a vacuous no-output shape as a separate positive
+proof; copied, deep-copied and translated-stale face bindings exercise the remaining identity
+refusals directly.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
