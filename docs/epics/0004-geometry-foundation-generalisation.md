@@ -634,6 +634,37 @@ evidence and untouched attribution holdout allocation before implementation, obt
 accepts before one authorised reveal, and may not reuse consumed MFTRCAD buckets 10–19. A post-reveal
 defining-role/status change invalidates that family result.
 
+F5c/#196 applies that gate first to Flats. The planar truncation face is the sole defining node;
+the matched external cylinder and optional same-stock antiparallel flat remain consulted. The
+public wrapper is unchanged, all pending bindings validate before issuance, and registry promotion
+lands only with the complete evidence matrix. `F5-FLATS-H1`, MFTRCAD v1 bucket 20, was technically
+sealed by #197 before implementation and remained unrevealed until the two pre-reveal accepts.
+The authorised one-shot reveal then consumed bucket 20 at exact PR #199 head `8796a86`: 23 complete
+models/69 files, zero invalid models, and a non-vacuous exact 10 Flat proposals = 10 accepted = 10
+attributed. The selected-artifact SHA-256 is
+`a2e045e3d6eb2b1ecd454fcbd12c04aaf5a4fb1ad85519891d8bcc48cd86356b`. No predicate, defining role,
+status rule, or output was tuned from the result; the allocation is regression evidence only.
+Its 10 claimed Flat faces plus 10 nonempty attributed Candidates prove one defining face per
+Candidate arithmetically, but the scanner did not reconstruct planar-owner/stock/opposition
+geometry. Exact role correctness therefore remains development-matrix evidence; H1 proves only
+non-vacuous attribution completeness, one-face cardinality, and output retention.
+
+The F5c development matrix found no valid closed-manifold occurrence with more than one distinct
+same-stock antiparallel Flat: a connected planar truncation is one face, while splitting it creates
+separate axial stock spans or unsupported/ambiguous topology. The audit therefore proves order
+invariance with a six-flat face-traversal reversal and treats open, duplicated, or ambiguous
+ownership as a pre-publication refusal; it does not fabricate a second opposition by bypassing the
+recogniser. If a future valid fixture contains multiple eligible oppositions, F5c stops and opens a
+semantic prerequisite rather than choosing by traversal order under this attribution-only slice.
+An open Shell carrying the real Flat faces is the executable family-level body-refusal case.
+OCCT cannot construct a valid closed nonmanifold Solid with one unambiguous owning Flat face:
+three-face edge incidence is either an open/invalid shell or ambiguous ownership, both rejected by
+the same graph-owned `common_valid_solid` authority before publication. F5c records that bounded
+kernel construction result instead of treating a vacuous no-output shape as a separate positive
+proof; a deep-copied geometric clone and a translated-stale clone exercise the remaining identity
+refusals directly. A shallow wrapper around the same OCCT topology may correctly resolve through
+the graph's `IsSame` identity and is not described as invalid evidence.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

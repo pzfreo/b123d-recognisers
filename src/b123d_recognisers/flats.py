@@ -25,7 +25,8 @@ right feature from the geometry, not the rendered view:
 The across-flats size is measured definitively: a flat opposed by a parallel flat across
 the axis (double-D / hex) reads **flat-to-flat**; a lone flat reads **flat-to-opposite-OD**
 (the D height, ``R + d``). The opposing flat is another recognised face, so no separate
-size estimate is made. Bottom of the recognition DAG: depends only on build123d/OCP.
+size estimate is made. Standalone recognition is a geometry-only leaf; aggregate orchestration
+may provide the private write-only evidence capability, which discovery never reads.
 """
 
 from __future__ import annotations
@@ -37,6 +38,8 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
 from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import (
     _axis_direction_is_aligned,
@@ -46,7 +49,7 @@ from b123d_recognisers._geometry import (
     length_tol,
 )
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderInventory, Part, Span2, Vector3
+from b123d_recognisers._typing import CylinderInventory, FaceLike, Part, Span2, Vector3
 
 # A normal counts as radial (perpendicular to the axis) / antiparallel to another within
 # these unit-vector tolerances.
@@ -193,6 +196,14 @@ class Flat(Record):
         return _axis_direction_is_aligned(self.axis, self.axis_direction)
 
 
+@dataclass(frozen=True, slots=True)
+class _FlatProposal:
+    record: Flat
+    face: FaceLike
+    stock_face: FaceLike
+    opposed_face: FaceLike | None
+
+
 def recognise_flats(
     part: Part, *, cyls: CylinderInventory | None = None, face_edges: FaceEdges | None = None
 ) -> list[Flat]:
@@ -202,6 +213,18 @@ def recognise_flats(
 
     Pass *cyls* — a precomputed ``analyse_cylinders(part)`` result — to avoid
     re-scanning the solid, matching :func:`recognise_holes`'s dependency-injection contract."""
+    return _discover_flats(part, cyls=cyls, face_edges=face_edges)
+
+
+def _discover_flats(
+    part: Part,
+    *,
+    cyls: CylinderInventory | None,
+    face_edges: FaceEdges | None,
+    writer: EvidenceWriter | None = None,
+) -> list[Flat]:
+    """Discover Flats and validate every evidence binding before publishing any."""
+
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
@@ -251,6 +274,8 @@ def recognise_flats(
                     "ax": ax,
                     "dir": d,
                     "axis_direction": d,
+                    "face": f,
+                    "stock_face": c["face"],
                     # Which piece of stock this face was matched to, for the opposition test
                     # below. Internal to one recognition run — a same-run equality check, not
                     # an identity that propagates — so the solid index is safe here.
@@ -261,7 +286,7 @@ def recognise_flats(
 
     # Phase 2 — size each flat. A parallel flat opposed across the axis (antiparallel
     # normal, same stock axis) makes it flat-to-flat; otherwise flat-to-opposite-OD.
-    out: list[Flat] = []
+    out: list[_FlatProposal] = []
     for i, cand in enumerate(cands):
         n = cand["n"]
         opp = None
@@ -285,16 +310,34 @@ def recognise_flats(
                 break
         across = cand["s"] + opp["s"] if opp else cand["s"] + cand["r"]
         out.append(
-            Flat(
-                axis=cand["axis"],
-                across=round(across, 3),
-                at=(round(cand["at"][0], 3), round(cand["at"][1], 3), round(cand["at"][2], 3)),
-                axis_line=cand["axis_line"],
-                stock_span=cand["stock_span"],
-                axis_direction=cand["axis_direction"],
+            _FlatProposal(
+                record=Flat(
+                    axis=cand["axis"],
+                    across=round(across, 3),
+                    at=(
+                        round(cand["at"][0], 3),
+                        round(cand["at"][1], 3),
+                        round(cand["at"][2], 3),
+                    ),
+                    axis_line=cand["axis_line"],
+                    stock_span=cand["stock_span"],
+                    axis_direction=cand["axis_direction"],
+                ),
+                face=cand["face"],
+                stock_face=cand["stock_face"],
+                opposed_face=None if opp is None else opp["face"],
             )
         )
-    return sorted(out, key=lambda fl: (fl.axis, fl.at))
+    out.sort(key=lambda proposal: (proposal.record.axis, proposal.record.at))
+    if writer is not None:
+        pending = tuple(
+            (proposal.record, writer.graph.require_node(proposal.face)) for proposal in out
+        )
+        if any(writer.graph.common_valid_solid((node,)) is None for _record, node in pending):
+            raise ValueError("flat defining face has no unambiguous valid solid")
+        for record, node in pending:
+            writer.sink.propose(FamilyId.FLATS, record, defining=(node,))
+    return [proposal.record for proposal in out]
 
 
 def _axis_line(

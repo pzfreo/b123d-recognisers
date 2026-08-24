@@ -90,3 +90,9 @@ Newly migrated attribution uses one private writer-enabled core while the suppor
 invokes the same core without a writer. Across those independent calls parity means record type,
 value, order and `to_dict()`, not Python identity. Within the writer-enabled run each Candidate must
 retain the exact returned record occurrence; equal-valued occurrences remain identity-distinct.
+
+`recognise_flats` is the first family using this shape without adding a public sidecar parameter.
+Its private core completes discovery, sizing, sorting and every original-face/common-solid binding
+before publishing any Candidate. The public wrapper calls that core without a sink and retains its
+exact signature and byte/value/order behaviour. The owning planar face is defining; the matched
+cylinder and an optional opposed flat contribute sizing as consulted context.

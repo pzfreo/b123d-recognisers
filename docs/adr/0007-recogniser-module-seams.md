@@ -226,3 +226,10 @@ the existing graph-bound write capability and cannot read frozen evidence, dispo
 or sibling output. `FaceGraph` alone owns common-solid membership. Generic per-face tooling consumes
 one completed `InventoryProduct`; corpus adapters may compare labels but cannot rerun discovery or
 define attribution status.
+
+For the F5c Flat migration, `flats._discover_flats` is the single private writer-enabled core.
+It accepts only the inseparable graph-bound `EvidenceWriter`; `_registry` is its sole production
+writer-enabled caller, while the public `recognise_flats` facade invokes the same core without a
+writer and keeps its existing signature. The core may write original `FaceNode` evidence but may
+not read claims, frozen evidence, inventory, reconciliation, or another family's output. Stock
+cylinders and an opposed Flat face remain consulted geometry rather than Candidate evidence.

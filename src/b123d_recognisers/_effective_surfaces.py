@@ -234,7 +234,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "neighbour plane/sphere rule uses oriented topology",
     ),
-    "flats:recognise_flats:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
+    "flats:_discover_flats:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "grooves:_cone_joins:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cone-axis join uses oriented frame",

@@ -34,7 +34,7 @@ from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
 from b123d_recognisers.fillets import Fillet, recognise_fillets
-from b123d_recognisers.flats import Flat, recognise_flats
+from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
@@ -400,11 +400,16 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                recognise_flats(s.context.part, cyls=s.cylinders, face_edges=s.context.face_edges)
+                _discover_flats(
+                    s.context.part,
+                    cyls=s.cylinders,
+                    face_edges=s.context.face_edges,
+                    writer=s.writer,
+                )
             )
         ),
         Counted("flat"),
-        IncompleteAttribution("no defining evidence is issued", "migrate flat owner face"),
+        FullyAttributed("every returned flat claims its defining planar truncation face"),
     ),
     PhysicalDefinition(
         FamilyId.POCKETS,

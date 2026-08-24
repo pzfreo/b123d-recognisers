@@ -117,7 +117,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
     assert selection["selection"]["named_allocations"] == {
         F5_FLATS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_FLATS_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         }
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | NAMED_ALLOCATIONS[F5_FLATS_H1]
@@ -207,7 +207,7 @@ def test_named_allocation_requires_exact_nontransferable_authority(tmp_path: Pat
     allocation = report["sealed_allocation"]
     assert allocation["id"] == F5_FLATS_H1
     assert allocation["buckets"] == [20]
-    assert allocation["policy_status"] == "sealed_unrevealed"
+    assert allocation["policy_status"] == "consumed"
     assert allocation["selection_policy_schema_version"] == 1
     assert allocation["selection_namespace"] == audit_module.SELECTION_NAMESPACE
     assert allocation["selection_modulus"] == audit_module.SELECTION_MODULUS

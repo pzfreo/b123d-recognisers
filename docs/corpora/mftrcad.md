@@ -79,12 +79,20 @@ holdout     = buckets 10..19
 ```
 
 Named semantic-family allocations are carved out of the remaining partition before their
-implementation begins. `F5-FLATS-H1` is bucket 20 and is `sealed_unrevealed`; it is excluded from
+implementation begins. `F5-FLATS-H1` is bucket 20 and is now `consumed`; it remains excluded from
 ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
-`all` closed while named sealed allocations exist, so generic holdout authority cannot reveal one.
+`all` closed whenever named allocations exist, including consumed allocations; exact named
+selection remains mandatory and generic holdout authority cannot reveal one.
 Repository chronology records no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. A later authorised family issue owns
-the one reveal and the transition to consumed regression evidence.
+the one reveal and the transition to consumed regression evidence. The authorised F5c reveal at
+PR #199 head `8796a86` contained 23 complete models and 69 files with no invalid models. It produced
+10 Flat proposals, 10 accepted Flats and 10 attributed Flats. The selected-artifact digest was
+`a2e045e3d6eb2b1ecd454fcbd12c04aaf5a4fb1ad85519891d8bcc48cd86356b`; this summary is regression
+evidence, not a taxonomy-derived acceptance rule. The completed report contains 10 claimed Flat
+faces, so nonempty-evidence arithmetic proves one defining face per attributed Candidate. The
+scanner did not independently reconstruct the planar owner, stock cylinder or opposition geometry;
+those exact role semantics remain established by the frozen development adversary matrix, not H1.
 
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression

@@ -133,7 +133,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         registry_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
     )
     monkeypatch.setattr(registry_module, "recognise_grooves", cyl_consumer("grooves", []))
-    monkeypatch.setattr(registry_module, "recognise_flats", cyl_consumer("flats", []))
+    monkeypatch.setattr(registry_module, "_discover_flats", cyl_consumer("flats", []))
     monkeypatch.setattr(registry_module, "recognise_pockets", counted("pockets", pockets))
     monkeypatch.setattr(registry_module, "recognise_passages", counted("passages", passages))
     monkeypatch.setattr(
