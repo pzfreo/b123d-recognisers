@@ -652,8 +652,9 @@ OCCT cannot construct a valid closed nonmanifold Solid with one unambiguous owni
 three-face edge incidence is either an open/invalid shell or ambiguous ownership, both rejected by
 the same graph-owned `common_valid_solid` authority before publication. F5c records that bounded
 kernel construction result instead of treating a vacuous no-output shape as a separate positive
-proof; copied, deep-copied and translated-stale face bindings exercise the remaining identity
-refusals directly.
+proof; a deep-copied geometric clone and a translated-stale clone exercise the remaining identity
+refusals directly. A shallow wrapper around the same OCCT topology may correctly resolve through
+the graph's `IsSame` identity and is not described as invalid evidence.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
