@@ -60,7 +60,12 @@ def test_rotational_inventory_keeps_turned_chamfers():
 def test_real_turned_inventory_keeps_dimensioned_three_tenths_chamfers():
     part = import_step(str(CORPUS / "GRM-03_thumbwheel_drive_screw.step"))
 
-    found = build_recognition_result(part, rotational=True).chamfers
+    ledger, found = attributed_run(part, FamilyId.CHAMFERS, recognise_chamfers)
+    assert tuple(found) == build_recognition_result(part, rotational=True).chamfers
+    assert all(
+        len(ledger.defining_of(candidate)) == 1
+        for candidate in ledger.candidate_set(FamilyId.CHAMFERS).candidates
+    )
 
     assert [
         (chamfer.axis, chamfer.leg1, chamfer.leg2, chamfer.angle, chamfer.at) for chamfer in found

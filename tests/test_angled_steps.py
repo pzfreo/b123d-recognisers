@@ -398,7 +398,12 @@ def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
     assert len(ends[0].edges()) == 4, "the fixture must actually add an edge to the flat"
     assert len(ends[0].outer_wire().edges()) == 3
 
-    assert recognise_angled_steps(drilled_part) == plain
+    ledger, drilled = attributed_run(
+        drilled_part, FamilyId.ANGLED_STEPS, recognise_angled_steps
+    )
+    assert drilled == plain
+    (candidate,) = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    assert len(ledger.defining_of(candidate)) == 1
 
 
 def test_a_step_is_a_step_at_any_scale():
