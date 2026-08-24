@@ -846,6 +846,13 @@ membership and outcomes untouched; it moves the ordinary unselected complement t
 The allocation remains `sealed_unrevealed` until #225 completes its separately reviewed semantic and
 mechanical gates, and cannot borrow authority from any earlier family allocation.
 
+The Plates semantic child #228 is independently protected by `F5-PLATES-H1`, bucket 29. Its neutral
+seal adds the exact `f5_plates_h1` selection and acknowledgement without archive access, membership
+inspection, recognition, or outcome evidence; the ordinary unselected complement moves to buckets
+30..999. The allocation remains `sealed_unrevealed` until #228 completes its two independent
+exact-head reviews and all mechanical gates. Its authority is non-transferable, and any later zero,
+abort, invalid, or completed reveal consumes this allocation without replacement, retry, or fitting.
+
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
 one exact CandidateSet, deliberate empty Candidates are staged without prefix leakage, later writes
