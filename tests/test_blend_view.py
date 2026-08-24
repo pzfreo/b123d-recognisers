@@ -542,17 +542,37 @@ def test_foreign_surface_capability_fails_at_construction_even_for_empty_graph()
 
 
 def test_chain_and_logical_handles_revalidate_issuer_snapshots():
-    _, index = _index(_external())
+    graph, index = _index(_external())
+    assert index.run_token is graph.run_token
+    assert _edge_groups(()) == ()
     chain = index.chains()[0]
     with pytest.raises(ValueError, match="not issued"):
         index.view((copy.copy(chain),))
     with pytest.raises(TypeError, match="_issuer"):
         CollapsedGraphView(index, (copy.copy(chain),))
+    with pytest.raises(ValueError, match="must be issued"):
+        CollapsedGraphView(index, (chain,), _issuer=object())
     view = index.view((chain,))
+    for issued in view.logical_nodes():
+        assert set(view.neighbours(issued)) <= set(view.logical_nodes())
+    issued_arc = next(
+        arc
+        for at, left in enumerate(view.logical_nodes())
+        for right in view.logical_nodes()[at + 1 :]
+        for arc in view.arcs_between(left, right)
+    )
+    with pytest.raises(ValueError, match="not issued"):
+        view.expand_arc(copy.copy(issued_arc))
     node = view.logical_nodes()[0]
     object.__setattr__(node, "sources", frozenset())
     with pytest.raises(ValueError, match="changed"):
         view.expand_node(node)
+
+    _, changed_index = _index(_external())
+    changed = changed_index.chains()[0]
+    object.__setattr__(changed, "side", "concave")
+    with pytest.raises(ValueError, match="chain changed"):
+        changed_index.chains()
 
 
 def test_nested_arc_solid_and_refusal_mutation_fail_on_warm_reads():
