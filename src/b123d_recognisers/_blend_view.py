@@ -100,6 +100,30 @@ def _physical_length(occurrences: tuple[OriginalArcRef, ...]) -> float:
     return math.fsum(lengths)
 
 
+def _node_key(node: FaceNode) -> int:
+    """Stable run-local order owned by the original graph."""
+
+    return node.index
+
+
+def _arc_key(arc: OriginalArcRef) -> tuple[int, int, int, int, int, int]:
+    """Stable occurrence order without consulting kernel object hashes."""
+
+    left, right = arc.occurrence.halves
+    return (
+        arc.endpoints[0].index,
+        arc.endpoints[1].index,
+        left.wire_ordinal,
+        left.ordinal,
+        right.wire_ordinal,
+        right.ordinal,
+    )
+
+
+def _ordered_arcs(occurrences: Iterable[OriginalArcRef]) -> tuple[OriginalArcRef, ...]:
+    return tuple(sorted(occurrences, key=_arc_key))
+
+
 def _edge_groups(
     occurrences: tuple[OriginalArcRef, ...],
 ) -> tuple[tuple[OriginalArcRef, ...], ...]:
@@ -107,14 +131,18 @@ def _edge_groups(
 
     if not occurrences:
         return ()
+    occurrences = _ordered_arcs(occurrences)
     edges = [arc.occurrence.edge for arc in occurrences]
     remaining = set(range(len(edges)))
     groups: list[tuple[OriginalArcRef, ...]] = []
     while remaining:
-        pending = {remaining.pop()}
+        first = min(remaining)
+        remaining.remove(first)
+        pending = {first}
         reached: set[int] = set()
         while pending:
-            at = pending.pop()
+            at = min(pending)
+            pending.remove(at)
             if at in reached:
                 continue
             reached.add(at)
@@ -128,7 +156,7 @@ def _edge_groups(
                     remaining.remove(other_at)
                     pending.add(other_at)
         groups.append(tuple(occurrences[at] for at in sorted(reached)))
-    return tuple(groups)
+    return tuple(sorted(groups, key=lambda group: _arc_key(group[0])))
 
 
 def _one_nonbranching_edge_group(occurrences: tuple[OriginalArcRef, ...]) -> bool:
@@ -237,19 +265,19 @@ class BlendCollapseIndex:
         pending = {node for node in self._graph.nodes if self._cylinder(node) is not None}
         components: list[frozenset[FaceNode]] = []
         while pending:
-            first = next(iter(pending))
+            first = min(pending, key=_node_key)
             pending.remove(first)
             found = {first}
             queue = deque((first,))
             while queue:
                 current = queue.popleft()
-                for neighbour in self._graph.neighbours(current):
+                for neighbour in sorted(self._graph.neighbours(current), key=_node_key):
                     if neighbour in pending and self._native_neutral(current, neighbour):
                         pending.remove(neighbour)
                         found.add(neighbour)
                         queue.append(neighbour)
             components.append(frozenset(found))
-        return tuple(components)
+        return tuple(sorted(components, key=lambda nodes: min(node.index for node in nodes)))
 
     def _support_region(
         self, first: FaceNode, *, excluded: frozenset[FaceNode], solid: SolidRef
@@ -258,7 +286,7 @@ class BlendCollapseIndex:
         queue = deque((first,))
         while queue:
             current = queue.popleft()
-            for neighbour in self._graph.neighbours(current):
+            for neighbour in sorted(self._graph.neighbours(current), key=_node_key):
                 if neighbour in found or neighbour in excluded:
                     continue
                 if self._native_neutral(current, neighbour):
@@ -274,7 +302,7 @@ class BlendCollapseIndex:
         return frozenset(found)
 
     def _arc_refs(self, a: FaceNode, b: FaceNode) -> tuple[OriginalArcRef, ...]:
-        found = tuple(
+        found = _ordered_arcs(
             OriginalArcRef(item.endpoints, item) for item in self._graph.shared_occurrences(a, b)
         )
         for arc in found:
@@ -327,8 +355,8 @@ class BlendCollapseIndex:
         solid = None
         internal_degree = {node: 0 for node in component}
         accounted_halves: set = set()
-        for node in component:
-            for neighbour in self._graph.neighbours(node):
+        for node in sorted(component, key=_node_key):
+            for neighbour in sorted(self._graph.neighbours(node), key=_node_key):
                 if neighbour in component and node.index > neighbour.index:
                     continue
                 refs = self._arc_refs(node, neighbour)
@@ -361,7 +389,7 @@ class BlendCollapseIndex:
                     return self._refuse(component, BlendRefusalReason.INCOMPLETE_BOUNDARY)
                 terminal_entries.extend((node, neighbour, ref) for ref in refs)
 
-        for node in component:
+        for node in sorted(component, key=_node_key):
             face = self._graph.face(node)
             for occurrence in self._graph.edge_occurrences(node):
                 if occurrence in accounted_halves:
@@ -434,10 +462,14 @@ class BlendCollapseIndex:
             sorted(support_sets, key=lambda region: min(node.index for node in region))
         )
         spring_groups = tuple(
-            tuple(arc for node in component for arc in spring_by_patch[node][support])
+            _ordered_arcs(
+                arc
+                for node in sorted(component, key=_node_key)
+                for arc in spring_by_patch[node][support]
+            )
             for support in supports
         )
-        first_fact = self._cylinder(next(iter(component)))
+        first_fact = self._cylinder(min(component, key=_node_key))
         assert first_fact is not None
         radius = first_fact.parameters[-1]
         local_values = [
@@ -466,9 +498,11 @@ class BlendCollapseIndex:
         chain = BlendChain(
             blend_nodes=component,
             supports=(supports[0], supports[1]),
-            spring_arcs=tuple(arc for group in spring_groups for arc in group),
-            internal_arcs=tuple(internal),
-            terminal_arcs=tuple(arc for group in terminal_groups_arcs for arc in group),
+            spring_arcs=_ordered_arcs(arc for group in spring_groups for arc in group),
+            internal_arcs=_ordered_arcs(internal),
+            terminal_arcs=_ordered_arcs(
+                arc for group in terminal_groups_arcs for arc in group
+            ),
             side=side,
             radius=radius,
             solid=solid,
@@ -574,6 +608,7 @@ class CollapsedGraphView:
                 if support not in support_sets:
                     support_sets.append(support)
         covered = frozenset(node for support in support_sets for node in support)
+        support_sets.sort(key=lambda sources: min(node.index for node in sources))
         sources = support_sets + [
             frozenset((node,))
             for node in self._graph.nodes
@@ -583,8 +618,8 @@ class CollapsedGraphView:
         self._node_provenance: dict[LogicalNode, FrozenProvenance] = {}
         self._issued_nodes: dict[LogicalNode, tuple] = {}
         for node in self._nodes:
-            members = tuple(node.sources)
-            internal = tuple(
+            members = tuple(sorted(node.sources, key=_node_key))
+            internal = _ordered_arcs(
                 arc
                 for at, left in enumerate(members)
                 for right in members[at + 1 :]
@@ -615,14 +650,16 @@ class CollapsedGraphView:
                     arc_provenance[arc] = FrozenProvenance(frozenset((left, right)), (ref,))
         for chain in selected:
             logical_left, logical_right = (
-                self._by_source[next(iter(source))] for source in chain.supports
+                self._by_source[min(source, key=_node_key)] for source in chain.supports
             )
             bridge_kind: ArcKind = "convex" if chain.side == "convex" else "concave"
             arc = LogicalArc((logical_left, logical_right), bridge_kind, True)
             arcs.append(arc)
             arc_provenance[arc] = FrozenProvenance(
                 frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1])),
-                (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs),
+                _ordered_arcs(
+                    (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
+                ),
             )
         self._arcs = tuple(arcs)
         self._issued_arcs = {

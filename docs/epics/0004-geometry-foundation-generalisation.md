@@ -385,7 +385,10 @@ and any existing support adjacency rather than collapsing them to one pair value
 
 `OriginalArcRef` is an issuer-owned unordered original-node pair plus exact graph-owned
 `SharedEdgeOccurrenceRef`. `FrozenProvenance` for a synthetic arc contains both support regions, every hidden blend
-node, and every original spring/internal/terminal arc. Expansion is deterministic and complete; a
+node, and every original spring/internal/terminal arc. Expansion is deterministic and complete.
+Occurrence tuples use the original graph's run-local node/wire/edge order solely as a stable
+presentation order; tuple position and node index carry no geometry, ownership or cross-run
+identity. A
 future consumer must expand the selected logical occurrence, then #192 must explicitly classify the
 original nodes as defining or consulted evidence under the existing evidence semantics before
 Candidate issuance. Complete provenance does not itself imply ownership. Logical handles themselves

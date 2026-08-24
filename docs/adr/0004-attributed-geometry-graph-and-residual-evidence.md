@@ -154,3 +154,6 @@ arc expands to complete original-node and original-occurrence provenance. The ba
 mutated or substituted. Overlapping discovery components refuse before issuance, and selection is
 atomic. Complete provenance does not imply Candidate ownership: the separately reviewed consumer
 must classify expanded original nodes as defining or consulted evidence before sink issuance.
+Run-local node/wire/edge ordinals provide deterministic tuple presentation only; they are not
+geometric identity and invariance remains defined through explicit original-face/edge
+correspondence.

@@ -25,6 +25,7 @@ from b123d_recognisers._blend_view import (
     CollapsedGraphView,
     OriginalArcRef,
     RefusedBlendComponent,
+    _edge_groups,
     _one_nonbranching_edge_group,
 )
 from b123d_recognisers._effective_surfaces import (
@@ -462,10 +463,31 @@ def test_selected_chain_hides_only_blend_and_adds_provenance_complete_bridge():
     assert provenance.nodes == frozenset(
         (*chain.blend_nodes, *chain.supports[0], *chain.supports[1])
     )
-    assert provenance.arcs == (
-        *chain.spring_arcs,
-        *chain.internal_arcs,
-        *chain.terminal_arcs,
+    assert set(provenance.arcs) == set(
+        (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
+    )
+    assert tuple(
+        (
+            arc.endpoints[0].index,
+            arc.endpoints[1].index,
+            arc.occurrence.halves[0].wire_ordinal,
+            arc.occurrence.halves[0].ordinal,
+            arc.occurrence.halves[1].wire_ordinal,
+            arc.occurrence.halves[1].ordinal,
+        )
+        for arc in provenance.arcs
+    ) == tuple(
+        sorted(
+            (
+                arc.endpoints[0].index,
+                arc.endpoints[1].index,
+                arc.occurrence.halves[0].wire_ordinal,
+                arc.occurrence.halves[0].ordinal,
+                arc.occurrence.halves[1].wire_ordinal,
+                arc.occurrence.halves[1].ordinal,
+            )
+            for arc in provenance.arcs
+        )
     )
     object.__setattr__(provenance, "nodes", frozenset())
     assert view.expand_arc(bridges[0]).nodes
@@ -580,6 +602,71 @@ def test_rigid_mirror_and_scale_keep_four_provenance_complete_chains(part):
         for chain in index.chains()
     )
     assert signatures == [("convex", 1, 2, 2)] * 4
+
+
+def test_discovery_and_provenance_use_graph_owned_order_not_set_or_input_order():
+    graph, index = _index(_external())
+    chains = index.chains()
+    assert [min(node.index for node in chain.blend_nodes) for chain in chains] == sorted(
+        min(node.index for node in chain.blend_nodes) for chain in chains
+    )
+
+    def arc_key(arc):
+        left, right = arc.occurrence.halves
+        return (
+            arc.endpoints[0].index,
+            arc.endpoints[1].index,
+            left.wire_ordinal,
+            left.ordinal,
+            right.wire_ordinal,
+            right.ordinal,
+        )
+
+    for chain in chains:
+        for arcs in (chain.spring_arcs, chain.internal_arcs, chain.terminal_arcs):
+            assert tuple(map(arc_key, arcs)) == tuple(sorted(map(arc_key, arcs)))
+        combined = (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
+        assert _edge_groups(combined) == _edge_groups(tuple(reversed(combined)))
+
+    # Rebuild from fresh graph-owned occurrences and compare correspondence, never identity.
+    other_graph, other_index = _index(_external())
+    assert [
+        (
+            tuple(sorted(node.index for node in chain.blend_nodes)),
+            tuple(arc_key(arc) for arc in chain.spring_arcs),
+            tuple(arc_key(arc) for arc in chain.internal_arcs),
+            tuple(arc_key(arc) for arc in chain.terminal_arcs),
+        )
+        for chain in chains
+    ] == [
+        (
+            tuple(sorted(node.index for node in chain.blend_nodes)),
+            tuple(arc_key(arc) for arc in chain.spring_arcs),
+            tuple(arc_key(arc) for arc in chain.internal_arcs),
+            tuple(arc_key(arc) for arc in chain.terminal_arcs),
+        )
+        for chain in other_index.chains()
+    ]
+    assert len(graph.nodes) == len(other_graph.nodes)
+
+    synthetic_graph, synthetic_surfaces = _split_strip_capabilities()
+    forward = BlendCollapseIndex(synthetic_graph, synthetic_surfaces).chains()[0]
+    synthetic_graph, synthetic_surfaces = _split_strip_capabilities()
+    synthetic_graph.adjacency = dict(reversed(tuple(synthetic_graph.adjacency.items())))
+    synthetic_graph.arcs = dict(reversed(tuple(synthetic_graph.arcs.items())))
+    synthetic_graph.sides = dict(reversed(tuple(synthetic_graph.sides.items())))
+    reversed_insertion = BlendCollapseIndex(synthetic_graph, synthetic_surfaces).chains()[0]
+    assert (
+        tuple(sorted(node.index for node in forward.blend_nodes)),
+        tuple(arc_key(arc) for arc in forward.spring_arcs),
+        tuple(arc_key(arc) for arc in forward.internal_arcs),
+        tuple(arc_key(arc) for arc in forward.terminal_arcs),
+    ) == (
+        tuple(sorted(node.index for node in reversed_insertion.blend_nodes)),
+        tuple(arc_key(arc) for arc in reversed_insertion.spring_arcs),
+        tuple(arc_key(arc) for arc in reversed_insertion.internal_arcs),
+        tuple(arc_key(arc) for arc in reversed_insertion.terminal_arcs),
+    )
 
 
 def test_step_round_trip_preserves_chain_incidence(tmp_path):
