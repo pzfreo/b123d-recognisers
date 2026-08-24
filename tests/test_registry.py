@@ -8,7 +8,7 @@ from dataclasses import fields, replace
 from inspect import signature
 
 import pytest
-from build123d import Box
+from build123d import Box, Pos
 
 import b123d_recognisers as public
 import b123d_recognisers.result as result_module
@@ -21,6 +21,8 @@ from b123d_recognisers._registry import (
     CompletedInputs,
     Counted,
     DerivedId,
+    FullyAttributed,
+    IncompleteAttribution,
     NotCounted,
     always,
     prismatic,
@@ -30,7 +32,7 @@ from b123d_recognisers._registry import (
     validate_result_fields,
 )
 from b123d_recognisers.census import CENSUS_BINDINGS, CENSUS_KEYS
-from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionResult
+from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionResult, _take_inventory
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
@@ -41,6 +43,22 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
     assert tuple(item.identifier for item in DERIVED_DEFINITIONS) == tuple(DerivedId)
     assert all(isinstance(item.census, Counted | NotCounted) for item in PHYSICAL_DEFINITIONS)
     assert all(isinstance(item.census, Counted | NotCounted) for item in DERIVED_DEFINITIONS)
+    assert {
+        item.family
+        for item in PHYSICAL_DEFINITIONS
+        if isinstance(item.attribution, FullyAttributed)
+    } == {
+        FamilyId.PRISMATIC_POCKETS,
+        FamilyId.PASSAGES,
+        FamilyId.GROOVES,
+        FamilyId.TURNED_STEPS,
+        FamilyId.CHAMFERS,
+        FamilyId.ANGLED_STEPS,
+    }
+    assert all(
+        isinstance(item.attribution, FullyAttributed | IncompleteAttribution)
+        for item in PHYSICAL_DEFINITIONS
+    )
     assert PHYSICAL_FAMILIES == (
         FamilyId.COUNTERSINKS,
         FamilyId.HOLES,
@@ -65,6 +83,53 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.FILLETS,
         FamilyId.PLATES,
     )
+
+
+@pytest.mark.parametrize(
+    "attribution",
+    [
+        FullyAttributed(""),
+        IncompleteAttribution("", "follow-up"),
+        IncompleteAttribution("reason", ""),
+    ],
+)
+def test_registry_rejects_empty_attribution_contracts(attribution) -> None:
+    changed = (replace(PHYSICAL_DEFINITIONS[0], attribution=attribution), *PHYSICAL_DEFINITIONS[1:])
+    with pytest.raises(ValueError, match="attribut"):
+        validate_definitions(changed, DERIVED_DEFINITIONS)
+
+
+def test_terminal_validator_enforces_fully_attributed_all_occurrence_promise(
+    monkeypatch,
+) -> None:
+    product = _take_inventory(Box(30, 30, 5) + Pos(10, 10, 5) * Box(10, 10, 5))
+    assert product.physical.candidate_set(FamilyId.PADS).candidates
+    definitions = tuple(
+        replace(
+            item,
+            attribution=FullyAttributed("adversarially false completeness declaration"),
+        )
+        if item.family is FamilyId.PADS
+        else item
+        for item in PHYSICAL_DEFINITIONS
+    )
+    monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
+    with pytest.raises(ValueError, match="pads promises complete"):
+        result_module._validate_attribution(
+            product.context, product.physical, product.evidence
+        )
+
+
+def test_terminal_validator_rechecks_partial_family_body_provenance(monkeypatch) -> None:
+    product = _take_inventory(Box(30, 30, 10) - Box(12, 5, 20))
+    slot = product.physical.candidate_set(FamilyId.SLOTS).candidates[0]
+    assert product.evidence.defining_of(slot)
+    monkeypatch.setattr(product.context.graph, "common_valid_solid", lambda nodes: None)
+
+    with pytest.raises(ValueError, match="lost its common valid solid"):
+        result_module._validate_attribution(
+            product.context, product.physical, product.evidence
+        )
 
 
 def test_registry_dependencies_are_explicit_and_restricted() -> None:

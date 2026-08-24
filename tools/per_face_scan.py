@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Per-face precision and recall for the claiming families against a labelled corpus.
+"""Registry-driven physical attribution plus an MFCAD++ label comparison adapter.
 
 Epic 0002 item 0. Every recall figure this package quotes outside chamfers and angled steps
 comes from non-negative least squares fitting record counts against labelled-face counts across
@@ -7,10 +7,10 @@ models -- correlational, unable to separate "not recognised" from "recognised un
 family name", and weak for several families. This observes attribution instead: a claim names
 the faces that established a record, the corpus names each face, so the join is direct.
 
-**It measures claiming, not recognition, and the difference is the point.** Only families that
-write into the :class:`~b123d_recognisers._claims.ClaimLedger` appear here. A class this package
-recognises through a non-claiming family scores zero, which is a statement about the ledger and
-not about the recogniser. Read the per-label table with :data:`CLAIMING` in front of you.
+**It measures attribution, not recognition, and the difference is the point.** Every registered
+physical family appears, including incomplete families with zero attributed occurrences. The
+generic counts come from the one completed frozen inventory; MFCAD++ labels are only a comparison
+adapter and never define ownership or attribution status.
 
 Reads any directory of MFCAD++-style STEP whose per-face label is the ``ADVANCED_FACE`` name,
 defaulting to the vendored subset. ``--json`` writes the raw counts for a caller that wants to
@@ -28,12 +28,6 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 VENDORED = ROOT / "tests" / "corpus" / "mfcadpp"
 _LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
-
-#: The families that write a defining claim, and so the only ones this scan can see. Grooves
-#: and turned steps claim too but have no MFCAD++ counterpart at all -- the corpus is prismatic
-#: and those are turning features -- so they are absent from a run over it rather than scoring
-#: zero on it.
-CLAIMING = ("Slot", "Pocket", "PrismaticPocket", "Passage", "Chamfer", "AngledStep")
 
 #: MFCAD++'s own mapping, from ``feature_labels.txt`` in the published archive.
 LABELS = {
@@ -65,7 +59,47 @@ LABELS = {
 }
 
 
-def scan_part(part, labels):
+def inventory_attribution(product):
+    """Primitive-only attribution counts for all registered physical families."""
+
+    from b123d_recognisers._registry import (
+        PHYSICAL_DEFINITIONS,
+        FullyAttributed,
+    )
+
+    result = {}
+    for definition in PHYSICAL_DEFINITIONS:
+        proposed = product.physical.candidate_set(definition.family).candidates
+        accepted = product.accepted.candidate_set(definition.family).candidates
+        attributed = tuple(
+            candidate for candidate in accepted if product.evidence.defining_of(candidate)
+        )
+        defining = tuple(
+            node for candidate in attributed for node in product.evidence.defining_of(candidate)
+        )
+        disposition = definition.attribution
+        result[definition.family.value] = {
+            "records": len(proposed),
+            "candidates": len(proposed),
+            "accepted": len(accepted),
+            "attributed": len(attributed),
+            "defining_face_occurrences": len(defining),
+            "distinct_defining_faces": len(set(defining)),
+            "status": (
+                "fully_attributed"
+                if isinstance(disposition, FullyAttributed)
+                else "incomplete_attribution"
+            ),
+            "reason": (
+                disposition.proof_contract
+                if isinstance(disposition, FullyAttributed)
+                else disposition.reason
+            ),
+        }
+    return result
+
+
+def _scan_part(part, labels):
     """One part's claimed faces, as ``{family: Counter(label)}`` plus the record counts.
 
     Runs the claiming families against one ledger and applies the reconcilers, so what is
@@ -74,7 +108,7 @@ def scan_part(part, labels):
     sees, which is the arithmetic that made the old fitted figures unreadable.
     """
 
-    from b123d_recognisers._candidates import FamilyId
+    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
     from b123d_recognisers.result import _take_inventory
 
     faces = list(part.faces())
@@ -82,12 +116,8 @@ def scan_part(part, labels):
     graph = product.context.graph
     at = {face: i for i, face in enumerate(faces)}
     family_names = {
-        FamilyId.SLOTS: "Slot",
-        FamilyId.POCKETS: "Pocket",
-        FamilyId.PRISMATIC_POCKETS: "PrismaticPocket",
-        FamilyId.PASSAGES: "Passage",
-        FamilyId.CHAMFERS: "Chamfer",
-        FamilyId.ANGLED_STEPS: "AngledStep",
+        definition.family: definition.record_types[0].__name__
+        for definition in PHYSICAL_DEFINITIONS
     }
     accepted = tuple(
         candidate
@@ -108,13 +138,23 @@ def scan_part(part, labels):
     covered: set[int] = set()
     for candidate in accepted:
         family = family_names[candidate.family]
-        if family not in CLAIMING:
-            continue
         for node in product.evidence.defining_of(candidate):
             index = at[graph.face(node)]
             claimed[family][labels[index]] += 1
             covered.add(index)
-    return claimed, records, Counter(labels[index] for index in covered)
+    return (
+        claimed,
+        records,
+        Counter(labels[index] for index in covered),
+        inventory_attribution(product),
+    )
+
+
+def scan_part(part, labels):
+    """Compatibility label adapter; generic attribution is available separately."""
+
+    claimed, records, covered, _attribution = _scan_part(part, labels)
+    return claimed, records, covered
 
 
 def scan(corpus: Path):
@@ -126,6 +166,7 @@ def scan(corpus: Path):
     records: Counter = Counter()
     per_label: Counter = Counter()
     covered: Counter = Counter()
+    attribution: dict[str, dict] = {}
     models = skipped = 0
 
     for path in sorted(corpus.glob("*.st*p")):
@@ -136,11 +177,36 @@ def scan(corpus: Path):
             continue
         models += 1
         per_label.update(labels)
-        part_claimed, part_records, part_covered = scan_part(part, labels)
+        part_claimed, part_records, part_covered, part_attribution = _scan_part(part, labels)
         for family, counts in part_claimed.items():
             claimed[family].update(counts)
         records.update(part_records)
         covered.update(part_covered)
+        for family, row in part_attribution.items():
+            aggregate = attribution.setdefault(
+                family,
+                {
+                    "records": 0,
+                    "candidates": 0,
+                    "accepted": 0,
+                    "attributed": 0,
+                    "defining_face_occurrences": 0,
+                    "distinct_defining_faces": 0,
+                    "status": row["status"],
+                    "reason": row["reason"],
+                },
+            )
+            if (aggregate["status"], aggregate["reason"]) != (row["status"], row["reason"]):
+                raise ValueError("registry attribution metadata changed during one scan")
+            for field in (
+                "records",
+                "candidates",
+                "accepted",
+                "attributed",
+                "defining_face_occurrences",
+                "distinct_defining_faces",
+            ):
+                aggregate[field] += row[field]
 
     return {
         "models": models,
@@ -149,26 +215,41 @@ def scan(corpus: Path):
         "claimed": {family: dict(counts) for family, counts in claimed.items()},
         "faces_per_label": dict(per_label),
         "faces_covered": dict(covered),
+        "attribution": attribution,
     }
 
 
 def report(result) -> str:
     """The two tables, as text."""
 
+    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+
     claimed = {family: Counter(counts) for family, counts in result["claimed"].items()}
+    registry_family_for = {
+        definition.record_types[0].__name__: definition.family.value
+        for definition in PHYSICAL_DEFINITIONS
+    }
     lines = [f"models scanned: {result['models']} (skipped {result['skipped']})", ""]
 
-    lines.append("PER-FAMILY -- what the faces a family claims are actually labelled")
-    lines.append(f"{'family':<12}{'records':>8}{'faces':>7}  labels")
-    for family in CLAIMING:
+    lines.append("PER-FAMILY -- frozen inventory attribution and corpus labels")
+    lines.append(
+        f"{'family':<24}{'records':>8}{'accepted':>10}{'attributed':>12}"
+        f"{'faces':>7}  status / labels"
+    )
+    for family in sorted(result["records"]):
         counts = claimed.get(family, Counter())
         dist = ", ".join(f"{LABELS.get(k, k)}={v}" for k, v in counts.most_common())
         n = sum(counts.values())
-        lines.append(f"{family:<12}{result['records'].get(family, 0):>8}{n:>7}  {dist or '-'}")
+        registry_family = registry_family_for[family]
+        row = result["attribution"][registry_family]
+        lines.append(
+            f"{family:<24}{row['records']:>8}{row['accepted']:>10}{row['attributed']:>12}"
+            f"{n:>7}  {row['status']} / {dist or '-'}"
+        )
 
     covered = {int(k): v for k, v in result["faces_covered"].items()}
 
-    lines += ["", "PER-LABEL -- the fraction of each class any CLAIMING family claims", ""]
+    lines += ["", "PER-LABEL -- the fraction of each class any physical family claims", ""]
     lines.append(f"{'label':<34}{'faces':>7}{'claimed':>9}{'share':>8}")
     for label, total in sorted(result["faces_per_label"].items(), key=lambda kv: -kv[1]):
         got = covered.get(int(label), 0)

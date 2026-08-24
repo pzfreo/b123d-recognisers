@@ -16,6 +16,26 @@ Downstream CI can export the identical deterministic JSON with
 `b123d-recognisers-capabilities --format-version 1`. Unknown format versions fail closed. This
 page remains the human explanation of the machine-readable boundary.
 
+## Defining-face attribution status
+
+Attribution is a private Candidate/evidence contract, not a new capability-manifest field. Format 1
+therefore remains unchanged. `Fully attributed` means every aggregate record occurrence on every
+current output path has non-empty original-face defining evidence. `Incomplete` may include useful
+measured occurrences while at least one path remains empty; it does not mean the recogniser returns
+nothing. Every non-empty aggregate defining set, complete or partial, must belong to one graph-proved
+valid closed solid.
+
+| Status | Physical families | Reason / next boundary |
+| --- | --- | --- |
+| Fully attributed | `angled_steps`, `chamfers`, `grooves`, `passages`, `prismatic_pockets`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; F5b independently audits every constructor path. |
+| Incomplete, partially measured | `pockets`, `slots` | Paired-wall/corner paths are measured, but cap-recovered obround outputs deliberately remain empty pending separate migrations. |
+| Incomplete | `bosses`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `holes`, `pads`, `plates`, `polygonal_bosses`, `polygonal_stock`, `repeating_radial_profiles`, `risers`, `step_levels` | No complete occurrence-to-defining-face contract yet. `polygonal_stock` is stock context; level/riser/repetition records are analysis or correspondence facts and require a reviewed ownership proof or structural exclusion. |
+
+The registry is the closed machine-checked authority for these 22 internal dispositions. Per-face
+tools consume the completed frozen inventory and report records, Candidates, accepted occurrences,
+attributed occurrences and defining faces separately. Corpus labels are diagnostic comparisons and
+never establish ownership.
+
 “Excluded” means that current recognition deliberately returns no record. It does not
 mean the geometry is invalid or that support is promised. Expanding an excluded class
 is a recognition-behaviour change requiring independent fixtures, semantic goldens,

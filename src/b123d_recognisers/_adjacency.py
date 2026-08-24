@@ -223,6 +223,8 @@ class FaceGraphQuery(Protocol):
 
     def ownership(self, occurrence: SharedEdgeOccurrenceRef) -> EdgeOwnershipFact | None: ...
 
+    def common_valid_solid(self, nodes: Iterable[FaceNode]) -> SolidRef | None: ...
+
 
 class FaceGraph:
     """One node per face of one part, for the length of one recognition run.
@@ -611,6 +613,35 @@ class FaceGraph:
         self._closed_solids = frozenset(closed)
         self._solid_refs = tuple(SolidRef(at) for at in range(len(solids)))
         self._issued_solid_refs = {solid: solid.ordinal for solid in self._solid_refs}
+
+    def common_valid_solid(self, nodes: Iterable[FaceNode]) -> SolidRef | None:
+        """Prove that non-empty original nodes belong to one valid closed solid.
+
+        Foreign nodes are caller errors. Ambiguous, open, non-solid, or cross-solid sets have no
+        proof and return ``None``. The returned reference is run-owned and revalidated on every
+        read; it is not persistent identity.
+        """
+
+        defining = tuple(nodes)
+        if not defining:
+            return None
+        for node in defining:
+            self._at(node)
+        self._build_solid_ownership()
+        assert self._face_solids is not None
+        assert self._closed_solids is not None
+        assert self._solid_refs is not None
+        memberships = tuple(self._face_solids[node.index] for node in defining)
+        if (
+            any(len(membership) != 1 for membership in memberships)
+            or any(membership != memberships[0] for membership in memberships[1:])
+            or memberships[0][0] not in self._closed_solids
+        ):
+            return None
+        solid = self._solid_refs[memberships[0][0]]
+        if self._issued_solid_refs.get(solid) != solid.ordinal:
+            raise ValueError("solid reference changed after issuance")
+        return solid
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:

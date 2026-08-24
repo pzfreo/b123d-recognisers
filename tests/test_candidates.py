@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from math import sqrt
 
 import pytest
-from build123d import Box, Pos, Rot
+from build123d import Box, Face, Plane, Pos, Rot
 
 from b123d_recognisers import recognise_angled_steps
 from b123d_recognisers._adjacency import FaceGraph
@@ -55,6 +55,29 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.claims == ()
     assert ledger.candidate_set(FamilyId.LEGACY).candidates == (candidate,)
     assert ledger.snapshot_index().defining_of(candidate) == frozenset()
+
+
+def test_physical_evidence_requires_one_valid_solid_but_legacy_remains_compatible() -> None:
+    assembly = Pos(-20, 0, 0) * Box(10, 10, 10) + Pos(20, 0, 0) * Box(10, 10, 10)
+    ledger = ClaimLedger(FaceGraph(assembly))
+    left = min(ledger.graph.nodes, key=lambda node: ledger.graph.face(node).center().X)
+    right = max(ledger.graph.nodes, key=lambda node: ledger.graph.face(node).center().X)
+
+    same_solid = ledger.propose(FamilyId.SLOTS, Record(1), [left])
+    assert ledger.graph.common_valid_solid(ledger.defining_of(same_solid)) is not None
+    before = ledger.candidate_set(FamilyId.SLOTS).candidates
+    with pytest.raises(ValueError, match="one valid closed solid"):
+        ledger.propose(FamilyId.SLOTS, Record(2), [left, right])
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == before
+
+    legacy = ledger.propose(FamilyId.LEGACY, Record(3), [left, right])
+    assert ledger.defining_of(legacy) == frozenset((left, right))
+
+    open_ledger = ClaimLedger(FaceGraph(Face.make_rect(10, 10, Plane.XY)))
+    with pytest.raises(ValueError, match="one valid closed solid"):
+        open_ledger.propose(FamilyId.SLOTS, Record(4), open_ledger.graph.nodes)
+    open_legacy = open_ledger.propose(FamilyId.LEGACY, Record(5), open_ledger.graph.nodes)
+    assert open_ledger.defining_of(open_legacy) == frozenset(open_ledger.graph.nodes)
 
 
 def test_observations_freeze_without_becoming_candidates_or_claims() -> None:

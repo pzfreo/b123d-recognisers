@@ -366,3 +366,10 @@ without justifying an inferred manufacturing or drafting feature.
 Rejected. Silent forward compatibility is precisely how downstream obligations drift. Explicit
 prerelease/range coordination provides compatibility without pretending unknown semantics are
 safe.
+
+## F5 attribution metadata does not change format 1
+
+The closed attribution disposition is private registry metadata and reviewed human capability
+prose. It adds no field to `capabilities.json`, no public record/result field and no Draftwright pin
+movement. Publishing machine-readable attribution requires a separately authorised format
+transition under this ADR; unknown format-1 family fields remain rejected.

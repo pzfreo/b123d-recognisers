@@ -219,3 +219,10 @@ surface index, re-walk solids, or issue evidence. Both inputs bind atomically to
 `CollapsedGraphView` is a distinct bounded support-bridge API, not a `FaceGraph` subtype, duck type
 or global context substitute. No production recogniser receives it in neutral F3a. ADR 0002 and
 ADR 0009 are amended only when issue #192 authorises one named direct/aggregate family consumer.
+
+F5 keeps attribution declarations in `_registry`; aggregate orchestration in `result` compares them
+with the completed `CandidateInventory` and terminal `EvidenceIndex`. Family discovery receives only
+the existing graph-bound write capability and cannot read frozen evidence, dispositions, inventory
+or sibling output. `FaceGraph` alone owns common-solid membership. Generic per-face tooling consumes
+one completed `InventoryProduct`; corpus adapters may compare labels but cannot rerun discovery or
+define attribution status.

@@ -83,3 +83,10 @@ it:
 - Its claims name the faces the record was **established by** -- asserted against the geometry
   those faces have, not against a captured count.
 - A ledger built from a different part is refused.
+
+## F5 defining-attribution migration
+
+Newly migrated attribution uses one private writer-enabled core while the supported public wrapper
+invokes the same core without a writer. Across those independent calls parity means record type,
+value, order and `to_dict()`, not Python identity. Within the writer-enabled run each Candidate must
+retain the exact returned record occurrence; equal-valued occurrences remain identity-distinct.
