@@ -20,6 +20,7 @@ from mftrcad_audit import (  # noqa: E402
     DATASET_REF,
     DATASET_VERSION,
     DEVELOPMENT_BUCKETS,
+    F5_BOSSES_H1,
     F5_COUNTERSINKS_H1,
     F5_FILLETS_H1,
     F5_FLATS_H1,
@@ -94,6 +95,7 @@ def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
         "f5_fillets_h1",
         "f5_flats_h1",
         "f5_countersinks_h1",
+        "f5_bosses_h1",
     }
     assert not (
         {name for name, value in selected.items() if value == "development"}
@@ -135,12 +137,16 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_COUNTERSINKS_H1]),
             "status": "consumed",
         },
+        F5_BOSSES_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_BOSSES_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 23
-    assert partition.isdisjoint(set(range(23, 1000)))
-    assert partition | set(range(23, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[23, 999]]
+    assert len(partition) == 24
+    assert partition.isdisjoint(set(range(24, 1000)))
+    assert partition | set(range(24, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[24, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -203,6 +209,7 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         ("f5_flats_h1", F5_FLATS_H1, 20, "consumed"),
         ("f5_fillets_h1", F5_FILLETS_H1, 21, "consumed"),
         ("f5_countersinks_h1", F5_COUNTERSINKS_H1, 22, "consumed"),
+        ("f5_bosses_h1", F5_BOSSES_H1, 23, "sealed_unrevealed"),
     ],
 )
 def test_named_allocation_requires_exact_nontransferable_authority(
@@ -248,6 +255,7 @@ def test_named_allocation_requires_exact_nontransferable_authority(
     [
         ("f5_fillets_h1", F5_FILLETS_H1, F5_FLATS_H1),
         ("f5_countersinks_h1", F5_COUNTERSINKS_H1, F5_FILLETS_H1),
+        ("f5_bosses_h1", F5_BOSSES_H1, F5_COUNTERSINKS_H1),
     ],
 )
 def test_named_allocation_requires_its_own_exact_authority(
@@ -272,7 +280,7 @@ def test_named_allocation_requires_its_own_exact_authority(
                 reveal_allocations=authority,
             )
 @pytest.mark.parametrize(
-    "token", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1"]
+    "token", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1", "f5_bosses_h1"]
 )
 def test_named_allocation_refuses_before_touching_the_root(
     tmp_path: Path, token: str
@@ -291,7 +299,7 @@ def test_named_allocation_refuses_before_touching_the_root(
 
 
 @pytest.mark.parametrize(
-    "token", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1"]
+    "token", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1", "f5_bosses_h1"]
 )
 def test_cli_named_allocation_refuses_before_touching_the_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, token: str
@@ -410,7 +418,7 @@ def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> 
 
 
 @pytest.mark.parametrize(
-    "named", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1"]
+    "named", ["f5_flats_h1", "f5_fillets_h1", "f5_countersinks_h1", "f5_bosses_h1"]
 )
 def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
     sealed = next(

@@ -763,6 +763,16 @@ The failure did not authorize an alternate scanner mode, rerun, replacement, pre
 role change. Bucket 22 is permanently consumed and the holdout result is explicitly inconclusive;
 the exact ownership claim remains supported by the frozen development matrix and mechanical gates.
 
+F5f/#209 migrates cylindrical Bosses only after #208 technically seals `F5-BOSSES-H1`, MFTRCAD v1
+bucket 23, without archive access. The sealed allocation is excluded permanently from `unselected`,
+requires its exact non-transferable acknowledgement, and begins `sealed_unrevealed`; the normalized
+unselected complement is 24..999. The defining evidence contract is the complete identity set of
+original external cylinder faces in the producing segment. End partners remain transient consulted
+orientation context. The migration preserves current unsorted emission order and the geometry-only
+public facade; no recognition, output, reconciliation, or capability-format change is part of the
+neutral seal. Bucket 23 may be revealed once only after the semantic child passes full gates and two
+independent exact-head accepts; a zero or aborted result still consumes it and remains inconclusive.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
