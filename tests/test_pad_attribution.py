@@ -298,6 +298,23 @@ def test_intervening_levels_do_not_change_body_local_pad_base() -> None:
     _assert_role(record, candidate, ledger)
 
 
+def test_tier_context_suppresses_upper_tiny_pad_but_retains_lower_pad() -> None:
+    base = Box(80, 60, 10)
+    lower = Pos(0, 0, 7) * Box(30, 20, 4)
+    upper = Pos(0, 0, 11) * Box(1, 1, 4)
+    (record,), (candidate,), ledger = _claim(base + lower + upper)
+    assert record == RaisedPad(-15, 15, -10, 10, 5, 9)
+    _assert_role(record, candidate, ledger)
+
+
+def test_sloped_support_keeps_current_highest_wall_base_semantics() -> None:
+    support = Rot(0, 8, 0) * Box(80, 60, 10)
+    part = support + Pos(0, 0, 7) * Box(20, 20, 4)
+    (record,), (candidate,), ledger = _claim(part)
+    assert record == RaisedPad(-10, 10, -10, 10, 6.455, 9)
+    _assert_role(record, candidate, ledger)
+
+
 def test_later_body_failure_leaves_family_empty(monkeypatch) -> None:
     part = Compound([Pos(-60, 0, 0) * _pad(), Pos(60, 0, 0) * _pad()])
     ledger = ClaimLedger(FaceGraph(part))
@@ -426,6 +443,23 @@ def test_reversed_face_traversal_preserves_pad_occurrence_roles(monkeypatch) -> 
     monkeypatch.setattr(solid_type, "faces", reversed_faces)
     records, _candidates, _ledger = _claim(part)
     assert [record.to_dict() for record in records] == baseline
+
+
+def test_reversed_vertical_face_orientation_preserves_unsigned_wall_roles(monkeypatch) -> None:
+    part = _pad()
+    solid_type = type(part)
+    original = solid_type.faces
+
+    def reversed_vertical(self):
+        faces = original(self)
+        return type(faces)(
+            type(face)(face.wrapped.Reversed()) if abs(face.normal_at().Z) <= 0.01 else face
+            for face in faces
+        )
+
+    monkeypatch.setattr(solid_type, "faces", reversed_vertical)
+    (record,), (candidate,), ledger = _claim(part)
+    _assert_role(record, candidate, ledger)
 
 
 def test_open_shell_keeps_public_behavior_but_refuses_aggregate() -> None:
@@ -584,6 +618,15 @@ def test_wall_role_selects_every_exact_maximal_base_tie() -> None:
         tol=0.2,
     )
     assert result == (1, (high, tied))
+
+
+def test_one_wall_can_match_opposed_roles_at_exact_twice_tolerance() -> None:
+    face = object()
+    facts = [_wall_fact(face)]
+    left = _wall_role(facts, axis="x", pos=-0.25, lo=-1, hi=1, top=2, tol=0.25)
+    right = _wall_role(facts, axis="x", pos=0.25, lo=-1, hi=1, top=2, tol=0.25)
+    assert left is not None and right is not None
+    assert left[1] == right[1] == (face,)
 
 
 @pytest.mark.parametrize(
