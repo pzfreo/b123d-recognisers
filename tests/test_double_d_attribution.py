@@ -23,6 +23,7 @@ from build123d import (
     Rot,
     Shell,
     Solid,
+    Sphere,
     Vector,
     export_step,
     import_step,
@@ -331,6 +332,77 @@ def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_is
         1e-5,
         face_edges=cast(FaceEdges, OutwardEdges()),
     ) == ()
+
+    ambiguous_incidence = dict(controlled)
+    ambiguous_incidence[low_edges[0]] = (
+        low_face,
+        low_owners[0],
+        low_owners[1],
+    )
+    monkeypatch.setattr(module, "edge_face_map", lambda *_args, **_kwargs: ambiguous_incidence)
+    assert module._complete_wall_component(
+        ControlledPart(),
+        low_wire,
+        high_wire,
+        low_face,
+        high_face,
+        "z",
+        profile,
+        bbox.min.Z,
+        bbox.max.Z,
+        1e-5,
+        face_edges=cast(FaceEdges, ControlledEdges()),
+    ) == ()
+
+    def substituted(seed):
+        changed = {
+            edge: tuple(
+                seed if owner.wrapped.IsSame(low_owners[0].wrapped) else owner
+                for owner in owners
+            )
+            for edge, owners in controlled.items()
+        }
+
+        class SubstitutedEdges:
+            def of(self, face):
+                return tuple(
+                    edge
+                    for edge, owners in changed.items()
+                    if any(owner.wrapped.IsSame(face.wrapped) for owner in owners)
+                )
+
+        class SubstitutedPart:
+            def faces(self):
+                return [
+                    *(
+                        face
+                        for face in ControlledPart().faces()
+                        if not face.wrapped.IsSame(low_owners[0].wrapped)
+                    ),
+                    seed,
+                ]
+
+        monkeypatch.setattr(module, "edge_face_map", lambda *_args, **_kwargs: changed)
+        return module._complete_wall_component(
+            SubstitutedPart(),
+            low_wire,
+            high_wire,
+            low_face,
+            high_face,
+            "z",
+            profile,
+            bbox.min.Z,
+            bbox.max.Z,
+            1e-5,
+            face_edges=cast(FaceEdges, SubstitutedEdges()),
+        )
+
+    spherical = Sphere(2).faces()[0]
+    assert substituted(spherical) == ()
+    outside = copy.deepcopy(low_owners[0]).translate((0, 0, 20))
+    assert substituted(outside) == ()
+    wrong_support = copy.deepcopy(low_owners[0]).translate((2, 0, 0))
+    assert substituted(wrong_support) == ()
 
     ledger = ClaimLedger(FaceGraph(part))
     monkeypatch.setattr(module, "_complete_wall_component", lambda *_args, **_kwargs: walls)
