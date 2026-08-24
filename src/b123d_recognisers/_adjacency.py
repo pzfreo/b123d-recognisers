@@ -907,28 +907,48 @@ class FaceGraph:
         left_halves = self._face_edge_occurrences(left)
         right_halves = self._face_edge_occurrences(right)
         pairs: list[SharedEdgeOccurrenceRef] = []
-        used_right: set[EdgeOccurrenceRef] = set()
-        for left_half in left_halves:
-            matches = tuple(
-                half
-                for half in right_halves
-                if half not in used_right and half.edge.wrapped.IsSame(left_half.edge.wrapped)
-            )
-            if not matches:
-                continue
-            right_half = matches[0]
-            used_right.add(right_half)
-            occurrence = SharedEdgeOccurrenceRef(
-                endpoints=(left, right),
-                halves=(left_half, right_half),
-                edge=left_half.edge,
-            )
-            self._issued_shared_occurrences[occurrence] = (
-                occurrence.endpoints,
-                occurrence.halves,
-                occurrence.edge,
-            )
-            pairs.append(occurrence)
+        pending_left = list(left_halves)
+        while pending_left:
+            seed = pending_left.pop(0)
+            left_group = [seed]
+            for half in tuple(pending_left):
+                if half.edge.wrapped.IsSame(seed.edge.wrapped):
+                    pending_left.remove(half)
+                    left_group.append(half)
+            right_group = [
+                half for half in right_halves if half.edge.wrapped.IsSame(seed.edge.wrapped)
+            ]
+            candidate_pairs = {
+                left_half: tuple(
+                    right_half
+                    for right_half in right_group
+                    if right_half.reversed is not left_half.reversed
+                )
+                for left_half in left_group
+            }
+            reverse_counts = {
+                right_half: sum(right_half in matches for matches in candidate_pairs.values())
+                for right_half in right_group
+            }
+            if (
+                len(left_group) != len(right_group)
+                or any(len(matches) != 1 for matches in candidate_pairs.values())
+                or any(count != 1 for count in reverse_counts.values())
+            ):
+                continue  # no traversal-independent unique pairing
+            for left_half, matches in candidate_pairs.items():
+                right_half = matches[0]
+                occurrence = SharedEdgeOccurrenceRef(
+                    endpoints=(left, right),
+                    halves=(left_half, right_half),
+                    edge=left_half.edge,
+                )
+                self._issued_shared_occurrences[occurrence] = (
+                    occurrence.endpoints,
+                    occurrence.halves,
+                    occurrence.edge,
+                )
+                pairs.append(occurrence)
         result = tuple(pairs)
         self._shared_occurrences[key] = result
         return result

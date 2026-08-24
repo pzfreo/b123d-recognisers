@@ -65,7 +65,7 @@ class BlendChain:
     solid: SolidRef
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, eq=False, slots=True)
 class RefusedBlendComponent:
     nodes: frozenset[FaceNode]
     reason: BlendRefusalReason
@@ -100,6 +100,57 @@ def _physical_length(occurrences: tuple[OriginalArcRef, ...]) -> float:
     return math.fsum(lengths)
 
 
+def _edge_groups(
+    occurrences: tuple[OriginalArcRef, ...],
+) -> tuple[tuple[OriginalArcRef, ...], ...]:
+    """Exact vertex-connected components, independent of occurrence traversal order."""
+
+    if not occurrences:
+        return ()
+    edges = [arc.occurrence.edge for arc in occurrences]
+    remaining = set(range(len(edges)))
+    groups: list[tuple[OriginalArcRef, ...]] = []
+    while remaining:
+        pending = {remaining.pop()}
+        reached: set[int] = set()
+        while pending:
+            at = pending.pop()
+            if at in reached:
+                continue
+            reached.add(at)
+            vertices = edges[at].vertices()
+            for other_at in tuple(remaining):
+                if any(
+                    left.wrapped.IsSame(right.wrapped)
+                    for left in vertices
+                    for right in edges[other_at].vertices()
+                ):
+                    remaining.remove(other_at)
+                    pending.add(other_at)
+        groups.append(tuple(occurrences[at] for at in sorted(reached)))
+    return tuple(groups)
+
+
+def _one_nonbranching_edge_group(occurrences: tuple[OriginalArcRef, ...]) -> bool:
+    """Whether exact physical edges form one open, connected, nonbranching path."""
+
+    groups = _edge_groups(occurrences)
+    if len(groups) != 1:
+        return False
+    edges = [arc.occurrence.edge for arc in groups[0]]
+    vertex_groups: list[tuple] = []
+    for edge in edges:
+        for vertex in edge.vertices():
+            for group_at, (representative, count) in enumerate(vertex_groups):
+                if vertex.wrapped.IsSame(representative.wrapped):
+                    vertex_groups[group_at] = (representative, count + 1)
+                    break
+            else:
+                vertex_groups.append((vertex, 1))
+    counts = [count for _, count in vertex_groups]
+    return counts.count(1) == 2 and all(count in (1, 2) for count in counts)
+
+
 class BlendCollapseIndex:
     """Discover frozen neutral blend-chain occurrences once for one original graph."""
 
@@ -113,6 +164,7 @@ class BlendCollapseIndex:
         self._issued_chains: dict[BlendChain, tuple] = {}
         self._issued_original_arcs: dict[OriginalArcRef, tuple] = {}
         self._issued_refusals: dict[RefusedBlendComponent, tuple] = {}
+        self._view_issuer = object()
 
     @property
     def run_token(self) -> GraphRunToken:
@@ -132,7 +184,9 @@ class BlendCollapseIndex:
         return tuple(result for result in self.results() if isinstance(result, BlendChain))
 
     def view(self, selected: Iterable[BlendChain] = ()) -> CollapsedGraphView:
-        selected = tuple(selected)
+        return CollapsedGraphView(self, tuple(selected), _issuer=self._view_issuer)
+
+    def _validate_selection(self, selected: tuple[BlendChain, ...]) -> tuple[BlendChain, ...]:
         seen_blends: set[FaceNode] = set()
         seen_arcs: set[SharedEdgeOccurrenceRef] = set()
         for chain in selected:
@@ -147,7 +201,7 @@ class BlendCollapseIndex:
                 raise ValueError("selected blend chains share original arcs")
             seen_blends.update(chain.blend_nodes)
             seen_arcs.update(occurrences)
-        return CollapsedGraphView(self, selected)
+        return selected
 
     def _fact(self, node: FaceNode) -> AnalyticSurfaceFact | None:
         fact = self._surfaces.fact(node)
@@ -166,30 +220,18 @@ class BlendCollapseIndex:
         fact = self._fact(node)
         return fact if fact is not None and fact.kind is SurfaceKind.CYLINDER else None
 
-    def _pair_local(self, a: FaceNode, b: FaceNode) -> float | None:
-        occurrences = self._graph.shared_occurrences(a, b)
-        lengths = [float(item.edge.length) for item in occurrences]
-        values = [
-            math.sqrt(float(self._graph.face(a).area)),
-            math.sqrt(float(self._graph.face(b).area)),
-            *lengths,
-        ]
-        if not values or not all(math.isfinite(value) and value > 0.0 for value in values):
-            return None
-        return min(values)
-
     def _native_neutral(self, a: FaceNode, b: FaceNode) -> bool:
         legacy_smooth = self._graph.arc(a, b) == "smooth"
         neutral_side = self._graph.smooth_side(a, b) == "neutral"
         if not (legacy_smooth and neutral_side):
             return False
         left, right = self._fact(a), self._fact(b)
-        if left is None or right is None or left.kind is not right.kind:
-            return False
-        local = self._pair_local(a, b)
-        return local is not None and equivalent_parameters(
-            left.kind, left.parameters, right.parameters, local=local
-        )
+        proved_same_kind = left is not None and right is not None and left.kind is right.kind
+        # F2's neutral fact is already the sole native-continuation certificate. Repeating its
+        # parameter comparison with an individual edge/face scale here would make F3 eligibility
+        # depend on topological subdivision; the complete-component aggregate scale is applied
+        # once below to the cylindrical chain itself.
+        return proved_same_kind
 
     def _cylinder_components(self) -> tuple[frozenset[FaceNode], ...]:
         pending = {node for node in self._graph.nodes if self._cylinder(node) is not None}
@@ -210,7 +252,7 @@ class BlendCollapseIndex:
         return tuple(components)
 
     def _support_region(
-        self, first: FaceNode, *, excluded: frozenset[FaceNode]
+        self, first: FaceNode, *, excluded: frozenset[FaceNode], solid: SolidRef
     ) -> frozenset[FaceNode]:
         found = {first}
         queue = deque((first,))
@@ -220,6 +262,13 @@ class BlendCollapseIndex:
                 if neighbour in found or neighbour in excluded:
                     continue
                 if self._native_neutral(current, neighbour):
+                    occurrences = self._graph.shared_occurrences(current, neighbour)
+                    if not occurrences or any(
+                        (ownership := self._graph.ownership(occurrence)) is None
+                        or ownership.solid is not solid
+                        for occurrence in occurrences
+                    ):
+                        continue
                     found.add(neighbour)
                     queue.append(neighbour)
         return frozenset(found)
@@ -270,10 +319,10 @@ class BlendCollapseIndex:
 
     def _classify(self, component: frozenset[FaceNode]) -> BlendDiscoveryResult:
         internal: list[OriginalArcRef] = []
-        spring_by_patch: dict[FaceNode, dict[frozenset[FaceNode], list[OriginalArcRef]]] = {
+        spring_neighbours: dict[FaceNode, dict[FaceNode, list[OriginalArcRef]]] = {
             node: {} for node in component
         }
-        terminal_by_face: dict[FaceNode, list[OriginalArcRef]] = {}
+        terminal_entries: list[tuple[FaceNode, FaceNode, OriginalArcRef]] = []
         sides: set[SmoothSide] = set()
         solid = None
         internal_degree = {node: 0 for node in component}
@@ -297,19 +346,20 @@ class BlendCollapseIndex:
                 if neighbour in component:
                     if not self._native_neutral(node, neighbour):
                         return self._refuse(component, BlendRefusalReason.MIXED_RADIUS_OR_SIDE)
+                    if not _one_nonbranching_edge_group(refs):
+                        return self._refuse(component, BlendRefusalReason.BRANCHING_OR_CYCLE)
                     internal.extend(refs)
                     internal_degree[node] += 1
                     internal_degree[neighbour] += 1
                     continue
                 side = self._graph.smooth_side(node, neighbour)
                 if self._graph.arc(node, neighbour) == "smooth" and side in ("convex", "concave"):
-                    region = self._support_region(neighbour, excluded=component)
-                    spring_by_patch[node].setdefault(region, []).extend(refs)
+                    spring_neighbours[node].setdefault(neighbour, []).extend(refs)
                     sides.add(side)
                     continue
                 if self._graph.arc(node, neighbour) == "smooth":
                     return self._refuse(component, BlendRefusalReason.INCOMPLETE_BOUNDARY)
-                terminal_by_face.setdefault(neighbour, []).extend(refs)
+                terminal_entries.extend((node, neighbour, ref) for ref in refs)
 
         for node in component:
             face = self._graph.face(node)
@@ -332,27 +382,52 @@ class BlendCollapseIndex:
                 return self._refuse(component, BlendRefusalReason.BRANCHING_OR_CYCLE)
         if len(sides) != 1:
             return self._refuse(component, BlendRefusalReason.MIXED_RADIUS_OR_SIDE)
+        assert solid is not None
+        support_cache: dict[FaceNode, frozenset[FaceNode]] = {}
+        spring_by_patch: dict[FaceNode, dict[frozenset[FaceNode], list[OriginalArcRef]]] = {
+            node: {} for node in component
+        }
+        for node, neighbours in spring_neighbours.items():
+            for neighbour, spring_refs in neighbours.items():
+                region = support_cache.get(neighbour)
+                if region is None:
+                    region = self._support_region(neighbour, excluded=component, solid=solid)
+                    for member in region:
+                        support_cache[member] = region
+                spring_by_patch[node].setdefault(region, []).extend(spring_refs)
         support_sets = {region for groups in spring_by_patch.values() for region in groups}
         if len(support_sets) != 2 or any(
             set(groups) != support_sets for groups in spring_by_patch.values()
         ):
             return self._refuse(component, BlendRefusalReason.AMBIGUOUS_SUPPORT)
+        if any(
+            not _one_nonbranching_edge_group(tuple(arcs))
+            for groups in spring_by_patch.values()
+            for arcs in groups.values()
+        ):
+            return self._refuse(component, BlendRefusalReason.BRANCHING_OR_CYCLE)
 
-        terminal_groups: list[set[FaceNode]] = []
-        pending = set(terminal_by_face)
-        while pending:
-            first = pending.pop()
-            group = {first}
-            queue = deque((first,))
-            while queue:
-                current = queue.popleft()
-                for neighbour in self._graph.neighbours(current):
-                    if neighbour in pending:
-                        pending.remove(neighbour)
-                        group.add(neighbour)
-                        queue.append(neighbour)
-            terminal_groups.append(group)
-        if len(terminal_groups) != 2:
+        terminal_groups_arcs = _edge_groups(tuple(arc for _, _, arc in terminal_entries))
+        if len(terminal_groups_arcs) != 2:
+            return self._refuse(component, BlendRefusalReason.INCOMPLETE_BOUNDARY)
+        path_ends = (
+            component
+            if len(component) == 1
+            else frozenset(node for node, degree in internal_degree.items() if degree == 1)
+        )
+        attached_ends: set[FaceNode] = set()
+        for group in terminal_groups_arcs:
+            if not _one_nonbranching_edge_group(group):
+                return self._refuse(component, BlendRefusalReason.BRANCHING_OR_CYCLE)
+            attached = {
+                blend
+                for blend, _, arc in terminal_entries
+                if any(arc is member for member in group)
+            }
+            if len(attached) != 1 or not attached <= path_ends:
+                return self._refuse(component, BlendRefusalReason.INCOMPLETE_BOUNDARY)
+            attached_ends.update(attached)
+        if attached_ends != set(path_ends):
             return self._refuse(component, BlendRefusalReason.INCOMPLETE_BOUNDARY)
 
         supports = tuple(
@@ -361,10 +436,6 @@ class BlendCollapseIndex:
         spring_groups = tuple(
             tuple(arc for node in component for arc in spring_by_patch[node][support])
             for support in supports
-        )
-        terminal_groups_arcs = tuple(
-            tuple(arc for face in group for arc in terminal_by_face[face])
-            for group in terminal_groups
         )
         first_fact = self._cylinder(next(iter(component)))
         assert first_fact is not None
@@ -392,7 +463,6 @@ class BlendCollapseIndex:
 
         side = sides.pop()
         assert side in ("convex", "concave")
-        assert solid is not None
         chain = BlendChain(
             blend_nodes=component,
             supports=(supports[0], supports[1]),
@@ -484,7 +554,16 @@ class BlendCollapseIndex:
 class CollapsedGraphView:
     """Explicit selected support bridges with complete original provenance."""
 
-    def __init__(self, index: BlendCollapseIndex, selected: tuple[BlendChain, ...]) -> None:
+    def __init__(
+        self,
+        index: BlendCollapseIndex,
+        selected: tuple[BlendChain, ...],
+        *,
+        _issuer: object,
+    ) -> None:
+        if _issuer is not index._view_issuer:
+            raise ValueError("collapsed views must be issued by their blend index")
+        selected = index._validate_selection(selected)
         self._index = index
         self._graph = index._graph
         self._selected = selected
@@ -501,10 +580,22 @@ class CollapsedGraphView:
             if node not in hidden and node not in covered
         ]
         self._nodes = tuple(LogicalNode(source) for source in sources)
-        self._issued_nodes = {node: node.sources for node in self._nodes}
+        self._node_provenance: dict[LogicalNode, FrozenProvenance] = {}
+        self._issued_nodes: dict[LogicalNode, tuple] = {}
+        for node in self._nodes:
+            members = tuple(node.sources)
+            internal = tuple(
+                arc
+                for at, left in enumerate(members)
+                for right in members[at + 1 :]
+                for arc in self._index._arc_refs(left, right)
+            )
+            node_value = FrozenProvenance(node.sources, internal)
+            self._node_provenance[node] = node_value
+            self._issued_nodes[node] = (node.sources, node_value.nodes, node_value.arcs)
         self._by_source = {source: node for node in self._nodes for source in node.sources}
         arcs: list[LogicalArc] = []
-        provenance: dict[LogicalArc, FrozenProvenance] = {}
+        arc_provenance: dict[LogicalArc, FrozenProvenance] = {}
         for at, left in enumerate(self._graph.nodes):
             if left in hidden:
                 continue
@@ -521,7 +612,7 @@ class CollapsedGraphView:
                 for ref in refs:
                     arc = LogicalArc((mapped_left, mapped_right), kind, False)
                     arcs.append(arc)
-                    provenance[arc] = FrozenProvenance(frozenset((left, right)), (ref,))
+                    arc_provenance[arc] = FrozenProvenance(frozenset((left, right)), (ref,))
         for chain in selected:
             logical_left, logical_right = (
                 self._by_source[next(iter(source))] for source in chain.supports
@@ -529,13 +620,20 @@ class CollapsedGraphView:
             bridge_kind: ArcKind = "convex" if chain.side == "convex" else "concave"
             arc = LogicalArc((logical_left, logical_right), bridge_kind, True)
             arcs.append(arc)
-            provenance[arc] = FrozenProvenance(
+            arc_provenance[arc] = FrozenProvenance(
                 frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1])),
                 (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs),
             )
         self._arcs = tuple(arcs)
         self._issued_arcs = {
-            arc: (arc.endpoints, arc.kind, arc.synthetic, provenance[arc]) for arc in arcs
+            arc: (
+                arc.endpoints,
+                arc.kind,
+                arc.synthetic,
+                arc_provenance[arc].nodes,
+                arc_provenance[arc].arcs,
+            )
+            for arc in arcs
         }
 
     def logical_nodes(self) -> tuple[LogicalNode, ...]:
@@ -545,18 +643,25 @@ class CollapsedGraphView:
 
     def _validate_node(self, node: LogicalNode) -> None:
         snapshot = self._issued_nodes.get(node)
+        if snapshot is None:
+            raise ValueError("logical node is foreign or changed")
+        sources, provenance_nodes, provenance_arcs = snapshot
+        provenance = self._node_provenance[node]
         if (
-            snapshot is None
-            or node.sources != snapshot
+            node.sources != sources
+            or provenance.nodes != provenance_nodes
+            or provenance.arcs != provenance_arcs
             or not all(self._graph.owns(source) for source in node.sources)
         ):
             raise ValueError("logical node is foreign or changed")
+        for original in provenance_arcs:
+            self._index._validate_original_arc(original)
 
     def _validate_arc(self, arc: LogicalArc) -> FrozenProvenance:
         snapshot = self._issued_arcs.get(arc)
         if snapshot is None:
             raise ValueError("logical arc was not issued by this view")
-        endpoints, kind, synthetic, provenance = snapshot
+        endpoints, kind, synthetic, provenance_nodes, provenance_arcs = snapshot
         if (
             any(
                 actual is not expected
@@ -568,9 +673,10 @@ class CollapsedGraphView:
             raise ValueError("logical arc changed after issuance")
         for endpoint in endpoints:
             self._validate_node(endpoint)
-        for original in provenance.arcs:
+        provenance = FrozenProvenance(provenance_nodes, provenance_arcs)
+        for original in provenance_arcs:
             self._index._validate_original_arc(original)
-        if not all(self._graph.owns(node) for node in provenance.nodes):
+        if not all(self._graph.owns(node) for node in provenance_nodes):
             raise ValueError("logical arc provenance contains a changed graph node")
         return provenance
 
@@ -600,7 +706,12 @@ class CollapsedGraphView:
 
     def expand_node(self, node: LogicalNode) -> frozenset[FaceNode]:
         self._validate_node(node)
-        return self._issued_nodes[node]
+        return self._issued_nodes[node][0]
+
+    def node_provenance(self, node: LogicalNode) -> FrozenProvenance:
+        self._validate_node(node)
+        _, nodes, arcs = self._issued_nodes[node]
+        return FrozenProvenance(nodes, arcs)
 
     def expand_arc(self, arc: LogicalArc) -> FrozenProvenance:
         return self._validate_arc(arc)

@@ -22,7 +22,10 @@ from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._blend_view import (
     BlendChain,
     BlendCollapseIndex,
+    CollapsedGraphView,
+    OriginalArcRef,
     RefusedBlendComponent,
+    _one_nonbranching_edge_group,
 )
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
@@ -60,7 +63,7 @@ def _base_occurrence_count(graph: FaceGraph) -> int:
 class _SyntheticGraph:
     nodes: tuple[FaceNode, ...]
     faces: tuple
-    adjacency: dict[tuple[int, int], SharedEdgeOccurrenceRef]
+    adjacency: dict[tuple[int, int], tuple[SharedEdgeOccurrenceRef, ...]]
     arcs: dict[tuple[int, int], str]
     sides: dict[tuple[int, int], str]
     run_token: GraphRunToken
@@ -87,13 +90,13 @@ class _SyntheticGraph:
         return self.sides.get(tuple(sorted((a.index, b.index))))
 
     def shared_occurrences(self, a, b):
-        found = self.adjacency.get(tuple(sorted((a.index, b.index))))
-        return () if found is None else (found,)
+        return self.adjacency.get(tuple(sorted((a.index, b.index))), ())
 
     def edge_occurrences(self, node):
         return tuple(
             half
-            for occurrence in self.adjacency.values()
+            for occurrences in self.adjacency.values()
+            for occurrence in occurrences
             for half in occurrence.halves
             if half.owner is node
         )
@@ -130,12 +133,16 @@ def _split_strip_capabilities():
     arcs = {}
     sides = {}
     for ordinal, (left, right, kind, side) in enumerate(pairs):
-        edge = edges[ordinal]
+        edge = (
+            (Pos(100, 100, 100) * Box(10, 10, 10)).edges()[ordinal]
+            if right is terminal_b
+            else edges[ordinal]
+        )
         left_half = EdgeOccurrenceRef(left, 0, ordinal, False, edge)
         right_half = EdgeOccurrenceRef(right, 0, ordinal, True, edge)
         key = tuple(sorted((left.index, right.index)))
-        adjacency[key] = SharedEdgeOccurrenceRef(
-            (nodes[key[0]], nodes[key[1]]), (left_half, right_half), edge
+        adjacency[key] = (
+            SharedEdgeOccurrenceRef((nodes[key[0]], nodes[key[1]]), (left_half, right_half), edge),
         )
         arcs[key] = kind
         if side is not None:
@@ -205,6 +212,30 @@ def test_graph_occurrences_reject_foreign_copies_and_mutation():
         graph.ownership(occurrence)
 
 
+def test_repeated_same_edge_halves_refuse_without_a_unique_orientation_pairing(monkeypatch):
+    graph = FaceGraph(Box(2, 3, 4))
+    left = graph.nodes[0]
+    right = graph.neighbours(left)[0]
+    left_half = next(
+        half
+        for half in graph.edge_occurrences(left)
+        if any(
+            half.edge.wrapped.IsSame(other.edge.wrapped) for other in graph.edge_occurrences(right)
+        )
+    )
+    right_half = next(
+        half
+        for half in graph.edge_occurrences(right)
+        if half.edge.wrapped.IsSame(left_half.edge.wrapped)
+    )
+    monkeypatch.setattr(
+        graph,
+        "_face_edge_occurrences",
+        lambda node: (left_half, left_half) if node is left else (right_half, right_half),
+    )
+    assert graph.shared_occurrences(left, right) == ()
+
+
 @pytest.mark.parametrize(
     ("part", "side", "count"),
     [(_external(), "convex", 4), (_internal(), "concave", 4)],
@@ -230,6 +261,74 @@ def test_split_cylindrical_strip_is_one_complete_multi_patch_chain():
     assert len(chain.spring_arcs) == 4
     assert len(chain.terminal_arcs) == 2
     assert chain.side == "convex"
+
+
+def test_spring_group_requires_one_connected_nonbranching_edge_chain():
+    _, index = _index(_external())
+    chain = index.chains()[0]
+    assert _one_nonbranching_edge_group((chain.spring_arcs[0],))
+    assert not _one_nonbranching_edge_group(chain.spring_arcs)
+
+    node_a, node_b = FaceNode(90), FaceNode(91)
+    cycle = tuple(
+        OriginalArcRef(
+            (node_a, node_b),
+            SharedEdgeOccurrenceRef(
+                (node_a, node_b),
+                (
+                    EdgeOccurrenceRef(node_a, 0, at, False, edge),
+                    EdgeOccurrenceRef(node_b, 0, at, True, edge),
+                ),
+                edge,
+            ),
+        )
+        for at, edge in enumerate(Box(4, 4, 1).faces()[0].edges())
+    )
+    assert not _one_nonbranching_edge_group(cycle)
+
+
+def test_classifier_refuses_two_disconnected_spring_occurrences_to_one_support():
+    graph, surfaces = _split_strip_capabilities()
+    key = (0, 2)
+    left, right = graph.nodes[0], graph.nodes[2]
+    edge = (Pos(100, 100, 100) * Box(2, 2, 2)).edges()[0]
+    disconnected = SharedEdgeOccurrenceRef(
+        (left, right),
+        (
+            EdgeOccurrenceRef(left, 0, 50, False, edge),
+            EdgeOccurrenceRef(right, 0, 50, True, edge),
+        ),
+        edge,
+    )
+    graph.adjacency[key] = (*graph.adjacency[key], disconnected)
+    results = BlendCollapseIndex(graph, surfaces).results()
+    assert not any(isinstance(result, BlendChain) for result in results)
+    assert any(
+        isinstance(result, RefusedBlendComponent) and result.reason.value == "branching-or-cycle"
+        for result in results
+    )
+
+
+def test_classifier_refuses_disconnected_terminal_occurrences_as_extra_end_group():
+    graph, surfaces = _split_strip_capabilities()
+    key = (0, 4)
+    left, right = graph.nodes[0], graph.nodes[4]
+    edge = (Pos(-100, -100, -100) * Box(2, 2, 2)).edges()[0]
+    disconnected = SharedEdgeOccurrenceRef(
+        (left, right),
+        (
+            EdgeOccurrenceRef(left, 0, 51, False, edge),
+            EdgeOccurrenceRef(right, 0, 51, True, edge),
+        ),
+        edge,
+    )
+    graph.adjacency[key] = (*graph.adjacency[key], disconnected)
+    results = BlendCollapseIndex(graph, surfaces).results()
+    assert not any(isinstance(result, BlendChain) for result in results)
+    assert any(
+        isinstance(result, RefusedBlendComponent) and result.reason.value == "incomplete-boundary"
+        for result in results
+    )
 
 
 def test_split_strip_refuses_partial_support_and_mixed_side_mutations():
@@ -282,13 +381,15 @@ def test_maximal_cylindrical_cycle_refuses_instead_of_selecting_a_path_subset():
         edge = Box(3, 3, 3).edges()[ordinal % 12]
         key = tuple(sorted((third.index, other.index)))
         left, right = graph.nodes[key[0]], graph.nodes[key[1]]
-        graph.adjacency[key] = SharedEdgeOccurrenceRef(
-            (left, right),
-            (
-                EdgeOccurrenceRef(left, 0, ordinal, False, edge),
-                EdgeOccurrenceRef(right, 0, ordinal, True, edge),
+        graph.adjacency[key] = (
+            SharedEdgeOccurrenceRef(
+                (left, right),
+                (
+                    EdgeOccurrenceRef(left, 0, ordinal, False, edge),
+                    EdgeOccurrenceRef(right, 0, ordinal, True, edge),
+                ),
+                edge,
             ),
-            edge,
         )
         graph.arcs[key] = "smooth"
         graph.sides[key] = side
@@ -366,6 +467,49 @@ def test_selected_chain_hides_only_blend_and_adds_provenance_complete_bridge():
         *chain.internal_arcs,
         *chain.terminal_arcs,
     )
+    object.__setattr__(provenance, "nodes", frozenset())
+    assert view.expand_arc(bridges[0]).nodes
+
+
+def test_aggregated_support_node_retains_its_internal_original_arc_provenance():
+    graph, surfaces = _split_strip_capabilities()
+    support = graph.nodes[2]
+    split = FaceNode(6)
+    graph.nodes = (*graph.nodes, split)
+    graph.faces = (*graph.faces, Box(2, 2, 2).faces()[0])
+    source = surfaces.facts[support]
+    assert isinstance(source, AnalyticSurfaceFact)
+    surfaces.facts[split] = AnalyticSurfaceFact(
+        split,
+        source.kind,
+        source.provenance,
+        source.orientation,
+        source.parameters,
+        0.0,
+        0.0,
+        None,
+    )
+    edge = Box(3, 3, 3).edges()[10]
+    key = (support.index, split.index)
+    graph.adjacency[key] = (
+        SharedEdgeOccurrenceRef(
+            (support, split),
+            (
+                EdgeOccurrenceRef(support, 0, 30, False, edge),
+                EdgeOccurrenceRef(split, 0, 30, True, edge),
+            ),
+            edge,
+        ),
+    )
+    graph.arcs[key] = "smooth"
+    graph.sides[key] = "neutral"
+    index = BlendCollapseIndex(graph, surfaces)
+    (chain,) = index.chains()
+    view = index.view((chain,))
+    logical = next(node for node in view.logical_nodes() if split in node.sources)
+    provenance = view.node_provenance(logical)
+    assert provenance.nodes == frozenset((support, split))
+    assert len(provenance.arcs) == 1
 
 
 def test_foreign_surface_capability_fails_at_construction_even_for_empty_graph():
@@ -380,6 +524,8 @@ def test_chain_and_logical_handles_revalidate_issuer_snapshots():
     chain = index.chains()[0]
     with pytest.raises(ValueError, match="not issued"):
         index.view((copy.copy(chain),))
+    with pytest.raises(TypeError, match="_issuer"):
+        CollapsedGraphView(index, (copy.copy(chain),))
     view = index.view((chain,))
     node = view.logical_nodes()[0]
     object.__setattr__(node, "sources", frozenset())
@@ -405,6 +551,10 @@ def test_nested_arc_solid_and_refusal_mutation_fail_on_warm_reads():
     refusal = next(
         result for result in refused_index.results() if isinstance(result, RefusedBlendComponent)
     )
+    copied = copy.copy(refusal)
+    with pytest.raises(ValueError, match="refusal changed"):
+        # A copied closed value is not the issuer-owned occurrence retained by the index.
+        refused_index._validate_refusal(copied)
     object.__setattr__(refusal, "reason", None)
     with pytest.raises(ValueError, match="refusal changed"):
         refused_index.results()
