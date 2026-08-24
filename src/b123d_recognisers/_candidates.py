@@ -382,6 +382,12 @@ class _CandidateIssuer:
         foreign = [node for node in nodes if not self._graph.owns(node)]
         if foreign:
             raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
+        if (
+            family is not FamilyId.LEGACY
+            and nodes
+            and self._graph.common_valid_solid(nodes) is None
+        ):
+            raise ValueError("physical defining evidence must belong to one valid closed solid")
         candidate = object.__new__(Candidate)
         object.__setattr__(candidate, "family", family)
         object.__setattr__(candidate, "record", record)

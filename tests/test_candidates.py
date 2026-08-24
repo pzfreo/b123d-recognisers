@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from math import sqrt
 
 import pytest
-from build123d import Box, Pos, Rot
+from build123d import Box, Face, Plane, Pos, Rot
 
 from b123d_recognisers import recognise_angled_steps
 from b123d_recognisers._adjacency import FaceGraph
@@ -57,6 +58,32 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.snapshot_index().defining_of(candidate) == frozenset()
 
 
+def test_physical_evidence_requires_one_valid_solid_but_legacy_remains_compatible() -> None:
+    assembly = Pos(-20, 0, 0) * Box(10, 10, 10) + Pos(20, 0, 0) * Box(10, 10, 10)
+    ledger = ClaimLedger(FaceGraph(assembly))
+    left = min(ledger.graph.nodes, key=lambda node: ledger.graph.face(node).center().X)
+    right = max(ledger.graph.nodes, key=lambda node: ledger.graph.face(node).center().X)
+
+    same_solid = ledger.propose(FamilyId.SLOTS, Record(1), [left])
+    assert ledger.graph.common_valid_solid(ledger.defining_of(same_solid)) is not None
+    before = ledger.candidate_set(FamilyId.SLOTS).candidates
+    with pytest.raises(ValueError, match="not this graph's nodes"):
+        ledger.propose(FamilyId.SLOTS, Record(2), [copy.copy(left)])
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == before
+    with pytest.raises(ValueError, match="one valid closed solid"):
+        ledger.propose(FamilyId.SLOTS, Record(2), [left, right])
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == before
+
+    legacy = ledger.propose(FamilyId.LEGACY, Record(3), [left, right])
+    assert ledger.defining_of(legacy) == frozenset((left, right))
+
+    open_ledger = ClaimLedger(FaceGraph(Face.make_rect(10, 10, Plane.XY)))
+    with pytest.raises(ValueError, match="one valid closed solid"):
+        open_ledger.propose(FamilyId.SLOTS, Record(4), open_ledger.graph.nodes)
+    open_legacy = open_ledger.propose(FamilyId.LEGACY, Record(5), open_ledger.graph.nodes)
+    assert open_ledger.defining_of(open_legacy) == frozenset(open_ledger.graph.nodes)
+
+
 def test_observations_freeze_without_becoming_candidates_or_claims() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     observation = ledger.sink.observe(
@@ -70,9 +97,9 @@ def test_observations_freeze_without_becoming_candidates_or_claims() -> None:
 
     assert ledger.claims == ()
     assert ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates == ()
-    assert evidence.observations(
-        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
-    ) == (observation,)
+    assert evidence.observations(FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL) == (
+        observation,
+    )
     with pytest.raises(RuntimeError, match="sealed"):
         ledger.sink.observe(
             FamilyId.ANGLED_STEPS,
@@ -103,9 +130,7 @@ def test_observation_forgery_and_post_issuance_mutation_fail_closed() -> None:
     with pytest.raises(ValueError, match="no longer matches"):
         ledger.snapshot_index()
     with pytest.raises(ValueError, match="no longer matches"):
-        evidence.observations(
-            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
-        )
+        evidence.observations(FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL)
 
 
 @pytest.mark.parametrize("failure", ["empty", "overlap", "family", "fact"])
@@ -125,9 +150,12 @@ def test_invalid_observations_are_rejected_atomically(failure: str) -> None:
             fact=fact,  # type: ignore[arg-type]
         )
 
-    assert ledger.snapshot_index().observations(
-        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
-    ) == ()
+    assert (
+        ledger.snapshot_index().observations(
+            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+        )
+        == ()
+    )
 
 
 @pytest.mark.parametrize("raw_edges,effective_sides", [(3, 3), (4, 4)])
@@ -143,11 +171,7 @@ def test_observation_rejects_open_enums_atomically(role: str) -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     subject = ledger.graph.nodes[0]
     family = "angled_steps" if role == "family" else FamilyId.ANGLED_STEPS
-    predicate = (
-        "angled_step_terminal"
-        if role == "predicate"
-        else PredicateId.ANGLED_STEP_TERMINAL
-    )
+    predicate = "angled_step_terminal" if role == "predicate" else PredicateId.ANGLED_STEP_TERMINAL
 
     with pytest.raises(ValueError, match="closed enums"):
         ledger.sink.observe(
@@ -158,9 +182,12 @@ def test_observation_rejects_open_enums_atomically(role: str) -> None:
             fact=SplitTriangularTerminalFact(4),
         )
 
-    assert ledger.snapshot_index().observations(
-        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
-    ) == ()
+    assert (
+        ledger.snapshot_index().observations(
+            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+        )
+        == ()
+    )
 
 
 @pytest.mark.parametrize("role", ["subject", "consulted"])
@@ -179,9 +206,12 @@ def test_observation_rejects_foreign_nodes_atomically(role: str) -> None:
             fact=SplitTriangularTerminalFact(4),
         )
 
-    assert ledger.snapshot_index().observations(
-        FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
-    ) == ()
+    assert (
+        ledger.snapshot_index().observations(
+            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+        )
+        == ()
+    )
 
 
 def test_foreign_evidence_is_refused_atomically() -> None:
@@ -346,15 +376,11 @@ def test_terminal_freeze_closes_issuance_exactly_once() -> None:
 def test_family_binding_reuses_claimed_candidates_and_wraps_unclaimed_occurrences() -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     claimed_record = Record(1)
-    claimed = ledger.propose(
-        FamilyId.SLOTS, claimed_record, [ledger.graph.nodes[0]]
-    )
+    claimed = ledger.propose(FamilyId.SLOTS, claimed_record, [ledger.graph.nodes[0]])
     unclaimed_record = Record(2)
 
     slots = ledger.candidate_set_for(FamilyId.SLOTS, [claimed_record])
-    holes = ledger.candidate_set_for(
-        FamilyId.HOLES, [unclaimed_record, unclaimed_record]
-    )
+    holes = ledger.candidate_set_for(FamilyId.HOLES, [unclaimed_record, unclaimed_record])
 
     assert slots.candidates == (claimed,)
     assert slots.candidates[0].evidence.defining == frozenset({ledger.graph.nodes[0]})
@@ -420,9 +446,7 @@ def test_empty_and_defining_proposals_require_candidate_identity(
     record = Record(1)
     defining = [ledger.graph.nodes[0]]
     evidence = ((), defining) if empty_first else (defining, ())
-    candidates = [
-        ledger.propose(FamilyId.LEGACY, record, nodes) for nodes in evidence
-    ]
+    candidates = [ledger.propose(FamilyId.LEGACY, record, nodes) for nodes in evidence]
 
     assert {ledger.defining_of(candidate) for candidate in candidates} == {
         frozenset(),

@@ -533,25 +533,62 @@ defining claims; Draftwright explicitly reviews the schema transition before pro
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
-evidence where the record has a geometric ownership proof.
+evidence where the record has a geometric ownership proof. This is a staged programme, not one
+22-family implementation PR.
 
 Required contract:
 
-- registry metadata states whether a family is `attributed` or deliberately `unattributed` with a
-  non-empty reason;
-- a returned attributed record occurrence has non-empty defining evidence;
+- every physical registry definition carries one closed private disposition:
+  `FullyAttributed(proof_contract)` or
+  `IncompleteAttribution(reason, follow_up_or_exclusion)`, with every string non-empty;
+- `FullyAttributed` is a family-completeness promise: every returned aggregate occurrence on every
+  output path has non-empty defining evidence. `IncompleteAttribution` may contain useful measured
+  occurrences as well as empty ones and tooling must report those separately;
+- the frozen baseline has exactly six complete families: PrismaticPockets, Passages, Grooves,
+  TurnedSteps, Chamfers and AngledSteps. Slots/Pockets are partial, Channels deliberately writes
+  nothing, and the other thirteen physical families begin incomplete;
+- after the sole terminal evidence freeze and before reconciliation, orchestration validates every
+  complete-family Candidate against the registry declaration and its issuer-owned frozen evidence;
 - evidence names only original graph nodes that establish the record, not stock/context faces;
+- `FaceGraph.common_valid_solid(nodes)` is the sole graph-owned membership proof. Every non-empty
+  non-LEGACY aggregate physical defining set, complete or partial, must prove unambiguous membership
+  in exactly one valid closed `SolidRef` atomically before Candidate publication and again from the
+  terminal frozen evidence. `LEGACY` standalone compatibility retains its existing graph-membership
+  boundary. Body provenance is generic, while defining-versus-context roles remain family-owned
+  geometry contracts;
 - direct recognition remains unchanged with or without the writer;
 - equal-valued occurrences stay identity-distinct;
 - empty evidence never proves containment, precedence or compatibility;
-- corpus reports distinguish measured ownership precision from fitted record counts.
+- corpus reports distinguish measured ownership precision from fitted record counts;
+- capability manifest format 1 remains unchanged. Attribution appears in reviewed private metadata
+  and capability prose unless ADR 0005 separately authorises a new public format.
 
-Families migrate independently. A family does not gain a reconciliation rule merely because it now
-has claims; a rule requires an observed overlap, a named geometry relation and separate review.
+F5a lands the closed 22-family metadata, common-solid capability, post-freeze validator, ADRs and
+registry-driven tooling with no status promotion or output change. F5b adversarially audits the six
+already-complete families. Later families migrate one private core per independently reviewed PR;
+public signatures remain unchanged, no discovery reader receives frozen evidence, and a family does
+not gain a reconciliation rule merely because it now has claims. A rule requires an observed
+overlap, a named geometry relation and separate review.
+
+Across independent writer-off/writer-on calls, parity means record type, value, ordering and
+`to_dict()`, never cross-run Python identity. Within one writer-enabled run each Candidate record is
+the exact returned object occurrence; value rematching is forbidden and equal-valued occurrences
+remain distinct.
+
+The generic per-face report consumes only the completed frozen inventory/evidence and enumerates all
+22 families: returned records, physical/final accepted Candidates, attributed occurrences, defining
+face occurrences/distinct faces and complete/incomplete reason. Corpus taxonomy adapters remain
+diagnostic comparison layers and cannot define attribution or rerun recognisers.
+
+F5a consumes no new holdout. Every later family child freezes its exact ownership rule, development
+evidence and untouched attribution holdout allocation before implementation, obtains two exact-head
+accepts before one authorised reveal, and may not reuse consumed MFTRCAD buckets 10–19. A post-reveal
+defining-role/status change invalidates that family result.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
-frozen inventory and no parallel claim path remains.
+frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
+reviewed structural exclusion or blocker, not a placeholder.
 
 ### F6 — Persistent cross-run feature correspondence
 

@@ -86,6 +86,24 @@ class NotCounted:
 CensusSpec: TypeAlias = Counted | NotCounted
 
 
+@dataclass(frozen=True, slots=True)
+class FullyAttributed:
+    """Every aggregate output path has non-empty original-face defining evidence."""
+
+    proof_contract: str
+
+
+@dataclass(frozen=True, slots=True)
+class IncompleteAttribution:
+    """At least one output path lacks a reviewed complete ownership proof."""
+
+    reason: str
+    follow_up_or_exclusion: str
+
+
+AttributionSpec: TypeAlias = FullyAttributed | IncompleteAttribution
+
+
 class DerivedId(Enum):
     """Closed identifiers for post-reconciliation, non-physical projections."""
 
@@ -190,6 +208,7 @@ class PhysicalDefinition:
     applicable: Applicability
     discover: PhysicalDiscoverer
     census: CensusSpec
+    attribution: AttributionSpec
     projected: Applicability = always
 
 
@@ -253,6 +272,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_countersinks(s.context.part))),
         Counted("countersink"),
+        IncompleteAttribution("no defining evidence is issued", "migrate countersink owner faces"),
     ),
     PhysicalDefinition(
         FamilyId.HOLES,
@@ -263,6 +283,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _holes,
         Counted("hole"),
+        IncompleteAttribution(
+            "no defining evidence is issued", "define bore and countersink roles"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.DOUBLE_D_BORES,
@@ -273,6 +296,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_double_d_bores(s.context.part))),
         NotCounted("not a distinct census key"),
+        IncompleteAttribution(
+            "no defining evidence is issued", "migrate profiled-bore owner faces"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.BOSSES,
@@ -287,6 +313,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("boss"),
+        IncompleteAttribution("no defining evidence is issued", "migrate cylindrical boss faces"),
     ),
     PhysicalDefinition(
         FamilyId.POLYGONAL_BOSSES,
@@ -297,6 +324,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_polygonal_bosses(s.context.part, graph=s.context.graph))),
         NotCounted("not a distinct census key"),
+        IncompleteAttribution("no defining evidence is issued", "migrate polygonal boss faces"),
     ),
     PhysicalDefinition(
         FamilyId.POLYGONAL_STOCK,
@@ -307,6 +335,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_polygonal_stock(s.context.part, graph=s.context.graph))),
         NotCounted("stock context is not a machined feature"),
+        IncompleteAttribution(
+            "stock context is not machined-feature ownership", "reviewed structural exclusion"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.CHANNELS,
@@ -321,6 +352,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("channel"),
+        IncompleteAttribution("writer is deliberately not used", "define channel owner faces"),
     ),
     PhysicalDefinition(
         FamilyId.SLOTS,
@@ -335,6 +367,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("slot"),
+        IncompleteAttribution(
+            "cap-recovered obround outputs have empty evidence", "migrate slot cap path"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.GROOVES,
@@ -354,6 +389,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("groove"),
+        FullyAttributed("every returned groove claims its defining groove faces"),
     ),
     PhysicalDefinition(
         FamilyId.FLATS,
@@ -368,6 +404,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("flat"),
+        IncompleteAttribution("no defining evidence is issued", "migrate flat owner face"),
     ),
     PhysicalDefinition(
         FamilyId.POCKETS,
@@ -382,6 +419,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("pocket"),
+        IncompleteAttribution(
+            "cap-recovered obround outputs have empty evidence", "migrate pocket cap path"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.PRISMATIC_POCKETS,
@@ -398,6 +438,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("prismatic_pocket"),
+        FullyAttributed("every returned prismatic pocket claims its defining boundary faces"),
     ),
     PhysicalDefinition(
         FamilyId.PADS,
@@ -408,6 +449,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_rectangular_pads(s.context.part))),
         NotCounted("not a distinct census key"),
+        IncompleteAttribution("no defining evidence is issued", "migrate raised-pad owner faces"),
     ),
     PhysicalDefinition(
         FamilyId.REPEATING_RADIAL_PROFILES,
@@ -418,6 +460,10 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_repeating_radial_profiles(s.context.part))),
         NotCounted("correspondence evidence is not a distinct feature"),
+        IncompleteAttribution(
+            "correspondence records lack occurrence ownership",
+            "review structural exclusion or prove source-face mapping",
+        ),
     ),
     PhysicalDefinition(
         FamilyId.TURNED_STEPS,
@@ -432,6 +478,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("step"),
+        FullyAttributed("every returned turned step claims its defining profile faces"),
     ),
     PhysicalDefinition(
         FamilyId.STEP_LEVELS,
@@ -442,6 +489,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(step_level_records(s.context.part))),
         NotCounted("level substrate is not a distinct feature"),
+        IncompleteAttribution(
+            "level substrate lacks occurrence ownership", "review structural exclusion"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.RISERS,
@@ -452,6 +502,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(lambda s: list(recognise_risers(s.context.part))),
         NotCounted("riser evidence is not a distinct feature"),
+        IncompleteAttribution(
+            "riser analysis lacks occurrence ownership", "review structural exclusion"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.CHAMFERS,
@@ -472,6 +525,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("chamfer"),
+        FullyAttributed("every returned chamfer claims its defining bevel face"),
     ),
     PhysicalDefinition(
         FamilyId.ANGLED_STEPS,
@@ -488,6 +542,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("angled_step"),
+        FullyAttributed("every returned angled step claims its defining slant face"),
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,
@@ -502,6 +557,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("passage"),
+        FullyAttributed("every returned passage claims its defining passage faces"),
         projected=prismatic,
     ),
     PhysicalDefinition(
@@ -522,6 +578,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         Counted("fillet"),
+        IncompleteAttribution("no defining evidence is issued", "migrate fillet blend faces"),
     ),
     PhysicalDefinition(
         FamilyId.PLATES,
@@ -532,6 +589,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         prismatic,
         _plates,
         Counted("plate"),
+        IncompleteAttribution("no defining evidence is issued", "prove plate source-face mapping"),
     ),
 )
 
@@ -593,6 +651,18 @@ def validate_definitions(
             raise ValueError("physical definitions require an explicit census disposition")
         if isinstance(definition.census, NotCounted) and not definition.census.reason:
             raise ValueError("not-counted census reasons must be non-empty")
+        if not isinstance(definition.attribution, FullyAttributed | IncompleteAttribution):
+            raise ValueError("physical definitions require an attribution disposition")
+        if (
+            isinstance(definition.attribution, FullyAttributed)
+            and not definition.attribution.proof_contract.strip()
+        ):
+            raise ValueError("fully-attributed proof contracts must be non-empty")
+        if isinstance(definition.attribution, IncompleteAttribution) and (
+            not definition.attribution.reason.strip()
+            or not definition.attribution.follow_up_or_exclusion.strip()
+        ):
+            raise ValueError("incomplete-attribution reasons and dispositions must be non-empty")
         if definition.applicable not in {always, prismatic}:
             raise ValueError("physical applicability must use a reviewed neutral predicate")
         if definition.projected not in {always, prismatic}:

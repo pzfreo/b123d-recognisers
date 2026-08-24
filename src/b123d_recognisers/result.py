@@ -46,6 +46,7 @@ from b123d_recognisers._registry import (
     CompletedInputs,
     DerivedId,
     DiscoveryServices,
+    FullyAttributed,
     validate_output,
     validate_result_fields,
 )
@@ -411,6 +412,7 @@ def _take_inventory(
     evidence.validate_complete_inventory(
         tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES)
     )
+    _validate_attribution(context, physical, evidence)
     reconciliation = _reconcile_existing(physical, evidence)
     diagnostics = diagnose_residuals(reconciliation, evidence)
     accepted = CandidateInventory.complete(
@@ -460,6 +462,23 @@ def _bind_physical(
     return CandidateInventory.complete(
         ledger.candidate_set_for(family, family_records) for family, family_records in records
     )
+
+
+def _validate_attribution(
+    context: RecognitionContext, physical: CandidateInventory, evidence: EvidenceIndex
+) -> None:
+    """Revalidate registry completeness and common-solid provenance on terminal evidence."""
+
+    for definition in PHYSICAL_DEFINITIONS:
+        candidates = physical.candidate_set(definition.family).candidates
+        for candidate in candidates:
+            defining = evidence.defining_of(candidate)
+            if isinstance(definition.attribution, FullyAttributed) and not defining:
+                raise ValueError(
+                    f"{definition.family.value} promises complete defining attribution"
+                )
+            if defining and context.graph.common_valid_solid(defining) is None:
+                raise ValueError("physical defining evidence lost its common valid solid")
 
 
 RecordT = TypeVar("RecordT")

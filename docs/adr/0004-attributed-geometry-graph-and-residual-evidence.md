@@ -157,3 +157,10 @@ must classify expanded original nodes as defining or consulted evidence before s
 Run-local node/wire/edge ordinals provide deterministic tuple presentation only; they are not
 geometric identity and invariance remains defined through explicit original-face/edge
 correspondence.
+
+F5 promotes the existing solid-membership substrate through
+`FaceGraph.common_valid_solid(nodes)`. Every non-empty non-LEGACY aggregate physical defining set,
+whether its family is complete or partial, must resolve to one issuer-owned valid closed `SolidRef`
+before Candidate publication and again from terminal frozen evidence. Empty incomplete-family
+evidence remains permitted. This proves body provenance only; each family still owns the geometric
+decision separating defining faces from stock, neighbours, probes and consulted context.

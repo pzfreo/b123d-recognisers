@@ -17,6 +17,7 @@ claimed which face is an interpretation, and lives in the separate ledger tested
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 
 import pytest
@@ -197,3 +198,37 @@ def test_an_injected_face_edges_memo_is_the_one_actually_used():
 
     injected = FaceGraph(part, face_edges=Truncating())
     assert all(len(injected.edges(node)) == 1 for node in injected.nodes)
+
+
+def test_common_valid_solid_is_run_owned_and_fails_closed() -> None:
+    assembly = Pos(-20, 0, 0) * Box(10, 10, 10) + Pos(20, 0, 0) * Box(10, 10, 10)
+    graph = FaceGraph(assembly)
+    left = tuple(node for node in graph.nodes if graph.face(node).center().X < 0)
+    right = tuple(node for node in graph.nodes if graph.face(node).center().X > 0)
+
+    solid = graph.common_valid_solid(left)
+    assert solid is not None
+    assert graph.common_valid_solid(left[:2]) is solid
+    assert graph.common_valid_solid(()) is None
+    assert graph.common_valid_solid((left[0], right[0])) is None
+
+    foreign = FaceGraph(Box(10, 10, 10))
+    with pytest.raises(ValueError, match="not issued by this graph"):
+        graph.common_valid_solid((foreign.nodes[0],))
+    with pytest.raises(ValueError, match="not issued by this graph"):
+        graph.common_valid_solid((copy.copy(left[0]),))
+
+    object.__setattr__(solid, "ordinal", 99)
+    with pytest.raises(ValueError, match="solid reference changed"):
+        graph.common_valid_solid(left)
+
+
+def test_common_valid_solid_refuses_ambiguous_membership() -> None:
+    graph = FaceGraph(Box(10, 10, 10))
+    graph._build_solid_ownership()
+    memberships = list(graph._face_solids)
+    memberships[0] = (0, 1)
+    graph._face_solids = tuple(memberships)
+    graph._closed_solids = frozenset({0, 1})
+
+    assert graph.common_valid_solid((graph.nodes[0],)) is None

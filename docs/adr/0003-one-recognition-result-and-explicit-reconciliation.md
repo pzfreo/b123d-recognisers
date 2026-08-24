@@ -276,3 +276,9 @@ Logical handles are never accepted by `EvidenceSink`. A future named consumer mu
 logical occurrence to same-run original `FaceNode`s, then explicitly classify the complete
 provenance into defining and consulted evidence. Existing candidate identity, terminal freeze and
 reconciliation remain unchanged; complete geometric provenance alone does not establish ownership.
+
+F5 adds closed private registry attribution dispositions and a terminal validator. Registry metadata
+states expected family completeness but cannot create evidence, accept a Candidate, or authorise a
+reconciliation rule. After the sole evidence freeze, every fully attributed family occurrence must
+have non-empty issuer-snapshotted defining evidence; incomplete families may mix measured and empty
+occurrences. `candidate_set_for` remains the only record-occurrence binding path.
