@@ -1024,3 +1024,22 @@ The epic is not complete until tests make these properties executable:
 The first implementation goal should stop after F0 and the design review for F1. Canonicalisation
 has the largest leverage, but it also sits beneath every recogniser; evidence and a reviewed seam
 must precede code.
+### F5h Polygonal Boss original-side attribution (#218)
+
+The Polygonal Boss migration is independently sealed by `F5-POLYGONAL-BOSSES-H1` (bucket 25).
+Its neutral implementation preserves the public Z-axis regular-hexagon recognition path and
+promotes only `POLYGONAL_BOSSES`.  Every returned occurrence carries exactly its six original
+vertical ring faces through stable sorting and binds them to one run-owned `SolidRef` before the
+first Candidate is issued.  Support, terminal and transition caps are independently rederived
+consulted facts for attachment and Z extent and are excluded from defining evidence.  Equal-valued
+occurrences remain identity-distinct across valid solids; `POLYGONAL_STOCK` remains unchanged.
+
+The one-shot reveal ran only after the frozen `ff3ce83` implementation had two independent accepts,
+full/static/package checks, the composite performance gate and 12/12 CI/Codecov. It selected 22
+complete models (66 files, 599 faces), found zero invalid models and returned zero physical,
+accepted or attributed Polygonal Boss Candidates. Bucket 25 is permanently consumed; this completed
+negative draw is regression evidence for zero output only and supplies no positive side-versus-cap
+ownership evidence. Selected-artifact SHA-256:
+`caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; report SHA-256:
+`43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, replacement,
+alternate selection or fitting occurred, and the temporary extracted selection/report were deleted.

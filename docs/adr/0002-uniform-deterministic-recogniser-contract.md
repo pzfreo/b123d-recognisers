@@ -121,3 +121,11 @@ runs preserve record type, value and current sorted order; each aggregate Candid
 to the exact returned occurrence. The defining set contains every original planar/cylindrical
 lateral wall patch in the proven constant Double-D extrusion. Extremal stock planes, opening wires,
 per-solid extrema and the empty-prism boolean remain consulted throughness/serialization facts.
+## Amendment (Polygonal Boss attribution, issue #218)
+
+`recognise_polygonal_bosses` remains the public writer-free facade over one private discovery
+core.  Writer-free and aggregate calls share the same records, stable ordering and serialization;
+aggregate Candidates retain the exact returned record occurrences rather than rematching equal
+values.  A Polygonal Boss owns exactly the six original vertical side faces in its accepted ring.
+Terminal, support and transition caps remain consulted geometry and are never defining evidence.
+`PolygonalStock` remains a separate public record and attribution family.

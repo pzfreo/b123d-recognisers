@@ -282,3 +282,11 @@ stay disjoint from every other role/occurrence. It creates no parallel edge-owne
 complete graph-ordered wall set binds to one valid SolidRef before first issuance. End planes,
 opening profiles, bbox extrema and void-prism results remain consulted, and the core cannot read
 claims, frozen evidence, inventory or reconciliation.
+
+For the Polygonal Boss F5 migration, `polygonal_bosses._discover_polygonal_bosses` is the sole
+private writer-enabled core and `_registry` its sole production writer caller.  The registry passes
+its whole-run graph and writer.  Single-solid discovery may reuse that graph; multi-solid discovery
+deliberately retains one local graph per solid and carries the six original side faces back to the
+whole-run graph for issuance.  Terminal/support/transition caps remain transient consulted context.
+The core may issue only the six side nodes and cannot read claims, frozen evidence, inventory,
+reconciliation or another family output.  `POLYGONAL_STOCK` remains outside this migration.

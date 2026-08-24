@@ -105,11 +105,17 @@ selected exactly once at accepted PR #215 head `80def7f`. No model matched the a
 scanner stopped before STEP import, annotation reading, recognition or complete report creation.
 The zero-population draw is permanently inconclusive and is not regression evidence. It cannot be
 rerun, replaced, reused or fitted; no alternate selection or scanner mode was attempted.
-`F5-POLYGONAL-BOSSES-H1`, `F5-PADS-H1`, and `F5-HOLES-H1` are independently
-`sealed_unrevealed` allocations at buckets 25, 26, and 27. They were designated together by the
-neutral #216 policy slice without archive access, membership inspection, or outcome access. Each
-requires only its own exact acknowledgement and may be consumed only by its named semantic child;
-authority for one does not authorize either other allocation.
+`F5-POLYGONAL-BOSSES-H1` bucket 25 is now `consumed`. It was selected exactly once at accepted
+PR #223 head `ff3ce83`: 22 complete models, 66 selected files, 599 faces and zero invalid models.
+The completed scanner report contained zero physical, accepted or attributed Polygonal Boss
+Candidates. It is therefore negative regression evidence only and supplies no positive ownership
+or side-versus-cap claim. The selected-artifact SHA-256 is
+`caf1f57ccc142697d10a8d74527ad08c4bdfa3e7a34dfab71518dda32f739eb4`; the report SHA-256 was
+`43aa6950f0f8781972ad1ba8c1c3a36ec4d6c89c65e227826915d96b137e2a28`. No retry, alternate
+selection or fitting was performed, and the temporary extracted selection/report were deleted.
+`F5-PADS-H1` and `F5-HOLES-H1` remain independently `sealed_unrevealed` at buckets 26 and 27.
+All three were designated by neutral #216 without outcome access; authority remains exact and
+non-transferable between them.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become

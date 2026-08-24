@@ -15,9 +15,11 @@ from dataclasses import dataclass
 from typing import TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 
 #: Whatever a caller keys its ring by: this module passes face nodes, the unit tests pass ints.
 #: The two polygon helpers below never look inside it, which is the point -- they are geometry
@@ -83,6 +85,12 @@ class PolygonalStock(Record):
     @property
     def length(self) -> float:
         return self.top - self.base
+
+
+@dataclass(frozen=True, slots=True)
+class _PolygonalProposal:
+    record: PolygonalBoss | PolygonalStock
+    side_faces: tuple[FaceLike, ...]
 
 
 def _heading(graph: FaceGraph, node: FaceNode) -> tuple[float, float, float]:
@@ -204,9 +212,7 @@ def _side_rings(
         lo_j, hi_j = graph.bounds(j)[2]
         return abs(lo_i - lo_j) <= tol and abs(hi_i - hi_j) <= tol
 
-    return connected_components(
-        vertical, lambda i, j: same_span(i, j) and shares_edge(i, j)
-    )
+    return connected_components(vertical, lambda i, j: same_span(i, j) and shares_edge(i, j))
 
 
 def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
@@ -245,14 +251,13 @@ def _regular_ring_order(
     """
 
     side_count = len(component)
+
     def heading_angle(key: _K) -> float:
         across, along, _ = headings[key]
         return math.atan2(along, across)
 
     ordered = tuple(sorted(component, key=heading_angle))
-    angles = [
-        heading_angle(i) % (2 * math.pi) for i in ordered
-    ]
+    angles = [heading_angle(i) % (2 * math.pi) for i in ordered]
     gaps = [(angles[(i + 1) % side_count] - angles[i]) % (2 * math.pi) for i in range(side_count)]
     expected_gap = 2 * math.pi / side_count
     if any(abs(gap - expected_gap) > angle_tol for gap in gaps):
@@ -331,7 +336,7 @@ def _recognise_one(
     angle_tol: float,
     whole_stock: bool = False,
     graph: FaceGraph | None = None,
-) -> list[PolygonalBoss | PolygonalStock]:
+) -> list[_PolygonalProposal]:
     tol = _TOL if tol is None else tol
     # The graph holds the face inventory, the adjacency and the per-face attributes this
     # module used to keep three private maps for. Its accessors memoise on first ask, which is
@@ -347,8 +352,10 @@ def _recognise_one(
         # A graph over the wrong solid would not raise here on its own -- it would answer
         # questions about the wrong faces, and a boss found on one solid would be reported for
         # another. Checked rather than trusted, as `_rings` checks its own caller.
-        for face in part.faces():
-            graph.require_node(face)
+        faces = tuple(part.faces())
+        resolved = {graph.require_node(face) for face in faces}
+        if len(resolved) != len(faces) or len(resolved) != len(graph):
+            raise ValueError("supplied Polygonal Boss graph does not exactly match the part")
 
     def shares_edge(i: FaceNode, j: FaceNode) -> bool:
         return j in graph.neighbours(i)
@@ -361,8 +368,7 @@ def _recognise_one(
         # hands out a tuple precisely so one ring's bookkeeping cannot corrupt the next one's.
         return set(graph.neighbours(node))
 
-
-    found: list[PolygonalBoss | PolygonalStock] = []
+    found: list[_PolygonalProposal] = []
     for component in components:
         side_count = len(component)
         # The accepted corpus proves hexagonal bosses. Broader polygon classes need their own
@@ -408,8 +414,14 @@ def _recognise_one(
             wall_hi=wall_hi,
         )
         top = _common_cap(
-            component, graph, adjacent_to, tol, upper=True, positive=True,
-            wall_lo=wall_lo, wall_hi=wall_hi,
+            component,
+            graph,
+            adjacent_to,
+            tol,
+            upper=True,
+            positive=True,
+            wall_lo=wall_lo,
+            wall_hi=wall_hi,
         )
         if base is None or top is None or top - base <= tol:
             continue
@@ -420,20 +432,23 @@ def _recognise_one(
             for point in centres
         )
         flat_directions = tuple(
-            (round(headings[index][0], 3), round(headings[index][1], 3), 0.0)
-            for index in ordered
+            (round(headings[index][0], 3), round(headings[index][1], 3), 0.0) for index in ordered
         )
         record_type = PolygonalStock if whole_stock else PolygonalBoss
+        record = record_type(
+            axis="z",
+            center=(round(cx, 4), round(cy, 4), round((base + top) / 2, 4)),
+            side_count=side_count,
+            across_flats=round(across, 4),
+            base=round(base, 4),
+            top=round(top, 4),
+            flat_directions=flat_directions,
+            flat_centres=flat_centres,
+        )
         found.append(
-            record_type(
-                axis="z",
-                center=(round(cx, 4), round(cy, 4), round((base + top) / 2, 4)),
-                side_count=side_count,
-                across_flats=round(across, 4),
-                base=round(base, 4),
-                top=round(top, 4),
-                flat_directions=flat_directions,
-                flat_centres=flat_centres,
+            _PolygonalProposal(
+                record,
+                tuple(graph.face(node) for node in ordered),
             )
         )
     return found
@@ -457,15 +472,53 @@ def recognise_polygonal_bosses(
     each solid separately on purpose -- a ring assembled from faces of two solids is not a boss
     -- and a whole-part graph would be the wrong inventory to ask.
     """
+    return _discover_polygonal_bosses(part, tol=tol, angle_tol=angle_tol, graph=graph)
+
+
+def _discover_polygonal_bosses(
+    part: Part,
+    *,
+    tol: float | None = None,
+    angle_tol: float = math.radians(2),
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[PolygonalBoss]:
+    """Shared Polygonal Boss discovery with optional aggregate evidence issuance."""
+
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
     shared = graph if len(sources) == 1 else None
-    return sorted(
-        boss
-        for solid in sources
-        for boss in _recognise_one(solid, tol=tol, angle_tol=angle_tol, graph=shared)
-        if isinstance(boss, PolygonalBoss)
+    proposals = sorted(
+        (
+            proposal
+            for solid in sources
+            for proposal in _recognise_one(solid, tol=tol, angle_tol=angle_tol, graph=shared)
+            if isinstance(proposal.record, PolygonalBoss)
+        ),
+        key=lambda proposal: proposal.record,
     )
+    records = [cast("PolygonalBoss", proposal.record) for proposal in proposals]
+    if writer is None:
+        return records
+    if shared is not None and shared is not writer.graph:
+        raise ValueError("Polygonal Boss discovery graph does not match its evidence writer")
+
+    pending: list[tuple[PolygonalBoss, tuple[FaceNode, ...]]] = []
+    used: set[FaceNode] = set()
+    for proposal, record in zip(proposals, records, strict=True):
+        resolved = {writer.graph.require_node(face) for face in proposal.side_faces}
+        nodes = tuple(node for node in writer.graph.nodes if node in resolved)
+        if len(nodes) != 6:
+            raise ValueError("a Polygonal Boss requires six distinct original side faces")
+        if used & resolved:
+            raise ValueError("Polygonal Boss occurrences share defining side faces")
+        if writer.graph.common_valid_solid(nodes) is None:
+            raise ValueError("Polygonal Boss side faces do not belong to one valid solid")
+        used.update(resolved)
+        pending.append((record, nodes))
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.POLYGONAL_BOSSES)
+    return records
 
 
 def recognise_polygonal_stock(
@@ -487,9 +540,9 @@ def recognise_polygonal_stock(
     if len(list(part.solids())) != 1 or len(list(part.faces())) != 8:
         return []
     return sorted(
-        record
-        for record in _recognise_one(
+        proposal.record
+        for proposal in _recognise_one(
             part, tol=tol, angle_tol=angle_tol, whole_stock=True, graph=graph
         )
-        if isinstance(record, PolygonalStock)
+        if isinstance(proposal.record, PolygonalStock)
     )
