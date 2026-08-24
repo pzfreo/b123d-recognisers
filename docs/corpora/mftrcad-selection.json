@@ -50,7 +50,7 @@
       },
       "F5-PADS-H1": {
         "buckets": [26],
-        "status": "sealed_unrevealed"
+        "status": "consumed"
       },
       "F5-HOLES-H1": {
         "buckets": [27],
@@ -68,7 +68,7 @@
   "policy": {
     "development": "May be scanned to find and describe gaps. Counts are diagnostic, not a definition.",
     "holdout": "Keep outcomes sealed until a semantic child has two independent pre-reveal ACCEPT verdicts. Both holdout and all-selection scans require an explicit reveal flag. After reveal it becomes regression evidence and must not be fitted.",
-    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed positive regression allocations. F5-POLYGONAL-BOSSES-H1 is a consumed completed negative regression allocation: its one-shot report contained no Polygonal Boss candidates and supplies no positive ownership evidence. F5-COUNTERSINKS-H1 and F5-BOSSES-H1 are consumed and inconclusive after invalid-model aborts. F5-DOUBLE-D-BORES-H1 is consumed and inconclusive after its one-shot selection contained no models. Those three inconclusive allocations produced no complete report and are not regression evidence. F5-PADS-H1 and F5-HOLES-H1 remain independently sealed and unrevealed for their semantic children. Consumed allocations may not be reused or treated as sealed evidence.",
+    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed positive regression allocations. F5-POLYGONAL-BOSSES-H1 is consumed completed negative regression evidence for zero output only. F5-PADS-H1 is consumed completed positive regression evidence for occurrence/aggregate-cardinality only: four attributed Pads carried 20 total defining face occurrences (average five), but the generic scanner did not record a per-Candidate cardinality vector or independently reconstruct top-versus-wall roles. F5-COUNTERSINKS-H1 and F5-BOSSES-H1 are consumed and inconclusive after invalid-model aborts; F5-DOUBLE-D-BORES-H1 is consumed and inconclusive after a zero-population selection. Those three inconclusive allocations produced no complete report and are not regression evidence. F5-HOLES-H1 remains independently sealed and unrevealed. Consumed allocations may not be reused or treated as sealed evidence.",
     "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
   }
 }
