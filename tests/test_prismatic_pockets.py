@@ -16,6 +16,7 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
+from attribution_audit import attributed_run
 from build123d import (
     Box,
     BuildPart,
@@ -29,6 +30,7 @@ from build123d import (
 
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
 
@@ -62,10 +64,11 @@ def _through():
 
 
 def _claimed(part):
-    ledger = ClaimLedger(FaceGraph(part))
-    found = r.recognise_prismatic_pockets(part, ledger=ledger)
-    assert found == r.recognise_prismatic_pockets(part), "claiming changed what was recognised"
-    return ledger, found
+    return attributed_run(
+        part,
+        FamilyId.PRISMATIC_POCKETS,
+        r.recognise_prismatic_pockets,
+    )
 
 
 def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():

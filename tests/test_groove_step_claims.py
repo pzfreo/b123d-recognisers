@@ -21,6 +21,7 @@ at three scales.
 from __future__ import annotations
 
 import pytest
+from attribution_audit import attributed_run
 from build123d import Cylinder, Pos
 
 import b123d_recognisers as r
@@ -48,13 +49,25 @@ def _plain_shaft():
 def _claimed(part):
     """Both families against one ledger, proved to return what they return without it."""
 
-    ledger = ClaimLedger(FaceGraph(part))
     cyls = r.analyse_cylinders(part)
-    grooves = r.recognise_grooves(part, cyls=cyls, ledger=ledger)
+    ledger, grooves = attributed_run(
+        part,
+        FamilyId.GROOVES,
+        r.recognise_grooves,
+        kwargs={"cyls": cyls},
+    )
     steps = r.recognise_turned_steps(part, cyls=cyls, ledger=ledger)
 
-    assert grooves == r.recognise_grooves(part), "claiming changed what was recognised"
-    assert steps == r.recognise_turned_steps(part), "claiming changed what was recognised"
+    plain_steps = r.recognise_turned_steps(part, cyls=cyls)
+    assert steps == plain_steps, "claiming changed what was recognised"
+    assert [step.to_dict() for step in steps] == [step.to_dict() for step in plain_steps]
+    candidates = ledger.candidate_set(FamilyId.TURNED_STEPS).candidates
+    assert len(candidates) == len(steps)
+    for candidate, step in zip(candidates, steps, strict=True):
+        assert candidate.record is step
+        defining = ledger.defining_of(candidate)
+        assert defining
+        assert ledger.graph.common_valid_solid(defining) is not None
     return ledger, grooves, steps
 
 

@@ -26,10 +26,12 @@ add is the *ownership*, not a second opinion about the geometry.
 
 from __future__ import annotations
 
+from attribution_audit import attributed_run
 from build123d import Box, Pos, Rot
 
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps as _reconcile_chamfers,
@@ -79,12 +81,15 @@ def _both_reversed():
 def _claimed(part):
     """Both families against one ledger, proved to return what they return without it."""
 
-    ledger = ClaimLedger(FaceGraph(part))
-    chamfers = r.recognise_chamfers(part, ledger=ledger)
+    ledger, chamfers = attributed_run(part, FamilyId.CHAMFERS, r.recognise_chamfers)
     steps = r.recognise_angled_steps(part, ledger=ledger)
 
-    assert chamfers == r.recognise_chamfers(part), "claiming changed what was recognised"
-    assert steps == r.recognise_angled_steps(part), "claiming changed what was recognised"
+    plain_steps = r.recognise_angled_steps(part)
+    assert steps == plain_steps, "claiming changed what was recognised"
+    assert [step.to_dict() for step in steps] == [step.to_dict() for step in plain_steps]
+    candidates = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    assert len(candidates) == len(steps)
+    assert all(candidate.record is step for candidate, step in zip(candidates, steps, strict=True))
     return ledger, chamfers, steps
 
 
