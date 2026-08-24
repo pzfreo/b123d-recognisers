@@ -665,6 +665,52 @@ proof; a deep-copied geometric clone and a translated-stale clone exercise the r
 refusals directly. A shallow wrapper around the same OCCT topology may correctly resolve through
 the graph's `IsSame` identity and is not described as invalid evidence.
 
+F5d/#201 applies the same gate to Fillets after #200 seals `F5-FILLETS-H1`, MFTRCAD v1
+bucket 21, without archive access. Each Fillet is defined solely by its original partial-cylinder
+or torus blend face. That adaptor supplies analytic kind, principal axis, radius and the serialized
+anchor evaluated at the midpoint of its trimmed parameter bounds; the anchor is not claimed to lie
+inside an arbitrarily holed trim. Neighbour planes, same-solid external stock cylinders,
+second-diameter bands, spherical continuation and convexity/material probes are consulted only.
+The pre-existing whole-part bounding-box extent remains consulted by maximum-radius eligibility and
+is not made body-local in this attribution slice.
+
+F5d preserves the principal-axis domain: translations, mirrors, uniform scales and axis-preserving
+rotations/permutations are positive representation checks, while an arbitrary non-principal
+rotation remains negative. The matrix separately exercises every public keyword route and the
+three alternative torus eligibility paths (transverse plane, two distinct external band diameters,
+or spherical continuation). A fresh-adaptor role oracle reconstructs kind, axis, radius and
+parameter-bound anchor without calling the production anchor helper, binds toroidal stock context
+to the owner's `SolidRef`, and proves consulted faces absent from defining evidence. Unavailable real
+open/nonmanifold/ambiguous or equal-valued family fixtures receive a recorded bounded construction
+disposition plus the nearest non-vacuous graph/issuer adversary; ordinary no-output geometry and
+fabricated sink input do not count as proof.
+
+The pre-implementation route scan covered all 40 checked-in MFCAD++ development STEP models,
+three Gramel STEP fixtures and constructed build123d turned rounds. No recognised turned Fillet
+appeared in the imported development sets, and constructed valid rounds exposed only the
+transverse-plane torus route. The two-distinct-band and spherical-continuation alternatives have no
+isolated real fixture in that bounded corpus/construction surface, so F5d pins them with narrow
+production-boundary mutations using real torus, owner and same-solid context faces. These
+substitutions may not replace an available returned path or authorize a predicate/role change; the
+first future real occurrence becomes a mandatory regression fixture.
+
+Writer-off/on parity applies to valid closed-solid inputs whose owner/context can be issued by the
+run graph. The public facade remains a geometry-only compatibility reader and is not changed to
+construct a graph or reject an otherwise recognised open/ambiguous shape; the aggregate writer
+fails closed before publication when owner or exact turned eligibility context lacks one common
+valid `SolidRef`. As with Flats, OCCT offers no valid closed nonmanifold Solid with one unambiguous
+owner and same-solid Fillet context: attempted three-face incidence becomes an open/invalid shell
+or ambiguous ownership. The real open-Shell refusal plus late body/context failures are the bounded
+family-level evidence; a vacuous nonmanifold no-output shape is not counted separately.
+
+The same bounded construction audit found no valid distinct Fillet occurrences with an equal full
+record value. Equal radii are common, but distinct faces have distinct parameter-bound anchors;
+forcing equal `axis/radius/at/turned` requires coincident duplicate topology, which is invalid or
+ambiguous under the common-solid issuer contract. F5d therefore pins equal-radius occurrence
+identity in the family loop and relies on the generic issuer's equal-value identity adversary for
+the unreachable full-record collision. Any future constructible collision becomes a mandatory
+family regression.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

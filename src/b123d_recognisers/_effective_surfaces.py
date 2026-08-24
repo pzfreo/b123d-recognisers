@@ -218,19 +218,19 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cylinder direction uses oriented frame",
     ),
-    "fillets:recognise_fillets:adaptor:1": (
+    "fillets:_discover_fillets:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "analytic anchor uses oriented frame",
     ),
-    "fillets:recognise_fillets:adaptor:2": (
+    "fillets:_discover_fillets:adaptor:2": (
         SurfaceReaderDisposition.TORUS_DEFERRED,
         "torus family gate",
     ),
-    "fillets:recognise_fillets:adaptor:3": (
+    "fillets:_discover_fillets:adaptor:3": (
         SurfaceReaderDisposition.TORUS_DEFERRED,
         "torus parameter read",
     ),
-    "fillets:recognise_fillets:adaptor:4": (
+    "fillets:_discover_fillets:adaptor:4": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "neighbour plane/sphere rule uses oriented topology",
     ),

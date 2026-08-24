@@ -96,3 +96,9 @@ Its private core completes discovery, sizing, sorting and every original-face/co
 before publishing any Candidate. The public wrapper calls that core without a sink and retains its
 exact signature and byte/value/order behaviour. The owning planar face is defining; the matched
 cylinder and an optional opposed flat contribute sizing as consulted context.
+
+`recognise_fillets` follows the same private-core shape without adding a public sidecar. Its
+writer-enabled aggregate call and writer-free public call preserve every existing keyword and
+record value/order. The core completes both cylinder and torus discovery, final sorting and all
+owner-face/common-solid validation before publishing. Each Candidate retains the exact returned
+record occurrence and only its original curved blend face as defining evidence.

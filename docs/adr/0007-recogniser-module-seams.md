@@ -233,3 +233,16 @@ writer-enabled caller, while the public `recognise_flats` facade invokes the sam
 writer and keeps its existing signature. The core may write original `FaceNode` evidence but may
 not read claims, frozen evidence, inventory, reconciliation, or another family's output. Stock
 cylinders and an opposed Flat face remain consulted geometry rather than Candidate evidence.
+
+For F5d, `fillets._discover_fillets` is likewise the single private writer-enabled core and
+`_registry` its sole production writer caller. The public `recognise_fillets` facade keeps its
+signature and calls the core without a writer. The core may issue only the original curved blend
+face; neighbour planes, cylinders, sphere continuation, material probes and whole-part scale are
+consulted. It cannot read claims/evidence/inventory/reconciliation, and no other family or tool may
+receive its write capability.
+
+Only turned face context is retained as graph-bindable proposal context: exact external cylinders
+and the plane/sphere faces that authorize the torus branch are validated with the owner. Prismatic
+neighbour coordinates and the convex material probe are transient scalar/topology decisions in the
+existing algorithm; the independent role matrix rederives them, but the proposal does not claim a
+complete prismatic context-node roster.

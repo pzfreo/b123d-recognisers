@@ -33,7 +33,7 @@ from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
-from b123d_recognisers.fillets import Fillet, recognise_fillets
+from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
@@ -574,16 +574,19 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                recognise_fillets(
+                _discover_fillets(
                     s.context.part,
+                    min_radius=None,
+                    max_radius_frac=0.45,
                     cyls=s.cylinders,
                     face_edges=s.context.face_edges,
                     include_cylindrical=not s.context.rotational,
+                    writer=s.writer,
                 )
             )
         ),
         Counted("fillet"),
-        IncompleteAttribution("no defining evidence is issued", "migrate fillet blend faces"),
+        FullyAttributed("every returned fillet claims its original curved blend face"),
     ),
     PhysicalDefinition(
         FamilyId.PLATES,
