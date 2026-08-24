@@ -711,6 +711,16 @@ identity in the family loop and relies on the generic issuer's equal-value ident
 the unreachable full-record collision. Any future constructible collision becomes a mandatory
 family regression.
 
+The authorised one-shot F5d reveal then consumed bucket 21 at exact pre-reveal PR #203 head
+`71be0b0`: 21 complete models/63 files, zero invalid models, and 6 Fillet proposals = 6 accepted =
+6 attributed across four models. The selected-artifact SHA-256 is
+`6323bd2af053ada35952e8e7af4172a7da14bc0ec04ec4b3ec5b7b1275206f5a`. The completed
+generic report contains six claimed Fillet face occurrences, so nonempty-evidence arithmetic proves
+one defining face per Candidate and no reconciliation loss. It does not reconstruct analytic owner,
+trim bounds or turned context geometry; those exact role claims remain frozen development-matrix
+evidence. No recogniser predicate, tolerance, defining role, registry rule, ordering or
+reconciliation was changed from the result, and bucket 21 is permanently consumed.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
