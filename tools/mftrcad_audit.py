@@ -34,6 +34,7 @@ DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 10))
 HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
 F5_FLATS_H1: Final = "F5-FLATS-H1"
 F5_FILLETS_H1: Final = "F5-FILLETS-H1"
+F5_COUNTERSINKS_H1: Final = "F5-COUNTERSINKS-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -50,6 +51,12 @@ class AllocationSpec:
 ALLOCATION_SPECS: Final = (
     AllocationSpec(F5_FLATS_H1, "f5_flats_h1", frozenset({20}), "consumed"),
     AllocationSpec(F5_FILLETS_H1, "f5_fillets_h1", frozenset({21}), "consumed"),
+    AllocationSpec(
+        F5_COUNTERSINKS_H1,
+        "f5_countersinks_h1",
+        frozenset({22}),
+        "sealed_unrevealed",
+    ),
 )
 
 
@@ -174,7 +181,13 @@ PACKAGE_FAMILIES_BY_LABEL: Final = {
 }
 
 Selection = Literal[
-    "all", "development", "holdout", "unselected", "f5_flats_h1", "f5_fillets_h1"
+    "all",
+    "development",
+    "holdout",
+    "unselected",
+    "f5_flats_h1",
+    "f5_fillets_h1",
+    "f5_countersinks_h1",
 ]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS

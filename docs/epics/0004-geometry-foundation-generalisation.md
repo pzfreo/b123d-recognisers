@@ -721,6 +721,17 @@ trim bounds or turned context geometry; those exact role claims remain frozen de
 evidence. No recogniser predicate, tolerance, defining role, registry rule, ordering or
 reconciliation was changed from the result, and bucket 21 is permanently consumed.
 
+F5e/#205 migrates Countersinks after #204 technically seals `F5-COUNTERSINKS-H1`, MFTRCAD v1
+bucket 22, without archive access. Each standalone record is defined solely by its exact original
+conical seat face; the matching coaxial bore cylinder and line/radius facts remain consulted
+eligibility context. A fresh adaptor/rim oracle must reconstruct every serialized field from that
+face, while the private writer core retains the geometry-only public facade and validates all
+pending owners before publication. Parity applies to valid closed-solid issuable owners; open,
+nonmanifold, or ambiguous geometry may remain publicly recognised while aggregate evidence refuses.
+The matrix includes arbitrary compound rotations because Countersinks have no principal-axis gate,
+and separately pins radius, axis-line, and fixed angular tolerances. Bucket 22 may be revealed once
+only after full gates and two independent exact-head accepts; zero occurrences still consume it.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

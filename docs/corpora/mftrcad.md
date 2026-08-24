@@ -87,6 +87,11 @@ selection remains mandatory and generic holdout authority cannot reveal one.
 archive or inspecting bucket-21 membership or outcomes, then revealed once only after #201's frozen
 exact-head implementation had two independent accepts and all mechanical gates. It remains excluded
 from `unselected`, requires its exact acknowledgement, and cannot be reused as sealed evidence.
+`F5-COUNTERSINKS-H1` is bucket 22 and is `sealed_unrevealed`; it was designated for #205 without
+opening the external archive or inspecting membership, geometry, annotations, or outcomes. It is
+permanently excluded from `unselected` and requires its own exact acknowledgement after the frozen
+Countersinks implementation gates and two independent accepts. A zero-result reveal is inconclusive
+and still consumes the allocation.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to consumed regression evidence. The authorised F5c reveal at
