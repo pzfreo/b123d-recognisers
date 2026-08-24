@@ -64,8 +64,6 @@ def assert_ring_role(ledger, candidate, record) -> None:
 def assert_turned_step_role(part, ledger, candidate, record) -> None:
     """Derive all cylindrical bands that establish one turned rung."""
 
-    axis = "xyz".index(record.axis)
-
     inventory = (*analyse_cylinders(part)[0], *analyse_cylinders(part)[1])
     axis_bands = [
         item
@@ -75,16 +73,10 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
     main = max(axis_bands, key=lambda item: item["diameter"])
     midpoint = 0.5 * (record.lo + record.hi)
 
-    def midpoint_distance(item) -> float:
-        node = ledger.graph.require_node(item["face"])
-        low, high = ledger.graph.bounds(node)[axis]
-        return max(low - midpoint, midpoint - high, 0.0)
-
-    matching = [
+    coaxial = [
         item
         for item in axis_bands
-        if abs(item["diameter"] - record.diameter) <= 1e-6
-        and _coaxial_axis_lines(
+        if _coaxial_axis_lines(
             main["axis_xyz"],
             main["dir_xyz"],
             item["axis_xyz"],
@@ -92,25 +84,23 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
             tol=1e-6,
         )
     ]
-    nearest = min(midpoint_distance(item) for item in matching)
+    eligible = [
+        item for item in coaxial if item["s_lo"] <= midpoint <= item["s_hi"]
+    ]
+    if not eligible:
+        # ADR 0008 freezes the 0.7 mm allowance and its per-band half-width cap.
+        eligible = [
+            item
+            for item in coaxial
+            if item["s_lo"] - min(0.7, (item["s_hi"] - item["s_lo"]) / 2)
+            <= midpoint
+            <= item["s_hi"] + min(0.7, (item["s_hi"] - item["s_lo"]) / 2)
+        ]
+    widest = max(item["diameter"] for item in eligible)
+    assert abs(widest - record.diameter) <= 1e-6
 
     def establishes(item) -> bool:
-        if not item["external"]:
-            return False
-        if abs(midpoint_distance(item) - nearest) > 1e-6:
-            return False
-        components = item["dir_xyz"]
-        return (
-            abs(abs(components[axis]) - 1.0) <= 1e-6
-            and abs(item["diameter"] - record.diameter) <= 1e-6
-            and _coaxial_axis_lines(
-                main["axis_xyz"],
-                main["dir_xyz"],
-                item["axis_xyz"],
-                item["dir_xyz"],
-                tol=1e-6,
-            )
-        )
+        return item in eligible and abs(item["diameter"] - widest) <= 1e-6
 
     expected = frozenset(
         ledger.graph.require_node(item["face"])
