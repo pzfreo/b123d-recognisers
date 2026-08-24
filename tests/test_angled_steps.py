@@ -430,12 +430,19 @@ def test_records_are_ordered_deterministically_and_are_plain_data():
     """Two steps on one part come back in a stable order that does not depend on traversal."""
 
     part = _blind() - Pos(20, -20, 6) * Rot(45, 0, 0) * Box(30, _WEDGE, _WEDGE)
-    steps = recognise_angled_steps(part)
+    ledger, steps = attributed_run(part, FamilyId.ANGLED_STEPS, recognise_angled_steps)
 
     assert len(steps) == 2
     assert steps == sorted(steps, key=lambda s: (s.axis, s.at))
     assert all(isinstance(s, AngledStep) for s in steps)
     assert recognise_angled_steps(part) == steps
+    candidates = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    for candidate, step in zip(candidates, steps, strict=True):
+        assert candidate.record is step
+        (slant,) = ledger.defining_of(candidate)
+        bounds = ledger.graph.bounds(slant)
+        axis = "xyz".index(step.axis)
+        assert round(bounds[axis][1] - bounds[axis][0], 3) == step.length
 
 
 def test_a_part_with_no_oblique_face_has_no_angled_steps():

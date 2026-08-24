@@ -90,6 +90,26 @@ def test_a_groove_claims_its_floor_band_and_not_the_shaft_either_side():
     assert 2 * radius == groove.diameter, "and it is the floor band, not a wall"
 
 
+def test_multiple_grooves_keep_occurrence_identity_and_floor_roles() -> None:
+    shaft = Cylinder(20, 80)
+    for position in (10, 35):
+        shaft -= Pos(0, 0, position) * (Cylinder(20, 6) - Cylinder(16, 6))
+    ledger, grooves = attributed_run(
+        shaft,
+        FamilyId.GROOVES,
+        r.recognise_grooves,
+        kwargs={"cyls": r.analyse_cylinders(shaft)},
+    )
+
+    assert len(grooves) == 2
+    candidates = ledger.candidate_set(FamilyId.GROOVES).candidates
+    assert all(
+        candidate.record is groove
+        for candidate, groove in zip(candidates, grooves, strict=True)
+    )
+    assert len({next(iter(ledger.defining_of(candidate))) for candidate in candidates}) == 2
+
+
 def test_a_turned_step_claims_the_bands_that_set_its_diameter():
     """The shoulder planes come from the neighbouring steps' faces, so they are not claimed."""
 

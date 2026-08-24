@@ -31,13 +31,26 @@ def _shaft_with_reduced_band(*, wall_r=15.0, band_r=12.0, lo_h=20.0, band_h=5.0,
     return shaft
 
 
+def _assert_floor_role(ledger, candidate, groove) -> None:
+    (floor,) = ledger.defining_of(candidate)
+    assert ledger.graph.face(floor).geom_type == GeomType.CYLINDER
+    bounds = ledger.graph.bounds(floor)
+    axis = "xyz".index(groove.axis)
+    assert round(bounds[axis][1] - bounds[axis][0], 3) == groove.width
+    radial = next(index for index in range(3) if index != axis)
+    assert round(2 * max(abs(value) for value in bounds[radial]), 3) == groove.diameter
+
+
 def test_a_narrow_band_between_two_equal_walls_is_a_groove():
     """The positive control. Without it the exclusions below prove nothing."""
 
-    (groove,) = recognise_grooves(_shaft_with_reduced_band())
+    part = _shaft_with_reduced_band()
+    ledger, (groove,) = attributed_run(part, FamilyId.GROOVES, recognise_grooves)
 
     assert groove.diameter == 24.0
     assert groove.width == 5.0
+    (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+    _assert_floor_role(ledger, candidate, groove)
 
 
 def test_a_monotonic_step_down_is_a_shoulder_not_a_groove():
@@ -146,8 +159,7 @@ def test_a_groove_with_lead_in_chamfers_is_recognised():
     assert len(grooves) == 1
     assert (grooves[0].diameter, grooves[0].width) == (24.0, 5.0)
     (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
-    (floor,) = ledger.defining_of(candidate)
-    assert ledger.graph.face(floor).geom_type == GeomType.CYLINDER
+    _assert_floor_role(ledger, candidate, grooves[0])
 
 
 def test_a_lead_in_cone_must_land_on_both_bands():
@@ -216,8 +228,7 @@ def test_a_radiused_lead_in_joins_the_groove_bands():
         (24.0, 1.5)
     ]
     (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
-    (floor,) = ledger.defining_of(candidate)
-    assert ledger.graph.face(floor).geom_type == GeomType.CYLINDER
+    _assert_floor_role(ledger, candidate, grooves[0])
 
 
 def test_a_chamfered_groove_reads_the_same_at_any_scale():
@@ -230,8 +241,12 @@ def test_a_chamfered_groove_reads_the_same_at_any_scale():
     """
 
     for factor in (0.05, 5.0, 100.0):
-        (groove,) = recognise_grooves(_chamfered_groove().scale(factor))
+        ledger, (groove,) = attributed_run(
+            _chamfered_groove().scale(factor), FamilyId.GROOVES, recognise_grooves
+        )
         assert groove.diameter == round(24.0 * factor, 3), f"at {factor}x"
+        (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+        _assert_floor_role(ledger, candidate, groove)
 
 
 def test_a_plain_cylinder_has_no_groove():

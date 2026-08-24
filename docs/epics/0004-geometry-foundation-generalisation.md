@@ -590,13 +590,17 @@ F5b is a frozen tests-and-documentation audit with this exact path matrix:
 Every positive fixture compares independent writer-off/on record type, value, order and `to_dict`,
 then proves same-run Candidate count, family, `candidate.record is returned_record`, nonempty
 issuer-valid common-solid evidence and no surplus Candidate. Every negative fixture proves no family
-Candidate, with the bounded AngledStep Observation stated separately. Transform, mirror, uniform
-scale, traversal and STEP checks compare independently derived defining-role signatures under
-explicit face correspondence, never FaceNode indices or byte-identical scaled records. One real
-physical-family fixture must prove equal-valued output occurrences remain distinct if constructible;
-otherwise the audit records why and relies on the already-pinned generic issuer invariant rather
-than injecting records directly into the sink. A closed test roster makes any future constructor
-path require review before `FullyAttributed` can remain truthful.
+Candidate, with the bounded AngledStep Observation stated separately. Correspondence is sampled at
+the representation-sensitive seams rather than multiplied across every topology row: mirrored
+pocket cap orientation, scaled groove floor binding, reversed bevel/step issuance order, cross-axis
+turned bands and a real STEP turned Chamfer. These compare independently derived defining roles,
+never FaceNode indices or byte-identical scaled records. The frozen development fixtures contain no
+two valid same-body output occurrences that serialize to equal values; manufacturing one requires
+coincident duplicate solids or direct sink injection and bypasses the family contract. F5b records
+that bounded construction result and relies on the existing generic issuer equal-value identity
+adversary. A constructor-count guard plus the reviewed case table makes a future output constructor
+require review before `FullyAttributed` can remain truthful; semantic helper branches remain
+review-owned because a test-name or AST-body assertion would be tautological.
 
 F5b changes no `src`, registry disposition, predicate, defining role, output, reconciliation,
 capability manifest or golden. If the audit finds a production defect, it stops and opens a semantic

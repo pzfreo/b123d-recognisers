@@ -99,6 +99,20 @@ def test_both_cap_orientations_issue_complete_wall_evidence() -> None:
         assert len(ledger.defining_of(candidate)) == pocket.sides
 
 
+def test_multiple_pockets_keep_sorted_occurrence_identity() -> None:
+    cutter = _prism((-8, -6), (8, -6), (0, 8))
+    part = Box(120, 80, 20) - Pos(-25, 0, 2) * cutter - Pos(25, 0, 2) * cutter
+    ledger, pockets = _claimed(part)
+
+    assert len(pockets) == 2
+    candidates = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    assert all(
+        candidate.record is pocket
+        for candidate, pocket in zip(candidates, pockets, strict=True)
+    )
+    assert len({frozenset(ledger.defining_of(candidate)) for candidate in candidates}) == 2
+
+
 def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
     """`sides` alone would not, and neither would depth.
 
@@ -112,12 +126,17 @@ def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
         (-12, -7), (-6, -12), (6, -12), (12, -7), (6, -2), (-6, -2)
     )
 
-    (tri,) = r.recognise_prismatic_pockets(triangle)
-    (hexa,) = r.recognise_prismatic_pockets(hexagon)
+    tri_ledger, (tri,) = _claimed(triangle)
+    hex_ledger, (hexa,) = _claimed(hexagon)
 
     assert (tri.sides, hexa.sides) == (3, 6)
     assert tri.section != hexa.section
     assert len(tri.section) == 3 and len(hexa.section) == 6
+    for ledger, pocket in ((tri_ledger, tri), (hex_ledger, hexa)):
+        (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+        defining = ledger.defining_of(candidate)
+        assert len(defining) == pocket.sides
+        assert all(abs(ledger.graph.normal(node)[2]) < 1e-6 for node in defining)
 
 
 def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():
@@ -164,6 +183,9 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)
 
     assert len(pockets) == 1 and len(prismatic) == 1, "both families see this recess"
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    assert candidate.record is prismatic[0]
+    assert len(ledger.defining_of(candidate)) == prismatic[0].sides == 4
     assert (
         prismatic_pockets_that_are_not_pockets(
             prismatic, pockets, ledger.snapshot_index()

@@ -110,6 +110,11 @@ def test_a_through_slot_is_reported_here_too_and_the_aggregate_resolves_it():
     assert recognise_slots(square) == []
     assert [p.sides for p in build_recognition_result(square).passages] == [4]
 
+    ledger, passages = attributed_run(square, FamilyId.PASSAGES, recognise_passages)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is passages[0]
+    assert len(ledger.defining_of(candidate)) == passages[0].sides == 4
+
 
 def test_a_passage_crossing_a_slot_only_in_projection_survives():
     """The regression for the heuristic that was replaced.

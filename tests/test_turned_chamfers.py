@@ -47,7 +47,12 @@ def test_direct_reader_recognises_conical_turned_chamfers():
     assert all(chamfer.turned for chamfer in found)
     for candidate in ledger.candidate_set(FamilyId.CHAMFERS).candidates:
         (node,) = ledger.defining_of(candidate)
-        assert ledger.graph.face(node).geom_type == GeomType.CONE
+        face = ledger.graph.face(node)
+        assert face.geom_type == GeomType.CONE
+        center = face.center()
+        assert tuple(
+            round(value, 3) for value in (center.X, center.Y, center.Z)
+        ) == candidate.record.at
 
 
 def test_rotational_inventory_keeps_turned_chamfers():
