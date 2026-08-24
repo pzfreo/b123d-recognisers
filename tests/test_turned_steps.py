@@ -6,9 +6,11 @@ orientation that is not flagged Z-rotational), mirroring _x_stepped_shaft.
 """
 
 import pytest
+from attribution_audit import attributed_run, unattributed_run
 from build123d import Box, Cylinder, GeomType, Pos, Rotation
 
 from b123d_recognisers import TurnedProfile, TurnedStep, recognise_turned_steps
+from b123d_recognisers._candidates import FamilyId
 
 
 def _shaft_x(*sections):
@@ -29,7 +31,9 @@ def _lengths(steps):
 
 class TestFindTurnedSteps:
     def test_two_step_shaft(self):
-        steps = recognise_turned_steps(_shaft_x((30, 40), (16, 30)))
+        _ledger, steps = attributed_run(
+            _shaft_x((30, 40), (16, 30)), FamilyId.TURNED_STEPS, recognise_turned_steps
+        )
         assert steps
         assert _lengths(steps) == [30.0, 40.0]
 
@@ -89,7 +93,7 @@ class TestFindTurnedSteps:
         assert diffs == [30.0, 40.0]
 
     def test_plain_cylinder_is_empty(self):
-        assert recognise_turned_steps(Cylinder(15, 40)) == []
+        unattributed_run(Cylinder(15, 40), FamilyId.TURNED_STEPS, recognise_turned_steps)
         assert TurnedProfile.from_steps(recognise_turned_steps(Cylinder(15, 40))) is None
 
     def test_prismatic_box_is_empty(self):

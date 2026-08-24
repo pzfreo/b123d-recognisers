@@ -17,6 +17,7 @@ two on size, the equal-legs assertions here would keep passing and
 
 from __future__ import annotations
 
+from attribution_audit import attributed_run, unattributed_run
 from build123d import (
     Align,
     Axis,
@@ -162,9 +163,8 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
 
 def test_successful_step_owns_only_the_slant() -> None:
     part = _blind()
-    ledger = ClaimLedger(FaceGraph(part))
-
-    step = recognise_angled_steps(part, ledger=ledger)[0]
+    ledger, steps = attributed_run(part, FamilyId.ANGLED_STEPS, recognise_angled_steps)
+    step = steps[0]
     candidate = ledger.candidate_set_for(FamilyId.ANGLED_STEPS, [step]).candidates[0]
     evidence = ledger.snapshot_index()
 
@@ -398,7 +398,12 @@ def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
     assert len(ends[0].edges()) == 4, "the fixture must actually add an edge to the flat"
     assert len(ends[0].outer_wire().edges()) == 3
 
-    assert recognise_angled_steps(drilled_part) == plain
+    ledger, drilled = attributed_run(
+        drilled_part, FamilyId.ANGLED_STEPS, recognise_angled_steps
+    )
+    assert drilled == plain
+    (candidate,) = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    assert len(ledger.defining_of(candidate)) == 1
 
 
 def test_a_step_is_a_step_at_any_scale():
@@ -425,18 +430,29 @@ def test_records_are_ordered_deterministically_and_are_plain_data():
     """Two steps on one part come back in a stable order that does not depend on traversal."""
 
     part = _blind() - Pos(20, -20, 6) * Rot(45, 0, 0) * Box(30, _WEDGE, _WEDGE)
-    steps = recognise_angled_steps(part)
+    ledger, steps = attributed_run(part, FamilyId.ANGLED_STEPS, recognise_angled_steps)
 
     assert len(steps) == 2
     assert steps == sorted(steps, key=lambda s: (s.axis, s.at))
     assert all(isinstance(s, AngledStep) for s in steps)
     assert recognise_angled_steps(part) == steps
+    candidates = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    for candidate, step in zip(candidates, steps, strict=True):
+        assert candidate.record is step
+        (slant,) = ledger.defining_of(candidate)
+        bounds = ledger.graph.bounds(slant)
+        axis = "xyz".index(step.axis)
+        assert round(bounds[axis][1] - bounds[axis][0], 3) == step.length
 
 
 def test_a_part_with_no_oblique_face_has_no_angled_steps():
     """The empty case, on geometry that exercises the scan rather than skipping it."""
 
-    assert recognise_angled_steps(_block() - Pos(0, 0, 0) * Cylinder(6, 12)) == []
+    unattributed_run(
+        _block() - Pos(0, 0, 0) * Cylinder(6, 12),
+        FamilyId.ANGLED_STEPS,
+        recognise_angled_steps,
+    )
 
 
 def test_a_shared_face_edge_memo_does_not_change_the_result():

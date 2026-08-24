@@ -570,6 +570,54 @@ public signatures remain unchanged, no discovery reader receives frozen evidence
 not gain a reconciliation rule merely because it now has claims. A rule requires an observed
 overlap, a named geometry relation and separate review.
 
+F5b is a frozen tests-and-documentation audit with this exact path matrix:
+
+- prismatic pockets: triangle, rectangle and hexagon rings, either cap/open sign and multi-ring
+  ordering; every ring wall defines the record while the sole cap/floor does
+  not;
+- passages: triangle, rectangle, hexagon and concave-U rings across supported principal axes and
+  multi-passage ordering; the uncapped ring defines the record while
+  mouth/stock faces do not;
+- grooves: sharp-band, conical/chamfered-lead-in and toroidal/radiused-lead-in joins, plus multiple
+  grooves; only each floor band defines its record, never shaft bands, walls, cones or tori;
+- turned steps: ordinary and groove rungs, supported principal axes and a split/multiple-widest-band
+  case; all and only the widest external bands containing the rung midpoint define it. Only when no
+  band contains that point may the frozen per-band bounded edge-break pad establish eligibility;
+  every widest eligible tie defines the rung, not shoulder planes. Those planes establish the
+  serialized interval as consulted context, so an edge-break-imported band may be narrower than the
+  shoulder-delimited rung;
+- chamfers: planar bevel and turned conical constructors, including rotational projection; only the
+  bevel/cone defines the record, not bridged planes or the external cylinder;
+- angled steps: ordinary and drilled triangular terminals, multiple/reversed ordering, and the
+  split-terminal near miss; only the slant defines a successful Candidate, while a permitted
+  diagnostic Observation must never become an orphan Candidate.
+
+Every positive fixture compares independent writer-off/on record type, value, order and `to_dict`,
+then proves same-run Candidate count, family, `candidate.record is returned_record`, nonempty
+issuer-valid common-solid evidence and no surplus Candidate. Every negative fixture proves no family
+Candidate, with the bounded AngledStep Observation stated separately. Correspondence is sampled at
+the representation-sensitive seams rather than multiplied across every topology row: mirrored
+pocket cap orientation, scaled groove floor binding, reversed bevel/step issuance order, cross-axis
+turned bands and a real STEP turned Chamfer. These compare independently derived defining roles,
+never FaceNode indices or byte-identical scaled records. The frozen development fixtures contain no
+two valid same-body output occurrences that serialize to equal values; manufacturing one requires
+coincident duplicate solids or direct sink injection and bypasses the family contract. F5b records
+that bounded construction result and relies on the existing generic issuer equal-value identity
+adversary. A constructor-count guard plus the reviewed case table makes a future output constructor
+require review before `FullyAttributed` can remain truthful; semantic helper branches remain
+review-owned because a test-name or AST-body assertion would be tautological.
+
+Coplanar subdivision of one logical wall into several face nodes is not a current output path: the
+ring grammar requires one degree-two graph node per polygon side and refuses that topology rather
+than merging it. A bounded fixture search also found no recognised ring with a multi-segment shared
+wall junction, so F5b makes no representation claim for that topology. Adding either form of wall
+merging is a future semantic recogniser change with its own attribution contract, not retrospective
+evidence for the current family.
+
+F5b changes no `src`, registry disposition, predicate, defining role, output, reconciliation,
+capability manifest or golden. If the audit finds a production defect, it stops and opens a semantic
+family child instead of fixing it under this neutral scope.
+
 Across independent writer-off/writer-on calls, parity means record type, value, ordering and
 `to_dict()`, never cross-run Python identity. Within one writer-enabled run each Candidate record is
 the exact returned object occurrence; value rematching is forbidden and equal-valued occurrences
@@ -580,7 +628,8 @@ The generic per-face report consumes only the completed frozen inventory/evidenc
 face occurrences/distinct faces and complete/incomplete reason. Corpus taxonomy adapters remain
 diagnostic comparison layers and cannot define attribution or rerun recognisers.
 
-F5a consumes no new holdout. Every later family child freezes its exact ownership rule, development
+F5a and the retrospective tests/docs-only F5b audit consume no new holdout. Every semantic family
+child freezes its exact ownership rule, development
 evidence and untouched attribution holdout allocation before implementation, obtains two exact-head
 accepts before one authorised reveal, and may not reuse consumed MFTRCAD buckets 10–19. A post-reveal
 defining-role/status change invalidates that family result.

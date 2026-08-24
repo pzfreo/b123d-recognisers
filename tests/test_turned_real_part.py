@@ -28,12 +28,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from attribution_audit import attributed_run
 
 pytest.importorskip("build123d")
 
 from build123d import import_step  # noqa: E402
 
 from b123d_recognisers import recognise_turned_steps  # noqa: E402
+from b123d_recognisers._candidates import FamilyId  # noqa: E402
 from b123d_recognisers._geometry import quantise  # noqa: E402
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
@@ -69,6 +71,25 @@ def _profile(part):
         (quantise(step.diameter), quantise(step.lo), quantise(step.hi))
         for step in sorted(recognise_turned_steps(part), key=lambda step: step.lo)
     ]
+
+
+def test_split_widest_band_contributes_every_original_face() -> None:
+    part = import_step(str(CORPUS / "string_post.step"))
+    ledger, steps = attributed_run(part, FamilyId.TURNED_STEPS, recognise_turned_steps)
+    candidates = ledger.candidate_set(FamilyId.TURNED_STEPS).candidates
+
+    assert len(steps) == len(candidates) == 4
+    assert [len(ledger.defining_of(candidate)) for candidate in candidates] == [2, 1, 1, 1]
+    for candidate, step in zip(candidates, steps, strict=True):
+        defining_bounds = [ledger.graph.bounds(node) for node in ledger.defining_of(candidate)]
+        axis = "xyz".index(step.axis)
+        radial_span = max(
+            max(bounds[index][1] for bounds in defining_bounds)
+            - min(bounds[index][0] for bounds in defining_bounds)
+            for index in range(3)
+            if index != axis
+        )
+        assert round(radial_span, 3) == step.diameter
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))

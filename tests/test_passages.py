@@ -11,6 +11,7 @@ pass for reasons unrelated to the gate it names.
 
 from __future__ import annotations
 
+from attribution_audit import attributed_run, unattributed_run
 from build123d import (
     Box,
     BuildPart,
@@ -109,6 +110,11 @@ def test_a_through_slot_is_reported_here_too_and_the_aggregate_resolves_it():
     assert recognise_slots(square) == []
     assert [p.sides for p in build_recognition_result(square).passages] == [4]
 
+    ledger, passages = attributed_run(square, FamilyId.PASSAGES, recognise_passages)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is passages[0]
+    assert len(ledger.defining_of(candidate)) == passages[0].sides == 4
+
 
 def test_a_passage_crossing_a_slot_only_in_projection_survives():
     """The regression for the heuristic that was replaced.
@@ -126,6 +132,9 @@ def test_a_passage_crossing_a_slot_only_in_projection_survives():
     result = build_recognition_result(part)
     assert result.slots, "the Z slot"
     assert [p.axis for p in result.passages] == ["x"], "the X passage, at the same XY, survives"
+    ledger, passages = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    assert "x" in {passage.axis for passage in passages}
+    assert len(ledger.candidate_set(FamilyId.PASSAGES).candidates) == len(passages)
 
 
 def test_the_same_void_with_a_floor_is_a_pocket_and_not_a_passage():
@@ -175,7 +184,7 @@ def test_the_side_count_is_the_polygon_and_not_a_class():
         extrude(amount=60, both=True)
     triangular = _block() - tri.part
 
-    found = recognise_passages(triangular)
+    _ledger, found = attributed_run(triangular, FamilyId.PASSAGES, recognise_passages)
     assert len(found) == 1
     assert found[0].sides == 3
     assert found[0].axis == "y"
@@ -189,12 +198,13 @@ def test_two_passages_on_one_part_are_reported_separately_and_in_order():
                 RegularPolygon(6, 6)
         extrude(amount=40, both=True)
     part = _block() - bores.part
-    found = recognise_passages(part)
+    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
 
     assert len(found) == 2
     assert found == sorted(found, key=lambda p: (p.axis, p.at))
     assert all(isinstance(p, Passage) for p in found)
     assert recognise_passages(part) == found
+    assert len(ledger.candidate_set(FamilyId.PASSAGES).candidates) == 2
 
 
 def test_a_passage_is_a_passage_at_any_scale():
@@ -213,7 +223,7 @@ def test_a_passage_is_a_passage_at_any_scale():
 
 
 def test_a_part_with_no_void_has_no_passages():
-    assert recognise_passages(_block()) == []
+    unattributed_run(_block(), FamilyId.PASSAGES, recognise_passages)
 
 
 def test_a_shared_face_edge_memo_does_not_change_the_result():
@@ -303,8 +313,11 @@ def test_a_concave_cross_section_is_probed_from_a_point_inside_it():
         extrude(amount=40, both=True)
     part = Box(60, 60, 20) - slot_u.part
 
-    (passage,) = recognise_passages(part)
+    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    (passage,) = found
     assert passage.sides == 8
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert len(ledger.defining_of(candidate)) == 8
     assert _is_material(part, _centroid(passage.section), passage.at[2]), (
         "the fixture must be one the centroid gets wrong"
     )
@@ -319,8 +332,8 @@ def test_a_passage_records_the_ring_it_was_built_from():
     """
 
     part = _hexagonal_passage()
-    ledger = ClaimLedger(FaceGraph(part))
-    (passage,) = recognise_passages(part, ledger=ledger)
+    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    (passage,) = found
 
     (claim,) = ledger.claims
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates

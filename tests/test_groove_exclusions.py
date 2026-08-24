@@ -15,9 +15,11 @@ stock, and each gate removes one way of failing that.
 
 from __future__ import annotations
 
+from attribution_audit import assert_groove_role, attributed_run, unattributed_run
 from build123d import Axis, Cone, Cylinder, GeomType, Pos, Rot, chamfer, fillet
 
 from b123d_recognisers import recognise_grooves
+from b123d_recognisers._candidates import FamilyId
 
 
 def _shaft_with_reduced_band(*, wall_r=15.0, band_r=12.0, lo_h=20.0, band_h=5.0, hi_h=20.0):
@@ -32,10 +34,13 @@ def _shaft_with_reduced_band(*, wall_r=15.0, band_r=12.0, lo_h=20.0, band_h=5.0,
 def test_a_narrow_band_between_two_equal_walls_is_a_groove():
     """The positive control. Without it the exclusions below prove nothing."""
 
-    (groove,) = recognise_grooves(_shaft_with_reduced_band())
+    part = _shaft_with_reduced_band()
+    ledger, (groove,) = attributed_run(part, FamilyId.GROOVES, recognise_grooves)
 
     assert groove.diameter == 24.0
     assert groove.width == 5.0
+    (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+    assert_groove_role(ledger, candidate, groove)
 
 
 def test_a_monotonic_step_down_is_a_shoulder_not_a_groove():
@@ -138,10 +143,13 @@ def test_a_groove_with_lead_in_chamfers_is_recognised():
     for a groove that gained a chamfer.
     """
 
-    grooves = recognise_grooves(_chamfered_groove())
+    part = _chamfered_groove()
+    ledger, grooves = attributed_run(part, FamilyId.GROOVES, recognise_grooves)
 
     assert len(grooves) == 1
     assert (grooves[0].diameter, grooves[0].width) == (24.0, 5.0)
+    (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+    assert_groove_role(ledger, candidate, grooves[0])
 
 
 def test_a_lead_in_cone_must_land_on_both_bands():
@@ -205,9 +213,12 @@ def test_a_radiused_lead_in_joins_the_groove_bands():
     plain += Pos(0, 0, 22.5) * Cylinder(15, 20)
     radiused = fillet(plain.edges().filter_by(GeomType.CIRCLE).group_by(Axis.Z)[1], 1.0)
 
-    assert [(groove.diameter, groove.width) for groove in recognise_grooves(radiused)] == [
+    ledger, grooves = attributed_run(radiused, FamilyId.GROOVES, recognise_grooves)
+    assert [(groove.diameter, groove.width) for groove in grooves] == [
         (24.0, 1.5)
     ]
+    (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+    assert_groove_role(ledger, candidate, grooves[0])
 
 
 def test_a_chamfered_groove_reads_the_same_at_any_scale():
@@ -220,9 +231,13 @@ def test_a_chamfered_groove_reads_the_same_at_any_scale():
     """
 
     for factor in (0.05, 5.0, 100.0):
-        (groove,) = recognise_grooves(_chamfered_groove().scale(factor))
+        ledger, (groove,) = attributed_run(
+            _chamfered_groove().scale(factor), FamilyId.GROOVES, recognise_grooves
+        )
         assert groove.diameter == round(24.0 * factor, 3), f"at {factor}x"
+        (candidate,) = ledger.candidate_set(FamilyId.GROOVES).candidates
+        assert_groove_role(ledger, candidate, groove)
 
 
 def test_a_plain_cylinder_has_no_groove():
-    assert recognise_grooves(Cylinder(15, 40)) == []
+    unattributed_run(Cylinder(15, 40), FamilyId.GROOVES, recognise_grooves)

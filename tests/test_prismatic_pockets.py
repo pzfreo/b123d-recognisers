@@ -16,6 +16,7 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
+from attribution_audit import assert_ring_role, attributed_run
 from build123d import (
     Box,
     BuildPart,
@@ -25,10 +26,12 @@ from build123d import (
     Polygon,
     Pos,
     extrude,
+    mirror,
 )
 
 import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
 
@@ -62,10 +65,11 @@ def _through():
 
 
 def _claimed(part):
-    ledger = ClaimLedger(FaceGraph(part))
-    found = r.recognise_prismatic_pockets(part, ledger=ledger)
-    assert found == r.recognise_prismatic_pockets(part), "claiming changed what was recognised"
-    return ledger, found
+    return attributed_run(
+        part,
+        FamilyId.PRISMATIC_POCKETS,
+        r.recognise_prismatic_pockets,
+    )
 
 
 def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():
@@ -85,6 +89,30 @@ def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():
     assert r.recognise_pockets(part) == [], "the pairing family must be blind to this"
 
 
+def test_both_cap_orientations_issue_complete_wall_evidence() -> None:
+    low_ledger, (low,) = _claimed(_triangular())
+    high_ledger, (high,) = _claimed(mirror(_triangular(), about=Plane.XY))
+
+    assert (low.open_sign, high.open_sign) == (1, -1)
+    for ledger, pocket in ((low_ledger, low), (high_ledger, high)):
+        (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+        assert len(ledger.defining_of(candidate)) == pocket.sides
+
+
+def test_multiple_pockets_keep_sorted_occurrence_identity() -> None:
+    cutter = _prism((-8, -6), (8, -6), (0, 8))
+    part = Box(120, 80, 20) - Pos(-25, 0, 2) * cutter - Pos(25, 0, 2) * cutter
+    ledger, pockets = _claimed(part)
+
+    assert len(pockets) == 2
+    candidates = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    assert all(
+        candidate.record is pocket
+        for candidate, pocket in zip(candidates, pockets, strict=True)
+    )
+    assert len({frozenset(ledger.defining_of(candidate)) for candidate in candidates}) == 2
+
+
 def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
     """`sides` alone would not, and neither would depth.
 
@@ -98,19 +126,26 @@ def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
         (-12, -7), (-6, -12), (6, -12), (12, -7), (6, -2), (-6, -2)
     )
 
-    (tri,) = r.recognise_prismatic_pockets(triangle)
-    (hexa,) = r.recognise_prismatic_pockets(hexagon)
+    tri_ledger, (tri,) = _claimed(triangle)
+    hex_ledger, (hexa,) = _claimed(hexagon)
 
     assert (tri.sides, hexa.sides) == (3, 6)
     assert tri.section != hexa.section
     assert len(tri.section) == 3 and len(hexa.section) == 6
+    for ledger, pocket in ((tri_ledger, tri), (hex_ledger, hexa)):
+        (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+        defining = ledger.defining_of(candidate)
+        assert len(defining) == pocket.sides
+        assert all(abs(ledger.graph.normal(node)[2]) < 1e-6 for node in defining)
 
 
 def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():
     """The cap count is the whole discriminator, so it is tested at both ends of its range."""
 
     part = _through()
-    assert r.recognise_prismatic_pockets(part) == []
+    from attribution_audit import unattributed_run
+
+    unattributed_run(part, FamilyId.PRISMATIC_POCKETS, r.recognise_prismatic_pockets)
     assert r.recognise_passages(part), "the same void must still be a passage"
 
 
@@ -143,11 +178,22 @@ def test_a_rectangular_recess_is_reported_by_both_families_and_reconciled_to_one
     """
 
     part = _rectangular()
+    rect_ledger, rect_records = _claimed(part)
+    assert len(rect_records) == 1
+    (rect_candidate,) = rect_ledger.candidate_set(
+        FamilyId.PRISMATIC_POCKETS
+    ).candidates
+    assert_ring_role(rect_ledger, rect_candidate, rect_records[0])
+
     ledger = ClaimLedger(FaceGraph(part))
     pockets = r.recognise_pockets(part, ledger=ledger)
     prismatic = r.recognise_prismatic_pockets(part, ledger=ledger)
 
     assert len(pockets) == 1 and len(prismatic) == 1, "both families see this recess"
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    assert candidate.record is prismatic[0]
+    assert len(ledger.defining_of(candidate)) == prismatic[0].sides == 4
+    assert_ring_role(ledger, candidate, prismatic[0])
     assert (
         prismatic_pockets_that_are_not_pockets(
             prismatic, pockets, ledger.snapshot_index()

@@ -129,6 +129,12 @@ def test_split_terminal_near_miss_flows_through_the_real_aggregate() -> None:
     product = _take_inventory(part)
 
     assert product.result.angled_steps == ()
+    assert product.physical.candidate_set(FamilyId.ANGLED_STEPS).candidates == ()
+    assert len(
+        product.evidence.observations(
+            FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
+        )
+    ) == 1
     assert len(product.result.chamfers) == 1
     assert len(product.diagnostics) == 1
     assert product.diagnostics[0].at == product.result.chamfers[0].at

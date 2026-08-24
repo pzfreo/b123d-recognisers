@@ -21,6 +21,7 @@ at three scales.
 from __future__ import annotations
 
 import pytest
+from attribution_audit import attributed_run
 from build123d import Cylinder, Pos
 
 import b123d_recognisers as r
@@ -48,13 +49,25 @@ def _plain_shaft():
 def _claimed(part):
     """Both families against one ledger, proved to return what they return without it."""
 
-    ledger = ClaimLedger(FaceGraph(part))
     cyls = r.analyse_cylinders(part)
-    grooves = r.recognise_grooves(part, cyls=cyls, ledger=ledger)
+    ledger, grooves = attributed_run(
+        part,
+        FamilyId.GROOVES,
+        r.recognise_grooves,
+        kwargs={"cyls": cyls},
+    )
     steps = r.recognise_turned_steps(part, cyls=cyls, ledger=ledger)
 
-    assert grooves == r.recognise_grooves(part), "claiming changed what was recognised"
-    assert steps == r.recognise_turned_steps(part), "claiming changed what was recognised"
+    plain_steps = r.recognise_turned_steps(part, cyls=cyls)
+    assert steps == plain_steps, "claiming changed what was recognised"
+    assert [step.to_dict() for step in steps] == [step.to_dict() for step in plain_steps]
+    candidates = ledger.candidate_set(FamilyId.TURNED_STEPS).candidates
+    assert len(candidates) == len(steps)
+    for candidate, step in zip(candidates, steps, strict=True):
+        assert candidate.record is step
+        defining = ledger.defining_of(candidate)
+        assert defining
+        assert ledger.graph.common_valid_solid(defining) is not None
     return ledger, grooves, steps
 
 
@@ -75,6 +88,26 @@ def test_a_groove_claims_its_floor_band_and_not_the_shaft_either_side():
     assert hi - lo == groove.width, "the claimed face spans exactly the groove's width"
     radius = max(abs(edge) for edge in ledger.graph.bounds(node)[0])
     assert 2 * radius == groove.diameter, "and it is the floor band, not a wall"
+
+
+def test_multiple_grooves_keep_occurrence_identity_and_floor_roles() -> None:
+    shaft = Cylinder(20, 80)
+    for position in (10, 35):
+        shaft -= Pos(0, 0, position) * (Cylinder(20, 6) - Cylinder(16, 6))
+    ledger, grooves = attributed_run(
+        shaft,
+        FamilyId.GROOVES,
+        r.recognise_grooves,
+        kwargs={"cyls": r.analyse_cylinders(shaft)},
+    )
+
+    assert len(grooves) == 2
+    candidates = ledger.candidate_set(FamilyId.GROOVES).candidates
+    assert all(
+        candidate.record is groove
+        for candidate, groove in zip(candidates, grooves, strict=True)
+    )
+    assert len({next(iter(ledger.defining_of(candidate))) for candidate in candidates}) == 2
 
 
 def test_a_turned_step_claims_the_bands_that_set_its_diameter():
