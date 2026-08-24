@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import ast
 import copy
-from math import inf, nan, sqrt
+from math import asin, inf, nan, sqrt
 from pathlib import Path
 from typing import cast
 
@@ -25,6 +25,7 @@ from build123d import (
     export_step,
     import_step,
 )
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map
 from b123d_recognisers._candidates import FamilyId
@@ -232,8 +233,19 @@ def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_is
         1e-5,
         face_edges=cast(FaceEdges, ControlledEdges()),
     )
-    assert all(any(face.wrapped.IsSame(patch.wrapped) for face in walls) for patch in patches)
-    assert len(walls) == 6
+    expected_walls = [
+        *(owner for owner in low_owners if not owner.wrapped.IsSame(original.wrapped)),
+        *patches,
+    ]
+    assert len(expected_walls) == 6
+    assert all(
+        any(face.wrapped.IsSame(expected.wrapped) for face in walls)
+        for expected in expected_walls
+    )
+    assert all(
+        any(face.wrapped.IsSame(expected.wrapped) for expected in expected_walls)
+        for face in walls
+    )
 
     ledger = ClaimLedger(FaceGraph(part))
     monkeypatch.setattr(module, "_complete_wall_component", lambda *_args, **_kwargs: walls)
@@ -290,7 +302,8 @@ def _claimed(part):
     return ledger, records, candidates
 
 
-def _assert_wall_role(ledger, record, candidate) -> None:
+def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None:
+    record = records[occurrence]
     axis = next(at for at, value in enumerate(record.axis) if value)
     low = record.location[axis] - record.depth
     high = record.location[axis]
@@ -304,13 +317,7 @@ def _assert_wall_role(ledger, record, candidate) -> None:
         if owner is not None and owner not in owners:
             owners.append(owner)
 
-    family_candidates = ledger.candidate_set(FamilyId.DOUBLE_D_BORES).candidates
-    occurrence = next(
-        at for at, known in enumerate(family_candidates) if known is candidate
-    )
-    equal_before = sum(
-        known.record == record for known in family_candidates[:occurrence]
-    )
+    equal_before = sum(known == record for known in records[:occurrence])
 
     def profile_of(wire):
         edges = wire.edges()
@@ -341,6 +348,14 @@ def _assert_wall_role(ledger, record, candidate) -> None:
             length = sqrt(sum(value * value for value in delta))
             directions.append(tuple(value / length for value in delta))
             midpoints.append(tuple((ends[0][i] + ends[1][i]) / 2 for i in range(3)))
+            if any(
+                abs(sqrt(sum((end[i] - centre_xyz[i]) ** 2 for i in range(3))) - radius)
+                > metric_tol
+                for end in ends
+            ):
+                return None
+        if abs(abs(sum(directions[0][i] * directions[1][i] for i in range(3))) - 1) > 1e-4:
+            return None
         direction = directions[0]
         flat = [0.0, 0.0, 0.0]
         plane = [at for at in range(3) if at != axis]
@@ -353,9 +368,18 @@ def _assert_wall_role(ledger, record, candidate) -> None:
             sum((point[i] - centre_xyz[i]) * flat[i] for i in range(3))
             for point in midpoints
         )
+        if offsets[0] >= -metric_tol or offsets[1] <= metric_tol:
+            return None
+        if abs(offsets[0] + offsets[1]) > metric_tol:
+            return None
         across = offsets[1] - offsets[0]
+        if across <= metric_tol or across >= 2 * radius - metric_tol:
+            return None
         expected_chord = 2 * sqrt(radius * radius - (across / 2) ** 2)
         assert all(abs(float(line.length) - expected_chord) <= metric_tol for line in lines)
+        expected_arc = 2 * radius * asin((across / 2) / radius)
+        if any(abs(float(arc.length) - expected_arc) > metric_tol for arc in arcs):
+            return None
         return centre_xyz, round(2 * radius, 4), round(across, 4), tuple(
             0.0 if abs(value) < 1e-12 else round(value, 12) for value in flat
         )
@@ -409,6 +433,9 @@ def _assert_wall_role(ledger, record, candidate) -> None:
                 for i in range(3)
                 if i != axis
             )
+            and highs[0][2][1] == record.major_diameter
+            and highs[0][2][2] == record.across_flats
+            and highs[0][2][3] == record.flat_direction
         ):
             matching.append((owner, lows[0], highs[0]))
     assert len(matching) > equal_before
@@ -424,7 +451,14 @@ def _assert_wall_role(ledger, record, candidate) -> None:
     assert record.depth == round(high - low, 4)
     assert record.through is True
     assert all(abs(record.location[i] - centre[i]) <= metric_tol for i in range(3) if i != axis)
-    owner_solid = ledger.graph._part.solids()[owner.ordinal]
+    owner_solid = next(
+        solid
+        for solid in part.solids()
+        if ledger.graph.common_valid_solid(
+            tuple(ledger.graph.require_node(face) for face in solid.faces())
+        )
+        is owner
+    )
     prism = Solid.extrude(
         Face(low_opening[1]),
         Vector(*(record.axis[i] * record.depth for i in range(3))),
@@ -432,19 +466,83 @@ def _assert_wall_role(ledger, record, candidate) -> None:
     overlap = owner_solid & prism
     assert overlap is None or float(overlap.volume) <= max(1e-15, float(prism.volume) * 1e-6)
 
-    expected = low_sets[0]
+    def support(node):
+        face = ledger.graph.face(node)
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if face.geom_type == GeomType.PLANE:
+            plane = surface.Plane()
+            normal = plane.Axis().Direction()
+            values = [normal.X(), normal.Y(), normal.Z()]
+            location = plane.Location()
+            offset = sum(
+                (location.X(), location.Y(), location.Z())[i] * values[i]
+                for i in range(3)
+            )
+            if next(value for value in values if abs(value) > 1e-9) < 0:
+                values = [-value for value in values]
+                offset = -offset
+            return ("plane", *values, offset)
+        cylinder = surface.Cylinder()
+        direction = cylinder.Axis().Direction()
+        values = [direction.X(), direction.Y(), direction.Z()]
+        if next(value for value in values if abs(value) > 1e-9) < 0:
+            values = [-value for value in values]
+        location = cylinder.Axis().Location()
+        return (
+            "cylinder",
+            *values,
+            *(
+                (location.X(), location.Y(), location.Z())[i]
+                for i in range(3)
+                if i != axis
+            ),
+            cylinder.Radius(),
+        )
+
+    def same_support(left, right):
+        return left[0] == right[0] and len(left) == len(right) and all(
+            abs(a - b) <= metric_tol
+            for a, b in zip(left[1:], right[1:], strict=True)
+        )
+
+    memo = FaceEdges()
+
+    def complete_chain(seed):
+        role = support(seed)
+        pending = [seed]
+        found = set()
+        while pending:
+            node = pending.pop()
+            if node in found or not same_support(support(node), role):
+                continue
+            bounds = ledger.graph.bounds(node)[axis]
+            if bounds[0] < low - metric_tol or bounds[1] > high + metric_tol:
+                continue
+            found.add(node)
+            for edge in memo.of(ledger.graph.face(node)):
+                for other in incidence.get(edge, ()):
+                    other_node = ledger.graph.require_node(other)
+                    if ledger.graph.common_valid_solid((other_node,)) is owner:
+                        pending.append(other_node)
+        return frozenset(found)
+
+    chains = [complete_chain(seed) for seed in low_opening[0]]
+    assert len(chains) == 4 and all(chain for chain in chains)
+    assert all(sum(seed in chain for seed in high_opening[0]) == 1 for chain in chains)
+    expected = frozenset().union(*chains)
     defining = ledger.defining_of(candidate)
     assert expected == defining
     wall_faces = [ledger.graph.face(node) for node in expected]
-    assert [face.geom_type for face in wall_faces].count(GeomType.PLANE) == 2
-    assert [face.geom_type for face in wall_faces].count(GeomType.CYLINDER) == 2
+    assert [face.geom_type for face in wall_faces].count(GeomType.PLANE) >= 2
+    assert [face.geom_type for face in wall_faces].count(GeomType.CYLINDER) >= 2
 
 
 @pytest.mark.parametrize("rotation", [Rot(), Rot(0, 90, 0), Rot(90, 0, 0)])
 def test_each_principal_axis_issues_the_complete_wall_set(rotation) -> None:
-    ledger, records, candidates = _claimed(rotation * _plate())
+    part = rotation * _plate()
+    ledger, records, candidates = _claimed(part)
     assert len(records) == 1
-    _assert_wall_role(ledger, records[0], candidates[0])
+    _assert_wall_role(part, ledger, records, 0, candidates[0])
 
 
 def test_multiple_occurrences_keep_sorted_record_identity_and_wall_ownership() -> None:
@@ -457,8 +555,8 @@ def test_multiple_occurrences_keep_sorted_record_identity_and_wall_ownership() -
     ledger, records, candidates = _claimed(part)
     assert len(records) == 2
     assert [record.location[0] for record in records] == [-30.0, 30.0]
-    for record, candidate in zip(records, candidates, strict=True):
-        _assert_wall_role(ledger, record, candidate)
+    for at, candidate in enumerate(candidates):
+        _assert_wall_role(part, ledger, records, at, candidate)
     assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
 
 
@@ -470,8 +568,8 @@ def test_equal_full_records_from_distinct_solids_remain_identity_distinct() -> N
     assert records[0] == records[1] and records[0] is not records[1]
     assert candidates[0].record is records[0]
     assert candidates[1].record is records[1]
-    for record, candidate in zip(records, candidates, strict=True):
-        _assert_wall_role(ledger, record, candidate)
+    for at, candidate in enumerate(candidates):
+        _assert_wall_role(part, ledger, records, at, candidate)
     assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
     owners = [
         ledger.graph.common_valid_solid(ledger.defining_of(candidate))
@@ -492,7 +590,7 @@ def test_equal_full_records_from_distinct_solids_remain_identity_distinct() -> N
 def test_transform_and_scale_routes_keep_exact_wall_roles(part) -> None:
     ledger, records, candidates = _claimed(part)
     assert len(records) == 1
-    _assert_wall_role(ledger, records[0], candidates[0])
+    _assert_wall_role(part, ledger, records, 0, candidates[0])
 
 
 def test_step_round_trip_retains_original_imported_wall_roles(tmp_path) -> None:
@@ -501,7 +599,7 @@ def test_step_round_trip_retains_original_imported_wall_roles(tmp_path) -> None:
     imported = import_step(target)
     ledger, records, candidates = _claimed(imported)
     assert len(records) == 1
-    _assert_wall_role(ledger, records[0], candidates[0])
+    _assert_wall_role(imported, ledger, records, 0, candidates[0])
 
 
 def test_aggregate_inventory_publishes_terminal_double_d_wall_evidence() -> None:
