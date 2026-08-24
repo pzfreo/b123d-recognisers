@@ -305,3 +305,9 @@ products and restricted completed COUNTERSINKS occurrences declared by the Hole 
 core may validate those opaque predecessor handles and their SolidRefs, but cannot inspect a
 Candidate set, EvidenceIndex, inventory, disposition, reconciliation result, or another family's
 global output. CounterSink cones remain predecessor-owned consulted context.
+
+For Channel attribution, `_recess_features._discover_channels` is the sole private writer-enabled
+family core and `_registry` its sole production writer caller. The public `recognise_channels`
+facade delegates without a writer even when its legacy `ledger=` parameter supplies a shared graph.
+The one-solid proposal seam remains in `_recess_core`, beside the unchanged wall-pair predicate;
+it carries exact low/high wall nodes but reads no evidence, inventory, sibling output or policy.

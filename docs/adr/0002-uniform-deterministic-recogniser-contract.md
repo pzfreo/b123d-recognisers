@@ -145,3 +145,12 @@ bore, selected near-side counterbore/spotface lands, and any blind deep-extensio
 drill-point cones, shoulder transitions, skipped grooves, crossing faces and far-side steps remain
 consulted. A nested countersink is an identity-linked completed COUNTERSINKS predecessor: its cone
 remains defining only for that predecessor and is never copied into HOLES evidence.
+
+## Amendment (Channel attribution, issue #225)
+
+An aggregate Channel owns exactly the two original planar side walls that establish its width:
+the geometrically low inward-facing wall followed by the geometrically high inward-facing wall.
+Floors, caps, envelope ends, curved interruptions and other wall pairs remain consulted. Discovery
+carries these wall identities through the existing per-solid exact-value reduction and global
+geometry sort; competing wall pairs for one value refuse aggregate publication rather than being
+rematched from the rounded record.

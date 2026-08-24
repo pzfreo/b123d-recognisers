@@ -861,6 +861,13 @@ complement moves to buckets 31..999. The allocation remains `sealed_unrevealed` 
 two independent exact-head reviews and all mechanical gates. Its authority is non-transferable,
 and zero, abort, invalid, or completed reveal consumes it without replacement, retry, or fitting.
 
+F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
+aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
+geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and
+alternative pairs remain consulted. All per-solid value ambiguity, node exclusivity, graph identity
+and common-body checks complete before the first proposal is issued. Bucket 28 remains sealed until
+the exact implementation head clears its independent semantic and mechanical gates.
+
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
 one exact CandidateSet, deliberate empty Candidates are staged without prefix leakage, later writes
