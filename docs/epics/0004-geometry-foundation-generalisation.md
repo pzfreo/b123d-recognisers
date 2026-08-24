@@ -840,6 +840,12 @@ outcome evidence. Each later semantic child owns its own two-review/mechanical g
 authorization and independent consumed chronology; zero, abort, invalid or completed outcomes may
 not be retried, replaced or fitted.
 
+The Channels semantic child #225 is independently protected by `F5-CHANNELS-H1`, bucket 28. Its
+neutral seal adds the exact `f5_channels_h1` selection and acknowledgement while leaving the archive,
+membership and outcomes untouched; it moves the ordinary unselected complement to buckets 29..999.
+The allocation remains `sealed_unrevealed` until #225 completes its separately reviewed semantic and
+mechanical gates, and cannot borrow authority from any earlier family allocation.
+
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
 one exact CandidateSet, deliberate empty Candidates are staged without prefix leakage, later writes

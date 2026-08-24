@@ -40,6 +40,7 @@ F5_DOUBLE_D_BORES_H1: Final = "F5-DOUBLE-D-BORES-H1"
 F5_POLYGONAL_BOSSES_H1: Final = "F5-POLYGONAL-BOSSES-H1"
 F5_PADS_H1: Final = "F5-PADS-H1"
 F5_HOLES_H1: Final = "F5-HOLES-H1"
+F5_CHANNELS_H1: Final = "F5-CHANNELS-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -77,6 +78,7 @@ ALLOCATION_SPECS: Final = (
     ),
     AllocationSpec(F5_PADS_H1, "f5_pads_h1", frozenset({26}), "consumed"),
     AllocationSpec(F5_HOLES_H1, "f5_holes_h1", frozenset({27}), "sealed_unrevealed"),
+    AllocationSpec(F5_CHANNELS_H1, "f5_channels_h1", frozenset({28}), "sealed_unrevealed"),
 )
 
 
@@ -117,9 +119,7 @@ def _validate_allocation_specs(
 
 _validate_allocation_specs(ALLOCATION_SPECS)
 NAMED_ALLOCATIONS: Final = {spec.policy_id: spec.buckets for spec in ALLOCATION_SPECS}
-ALLOCATION_SELECTIONS: Final = {
-    spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS
-}
+ALLOCATION_SELECTIONS: Final = {spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS}
 ALLOCATION_STATUSES: Final = {spec.policy_id: spec.status for spec in ALLOCATION_SPECS}
 BUCKET_SELECTIONS: Final = {
     bucket: spec.selection_token for spec in ALLOCATION_SPECS for bucket in spec.buckets
@@ -213,6 +213,7 @@ Selection = Literal[
     "f5_polygonal_bosses_h1",
     "f5_pads_h1",
     "f5_holes_h1",
+    "f5_channels_h1",
 ]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS
