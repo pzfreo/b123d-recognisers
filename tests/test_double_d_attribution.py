@@ -16,6 +16,7 @@ from build123d import (
     GeomType,
     Pos,
     Rot,
+    Shell,
     export_step,
     import_step,
 )
@@ -284,6 +285,55 @@ def test_cross_occurrence_wall_reuse_refuses_before_publication(monkeypatch) -> 
     assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
 
 
+def test_repeated_same_wall_reference_collapses_once(monkeypatch) -> None:
+    import b123d_recognisers.profiled_bores as module
+
+    part = _plate()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._complete_wall_component
+
+    def repeated(*args, **kwargs):
+        walls = original(*args, **kwargs)
+        return (*walls, walls[0])
+
+    monkeypatch.setattr(module, "_complete_wall_component", repeated)
+    records = _discover_double_d_bores(part, writer=ledger.writer)
+    candidate = ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, records).candidates[0]
+    assert len(ledger.defining_of(candidate)) == 4
+
+
+@pytest.mark.parametrize("translated", [False, True])
+def test_deep_or_translated_wall_clone_refuses_before_publication(
+    monkeypatch, translated: bool
+) -> None:
+    import b123d_recognisers.profiled_bores as module
+
+    part = _plate()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._complete_wall_component
+
+    def cloned(*args, **kwargs):
+        walls = original(*args, **kwargs)
+        changed = [copy.deepcopy(face) for face in walls]
+        if translated:
+            changed = [face.translate((1, 0, 0)) for face in changed]
+        return tuple(changed)
+
+    monkeypatch.setattr(module, "_complete_wall_component", cloned)
+    with pytest.raises(ValueError):
+        _discover_double_d_bores(part, writer=ledger.writer)
+    assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
+def test_open_shell_keeps_public_compatibility_but_refuses_aggregate() -> None:
+    shell = Shell(_plate().faces())
+    assert len(recognise_double_d_bores(shell)) == 1
+    ledger = ClaimLedger(FaceGraph(shell))
+    with pytest.raises(ValueError, match="one valid owner solid"):
+        _discover_double_d_bores(shell, writer=ledger.writer)
+    assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
 def test_foreign_writer_refuses_before_publication() -> None:
     part = _plate()
     foreign = ClaimLedger(FaceGraph(Pos(50, 0, 0) * _plate()))
@@ -295,10 +345,18 @@ def test_foreign_writer_refuses_before_publication() -> None:
 def test_only_registry_may_call_writer_enabled_core() -> None:
     root = Path(__file__).parents[1]
     sites: list[tuple[str, bool]] = []
+    importers: list[str] = []
     for path in (root / "src").rglob("*.py"):
         if path.name == "profiled_bores.py":
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
+        if any(
+            isinstance(node, ast.ImportFrom)
+            and node.module == "b123d_recognisers.profiled_bores"
+            and any(alias.name == "_discover_double_d_bores" for alias in node.names)
+            for node in ast.walk(tree)
+        ):
+            importers.append(path.name)
         for qualified, node in _qualified_calls(tree):
             if qualified == "b123d_recognisers.profiled_bores._discover_double_d_bores":
                 sites.append(
@@ -310,6 +368,7 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
                         ),
                     )
                 )
+    assert importers == ["_registry.py"]
     assert sites == [("_registry.py", True)]
 
 

@@ -167,7 +167,7 @@ def _complete_wall_component(
         if not valid_support:
             return False
         point = face.center()
-        normal = face.normal_at()
+        normal = face.normal_at(point)
         point_values = (float(point.X), float(point.Y), float(point.Z))
         normal_values = (float(normal.X), float(normal.Y), float(normal.Z))
         # A void wall's material-outward normal points from the wall into the profile void.
@@ -192,12 +192,15 @@ def _complete_wall_component(
             return ("plane", *(round(value, 8) for value in values), round(offset, 8))
         cylinder = surface.Cylinder()
         direction = cylinder.Axis().Direction()
-        components = (direction.X(), direction.Y(), direction.Z())
+        components = [direction.X(), direction.Y(), direction.Z()]
+        first = next(value for value in components if abs(value) > 1e-12)
+        if first < 0:
+            components = [-value for value in components]
         location = cylinder.Axis().Location()
         axis_point = (location.X(), location.Y(), location.Z())
         return (
             "cylinder",
-            round(abs(components[axis_i]), 8),
+            *(round(value, 8) for value in components),
             *(round(axis_point[i], 8) for i in range(3) if i != axis_i),
             round(cylinder.Radius(), 8),
         )
@@ -259,16 +262,22 @@ def _complete_wall_component(
         # Same-support adjacency must be one path, not a branch or cycle.
         if len(chain_faces) > 1:
             degrees = []
+            connection_edges: set = set()
             for face in chain_faces:
-                adjacent = {
-                    id(other)
+                adjacent_edges = {
+                    edge
                     for edge in face_edges.of(face)
                     for other in incidence.get(edge, ())
                     if any(_same_shape(other, candidate) for candidate in chain_faces)
                     and not _same_shape(other, face)
                 }
-                degrees.append(len(adjacent))
-            if any(degree > 2 for degree in degrees) or degrees.count(1) != 2:
+                connection_edges.update(adjacent_edges)
+                degrees.append(len(adjacent_edges))
+            if (
+                len(connection_edges) != len(chain_faces) - 1
+                or any(degree > 2 for degree in degrees)
+                or degrees.count(1) != 2
+            ):
                 return ()
         seen.extend(chain_faces)
 
