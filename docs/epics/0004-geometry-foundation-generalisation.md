@@ -1094,3 +1094,11 @@ Promotion to `FullyAttributed` and any one-shot bucket reveal require the same e
 the complete lifecycle, independent topology-first role oracle, static/package/full/performance/CI
 gates and two independent accepts. Zero, invalid input, abort or completion consumes the allocation
 without retry or fitting and without implying geometry the scanner does not reconstruct.
+
+The frozen development evidence also pins the recognition-owned helper boundaries rather than
+inferring them from final records: six-significant cylinder measurement and four-significant
+grouping, projected line identity, scale-relative stack gaps, high-coordinate opening ties,
+narrowest-bore/monotonic near-step selection, through-versus-blind depth ownership, and all closed
+CounterSink association tolerances. Original-topology fixtures exercise plane, cone, inward/outward
+torus, sphere and crossing-cylinder end partners; these are role and lifecycle evidence only, not
+new recognition claims or holdout-derived tuning.

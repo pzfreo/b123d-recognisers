@@ -22,6 +22,7 @@ from build123d import (
     Rectangle,
     Rot,
     Shell,
+    Sphere,
     Vector,
     chamfer,
     export_step,
@@ -33,23 +34,42 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_holes
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef, frame_points_outward
+from b123d_recognisers._adjacency import (
+    FaceGraph,
+    FaceNode,
+    SolidRef,
+    edge_face_map,
+    frame_points_outward,
+)
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._cylinder_substrate import (
+    _STACK_GAP_FRAC,
+    _cyl_group_key,
+    _line_key,
+    _merge_runs,
+    analyse_cylinders,
+    full_cylinders,
+)
+from b123d_recognisers._geometry import length_tol, quantise
 from b123d_recognisers._hole_features import (
     CounterBore,
     HoleRecord,
     SegmentEvidence,
     _bore_depth,
+    _classify_end,
     _discover_holes,
+    _drilled_from,
+    _end_partners,
     _near_side_steps,
     _same_diameter,
+    _segments,
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 from b123d_recognisers.countersinks import (
     CounterSink,
     _discover_countersinks,
+    countersink_matches_hole,
     recognise_countersinks,
 )
 from b123d_recognisers.result import _take_inventory
@@ -534,6 +554,176 @@ def test_bore_depth_boundary_excludes_far_step_but_owns_blind_relief() -> None:
     blind = _bore_depth([relief, bore], bore, bottom="flat", from_hi=True)
     assert blind.depth == 12.0
     assert blind.faces == (bore_face, relief_face)
+
+
+def _segment(
+    diameter: float,
+    lo: float,
+    hi: float,
+    *,
+    line=(0.0, 0.0, 0.0),
+    direction=(0.0, 0.0, 1.0),
+    face=None,
+) -> SegmentEvidence:
+    return cast(
+        SegmentEvidence,
+        {
+            "diameter": diameter,
+            "axis": "z",
+            "solid_idx": 0,
+            "u_extent": 2 * math.pi,
+            "axis_xyz": line,
+            "dir_xyz": direction,
+            "s_lo": lo,
+            "s_hi": hi,
+            "face": face or object(),
+            "faces": [face or object()],
+            "external": False,
+        },
+    )
+
+
+def test_cylinder_quantisation_line_projection_and_gap_boundaries() -> None:
+    diameter = 2.4691357
+    (measured,) = analyse_cylinders(Cylinder(diameter / 2, 5))[0]
+    assert measured["diameter"] == quantise(diameter)
+    assert _cyl_group_key(dict(measured, diameter=1.2344)) != _cyl_group_key(
+        dict(measured, diameter=1.2346)
+    )
+
+    base = _segment(10, 0, 1)
+    inside_line = dict(base, axis_xyz=(0.00049, 0.0, 9.0))
+    outside_line = dict(base, axis_xyz=(0.00051, 0.0, 9.0))
+    assert _line_key(base) == _line_key(inside_line)
+    assert _line_key(base) != _line_key(outside_line)
+
+    gap = length_tol(10, rel=_STACK_GAP_FRAC)
+    touching = _segment(10, 1 + gap, 2)
+    separated = _segment(10, math.nextafter(1 + gap, math.inf), 2)
+    assert len(_merge_runs([base, touching], _cyl_group_key)) == 1
+    assert len(_merge_runs([base, separated], _cyl_group_key)) == 2
+
+
+def test_opening_tie_break_and_monotonic_step_rejection(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as module
+
+    lo = _segment(10, 0, 4)
+    hi = _segment(10, 4, 10)
+    monkeypatch.setattr(module, "_classify_end", lambda *_args, **_kwargs: "open")
+    from_hi, opening, coordinate, bottom = _drilled_from([lo, hi], {}, {})
+    assert from_hi and opening is hi and coordinate == 10 and bottom == "through"
+
+    near = _segment(18, 6, 10)
+    narrower = _segment(14, 4, 6)
+    rejected_wider = _segment(16, 2, 4)
+    selection = _near_side_steps([near, narrower, rejected_wider])
+    assert selection.cbore == CounterBore(18, 4)
+    assert selection.spotface == CounterBore(14, 2)
+    assert rejected_wider["faces"][0] not in selection.faces
+
+
+def test_countersink_matcher_tolerances_are_closed() -> None:
+    hole = HoleRecord(
+        axis=(0.0, 0.0, 1.0),
+        location=(0.0, 0.0, 0.0),
+        diameter=10.0,
+        depth=20.0,
+        bottom="through",
+    )
+
+    def sink(*, radial=0.0, axial=0.0, diameter=10.0):
+        return CounterSink(
+            axis=(0.0, 0.0, 1.0),
+            location=(radial, 0.0, axial - 2.0),
+            major_diameter=20.0,
+            drill_diameter=diameter,
+            included_angle=90.0,
+            depth=2.0,
+        )
+
+    axis_tol = length_tol(hole.diameter, rel=0.0333)
+    diameter_tol = length_tol(hole.diameter, rel=0.0333)
+    mouth_tol = length_tol(hole.diameter, rel=0.0833)
+    assert countersink_matches_hole(sink(radial=axis_tol), hole)
+    assert not countersink_matches_hole(sink(radial=math.nextafter(axis_tol, math.inf)), hole)
+    assert countersink_matches_hole(sink(diameter=hole.diameter + diameter_tol), hole)
+    assert not countersink_matches_hole(
+        sink(diameter=math.nextafter(hole.diameter + diameter_tol, math.inf)), hole
+    )
+    assert countersink_matches_hole(sink(axial=mouth_tol), hole)
+    assert countersink_matches_hole(sink(axial=hole.depth + mouth_tol), hole)
+    blind = replace(hole, bottom="flat")
+    assert not countersink_matches_hole(sink(axial=hole.depth), blind)
+
+
+def _single_internal_end_states(part) -> tuple[str, str]:
+    inventory = analyse_cylinders(part)
+    cylinders = [item for group in inventory for item in group if not item["external"]]
+    segments = _segments(full_cylinders(cylinders))
+    assert len(segments) == 1
+    segment = segments[0]
+    adjacency = edge_face_map(part.faces())
+    return (
+        _classify_end(segment, segment["s_lo"], False, adjacency),
+        _classify_end(segment, segment["s_hi"], True, adjacency),
+    )
+
+
+def test_real_end_partner_plane_cone_torus_sphere_and_cylinder_routes() -> None:
+    assert set(_single_internal_end_states(_blind())) == {"flat", "open"}
+    assert set(_single_internal_end_states(Box(60, 60, 20) - _drill_tool(5, 12, 10))) == {
+        "drill_point",
+        "open",
+    }
+    assert _single_internal_end_states(Sphere(20) - Cylinder(4, 50)) == ("open", "open")
+
+    blind = Box(60, 60, 20) - Pos(0, 0, 4) * Cylinder(5, 12)
+    bottom_edge = [
+        edge for edge in blind.edges().filter_by(GeomType.CIRCLE) if abs(edge.center().Z + 2) < 0.01
+    ]
+    assert set(_single_internal_end_states(fillet(bottom_edge, 1.5))) == {"flat", "open"}
+
+    through = _through()
+    opening_edge = [
+        edge
+        for edge in through.edges().filter_by(GeomType.CIRCLE)
+        if abs(edge.center().Z - 10) < 0.01
+    ]
+    assert _single_internal_end_states(fillet(opening_edge, 1.0)) == ("open", "open")
+
+    crossed = (
+        Box(60, 60, 40) - Pos(0, 0, 9) * Cylinder(5, 22) - Cylinder(2, 60, rotation=(0, 90, 0))
+    )
+    assert any(
+        record.bottom == "flat" and math.isclose(record.diameter, 10)
+        for record in _claimed(crossed)[0]
+    )
+
+
+def test_end_partner_margin_and_narrowest_bore_tie_are_explicit() -> None:
+    part = _blind()
+    inventory = analyse_cylinders(part)
+    cylinders = [item for group in inventory for item in group if not item["external"]]
+    (segment,) = _segments(full_cylinders(cylinders))
+    adjacency = edge_face_map(part.faces())
+    end = segment["s_hi"]
+    margin = max(
+        length_tol(segment["diameter"], rel=_STACK_GAP_FRAC),
+        min(0.45 * (segment["s_hi"] - segment["s_lo"]), 0.5 * segment["diameter"]),
+    )
+    assert _end_partners(segment, end + margin, adjacency)
+    assert not _end_partners(segment, math.nextafter(end + margin, math.inf), adjacency)
+
+    (counterbore,), _, _ = _claimed(_counterbore())
+    assert counterbore.diameter == 10 and counterbore.cbore == CounterBore(18, 6)
+    split = (
+        Box(60, 40, 10)
+        - Cylinder(5, 12)
+        - Pos(0, 5, 0) * Box(2, 4, 12)
+        - Pos(0, -5, 0) * Box(2, 4, 12)
+    )
+    (tied,), (candidate,), ledger = _claimed(split)
+    assert tied.diameter == 10 and len(ledger.defining_of(candidate)) > 1
 
 
 def test_double_counterbore_excludes_equal_diameter_far_side_land() -> None:
