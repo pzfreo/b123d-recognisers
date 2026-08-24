@@ -634,6 +634,12 @@ evidence and untouched attribution holdout allocation before implementation, obt
 accepts before one authorised reveal, and may not reuse consumed MFTRCAD buckets 10–19. A post-reveal
 defining-role/status change invalidates that family result.
 
+F5c/#196 applies that gate first to Flats. The planar truncation face is the sole defining node;
+the matched external cylinder and optional same-stock antiparallel flat remain consulted. The
+public wrapper is unchanged, all pending bindings validate before issuance, and registry promotion
+lands only with the complete evidence matrix. `F5-FLATS-H1`, MFTRCAD v1 bucket 20, was technically
+sealed by #197 before implementation and remains unrevealed until the two pre-reveal accepts.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
