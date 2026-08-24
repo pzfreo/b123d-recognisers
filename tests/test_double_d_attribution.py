@@ -247,6 +247,49 @@ def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_is
         for face in walls
     )
 
+    outward = Face(patches[1].wrapped.Reversed())
+    outward_incidence = {
+        edge: tuple(
+            outward if owner.wrapped.IsSame(patches[1].wrapped) else owner
+            for owner in owners
+        )
+        for edge, owners in controlled.items()
+    }
+
+    class OutwardEdges:
+        def of(self, face):
+            return tuple(
+                edge
+                for edge, owners in outward_incidence.items()
+                if any(owner.wrapped.IsSame(face.wrapped) for owner in owners)
+            )
+
+    class OutwardPart:
+        def faces(self):
+            return [
+                *(
+                    face
+                    for face in ControlledPart().faces()
+                    if not face.wrapped.IsSame(patches[1].wrapped)
+                ),
+                outward,
+            ]
+
+    monkeypatch.setattr(module, "edge_face_map", lambda *_args, **_kwargs: outward_incidence)
+    assert module._complete_wall_component(
+        OutwardPart(),
+        low_wire,
+        high_wire,
+        low_face,
+        high_face,
+        "z",
+        profile,
+        bbox.min.Z,
+        bbox.max.Z,
+        1e-5,
+        face_edges=cast(FaceEdges, OutwardEdges()),
+    ) == ()
+
     ledger = ClaimLedger(FaceGraph(part))
     monkeypatch.setattr(module, "_complete_wall_component", lambda *_args, **_kwargs: walls)
     with pytest.raises(ValueError):
@@ -305,17 +348,16 @@ def _claimed(part):
 def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None:
     record = records[occurrence]
     axis = next(at for at, value in enumerate(record.axis) if value)
-    low = record.location[axis] - record.depth
-    high = record.location[axis]
     metric_tol = record.major_diameter * 1e-3
     faces = [ledger.graph.face(node) for node in ledger.graph.nodes]
     incidence = edge_face_map(faces, face_edges=FaceEdges())
 
-    owners = []
-    for node in ledger.graph.nodes:
-        owner = ledger.graph.common_valid_solid((node,))
-        if owner is not None and owner not in owners:
-            owners.append(owner)
+    owner_solids = []
+    for solid in part.solids():
+        nodes = tuple(ledger.graph.require_node(face) for face in solid.faces())
+        owner = ledger.graph.common_valid_solid(nodes)
+        if owner is not None:
+            owner_solids.append((owner, solid))
 
     equal_before = sum(known == record for known in records[:occurrence])
 
@@ -422,7 +464,10 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
         return found
 
     matching = []
-    for owner in owners:
+    for owner, solid in owner_solids:
+        bbox = solid.bounding_box()
+        low = (bbox.min.X, bbox.min.Y, bbox.min.Z)[axis]
+        high = (bbox.max.X, bbox.max.Y, bbox.max.Z)[axis]
         lows = opening_sets(owner, low)
         highs = opening_sets(owner, high)
         if (
@@ -437,9 +482,9 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
             and highs[0][2][2] == record.across_flats
             and highs[0][2][3] == record.flat_direction
         ):
-            matching.append((owner, lows[0], highs[0]))
+            matching.append((owner, solid, low, high, lows[0], highs[0]))
     assert len(matching) > equal_before
-    owner, low_opening, high_opening = matching[equal_before]
+    owner, owner_solid, low, high, low_opening, high_opening = matching[equal_before]
     low_sets = [low_opening[0]]
     high_sets = [high_opening[0]]
     assert len(low_sets) == len(high_sets) == 1
@@ -448,17 +493,10 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
     assert record.major_diameter == diameter
     assert record.across_flats == across
     assert record.flat_direction == flat
+    assert record.location[axis] == high
     assert record.depth == round(high - low, 4)
     assert record.through is True
     assert all(abs(record.location[i] - centre[i]) <= metric_tol for i in range(3) if i != axis)
-    owner_solid = next(
-        solid
-        for solid in part.solids()
-        if ledger.graph.common_valid_solid(
-            tuple(ledger.graph.require_node(face) for face in solid.faces())
-        )
-        is owner
-    )
     prism = Solid.extrude(
         Face(low_opening[1]),
         Vector(*(record.axis[i] * record.depth for i in range(3))),
@@ -506,6 +544,24 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
         )
 
     memo = FaceEdges()
+    void_centre = low_opening[2][0]
+
+    def inward(node) -> bool:
+        face = ledger.graph.face(node)
+        surface = BRepAdaptor_Surface(face.wrapped)
+        native = surface.Value(
+            0.5 * (surface.FirstUParameter() + surface.LastUParameter()),
+            0.5 * (surface.FirstVParameter() + surface.LastVParameter()),
+        )
+        point = Vector(native.X(), native.Y(), native.Z())
+        normal = face.normal_at(point)
+        radial = [
+            void_centre[i] - (float(point.X), float(point.Y), float(point.Z))[i]
+            for i in range(3)
+        ]
+        radial[axis] = 0.0
+        normal_values = (float(normal.X), float(normal.Y), float(normal.Z))
+        return sum(radial[i] * normal_values[i] for i in range(3)) > metric_tol
 
     def complete_chain(seed):
         role = support(seed)
@@ -513,7 +569,7 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
         found = set()
         while pending:
             node = pending.pop()
-            if node in found or not same_support(support(node), role):
+            if node in found or not same_support(support(node), role) or not inward(node):
                 continue
             bounds = ledger.graph.bounds(node)[axis]
             if bounds[0] < low - metric_tol or bounds[1] > high + metric_tol:
@@ -528,7 +584,32 @@ def _assert_wall_role(part, ledger, records, occurrence: int, candidate) -> None
 
     chains = [complete_chain(seed) for seed in low_opening[0]]
     assert len(chains) == 4 and all(chain for chain in chains)
-    assert all(sum(seed in chain for seed in high_opening[0]) == 1 for chain in chains)
+    assert sum(len(chain) for chain in chains) == len(set().union(*chains))
+    assignments = [
+        next(at for at, seed in enumerate(high_opening[0]) if seed in chain)
+        for chain in chains
+    ]
+    assert sorted(assignments) == [0, 1, 2, 3]
+    for chain in chains:
+        intervals = sorted(ledger.graph.bounds(node)[axis] for node in chain)
+        cursor = low
+        for start, end in intervals:
+            assert abs(start - cursor) <= metric_tol
+            assert end > start
+            cursor = end
+        assert abs(cursor - high) <= metric_tol
+        internal_edges = []
+        for node in chain:
+            for edge in memo.of(ledger.graph.face(node)):
+                partners = {
+                    ledger.graph.require_node(face)
+                    for face in incidence.get(edge, ())
+                    if ledger.graph.require_node(face) in chain
+                }
+                if len(partners) == 2:
+                    internal_edges.append(edge)
+        # Each seam is encountered twice, once from each incident face.
+        assert len(internal_edges) // 2 == max(0, len(chain) - 1)
     expected = frozenset().union(*chains)
     defining = ledger.defining_of(candidate)
     assert expected == defining
@@ -600,6 +681,36 @@ def test_step_round_trip_retains_original_imported_wall_roles(tmp_path) -> None:
     ledger, records, candidates = _claimed(imported)
     assert len(records) == 1
     _assert_wall_role(imported, ledger, records, 0, candidates[0])
+
+
+def test_reversed_face_traversal_preserves_occurrence_and_complete_roles(monkeypatch) -> None:
+    part = Compound([Pos(-25, 0, 0) * _plate(), Pos(25, 0, 0) * _plate()])
+    baseline = recognise_double_d_bores(part)
+    original = type(part).faces
+    monkeypatch.setattr(type(part), "faces", lambda self: list(reversed(original(self))))
+    ledger, records, candidates = _claimed(part)
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in baseline]
+    for at, candidate in enumerate(candidates):
+        _assert_wall_role(part, ledger, records, at, candidate)
+
+
+def test_opposite_extremal_orientation_keeps_canonical_flat_sign() -> None:
+    part = Rot(180, 0, 0) * _plate()
+    ledger, records, candidates = _claimed(part)
+    assert records[0].axis == (0.0, 0.0, 1.0)
+    assert next(value for value in records[0].flat_direction if abs(value) > 1e-12) > 0
+    _assert_wall_role(part, ledger, records, 0, candidates[0])
+
+
+def test_custom_tolerance_route_preserves_public_and_writer_roles() -> None:
+    part = _plate().scale(0.1)
+    public = recognise_double_d_bores(part, tol=1e-4)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_double_d_bores(part, tol=1e-4, writer=ledger.writer)
+    candidates = ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, records).candidates
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
+    assert len(records) == 1
+    _assert_wall_role(part, ledger, records, 0, candidates[0])
 
 
 def test_aggregate_inventory_publishes_terminal_double_d_wall_evidence() -> None:
