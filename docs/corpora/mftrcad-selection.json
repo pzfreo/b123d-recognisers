@@ -43,9 +43,21 @@
       "F5-DOUBLE-D-BORES-H1": {
         "buckets": [24],
         "status": "consumed"
+      },
+      "F5-POLYGONAL-BOSSES-H1": {
+        "buckets": [25],
+        "status": "sealed_unrevealed"
+      },
+      "F5-PADS-H1": {
+        "buckets": [26],
+        "status": "sealed_unrevealed"
+      },
+      "F5-HOLES-H1": {
+        "buckets": [27],
+        "status": "sealed_unrevealed"
       }
     },
-    "unselected_bucket_ranges": [[25, 999]],
+    "unselected_bucket_ranges": [[28, 999]],
     "chosen_without": [
       "opening a selected STEP model",
       "reading selected annotations",
@@ -56,7 +68,7 @@
   "policy": {
     "development": "May be scanned to find and describe gaps. Counts are diagnostic, not a definition.",
     "holdout": "Keep outcomes sealed until a semantic child has two independent pre-reveal ACCEPT verdicts. Both holdout and all-selection scans require an explicit reveal flag. After reveal it becomes regression evidence and must not be fitted.",
-    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed regression allocations. F5-COUNTERSINKS-H1 and F5-BOSSES-H1 are consumed and inconclusive after invalid-model aborts. F5-DOUBLE-D-BORES-H1 is consumed and inconclusive after its one-shot selection contained no models. These three allocations produced no complete report and are not regression evidence. Consumed allocations may not be reused or treated as sealed evidence.",
+    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed regression allocations. F5-COUNTERSINKS-H1 and F5-BOSSES-H1 are consumed and inconclusive after invalid-model aborts. F5-DOUBLE-D-BORES-H1 is consumed and inconclusive after its one-shot selection contained no models. These three allocations produced no complete report and are not regression evidence. F5-POLYGONAL-BOSSES-H1, F5-PADS-H1, and F5-HOLES-H1 are independently sealed and unrevealed for their semantic children. Consumed allocations may not be reused or treated as sealed evidence.",
     "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
   }
 }

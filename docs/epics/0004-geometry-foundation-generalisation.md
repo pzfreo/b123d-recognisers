@@ -830,6 +830,16 @@ replacement, alternate mode, fitting or treatment change followed. Bucket 24 is 
 `consumed`, the result is inconclusive and not regression evidence, and exact Double-D ownership
 remains supported by the frozen development matrix and mechanical gates.
 
+F5 Wave 1 sealing/#216 predeclares three independent semantic allocations without archive access:
+`F5-POLYGONAL-BOSSES-H1` bucket 25, `F5-PADS-H1` bucket 26, and `F5-HOLES-H1`
+bucket 27. The immutable allocation roster and checked policy manifest retain one exact token,
+acknowledgement and `sealed_unrevealed` state per allocation; the exact unselected complement moves
+to 28..999. Authority is non-transferable between the three selections, and `all` remains closed.
+This neutral tools/tests/docs slice supplies no membership, geometry, recognition, attribution or
+outcome evidence. Each later semantic child owns its own two-review/mechanical gates, one-shot
+authorization and independent consumed chronology; zero, abort, invalid or completed outcomes may
+not be retried, replaced or fitted.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

@@ -105,6 +105,11 @@ selected exactly once at accepted PR #215 head `80def7f`. No model matched the a
 scanner stopped before STEP import, annotation reading, recognition or complete report creation.
 The zero-population draw is permanently inconclusive and is not regression evidence. It cannot be
 rerun, replaced, reused or fitted; no alternate selection or scanner mode was attempted.
+`F5-POLYGONAL-BOSSES-H1`, `F5-PADS-H1`, and `F5-HOLES-H1` are independently
+`sealed_unrevealed` allocations at buckets 25, 26, and 27. They were designated together by the
+neutral #216 policy slice without archive access, membership inspection, or outcome access. Each
+requires only its own exact acknowledgement and may be consumed only by its named semantic child;
+authority for one does not authorize either other allocation.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become
@@ -128,8 +133,8 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 25–999 remain unselected; buckets 20, 21, 22, 23, and 24 are the named
-Flat, Fillet, Countersink, Boss, and Double-D allocations. This keeps each draw near one
+may be fitted. Buckets 28–999 remain unselected; buckets 20 through 27 are the named Flat, Fillet,
+Countersink, Boss, Double-D, Polygonal Boss, Pad, and Hole allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
 closed; each named allocation accepts only its own exact acknowledgement.
