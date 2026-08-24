@@ -21,6 +21,7 @@ from mftrcad_audit import (  # noqa: E402
     DATASET_VERSION,
     DEVELOPMENT_BUCKETS,
     F5_BOSSES_H1,
+    F5_CHANNELS_H1,
     F5_COUNTERSINKS_H1,
     F5_DOUBLE_D_BORES_H1,
     F5_FILLETS_H1,
@@ -104,6 +105,7 @@ def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
         "f5_polygonal_bosses_h1",
         "f5_pads_h1",
         "f5_holes_h1",
+        "f5_channels_h1",
     }
     assert not (
         {name for name, value in selected.items() if value == "development"}
@@ -165,12 +167,16 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_HOLES_H1]),
             "status": "sealed_unrevealed",
         },
+        F5_CHANNELS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_CHANNELS_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 28
-    assert partition.isdisjoint(set(range(28, 1000)))
-    assert partition | set(range(28, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[28, 999]]
+    assert len(partition) == 29
+    assert partition.isdisjoint(set(range(29, 1000)))
+    assert partition | set(range(29, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[29, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -220,9 +226,7 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         lambda files, **kwargs: opened.append(files.model_id),
     )
 
-    with pytest.raises(
-        ValueError, match="selection 'all' is closed while named allocations exist"
-    ):
+    with pytest.raises(ValueError, match="selection 'all' is closed while named allocations exist"):
         audit(root, selection="all", annotations_only=True)
     assert opened == []
 
@@ -243,15 +247,14 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         ),
         ("f5_pads_h1", F5_PADS_H1, 26, "consumed"),
         ("f5_holes_h1", F5_HOLES_H1, 27, "sealed_unrevealed"),
+        ("f5_channels_h1", F5_CHANNELS_H1, 28, "sealed_unrevealed"),
     ],
 )
 def test_named_allocation_requires_exact_nontransferable_authority(
     tmp_path: Path, token: str, policy_id: str, bucket: int, status: str
 ) -> None:
     model_id = next(
-        f"{token}-{at}"
-        for at in range(10_000)
-        if selection_of(f"{token}-{at}") == token
+        f"{token}-{at}" for at in range(10_000) if selection_of(f"{token}-{at}") == token
     )
     root = _dataset(tmp_path, model_id=model_id)
 
@@ -297,15 +300,14 @@ def test_named_allocation_requires_exact_nontransferable_authority(
         ),
         ("f5_pads_h1", F5_PADS_H1, F5_POLYGONAL_BOSSES_H1),
         ("f5_holes_h1", F5_HOLES_H1, F5_PADS_H1),
+        ("f5_channels_h1", F5_CHANNELS_H1, F5_HOLES_H1),
     ],
 )
 def test_named_allocation_requires_its_own_exact_authority(
     tmp_path: Path, token: str, policy_id: str, wrong_policy_id: str
 ) -> None:
     model_id = next(
-        f"{token}-{at}"
-        for at in range(10_000)
-        if selection_of(f"{token}-{at}") == token
+        f"{token}-{at}" for at in range(10_000) if selection_of(f"{token}-{at}") == token
     )
     root = _dataset(tmp_path, model_id=model_id)
     for authority in (
@@ -320,6 +322,8 @@ def test_named_allocation_requires_its_own_exact_authority(
                 annotations_only=True,
                 reveal_allocations=authority,
             )
+
+
 @pytest.mark.parametrize(
     "token",
     [
@@ -331,11 +335,10 @@ def test_named_allocation_requires_its_own_exact_authority(
         "f5_polygonal_bosses_h1",
         "f5_pads_h1",
         "f5_holes_h1",
+        "f5_channels_h1",
     ],
 )
-def test_named_allocation_refuses_before_touching_the_root(
-    tmp_path: Path, token: str
-) -> None:
+def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path, token: str) -> None:
     missing = tmp_path / "must-not-be-read"
     with pytest.raises(ValueError, match="requires exact acknowledgement"):
         audit(missing, selection=token, annotations_only=True)
@@ -360,6 +363,7 @@ def test_named_allocation_refuses_before_touching_the_root(
         "f5_polygonal_bosses_h1",
         "f5_pads_h1",
         "f5_holes_h1",
+        "f5_channels_h1",
     ],
 )
 def test_cli_named_allocation_refuses_before_touching_the_root(
@@ -425,9 +429,7 @@ def test_unknown_selection_fails_before_touching_the_root(tmp_path: Path, entry:
     ],
 )
 def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
-    policy = json.loads(
-        (ROOT / "docs/corpora/mftrcad-selection.json").read_text(encoding="utf-8")
-    )
+    policy = json.loads((ROOT / "docs/corpora/mftrcad-selection.json").read_text(encoding="utf-8"))
     changed = deepcopy(policy)
     mutate(changed)
     with pytest.raises(ValueError, match=message):
@@ -446,9 +448,7 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
             ),
         ),
         (
-            audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "consumed"
-            ),
+            audit_module.AllocationSpec("F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "consumed"),
             audit_module.AllocationSpec(
                 "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "sealed_unrevealed"
             ),
@@ -489,6 +489,7 @@ def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> 
         "f5_polygonal_bosses_h1",
         "f5_pads_h1",
         "f5_holes_h1",
+        "f5_channels_h1",
     ],
 )
 def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
@@ -498,9 +499,7 @@ def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> N
         if selection_of(f"sealed-{named}-{at}") == named
     )
     ordinary = next(
-        f"ordinary-{at}"
-        for at in range(10_000)
-        if selection_of(f"ordinary-{at}") == "unselected"
+        f"ordinary-{at}" for at in range(10_000) if selection_of(f"ordinary-{at}") == "unselected"
     )
     root = _dataset(tmp_path, model_id=sealed)
     _dataset(tmp_path, model_id=ordinary)
