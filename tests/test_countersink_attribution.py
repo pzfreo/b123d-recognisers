@@ -3,19 +3,21 @@
 from __future__ import annotations
 
 import ast
+import copy
 import math
 from pathlib import Path
 
 import pytest
 from build123d import Box, Cone, Cylinder, GeomType, Pos, Rot, Shell, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cone
+from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_countersinks
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.countersinks import _discover_countersinks
+from b123d_recognisers.result import _take_inventory
 
 
 def _plate(points=((0, 0),)):
@@ -55,7 +57,30 @@ def _assert_role(ledger, candidate, record) -> None:
     assert record.drill_diameter == round(2 * minor.radius, 4)
     assert record.depth == round(depth, 4)
     assert record.included_angle == round(2 * abs(math.degrees(surface.Cone().SemiAngle())), 2)
-    assert all(other == node or other not in defining for other in ledger.graph.nodes)
+    matching_cylinders = []
+    for other in ledger.graph.nodes:
+        other_surface = BRepAdaptor_Surface(ledger.graph.face(other).wrapped)
+        if other_surface.GetType() != GeomAbs_Cylinder:
+            continue
+        cylinder = other_surface.Cylinder()
+        axis_line = cylinder.Axis()
+        direction = axis_line.Direction()
+        line_direction = (direction.X(), direction.Y(), direction.Z())
+        if abs(sum(a * b for a, b in zip(record.axis, line_direction, strict=True))) <= 0.999:
+            continue
+        line_point = axis_line.Location()
+        offset = tuple(
+            record.location[index] - (line_point.X(), line_point.Y(), line_point.Z())[index]
+            for index in range(3)
+        )
+        along = sum(offset[index] * line_direction[index] for index in range(3))
+        distance = math.sqrt(
+            sum((offset[index] - along * line_direction[index]) ** 2 for index in range(3))
+        )
+        if abs(2 * cylinder.Radius() - record.drill_diameter) <= 0.001 and distance <= 0.001:
+            matching_cylinders.append(other)
+    assert matching_cylinders
+    assert all(context not in defining for context in matching_cylinders)
 
 
 def _claimed(part):
@@ -145,6 +170,24 @@ def test_step_round_trip_preserves_conical_owner_role(tmp_path: Path) -> None:
     assert len(records) == 1
 
 
+def test_aggregate_inventory_publishes_terminal_countersink_evidence() -> None:
+    product = _take_inventory(_plate(((-20, 0), (20, 0))))
+    candidates = product.physical.candidate_set(FamilyId.COUNTERSINKS).candidates
+    assert candidates
+    assert tuple(candidate.record for candidate in candidates) == product.result.countersinks
+    assert product.accepted.candidate_set(FamilyId.COUNTERSINKS).candidates == candidates
+    assert all(len(product.evidence.defining_of(candidate)) == 1 for candidate in candidates)
+
+
+def test_multiple_valid_solids_publish_independent_owner_bodies() -> None:
+    part = _plate() + Pos(150, 0, 0) * _plate()
+    ledger, records = _claimed(part)
+    candidates = ledger.candidate_set(FamilyId.COUNTERSINKS).candidates
+    assert len(records) == len(candidates) == 2
+    solids = {ledger.graph.common_valid_solid(ledger.defining_of(item)) for item in candidates}
+    assert None not in solids and len(solids) == 2
+
+
 def test_late_owner_validation_refuses_before_publication(monkeypatch: pytest.MonkeyPatch) -> None:
     part = _plate(((-20, 0), (20, 0)))
     ledger = ClaimLedger(FaceGraph(part))
@@ -160,6 +203,71 @@ def test_late_owner_validation_refuses_before_publication(monkeypatch: pytest.Mo
     with pytest.raises(ValueError, match="no unambiguous valid solid"):
         _discover_countersinks(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
+
+
+def test_late_owner_binding_refuses_before_publication(monkeypatch: pytest.MonkeyPatch) -> None:
+    part = _plate(((-20, 0), (20, 0)))
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.require_node
+    calls = 0
+
+    def fail_second(face):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise ValueError("later countersink binding failed")
+        return original(face)
+
+    monkeypatch.setattr(ledger.graph, "require_node", fail_second)
+    with pytest.raises(ValueError, match="later countersink binding failed"):
+        _discover_countersinks(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
+
+
+def test_foreign_writer_refuses_without_publication() -> None:
+    part = _plate()
+    foreign = ClaimLedger(FaceGraph(Box(20, 20, 20)))
+    with pytest.raises(ValueError):
+        _discover_countersinks(part, writer=foreign.writer)
+    assert foreign.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
+
+
+@pytest.mark.parametrize("translated", [False, True])
+def test_deep_cloned_owner_refuses_without_publication(
+    monkeypatch: pytest.MonkeyPatch, translated: bool
+) -> None:
+    part = _plate()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.require_node
+
+    def cloned(face):
+        changed = copy.deepcopy(face)
+        if translated:
+            changed = changed.translate((1, 0, 0))
+        return original(changed)
+
+    monkeypatch.setattr(ledger.graph, "require_node", cloned)
+    with pytest.raises(ValueError):
+        _discover_countersinks(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.COUNTERSINKS).candidates == ()
+
+
+def test_reversed_face_traversal_preserves_occurrence_roles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    part = _plate(((-20, 0), (20, 0)))
+    baseline = [record.to_dict() for record in recognise_countersinks(part)]
+    part_type = type(part)
+    original = part_type.faces
+
+    def reversed_faces(self):
+        faces = original(self)
+        return type(faces)(reversed(faces))
+
+    monkeypatch.setattr(part_type, "faces", reversed_faces)
+    ledger, records = _claimed(part)
+    assert [record.to_dict() for record in records] == baseline
+    assert len(ledger.candidate_set(FamilyId.COUNTERSINKS).candidates) == 2
 
 
 def test_only_registry_may_call_writer_enabled_core() -> None:
