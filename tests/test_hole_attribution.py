@@ -5,19 +5,37 @@ from __future__ import annotations
 import ast
 import copy
 import math
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cone, Cylinder, Pos, Rot, Shell, export_step, import_step
+from build123d import (
+    Box,
+    Circle,
+    Compound,
+    Cone,
+    Cylinder,
+    GeomType,
+    Pos,
+    Rectangle,
+    Rot,
+    Shell,
+    chamfer,
+    export_step,
+    extrude,
+    fillet,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_holes
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders, full_cylinders
+from b123d_recognisers._cylinder_substrate import analyse_cylinders
 from b123d_recognisers._hole_features import (
+    CounterBore,
     HoleRecord,
     _discover_holes,
     _near_side_steps,
@@ -73,63 +91,254 @@ def _line_distance(point, line, direction) -> float:
     return math.sqrt(sum((offset[i] - along * direction[i]) ** 2 for i in range(3)))
 
 
-def _expected_cylindrical_nodes(part, graph: FaceGraph, record: HoleRecord):
-    """Fresh topology-first oracle for the fixtures in this module.
+@dataclass(frozen=True)
+class _CylinderFact:
+    node: object
+    direction: tuple[float, float, float]
+    line: tuple[float, float, float]
+    diameter: float
+    lo: float
+    hi: float
 
-    It reads original surfaces directly, before Candidate evidence, and selects internal,
-    coaxial patches whose diameters are serialized by the Hole occurrence. Context cones,
-    end planes, external cylinders and unrelated axes cannot enter the result.
-    """
 
-    axial, cross = analyse_cylinders(part)
-    facts = full_cylinders(axial) + full_cylinders(cross)
-    expected = []
+@dataclass(frozen=True)
+class _ExpectedHole:
+    record: HoleRecord
+    nodes: frozenset
+    solid: object
+
+
+def _canonical_direction(direction) -> tuple[float, float, float]:
+    unit = (direction.X(), direction.Y(), direction.Z())
+    for value in unit:
+        if abs(value) > 1e-10:
+            return tuple(-item for item in unit) if value < 0 else unit
+    raise AssertionError("cylinder direction is zero")
+
+
+def _face_interval(face, direction) -> tuple[float, float]:
+    points = [vertex.center() for edge in face.edges() for vertex in edge.vertices()]
+    points.extend(edge.center() for edge in face.edges())
+    assert points
+    values = [
+        point.X * direction[0] + point.Y * direction[1] + point.Z * direction[2] for point in points
+    ]
+    return min(values), max(values)
+
+
+def _raw_internal_cylinders(graph: FaceGraph, solid) -> list[_CylinderFact]:
+    facts = []
+    for face in solid.faces():
+        node = graph.require_node(face)
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if surface.GetType() != GeomAbs_Cylinder or frame_points_outward(face):
+            continue
+        cylinder = surface.Cylinder()
+        direction = _canonical_direction(cylinder.Axis().Direction())
+        location = cylinder.Axis().Location()
+        raw_line = (location.X(), location.Y(), location.Z())
+        along = sum(raw_line[i] * direction[i] for i in range(3))
+        line = tuple(raw_line[i] - along * direction[i] for i in range(3))
+        lo, hi = _face_interval(face, direction)
+        facts.append(_CylinderFact(node, direction, line, 2 * cylinder.Radius(), lo, hi))
+    return facts
+
+
+def _line_groups(facts: list[_CylinderFact]) -> list[list[_CylinderFact]]:
+    groups: list[list[_CylinderFact]] = []
     for fact in facts:
-        if fact["external"]:
+        for group in groups:
+            first = group[0]
+            if (
+                abs(sum(a * b for a, b in zip(first.direction, fact.direction, strict=True)))
+                > 0.999999
+                and _line_distance(fact.line, first.line, first.direction) <= 1e-5
+            ):
+                group.append(fact)
+                break
+        else:
+            groups.append([fact])
+    return groups
+
+
+def _point_on_line(
+    line: tuple[float, float, float],
+    direction: tuple[float, float, float],
+    coordinate: float,
+) -> tuple[float, float, float]:
+    return (
+        line[0] + coordinate * direction[0],
+        line[1] + coordinate * direction[1],
+        line[2] + coordinate * direction[2],
+    )
+
+
+def _deep_end_is_conical(solid, line, direction, deep) -> bool:
+    for face in solid.faces():
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if surface.GetType() != GeomAbs_Cone:
             continue
-        face = fact["face"]
-        unit = fact["dir_xyz"]
-        if abs(sum(a * b for a, b in zip(record.axis, unit, strict=True))) < 0.999999:
+        cone = surface.Cone()
+        cone_direction = _canonical_direction(cone.Axis().Direction())
+        if abs(sum(a * b for a, b in zip(direction, cone_direction, strict=True))) < 0.999999:
             continue
-        line = fact["axis_xyz"]
-        if _line_distance(record.location, line, unit) > 1e-5:
+        location = cone.Axis().Location()
+        cone_line = (location.X(), location.Y(), location.Z())
+        if _line_distance(cone_line, line, direction) > 1e-5:
             continue
-        opening_s = sum(record.location[i] * unit[i] for i in range(3))
-        axis_sign = 1 if sum(record.axis[i] * unit[i] for i in range(3)) > 0 else -1
-        deep_s = opening_s + axis_sign * record.depth
-        lo, hi = sorted((opening_s, deep_s))
-        within_serialized_depth = fact["s_hi"] >= lo - 1e-6 and fact["s_lo"] <= hi + 1e-6
-        bore_land = math.isclose(fact["diameter"], record.diameter, rel_tol=1e-5) and (
-            within_serialized_depth
+        lo, hi = _face_interval(face, direction)
+        if lo - 1e-5 <= deep <= hi + 1e-5:
+            return True
+    return False
+
+
+def _record_matches(expected: HoleRecord, actual: HoleRecord) -> bool:
+    return (
+        expected.bottom == actual.bottom
+        and expected.cbore == actual.cbore
+        and expected.spotface == actual.spotface
+        and expected.csink == actual.csink
+        and math.isclose(expected.diameter, actual.diameter, rel_tol=1e-6, abs_tol=1e-7)
+        and math.isclose(expected.depth, actual.depth, rel_tol=1e-6, abs_tol=1e-7)
+        and all(
+            math.isclose(left, right, rel_tol=1e-6, abs_tol=1e-7)
+            for left, right in zip(expected.axis, actual.axis, strict=True)
         )
-        step_diameters = tuple(
-            spec.diameter for spec in (record.cbore, record.spotface) if spec is not None
+        and all(
+            math.isclose(left, right, rel_tol=1e-6, abs_tol=0.01)
+            for left, right in zip(expected.location, actual.location, strict=True)
         )
-        selected_step = within_serialized_depth and any(
-            math.isclose(fact["diameter"], diameter, rel_tol=1e-5) for diameter in step_diameters
-        )
-        blind_extension = (
-            record.bottom != "through" and fact["s_lo"] - 1e-6 <= deep_s <= fact["s_hi"] + 1e-6
-        )
-        if bore_land or selected_step or blind_extension:
-            expected.append(graph.require_node(face))
-    return frozenset(expected)
+    )
+
+
+def _fresh_expected_holes(part, graph: FaceGraph) -> list[_ExpectedHole]:
+    """Reconstruct bounded test-domain Hole occurrences before any recogniser output read."""
+
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    expected: list[_ExpectedHole] = []
+    for solid in sources:
+        solid_ref = graph.common_valid_solid(graph.require_node(face) for face in solid.faces())
+        assert solid_ref is not None
+        for group in _line_groups(_raw_internal_cylinders(graph, solid)):
+            direction = group[0].direction
+            line = group[0].line
+            lo = min(fact.lo for fact in group)
+            hi = max(fact.hi for fact in group)
+            # A valid opening is an interval end on the body's projected envelope. This is
+            # derived from original topology and remains rotation independent.
+            body_points = [vertex.center() for face in solid.faces() for vertex in face.vertices()]
+            body_s = [
+                point.X * direction[0] + point.Y * direction[1] + point.Z * direction[2]
+                for point in body_points
+            ]
+            opening_margin = max(1e-5, 0.51 * min(fact.diameter for fact in group))
+            open_lo = abs(lo - min(body_s)) <= opening_margin
+            open_hi = abs(hi - max(body_s)) <= opening_margin
+            if not (open_lo or open_hi):
+                continue
+            at_lo = [fact for fact in group if abs(fact.lo - lo) <= 1e-5]
+            at_hi = [fact for fact in group if abs(fact.hi - hi) <= 1e-5]
+            if open_hi and not open_lo:
+                from_hi = True
+            elif open_lo and not open_hi:
+                from_hi = False
+            else:
+                from_hi = max(fact.diameter for fact in at_hi) >= max(
+                    fact.diameter for fact in at_lo
+                )
+            ordered = sorted(group, key=lambda fact: fact.hi, reverse=from_hi)
+            bore_diameter = min(fact.diameter for fact in ordered)
+            bore = [
+                fact for fact in group if math.isclose(fact.diameter, bore_diameter, rel_tol=1e-4)
+            ]
+            bore_top = max(fact.hi for fact in bore) if from_hi else min(fact.lo for fact in bore)
+            deep = min(fact.lo for fact in bore) if from_hi else max(fact.hi for fact in bore)
+            bottom = "through" if open_lo and open_hi else "flat"
+            if bottom != "through":
+                deep = min(fact.lo for fact in group) if from_hi else max(fact.hi for fact in group)
+                if _deep_end_is_conical(solid, line, direction, deep):
+                    bottom = "drill_point"
+            near = [
+                fact
+                for fact in ordered
+                if (fact.lo >= bore_top - 1e-5 if from_hi else fact.hi <= bore_top + 1e-5)
+                and not math.isclose(fact.diameter, bore_diameter, rel_tol=1e-4)
+            ]
+            selected: list[_CylinderFact] = []
+            specs = []
+            minimum = math.inf
+            for fact in near:
+                if fact.diameter > minimum and not math.isclose(
+                    fact.diameter, minimum, rel_tol=1e-4
+                ):
+                    continue
+                minimum = fact.diameter
+                if not any(
+                    math.isclose(fact.diameter, item.diameter, rel_tol=1e-4) for item in selected
+                ):
+                    selected.append(fact)
+            cbore = spotface = None
+            for fact in selected:
+                lands = [
+                    item
+                    for item in near
+                    if math.isclose(item.diameter, fact.diameter, rel_tol=1e-4)
+                ]
+                span = max(item.hi for item in lands) - min(item.lo for item in lands)
+                spec = CounterBore(round(fact.diameter, 4), round(span, 2))
+                specs.append((spec, lands))
+                if spec.depth < 0.2 * spec.diameter:
+                    spotface = spotface or spec
+                else:
+                    cbore = cbore or spec
+            selected_specs = {id(spec): lands for spec, lands in specs}
+            owner = set(bore)
+            for chosen_spec in (cbore, spotface):
+                if chosen_spec is not None:
+                    owner.update(selected_specs[id(chosen_spec)])
+            if bottom != "through":
+                owner.update(fact for fact in group if fact.lo - 1e-5 <= deep <= fact.hi + 1e-5)
+            opening = hi if from_hi else lo
+            axis = (-direction[0], -direction[1], -direction[2]) if from_hi else direction
+            record = HoleRecord(
+                axis=axis,
+                location=_point_on_line(line, direction, opening),
+                diameter=bore_diameter,
+                depth=round(abs(bore_top - deep), 2),
+                bottom=bottom,
+                cbore=cbore,
+                spotface=spotface,
+            )
+            expected.append(
+                _ExpectedHole(record, frozenset(fact.node for fact in owner), solid_ref)
+            )
+    return expected
 
 
 def _claimed(part, **kwargs):
-    public = recognise_holes(part, **kwargs)
     ledger = ClaimLedger(FaceGraph(part))
+    expected = _fresh_expected_holes(part, ledger.graph)
+    public = recognise_holes(part, **kwargs)
     records = _discover_holes(part, writer=ledger.writer, **kwargs)
     assert [type(record) for record in records] == [type(record) for record in public]
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     candidates = ledger.candidate_set(FamilyId.HOLES).candidates
     assert len(candidates) == len(records)
-    for record, candidate in zip(records, candidates, strict=True):
+    unmatched = list(expected)
+    paired = []
+    for record in records:
+        matches = [item for item in unmatched if _record_matches(item.record, record)]
+        assert matches, (record, [item.record for item in unmatched])
+        item = matches[0]  # ordinal is used only among already-equal independently derived facts
+        unmatched.remove(item)
+        paired.append(item)
+    assert not unmatched
+    for item, record, candidate in zip(paired, records, candidates, strict=True):
         assert candidate.record is record
-        expected = _expected_cylindrical_nodes(part, ledger.graph, record)
-        assert expected
-        assert ledger.defining_of(candidate) == expected
-        assert ledger.graph.common_valid_solid(expected) is not None
+        assert item.nodes
+        assert ledger.defining_of(candidate) == item.nodes
+        assert ledger.graph.common_valid_solid(item.nodes) == item.solid
     return records, candidates, ledger
 
 
@@ -152,10 +361,8 @@ def test_split_and_interrupted_bore_retains_every_original_patch() -> None:
     crossed = Box(60, 60, 40) - Cylinder(5, 40) - Cylinder(3, 60, rotation=(0, 90, 0))
     records, candidates, ledger = _claimed(crossed)
     assert len(records) == len(candidates) == 2
-    for record, candidate in zip(records, candidates, strict=True):
-        assert ledger.defining_of(candidate) == _expected_cylindrical_nodes(
-            crossed, ledger.graph, record
-        )
+    for _record, candidate in zip(records, candidates, strict=True):
+        assert ledger.defining_of(candidate)
 
 
 def test_near_step_and_bottom_relief_roles_exclude_transition_context() -> None:
@@ -393,12 +600,8 @@ def test_equal_holes_keep_occurrence_and_body_identity() -> None:
 def test_coincident_equal_full_records_keep_distinct_occurrence_bodies() -> None:
     original = _through()
     part = Compound([original, copy.deepcopy(original)])
-    public = recognise_holes(part)
-    ledger = ClaimLedger(FaceGraph(part))
-    records = _discover_holes(part, writer=ledger.writer)
-    candidates = ledger.candidate_set(FamilyId.HOLES).candidates
+    records, candidates, ledger = _claimed(part)
     assert len(records) == 2 and records[0] == records[1] and records[0] is not records[1]
-    assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     defining = [ledger.defining_of(candidate) for candidate in candidates]
     assert defining[0].isdisjoint(defining[1])
     assert ledger.graph.common_valid_solid(defining[0]) != ledger.graph.common_valid_solid(
@@ -441,6 +644,100 @@ def test_scale_traversal_step_and_supplied_dependencies_preserve_roles(
     from b123d_recognisers._adjacency import FaceEdges
 
     _claimed(supplied_part, cyls=cylinders, face_edges=FaceEdges())
+
+
+def test_shoulder_transitions_and_opening_chamfer_remain_context_only() -> None:
+    base = _counterbore()
+    shoulder = [
+        edge
+        for edge in base.edges().filter_by(GeomType.CIRCLE)
+        if abs(edge.center().Z - 4) < 0.01 and abs(edge.radius - 5) < 0.01
+    ]
+    for part in (chamfer(shoulder, 1.0), fillet(shoulder, 1.0)):
+        records, candidates, ledger = _claimed(part)
+        assert records[0].cbore is not None
+        assert all(
+            BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
+            for node in ledger.defining_of(candidates[0])
+        )
+
+    opened = _through()
+    lip = max(opened.edges().filter_by(GeomType.CIRCLE), key=lambda edge: edge.center().Z)
+    records, candidates, ledger = _claimed(chamfer(lip, 1.0))
+    assert records[0].bottom == "through"
+    assert all(
+        BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
+        for node in ledger.defining_of(candidates[0])
+    )
+
+
+def test_radial_turned_and_separate_coaxial_bodies_keep_body_roles() -> None:
+    _claimed(Cylinder(15, 60, rotation=(0, 90, 0)) - Cylinder(3, 40))
+    _claimed(Cylinder(30, 40) - Cylinder(10, 40))
+
+    plate = Pos(-1, 0, 0) * (Box(2, 40, 12) - Cylinder(4.9, 40, rotation=(0, 90, 0)))
+    block = Pos(60.5, 0, 0) * (
+        Box(119, 40, 12) - Pos(-59.5, 0, 0) * Cylinder(4.9, 24, rotation=(0, 90, 0))
+    )
+    records, candidates, ledger = _claimed(Compound([plate, block]))
+    assert len(records) == len(candidates) == 2
+    assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
+
+
+def test_rounded_slot_and_unrelated_wider_groove_issue_no_surplus_roles() -> None:
+    profile = Rectangle(8, 30) + Circle(4)
+    slot = extrude(profile, 10)
+    part = Box(60, 60, 20) - slot
+    assert recognise_holes(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_holes(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    grooved = Box(60, 60, 20) - Cylinder(5, 20) - Cylinder(6, 3)
+    (record,), (candidate,), ledger = _claimed(grooved)
+    assert record.diameter == 10.0
+    assert {
+        round(BRepAdaptor_Surface(ledger.graph.face(node).wrapped).Cylinder().Radius() * 2, 2)
+        for node in ledger.defining_of(candidate)
+    } == {10.0}
+
+
+@pytest.mark.parametrize("stale", [False, True])
+def test_deep_or_translated_cylindrical_snapshot_refuses_atomically(monkeypatch, stale) -> None:
+    import b123d_recognisers._hole_features as module
+
+    part = _through()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._bore_depth
+
+    def changed(*args, **kwargs):
+        selection = original(*args, **kwargs)
+        face = copy.deepcopy(selection.faces[0])
+        if stale:
+            face = Pos(1, 0, 0) * face
+        return replace(selection, faces=(face, *selection.faces[1:]))
+
+    monkeypatch.setattr(module, "_bore_depth", changed)
+    with pytest.raises(ValueError):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+
+def test_later_common_solid_failure_is_prefix_free(monkeypatch) -> None:
+    part = Compound([Pos(-50, 0, 0) * _through(), Pos(50, 0, 0) * _through()])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.common_valid_solid
+    calls = 0
+
+    def fail_second(nodes):
+        nonlocal calls
+        calls += 1
+        return None if calls == 2 else original(nodes)
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
+    with pytest.raises(ValueError, match="one valid solid"):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
 
 
 def test_open_shell_public_compatibility_refuses_aggregate_without_prefix() -> None:
@@ -520,9 +817,83 @@ def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> N
     registry = next(call for name, call in sites if name == "_registry.py")
     keywords = {keyword.arg: keyword.value for keyword in registry.keywords}
     writer = keywords["writer"]
-    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert (
+        isinstance(writer, ast.Attribute)
+        and writer.attr == "writer"
+        and isinstance(writer.value, ast.Name)
+        and writer.value.id == "services"
+    )
     predecessor = keywords["predecessor_occurrences"]
     assert isinstance(predecessor, ast.Name) and predecessor.id == "occurrences"
+
+    source = ast.parse(
+        (ROOT / "src/b123d_recognisers/_hole_features.py").read_text(encoding="utf-8")
+    )
+    functions = {node.name: node for node in source.body if isinstance(node, ast.FunctionDef)}
+    public_calls = [
+        call
+        for qualified, call in _qualified_calls(functions["recognise_holes"])
+        if qualified == "_discover_holes"
+    ]
+    assert len(public_calls) == 1
+    assert {keyword.arg for keyword in public_calls[0].keywords} == {
+        "cyls",
+        "csinks",
+        "face_edges",
+    }
+
+    registry_tree = ast.parse(
+        (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
+    )
+    registry_functions = {
+        node.name: node for node in registry_tree.body if isinstance(node, ast.FunctionDef)
+    }
+    holes_body = registry_functions["_holes"]
+    occurrence_calls = [
+        call
+        for qualified, call in _qualified_calls(holes_body)
+        if qualified.endswith(".occurrences")
+    ]
+    assert len(occurrence_calls) == 1
+    call = occurrence_calls[0]
+    assert isinstance(call.args[0], ast.Attribute) and call.args[0].attr == "COUNTERSINKS"
+    assert isinstance(call.args[1], ast.Name) and call.args[1].id == "CounterSink"
+
+    forbidden = {
+        "EvidenceIndex",
+        "CandidateInventory",
+        "CandidateReconciliation",
+        "ReconciliationResult",
+        "reconcile_recess_candidates",
+    }
+    imported = {
+        alias.name
+        for node in source.body
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    assert imported.isdisjoint(forbidden)
+
+
+def test_hole_record_and_step_constructor_roster_is_closed() -> None:
+    sites: list[tuple[str, str]] = []
+    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for qualified, _call in _qualified_calls(tree):
+            if qualified.endswith(".HoleRecord") or qualified == "HoleRecord":
+                sites.append((path.name, "HoleRecord"))
+            if qualified.endswith(".CounterBore") or qualified == "CounterBore":
+                sites.append((path.name, "CounterBore"))
+    assert sites == [
+        ("_hole_features.py", "CounterBore"),
+        ("_hole_features.py", "HoleRecord"),
+    ]
+
+    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+
+    assert "_hole_features:_classify_end_uncached:adaptor:1" in SURFACE_READER_SITES
+    assert "_hole_features:_classify_end_uncached:adaptor:2" in SURFACE_READER_SITES
+    assert not any("_discover_holes" in key for key in SURFACE_READER_SITES)
 
 
 def test_terminal_inventory_retains_complete_hole_identity() -> None:
