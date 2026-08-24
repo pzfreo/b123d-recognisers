@@ -113,8 +113,8 @@ remains development-matrix evidence rather than an H1 claim.
 
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression
-evidence and cannot be fitted. Buckets 22–999 remain unselected; buckets 20 and 21 are the named
-Flat and Fillet allocations. This keeps each draw near one
+evidence and cannot be fitted. Buckets 23–999 remain unselected; buckets 20, 21, and 22 are the named
+Flat, Fillet, and Countersink allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
 closed; each named allocation accepts only its own exact acknowledgement.
