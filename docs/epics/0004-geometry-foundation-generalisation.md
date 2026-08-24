@@ -639,6 +639,11 @@ the matched external cylinder and optional same-stock antiparallel flat remain c
 public wrapper is unchanged, all pending bindings validate before issuance, and registry promotion
 lands only with the complete evidence matrix. `F5-FLATS-H1`, MFTRCAD v1 bucket 20, was technically
 sealed by #197 before implementation and remains unrevealed until the two pre-reveal accepts.
+The authorised one-shot reveal then consumed bucket 20 at exact PR #199 head `8796a86`: 23 complete
+models/69 files, zero invalid models, and a non-vacuous exact 10 Flat proposals = 10 accepted = 10
+attributed. The selected-artifact SHA-256 is
+`a2e045e3d6eb2b1ecd454fcbd12c04aaf5a4fb1ad85519891d8bcc48cd86356b`. No predicate, defining role,
+status rule, or output was tuned from the result; the allocation is regression evidence only.
 
 The F5c development matrix found no valid closed-manifold occurrence with more than one distinct
 same-stock antiparallel Flat: a connected planar truncation is one face, while splitting it creates
