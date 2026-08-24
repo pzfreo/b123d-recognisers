@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import math
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from build123d import (
     Pos,
     RegularPolygon,
     Rot,
+    Shell,
     export_step,
     extrude,
     import_step,
@@ -144,6 +146,7 @@ def _assert_flat_role(part, ledger: ClaimLedger, candidate, record) -> None:
         Rot(0, 25, 0) * _lone_d(),
         _lone_d().mirror(Plane.YZ),
         _lone_d().scale(10),
+        Cylinder(20, 40) - Pos(59.49, 0, 0) * Box(80, 80, 60, align=_CENTRE),
     ],
 )
 def test_flat_writer_preserves_records_and_binds_only_each_owner_face(part) -> None:
@@ -238,12 +241,17 @@ def test_registry_is_the_only_production_writer_enabled_flat_caller() -> None:
         if path.name == "flats.py":
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        if any(
+        direct = any(
             isinstance(node, ast.ImportFrom)
             and node.module == "b123d_recognisers.flats"
             and any(alias.name == "_discover_flats" for alias in node.names)
             for node in ast.walk(tree)
-        ):
+        )
+        qualified = any(
+            isinstance(node, ast.Attribute) and node.attr == "_discover_flats"
+            for node in ast.walk(tree)
+        )
+        if direct or qualified:
             importers.add(path.name)
     assert importers == {"_registry.py"}
 
@@ -255,6 +263,8 @@ def test_registry_is_the_only_production_writer_enabled_flat_caller() -> None:
         Cylinder(20, 40) - Cylinder(5, 40),
         Cylinder(20, 40) - Pos(59.8, 0, 0) * Box(80, 80, 60, align=_CENTRE),
         Box(60, 60, 20) - Pos(0, 0, 5) * Box(15, 20, 10, align=_CENTRE),
+        Cylinder(20, 40) - Box(50, 8, 20, align=_CENTRE),
+        Cylinder(20, 40) - Pos(14, 0, 0) * Box(20, 8, 20, align=_CENTRE),
     ],
 )
 def test_rejected_context_geometry_issues_no_flat_candidate(part) -> None:
@@ -269,6 +279,64 @@ def test_rejected_context_geometry_issues_no_flat_candidate(part) -> None:
         == []
     )
     assert ledger.candidate_set(FamilyId.FLATS).candidates == ()
+
+
+def test_open_flat_topology_refuses_before_publication() -> None:
+    part = _lone_d()
+    shell = Shell(part.faces()[:-1])
+    ledger = ClaimLedger(FaceGraph(shell))
+    with pytest.raises(ValueError, match="no unambiguous valid solid"):
+        _discover_flats(
+            shell,
+            cyls=analyse_cylinders(shell),
+            face_edges=None,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.FLATS).candidates == ()
+
+
+def test_deep_copied_face_binding_refuses_before_publication(monkeypatch) -> None:
+    part = _double_d()
+    ledger = ClaimLedger(FaceGraph(part))
+    real_require = ledger.graph.require_node
+
+    def copied(face):
+        return real_require(copy.deepcopy(face))
+
+    monkeypatch.setattr(ledger.graph, "require_node", copied)
+    with pytest.raises(ValueError):
+        _discover_flats(
+            part,
+            cyls=analyse_cylinders(part),
+            face_edges=None,
+            writer=ledger.writer,
+        )
+    assert ledger.candidate_set(FamilyId.FLATS).candidates == ()
+
+
+def test_reversed_face_traversal_preserves_flat_roles(monkeypatch) -> None:
+    part = Cylinder(20, 40) & extrude(RegularPolygon(22, 6), 40)
+    baseline = [record.to_dict() for record in recognise_flats(part)]
+    part_type = type(part)
+    real_faces = part_type.faces
+
+    def reversed_faces(self):
+        faces = real_faces(self)
+        return type(faces)(reversed(faces))
+
+    monkeypatch.setattr(part_type, "faces", reversed_faces)
+    ledger = ClaimLedger(FaceGraph(part))
+    measured = _discover_flats(
+        part,
+        cyls=analyse_cylinders(part),
+        face_edges=None,
+        writer=ledger.writer,
+    )
+    assert [record.to_dict() for record in measured] == baseline
+    for candidate, record in zip(
+        ledger.candidate_set(FamilyId.FLATS).candidates, measured, strict=True
+    ):
+        _assert_flat_role(part, ledger, candidate, record)
 
 
 def test_real_step_round_trip_preserves_flat_occurrence_roles(tmp_path) -> None:

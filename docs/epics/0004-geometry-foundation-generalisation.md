@@ -640,6 +640,14 @@ public wrapper is unchanged, all pending bindings validate before issuance, and 
 lands only with the complete evidence matrix. `F5-FLATS-H1`, MFTRCAD v1 bucket 20, was technically
 sealed by #197 before implementation and remains unrevealed until the two pre-reveal accepts.
 
+The F5c development matrix found no valid closed-manifold occurrence with more than one distinct
+same-stock antiparallel Flat: a connected planar truncation is one face, while splitting it creates
+separate axial stock spans or unsupported/ambiguous topology. The audit therefore proves order
+invariance with a six-flat face-traversal reversal and treats open, duplicated, or ambiguous
+ownership as a pre-publication refusal; it does not fabricate a second opposition by bypassing the
+recogniser. If a future valid fixture contains multiple eligible oppositions, F5c stops and opens a
+semantic prerequisite rather than choosing by traversal order under this attribution-only slice.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
