@@ -55,26 +55,36 @@ def _pad():
     return Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4)
 
 
-def _perforated_pad(radius: float):
-    island = Box(30, 20, 4) - Pos(0, 0, -2) * Cylinder(radius, 8)
+def _perforated_pad(radius: float, *, width: float = 30, depth: float = 20):
+    island = Box(width, depth, 4) - Pos(0, 0, -2) * Cylinder(radius, 8)
     return Box(80, 60, 10) + Pos(0, 0, 7) * island
+
+
+def _through_perforated_pad(radius: float):
+    solid = Box(80, 60, 10) + Pos(0, 0, 7) * Box(1, 1, 4)
+    return solid - Cylinder(radius, 30)
 
 
 def _wall_fact(
     face: object,
     *,
-    normal_x: float = 1.0,
+    normal_axis: float = 1.0,
+    axis: str = "x",
     plane: float = 0.0,
     cross_lo: float = -1.0,
     cross_hi: float = 1.0,
     base: float = 0.0,
     top: float = 2.0,
 ):
-    bounds = SimpleNamespace(
-        min=SimpleNamespace(X=plane, Y=cross_lo, Z=base),
-        max=SimpleNamespace(X=plane, Y=cross_hi, Z=top),
-    )
-    normal = SimpleNamespace(X=normal_x, Y=0.0, Z=0.0)
+    if axis == "x":
+        minimum = SimpleNamespace(X=plane, Y=cross_lo, Z=base)
+        maximum = SimpleNamespace(X=plane, Y=cross_hi, Z=top)
+        normal = SimpleNamespace(X=normal_axis, Y=0.0, Z=0.0)
+    else:
+        minimum = SimpleNamespace(X=cross_lo, Y=plane, Z=base)
+        maximum = SimpleNamespace(X=cross_hi, Y=plane, Z=top)
+        normal = SimpleNamespace(X=0.0, Y=normal_axis, Z=0.0)
+    bounds = SimpleNamespace(min=minimum, max=maximum)
     return face, bounds, normal
 
 
@@ -513,6 +523,30 @@ def test_top_area_deficit_boundary_preserves_current_semantics(radius, accepted)
         assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
+@pytest.mark.parametrize(
+    ("radius", "accepted"),
+    [
+        (math.sqrt(0.04 / math.pi) * 0.99, True),
+        (
+            math.nextafter(math.nextafter(math.sqrt(0.04 / math.pi), 0.0), 0.0),
+            True,
+        ),
+        (math.sqrt(0.04 / math.pi), False),
+    ],
+)
+def test_absolute_area_floor_boundary_preserves_current_semantics(radius, accepted) -> None:
+    part = _through_perforated_pad(radius)
+    if accepted:
+        records, candidates, ledger = _claim(part)
+        assert len(records) == 1
+        _assert_role(records[0], candidates[0], ledger)
+    else:
+        assert recognise_rectangular_pads(part) == []
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_rectangular_pads(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
 def test_stock_envelope_wall_remains_defining_below_local_base() -> None:
     part = Box(80, 60, 10) + Pos(25, 0, 7) * Box(30, 20, 4)
     (record,), (candidate,), ledger = _claim(part)
@@ -540,8 +574,12 @@ def test_absolute_height_threshold_is_strict(height: float, accepted: bool) -> N
 
 
 @pytest.mark.parametrize(("width", "accepted"), [(0.199, False), (0.2, False), (0.201, True)])
-def test_footprint_width_threshold_is_strict(width: float, accepted: bool) -> None:
-    part = Box(20, 20, 2) + Pos(0, 0, 2) * Box(width, 2, 2)
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_footprint_width_threshold_is_strict(
+    width: float, accepted: bool, axis: str
+) -> None:
+    island = Box(width, 2, 2) if axis == "x" else Box(2, width, 2)
+    part = Box(20, 20, 2) + Pos(0, 0, 2) * island
     if accepted:
         records, candidates, ledger = _claim(part)
         assert len(records) == 1
@@ -556,8 +594,12 @@ def test_footprint_width_threshold_is_strict(width: float, accepted: bool) -> No
 @pytest.mark.parametrize(
     ("width", "accepted"), [(19.598, True), (19.6, False), (19.602, False)]
 )
-def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool) -> None:
-    part = Box(20, 20, 2) + Pos(0, 0, 2) * Box(width, 2, 2)
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_full_span_margin_boundary_is_inclusive(
+    width: float, accepted: bool, axis: str
+) -> None:
+    island = Box(width, 2, 2) if axis == "x" else Box(2, width, 2)
+    part = Box(20, 20, 2) + Pos(0, 0, 2) * island
     if accepted:
         records, candidates, ledger = _claim(part)
         assert len(records) == 1
@@ -572,8 +614,8 @@ def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool) ->
 @pytest.mark.parametrize(
     ("changes", "accepted"),
     [
-        ({"normal_x": 0.99}, True),
-        ({"normal_x": 0.9899}, False),
+        ({"normal_axis": 0.99}, True),
+        ({"normal_axis": 0.9899}, False),
         ({"plane": 0.25}, True),
         ({"plane": 0.2501}, False),
         ({"top": 2.25}, True),
@@ -586,11 +628,14 @@ def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool) ->
         ({"cross_hi": 0.7499}, False),
     ],
 )
-def test_wall_role_predicate_boundaries(changes: dict[str, float], accepted: bool) -> None:
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_wall_role_predicate_boundaries(
+    changes: dict[str, float], accepted: bool, axis: str
+) -> None:
     face = object()
     result = _wall_role(
-        [_wall_fact(face, **changes)],
-        axis="x",
+        [_wall_fact(face, axis=axis, **changes)],
+        axis=axis,
         pos=0,
         lo=-1,
         hi=1,
