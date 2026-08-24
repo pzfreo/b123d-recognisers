@@ -83,6 +83,9 @@ implementation begins. `F5-FLATS-H1` is bucket 20 and is now `consumed`; it rema
 ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
 `all` closed whenever named allocations exist, including consumed allocations; exact named
 selection remains mandatory and generic holdout authority cannot reveal one.
+`F5-FILLETS-H1` is bucket 21 and is `sealed_unrevealed`; it was designated without opening the
+external archive or inspecting bucket-21 membership or outcomes, and only its exact acknowledgement
+can authorize its later semantic-child reveal.
 Repository chronology records no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. A later authorised family issue owns
 the one reveal and the transition to consumed regression evidence. The authorised F5c reveal at
@@ -96,10 +99,11 @@ those exact role semantics remain established by the frozen development adversar
 
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression
-evidence and cannot be fitted. Buckets 20–999 are outside both draws. This keeps each draw near one
+evidence and cannot be fitted. Buckets 22–999 remain unselected; buckets 20 and 21 are the named
+Flat and Fillet allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
-The scanner refuses both `--selection holdout` and `--selection all` unless the authorised caller
-also supplies the explicit `--reveal-holdout` acknowledgement.
+The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
+closed; each named allocation accepts only its own exact acknowledgement.
 
 The version-1 archive contains 301 STEP entries selected for development. Three hundred have both
 annotation files; one (`20240125_003844_9903`) has neither and is recorded as an upstream archive

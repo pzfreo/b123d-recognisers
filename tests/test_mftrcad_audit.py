@@ -8,6 +8,7 @@ import json
 import sys
 from copy import deepcopy
 from pathlib import Path, PureWindowsPath
+from typing import get_args
 
 import pytest
 from build123d import Box, export_step
@@ -19,11 +20,14 @@ from mftrcad_audit import (  # noqa: E402
     DATASET_REF,
     DATASET_VERSION,
     DEVELOPMENT_BUCKETS,
+    F5_FILLETS_H1,
     F5_FLATS_H1,
     FEATURE_LABELS,
     HOLDOUT_BUCKETS,
     NAMED_ALLOCATIONS,
     PACKAGE_FAMILIES_BY_LABEL,
+    SELECTIONS,
+    Selection,
     audit,
     check_compact_baseline,
     compact_baseline,
@@ -71,6 +75,7 @@ def _dataset(tmp_path: Path, *, model_id: str = DEFAULT_MODEL_ID) -> Path:
 
 
 def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
+    assert set(get_args(Selection)) == SELECTIONS
     assert DEVELOPMENT_BUCKETS.isdisjoint(HOLDOUT_BUCKETS)
     assert selection_bucket("20240116_231044_0") == 113
     assert selection_of("20240116_231044_0") == "unselected"
@@ -85,6 +90,7 @@ def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
     assert {value for value in selected.values()} == {
         "development",
         "holdout",
+        "f5_fillets_h1",
         "f5_flats_h1",
     }
     assert not (
@@ -115,15 +121,20 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
     assert selection["selection"]["development_buckets"] == sorted(DEVELOPMENT_BUCKETS)
     assert selection["selection"]["holdout_buckets"] == sorted(HOLDOUT_BUCKETS)
     assert selection["selection"]["named_allocations"] == {
+        F5_FILLETS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_FILLETS_H1]),
+            "status": "sealed_unrevealed",
+        },
         F5_FLATS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_FLATS_H1]),
             "status": "consumed",
         }
     }
-    partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | NAMED_ALLOCATIONS[F5_FLATS_H1]
-    assert len(partition) == 21
-    assert partition.isdisjoint(set(range(21, 1000)))
-    assert partition | set(range(21, 1000)) == set(range(1000))
+    partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
+    assert len(partition) == 22
+    assert partition.isdisjoint(set(range(22, 1000)))
+    assert partition | set(range(22, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[22, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -173,61 +184,97 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         lambda files, **kwargs: opened.append(files.model_id),
     )
 
-    with pytest.raises(ValueError, match="selection 'all' is closed"):
+    with pytest.raises(
+        ValueError, match="selection 'all' is closed while named allocations exist"
+    ):
         audit(root, selection="all", annotations_only=True)
     assert opened == []
 
 
-def test_named_allocation_requires_exact_nontransferable_authority(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("token", "policy_id", "bucket", "status"),
+    [
+        ("f5_flats_h1", F5_FLATS_H1, 20, "consumed"),
+        ("f5_fillets_h1", F5_FILLETS_H1, 21, "sealed_unrevealed"),
+    ],
+)
+def test_named_allocation_requires_exact_nontransferable_authority(
+    tmp_path: Path, token: str, policy_id: str, bucket: int, status: str
+) -> None:
     model_id = next(
-        f"flats-{at}"
+        f"{token}-{at}"
         for at in range(10_000)
-        if selection_of(f"flats-{at}") == "f5_flats_h1"
+        if selection_of(f"{token}-{at}") == token
     )
     root = _dataset(tmp_path, model_id=model_id)
 
-    with pytest.raises(ValueError, match="requires exact acknowledgement 'F5-FLATS-H1'"):
-        audit(root, selection="f5_flats_h1", annotations_only=True)
-    with pytest.raises(ValueError, match="requires exact acknowledgement 'F5-FLATS-H1'"):
-        discover_models(root, selection="f5_flats_h1", allow_holdout=True)
+    with pytest.raises(ValueError, match=f"requires exact acknowledgement '{policy_id}'"):
+        audit(root, selection=token, annotations_only=True)
+    with pytest.raises(ValueError, match=f"requires exact acknowledgement '{policy_id}'"):
+        discover_models(root, selection=token, allow_holdout=True)
     with pytest.raises(ValueError, match="does not accept reveal authority"):
         audit(
             root,
             selection="development",
             annotations_only=True,
-            reveal_allocations=frozenset({F5_FLATS_H1}),
+            reveal_allocations=frozenset({policy_id}),
         )
 
     report = audit(
         root,
-        selection="f5_flats_h1",
+        selection=token,
         annotations_only=True,
-        reveal_allocations=frozenset({F5_FLATS_H1}),
+        reveal_allocations=frozenset({policy_id}),
     )
     allocation = report["sealed_allocation"]
-    assert allocation["id"] == F5_FLATS_H1
-    assert allocation["buckets"] == [20]
-    assert allocation["policy_status"] == "consumed"
+    assert allocation["id"] == policy_id
+    assert allocation["buckets"] == [bucket]
+    assert allocation["policy_status"] == status
     assert allocation["selection_policy_schema_version"] == 1
     assert allocation["selection_namespace"] == audit_module.SELECTION_NAMESPACE
     assert allocation["selection_modulus"] == audit_module.SELECTION_MODULUS
     assert len(allocation["selection_policy_sha256"]) == 64
 
 
-def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path) -> None:
+def test_fillets_allocation_requires_its_own_exact_authority(tmp_path: Path) -> None:
+    model_id = next(
+        f"fillets-{at}"
+        for at in range(10_000)
+        if selection_of(f"fillets-{at}") == "f5_fillets_h1"
+    )
+    root = _dataset(tmp_path, model_id=model_id)
+    for authority in (
+        frozenset(),
+        frozenset({F5_FLATS_H1}),
+        frozenset({F5_FLATS_H1, F5_FILLETS_H1}),
+    ):
+        with pytest.raises(ValueError, match="requires exact acknowledgement 'F5-FILLETS-H1'"):
+            audit(
+                root,
+                selection="f5_fillets_h1",
+                annotations_only=True,
+                reveal_allocations=authority,
+            )
+@pytest.mark.parametrize("token", ["f5_flats_h1", "f5_fillets_h1"])
+def test_named_allocation_refuses_before_touching_the_root(
+    tmp_path: Path, token: str
+) -> None:
     missing = tmp_path / "must-not-be-read"
     with pytest.raises(ValueError, match="requires exact acknowledgement"):
-        audit(missing, selection="f5_flats_h1", annotations_only=True)
+        audit(missing, selection=token, annotations_only=True)
+    with pytest.raises(ValueError, match="requires exact acknowledgement"):
+        discover_models(missing, selection=token)
     with pytest.raises(ValueError, match="requires exact acknowledgement"):
         audit_module._discover(
             missing,
-            selection="f5_flats_h1",
+            selection=token,
             record_invalid=False,
         )
 
 
+@pytest.mark.parametrize("token", ["f5_flats_h1", "f5_fillets_h1"])
 def test_cli_named_allocation_refuses_before_touching_the_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, token: str
 ) -> None:
     monkeypatch.setattr(
         sys,
@@ -236,7 +283,7 @@ def test_cli_named_allocation_refuses_before_touching_the_root(
             "mftrcad_audit.py",
             str(tmp_path / "must-not-be-read"),
             "--selection",
-            "f5_flats_h1",
+            token,
         ],
     )
     with pytest.raises(ValueError, match="requires exact acknowledgement"):
@@ -283,7 +330,7 @@ def test_unknown_selection_fails_before_touching_the_root(tmp_path: Path, entry:
             "named allocations differ",
         ),
         (
-            lambda policy: policy["selection"].update(unselected_buckets="20..999"),
+            lambda policy: policy["selection"].update(unselected_bucket_ranges=[[21, 999]]),
             "unselected complement differs",
         ),
     ],
@@ -311,6 +358,19 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
         ),
         (
             audit_module.AllocationSpec(
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "consumed"
+            ),
+            audit_module.AllocationSpec(
+                "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "sealed_unrevealed"
+            ),
+        ),
+        (
+            audit_module.AllocationSpec(
+                "F5-OTHER-H1", "f5_other_h1", frozenset({10}), "sealed_unrevealed"
+            ),
+        ),
+        (
+            audit_module.AllocationSpec(
                 "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
             ),
             audit_module.AllocationSpec(
@@ -325,15 +385,16 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
     ],
 )
 def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> None:
-    with pytest.raises(ValueError, match="unique|canonical"):
+    with pytest.raises(ValueError, match="unique|canonical|disjoint"):
         audit_module._validate_allocation_specs(specs)
 
 
-def test_unselected_excludes_a_named_allocation(tmp_path: Path) -> None:
+@pytest.mark.parametrize("named", ["f5_flats_h1", "f5_fillets_h1"])
+def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
     sealed = next(
-        f"sealed-{at}"
+        f"sealed-{named}-{at}"
         for at in range(10_000)
-        if selection_of(f"sealed-{at}") == "f5_flats_h1"
+        if selection_of(f"sealed-{named}-{at}") == named
     )
     ordinary = next(
         f"ordinary-{at}"
