@@ -229,7 +229,17 @@ class BlendCollapseIndex:
                 raise ValueError("selected blend chains share original arcs")
             seen_blends.update(chain.blend_nodes)
             seen_arcs.update(occurrences)
-        return selected
+        return tuple(
+            sorted(
+                selected,
+                key=lambda chain: (
+                    min(node.index for node in chain.blend_nodes),
+                    tuple(_arc_key(arc) for arc in chain.spring_arcs),
+                    tuple(_arc_key(arc) for arc in chain.internal_arcs),
+                    tuple(_arc_key(arc) for arc in chain.terminal_arcs),
+                ),
+            )
+        )
 
     def _fact(self, node: FaceNode) -> AnalyticSurfaceFact | None:
         fact = self._surfaces.fact(node)

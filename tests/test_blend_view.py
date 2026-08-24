@@ -628,6 +628,24 @@ def test_discovery_and_provenance_use_graph_owned_order_not_set_or_input_order()
         combined = (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
         assert _edge_groups(combined) == _edge_groups(tuple(reversed(combined)))
 
+    def view_signature(selected):
+        view = index.view(selected)
+        nodes = view.logical_nodes()
+        return tuple(
+            (
+                tuple(sorted(source.index for source in view.expand_node(arc.endpoints[0]))),
+                tuple(sorted(source.index for source in view.expand_node(arc.endpoints[1]))),
+                arc.kind,
+                arc.synthetic,
+                tuple(arc_key(original) for original in view.expand_arc(arc).arcs),
+            )
+            for at, left in enumerate(nodes)
+            for right in nodes[at + 1 :]
+            for arc in view.arcs_between(left, right)
+        )
+
+    assert view_signature(chains) == view_signature(tuple(reversed(chains)))
+
     # Rebuild from fresh graph-owned occurrences and compare correspondence, never identity.
     other_graph, other_index = _index(_external())
     assert [
