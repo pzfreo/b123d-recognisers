@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import ast
 import copy
+from pathlib import Path
 
 import pytest
 from build123d import (
@@ -17,6 +19,7 @@ from build123d import (
     export_step,
     import_step,
 )
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -28,6 +31,28 @@ from b123d_recognisers.profiled_bores import (
 from b123d_recognisers.result import _take_inventory
 
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)
+
+
+def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                aliases[local] = alias.name if alias.asname else alias.name.split(".")[0]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+
+    def name(node: ast.expr) -> str:
+        if isinstance(node, ast.Name):
+            return aliases.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            base = name(node.value)
+            return f"{base}.{node.attr}" if base else node.attr
+        return ""
+
+    return [(name(node.func), node) for node in ast.walk(tree) if isinstance(node, ast.Call)]
 
 
 def _tool(height: float = 20, *, across: float = 7.2):
@@ -58,15 +83,63 @@ def _claimed(part):
 
 def _assert_wall_role(ledger, record, candidate) -> None:
     defining = ledger.defining_of(candidate)
-    assert len(defining) == 4
-    faces = [ledger.graph.face(node) for node in defining]
-    assert [face.geom_type for face in faces].count(GeomType.PLANE) == 2
-    assert [face.geom_type for face in faces].count(GeomType.CYLINDER) == 2
     axis = next(at for at, value in enumerate(record.axis) if value)
-    bounds = [ledger.graph.bounds(node)[axis] for node in defining]
     low = record.location[axis] - record.depth
     high = record.location[axis]
-    assert all(pair == pytest.approx((low, high), abs=1e-6) for pair in bounds)
+    flat = record.flat_direction
+    metric_tol = record.major_diameter * 1e-3
+
+    def establishes(node) -> bool:
+        face = ledger.graph.face(node)
+        if face.geom_type not in (GeomType.PLANE, GeomType.CYLINDER):
+            return False
+        bounds = ledger.graph.bounds(node)[axis]
+        if bounds[0] < low - metric_tol or bounds[1] > high + metric_tol:
+            return False
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if face.geom_type == GeomType.PLANE:
+            plane = surface.Plane()
+            normal = plane.Axis().Direction()
+            values = (normal.X(), normal.Y(), normal.Z())
+            if abs(abs(sum(values[i] * flat[i] for i in range(3))) - 1.0) > 1e-4:
+                return False
+            location = plane.Location()
+            offset = abs(
+                sum(
+                    ((location.X(), location.Y(), location.Z())[i] - record.location[i])
+                    * flat[i]
+                    for i in range(3)
+                )
+            )
+            valid = abs(offset - record.across_flats / 2) <= metric_tol
+        else:
+            cylinder = surface.Cylinder()
+            direction = cylinder.Axis().Direction()
+            components = (direction.X(), direction.Y(), direction.Z())
+            location = cylinder.Axis().Location()
+            axis_point = (location.X(), location.Y(), location.Z())
+            valid = (
+                abs(abs(components[axis]) - 1.0) <= 1e-4
+                and abs(cylinder.Radius() - record.major_diameter / 2) <= metric_tol
+                and all(
+                    abs(axis_point[i] - record.location[i]) <= metric_tol
+                    for i in range(3)
+                    if i != axis
+                )
+            )
+        if not valid:
+            return False
+        center = face.center()
+        normal = face.normal_at()
+        radial = [record.location[i] - (center.X, center.Y, center.Z)[i] for i in range(3)]
+        radial[axis] = 0.0
+        return sum(radial[i] * (normal.X, normal.Y, normal.Z)[i] for i in range(3)) > metric_tol
+
+    expected = frozenset(node for node in ledger.graph.nodes if establishes(node))
+    assert expected == defining
+    faces = [ledger.graph.face(node) for node in expected]
+    assert [face.geom_type for face in faces].count(GeomType.PLANE) >= 2
+    assert [face.geom_type for face in faces].count(GeomType.CYLINDER) >= 2
     assert ledger.graph.common_valid_solid(defining) is not None
 
 
@@ -171,9 +244,92 @@ def test_late_body_validation_failure_leaves_no_prefix(monkeypatch) -> None:
     assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
 
 
+def test_late_binding_failure_leaves_no_prefix(monkeypatch) -> None:
+    part = Compound([Pos(-30, 0, 0) * _plate(), Pos(30, 0, 0) * _plate()])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.require_node
+    calls = 0
+
+    def fail_late(face):
+        nonlocal calls
+        calls += 1
+        if calls > 4:
+            raise ValueError("late binding refusal")
+        return original(face)
+
+    monkeypatch.setattr(ledger.graph, "require_node", fail_late)
+    with pytest.raises(ValueError, match="late binding refusal"):
+        _discover_double_d_bores(part, writer=ledger.writer)
+    assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
+def test_cross_occurrence_wall_reuse_refuses_before_publication(monkeypatch) -> None:
+    import b123d_recognisers.profiled_bores as module
+
+    part = Compound([Pos(-30, 0, 0) * _plate(), Pos(30, 0, 0) * _plate()])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._complete_wall_component
+    first = None
+
+    def reuse_first(*args, **kwargs):
+        nonlocal first
+        walls = original(*args, **kwargs)
+        if first is None:
+            first = walls
+        return first
+
+    monkeypatch.setattr(module, "_complete_wall_component", reuse_first)
+    with pytest.raises(ValueError, match="assigned across occurrences"):
+        _discover_double_d_bores(part, writer=ledger.writer)
+    assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
 def test_foreign_writer_refuses_before_publication() -> None:
     part = _plate()
     foreign = ClaimLedger(FaceGraph(Pos(50, 0, 0) * _plate()))
     with pytest.raises(ValueError, match="different part|does not belong"):
         _discover_double_d_bores(part, writer=foreign.writer)
     assert foreign.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
+def test_only_registry_may_call_writer_enabled_core() -> None:
+    root = Path(__file__).parents[1]
+    sites: list[tuple[str, bool]] = []
+    for path in (root / "src").rglob("*.py"):
+        if path.name == "profiled_bores.py":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for qualified, node in _qualified_calls(tree):
+            if qualified == "b123d_recognisers.profiled_bores._discover_double_d_bores":
+                sites.append(
+                    (
+                        path.name,
+                        any(
+                            keyword.arg == "writer" and ast.unparse(keyword.value) == "s.writer"
+                            for keyword in node.keywords
+                        ),
+                    )
+                )
+    assert sites == [("_registry.py", True)]
+
+
+def test_constructor_and_void_prism_path_roster_is_closed() -> None:
+    path = Path(__file__).parents[1] / "src/b123d_recognisers/profiled_bores.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    sites: list[tuple[str, str]] = []
+    for qualified, node in _qualified_calls(tree):
+        if qualified in {"DoubleDBore", "build123d.Solid.extrude"}:
+            function = next(
+                (
+                    parent.name
+                    for parent in ast.walk(tree)
+                    if isinstance(parent, ast.FunctionDef) and node in ast.walk(parent)
+                ),
+                "",
+            )
+            sites.append((qualified, function))
+    assert sites == [
+        ("DoubleDBore", "double_d_bores_from_openings"),
+        ("build123d.Solid.extrude", "double_d_bores_from_openings"),
+        ("build123d.Solid.extrude", "read_double_d_tool"),
+    ]

@@ -147,35 +147,132 @@ def _complete_wall_component(
                     for i in range(3)
                 )
             )
-            return abs(offset - profile.across_flats / 2.0) <= metric_tol
+            valid_support = abs(offset - profile.across_flats / 2.0) <= metric_tol
+        else:
+            cylinder = surface.Cylinder()
+            direction = cylinder.Axis().Direction()
+            components = (direction.X(), direction.Y(), direction.Z())
+            if abs(abs(components[axis_i]) - 1.0) > 1e-4:
+                return False
+            location = cylinder.Axis().Location()
+            axis_point = (location.X(), location.Y(), location.Z())
+            valid_support = (
+                abs(cylinder.Radius() - profile.major_diameter / 2.0) <= metric_tol
+                and all(
+                    abs(axis_point[i] - centre[i]) <= metric_tol
+                    for i in range(3)
+                    if i != axis_i
+                )
+            )
+        if not valid_support:
+            return False
+        point = face.center()
+        normal = face.normal_at()
+        point_values = (float(point.X), float(point.Y), float(point.Z))
+        normal_values = (float(normal.X), float(normal.Y), float(normal.Z))
+        # A void wall's material-outward normal points from the wall into the profile void.
+        radial_to_void = [centre[i] - point_values[i] for i in range(3)]
+        radial_to_void[axis_i] = 0.0
+        return sum(radial_to_void[i] * normal_values[i] for i in range(3)) > metric_tol
+
+    def support(face):
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if face.geom_type == GeomType.PLANE:
+            plane = surface.Plane()
+            normal = plane.Axis().Direction()
+            values = (normal.X(), normal.Y(), normal.Z())
+            location = plane.Location()
+            offset = sum(
+                (location.X(), location.Y(), location.Z())[i] * values[i]
+                for i in range(3)
+            )
+            if next(value for value in values if abs(value) > 1e-9) < 0:
+                values = tuple(-value for value in values)
+                offset = -offset
+            return ("plane", *(round(value, 8) for value in values), round(offset, 8))
         cylinder = surface.Cylinder()
         direction = cylinder.Axis().Direction()
         components = (direction.X(), direction.Y(), direction.Z())
-        if abs(abs(components[axis_i]) - 1.0) > 1e-4:
-            return False
         location = cylinder.Axis().Location()
         axis_point = (location.X(), location.Y(), location.Z())
-        return abs(cylinder.Radius() - profile.major_diameter / 2.0) <= metric_tol and all(
-            abs(axis_point[i] - centre[i]) <= metric_tol for i in range(3) if i != axis_i
+        return (
+            "cylinder",
+            round(abs(components[axis_i]), 8),
+            *(round(axis_point[i], 8) for i in range(3) if i != axis_i),
+            round(cylinder.Radius(), 8),
         )
 
-    pending = list(low_seeds)
-    component: list = []
-    while pending:
-        face = pending.pop()
-        if any(_same_shape(face, known) for known in component):
-            continue
-        if not lateral(face):
+    def chain(seed) -> tuple[FaceLike, ...]:
+        if not lateral(seed):
             return ()
-        component.append(face)
-        for edge in face_edges.of(face):
-            for other in incidence.get(edge, ()):
-                if lateral(other) and not any(_same_shape(other, known) for known in component):
-                    pending.append(other)
+        role = support(seed)
+        pending = [seed]
+        found: list[FaceLike] = []
+        while pending:
+            face = pending.pop()
+            if any(_same_shape(face, known) for known in found):
+                continue
+            if not lateral(face) or support(face) != role:
+                continue
+            found.append(face)
+            for edge in face_edges.of(face):
+                for other in incidence.get(edge, ()):
+                    if not any(_same_shape(other, known) for known in found):
+                        pending.append(other)
+        return tuple(found)
 
-    if not all(any(_same_shape(seed, face) for face in component) for seed in high_seeds):
+    chains = [chain(seed) for seed in low_seeds]
+    if any(not chain_faces for chain_faces in chains):
         return ()
-    return tuple(face for face in faces if any(_same_shape(face, wall) for wall in component))
+    # Each low role must reach exactly one high role, and every high role is consumed once.
+    high_assignments: list[int] = []
+    for chain_faces in chains:
+        matches = [
+            at
+            for at, seed in enumerate(high_seeds)
+            if any(_same_shape(seed, face) for face in chain_faces)
+        ]
+        if len(matches) != 1:
+            return ()
+        high_assignments.append(matches[0])
+    if len(set(high_assignments)) != 4:
+        return ()
+
+    seen: list[FaceLike] = []
+    for chain_faces in chains:
+        if any(any(_same_shape(face, prior) for prior in seen) for face in chain_faces):
+            return ()
+        intervals = sorted(
+            (
+                float(getattr(face.bounding_box().min, attr)),
+                float(getattr(face.bounding_box().max, attr)),
+            )
+            for face in chain_faces
+        )
+        cursor = lo
+        for start, end in intervals:
+            if start > cursor + metric_tol or start < cursor - metric_tol:
+                return ()
+            cursor = end
+        if abs(cursor - hi) > metric_tol:
+            return ()
+        # Same-support adjacency must be one path, not a branch or cycle.
+        if len(chain_faces) > 1:
+            degrees = []
+            for face in chain_faces:
+                adjacent = {
+                    id(other)
+                    for edge in face_edges.of(face)
+                    for other in incidence.get(edge, ())
+                    if any(_same_shape(other, candidate) for candidate in chain_faces)
+                    and not _same_shape(other, face)
+                }
+                degrees.append(len(adjacent))
+            if any(degree > 2 for degree in degrees) or degrees.count(1) != 2:
+                return ()
+        seen.extend(chain_faces)
+
+    return tuple(face for face in faces if any(_same_shape(face, wall) for wall in seen))
 
 
 def principal_boundary_plane(face, bbox) -> tuple[str, tuple[str, str], float] | None:
@@ -494,6 +591,7 @@ def _discover_double_d_bores(
     by_occurrence = {id(proposal.record): proposal for proposal in proposals}
     ordered_proposals = [by_occurrence[id(record)] for record in ordered]
     pending: list[tuple[DoubleDBore, tuple]] = []
+    assigned_nodes: set[int] = set()
     for proposal in ordered_proposals:
         if not proposal.wall_faces:
             raise ValueError("Double-D bore has no complete original wall component")
@@ -502,6 +600,9 @@ def _discover_double_d_bores(
         nodes = tuple(node for node in writer.graph.nodes if id(node) in node_ids)
         if not nodes or writer.graph.common_valid_solid(nodes) is None:
             raise ValueError("Double-D wall evidence has no one valid owner solid")
+        if assigned_nodes & node_ids:
+            raise ValueError("Double-D wall evidence is assigned across occurrences")
+        assigned_nodes.update(node_ids)
         pending.append((proposal.record, nodes))
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.DOUBLE_D_BORES)

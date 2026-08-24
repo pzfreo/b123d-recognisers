@@ -299,6 +299,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "Double-D planar chord-wall branch",
     ),
+    "profiled_bores:support:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "Double-D logical wall support identity",
+    ),
+    "profiled_bores:support:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "Double-D plane/cylinder support branch",
+    ),
     "profiled_bores:double_d_profile:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "line boundary edge gate",

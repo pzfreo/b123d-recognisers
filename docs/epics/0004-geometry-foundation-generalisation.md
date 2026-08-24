@@ -807,11 +807,19 @@ unselected complement to 25..999. Its sole purpose is the later one-shot Double-
 chronology; the neutral seal creates no recognition, evidence, result, or corpus-outcome claim.
 
 The F5g implementation uses one private `profiled_bores._discover_double_d_bores` core. Each exact
-low/high four-edge opening pair seeds a connected component of original planar chord-wall and
-cylindrical arc-wall faces. Every complete component is resolved in graph order and proved to have
+low/high four-edge opening pair seeds four role-labelled chains of original planar chord-wall and
+cylindrical arc-wall faces. Same-support inward continuations must pair one low seed to one high
+seed, cover the serialized interval without overlap/gap, remain nonbranching and stay disjoint
+across roles and occurrences. Every complete union is resolved in graph order and proved to have
 one valid SolidRef before publication; only those lateral faces are defining. End planes, opening
 wires, per-solid extrema and the empty-prism boolean remain consulted facts establishing eligibility,
 throughness, high-end location and depth. The public facade remains writer-free and output-identical.
+
+OCCT healing of native and ordinary STEP Double-D tools retains one full-span face per logical wall;
+the current development fixture therefore cannot supply a positive middle axial patch. The
+production chain grammar and interval checks admit consecutive disjoint/meeting axial patches, while
+the imported ordinary fixture proves role correspondence. A future valid one-solid axial subdivision
+must add an exact all-patch regression before it can be claimed as observed positive evidence.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same

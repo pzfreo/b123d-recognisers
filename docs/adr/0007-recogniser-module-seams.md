@@ -266,8 +266,10 @@ inventory, reconciliation or another family output.
 
 For F5g, `profiled_bores._discover_double_d_bores` is the sole private writer-enabled Double-D
 core and `_registry` its sole production writer caller. The public facade delegates without a
-writer. The core uses the shared adjacency incidence authority to seed the four lateral wall roles
-from both exact openings and retain their original connected patches; it does not create another
-edge-owner store. Every complete graph-ordered wall set binds to one valid SolidRef before the first
-Candidate is issued. End planes, opening profiles, bbox extrema and void-prism results remain
-consulted, and the core cannot read claims, frozen evidence, inventory or reconciliation.
+writer. The core uses shared adjacency incidence to seed four role-labelled lateral chains from
+both exact openings. Traversal crosses only same-support, inward-facing continuations; each chain
+must consume one high seed, cover the full interval without overlap/gap, remain nonbranching, and
+stay disjoint from every other role/occurrence. It creates no parallel edge-owner store. Every
+complete graph-ordered wall set binds to one valid SolidRef before first issuance. End planes,
+opening profiles, bbox extrema and void-prism results remain consulted, and the core cannot read
+claims, frozen evidence, inventory or reconciliation.
