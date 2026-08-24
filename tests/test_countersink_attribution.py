@@ -273,8 +273,14 @@ def test_connected_external_stepped_shaft_false_positive_remains_attributed() ->
 
 
 def test_centre_drill_geometry_false_positive_remains_attributed() -> None:
-    _ledger, records = _claimed(_angle_plate(60.0))
+    depth = 4.0
+    major = 2 + depth * math.tan(math.radians(30))
+    centre_drilled = (
+        Cylinder(20, 30) - Pos(0, 0, 10) * Cylinder(2, 10) - Pos(0, 0, 13) * Cone(2, major, depth)
+    )
+    _ledger, records = _claimed(centre_drilled)
     assert len(records) == 1
+    assert records[0].included_angle == 60.0
 
 
 def test_translation_and_uniform_scale_keep_owner_correspondence() -> None:
@@ -304,6 +310,7 @@ def test_rejected_shapes_issue_no_countersink_candidate(part) -> None:
     [
         Compound([Cone(0, 6, 3), Cylinder(3, 4)]),
         Cone(3, 6, 3),
+        Compound([Cone(3, 8, 10) & Rot(20, 0, 0) * Box(30, 30, 2), Cylinder(3, 4)]),
         Box(40, 40, 12) - Cylinder(5, 4) - Cylinder(3, 12),
     ],
 )

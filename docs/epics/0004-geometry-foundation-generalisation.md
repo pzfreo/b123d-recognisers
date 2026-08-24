@@ -748,6 +748,14 @@ retain circular-arc boundary geometry and remains accepted. F5e pins that as a r
 only non-circular or insufficient rim geometry is negative. Tightening trim/full-circle semantics is
 a separate behavior-changing prerequisite, not an attribution fix.
 
+The negative matrix separately constructs a cone trimmed between two oblique non-circular
+boundaries and proves empty public/writer output, while an apex drill-point proves the insufficient
+rim branch. A real turned workpiece with pilot bore and 60-degree end cone pins the documented
+centre-drill false positive. As in F5c/F5d, OCCT does not provide a valid closed nonmanifold Solid
+with one unambiguous owner cone: attempted extra edge incidence becomes open/invalid or ambiguous.
+The real open Shell plus late graph/body refusal is the bounded family evidence; a vacuous
+nonmanifold no-output shape is not counted as a distinct execution path.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
