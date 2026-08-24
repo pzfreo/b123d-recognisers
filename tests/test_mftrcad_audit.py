@@ -298,6 +298,37 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
         audit_module._validate_selection_policy(changed)
 
 
+@pytest.mark.parametrize(
+    "specs",
+    [
+        (
+            audit_module.AllocationSpec(
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
+            ),
+            audit_module.AllocationSpec(
+                "F5-FLATS-H1", "f5_other_h1", frozenset({21}), "sealed_unrevealed"
+            ),
+        ),
+        (
+            audit_module.AllocationSpec(
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
+            ),
+            audit_module.AllocationSpec(
+                "F5-OTHER-H1", "f5_flats_h1", frozenset({21}), "sealed_unrevealed"
+            ),
+        ),
+        (
+            audit_module.AllocationSpec(
+                "F5-FLATS-H1", "F5-FLATS-H1", frozenset({20}), "sealed_unrevealed"
+            ),
+        ),
+    ],
+)
+def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> None:
+    with pytest.raises(ValueError, match="unique|canonical"):
+        audit_module._validate_allocation_specs(specs)
+
+
 def test_unselected_excludes_a_named_allocation(tmp_path: Path) -> None:
     sealed = next(
         f"sealed-{at}"

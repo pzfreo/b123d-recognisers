@@ -33,12 +33,59 @@ SELECTION_MODULUS: Final = 1000
 DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 10))
 HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
 F5_FLATS_H1: Final = "F5-FLATS-H1"
-NAMED_ALLOCATIONS: Final = {F5_FLATS_H1: frozenset({20})}
-ALLOCATION_SELECTIONS: Final = {"f5_flats_h1": F5_FLATS_H1}
-ALLOCATION_STATUSES: Final = {F5_FLATS_H1: "sealed_unrevealed"}
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
+
+
+@dataclass(frozen=True, slots=True)
+class AllocationSpec:
+    policy_id: str
+    selection_token: str
+    buckets: frozenset[int]
+    status: str
+
+
+ALLOCATION_SPECS: Final = (
+    AllocationSpec(F5_FLATS_H1, "f5_flats_h1", frozenset({20}), "sealed_unrevealed"),
+)
+
+
+def _validate_allocation_specs(
+    specs: tuple[AllocationSpec, ...],
+) -> tuple[AllocationSpec, ...]:
+    ids = [spec.policy_id for spec in specs]
+    tokens = [spec.selection_token for spec in specs]
+    if len(ids) != len(set(ids)) or len(tokens) != len(set(tokens)):
+        raise ValueError("allocation policy ids and selection tokens must be unique")
+    if any(
+        not spec.policy_id.replace("-", "").isalnum()
+        or spec.policy_id.upper() != spec.policy_id
+        or not spec.selection_token.isidentifier()
+        or spec.selection_token.lower() != spec.selection_token
+        for spec in specs
+    ):
+        raise ValueError("allocation policy ids or selection tokens are not canonical")
+    if any(spec.status not in {"sealed_unrevealed", "consumed"} for spec in specs):
+        raise ValueError("allocation status is not closed")
+    if any(
+        not spec.buckets
+        or any(
+            not isinstance(bucket, int) or isinstance(bucket, bool) or not 0 <= bucket < 1000
+            for bucket in spec.buckets
+        )
+        for spec in specs
+    ):
+        raise ValueError("allocation buckets must be nonempty exact integers in range")
+    return specs
+
+
+_validate_allocation_specs(ALLOCATION_SPECS)
+NAMED_ALLOCATIONS: Final = {spec.policy_id: spec.buckets for spec in ALLOCATION_SPECS}
+ALLOCATION_SELECTIONS: Final = {
+    spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS
+}
+ALLOCATION_STATUSES: Final = {spec.policy_id: spec.status for spec in ALLOCATION_SPECS}
 
 FEATURE_LABELS: Final = {
     0: "chamfer",
