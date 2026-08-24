@@ -12,13 +12,14 @@ from build123d import Box, Pos
 
 import b123d_recognisers as public
 import b123d_recognisers.result as result_module
+from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._record import Record
 from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
-    CompletedInputs,
     Counted,
     DerivedId,
     FullyAttributed,
@@ -159,7 +160,10 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
         DerivedId.SLOT_PATTERNS: (FamilyId.SLOTS,),
         DerivedId.POCKET_PATTERNS: (FamilyId.POCKETS,),
     }
-    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: ()})
+    ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())
+    holes = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    completed = ledger.restricted_inputs(holes)
     accepted = AcceptedInputs.restricted((FamilyId.SLOTS,), {FamilyId.SLOTS: ()})
     with pytest.raises(ValueError, match="not a declared"):
         completed.records(FamilyId.SLOTS, object)
@@ -168,9 +172,12 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
 
 
 def test_registry_rejects_wrong_typed_dependency_values() -> None:
-    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: (object(),)})
+    ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, (object(),))
+    holes = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    completed = ledger.restricted_inputs(holes)
     with pytest.raises(TypeError, match="wrong record type"):
-        completed.records(FamilyId.HOLES, public.HoleRecord)
+        completed.records(FamilyId.COUNTERSINKS, public.CounterSink)
 
     accepted = AcceptedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: (object(),)})
     with pytest.raises(TypeError, match="wrong record type"):
@@ -178,14 +185,19 @@ def test_registry_rejects_wrong_typed_dependency_values() -> None:
 
 
 def test_registry_distinguishes_an_empty_dependency_from_one_not_run() -> None:
-    completed = CompletedInputs.restricted((FamilyId.HOLES,), {FamilyId.HOLES: ()})
-    assert completed.records(FamilyId.HOLES, public.HoleRecord) == ()
+    ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())
+    holes = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.HOLES)
+    completed = ledger.restricted_inputs(holes)
+    assert completed.records(FamilyId.COUNTERSINKS, public.CounterSink) == ()
 
     with pytest.raises(ValueError, match="has not completed"):
-        CompletedInputs.restricted((FamilyId.HOLES,), {})
+        ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS).restricted_inputs(
+            holes
+        )
 
 
-def test_inapplicable_family_is_not_published_as_a_completed_dependency(monkeypatch) -> None:
+def test_inapplicable_family_completes_as_an_empty_dependency(monkeypatch) -> None:
     turned = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.TURNED_STEPS)
     definitions = tuple(
         replace(item, applicable=prismatic) if item is turned else item
@@ -193,8 +205,8 @@ def test_inapplicable_family_is_not_published_as_a_completed_dependency(monkeypa
     )
     monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
 
-    with pytest.raises(ValueError, match="turned_steps"):
-        result_module.build_recognition_result(Box(20, 20, 10), rotational=True)
+    result = result_module.build_recognition_result(Box(20, 20, 10), rotational=True)
+    assert result.turned_steps == ()
 
 
 def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> None:

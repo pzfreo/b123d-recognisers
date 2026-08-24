@@ -157,6 +157,15 @@ adapters receive only their declared accepted physical sources after reconciliat
 therefore makes orchestration dependencies executable without introducing a recogniser base class,
 filesystem discovery, dynamic imports or plugin behavior.
 
+Issue #219 makes that restricted physical view an issuer-owned capability rather than a caller-
+constructed mapping. Orchestration completes each registry family exactly once, then asks the
+issuer for an opaque input object bound to the next definition's exact declared predecessor roster.
+The registry adapter may read validated record identity and original-node/common-solid provenance
+from those predecessor handles, but cannot construct, copy, broaden or enumerate the view. Family
+modules continue to receive only their own write capability; they do not import CandidateInventory,
+EvidenceIndex, disposition, result or reconciliation layers. The exact completed CandidateSet is
+reused by terminal inventory, so no parallel dependency ledger exists.
+
 The authority boundary is deliberately narrow. Registry definitions drive internal discovery
 order, applicability, physical completeness and derived pattern order. Typed `RecognitionResult`
 projection, public exports, capability/schema metadata and the stable census key order remain

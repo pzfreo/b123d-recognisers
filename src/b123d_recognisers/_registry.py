@@ -16,7 +16,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TypeAlias, TypeVar, cast
 
-from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._candidates import CompletedInputs, FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import (
     BoltCircle,
@@ -122,39 +122,6 @@ class DiscoveryServices:
 
 
 RecordT = TypeVar("RecordT")
-
-
-@dataclass(frozen=True, slots=True)
-class CompletedInputs:
-    """Read-only records for exactly one definition's declared predecessors."""
-
-    _allowed: frozenset[FamilyId]
-    _records: Mapping[FamilyId, tuple[object, ...]]
-
-    @classmethod
-    def restricted(
-        cls,
-        allowed: tuple[FamilyId, ...],
-        completed: Mapping[FamilyId, tuple[object, ...]],
-    ) -> CompletedInputs:
-        missing = tuple(family for family in allowed if family not in completed)
-        if missing:
-            raise ValueError(
-                "declared physical dependency has not completed: "
-                + ", ".join(family.value for family in missing)
-            )
-        return cls(
-            frozenset(allowed),
-            MappingProxyType({family: completed[family] for family in allowed}),
-        )
-
-    def records(self, family: FamilyId, record_type: type[RecordT]) -> tuple[RecordT, ...]:
-        if family not in self._allowed:
-            raise ValueError(f"{family.value} is not a declared physical dependency")
-        records = self._records[family]
-        if not all(isinstance(record, record_type) for record in records):
-            raise TypeError(f"{family.value} dependency has the wrong record type")
-        return cast(tuple[RecordT, ...], records)
 
 
 @dataclass(frozen=True, slots=True)

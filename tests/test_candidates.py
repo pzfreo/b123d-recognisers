@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from math import sqrt
+from types import SimpleNamespace
 
 import pytest
 from build123d import Box, Face, Plane, Pos, Rot
@@ -16,6 +17,8 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import (
     Candidate,
     CandidateSet,
+    CompletedInputs,
+    CompletedOccurrence,
     Evidence,
     FamilyId,
     Observation,
@@ -23,11 +26,21 @@ from b123d_recognisers._candidates import (
     SplitTriangularTerminalFact,
 )
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 
 
 @dataclass(frozen=True)
 class Record:
     value: int
+
+
+def _definition(family: FamilyId):
+    return next(item for item in PHYSICAL_DEFINITIONS if item.family is family)
+
+
+def _registry_ledger(part=None) -> ClaimLedger:
+    part = Box(10, 10, 10) if part is None else part
+    return ClaimLedger(FaceGraph(part), definitions=PHYSICAL_DEFINITIONS)
 
 
 def test_equal_records_remain_distinct_sink_issued_candidates() -> None:
@@ -403,6 +416,165 @@ def test_family_binding_rejects_wrong_family_and_omitted_proposals() -> None:
     omitted.propose(FamilyId.SLOTS, second)
     with pytest.raises(ValueError, match="absent from its returned inventory"):
         omitted.candidate_set_for(FamilyId.SLOTS, [first])
+
+
+def test_family_completion_is_atomic_and_closes_later_issuance() -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    returned, omitted = Record(1), Record(2)
+    ledger.propose(FamilyId.SLOTS, omitted)
+
+    with pytest.raises(ValueError, match="absent from its returned inventory"):
+        ledger.candidate_set_for(FamilyId.SLOTS, [returned])
+    issued_records = tuple(
+        candidate.record for candidate in ledger.candidate_set(FamilyId.SLOTS).candidates
+    )
+    assert issued_records == (omitted,)
+
+    ledger.candidate_set_for(FamilyId.SLOTS, [omitted])
+    with pytest.raises(RuntimeError, match="already completed"):
+        ledger.candidate_set_for(FamilyId.SLOTS, [omitted])
+    with pytest.raises(RuntimeError, match="already completed"):
+        ledger.propose(FamilyId.SLOTS, Record(3))
+
+    empty = ClaimLedger(FaceGraph(Box(4, 4, 4)))
+    empty.candidate_set_for(FamilyId.HOLES, ())
+    with pytest.raises(RuntimeError, match="already completed"):
+        empty.propose(FamilyId.HOLES, Record(4))
+
+
+def test_completion_body_failure_does_not_publish_planned_empty_prefix(monkeypatch) -> None:
+    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    explicit, unwritten = Record(1), Record(2)
+    ledger.propose(FamilyId.COUNTERSINKS, explicit, [ledger.graph.nodes[0]])
+
+    def fail(_nodes):
+        raise ValueError("solid reference changed after issuance")
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail)
+    with pytest.raises(ValueError, match="solid reference changed"):
+        ledger.candidate_set_for(FamilyId.COUNTERSINKS, [unwritten, explicit])
+    assert tuple(
+        candidate.record for candidate in ledger.candidate_set(FamilyId.COUNTERSINKS).candidates
+    ) == (explicit,)
+
+
+def test_completed_capabilities_cannot_be_constructed_or_broadened() -> None:
+    with pytest.raises(TypeError, match="issuer-created"):
+        CompletedOccurrence()
+    with pytest.raises(TypeError, match="issuer-created"):
+        CompletedInputs()
+
+    ledger = _registry_ledger()
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())
+    definition = _definition(FamilyId.HOLES)
+    with pytest.raises(ValueError, match="exact registered definition"):
+        ledger.restricted_inputs(copy.copy(definition))
+    fake = SimpleNamespace(family=FamilyId.HOLES, dependencies=(FamilyId.COUNTERSINKS,))
+    with pytest.raises(ValueError, match="exact registered definition"):
+        ledger.restricted_inputs(fake)
+
+    mutable = SimpleNamespace(family=FamilyId.HOLES, dependencies=(FamilyId.COUNTERSINKS,))
+    mutable_ledger = ClaimLedger(FaceGraph(Box(4, 4, 4)), definitions=(mutable,))
+    mutable_ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())
+    inputs = mutable_ledger.restricted_inputs(mutable)
+    mutable.dependencies = (FamilyId.COUNTERSINKS, FamilyId.SLOTS)
+    with pytest.raises(ValueError, match="definition authority was mutated"):
+        inputs.records(FamilyId.COUNTERSINKS, Record)
+
+
+def test_restricted_input_validation_fails_closed_on_malformed_or_stale_state(
+    monkeypatch,
+) -> None:
+    malformed = SimpleNamespace(family="holes", dependencies=(FamilyId.COUNTERSINKS,))
+    malformed_ledger = ClaimLedger(FaceGraph(Box(3, 3, 3)), definitions=(malformed,))
+    with pytest.raises(TypeError, match="physical definition authority"):
+        malformed_ledger.restricted_inputs(malformed)
+
+    recursive = SimpleNamespace(family=FamilyId.HOLES, dependencies=(FamilyId.HOLES,))
+    recursive_ledger = ClaimLedger(FaceGraph(Box(3, 3, 3)), definitions=(recursive,))
+    with pytest.raises(ValueError, match="dependency roster is invalid"):
+        recursive_ledger.restricted_inputs(recursive)
+
+    ledger = _registry_ledger()
+    record = Record(1)
+    ledger.propose(FamilyId.COUNTERSINKS, record, [ledger.graph.nodes[0]])
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, (record,))
+    inputs = ledger.restricted_inputs(_definition(FamilyId.HOLES))
+    occurrence = inputs.occurrences(FamilyId.COUNTERSINKS, Record)[0]
+    issuer = ledger._issuer
+
+    issuer._completed_occurrences[FamilyId.COUNTERSINKS] = ()
+    with pytest.raises(ValueError, match="snapshot is stale"):
+        inputs.occurrences(FamilyId.COUNTERSINKS, Record)
+    issuer._completed_occurrences[FamilyId.COUNTERSINKS] = (occurrence,)
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", lambda _nodes: None)
+    with pytest.raises(ValueError, match="provenance was mutated"):
+        occurrence.record(Record)
+
+    object.__setattr__(occurrence, "_CompletedOccurrence__issuer", None)
+    with pytest.raises(ValueError, match="issuer was mutated"):
+        issuer.completed_defining(occurrence)
+    object.__setattr__(occurrence, "_CompletedOccurrence__issuer", issuer)
+
+    object.__setattr__(inputs, "_CompletedInputs__issuer", None)
+    with pytest.raises(ValueError, match="issuer was mutated"):
+        issuer.restricted_occurrences(inputs, FamilyId.COUNTERSINKS)
+    with pytest.raises(ValueError, match="issuer was mutated"):
+        inputs.records(FamilyId.COUNTERSINKS, Record)
+    object.__setattr__(inputs, "_CompletedInputs__issuer", issuer)
+
+    del issuer._completed[FamilyId.COUNTERSINKS]
+    with pytest.raises(ValueError, match="predecessor state is stale"):
+        inputs.occurrences(FamilyId.COUNTERSINKS, Record)
+
+
+def test_completed_predecessor_occurrences_are_opaque_identity_provenance() -> None:
+    ledger = _registry_ledger()
+    record = Record(1)
+    node = ledger.graph.nodes[0]
+    ledger.propose(FamilyId.COUNTERSINKS, record, [node])
+    ledger.candidate_set_for(FamilyId.COUNTERSINKS, [record])
+    inputs = ledger.restricted_inputs(_definition(FamilyId.HOLES))
+
+    assert inputs.records(FamilyId.COUNTERSINKS, Record) == (record,)
+    (occurrence,) = inputs.occurrences(FamilyId.COUNTERSINKS, Record)
+    assert occurrence.record(Record) is record
+    assert occurrence.defining() == (node,)
+    assert occurrence.solid() is not None
+    with pytest.raises(ValueError, match="not a declared"):
+        inputs.records(FamilyId.HOLES, Record)
+
+    copied_occurrence = copy.copy(occurrence)
+    with pytest.raises(ValueError, match="not issued"):
+        copied_occurrence.record(Record)
+    copied_inputs = copy.copy(inputs)
+    with pytest.raises(ValueError, match="not issued"):
+        copied_inputs.records(FamilyId.COUNTERSINKS, Record)
+    with pytest.raises(TypeError):
+        copy.deepcopy(inputs)
+    object.__setattr__(occurrence, "_CompletedOccurrence__issuer", None)
+    with pytest.raises(ValueError, match="issuer was mutated"):
+        occurrence.defining()
+
+
+def test_completed_empty_predecessor_has_no_invented_provenance() -> None:
+    ledger = _registry_ledger()
+    record = Record(1)
+    ledger.candidate_set_for(FamilyId.TURNED_STEPS, [record])
+    inputs = ledger.restricted_inputs(_definition(FamilyId.PLATES))
+    (occurrence,) = inputs.occurrences(FamilyId.TURNED_STEPS, Record)
+    assert occurrence.defining() == ()
+    assert occurrence.solid() is None
+
+    empty = _registry_ledger(Box(4, 4, 4))
+    empty.candidate_set_for(FamilyId.TURNED_STEPS, ())
+    assert (
+        empty.restricted_inputs(_definition(FamilyId.PLATES)).occurrences(
+            FamilyId.TURNED_STEPS, Record
+        )
+        == ()
+    )
 
 
 def test_terminal_inventory_rejects_foreign_or_incomplete_candidate_sets() -> None:

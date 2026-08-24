@@ -442,7 +442,7 @@ def test_recess_reconciler_accepts_completed_records_and_frozen_evidence_only() 
 def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     module = importlib.import_module("b123d_recognisers.result")
     expected = {
-        "_discover_all": {"context", "writer", "return"},
+        "_discover_all": {"context", "ledger", "return"},
         "_reconcile_existing": {"physical", "evidence", "return"},
         "diagnose_residuals": {"reconciliation", "evidence", "return"},
         "_derive_patterns": {"accepted", "return"},
@@ -463,7 +463,10 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     }
     assert not ({"ledger", "sink", "evidence", "index"} & set(context))
 
-    writer_type = typing.get_type_hints(module._discover_all)["writer"]
+    ledger_type = typing.get_type_hints(module._discover_all)["ledger"]
+    assert ledger_type.__name__ == "ClaimLedger"
+    registry_module = importlib.import_module("b123d_recognisers._registry")
+    writer_type = typing.get_type_hints(registry_module.DiscoveryServices)["writer"]
     assert writer_type.__name__ == "EvidenceWriter"
     assert {name for name in dir(writer_type) if not name.startswith("_")} == {
         "add_defining",
@@ -475,6 +478,53 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     assert "reconciliation" in product_fields
     assert "diagnostics" in product_fields
     assert "accepted" not in product_fields and "distinct_steps" not in product_fields
+
+
+def test_only_result_orchestration_may_create_restricted_completed_inputs() -> None:
+    candidate_module = importlib.import_module("b123d_recognisers._candidates")
+    assert {name for name in dir(candidate_module.CompletedInputs) if not name.startswith("_")} == {
+        "occurrences",
+        "records",
+    }
+    assert {
+        name for name in dir(candidate_module.CompletedOccurrence) if not name.startswith("_")
+    } == {"defining", "record", "solid"}
+    callers: list[tuple[str, str]] = []
+    constructors: list[str] = []
+    for path in PACKAGE.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+        class Visitor(ast.NodeVisitor):
+            function = "<module>"
+
+            def __init__(self, filename: str) -> None:
+                self.filename = filename
+
+            def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+                previous = self.function
+                self.function = node.name
+                self.generic_visit(node)
+                self.function = previous
+
+            visit_AsyncFunctionDef = visit_FunctionDef
+
+            def visit_Call(self, node: ast.Call) -> None:
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "restricted_inputs":
+                    callers.append((self.filename, self.function))
+                if isinstance(node.func, ast.Name) and node.func.id in {
+                    "CompletedInputs",
+                    "CompletedOccurrence",
+                }:
+                    constructors.append(self.filename)
+                self.generic_visit(node)
+
+        Visitor(path.name).visit(tree)
+
+    assert sorted(callers) == [
+        ("_claims.py", "restricted_inputs"),
+        ("result.py", "_discover_all"),
+    ]
+    assert constructors == []
 
 
 def test_private_section_adapters_are_not_used_by_production_orchestration() -> None:

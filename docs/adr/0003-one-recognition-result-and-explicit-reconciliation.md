@@ -225,6 +225,23 @@ The temporary physical-family roster is deliberately closed and explicit until i
 registry metadata; cylinders, graph facts, rotational classification and turned-profile
 applicability remain context or value dependencies, not physical candidates.
 
+## Amendment (geometry foundation, issue #219)
+
+Physical dependency reads now cross one issuer-owned completion boundary rather than a record-only
+side table. Immediately after each registry discoverer returns and output validation succeeds, the
+issuer atomically binds the complete returned occurrence sequence, creates deliberate empty
+Candidates where required, closes later issuance for that family and retains that exact
+CandidateSet for terminal inventory. Failed completion publishes no empty prefix, occurrence handle
+or completed-family state.
+
+Downstream physical adapters receive opaque occurrence handles only for their exact declared,
+already-completed predecessors. Every handle read revalidates exact Candidate/record/evidence
+identity, original graph nodes and the common valid SolidRef. This is completed physical provenance,
+not an EvidenceIndex, disposition or accepted-state view: discovery still cannot enumerate global
+Candidates, inspect reconciliation or infer whether an occurrence will survive policy. Opaque
+restricted-input capabilities bind the consumer definition and declared predecessor roster, so a
+family cannot broaden its own dependency authority.
+
 ## Amendment (framework consolidation, issue #158)
 
 Every emitted physical aggregate candidate now receives exactly one identity-preserving

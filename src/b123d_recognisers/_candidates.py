@@ -20,9 +20,9 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
 
 RecordT = TypeVar("RecordT")
 
@@ -127,6 +127,88 @@ class CandidateSet(Generic[RecordT]):
     _issuer: object = field(repr=False)
 
 
+class CompletedOccurrence:
+    """Opaque, issuer-validated provenance for one completed physical occurrence."""
+
+    __slots__ = ("__issuer",)
+
+    def __init__(self) -> None:
+        raise TypeError("completed occurrences are issuer-created")
+
+    def record(self, record_type: type[RecordT]) -> RecordT:
+        """Return the exact completed record occurrence after issuer validation."""
+
+        return _completed_record(self, record_type)
+
+    def defining(self) -> tuple[FaceNode, ...]:
+        """Return graph-ordered defining nodes after issuer validation."""
+
+        return _completed_defining(self)
+
+    def solid(self) -> SolidRef | None:
+        """Return recomputed common-solid authority, or ``None`` for empty evidence."""
+
+        return _completed_solid(self)
+
+
+class CompletedInputs:
+    """Opaque provenance restricted to one definition's declared predecessors."""
+
+    __slots__ = ("__issuer",)
+
+    def __init__(self) -> None:
+        raise TypeError("completed inputs are issuer-created")
+
+    def records(self, family: FamilyId, record_type: type[RecordT]) -> tuple[RecordT, ...]:
+        """Return exact predecessor records for one declared completed family."""
+
+        return tuple(
+            occurrence.record(record_type) for occurrence in _restricted_occurrences(self, family)
+        )
+
+    def occurrences(
+        self, family: FamilyId, record_type: type[RecordT]
+    ) -> tuple[CompletedOccurrence, ...]:
+        """Return validated occurrence handles for one declared predecessor."""
+
+        occurrences = _restricted_occurrences(self, family)
+        for occurrence in occurrences:
+            occurrence.record(record_type)
+        return occurrences
+
+
+def _occurrence_issuer(occurrence: CompletedOccurrence) -> _CandidateIssuer:
+    issuer = getattr(occurrence, "_CompletedOccurrence__issuer", None)
+    if issuer is None:
+        raise ValueError("completed occurrence issuer was mutated")
+    return cast("_CandidateIssuer", issuer)
+
+
+def _inputs_issuer(inputs: CompletedInputs) -> _CandidateIssuer:
+    issuer = getattr(inputs, "_CompletedInputs__issuer", None)
+    if issuer is None:
+        raise ValueError("completed-input issuer was mutated")
+    return cast("_CandidateIssuer", issuer)
+
+
+def _completed_record(occurrence: CompletedOccurrence, record_type: type[RecordT]) -> RecordT:
+    return _occurrence_issuer(occurrence).completed_record(occurrence, record_type)
+
+
+def _completed_defining(occurrence: CompletedOccurrence) -> tuple[FaceNode, ...]:
+    return _occurrence_issuer(occurrence).completed_defining(occurrence)
+
+
+def _completed_solid(occurrence: CompletedOccurrence) -> SolidRef | None:
+    return _occurrence_issuer(occurrence).completed_solid(occurrence)
+
+
+def _restricted_occurrences(
+    inputs: CompletedInputs, family: FamilyId
+) -> tuple[CompletedOccurrence, ...]:
+    return _inputs_issuer(inputs).restricted_occurrences(inputs, family)
+
+
 class EvidenceSink:
     """Write-only candidate/evidence capability handed to discovery."""
 
@@ -227,9 +309,7 @@ class EvidenceIndex:
         object.__setattr__(result, "_issuer", self._token)
         return result
 
-    def validate_complete_inventory(
-        self, candidate_sets: tuple[CandidateSet[object], ...]
-    ) -> None:
+    def validate_complete_inventory(self, candidate_sets: tuple[CandidateSet[object], ...]) -> None:
         """Prove one same-run, non-legacy inventory covers every frozen candidate once."""
 
         seen: set[int] = set()
@@ -271,9 +351,7 @@ class EvidenceIndex:
         candidate = _record_candidate(self._by_record, subject)
         return self._validate(candidate).defining if candidate is not None else frozenset()
 
-    def observations(
-        self, family: FamilyId, predicate: PredicateId
-    ) -> tuple[Observation, ...]:
+    def observations(self, family: FamilyId, predicate: PredicateId) -> tuple[Observation, ...]:
         """Return validated failed attempts in issuance order."""
 
         issued = tuple(self._validate_observation(item) for item in self._observations)
@@ -337,6 +415,25 @@ class _IssuedCandidate:
 
 
 @dataclass(frozen=True, slots=True)
+class _CompletedOccurrenceSnapshot:
+    handle: CompletedOccurrence
+    candidate: Candidate[object]
+    family: FamilyId
+    record: object
+    defining: tuple[FaceNode, ...]
+    solid: SolidRef | None
+
+
+@dataclass(frozen=True, slots=True)
+class _RestrictedInputsSnapshot:
+    inputs: CompletedInputs
+    definition: object
+    consumer: FamilyId
+    allowed: tuple[FamilyId, ...]
+    occurrences: Mapping[FamilyId, tuple[CompletedOccurrence, ...]]
+
+
+@dataclass(frozen=True, slots=True)
 class _IssuedObservation:
     observation: Observation
     family: FamilyId
@@ -356,6 +453,7 @@ class _CandidateIssuer:
         graph: FaceGraph,
         *,
         on_issued: Callable[[Candidate[object]], None] | None = None,
+        definitions: Sequence[object] = (),
     ) -> None:
         self._graph = graph
         self._token = object()
@@ -365,6 +463,11 @@ class _CandidateIssuer:
         self._by_node: dict[FaceNode, list[Candidate[object]]] = {}
         self._observations: list[Observation] = []
         self._issued_observations: dict[int, _IssuedObservation] = {}
+        self._completed: dict[FamilyId, CandidateSet[object]] = {}
+        self._completed_occurrences: dict[FamilyId, tuple[CompletedOccurrence, ...]] = {}
+        self._occurrence_snapshots: dict[int, _CompletedOccurrenceSnapshot] = {}
+        self._restricted_snapshots: dict[int, _RestrictedInputsSnapshot] = {}
+        self._definitions = tuple(definitions)
         self._on_issued = on_issued
         self._sealed = False
         self.sink = EvidenceSink(self)
@@ -378,6 +481,8 @@ class _CandidateIssuer:
     ) -> Candidate[RecordT]:
         if self._sealed:
             raise RuntimeError("evidence issuance is sealed")
+        if family in self._completed:
+            raise RuntimeError(f"{family.value} candidate issuance is already completed")
         nodes = frozenset(defining)
         foreign = [node for node in nodes if not self._graph.owns(node)]
         if foreign:
@@ -419,6 +524,8 @@ class _CandidateIssuer:
     ) -> Observation:
         if self._sealed:
             raise RuntimeError("evidence issuance is sealed")
+        if family in self._completed:
+            raise RuntimeError(f"{family.value} observation issuance is already completed")
         if not isinstance(family, FamilyId) or not isinstance(predicate, PredicateId):
             raise ValueError("observation family and predicate must use closed enums")
         if not isinstance(fact, SplitTriangularTerminalFact):
@@ -473,23 +580,22 @@ class _CandidateIssuer:
     def candidate_set_for(
         self, family: FamilyId, records: Iterable[object]
     ) -> CandidateSet[object]:
-        """Map each returned record occurrence to exactly one family candidate.
+        """Atomically complete *family* against its exact returned occurrences.
 
-        Named candidates already issued by a claim-writing recogniser are reused.  An output
-        with no issued candidate receives one deliberate empty-evidence candidate.  Wrong-family
-        issuance and candidates omitted from the returned inventory fail closed rather than being
-        relabelled or silently retained. A recogniser that proposes explicitly must return the
-        same record object: binding is by occurrence identity, not record value. A returned record
-        that was never proposed is still bound to an empty-evidence Candidate and therefore still
-        receives a disposition.
+        Completion validates the whole family before publishing deliberate empty Candidates,
+        occurrence handles, or the completed-family marker.  The resulting CandidateSet is the
+        one terminal inventory source and completion permanently closes later family issuance.
         """
 
+        if family in self._completed:
+            raise RuntimeError(f"{family.value} is already completed")
         ordered_records = tuple(records)
         available: dict[int, list[Candidate[object]]] = {
             key: list(value) for key, value in self._by_record.items()
         }
         used: set[int] = set()
         ordered: list[Candidate[object]] = []
+        planned: list[tuple[Candidate[object], _IssuedCandidate]] = []
         for record in ordered_records:
             candidates = available.get(id(record), [])
             wrong = [
@@ -503,13 +609,23 @@ class _CandidateIssuer:
                 (
                     candidate
                     for candidate in candidates
-                    if id(candidate) not in used
-                    and self._validate(candidate).family is family
+                    if id(candidate) not in used and self._validate(candidate).family is family
                 ),
                 None,
             )
             if candidate is None:
-                candidate = self.propose(family, record, defining=())
+                candidate = object.__new__(Candidate)
+                evidence = Evidence(frozenset())
+                object.__setattr__(candidate, "family", family)
+                object.__setattr__(candidate, "record", record)
+                object.__setattr__(candidate, "evidence", evidence)
+                object.__setattr__(candidate, "_issuer", self._token)
+                planned.append(
+                    (
+                        candidate,
+                        _IssuedCandidate(candidate, family, record, evidence, evidence.defining),
+                    )
+                )
                 available.setdefault(id(record), []).append(candidate)
             used.add(id(candidate))
             ordered.append(candidate)
@@ -519,9 +635,127 @@ class _CandidateIssuer:
             for candidate in self._candidates
             if self._validate(candidate).family is family
         }
-        if issued_for_family != used:
+        planned_ids = {id(candidate) for candidate, _issued in planned}
+        if issued_for_family != used - planned_ids:
             raise ValueError("family issued candidates absent from its returned inventory")
-        return self._make_candidate_set(family, tuple(ordered))
+
+        planned_by_id = {id(candidate): issued for candidate, issued in planned}
+        candidate_set = self._make_candidate_set(family, tuple(ordered))
+        handles: list[CompletedOccurrence] = []
+        snapshots: list[_CompletedOccurrenceSnapshot] = []
+        for candidate in ordered:
+            issued = planned_by_id.get(id(candidate)) or self._validate(candidate)
+            defining = tuple(node for node in self._graph.nodes if node in issued.defining)
+            solid = self._graph.common_valid_solid(defining) if defining else None
+            handle = object.__new__(CompletedOccurrence)
+            object.__setattr__(handle, "_CompletedOccurrence__issuer", self)
+            handles.append(handle)
+            snapshots.append(
+                _CompletedOccurrenceSnapshot(
+                    handle, candidate, family, issued.record, defining, solid
+                )
+            )
+
+        # Phase two contains only installation of the fully validated staged snapshot.
+        for candidate, issued in planned:
+            self._candidates.append(candidate)
+            self._issued[id(candidate)] = issued
+            self._by_record.setdefault(id(issued.record), []).append(candidate)
+        self._completed[family] = candidate_set
+        self._completed_occurrences[family] = tuple(handles)
+        self._occurrence_snapshots.update({id(snapshot.handle): snapshot for snapshot in snapshots})
+        return candidate_set
+
+    def restricted_inputs(self, definition: object) -> CompletedInputs:
+        """Create one opaque input view for an exact declared predecessor roster."""
+
+        if not any(definition is registered for registered in self._definitions):
+            raise ValueError("completed inputs require an exact registered definition authority")
+        consumer = getattr(definition, "family", None)
+        allowed = getattr(definition, "dependencies", None)
+        if (
+            not isinstance(consumer, FamilyId)
+            or not isinstance(allowed, tuple)
+            or not all(isinstance(family, FamilyId) for family in allowed)
+        ):
+            raise TypeError("completed inputs require one physical definition authority")
+        if consumer in allowed or len(allowed) != len(set(allowed)):
+            raise ValueError("completed-input dependency roster is invalid")
+        missing = tuple(family for family in allowed if family not in self._completed)
+        if missing:
+            raise ValueError(
+                "declared physical dependency has not completed: "
+                + ", ".join(family.value for family in missing)
+            )
+        inputs = object.__new__(CompletedInputs)
+        object.__setattr__(inputs, "_CompletedInputs__issuer", self)
+        occurrences = MappingProxyType(
+            {family: self._completed_occurrences[family] for family in allowed}
+        )
+        self._restricted_snapshots[id(inputs)] = _RestrictedInputsSnapshot(
+            inputs, definition, consumer, allowed, occurrences
+        )
+        return inputs
+
+    def restricted_occurrences(
+        self, inputs: CompletedInputs, family: FamilyId
+    ) -> tuple[CompletedOccurrence, ...]:
+        snapshot = self._validate_restricted(inputs)
+        if family not in snapshot.allowed:
+            raise ValueError(f"{family.value} is not a declared physical dependency")
+        occurrences = snapshot.occurrences[family]
+        if occurrences is not self._completed_occurrences.get(family):
+            raise ValueError("completed predecessor occurrence snapshot is stale")
+        for occurrence in occurrences:
+            self._validate_completed(occurrence)
+        return occurrences
+
+    def completed_record(
+        self, occurrence: CompletedOccurrence, record_type: type[RecordT]
+    ) -> RecordT:
+        snapshot = self._validate_completed(occurrence)
+        if not isinstance(snapshot.record, record_type):
+            raise TypeError(f"{snapshot.family.value} dependency has the wrong record type")
+        return snapshot.record
+
+    def completed_defining(self, occurrence: CompletedOccurrence) -> tuple[FaceNode, ...]:
+        return self._validate_completed(occurrence).defining
+
+    def completed_solid(self, occurrence: CompletedOccurrence) -> SolidRef | None:
+        return self._validate_completed(occurrence).solid
+
+    def _validate_completed(self, occurrence: CompletedOccurrence) -> _CompletedOccurrenceSnapshot:
+        snapshot = self._occurrence_snapshots.get(id(occurrence))
+        if snapshot is None or snapshot.handle is not occurrence:
+            raise ValueError("completed occurrence was not issued by this run")
+        if getattr(occurrence, "_CompletedOccurrence__issuer", None) is not self:
+            raise ValueError("completed occurrence issuer was mutated")
+        issued = self._validate(snapshot.candidate)
+        defining = tuple(node for node in self._graph.nodes if node in issued.defining)
+        solid = self._graph.common_valid_solid(defining) if defining else None
+        if (
+            issued.family is not snapshot.family
+            or issued.record is not snapshot.record
+            or defining != snapshot.defining
+            or solid != snapshot.solid
+        ):
+            raise ValueError("completed occurrence provenance was mutated")
+        return snapshot
+
+    def _validate_restricted(self, inputs: CompletedInputs) -> _RestrictedInputsSnapshot:
+        snapshot = self._restricted_snapshots.get(id(inputs))
+        if snapshot is None or snapshot.inputs is not inputs:
+            raise ValueError("completed inputs were not issued by this run")
+        if getattr(inputs, "_CompletedInputs__issuer", None) is not self:
+            raise ValueError("completed-input issuer was mutated")
+        if (
+            getattr(snapshot.definition, "family", None) is not snapshot.consumer
+            or getattr(snapshot.definition, "dependencies", None) != snapshot.allowed
+        ):
+            raise ValueError("completed-input definition authority was mutated")
+        if any(family not in self._completed for family in snapshot.allowed):
+            raise ValueError("completed-input predecessor state is stale")
+        return snapshot
 
     def snapshot_index(self) -> EvidenceIndex:
         """Copy the currently issued prefix into an immutable read capability."""
@@ -538,9 +772,7 @@ class _CandidateIssuer:
         object.__setattr__(
             result,
             "_by_record",
-            MappingProxyType(
-                {key: tuple(value) for key, value in self._by_record.items()}
-            ),
+            MappingProxyType({key: tuple(value) for key, value in self._by_record.items()}),
         )
         object.__setattr__(
             result,
