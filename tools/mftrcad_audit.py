@@ -33,6 +33,7 @@ SELECTION_MODULUS: Final = 1000
 DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 10))
 HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
 F5_FLATS_H1: Final = "F5-FLATS-H1"
+F5_FILLETS_H1: Final = "F5-FILLETS-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -48,6 +49,7 @@ class AllocationSpec:
 
 ALLOCATION_SPECS: Final = (
     AllocationSpec(F5_FLATS_H1, "f5_flats_h1", frozenset({20}), "consumed"),
+    AllocationSpec(F5_FILLETS_H1, "f5_fillets_h1", frozenset({21}), "sealed_unrevealed"),
 )
 
 
@@ -77,6 +79,12 @@ def _validate_allocation_specs(
         for spec in specs
     ):
         raise ValueError("allocation buckets must be nonempty exact integers in range")
+    reserved = set(DEVELOPMENT_BUCKETS) | set(HOLDOUT_BUCKETS)
+    named: set[int] = set()
+    for spec in specs:
+        if reserved & spec.buckets or named & spec.buckets:
+            raise ValueError("allocation bucket groups must be globally disjoint")
+        named.update(spec.buckets)
     return specs
 
 
@@ -86,6 +94,9 @@ ALLOCATION_SELECTIONS: Final = {
     spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS
 }
 ALLOCATION_STATUSES: Final = {spec.policy_id: spec.status for spec in ALLOCATION_SPECS}
+BUCKET_SELECTIONS: Final = {
+    bucket: spec.selection_token for spec in ALLOCATION_SPECS for bucket in spec.buckets
+}
 
 FEATURE_LABELS: Final = {
     0: "chamfer",
@@ -162,7 +173,9 @@ PACKAGE_FAMILIES_BY_LABEL: Final = {
     26: (),
 }
 
-Selection = Literal["all", "development", "holdout", "unselected", "f5_flats_h1"]
+Selection = Literal[
+    "all", "development", "holdout", "unselected", "f5_flats_h1", "f5_fillets_h1"
+]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS
 )
@@ -216,12 +229,12 @@ def _validate_selection_policy(value: object) -> JsonObject:
         raise ValueError("selection policy holdout buckets differ from the scanner mirror")
     if selection.get("named_allocations") != expected_allocations:
         raise ValueError("selection policy named allocations differ from the scanner mirror")
-    for allocation, spec in expected_allocations.items():
+    for allocation, expected_spec in expected_allocations.items():
         if not allocation.replace("-", "").isalnum() or allocation.upper() != allocation:
             raise ValueError(f"invalid allocation id {allocation!r}")
-        if spec["status"] not in {"sealed_unrevealed", "consumed"}:
+        if expected_spec["status"] not in {"sealed_unrevealed", "consumed"}:
             raise ValueError(f"invalid allocation status for {allocation!r}")
-        buckets = spec["buckets"]
+        buckets = expected_spec["buckets"]
         if not buckets or any(
             not isinstance(bucket, int) or isinstance(bucket, bool) or not 0 <= bucket < 1000
             for bucket in buckets
@@ -233,7 +246,26 @@ def _validate_selection_policy(value: object) -> JsonObject:
             raise ValueError("selection policy bucket groups overlap")
         selected.update(buckets)
     complement = set(range(SELECTION_MODULUS)) - selected
-    if selection.get("unselected_buckets") != f"{min(complement)}..{max(complement)}":
+    ranges = selection.get("unselected_bucket_ranges")
+    if not isinstance(ranges, list) or any(
+        not isinstance(item, list)
+        or len(item) != 2
+        or any(not isinstance(bound, int) or isinstance(bound, bool) for bound in item)
+        or item[0] < 0
+        or item[1] >= SELECTION_MODULUS
+        or item[0] > item[1]
+        for item in ranges
+    ):
+        raise ValueError("selection policy unselected ranges are malformed")
+    checked_ranges = cast(list[list[int]], ranges)
+    expanded = {bucket for lo, hi in checked_ranges for bucket in range(lo, hi + 1)}
+    normalized: list[list[int]] = []
+    for bucket in sorted(expanded):
+        if not normalized or bucket != normalized[-1][1] + 1:
+            normalized.append([bucket, bucket])
+        else:
+            normalized[-1][1] = bucket
+    if ranges != normalized or expanded != complement:
         raise ValueError("selection policy unselected complement differs from the scanner mirror")
     if selected | complement != set(range(SELECTION_MODULUS)):
         raise ValueError("selection policy does not partition the selection modulus")
@@ -258,9 +290,7 @@ def selection_of(model_id: str) -> Selection:
         return "development"
     if bucket in HOLDOUT_BUCKETS:
         return "holdout"
-    if bucket in NAMED_ALLOCATIONS[F5_FLATS_H1]:
-        return "f5_flats_h1"
-    return "unselected"
+    return cast(Selection, BUCKET_SELECTIONS.get(bucket, "unselected"))
 
 
 def _preflight(
@@ -278,7 +308,7 @@ def _preflight(
     if unknown:
         raise ValueError(f"unknown sealed allocation acknowledgement {sorted(unknown)!r}")
     if selection == "all":
-        raise ValueError("selection 'all' is closed while sealed allocations exist")
+        raise ValueError("selection 'all' is closed while named allocations exist")
     if selection == "holdout":
         if not allow_holdout or reveal_allocations:
             raise ValueError("selection 'holdout' requires only its explicit holdout authority")
@@ -976,7 +1006,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--selection",
-        choices=("all", "development", "holdout", "unselected", "f5_flats_h1"),
+        choices=tuple(sorted(SELECTIONS)),
         default="development",
         help="stable selection to scan (default: development; holdout must stay sealed)",
     )
