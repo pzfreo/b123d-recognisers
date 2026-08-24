@@ -821,6 +821,15 @@ production chain grammar and interval checks admit consecutive disjoint/meeting 
 the imported ordinary fixture proves role correspondence. A future valid one-solid axial subdivision
 must add an exact all-patch regression before it can be claimed as observed positive evidence.
 
+The authorised F5g reveal ran exactly once at accepted pre-reveal PR #215 head `80def7f`, after two
+exact-head ACCEPTs, green focused/static/package/CI/Codecov gates, a passing composite budget, and
+crossed same-host census neutrality evidence. Selection `f5_double_d_bores_h1` contained no models;
+the scanner raised `no models match selection 'f5_double_d_bores_h1'` before importing STEP,
+reading annotations, running recognition or producing a complete JSON report. No retry,
+replacement, alternate mode, fitting or treatment change followed. Bucket 24 is permanently
+`consumed`, the result is inconclusive and not regression evidence, and exact Double-D ownership
+remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

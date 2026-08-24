@@ -145,7 +145,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F5_DOUBLE_D_BORES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_DOUBLE_D_BORES_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
@@ -216,7 +216,7 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         ("f5_fillets_h1", F5_FILLETS_H1, 21, "consumed"),
         ("f5_countersinks_h1", F5_COUNTERSINKS_H1, 22, "consumed"),
         ("f5_bosses_h1", F5_BOSSES_H1, 23, "consumed"),
-        ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, 24, "sealed_unrevealed"),
+        ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, 24, "consumed"),
     ],
 )
 def test_named_allocation_requires_exact_nontransferable_authority(
