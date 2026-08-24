@@ -278,9 +278,11 @@ def test_centre_drill_geometry_false_positive_remains_attributed() -> None:
     centre_drilled = (
         Cylinder(20, 30) - Pos(0, 0, 10) * Cylinder(2, 10) - Pos(0, 0, 13) * Cone(2, major, depth)
     )
+    assert centre_drilled.bounding_box().max.Z == 15.0
     _ledger, records = _claimed(centre_drilled)
     assert len(records) == 1
     assert records[0].included_angle == 60.0
+    assert records[0].location[2] == 15.0
 
 
 def test_translation_and_uniform_scale_keep_owner_correspondence() -> None:
