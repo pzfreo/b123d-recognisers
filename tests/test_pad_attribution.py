@@ -174,11 +174,15 @@ def _fresh_expected(part, *, tol: float | None = None) -> list[_ExpectedPad]:
         for proposal in proposals:
             grouped.setdefault(proposal.record, []).append(proposal)
         for record, group in grouped.items():
-            identities = {
-                tuple(id(face.wrapped) for face in proposal.faces)
+            reference = group[0].faces
+            assert all(
+                len(proposal.faces) == len(reference)
+                and all(
+                    actual.wrapped.IsSame(expected.wrapped)
+                    for actual, expected in zip(proposal.faces, reference, strict=True)
+                )
                 for proposal in group
-            }
-            assert len(identities) == 1
+            )
             occurrences.append(_ExpectedPad(record, group[0].faces))
     occurrences.sort(key=lambda occurrence: occurrence.record)
     return occurrences
@@ -216,10 +220,12 @@ def _assert_role(record, candidate, ledger) -> None:
     walls = [node for node in defining if node not in top]
     assert len(top) == 1 and len(walls) == 4
     top_bounds = ledger.graph.bounds(top[0])
-    assert top_bounds[0] == pytest.approx((record.x0, record.x1))
-    assert top_bounds[1] == pytest.approx((record.y0, record.y1))
-    assert top_bounds[2][1] == pytest.approx(record.z1)
-    assert max(ledger.graph.bounds(node)[2][0] for node in walls) == pytest.approx(record.z0)
+    assert top_bounds[0] == pytest.approx((record.x0, record.x1), abs=0.001)
+    assert top_bounds[1] == pytest.approx((record.y0, record.y1), abs=0.001)
+    assert top_bounds[2][1] == pytest.approx(record.z1, abs=0.001)
+    assert max(ledger.graph.bounds(node)[2][0] for node in walls) == pytest.approx(
+        record.z0, abs=0.001
+    )
     assert all(
         ledger.graph.is_planar(node)
         and abs(ledger.graph.normal(node)[2]) < 1e-4
@@ -242,6 +248,30 @@ def test_equal_records_on_coincident_valid_solids_remain_distinct() -> None:
     assert ledger.graph.common_valid_solid(first) != ledger.graph.common_valid_solid(second)
     for record, candidate in zip(records, candidates, strict=True):
         _assert_role(record, candidate, ledger)
+
+
+@pytest.mark.parametrize("unequal", [False, True])
+def test_disjoint_same_solid_pad_occurrences_keep_exact_roles(unequal: bool) -> None:
+    base = Box(140, 80, 10)
+    left = Pos(-40, 0, 7) * Box(24, 18, 4)
+    right = Pos(40, 0, 7.5 if unequal else 7) * Box(30 if unequal else 24, 18, 5 if unequal else 4)
+    records, candidates, ledger = _claim(base + left + right)
+    assert len(records) == 2
+    if not unequal:
+        assert records[0].z0 == records[1].z0 and records[0].z1 == records[1].z1
+    for record, candidate in zip(records, candidates, strict=True):
+        _assert_role(record, candidate, ledger)
+    assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
+
+
+def test_intervening_levels_do_not_change_body_local_pad_base() -> None:
+    base = Box(120, 70, 8)
+    wall = Pos(-50, 0, 20) * Box(10, 70, 32)
+    lower_step = Pos(10, 0, 8) * Box(45, 50, 8)
+    raised_pad = Pos(30, 0, 20) * Box(24, 18, 16)
+    (record,), (candidate,), ledger = _claim(base + wall + lower_step + raised_pad)
+    assert record == RaisedPad(18, 42, -9, 9, 12, 28)
+    _assert_role(record, candidate, ledger)
 
 
 def test_later_body_failure_leaves_family_empty(monkeypatch) -> None:
@@ -284,6 +314,26 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
     with pytest.raises(ValueError, match="ambiguous defining occurrences"):
         _discover_rectangular_pads(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -> None:
+    import b123d_recognisers.pads as module
+
+    part = _pad()
+    original = module._recognise_rectangular_pads_one
+
+    def repeated(source, *, tol):
+        (proposal,) = original(source, tol=tol)
+        wrapped = module._PadProposal(
+            proposal.record,
+            copy.copy(proposal.top_face),
+            tuple((copy.copy(role[0]),) for role in proposal.wall_roles),
+        )
+        return [proposal, wrapped]
+
+    monkeypatch.setattr(module, "_recognise_rectangular_pads_one", repeated)
+    (record,), (candidate,), ledger = _claim(part)
+    _assert_role(record, candidate, ledger)
 
 
 def test_late_binding_failure_leaves_family_empty(monkeypatch) -> None:
@@ -342,14 +392,14 @@ def test_step_round_trip_preserves_pad_role_correspondence(tmp_path) -> None:
 def test_reversed_face_traversal_preserves_pad_occurrence_roles(monkeypatch) -> None:
     part = Compound([Pos(-60, 0, 0) * _pad(), Pos(60, 0, 0) * _pad()])
     baseline = [record.to_dict() for record in recognise_rectangular_pads(part)]
-    part_type = type(part)
-    original = part_type.faces
+    solid_type = type(part.solids()[0])
+    original = solid_type.faces
 
     def reversed_faces(self):
         faces = original(self)
         return type(faces)(reversed(faces))
 
-    monkeypatch.setattr(part_type, "faces", reversed_faces)
+    monkeypatch.setattr(solid_type, "faces", reversed_faces)
     records, _candidates, _ledger = _claim(part)
     assert [record.to_dict() for record in records] == baseline
 
@@ -429,6 +479,62 @@ def test_absolute_height_threshold_is_strict(height: float, accepted: bool) -> N
         ledger = ClaimLedger(FaceGraph(part))
         assert _discover_rectangular_pads(part, writer=ledger.writer) == []
         assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+@pytest.mark.parametrize(("width", "accepted"), [(0.199, False), (0.2, False), (0.201, True)])
+def test_footprint_width_threshold_is_strict(width: float, accepted: bool) -> None:
+    part = Box(20, 20, 2) + Pos(0, 0, 2) * Box(width, 2, 2)
+    if accepted:
+        records, candidates, ledger = _claim(part)
+        assert len(records) == 1
+        _assert_role(records[0], candidates[0], ledger)
+    else:
+        assert recognise_rectangular_pads(part) == []
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_rectangular_pads(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    ("width", "accepted"), [(19.598, True), (19.6, False), (19.602, False)]
+)
+def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool) -> None:
+    part = Box(20, 20, 2) + Pos(0, 0, 2) * Box(width, 2, 2)
+    if accepted:
+        records, candidates, ledger = _claim(part)
+        assert len(records) == 1
+        _assert_role(records[0], candidates[0], ledger)
+    else:
+        assert recognise_rectangular_pads(part) == []
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_rectangular_pads(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+def test_small_pad_on_large_part_remains_attributed() -> None:
+    part = Box(10_000, 10_000, 10) + Pos(0, 0, 6) * Box(1, 1, 2)
+    (record,), (candidate,), ledger = _claim(part)
+    _assert_role(record, candidate, ledger)
+
+
+@pytest.mark.parametrize("tol", [-0.1, float("nan"), float("inf")])
+def test_existing_invalid_tolerance_behavior_remains_empty(tol: float) -> None:
+    part = _pad()
+    assert recognise_rectangular_pads(part, tol=tol) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_rectangular_pads(part, tol=tol, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    "part",
+    [Rot(8, 0, 0) * _pad(), Box(80, 60, 10) + Pos(0, 0, 7) * Cylinder(8, 4)],
+)
+def test_non_z_and_curved_top_shapes_issue_no_pad(part) -> None:
+    assert recognise_rectangular_pads(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_rectangular_pads(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
 @pytest.mark.parametrize("mode", ["role_alias", "tied_maximum", "deep_top", "stale_top"])
