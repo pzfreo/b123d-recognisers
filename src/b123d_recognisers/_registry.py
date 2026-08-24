@@ -404,8 +404,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                     s.context.part,
                     cyls=s.cylinders,
                     face_edges=s.context.face_edges,
-                    graph=s.context.graph,
-                    sink=s.writer.sink,
+                    writer=s.writer,
                 )
             )
         ),

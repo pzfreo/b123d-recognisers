@@ -37,8 +37,9 @@ from dataclasses import dataclass
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map, neighbours
-from b123d_recognisers._candidates import EvidenceSink, FamilyId
+from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import (
     _axis_direction_is_aligned,
@@ -195,6 +196,14 @@ class Flat(Record):
         return _axis_direction_is_aligned(self.axis, self.axis_direction)
 
 
+@dataclass(frozen=True, slots=True)
+class _FlatProposal:
+    record: Flat
+    face: FaceLike
+    stock_face: FaceLike
+    opposed_face: FaceLike | None
+
+
 def recognise_flats(
     part: Part, *, cyls: CylinderInventory | None = None, face_edges: FaceEdges | None = None
 ) -> list[Flat]:
@@ -212,13 +221,10 @@ def _discover_flats(
     *,
     cyls: CylinderInventory | None,
     face_edges: FaceEdges | None,
-    graph: FaceGraph | None = None,
-    sink: EvidenceSink | None = None,
+    writer: EvidenceWriter | None = None,
 ) -> list[Flat]:
     """Discover Flats and validate every evidence binding before publishing any."""
 
-    if (graph is None) != (sink is None):
-        raise ValueError("flat evidence requires both graph and sink")
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
@@ -269,6 +275,7 @@ def _discover_flats(
                     "dir": d,
                     "axis_direction": d,
                     "face": f,
+                    "stock_face": c["face"],
                     # Which piece of stock this face was matched to, for the opposition test
                     # below. Internal to one recognition run — a same-run equality check, not
                     # an identity that propagates — so the solid index is safe here.
@@ -279,7 +286,7 @@ def _discover_flats(
 
     # Phase 2 — size each flat. A parallel flat opposed across the axis (antiparallel
     # normal, same stock axis) makes it flat-to-flat; otherwise flat-to-opposite-OD.
-    out: list[tuple[Flat, FaceLike]] = []
+    out: list[_FlatProposal] = []
     for i, cand in enumerate(cands):
         n = cand["n"]
         opp = None
@@ -303,8 +310,8 @@ def _discover_flats(
                 break
         across = cand["s"] + opp["s"] if opp else cand["s"] + cand["r"]
         out.append(
-            (
-                Flat(
+            _FlatProposal(
+                record=Flat(
                     axis=cand["axis"],
                     across=round(across, 3),
                     at=(
@@ -316,17 +323,21 @@ def _discover_flats(
                     stock_span=cand["stock_span"],
                     axis_direction=cand["axis_direction"],
                 ),
-                cand["face"],
+                face=cand["face"],
+                stock_face=cand["stock_face"],
+                opposed_face=None if opp is None else opp["face"],
             )
         )
-    out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
-    if graph is not None and sink is not None:
-        pending = tuple((record, graph.require_node(face)) for record, face in out)
-        if any(graph.common_valid_solid((node,)) is None for _record, node in pending):
+    out.sort(key=lambda proposal: (proposal.record.axis, proposal.record.at))
+    if writer is not None:
+        pending = tuple(
+            (proposal.record, writer.graph.require_node(proposal.face)) for proposal in out
+        )
+        if any(writer.graph.common_valid_solid((node,)) is None for _record, node in pending):
             raise ValueError("flat defining face has no unambiguous valid solid")
         for record, node in pending:
-            sink.propose(FamilyId.FLATS, record, defining=(node,))
-    return [record for record, _face in out]
+            writer.sink.propose(FamilyId.FLATS, record, defining=(node,))
+    return [proposal.record for proposal in out]
 
 
 def _axis_line(
