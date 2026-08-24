@@ -4,11 +4,25 @@ from __future__ import annotations
 
 import ast
 import copy
+import math
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from build123d import Compound, Plane, Pos, Rot, export_step, import_step
+from build123d import (
+    Box,
+    Compound,
+    Cylinder,
+    GeomType,
+    Plane,
+    Pos,
+    Rot,
+    Vector,
+    export_step,
+    import_step,
+)
+from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.GeomAbs import GeomAbs_Plane
 
 import b123d_recognisers._recess_features as feature_module
 from b123d_recognisers import recognise_channels
@@ -16,23 +30,182 @@ from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_channels
+from b123d_recognisers._recess_records import Channel
 from b123d_recognisers.result import _take_inventory
 from tests.golden.open_channels.fixture import build_fixture
 
 ROOT = Path(__file__).parents[1]
 
 
+def _coordinate(point, axis: str) -> float:
+    return (point.X, point.Y, point.Z)["xyz".index(axis)]
+
+
+def _fresh_expected_channels(part, graph: FaceGraph):
+    """Reconstruct the supported Channel grammar before any recogniser/Candidate read."""
+
+    expected = []
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    for solid in sources:
+        bb = solid.bounding_box()
+        bounds = {axis: (_coordinate(bb.min, axis), _coordinate(bb.max, axis)) for axis in "xyz"}
+        facts = []
+        for face in solid.faces():
+            node = graph.require_node(face)
+            if BRepAdaptor_Surface(face.wrapped).GetType() != GeomAbs_Plane:
+                continue
+            normal = graph.normal(node)
+            assert normal is not None
+            dominant = next(
+                (
+                    axis
+                    for axis, value in zip("xyz", normal, strict=True)
+                    if abs(abs(value) - 1) <= 1e-3
+                ),
+                None,
+            )
+            edge_types = [edge.geom_type for edge in face.edges()]
+            wall = (
+                bool(edge_types)
+                and all(kind in (GeomType.LINE, GeomType.CIRCLE) for kind in edge_types)
+                and sum(kind is GeomType.LINE for kind in edge_types) >= 1
+                and sum(kind is GeomType.CIRCLE for kind in edge_types) <= 1
+            )
+            facts.append((node, face, normal, dominant, wall))
+
+        proposals = []
+        for width_axis in "xyz":
+            wi = "xyz".index(width_axis)
+            walls = [fact for fact in facts if fact[3] == width_axis and fact[4]]
+            for left_index, left in enumerate(walls):
+                for right in walls[left_index + 1 :]:
+                    left_c = _coordinate(left[1].center(), width_axis)
+                    right_c = _coordinate(right[1].center(), width_axis)
+                    if left_c > right_c:
+                        left, right = right, left
+                        left_c, right_c = right_c, left_c
+                    if not (left[2][wi] > 0 and right[2][wi] < 0):
+                        continue
+                    common = set(graph.neighbours(left[0])) & set(graph.neighbours(right[0]))
+                    if not common or not all(
+                        graph.arc(left[0], node) == graph.arc(right[0], node)
+                        for node in common
+                        if graph.is_planar(node)
+                    ):
+                        continue
+                    other_axes = [axis for axis in "xyz" if axis != width_axis]
+                    ranges = {}
+                    for axis in other_axes:
+                        lo = max(
+                            _coordinate(left[1].bounding_box().min, axis),
+                            _coordinate(right[1].bounding_box().min, axis),
+                        )
+                        hi = min(
+                            _coordinate(left[1].bounding_box().max, axis),
+                            _coordinate(right[1].bounding_box().max, axis),
+                        )
+                        ranges[axis] = (lo, hi)
+                    if any(hi - lo <= 0 for lo, hi in ranges.values()):
+                        continue
+                    width = right_c - left_c
+                    for depth_axis in other_axes:
+                        long_axis = next(axis for axis in other_axes if axis != depth_axis)
+                        d_lo, d_hi = ranges[depth_axis]
+                        lo, hi = ranges[long_axis]
+                        foot = {
+                            width_axis: (left_c, right_c),
+                            long_axis: (lo, hi),
+                        }
+                        capped = []
+                        for end, wanted in ((d_lo, 1), (d_hi, -1)):
+                            covered = 0.0
+                            for _node, face, normal, axis, _wall in facts:
+                                if (
+                                    axis != depth_axis
+                                    or normal["xyz".index(depth_axis)] * wanted <= 0
+                                ):
+                                    continue
+                                if abs(_coordinate(face.center(), depth_axis) - end) > 0.3:
+                                    continue
+                                area = 1.0
+                                face_bb = face.bounding_box()
+                                for axis_name, (foot_lo, foot_hi) in foot.items():
+                                    overlap = min(
+                                        _coordinate(face_bb.max, axis_name), foot_hi
+                                    ) - max(_coordinate(face_bb.min, axis_name), foot_lo)
+                                    area *= max(overlap, 0)
+                                covered += area
+                            capped.append(covered >= 0.5 * width * (hi - lo))
+                        if sum(capped) != 1:
+                            continue
+                        if not (
+                            math.isclose(lo, bounds[long_axis][0], abs_tol=0.3)
+                            and math.isclose(hi, bounds[long_axis][1], abs_tol=0.3)
+                        ):
+                            continue
+                        sample = {axis: sum(ranges[axis]) / 2 for axis in other_axes}
+                        sample[width_axis] = (left_c + right_c) / 2
+                        if solid.is_inside(
+                            Vector(sample["x"], sample["y"], sample["z"]), tolerance=1e-7
+                        ):
+                            continue
+                        proposals.append(
+                            (
+                                Channel(
+                                    width_axis,
+                                    long_axis,
+                                    round(width, 2),
+                                    round((left_c + right_c) / 2, 2),
+                                    round(lo, 2),
+                                    round(hi, 2),
+                                    round(d_lo, 2),
+                                    round(d_hi, 2),
+                                    1 if capped[0] else -1,
+                                ),
+                                frozenset((left[0], right[0])),
+                            )
+                        )
+        by_record = {}
+        for record, nodes in proposals:
+            by_record.setdefault(record, set()).add(nodes)
+        for record, node_sets in by_record.items():
+            assert len(node_sets) == 1
+            expected.append((record, next(iter(node_sets))))
+    return sorted(
+        expected,
+        key=lambda item: (
+            item[0].long_axis,
+            item[0].width_axis,
+            item[0].lo,
+            item[0].hi,
+            item[0].w_center,
+            item[0].width,
+            item[0].d_lo,
+            item[0].d_hi,
+            item[0].open_sign,
+        ),
+    )
+
+
 def _assert_roles(part, **kwargs):
-    public = recognise_channels(part, **kwargs)
     ledger = ClaimLedger(FaceGraph(part, face_edges=kwargs.get("face_edges")))
+    expected = _fresh_expected_channels(part, ledger.graph)
+    public = recognise_channels(part, **kwargs)
     records = _discover_channels(part, writer=ledger.writer, **kwargs)
+    assert [record.to_dict() for record, _nodes in expected] == [
+        record.to_dict() for record in records
+    ]
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     candidates = ledger.candidate_set(FamilyId.CHANNELS).candidates
     assert len(records) == len(candidates)
-    for record, candidate in zip(records, candidates, strict=True):
+    for (expected_record, expected_nodes), record, candidate in zip(
+        expected, records, candidates, strict=True
+    ):
+        assert record == expected_record
         assert candidate.record is record
         nodes = ledger.defining_of(candidate)
-        assert len(nodes) == 2
+        assert nodes == expected_nodes
         assert ledger.graph.common_valid_solid(nodes) is not None
         centres = []
         signs = []
@@ -42,7 +215,9 @@ def _assert_roles(part, **kwargs):
             assert ledger.graph.is_planar(node)
             centre = face.center()
             centres.append((centre.X, centre.Y, centre.Z)[axis])
-            signs.append(ledger.graph.normal(node)[axis])
+            normal = ledger.graph.normal(node)
+            assert normal is not None
+            signs.append(normal[axis])
         ordered = sorted(zip(centres, signs, strict=True))
         assert ordered[0][0] == pytest.approx(record.w_center - record.width / 2)
         assert ordered[1][0] == pytest.approx(record.w_center + record.width / 2)
@@ -68,6 +243,9 @@ def test_public_ledger_remains_graph_only_and_writer_free() -> None:
     [
         Pos(13, -9, 7) * build_fixture(),
         Rot(0, 0, 90) * build_fixture(),
+        Rot(90, 0, 0) * build_fixture(),
+        Rot(0, 90, 0) * build_fixture(),
+        Rot(180, 0, 0) * build_fixture(),
         build_fixture().mirror(Plane.YZ),
         build_fixture().scale(0.2),
         build_fixture().scale(5),
@@ -86,6 +264,50 @@ def test_multiple_bodies_keep_occurrence_and_body_identity() -> None:
     assert ledger.graph.common_valid_solid(defining[0]) != ledger.graph.common_valid_solid(
         defining[1]
     )
+
+
+def test_equal_channels_on_one_and_coincident_bodies_keep_occurrence_identity() -> None:
+    same_body = (
+        Box(60, 70, 10)
+        + Pos(0, -30, 13) * Box(60, 10, 16)
+        + Pos(0, 0, 13) * Box(60, 10, 16)
+        + Pos(0, 30, 13) * Box(60, 10, 16)
+    )
+    records, candidates, ledger = _assert_roles(same_body)
+    assert len(records) == 2 and records[0].width == records[1].width
+    assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
+
+    coincident = Compound([build_fixture(), copy.deepcopy(build_fixture())])
+    records, candidates, ledger = _assert_roles(coincident)
+    assert len(records) == 2 and records[0] == records[1] and records[0] is not records[1]
+    defining = [ledger.defining_of(candidate) for candidate in candidates]
+    assert defining[0].isdisjoint(defining[1])
+    assert ledger.graph.common_valid_solid(defining[0]) != ledger.graph.common_valid_solid(
+        defining[1]
+    )
+
+
+def test_round_clip_split_floor_and_depth_width_extremes_keep_roles() -> None:
+    round_clipped = build_fixture() & Cylinder(38, 40)
+    split_floor = build_fixture() - Pos(0, 0, 5) * Box(2, 50, 1)
+    deep = Box(60, 50, 10) + Pos(0, -20, 30) * Box(60, 10, 50) + Pos(0, 20, 30) * Box(60, 10, 50)
+    wider_than_long = (
+        Box(30, 80, 10) + Pos(0, -30, 13) * Box(30, 20, 16) + Pos(0, 30, 13) * Box(30, 20, 16)
+    )
+    for part in (round_clipped, split_floor, deep, wider_than_long):
+        assert _assert_roles(part)[0]
+
+
+def test_real_nonchannel_predicates_issue_no_evidence() -> None:
+    enclosed = Box(60, 60, 20) - Box(20, 20, 10)
+    through_slot = Box(60, 60, 20) - Box(20, 60, 20)
+    bridged = build_fixture() + Pos(0, 0, 13) * Box(4, 30, 6)
+    oblique = Rot(17, 23, 11) * build_fixture()
+    for part in (Box(30, 30, 30), enclosed, through_slot, bridged, oblique):
+        assert recognise_channels(part) == []
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_channels(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
 
 def test_step_traversal_and_supplied_edges_preserve_roles(monkeypatch, tmp_path: Path) -> None:
@@ -178,19 +400,44 @@ def test_terminal_inventory_retains_channel_identity() -> None:
     assert len(product.evidence.defining_of(candidates[0])) == 2
 
 
+def _qualified_calls(tree: ast.AST):
+    aliases = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+
+    def qualified(node):
+        if isinstance(node, ast.Name):
+            return aliases.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            return f"{qualified(node.value)}.{node.attr}"
+        return ""
+
+    return [(qualified(node.func), node) for node in ast.walk(tree) if isinstance(node, ast.Call)]
+
+
 def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
-    sites = []
+    sites: list[tuple[str, ast.Call]] = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and (
-                isinstance(node.func, ast.Name) and node.func.id == "_discover_channels"
-            ):
-                sites.append((path.name, node))
+        sites.extend(
+            (path.name, call)
+            for name, call in _qualified_calls(tree)
+            if name == "_discover_channels" or name.endswith("._discover_channels")
+        )
     assert {name for name, _call in sites} == {"_recess_features.py", "_registry.py"}
     registry = next(call for name, call in sites if name == "_registry.py")
     writer = {keyword.arg: keyword.value for keyword in registry.keywords}["writer"]
-    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert (
+        isinstance(writer, ast.Attribute)
+        and writer.attr == "writer"
+        and isinstance(writer.value, ast.Name)
+        and writer.value.id == "s"
+    )
 
     feature_tree = ast.parse(
         (ROOT / "src/b123d_recognisers/_recess_features.py").read_text(encoding="utf-8")
@@ -200,5 +447,61 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
         for node in feature_tree.body
         if isinstance(node, ast.FunctionDef) and node.name == "recognise_channels"
     )
-    call = next(node for node in ast.walk(public) if isinstance(node, ast.Call))
+    public_calls = [
+        call
+        for name, call in _qualified_calls(public)
+        if name == "_discover_channels" or name.endswith("._discover_channels")
+    ]
+    assert len(public_calls) == 1
+    (call,) = public_calls
     assert all(keyword.arg != "writer" for keyword in call.keywords)
+    graph = {keyword.arg: keyword.value for keyword in call.keywords}["graph"]
+    assert isinstance(graph, ast.IfExp) and isinstance(graph.orelse, ast.Attribute)
+
+    constructors = []
+    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        constructors.extend(
+            (path.name, name)
+            for name, _call in _qualified_calls(tree)
+            if name == "Channel" or name.endswith(".Channel")
+        )
+    assert len(constructors) == 1
+    assert constructors[0][0] == "_recess_core.py"
+    assert constructors[0][1].endswith(".Channel") or constructors[0][1] == "Channel"
+
+    core = ast.parse((ROOT / "src/b123d_recognisers/_recess_core.py").read_text(encoding="utf-8"))
+    proposal = next(
+        node
+        for node in core.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_channel_proposals_one"
+    )
+    assert (
+        sum(
+            name.endswith("._planar_faces") or name == "_planar_faces"
+            for name, _call in _qualified_calls(proposal)
+        )
+        == 1
+    )
+
+    forbidden = {
+        "EvidenceIndex",
+        "CandidateInventory",
+        "ReconciliationResult",
+        "reconcile_recess_candidates",
+        "recognise_slots",
+        "recognise_pockets",
+    }
+    imported = {
+        alias.name
+        for tree in (feature_tree, core)
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    assert imported.isdisjoint(forbidden)
+
+    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+
+    assert not any("_discover_channels" in site for site in SURFACE_READER_SITES)
+    assert "_recess_faces:_planar_faces:is_planar:1" in SURFACE_READER_SITES
