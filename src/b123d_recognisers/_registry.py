@@ -32,7 +32,7 @@ from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
-from b123d_recognisers.countersinks import CounterSink, recognise_countersinks
+from b123d_recognisers.countersinks import CounterSink, _discover_countersinks
 from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
@@ -270,9 +270,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_countersinks",
         (),
         always,
-        _simple(lambda s: list(recognise_countersinks(s.context.part))),
+        _simple(lambda s: list(_discover_countersinks(s.context.part, writer=s.writer))),
         Counted("countersink"),
-        IncompleteAttribution("no defining evidence is issued", "migrate countersink owner faces"),
+        FullyAttributed("every returned countersink claims its original conical seat face"),
     ),
     PhysicalDefinition(
         FamilyId.HOLES,

@@ -214,7 +214,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cone rim direction uses oriented frame",
     ),
-    "countersinks:recognise_countersinks:adaptor:1": (
+    "countersinks:_discover_countersinks:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cylinder direction uses oriented frame",
     ),

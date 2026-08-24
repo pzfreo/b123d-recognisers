@@ -102,3 +102,8 @@ writer-enabled aggregate call and writer-free public call preserve every existin
 record value/order. The core completes both cylinder and torus discovery, final sorting and all
 owner-face/common-solid validation before publishing. Each Candidate retains the exact returned
 record occurrence and only its original curved blend face as defining evidence.
+
+`recognise_countersinks` uses the same shape. On valid closed-solid inputs, its geometry-only
+public facade and private writer-enabled core preserve record type, value, order and `to_dict()`;
+each same-run Candidate retains exact returned-record identity. Open or ambiguous topology may
+remain publicly recognised for compatibility while aggregate evidence refuses before publication.

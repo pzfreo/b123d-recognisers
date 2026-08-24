@@ -732,6 +732,17 @@ The matrix includes arbitrary compound rotations because Countersinks have no pr
 and separately pins radius, axis-line, and fixed angular tolerances. Bucket 22 may be revealed once
 only after full gates and two independent exact-head accepts; zero occurrences still consume it.
 
+The private `_discover_countersinks` core carries each sorted `(CounterSink, original cone face)`
+occurrence through final output ordering. With the registry's graph-bound writer it resolves and
+validates every final owner before the first proposal, then issues only that cone as defining
+evidence; the public facade calls the same geometry path without a writer. A fresh adaptor/rim
+oracle reconstructs axis, location, both diameters, included angle and depth independently. The
+matrix covers X/Y/Z and arbitrary compound orientations, translation/mirror/scale, standard and
+inclusive maximum angles, multiple occurrences, STEP, geometry-only open-shell compatibility,
+negative/no-leak shapes and late validation refusal. The raw cylinder adaptor reader roster moves
+to the private core without changing its orientation-deferred disposition; `cone_rims` remains a
+separate reader authority. `COUNTERSINKS` becomes `FullyAttributed` on that same reviewed head.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
