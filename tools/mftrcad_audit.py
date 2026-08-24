@@ -36,6 +36,7 @@ F5_FLATS_H1: Final = "F5-FLATS-H1"
 F5_FILLETS_H1: Final = "F5-FILLETS-H1"
 F5_COUNTERSINKS_H1: Final = "F5-COUNTERSINKS-H1"
 F5_BOSSES_H1: Final = "F5-BOSSES-H1"
+F5_DOUBLE_D_BORES_H1: Final = "F5-DOUBLE-D-BORES-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -59,6 +60,12 @@ ALLOCATION_SPECS: Final = (
         "consumed",
     ),
     AllocationSpec(F5_BOSSES_H1, "f5_bosses_h1", frozenset({23}), "consumed"),
+    AllocationSpec(
+        F5_DOUBLE_D_BORES_H1,
+        "f5_double_d_bores_h1",
+        frozenset({24}),
+        "sealed_unrevealed",
+    ),
 )
 
 
@@ -191,6 +198,7 @@ Selection = Literal[
     "f5_fillets_h1",
     "f5_countersinks_h1",
     "f5_bosses_h1",
+    "f5_double_d_bores_h1",
 ]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS

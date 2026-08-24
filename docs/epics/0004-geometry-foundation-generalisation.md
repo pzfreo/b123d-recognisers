@@ -800,6 +800,12 @@ failure did not authorize an alternate scanner mode, rerun, replacement, predica
 change. Bucket 23 is permanently consumed and the holdout result is explicitly inconclusive; the
 exact ownership claim remains supported by the frozen development matrix and mechanical gates.
 
+F5g/#213 may begin only after #212 technically seals `F5-DOUBLE-D-BORES-H1`, MFTRCAD v1 bucket 24,
+without archive access. The allocation starts `sealed_unrevealed`, is permanently excluded from
+`unselected`, accepts only its exact non-transferable acknowledgement, and moves the normalized
+unselected complement to 25..999. Its sole purpose is the later one-shot Double-D attribution
+chronology; the neutral seal creates no recognition, evidence, result, or corpus-outcome claim.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
