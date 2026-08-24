@@ -137,6 +137,39 @@ def test_wall_chain_fact_boundary_fails_closed_on_malformed_snapshots(
     )
 
 
+def test_wall_chain_fact_boundary_refuses_structural_shape_errors() -> None:
+    base_intervals = {0: (-5.0, 5.0), 1: (-5.0, 5.0), 2: (-5.0, 5.0), 3: (-5.0, 5.0)}
+    cases: list[
+        tuple[
+            tuple[tuple[int, ...], ...],
+            tuple[int, ...],
+            dict[int, tuple[float, float]],
+            tuple[tuple[int, int], ...],
+        ]
+    ] = [
+        (((0,), (1,), (2,)), (0, 1, 2), base_intervals, ()),
+        (((0,), (0,), (2,), (3,)), (0, 1, 2, 3), {0: (-5, 5), 2: (-5, 5), 3: (-5, 5)}, ()),
+        (((0,), (1,), (2,), (3,)), (0, 1, 2, 3), {**base_intervals, 0: (-5, 4)}, ()),
+        (((0,), (1,), (2,), (3,)), (0, 1, 2, 3), base_intervals, ((0, 0),)),
+        (
+            ((0, 4), (1,), (2,), (3,)),
+            (0, 1, 2, 3),
+            {**base_intervals, 0: (-5, 0), 4: (0, 5)},
+            ((0, 0),),
+        ),
+    ]
+    for chains, high, intervals, edges in cases:
+        assert not _valid_wall_chain_facts(
+            chains,
+            high,
+            intervals,
+            edges,
+            lo=-5,
+            hi=5,
+            tol=1e-6,
+        )
+
+
 def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_issuance(
     monkeypatch,
 ) -> None:
@@ -839,6 +872,17 @@ def test_cross_occurrence_wall_reuse_refuses_before_publication(monkeypatch) -> 
     with pytest.raises(ValueError, match="assigned across occurrences"):
         _discover_double_d_bores(part, writer=ledger.writer)
     assert ledger.candidate_set_for(FamilyId.DOUBLE_D_BORES, ()).candidates == ()
+
+
+def test_incomplete_wall_component_refuses_before_publication(monkeypatch) -> None:
+    import b123d_recognisers.profiled_bores as module
+
+    part = _plate()
+    ledger = ClaimLedger(FaceGraph(part))
+    monkeypatch.setattr(module, "_complete_wall_component", lambda *_args, **_kwargs: ())
+    with pytest.raises(ValueError, match="no complete original wall component"):
+        _discover_double_d_bores(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.DOUBLE_D_BORES).candidates == ()
 
 
 def test_repeated_same_wall_reference_collapses_once(monkeypatch) -> None:
