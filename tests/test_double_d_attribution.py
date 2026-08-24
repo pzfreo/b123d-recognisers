@@ -3,8 +3,20 @@
 
 from __future__ import annotations
 
+import copy
+
 import pytest
-from build123d import Align, Box, Compound, Cylinder, GeomType, Pos, Rot
+from build123d import (
+    Align,
+    Box,
+    Compound,
+    Cylinder,
+    GeomType,
+    Pos,
+    Rot,
+    export_step,
+    import_step,
+)
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -78,6 +90,46 @@ def test_multiple_occurrences_keep_sorted_record_identity_and_wall_ownership() -
     for record, candidate in zip(records, candidates, strict=True):
         _assert_wall_role(ledger, record, candidate)
     assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
+
+
+def test_equal_full_records_from_distinct_solids_remain_identity_distinct() -> None:
+    first = _plate()
+    part = Compound([first, copy.deepcopy(first)])
+    ledger, records, candidates = _claimed(part)
+    assert len(records) == len(candidates) == 2
+    assert records[0] == records[1] and records[0] is not records[1]
+    assert candidates[0].record is records[0]
+    assert candidates[1].record is records[1]
+    assert ledger.defining_of(candidates[0]).isdisjoint(ledger.defining_of(candidates[1]))
+    owners = [
+        ledger.graph.common_valid_solid(ledger.defining_of(candidate))
+        for candidate in candidates
+    ]
+    assert owners[0] is not owners[1]
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Pos(17, -9, 4) * _plate(),
+        _plate().mirror(),
+        _plate().scale(0.1),
+        _plate().scale(10),
+    ],
+)
+def test_transform_and_scale_routes_keep_exact_wall_roles(part) -> None:
+    ledger, records, candidates = _claimed(part)
+    assert len(records) == 1
+    _assert_wall_role(ledger, records[0], candidates[0])
+
+
+def test_step_round_trip_retains_original_imported_wall_roles(tmp_path) -> None:
+    target = tmp_path / "double-d.step"
+    assert export_step(_plate(), target)
+    imported = import_step(target)
+    ledger, records, candidates = _claimed(imported)
+    assert len(records) == 1
+    _assert_wall_role(ledger, records[0], candidates[0])
 
 
 def test_aggregate_inventory_publishes_terminal_double_d_wall_evidence() -> None:
