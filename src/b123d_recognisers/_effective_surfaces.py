@@ -291,6 +291,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "Double-D lateral wall component plane/cylinder gate",
     ),
+    "profiled_bores:lateral:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "Double-D lateral wall role geometry",
+    ),
+    "profiled_bores:lateral:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "Double-D planar chord-wall branch",
+    ),
     "profiled_bores:double_d_profile:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "line boundary edge gate",
