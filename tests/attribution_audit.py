@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from math import hypot
+from math import atan2, degrees, hypot
 from typing import Any
 
 from build123d import GeomType
@@ -57,6 +57,7 @@ def assert_ring_role(ledger, candidate, record) -> None:
 
     expected = frozenset(node for node in ledger.graph.nodes if on_boundary(node))
     assert expected
+    assert len(expected) == record.sides == len(record.section)
     assert ledger.defining_of(candidate) == expected
 
 
@@ -64,7 +65,6 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
     """Derive all cylindrical bands that establish one turned rung."""
 
     axis = "xyz".index(record.axis)
-    midpoint = 0.5 * (record.lo + record.hi)
 
     inventory = (*analyse_cylinders(part)[0], *analyse_cylinders(part)[1])
     axis_bands = [
@@ -79,7 +79,7 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
             return False
         node = ledger.graph.require_node(item["face"])
         low, high = ledger.graph.bounds(node)[axis]
-        if not low - 1e-6 <= midpoint <= high + 1e-6:
+        if low > record.lo + 1e-6 or high < record.hi - 1e-6:
             return False
         components = item["dir_xyz"]
         return (
@@ -100,6 +100,14 @@ def assert_turned_step_role(part, ledger, candidate, record) -> None:
         if establishes(item)
     )
     assert expected
+    intervals = sorted(
+        ledger.graph.bounds(node)[axis] for node in expected
+    )
+    covered = record.lo
+    for low, high in intervals:
+        assert low <= covered + 1e-6
+        covered = max(covered, high)
+    assert covered >= record.hi - 1e-6
     assert ledger.defining_of(candidate) == expected
 
 
@@ -135,10 +143,14 @@ def assert_chamfer_role(ledger, candidate, record) -> None:
             record.leg1,
             record.leg2,
         )
+        assert round(degrees(atan2(min(axial, radial), max(axial, radial))), 2) == (
+            record.angle
+        )
     else:
         edge_i, _normal, _span, leg_hi, leg_lo = classify_bevel(face)
         assert edge_i == axis
         assert (round(leg_hi, 3), round(leg_lo, 3)) == (record.leg1, record.leg2)
+        assert round(degrees(atan2(leg_lo, leg_hi)), 2) == record.angle
 
 
 def assert_angled_step_role(ledger, candidate, record) -> None:
@@ -152,6 +164,7 @@ def assert_angled_step_role(ledger, candidate, record) -> None:
     center = face.center()
     assert edge_i == "xyz".index(record.axis)
     assert (round(leg_hi, 3), round(leg_lo, 3)) == (record.leg1, record.leg2)
+    assert round(degrees(atan2(leg_lo, leg_hi)), 2) == record.angle
     assert round(span[edge_i][1] - span[edge_i][0], 3) == record.length
     assert tuple(round(value, 3) for value in (center.X, center.Y, center.Z)) == record.at
 
@@ -168,8 +181,9 @@ def assert_groove_role(ledger, candidate, record) -> None:
         bounds = ledger.graph.bounds(node)
         if abs((bounds[axis][1] - bounds[axis][0]) - record.width) > 1e-6:
             return False
-        center = ledger.graph.face(node).center()
-        if abs((center.X, center.Y, center.Z)[axis] - record.at[axis]) > 1e-6:
+        bounds = ledger.graph.bounds(node)
+        center = tuple(0.5 * (low + high) for low, high in bounds)
+        if any(abs(center[at] - record.at[at]) > 1e-6 for at in range(3)):
             return False
         cylinder = BRepAdaptor_Surface(face.wrapped).Cylinder()
         direction = cylinder.Axis().Direction()
