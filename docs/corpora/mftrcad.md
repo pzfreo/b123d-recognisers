@@ -93,6 +93,10 @@ accepts and all mechanical gates. The selection contained 36 model triples (108 
 audit aborted when model `20240116_231044_6899` imported as an invalid B-rep, before a complete
 report or Countersinks attribution result existed. The allocation is therefore inconclusive and
 cannot be rerun, replaced, reused, or fitted. No alternate scanner mode was attempted.
+`F5-BOSSES-H1` is bucket 23 and is `sealed_unrevealed`. It was designated for #209 without opening
+the archive or inspecting bucket-23 membership, geometry, annotations, or outcomes. It remains
+excluded from `unselected`, accepts only its exact allocation acknowledgement, and may be revealed
+once only after the frozen Bosses implementation passes its pre-reveal gates.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become
@@ -116,8 +120,8 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 23–999 remain unselected; buckets 20, 21, and 22 are the named
-Flat, Fillet, and Countersink allocations. This keeps each draw near one
+may be fitted. Buckets 24–999 remain unselected; buckets 20, 21, 22, and 23 are the named
+Flat, Fillet, Countersink, and Boss allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
 closed; each named allocation accepts only its own exact acknowledgement.
