@@ -756,6 +756,13 @@ with one unambiguous owner cone: attempted extra edge incidence becomes open/inv
 The real open Shell plus late graph/body refusal is the bounded family evidence; a vacuous
 nonmanifold no-output shape is not counted as a distinct execution path.
 
+The authorised one-shot F5e reveal at exact pre-reveal PR #207 head `8c0462a` selected 36 model
+triples/108 files, then aborted when `20240116_231044_6899` imported as an invalid B-rep. It produced
+no complete scanner report and therefore no Countersinks attribution or output-retention claim.
+The failure did not authorize an alternate scanner mode, rerun, replacement, predicate change, or
+role change. Bucket 22 is permanently consumed and the holdout result is explicitly inconclusive;
+the exact ownership claim remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
