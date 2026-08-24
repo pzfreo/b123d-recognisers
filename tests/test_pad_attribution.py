@@ -7,6 +7,7 @@ import copy
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from build123d import Box, Compound, Cylinder, Plane, Pos, Rot, Shell, export_step, import_step
@@ -19,7 +20,12 @@ from b123d_recognisers import recognise_rectangular_pads
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
+from b123d_recognisers.pads import (
+    RaisedPad,
+    _discover_rectangular_pads,
+    _tier_suppresses,
+    _wall_role,
+)
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
@@ -52,6 +58,24 @@ def _pad():
 def _perforated_pad(radius: float):
     island = Box(30, 20, 4) - Pos(0, 0, -2) * Cylinder(radius, 8)
     return Box(80, 60, 10) + Pos(0, 0, 7) * island
+
+
+def _wall_fact(
+    face: object,
+    *,
+    normal_x: float = 1.0,
+    plane: float = 0.0,
+    cross_lo: float = -1.0,
+    cross_hi: float = 1.0,
+    base: float = 0.0,
+    top: float = 2.0,
+):
+    bounds = SimpleNamespace(
+        min=SimpleNamespace(X=plane, Y=cross_lo, Z=base),
+        max=SimpleNamespace(X=plane, Y=cross_hi, Z=top),
+    )
+    normal = SimpleNamespace(X=normal_x, Y=0.0, Z=0.0)
+    return face, bounds, normal
 
 
 @dataclass(frozen=True)
@@ -509,6 +533,71 @@ def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool) ->
         ledger = ClaimLedger(FaceGraph(part))
         assert _discover_rectangular_pads(part, writer=ledger.writer) == []
         assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    ("changes", "accepted"),
+    [
+        ({"normal_x": 0.99}, True),
+        ({"normal_x": 0.9899}, False),
+        ({"plane": 0.25}, True),
+        ({"plane": 0.2501}, False),
+        ({"top": 2.25}, True),
+        ({"top": 2.2501}, False),
+        ({"base": 1.7499}, True),
+        ({"base": 1.75}, False),
+        ({"cross_lo": -0.75}, True),
+        ({"cross_lo": -0.7499}, False),
+        ({"cross_hi": 0.75}, True),
+        ({"cross_hi": 0.7499}, False),
+    ],
+)
+def test_wall_role_predicate_boundaries(changes: dict[str, float], accepted: bool) -> None:
+    face = object()
+    result = _wall_role(
+        [_wall_fact(face, **changes)],
+        axis="x",
+        pos=0,
+        lo=-1,
+        hi=1,
+        top=2,
+        tol=0.25,
+    )
+    assert (result is not None) is accepted
+    if accepted:
+        assert result is not None and result[1] == (face,)
+
+
+def test_wall_role_selects_every_exact_maximal_base_tie() -> None:
+    low, high, tied = object(), object(), object()
+    result = _wall_role(
+        [
+            _wall_fact(low, base=0),
+            _wall_fact(high, base=1),
+            _wall_fact(tied, base=1),
+        ],
+        axis="x",
+        pos=0,
+        lo=-1,
+        hi=1,
+        top=2,
+        tol=0.2,
+    )
+    assert result == (1, (high, tied))
+
+
+@pytest.mark.parametrize(
+    ("z_delta", "plan_gap", "accepted"),
+    [
+        (0.25, 0.25, True),
+        (0.2501, 0.25, False),
+        (0.25, 0.2501, False),
+    ],
+)
+def test_tier_suppression_boundaries(z_delta: float, plan_gap: float, accepted: bool) -> None:
+    pad = RaisedPad(0, 1, 0, 1, 2, 3)
+    region = RaisedPad(1 + plan_gap, 2 + plan_gap, 0, 1, 2 + z_delta, 2 + z_delta)
+    assert _tier_suppresses(pad, region, tol=0.25) is accepted
 
 
 def test_small_pad_on_large_part_remains_attributed() -> None:

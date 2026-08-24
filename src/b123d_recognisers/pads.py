@@ -45,6 +45,59 @@ class _PadProposal:
     wall_roles: tuple[tuple[FaceLike, ...], ...]
 
 
+def _wall_role(
+    vertical_faces: list[tuple[FaceLike, Any, Any]],
+    *,
+    axis: str,
+    pos: float,
+    lo: float,
+    hi: float,
+    top: float,
+    tol: float,
+) -> tuple[float, tuple[FaceLike, ...]] | None:
+    """Return the current maximal-base original faces for one perimeter role."""
+
+    matches = []
+    for face, bounds, normal in vertical_faces:
+        n_axis = abs(normal.X) if axis == "x" else abs(normal.Y)
+        if n_axis < AXIS_ALIGNED_COS:
+            continue
+        plane_pos = (
+            (bounds.min.X + bounds.max.X) / 2
+            if axis == "x"
+            else (bounds.min.Y + bounds.max.Y) / 2
+        )
+        cross_lo = bounds.min.Y if axis == "x" else bounds.min.X
+        cross_hi = bounds.max.Y if axis == "x" else bounds.max.X
+        if (
+            abs(plane_pos - pos) <= tol
+            and abs(bounds.max.Z - top) <= tol
+            and top - tol > bounds.min.Z
+            and cross_lo <= lo + tol
+            and cross_hi >= hi - tol
+        ):
+            matches.append((float(bounds.min.Z), face))
+    if not matches:
+        return None
+    base = max(item[0] for item in matches)
+    return base, tuple(face for candidate_base, face in matches if candidate_base == base)
+
+
+def _touches_plan(a: RaisedPad, b: RaisedPad, *, tol: float) -> bool:
+    """Return the current tolerance-inclusive XY contact predicate."""
+
+    return (
+        min(a.x1, b.x1) - max(a.x0, b.x0) >= -tol
+        and min(a.y1, b.y1) - max(a.y0, b.y0) >= -tol
+    )
+
+
+def _tier_suppresses(pad: RaisedPad, region: RaisedPad, *, tol: float) -> bool:
+    """Return whether one raw top is the current touching-tier suppression context."""
+
+    return abs(region.z1 - pad.z0) <= tol and _touches_plan(pad, region, tol=tol)
+
+
 def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProposal]:
     """Recognise pads using one solid's faces and bounds."""
     bb = part.bounding_box()
@@ -101,37 +154,13 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProp
         fb = face.bounding_box()
         vertical_faces.append((face, fb, normal))
 
-    def wall_role(
-        axis: str, pos: float, lo: float, hi: float, top: float
-    ) -> tuple[float, tuple[FaceLike, ...]] | None:
-        matches = []
-        for face, fb, normal in vertical_faces:
-            n_axis = abs(normal.X) if axis == "x" else abs(normal.Y)
-            if n_axis < AXIS_ALIGNED_COS:
-                continue
-            plane_pos = (fb.min.X + fb.max.X) / 2 if axis == "x" else (fb.min.Y + fb.max.Y) / 2
-            cross_lo = fb.min.Y if axis == "x" else fb.min.X
-            cross_hi = fb.max.Y if axis == "x" else fb.max.X
-            if (
-                abs(plane_pos - pos) <= tol
-                and abs(fb.max.Z - top) <= tol
-                and top - tol > fb.min.Z
-                and cross_lo <= lo + tol
-                and cross_hi >= hi - tol
-            ):
-                matches.append((float(fb.min.Z), face))
-        if not matches:
-            return None
-        base = max(item[0] for item in matches)
-        return base, tuple(face for candidate_base, face in matches if candidate_base == base)
-
     proposals: list[_PadProposal] = []
     for x0, x1, y0, y1, z1, top_face in raw_tops:
         roles = (
-            wall_role("x", x0, y0, y1, z1),
-            wall_role("x", x1, y0, y1, z1),
-            wall_role("y", y0, x0, x1, z1),
-            wall_role("y", y1, x0, x1, z1),
+            _wall_role(vertical_faces, axis="x", pos=x0, lo=y0, hi=y1, top=z1, tol=tol),
+            _wall_role(vertical_faces, axis="x", pos=x1, lo=y0, hi=y1, top=z1, tol=tol),
+            _wall_role(vertical_faces, axis="y", pos=y0, lo=x0, hi=x1, top=z1, tol=tol),
+            _wall_role(vertical_faces, axis="y", pos=y1, lo=x0, hi=x1, top=z1, tol=tol),
         )
         if any(role is None for role in roles):
             continue
@@ -153,17 +182,12 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProp
     # recovered local base.  Lower ledges on a sloped support can touch the pad in plan
     # without belonging to that stack; comparing every different Z discarded the
     # real upper pad.  Disjoint pads may legitimately have any number of heights.
-    def touches_plan(a: RaisedPad, b: RaisedPad) -> bool:
-        return (
-            min(a.x1, b.x1) - max(a.x0, b.x0) >= -tol and min(a.y1, b.y1) - max(a.y0, b.y0) >= -tol
-        )
-
     raw_regions = [RaisedPad(x0, x1, y0, y1, z1, z1) for x0, x1, y0, y1, z1, _face in raw_tops]
     return [
         proposal
         for proposal in proposals
         if not any(
-            abs(other.z1 - proposal.record.z0) <= tol and touches_plan(proposal.record, other)
+            _tier_suppresses(proposal.record, other, tol=tol)
             for other in raw_regions
         )
     ]
