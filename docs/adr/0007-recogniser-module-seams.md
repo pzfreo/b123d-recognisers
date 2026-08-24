@@ -254,3 +254,12 @@ conical seat face; coaxial bore-cylinder and line/radius facts remain transient 
 It cannot read claims, evidence, inventory, reconciliation, or another family output. Moving the
 raw cylinder adaptor loop changes only its machine-owned surface-reader roster key; the existing
 orientation-deferred disposition remains unchanged.
+
+For F5f, `_hole_features._discover_bosses` is the sole private writer-enabled Boss core and
+`_registry` its sole production writer caller. The public `recognise_bosses` compatibility facade
+retains its exact signature and delegates without a writer. The core carries only the returned
+record and immutable original segment-face snapshot; planes, cones, tori, spheres and weak curved
+partners visited by the shared Hole/Boss end classifier remain transient context. No parallel
+classifier trace is introduced, and the existing `_classify_end_uncached` surface-reader roster
+does not move. The core may issue original segment nodes but cannot read claims, frozen evidence,
+inventory, reconciliation or another family output.

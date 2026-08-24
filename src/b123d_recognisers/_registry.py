@@ -24,10 +24,10 @@ from b123d_recognisers._features import (
     HoleRecord,
     LinearArray,
     RectGrid,
-    recognise_bosses,
     recognise_hole_patterns,
     recognise_holes,
 )
+from b123d_recognisers._hole_features import _discover_bosses
 from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
@@ -309,11 +309,16 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                recognise_bosses(s.context.part, cyls=s.cylinders, face_edges=s.context.face_edges)
+                _discover_bosses(
+                    s.context.part,
+                    cyls=s.cylinders,
+                    face_edges=s.context.face_edges,
+                    writer=s.writer,
+                )
             )
         ),
         Counted("boss"),
-        IncompleteAttribution("no defining evidence is issued", "migrate cylindrical boss faces"),
+        FullyAttributed("every returned boss claims its original external segment faces"),
     ),
     PhysicalDefinition(
         FamilyId.POLYGONAL_BOSSES,

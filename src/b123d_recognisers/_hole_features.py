@@ -12,6 +12,8 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
 from b123d_recognisers._adjacency import FaceEdges, edge_face_map, frame_points_outward, neighbours
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
@@ -118,6 +120,12 @@ class BossRecord(Record):
     location: Vector3
     diameter: float
     height: float
+
+
+@dataclass(frozen=True, slots=True)
+class _BossProposal:
+    record: BossRecord
+    segment_faces: tuple[Face, ...]
 
 
 def _segments(cyls: list[CylinderEvidence]) -> list[SegmentEvidence]:
@@ -554,6 +562,18 @@ def recognise_bosses(
     re-scanning the solid (mirrors ``recognise_holes``'s parameter, so a caller
     computing both holes and bosses can share one analysis).
     """
+    return _discover_bosses(part, cyls=cyls, face_edges=face_edges)
+
+
+def _discover_bosses(
+    part: Part,
+    *,
+    cyls: CylinderInventory | None = None,
+    face_edges: FaceEdges | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[BossRecord]:
+    """Discover Bosses and validate every defining segment before publication."""
+
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
@@ -561,7 +581,7 @@ def recognise_bosses(
     edge_faces = edge_face_map(part.faces(), face_edges=face_edges)
     cache: dict = {}
 
-    bosses = []
+    proposals: list[_BossProposal] = []
     for seg in _segments(external):
         d = seg["dir_xyz"]
         lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache)
@@ -569,15 +589,32 @@ def recognise_bosses(
         # The free end is the open one (its cap faces away from the segment);
         # default to the high end when both or neither are open.
         from_hi = not (lo_state == "open" and hi_state != "open")
-        bosses.append(
-            BossRecord(
-                axis=_unit(d if from_hi else tuple(-c for c in d)),
-                location=_axis_point(seg, seg["s_hi"] if from_hi else seg["s_lo"]),
-                diameter=seg["diameter"],
-                height=round(seg["s_hi"] - seg["s_lo"], 2),
+        proposals.append(
+            _BossProposal(
+                BossRecord(
+                    axis=_unit(d if from_hi else tuple(-c for c in d)),
+                    location=_axis_point(seg, seg["s_hi"] if from_hi else seg["s_lo"]),
+                    diameter=seg["diameter"],
+                    height=round(seg["s_hi"] - seg["s_lo"], 2),
+                ),
+                tuple(seg["faces"]),
             )
         )
-    return bosses
+
+    if writer is not None:
+        pending = []
+        for proposal in proposals:
+            resolved = {
+                writer.graph.require_node(face) for face in proposal.segment_faces
+            }
+            nodes = tuple(node for node in writer.graph.nodes if node in resolved)
+            if not nodes or writer.graph.common_valid_solid(nodes) is None:
+                raise ValueError("Boss defining faces do not prove one valid solid")
+            pending.append((proposal.record, nodes))
+        for record, nodes in pending:
+            writer.add_defining(record, nodes, family=FamilyId.BOSSES)
+
+    return [proposal.record for proposal in proposals]
 
 
 def feature_diameters(

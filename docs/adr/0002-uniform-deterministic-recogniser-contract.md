@@ -107,3 +107,10 @@ record occurrence and only its original curved blend face as defining evidence.
 public facade and private writer-enabled core preserve record type, value, order and `to_dict()`;
 each same-run Candidate retains exact returned-record identity. Open or ambiguous topology may
 remain publicly recognised for compatibility while aggregate evidence refuses before publication.
+
+`recognise_bosses` follows without introducing a canonical sort: its private core preserves the
+existing `_segments(external)` emission order in both writer-free and writer-enabled calls. Each
+same-run Candidate is identity-bound to that returned occurrence and contains the complete
+graph-deduplicated set of original external cylinder faces in its producing segment. Every pending
+set binds to one valid solid before the first publication; end-classification faces remain transient
+consulted context. Equal-valued Boss records from distinct valid bodies remain distinct occurrences.

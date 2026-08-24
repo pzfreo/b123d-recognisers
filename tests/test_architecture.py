@@ -53,6 +53,8 @@ MODULE_SEAM_EDGES = {
     "_cylinder_substrate": {"_adjacency", "_geometry", "_typing"},
     "_hole_features": {
         "_adjacency",
+        "_candidates",
+        "_claims",
         "_cylinder_substrate",
         "_geometry",
         "_record",
@@ -116,6 +118,7 @@ MODULE_SEAM_EDGES = {
         "_candidates",
         "_claims",
         "_features",
+        "_hole_features",
         "_run",
         "_typing",
         "angled_steps",
