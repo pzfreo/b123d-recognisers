@@ -793,6 +793,13 @@ cylinders and a valid closed nonmanifold Solid likewise could not be constructed
 are rejected before Boss discovery, while open Shell and injected ambiguous/body failures exercise
 the nearest non-vacuous aggregate refusal boundaries.
 
+The authorised one-shot F5f reveal at exact pre-reveal PR #211 head `f3e7dd9` selected 32 model
+triples/96 files, then aborted when `20240124_001736_209` imported as an invalid B-rep. It produced
+no complete scanner report and therefore no Bosses attribution or output-retention claim. The
+failure did not authorize an alternate scanner mode, rerun, replacement, predicate change, or role
+change. Bucket 23 is permanently consumed and the holdout result is explicitly inconclusive; the
+exact ownership claim remains supported by the frozen development matrix and mechanical gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
