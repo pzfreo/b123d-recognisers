@@ -87,6 +87,11 @@ selection remains mandatory and generic holdout authority cannot reveal one.
 archive or inspecting bucket-21 membership or outcomes, then revealed once only after #201's frozen
 exact-head implementation had two independent accepts and all mechanical gates. It remains excluded
 from `unselected`, requires its exact acknowledgement, and cannot be reused as sealed evidence.
+`F5-COUNTERSINKS-H1` is bucket 22 and is `sealed_unrevealed`; it was designated for #205 without
+opening the external archive or inspecting membership, geometry, annotations, or outcomes. It is
+permanently excluded from `unselected` and requires its own exact acknowledgement after the frozen
+Countersinks implementation gates and two independent accepts. A zero-result reveal is inconclusive
+and still consumes the allocation.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to consumed regression evidence. The authorised F5c reveal at
@@ -108,8 +113,8 @@ remains development-matrix evidence rather than an H1 claim.
 
 The two draws are disjoint. Development outcomes may be inspected. Holdout outcomes stay sealed
 until a semantic child has two independent pre-reveal accepts; after reveal they become regression
-evidence and cannot be fitted. Buckets 22–999 remain unselected; buckets 20 and 21 are the named
-Flat and Fillet allocations. This keeps each draw near one
+evidence and cannot be fitted. Buckets 23–999 remain unselected; buckets 20, 21, and 22 are the named
+Flat, Fillet, and Countersink allocations. This keeps each draw near one
 percent without depending on class, topology, recognition result, or archive traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
 closed; each named allocation accepts only its own exact acknowledgement.
