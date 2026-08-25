@@ -133,12 +133,17 @@ counts or attribution outcomes are available or claimable. The temporary selecti
 no retry, alternate mode, replacement or fitting followed. The allocation is permanently
 inconclusive and is not regression evidence. The Wave 1 allocations were designated by neutral
 #216 without outcome access; authority remains exact and non-transferable.
-`F5-CHANNELS-H1` is independently `sealed_unrevealed` at bucket 28 for #225. The Channels
-allocation was added without opening the archive, inspecting membership, or running recognition;
-it supplies no outcome evidence. Authority remains exact and non-transferable between allocations,
+`F5-CHANNELS-H1` bucket 28 was selected exactly once at accepted pre-reveal PR #230 head
+`bdbe3cc`. The deterministic selection contained 28 model triples (84 files; selected-artifact
+SHA-256 `b9995ccd4acb273b2e1a2d81942bb848c838d3b65d8a51b75461bf4288b73319`). Annotation
+validation stopped because `20240125_003844_2492_result_rel.json` repeats an instance id in
+`relation[0]`, before that model's STEP import or recognition. The overall audit produced no
+complete report, so no aggregate Channel counts or attribution outcomes are available or
+claimable. The temporary selection was deleted; no retry, alternate mode, replacement or fitting
+followed. The allocation is permanently consumed and inconclusive, not regression evidence.
 `F5-PLATES-H1` is independently `sealed_unrevealed` at bucket 29 for #228. The Plates allocation
 was likewise added without archive access, membership inspection, recognition, or outcome evidence.
-Neither allocation's acknowledgement authorizes the other, and the ordinary `unselected`
+The Plates acknowledgement cannot authorize any consumed allocation; the ordinary `unselected`
 complement was then buckets 30..999.
 `F5-POLYGONAL-STOCK-H1` is independently `sealed_unrevealed` at bucket 30 for #232. It was
 designated without archive access, membership inspection, recognition, annotation reading, or

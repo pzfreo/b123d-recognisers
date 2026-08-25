@@ -843,8 +843,15 @@ not be retried, replaced or fitted.
 The Channels semantic child #225 is independently protected by `F5-CHANNELS-H1`, bucket 28. Its
 neutral seal adds the exact `f5_channels_h1` selection and acknowledgement while leaving the archive,
 membership and outcomes untouched; it moves the ordinary unselected complement to buckets 29..999.
-The allocation remains `sealed_unrevealed` until #225 completes its separately reviewed semantic and
-mechanical gates, and cannot borrow authority from any earlier family allocation.
+At accepted pre-reveal PR #230 head `bdbe3cc`, after two exact-head accepts and all mechanical,
+performance and CI gates, its one authorised selection contained 28 model triples (84 files).
+Annotation validation stopped on repeated instance membership in
+`20240125_003844_2492_result_rel.json` `relation[0]`, before that model's STEP import or
+recognition. The overall audit produced no complete report, so no aggregate Channel counts or
+attribution outcomes are available or claimable. Selected-artifact SHA-256:
+`b9995ccd4acb273b2e1a2d81942bb848c838d3b65d8a51b75461bf4288b73319`. The temporary
+selection was deleted and no retry, alternate mode, replacement or fitting followed. Bucket 28 is
+permanently consumed and inconclusive, not regression evidence.
 
 The Plates semantic child #228 is independently protected by `F5-PLATES-H1`, bucket 29. Its neutral
 seal adds the exact `f5_plates_h1` selection and acknowledgement without archive access, membership
@@ -860,6 +867,16 @@ inspection, recognition, annotation reading, or outcome evidence; the ordinary u
 complement moves to buckets 31..999. The allocation remains `sealed_unrevealed` until #232 clears
 two independent exact-head reviews and all mechanical gates. Its authority is non-transferable,
 and zero, abort, invalid, or completed reveal consumes it without replacement, retry, or fitting.
+
+F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
+aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
+geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and
+alternative pairs remain consulted. One original wall may truthfully define distinct Channels on
+its two sides when each occurrence retains a distinct ordered wall pair, exact record and one-body
+proof; only competing wall pairs for the same serialized record are ambiguous. All per-solid value
+ambiguity, graph identity and common-body checks complete before the first proposal is issued. Exact
+Channel ownership therefore remains established by the frozen development matrix rather than the
+inconclusive consumed allocation.
 
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to

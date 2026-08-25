@@ -135,7 +135,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(
         registry_module, "recognise_polygonal_stock", counted("polygonal_stock", [])
     )
-    monkeypatch.setattr(registry_module, "recognise_channels", counted("channels", []))
+    monkeypatch.setattr(registry_module, "_discover_channels", counted("channels", []))
     monkeypatch.setattr(registry_module, "recognise_slots", counted("slots", slots))
     monkeypatch.setattr(
         registry_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])

@@ -173,7 +173,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F5_CHANNELS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_CHANNELS_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
         F5_PLATES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_PLATES_H1]),
@@ -259,7 +259,7 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
         ),
         ("f5_pads_h1", F5_PADS_H1, 26, "consumed"),
         ("f5_holes_h1", F5_HOLES_H1, 27, "consumed"),
-        ("f5_channels_h1", F5_CHANNELS_H1, 28, "sealed_unrevealed"),
+        ("f5_channels_h1", F5_CHANNELS_H1, 28, "consumed"),
         ("f5_plates_h1", F5_PLATES_H1, 29, "sealed_unrevealed"),
         (
             "f5_polygonal_stock_h1",

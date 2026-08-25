@@ -88,3 +88,11 @@ therefore visible to anyone reading that recogniser or measuring its output.
 It also does not reopen the graph-versus-rules question. ADR 0004 decides for an attributed
 graph and against subgraph matching; a total reduction is compatible with entirely procedural
 recognisers, which is what `recognise_passages` demonstrates.
+
+## Amendment (Channel wall attribution, issue #225)
+
+Channel attribution does not add a shared-reduction filter. `_planar_faces` remains total over
+planar faces and retains graph identity; Channel discovery itself continues to decline oblique or
+edge-ineligible walls and carries only the accepted opposed pair into its proposal. The floor and
+boundary facts consulted by the predicate do not become defining evidence merely because the
+shared reduction exposed them.

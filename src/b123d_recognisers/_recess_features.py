@@ -6,12 +6,13 @@ from __future__ import annotations
 
 from functools import partial
 
-from b123d_recognisers._adjacency import FaceEdges
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
+    _channel_proposals_one,
     _channel_sort_key,
-    _recognise_channels_one,
+    _ChannelProposal,
     _recognise_pockets_one,
     _recognise_slots_one,
 )
@@ -141,12 +142,54 @@ def recognise_channels(
     builds its own. Passing the run's keeps a census to a single graph rather than one per solid
     for this family alone.
     """
+    return _discover_channels(
+        part,
+        face_edges=face_edges,
+        graph=None if ledger is None else ledger.graph,
+    )
+
+
+def _discover_channels(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[Channel]:
+    """Discover Channels and optionally issue their exact opposed-wall evidence."""
+
+    if graph is not None and writer is not None and graph is not writer.graph:
+        raise ValueError("Channel graph and writer must share one authority")
+    owner = writer.graph if writer is not None else graph
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    graph = None if ledger is None else ledger.graph
-    channels = [
-        channel
-        for solid in sources
-        for channel in _recognise_channels_one(solid, face_edges, graph)
-    ]
-    return sorted(channels, key=_channel_sort_key)
+    retained: list[_ChannelProposal] = []
+    for solid in sources:
+        proposals = _channel_proposals_one(solid, face_edges, owner)
+        by_record: dict[Channel, list[_ChannelProposal]] = {}
+        for proposal in proposals:
+            by_record.setdefault(proposal.record, []).append(proposal)
+        for record in sorted(by_record, key=_channel_sort_key):
+            unique = {}
+            for proposal in by_record[record]:
+                unique[(proposal.low_wall, proposal.high_wall)] = proposal
+            if writer is not None and len(unique) != 1:
+                raise ValueError("Channel value has ambiguous opposed-wall occurrences")
+            retained.append(next(iter(unique.values())))
+
+    retained.sort(key=lambda proposal: _channel_sort_key(proposal.record))
+    if writer is not None:
+        pending = []
+        for proposal in retained:
+            nodes = (proposal.low_wall, proposal.high_wall)
+            if nodes[0] == nodes[1]:
+                raise ValueError("Channel side walls must be distinct")
+            # Revalidate the graph-issued snapshots immediately before publication.
+            writer.graph.face(nodes[0])
+            writer.graph.face(nodes[1])
+            if writer.graph.common_valid_solid(nodes) is None:
+                raise ValueError("Channel side walls do not prove one valid solid")
+            pending.append((proposal.record, nodes))
+        for record, nodes in pending:
+            writer.add_defining(record, nodes, family=FamilyId.CHANNELS)
+    return [proposal.record for proposal in retained]
