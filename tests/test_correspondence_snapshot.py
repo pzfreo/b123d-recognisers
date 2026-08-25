@@ -186,6 +186,33 @@ def test_planar_trimmed_circle_integral_reconstructs_the_arc() -> None:
     ) == pytest.approx(0.25 * math.pi)
 
 
+def test_cylindrical_seam_matching_graph_erases_wire_presentation(monkeypatch) -> None:
+    part = Cylinder(10, 20)
+    graph = FaceGraph(part)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    descriptor = graph.body_geometry(solid).descriptor
+    source = matching_boundary_for_solid(part, descriptor)
+
+    wire_edges = Wire.edges
+    monkeypatch.setattr(Wire, "edges", lambda self: list(reversed(wire_edges(self))))
+
+    assert matching_boundary_for_solid(part, descriptor) == source
+    cylinder = next(face for face in source.faces if face.kind == "CYLINDER")
+    assert cylinder.wires[0].theta_winding == 0
+    seam_uses = tuple(
+        item
+        for item in cylinder.wires[0].cycle
+        if source.curves[item.curve].kind == "LINE"
+    )
+    assert len(seam_uses) == 2
+    assert seam_uses[0].curve == seam_uses[1].curve
+    seam_thetas = sorted(
+        item.start.parameter[0] for item in seam_uses if item.start is not None
+    )
+    assert seam_thetas == pytest.approx((0.0, 2.0 * math.pi), abs=_body_geometry.ANGLE_TOL)
+
+
 def _rrp(repeats: int = 5):
     part = Cylinder(20, 10)
     for index in range(repeats):

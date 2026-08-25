@@ -14,7 +14,7 @@ from itertools import permutations, product
 from typing import Any, TypeAlias, cast
 
 from build123d import GeomType
-from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
@@ -154,6 +154,16 @@ class MatchingBoundaryGraph:
     wire_count: int
     edge_occurrence_count: int
     symmetric: bool
+
+
+@dataclass(slots=True)
+class _MatchingConstructionBudget:
+    attempts: int = 0
+
+    def charge(self) -> None:
+        self.attempts += 1
+        if self.attempts > CANONICAL_SERIALIZATION_BUDGET:
+            raise UnsupportedBodyGeometry("matching boundary construction budget exceeded")
 
 
 @dataclass(frozen=True, slots=True)
@@ -927,6 +937,157 @@ def _planar_cycle(
     return MatchingWire(role, 0, min(oriented))
 
 
+def _cylinder_parameter(
+    adaptor: BRepAdaptor_Surface,
+    raw_u: float,
+    raw_v: float,
+    face: FaceGeometry,
+    centre: QPoint,
+    quantum: float,
+) -> tuple[float, float]:
+    axis = cast(QPoint, face.parameters[:3])
+    axis_point = cast(QPoint, face.parameters[3:6])
+    u_axis, v_axis = _plane_basis(axis)
+    cylinder = adaptor.Cylinder()
+    raw_axis = _vector(cylinder.Axis().Direction())
+    axis_sign = 1.0 if sum(a * b for a, b in zip(raw_axis, axis, strict=True)) > 0 else -1.0
+    origin = adaptor.Value(0.0, raw_v)
+    origin_relative = (
+        origin.X() - centre[0] - axis_point[0],
+        origin.Y() - centre[1] - axis_point[1],
+        origin.Z() - centre[2] - axis_point[2],
+    )
+    radial = tuple(
+        value - sum(x * n for x, n in zip(origin_relative, axis, strict=True)) * normal
+        for value, normal in zip(origin_relative, axis, strict=True)
+    )
+    phase = math.atan2(
+        sum(value * basis for value, basis in zip(radial, v_axis, strict=True)),
+        sum(value * basis for value, basis in zip(radial, u_axis, strict=True)),
+    )
+    point = adaptor.Value(raw_u, raw_v)
+    relative = (
+        point.X() - centre[0] - axis_point[0],
+        point.Y() - centre[1] - axis_point[1],
+        point.Z() - centre[2] - axis_point[2],
+    )
+    z = sum(value * normal for value, normal in zip(relative, axis, strict=True))
+    return (
+        _snap_checked(phase + axis_sign * raw_u, ANGLE_TOL, name="cylinder theta"),
+        _snap_checked(z, quantum, name="cylinder z"),
+    )
+
+
+def _cylinder_cycle(
+    face_wrapper: Any,
+    wire: Any,
+    curve_indices: tuple[int, ...],
+    curves: tuple[MatchingCurve, ...],
+    role: str,
+    face: FaceGeometry,
+    centre: QPoint,
+    quantum: float,
+    vertex_labels: tuple[QPoint, ...],
+    budget: _MatchingConstructionBudget,
+) -> MatchingWire:
+    surface = BRepAdaptor_Surface(face_wrapper.wrapped)
+    occurrences = []
+    for edge, curve_index in zip(wire.edges(), curve_indices, strict=True):
+        pcurve = BRepAdaptor_Curve2d(edge.wrapped, face_wrapper.wrapped)
+        first = pcurve.FirstParameter()
+        last = pcurve.LastParameter()
+        raw_start = pcurve.Value(first)
+        raw_end = pcurve.Value(last)
+        if edge.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
+            raw_start, raw_end = raw_end, raw_start
+        start_parameter = _cylinder_parameter(
+            surface, raw_start.X(), raw_start.Y(), face, centre, quantum
+        )
+        end_parameter = _cylinder_parameter(
+            surface, raw_end.X(), raw_end.Y(), face, centre, quantum
+        )
+        curve = curves[curve_index]
+        if curve.full:
+            direction = 1 if end_parameter[0] > start_parameter[0] else -1
+            start = end = None
+        else:
+            if curve.vertices is None:
+                raise UnsupportedBodyGeometry("trimmed cylinder curve has no vertices")
+            start_point = surface.Value(raw_start.X(), raw_start.Y())
+            end_point = surface.Value(raw_end.X(), raw_end.Y())
+            start_label = _relative_point(
+                tuple(
+                    value - origin
+                    for value, origin in zip(start_point.Coord(), centre, strict=True)
+                ),
+                quantum,
+                name="matching vertex",
+            )
+            end_label = _relative_point(
+                tuple(
+                    value - origin
+                    for value, origin in zip(end_point.Coord(), centre, strict=True)
+                ),
+                quantum,
+                name="matching vertex",
+            )
+            start_index = next(
+                (index for index, label in enumerate(vertex_labels) if label == start_label), None
+            )
+            end_index = next(
+                (index for index, label in enumerate(vertex_labels) if label == end_label), None
+            )
+            if start_index is None or end_index is None:
+                raise UnsupportedBodyGeometry("cylinder half-edge lost its global vertex")
+            direction = 1 if (start_index, end_index) == curve.vertices else -1
+            start = MatchingWireVertex(start_index, start_parameter)
+            end = MatchingWireVertex(end_index, end_parameter)
+        occurrences.append(
+            (MatchingHalfEdge(curve_index, direction, start, end), start_parameter, end_parameter)
+        )
+    if not occurrences:
+        raise UnsupportedBodyGeometry("matching cylinder wire is empty")
+    joined_items = []
+    for candidate in permutations(occurrences):
+        budget.charge()
+        if all(
+            left[2] == right[1]
+            for left, right in zip(candidate, candidate[1:] + candidate[:1], strict=True)
+        ):
+            joined_items.append(candidate)
+    joined = tuple(joined_items)
+    if not joined:
+        raise UnsupportedBodyGeometry("matching cylinder pcurve cycle does not join")
+    canonical_sequences = {
+        tuple(item for item, _, _ in candidate): candidate for candidate in joined
+    }
+    canonical_cycle = min(canonical_sequences)
+    occurrences = list(canonical_sequences[canonical_cycle])
+    area = 0.5 * sum(
+        left[0] * right[1] - right[0] * left[1]
+        for _, left, right in occurrences
+    )
+    if abs(area) <= ANGLE_TOL * quantum:
+        raise UnsupportedBodyGeometry("matching cylinder wire area is degenerate")
+    expected_positive = (role == "outer") == (face.material_side > 0)
+    if (area > 0.0) != expected_positive:
+        occurrences = [
+            (
+                MatchingHalfEdge(item.curve, -item.direction, item.end, item.start),
+                end,
+                start,
+            )
+            for item, start, end in reversed(occurrences)
+        ]
+    cycle = tuple(item for item, _, _ in occurrences)
+    rotations = tuple(cycle[index:] + cycle[:index] for index in range(len(cycle)))
+    theta_delta = sum(end[0] - start[0] for _, start, end in occurrences)
+    theta_winding = int(round(theta_delta / (2.0 * math.pi)))
+    if abs(theta_delta - theta_winding * 2.0 * math.pi) > 4.0 * ANGLE_TOL:
+        raise UnsupportedBodyGeometry("matching cylinder theta lift does not close")
+    return MatchingWire(role, theta_winding, min(rotations))
+
+
 def _matching_graph_canonical(
     vertices: tuple[QPoint, ...],
     curves: tuple[MatchingCurve, ...],
@@ -1026,6 +1187,7 @@ def matching_boundary_for_solid(
 
     centre = descriptor.placement.centre_of_mass
     quantum = descriptor.quantization.metric_quantum
+    budget = _MatchingConstructionBudget()
     raw_vertices: list[Any] = []
     raw_curves: list[Any] = []
     curve_examples: list[Any] = []
@@ -1096,18 +1258,37 @@ def matching_boundary_for_solid(
     for face_index, (build, wire_roster) in enumerate(
         zip(face_builds, face_curve_indices, strict=True)
     ):
-        if build.geometry.kind != "PLANE":
-            raise UnsupportedBodyGeometry("initial matching boundary grammar is planar")
         matching_wires = []
-        for wire_index, (role, curve_indices) in enumerate(wire_roster):
-            matching = _planar_cycle(
-                curve_indices,
-                curves,
-                role,
-                build.geometry,
-                quantum,
-                vertex_labels,
-            )
+        face_wires = tuple(faces[face_index].wires())
+        if len(face_wires) != len(wire_roster):
+            raise UnsupportedBodyGeometry("matching face wire roster changed")
+        for wire_index, ((role, curve_indices), wire_wrapper) in enumerate(
+            zip(wire_roster, face_wires, strict=True)
+        ):
+            if build.geometry.kind == "PLANE":
+                matching = _planar_cycle(
+                    curve_indices,
+                    curves,
+                    role,
+                    build.geometry,
+                    quantum,
+                    vertex_labels,
+                )
+            elif build.geometry.kind == "CYLINDER":
+                matching = _cylinder_cycle(
+                    faces[face_index],
+                    wire_wrapper,
+                    curve_indices,
+                    curves,
+                    role,
+                    build.geometry,
+                    centre,
+                    quantum,
+                    vertex_labels,
+                    budget,
+                )
+            else:
+                raise UnsupportedBodyGeometry("matching boundary surface is unsupported")
             matching_wires.append(matching)
             for occurrence, half_edge in enumerate(matching.cycle):
                 incidence.setdefault(half_edge.curve, []).append(
