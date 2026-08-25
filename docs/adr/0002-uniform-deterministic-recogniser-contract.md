@@ -130,6 +130,15 @@ values.  A Polygonal Boss owns exactly the six original vertical side faces in i
 Terminal, support and transition caps remain consulted geometry and are never defining evidence.
 `PolygonalStock` remains a separate public record and attribution family.
 
+## Amendment (Polygonal Stock attribution, issue #232)
+
+`recognise_polygonal_stock` remains the writer-free facade over a private optional-writer core.
+Each aggregate occurrence owns the complete eight-face boundary of its one valid solid: six
+geometrically ordered outward side faces and the uniquely selected lower and upper terminal caps.
+Cap identity is retained when recognition selects the cap; it is never inferred later from a
+leftover face or rematched from rounded base/top values. Polygonal Stock remains `NotCounted`
+because it is stock context rather than a machined feature, independently of complete attribution.
+
 `recognise_rectangular_pads` follows the same private-core contract. Its public facade remains
 geometry-only and preserves the existing per-solid value deduplication and global record sort. Each
 issuable occurrence owns exactly five pairwise-distinct original faces: the accepted +Z top and the

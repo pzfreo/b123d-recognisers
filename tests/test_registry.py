@@ -63,6 +63,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.BOSSES,
         FamilyId.DOUBLE_D_BORES,
         FamilyId.POLYGONAL_BOSSES,
+        FamilyId.POLYGONAL_STOCK,
         FamilyId.PADS,
         FamilyId.PLATES,
     }

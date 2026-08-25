@@ -176,7 +176,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F5_POLYGONAL_STOCK_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_STOCK_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
         F5_SLOTS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_SLOTS_H1]),

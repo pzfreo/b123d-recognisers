@@ -289,7 +289,13 @@ its whole-run graph and writer.  Single-solid discovery may reuse that graph; mu
 deliberately retains one local graph per solid and carries the six original side faces back to the
 whole-run graph for issuance.  Terminal/support/transition caps remain transient consulted context.
 The core may issue only the six side nodes and cannot read claims, frozen evidence, inventory,
-reconciliation or another family output.  `POLYGONAL_STOCK` remains outside this migration.
+reconciliation or another family output.
+
+For Polygonal Stock attribution, `polygonal_bosses._discover_polygonal_stock` is the sole private
+writer-enabled core and `_registry` its sole production writer caller. The registry passes its exact
+shared graph and writer. Discovery carries selected side and cap identities through record creation,
+then proves the resulting eight nodes equal the complete graph inventory and share one SolidRef.
+The public facade supplies no writer, and the core reads no Candidate or reconciliation product.
 
 For the F5 rectangular-Pad migration, `pads._discover_rectangular_pads` is the sole private
 writer-enabled core and `_registry` its sole production writer caller. The public facade delegates

@@ -44,7 +44,7 @@ from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
     PolygonalStock,
     _discover_polygonal_bosses,
-    recognise_polygonal_stock,
+    _discover_polygonal_stock,
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
 from b123d_recognisers.profiled_bores import DoubleDBore, _discover_double_d_bores
@@ -323,11 +323,17 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_polygonal_stock",
         (),
         always,
-        _simple(lambda s: list(recognise_polygonal_stock(s.context.part, graph=s.context.graph))),
-        NotCounted("stock context is not a machined feature"),
-        IncompleteAttribution(
-            "stock context is not machined-feature ownership", "reviewed structural exclusion"
+        _simple(
+            lambda s: list(
+                _discover_polygonal_stock(
+                    s.context.part,
+                    graph=s.context.graph,
+                    writer=s.writer,
+                )
+            )
         ),
+        NotCounted("stock context is not a machined feature"),
+        FullyAttributed("every returned Polygonal Stock owns its complete eight-face boundary"),
     ),
     PhysicalDefinition(
         FamilyId.CHANNELS,
