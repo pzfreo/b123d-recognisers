@@ -40,8 +40,8 @@ class _RecessProposal(Generic[_R]):
 
     ``record`` remains the public value.  Proposal identity is deliberately object identity:
     equal records on separate solids are separate occurrences until the body-scoped projection.
-    Planar defining nodes and cylindrical cap groups are separate because #234 is neutral plumbing;
-    the later family migrations decide which roles become published defining evidence.
+    Planar defining nodes and cylindrical cap groups stay separate because this is neutral
+    plumbing; later family migrations decide which roles become published defining evidence.
     """
 
     record: _R
