@@ -14,7 +14,15 @@ from enum import Enum
 from itertools import permutations, product
 from typing import cast
 
-from b123d_recognisers._body_geometry import DESCRIPTOR_REL, DescriptorQuantization
+from b123d_recognisers._body_geometry import (
+    ANGLE_TOL,
+    DESCRIPTOR_REL,
+    DIRECTION_TOL,
+    DescriptorQuantization,
+    EdgeGeometry,
+    FaceGeometry,
+    WireGeometry,
+)
 from b123d_recognisers._correspondence import (
     AcceptedOccurrenceSnapshot,
     CorrespondenceSnapshot,
@@ -207,6 +215,215 @@ def _translated_point(left: Vector3, translation: Vector3, right: Vector3, bound
     )
 
 
+def _scaled_point(left: Vector3, scale: float, right: Vector3, bound: float) -> bool:
+    return all(
+        _close(scale * source, target, bound) for source, target in zip(left, right, strict=True)
+    )
+
+
+def _order_bound(
+    before: DescriptorQuantization,
+    after: DescriptorQuantization,
+    scale: float,
+    order: int,
+) -> float:
+    quantum_before = {
+        1: before.metric_quantum,
+        2: before.area_quantum,
+        3: before.volume_quantum,
+        5: before.moment_quantum,
+    }[order]
+    quantum_after = {
+        1: after.metric_quantum,
+        2: after.area_quantum,
+        3: after.volume_quantum,
+        5: after.moment_quantum,
+    }[order]
+    return 2.0 * (scale**order * quantum_before + quantum_after)
+
+
+def _edge_scaled(
+    before: EdgeGeometry,
+    after: EdgeGeometry,
+    scale: float,
+    quant_before: DescriptorQuantization,
+    quant_after: DescriptorQuantization,
+) -> bool:
+    metric = _order_bound(quant_before, quant_after, scale, 1)
+    return (
+        before.kind == after.kind
+        and _scaled_point(before.start, scale, after.start, metric)
+        and _scaled_point(before.end, scale, after.end, metric)
+        and _close(scale * before.length, after.length, metric)
+        and ((before.centre is None) == (after.centre is None))
+        and (
+            before.centre is None
+            or _scaled_point(before.centre, scale, cast(Vector3, after.centre), metric)
+        )
+        and ((before.axis is None) == (after.axis is None))
+        and (
+            before.axis is None
+            or all(
+                _close(source, target, 4.0 * DIRECTION_TOL)
+                for source, target in zip(before.axis, cast(Vector3, after.axis), strict=True)
+            )
+        )
+        and ((before.radius is None) == (after.radius is None))
+        and (
+            before.radius is None
+            or _close(scale * before.radius, cast(float, after.radius), metric)
+        )
+        and ((before.sweep is None) == (after.sweep is None))
+        and (
+            before.sweep is None or _close(before.sweep, cast(float, after.sweep), 4.0 * ANGLE_TOL)
+        )
+        and before.full is after.full
+    )
+
+
+def _wire_scaled(
+    before: WireGeometry,
+    after: WireGeometry,
+    scale: float,
+    quant_before: DescriptorQuantization,
+    quant_after: DescriptorQuantization,
+) -> bool:
+    return (
+        before.role == after.role
+        and before.semantic_winding == after.semantic_winding
+        and len(before.edges) == len(after.edges)
+        and all(
+            left_direction == right_direction
+            and _edge_scaled(left, right, scale, quant_before, quant_after)
+            for (left, left_direction), (right, right_direction) in zip(
+                before.edges, after.edges, strict=True
+            )
+        )
+    )
+
+
+def _face_scaled(
+    before: FaceGeometry,
+    after: FaceGeometry,
+    scale: float,
+    quant_before: DescriptorQuantization,
+    quant_after: DescriptorQuantization,
+) -> bool:
+    metric = _order_bound(quant_before, quant_after, scale, 1)
+    area = _order_bound(quant_before, quant_after, scale, 2)
+    if before.kind != after.kind or len(before.parameters) != len(after.parameters):
+        return False
+    if before.kind == "PLANE":
+        parameters = all(
+            _close(source, target, 4.0 * DIRECTION_TOL)
+            for source, target in zip(before.parameters[:3], after.parameters[:3], strict=True)
+        ) and _close(scale * before.parameters[3], after.parameters[3], metric)
+    elif before.kind == "CYLINDER":
+        parameters = (
+            all(
+                _close(source, target, 4.0 * DIRECTION_TOL)
+                for source, target in zip(before.parameters[:3], after.parameters[:3], strict=True)
+            )
+            and all(
+                _close(scale * source, target, metric)
+                for source, target in zip(
+                    before.parameters[3:6], after.parameters[3:6], strict=True
+                )
+            )
+            and _close(scale * before.parameters[6], after.parameters[6], metric)
+        )
+    else:
+        return False
+    return (
+        parameters
+        and _close(scale**2 * before.area, after.area, area)
+        and _scaled_point(before.centroid, scale, after.centroid, metric)
+        and before.material_side == after.material_side
+        and len(before.wires) == len(after.wires)
+        and all(
+            _wire_scaled(left, right, scale, quant_before, quant_after)
+            for left, right in zip(before.wires, after.wires, strict=True)
+        )
+    )
+
+
+def _body_scaled(
+    before: AcceptedOccurrenceSnapshot,
+    after: AcceptedOccurrenceSnapshot,
+    scale: float,
+) -> bool:
+    left = before.body
+    right = after.body
+    qleft, qright = left.quantization, right.quantization
+    if (
+        left.placement.frame_status != right.placement.frame_status
+        or left.boundary.face_count != right.boundary.face_count
+        or left.boundary.wire_count != right.boundary.wire_count
+        or left.boundary.edge_occurrence_count != right.boundary.edge_occurrence_count
+        or left.boundary.symmetric is not right.boundary.symmetric
+        or len(left.boundary.faces) != len(right.boundary.faces)
+        or len(left.boundary.incidence) != len(right.boundary.incidence)
+    ):
+        return False
+    if not (
+        _close(
+            scale**3 * left.intrinsic.volume,
+            right.intrinsic.volume,
+            _order_bound(qleft, qright, scale, 3),
+        )
+        and _close(
+            scale**2 * left.intrinsic.surface_area,
+            right.intrinsic.surface_area,
+            _order_bound(qleft, qright, scale, 2),
+        )
+        and all(
+            _close(scale**5 * source, target, _order_bound(qleft, qright, scale, 5))
+            for source, target in zip(
+                left.intrinsic.principal_moments,
+                right.intrinsic.principal_moments,
+                strict=True,
+            )
+        )
+        and all(
+            _face_scaled(source, target, scale, qleft, qright)
+            for source, target in zip(left.boundary.faces, right.boundary.faces, strict=True)
+        )
+    ):
+        return False
+    return all(
+        source_occurrences == target_occurrences
+        and _edge_scaled(source_edge, target_edge, scale, qleft, qright)
+        for (source_edge, source_occurrences), (target_edge, target_occurrences) in zip(
+            left.boundary.incidence, right.boundary.incidence, strict=True
+        )
+    )
+
+
+def _signature_scaled(before: object, after: object, scale: float, bound: float) -> bool:
+    """Compare the explicit RRP `(kind, length, ((radius, angle), ...))` schema."""
+
+    if type(before) is not tuple or type(after) is not tuple or len(before) != len(after):
+        return False
+    for left, right in zip(before, after, strict=True):
+        if type(left) is not tuple or type(right) is not tuple or len(left) != 3 or len(right) != 3:
+            return False
+        if left[0] != right[0] or not _close(scale * left[1], right[1], bound):
+            return False
+        if (
+            type(left[2]) is not tuple
+            or type(right[2]) is not tuple
+            or len(left[2]) != len(right[2])
+        ):
+            return False
+        if any(
+            not _close(scale * source[0], target[0], bound)
+            or not _close(source[1], target[1], 4.0 * ANGLE_TOL)
+            for source, target in zip(left[2], right[2], strict=True)
+        ):
+            return False
+    return True
+
+
 def _translation_witness(
     before: AcceptedOccurrenceSnapshot, after: AcceptedOccurrenceSnapshot
 ) -> RigidScaleWitness | None:
@@ -215,32 +432,51 @@ def _translation_witness(
     if (
         before.family != after.family
         or before.record_type != after.record_type
-        or before.body.intrinsic != after.body.intrinsic
-        or before.body.boundary != after.body.boundary
-        or before.body.quantization != after.body.quantization
         or before.summary.repeat_count != after.summary.repeat_count
         or before.summary.edge_count != after.summary.edge_count
-        or before.summary.sector_signature != after.summary.sector_signature
-        or before.summary.defining != after.summary.defining
         or before.summary.axis != after.summary.axis
+    ):
+        return None
+    if before.body.intrinsic.volume <= 0.0 or after.body.intrinsic.volume <= 0.0:
+        return None
+    # Schema 2 retains the raw-mass-derived characteristic scale precisely so a similarity
+    # witness does not amplify error from the already-snapped public mass fact. The complete
+    # volume/area/moment values are still independently required below within their stored
+    # power-specific contracts.
+    scale = (
+        after.body.quantization.characteristic_scale / before.body.quantization.characteristic_scale
+    )
+    if not math.isfinite(scale) or scale <= 0.0 or not _body_scaled(before, after, scale):
+        return None
+    metric = _order_bound(before.body.quantization, after.body.quantization, scale, 1)
+    if not _signature_scaled(
+        before.summary.sector_signature, after.summary.sector_signature, scale, metric
+    ) or not all(
+        _face_scaled(left, right, scale, before.body.quantization, after.body.quantization)
+        for left, right in zip(before.summary.defining, after.summary.defining, strict=True)
     ):
         return None
     before_centre = before.body.placement.centre_of_mass
     after_centre = after.body.placement.centre_of_mass
     translation = tuple(
-        target - source for source, target in zip(before_centre, after_centre, strict=True)
+        target - scale * source for source, target in zip(before_centre, after_centre, strict=True)
     )
     translation = cast(Vector3, translation)
-    bound = _metric_bound(before.body.quantization, after.body.quantization)
-    if not _translated_point(before.summary.centre, translation, after.summary.centre, bound):
+    bound = metric
+    if not all(
+        _close(scale * source + delta, target, bound)
+        for source, delta, target in zip(
+            before.summary.centre, translation, after.summary.centre, strict=True
+        )
+    ):
         return None
     axis = "xyz".index(before.summary.axis)
     if any(
-        not _close(source + translation[axis], target, bound)
+        not _close(scale * source + translation[axis], target, bound)
         for source, target in zip(before.summary.span, after.summary.span, strict=True)
     ):
         return None
-    return RigidScaleWitness(IDENTITY_ROTATION, translation, 1.0)
+    return RigidScaleWitness(IDENTITY_ROTATION, translation, scale)
 
 
 def _maximum_matchings(
@@ -326,14 +562,14 @@ def _translation_relations(
         occurrence_matching, witness = internal[(before_group_at, after_group_at)]
         before_group = before.body_groups[before_group_at]
         after_group = after.body_groups[after_group_at]
-        identity = all(
-            abs(item)
-            <= _metric_bound(
-                before.occurrences[before_group[0]].body.quantization,
-                after.occurrences[after_group[0]].body.quantization,
-            )
-            for item in witness.translation
+        metric = _order_bound(
+            before.occurrences[before_group[0]].body.quantization,
+            after.occurrences[after_group[0]].body.quantization,
+            witness.scale,
+            1,
         )
+        scale_identity = max(witness.scale, 1.0 / witness.scale) - 1.0 <= SCALE_TOL
+        placement_identity = all(abs(item) <= metric for item in witness.translation)
         for left_at, right_at in occurrence_matching:
             left = before_group[left_at]
             right = after_group[right_at]
@@ -341,10 +577,16 @@ def _translation_relations(
             matched_after.add(right)
             relations.append(
                 CorrespondenceRelation(
-                    ChangeKind.UNCHANGED if identity else ChangeKind.MOVED,
+                    (
+                        ChangeKind.UNCHANGED
+                        if scale_identity and placement_identity
+                        else ChangeKind.MOVED
+                        if scale_identity
+                        else ChangeKind.RESIZED
+                    ),
                     (_ref("before", left, before),),
                     (_ref("after", right, after),),
-                    None if identity else witness,
+                    None if scale_identity and placement_identity else witness,
                 )
             )
     relations.extend(

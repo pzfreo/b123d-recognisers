@@ -73,3 +73,13 @@ def test_one_body_translation_has_one_shared_moved_witness() -> None:
     assert relation.witness is not None
     assert relation.witness.scale == 1.0
     assert relation.witness.translation == pytest.approx((11.0, -7.0, 3.0), abs=1e-6)
+
+
+def test_uniform_scale_precedes_its_placement_change() -> None:
+    before = _take_inventory(_line_rrp(5))
+    after = _take_inventory((Pos(11, -7, 3) * _line_rrp(5)).scale(2.0))
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [ChangeKind.RESIZED]
+    (relation,) = result.relations
+    assert relation.witness is not None
+    assert relation.witness.scale == pytest.approx(2.0, rel=1e-7)
