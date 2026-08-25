@@ -208,7 +208,6 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
         any(not group or tuple(sorted(group)) != group for group in snapshot.body_groups)
         or tuple(sorted(snapshot.body_groups)) != snapshot.body_groups
         or tuple(sorted(positions)) != tuple(range(len(snapshot.occurrences)))
-        or len(set(positions)) != len(positions)
     ):
         raise CorrespondenceSnapshotError("correspondence body groups are not a complete partition")
     for group in snapshot.body_groups:

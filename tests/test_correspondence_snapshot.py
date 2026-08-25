@@ -1257,6 +1257,12 @@ def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry()
         correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=1))
     with pytest.raises(CorrespondenceSnapshotError, match="schema is malformed"):
         correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=True))
+    for malformed in (
+        dataclasses.replace(one, occurrences=list(one.occurrences)),
+        dataclasses.replace(one, body_groups=list(one.body_groups)),
+    ):
+        with pytest.raises(CorrespondenceSnapshotError, match="body groups are malformed"):
+            correspondence_module._validate_snapshot(malformed)
     with pytest.raises(CorrespondenceSnapshotError, match="occurrence schema is malformed"):
         correspondence_module._validate_snapshot(dataclasses.replace(one, occurrences=(object(),)))
     malformed_body = dataclasses.replace(one.occurrences[0], body=object())
@@ -1277,6 +1283,20 @@ def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry()
     assert two.body_groups == ((0,), (1,))
     with pytest.raises(CorrespondenceSnapshotError, match="unequal geometry"):
         correspondence_module._validate_snapshot(dataclasses.replace(two, body_groups=((0, 1),)))
+
+    invalid_quantization = dataclasses.replace(
+        one.occurrences[0].body.quantization,
+        metric_quantum=0.0,
+    )
+    invalid_body = dataclasses.replace(
+        one.occurrences[0].body,
+        quantization=invalid_quantization,
+    )
+    invalid_occurrence = dataclasses.replace(one.occurrences[0], body=invalid_body)
+    with pytest.raises(CorrespondenceSnapshotError, match="quantization is invalid"):
+        correspondence_module._validate_snapshot(
+            dataclasses.replace(one, occurrences=(invalid_occurrence,))
+        )
 
 
 def test_cached_snapshot_malformed_occurrence_refuses_before_dereference() -> None:
