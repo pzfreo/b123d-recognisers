@@ -1005,6 +1005,13 @@ compatibility remains value/order identical. The compatibility ledger is project
 occurrences and publishes no new cap evidence. SLOT and POCKET remain `IncompleteAttribution`; no
 allocation, schema, census, reconciliation or public-output change belongs to this prerequisite.
 
+F5 Pocket attribution/#236 promotes only `POCKETS`. Opposed-wall routes define the intentionally
+merged wall union while their floor remains consulted; corner notches define their two walls and
+footprint floor; elongated and recovered obrounds define every selected endpoint patch in addition
+to any retained walls. Discovery validates every occurrence, identity and SolidRef before the first
+issuance. Public records/order, Pocket reconciliation and derived patterns remain unchanged, and
+the independently authorized bucket 32 remains sealed pending all review and delivery gates.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a

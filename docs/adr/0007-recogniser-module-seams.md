@@ -346,3 +346,7 @@ Issue #235 adds `_recess_features._discover_slots` as the sole writer-enabled Sl
 neutral proposal stack. The public compatibility facade and registry are its only production writer
 callers; the registry supplies the run `FaceEdges` and `services.writer`. Lower face, obround,
 reduction and core modules remain evidence-policy-free.
+
+Issue #236 makes `_recess_features._discover_pockets` the sole private writer-enabled Pocket
+adapter. The public compatibility facade and `_registry` are its only writer callers. Proposal,
+reduction and cap modules remain neutral identity carriers and do not read evidence or siblings.

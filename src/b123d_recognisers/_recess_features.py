@@ -217,15 +217,25 @@ def _discover_pockets(
     owner = writer.graph if writer is not None else graph
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
+    if writer is not None:
+        try:
+            for face in part.faces():
+                writer.graph.require_node(face)
+        except ValueError as exc:
+            if not _wrap_errors:
+                raise
+            raise _PocketAttributionError(
+                "Pocket source identity does not belong to this run"
+            ) from exc
     try:
         proposals = _body_scoped_proposals(
             sources,
             partial(_pocket_proposals_one, face_edges=face_edges, graph=owner),
         )
-    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
-        if not _wrap_errors:
+    except ValueError as exc:
+        if "obround cap clusters compete" not in str(exc):
             raise
-        raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc
+        raise _PocketAttributionError("Pocket endpoint cap ownership is ambiguous") from exc
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
     records = [proposal.record for proposal in proposals]
     if writer is None:
@@ -250,7 +260,7 @@ def _discover_pockets(
             pending.append((proposal.record, nodes))
     except _PocketAttributionError:
         raise
-    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+    except (IndexError, KeyError, ValueError) as exc:
         if not _wrap_errors:
             raise
         raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc

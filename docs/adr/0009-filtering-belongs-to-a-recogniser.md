@@ -106,3 +106,7 @@ Issue #235 does not move any Slot predicate into the evidence layer. The same pr
 merge/collapse decisions and cap selection establish both writer-free records and writer-enabled
 occurrences. The writer adapter validates identity and one-body provenance only; it neither reads
 other family outputs nor adds an acceptance or reconciliation filter.
+
+Issue #236 adds no Pocket admission predicate. Writer-enabled discovery publishes the exact
+sources retained by the same proposal and reduction path after identity and one-solid validation;
+writer-free discovery retains the historical record-only ambiguity behavior.
