@@ -907,7 +907,8 @@ at bucket 33, `F5-STEP-LEVELS-H1` at bucket 34 and `F5-RISERS-H1` at bucket 35. 
 selection tokens and acknowledgements are non-transferable, including between the three siblings.
 This designation changes only scanner policy, tests and documentation and moves the ordinary
 unselected complement to buckets 36..999; no archive membership, annotation, geometry,
-recognition result or outcome was inspected. Each remains `sealed_unrevealed` until its own
+recognition result or outcome was inspected. Before an authorized attempt, each remains
+`sealed_unrevealed` until its own
 semantic child has two independent exact-head accepts and all mechanical gates. Any authorized
 zero, abort, invalid or completed reveal consumes only that allocation without replacement, retry
 or fitting.
@@ -920,6 +921,35 @@ unioning cross-solid faces violates the one-body evidence invariant. Both regist
 remain writer-free, `IncompleteAttribution` and `NotCounted`, with their public values and aggregate
 behaviour unchanged. Occurrence-preserving/body-scoped records or an explicit multi-source ownership
 ADR are prerequisites to revisit them. Buckets 34 and 35 remain sealed and were not revealed.
+
+At accepted pre-reveal PR #245 head `6ccbedc`, after two independent exact-head accepts, all
+mechanical/package/performance gates, nine OS/Python CI jobs and Codecov patch/project success, the
+single authorized `f5_repeating_radial_profiles_h1`/`F5-REPEATING-RADIAL-PROFILES-H1` attempt found
+zero models. It stopped before annotation reading, STEP import or recognition and produced no
+report, digest, counts or outcomes. Temporary output was deleted and no retry, alternate root or
+allocation, replacement or fitting followed. Bucket 33 is permanently consumed and inconclusive,
+not regression evidence; buckets 34 and 35 remain sealed.
+
+F5 Repeating Radial Profile attribution/#239 uses one private writer-capable discovery core while
+preserving the public writer-free values, order and schema. Each retained occurrence carries its
+exact lower and upper extremal planar source faces through correspondence and sorting; the aggregate
+binds both to one valid solid and publishes the exact two defining nodes only after every occurrence
+has validated. Boundary curves, sampling, side regions and rejected alternatives remain consulted.
+This is exhaustive prevalidation atomicity: once staging succeeds, publication uses the issuer's
+validated no-fail proposal contract rather than inventing a family-local transaction or rollback.
+The family becomes `FullyAttributed` but retains
+`NotCounted("correspondence evidence is not a distinct feature")`; it remains neutral correspondence
+evidence rather than a manufacturing classifier. Bucket 33 remained sealed until the independent
+exact-head reviews and all frozen mechanical gates completed; its later zero-population attempt is
+the consumed, inconclusive lifecycle result recorded above.
+
+The frozen development matrix has real LINE-only bbox-centred and mixed LINE/CIRCLE
+common-circle-centred occurrences, including minimum five and higher prime counts. A bounded
+build123d/OCCT construction search did not produce a stable valid closed spline/freeform radial
+profile whose imported opposed wires preserve exact sampled bijection. This migration therefore
+makes no spline-specific acceptance claim and does not alter curve predicates to manufacture one;
+curve-kind mismatch and sampled-shape refusal remain pinned synthetically until a genuine supported
+fixture exists as a separately reviewed semantic prerequisite.
 
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original

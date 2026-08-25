@@ -191,3 +191,16 @@ identity set directly, with no record-value claim map between discovery and redu
 endpoint clusters retain every original cylindrical
 patch, separately from planar evidence. This substrate is private and neutral: public values/order,
 legacy claims, family attribution status and aggregate evidence publication do not change here.
+
+## Amendment (Repeating Radial Profile attribution, issue #239)
+
+`recognise_repeating_radial_profiles` remains a writer-free geometry facade. In an aggregate run,
+each retained occurrence owns exactly the two original opposed extremal planar faces whose complete
+outer boundaries establish its neutral rotational correspondence record. Boundary edges, sampled
+points, side regions, rejected faces, tolerance facts and correspondence alternatives are consulted
+geometry, not additional defining face evidence. Attribution does not classify gears, splines or
+manufacturing intent, and the family's existing non-census disposition remains unchanged.
+All discoverable geometry, source-identity and one-body failures are exhausted across the complete
+proposal roster before the first issue. Publication then relies on the issuer's validated proposal
+operation; this recogniser does not claim a separate transaction or rollback for arbitrary injected
+issuer failures.

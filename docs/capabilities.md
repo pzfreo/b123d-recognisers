@@ -250,7 +250,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `PolygonalStock` | One whole regular hexagonal Z-axis prism; output is exactly `axis="z"`, `side_count=6`. |
 | `RaisedPad` | One bounded rectangular +Z island with footprint and height evidence. |
 | `RectGrid` | A complete rectangular lattice of same-spec holes with the documented row/column basis convention. |
-| `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, not gear semantics. |
+| `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, defined by its two original opposed extremal planar source faces; not gear semantics. |
 | `RiserEvidence` | One full-span candidate riser before any consumer-specific level projection. |
 | `Slot` | One enclosed through-slot; no floor and no open longitudinal end. |
 | `SlotArray` | At least three identical compatible through-slots on one constant-pitch line. |

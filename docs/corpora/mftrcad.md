@@ -166,13 +166,21 @@ Each selection requires only its own exact acknowledgement; neither acknowledgem
 other selection or any earlier allocation. An authorized zero, abort, invalid or completed reveal
 consumes only that family's allocation without retry, replacement or fitting. The ordinary
 `unselected` complement was then buckets 33..999.
-`F5-REPEATING-RADIAL-PROFILES-H1`, `F5-STEP-LEVELS-H1` and `F5-RISERS-H1` are independently
-`sealed_unrevealed` at buckets 33, 34 and 35 for #239, #240 and #241. Their combined neutral
+`F5-REPEATING-RADIAL-PROFILES-H1`, `F5-STEP-LEVELS-H1` and `F5-RISERS-H1` were independently
+designated at buckets 33, 34 and 35 for #239, #240 and #241. Their combined neutral
 designation changed only allocation policy, tests and documentation: no archive membership,
 annotation, geometry, recognition result or outcome was inspected. Each token requires its own
 exact acknowledgement and cannot authorize either sibling or any earlier allocation. An
 authorized zero, abort, invalid or completed reveal consumes only that allocation without retry,
 replacement or fitting. The ordinary `unselected` complement is now buckets 36..999.
+At accepted PR #245 head `6ccbedc`, after two independent exact-head accepts and every local,
+package, performance, CI and coverage gate, the one authorized
+`f5_repeating_radial_profiles_h1` selection with acknowledgement
+`F5-REPEATING-RADIAL-PROFILES-H1` found zero models. Discovery stopped before annotation reading,
+STEP import or recognition, so no report, artifact digest, counts or attribution outcomes exist.
+The temporary output directory was deleted; no retry, alternate root/allocation, replacement or
+fitting followed. Bucket 33 is permanently consumed and inconclusive, not regression evidence.
+Buckets 34 and 35 remain independently `sealed_unrevealed`.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become

@@ -17,9 +17,12 @@ from math import atan2, cos, hypot, pi, sin
 
 from build123d import GeomType
 
+from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 from b123d_recognisers.profiled_bores import principal_boundary_plane
 
 _SAMPLES_PER_CURVE = 9
@@ -55,6 +58,7 @@ class _CurveEvidence:
 
 @dataclass(frozen=True)
 class _BoundaryEvidence:
+    face: FaceLike
     axis: str
     at: float
     plane_axes: tuple[str, str]
@@ -201,6 +205,33 @@ def _sample_wire(wire, plane_axes: tuple[str, str]) -> tuple[_CurveEvidence, ...
     return tuple(sampled)
 
 
+def _common_circle_centre(
+    wire, plane_axes: tuple[str, str], *, tol: float
+) -> tuple[float, float] | None:
+    """Return the unanimous centre of at least two circular outer-wire curves."""
+
+    centres: list[tuple[float, float]] = []
+    for edge in wire.edges():
+        if edge.geom_type != GeomType.CIRCLE:
+            continue
+        try:
+            centres.append(
+                (
+                    float(getattr(edge.arc_center, plane_axes[0].upper())),
+                    float(getattr(edge.arc_center, plane_axes[1].upper())),
+                )
+            )
+        except (AttributeError, ValueError):
+            return None
+    if len(centres) < 2:
+        return None
+    mean = (
+        sum(point[0] for point in centres) / len(centres),
+        sum(point[1] for point in centres) / len(centres),
+    )
+    return mean if all(_distance(point, mean) <= tol for point in centres) else None
+
+
 def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
     boundary = principal_boundary_plane(face, bbox)
     if boundary is None:
@@ -217,28 +248,7 @@ def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
     # spline extrema make its wire-bbox centre drift by 0.03 mm, while all 13 tip arcs carry
     # the exact source centre.  Fall back to the bbox only when there is no unique common
     # circle centre; the complete-wire bijection below remains the acceptance guard.
-    circle_centres: list[tuple[float, float]] = []
-    for edge in wire.edges():
-        if edge.geom_type != GeomType.CIRCLE:
-            continue
-        try:
-            circle_centres.append(
-                (
-                    float(getattr(edge.arc_center, plane_axes[0].upper())),
-                    float(getattr(edge.arc_center, plane_axes[1].upper())),
-                )
-            )
-        except (AttributeError, ValueError):
-            circle_centres = []
-            break
-    common_circle_centre: tuple[float, float] | None = None
-    if len(circle_centres) >= 2:
-        mean = (
-            sum(point[0] for point in circle_centres) / len(circle_centres),
-            sum(point[1] for point in circle_centres) / len(circle_centres),
-        )
-        if all(_distance(point, mean) <= tol for point in circle_centres):
-            common_circle_centre = mean
+    common_circle_centre = _common_circle_centre(wire, plane_axes, tol=tol)
     if common_circle_centre is None:
         wbb = wire.bounding_box()
         raw = tuple(float(getattr(wbb.center(), candidate.upper())) for candidate in plane_axes)
@@ -259,6 +269,7 @@ def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
         )
         if orbits is not None:
             return _BoundaryEvidence(
+                face,
                 axis,
                 at,
                 plane_axes,
@@ -270,9 +281,7 @@ def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
     return None
 
 
-def _profiles_correspond(
-    lower: _BoundaryEvidence, upper: _BoundaryEvidence, *, tol: float
-) -> bool:
+def _profiles_correspond(lower: _BoundaryEvidence, upper: _BoundaryEvidence, *, tol: float) -> bool:
     return (
         lower.axis == upper.axis
         and lower.plane_axes == upper.plane_axes
@@ -333,7 +342,20 @@ def _sector_signature(
     return tuple(sorted(signature))
 
 
-def _recognise_solid(solid, *, tol: float) -> list[RepeatingRadialProfile]:
+@dataclass(frozen=True, slots=True)
+class _RepeatingRadialProposal:
+    """One correspondence occurrence with its exact opposed source faces."""
+
+    record: RepeatingRadialProfile
+    lower_face: FaceLike
+    upper_face: FaceLike
+
+
+class _RepeatingRadialAttributionError(ValueError):
+    """A public geometry result whose aggregate source ownership is unprovable."""
+
+
+def _recognise_solid(solid, *, tol: float) -> list[_RepeatingRadialProposal]:
     bbox = solid.bounding_box()
     metric_tol = max(tol, part_scale(bbox) * 1e-5)
     boundaries = []
@@ -344,7 +366,7 @@ def _recognise_solid(solid, *, tol: float) -> list[RepeatingRadialProfile]:
             evidence = None
         if evidence is not None:
             boundaries.append(evidence)
-    found: list[RepeatingRadialProfile] = []
+    found: list[_RepeatingRadialProposal] = []
     for axis in "xyz":
         attr = axis.upper()
         lo = float(getattr(bbox.min, attr))
@@ -372,30 +394,78 @@ def _recognise_solid(solid, *, tol: float) -> list[RepeatingRadialProfile]:
             coords["xyz".index(lower.plane_axes[0])] = lower.centre[0]
             coords["xyz".index(lower.plane_axes[1])] = lower.centre[1]
             coords["xyz".index(axis)] = (lo + hi) / 2
-            found.append(
-                RepeatingRadialProfile(
-                    axis=axis,
-                    centre=(coords[0], coords[1], coords[2]),
-                    span=(lo, hi),
-                    repeat_count=lower.repeat_count,
-                    edge_count=len(lower.edges),
-                    sector_signature=_sector_signature(lower),
-                )
+            record = RepeatingRadialProfile(
+                axis=axis,
+                centre=(coords[0], coords[1], coords[2]),
+                span=(lo, hi),
+                repeat_count=lower.repeat_count,
+                edge_count=len(lower.edges),
+                sector_signature=_sector_signature(lower),
             )
+            found.append(_RepeatingRadialProposal(record, lower.face, matches[0].face))
     return found
+
+
+def _discover_repeating_radial_profiles(
+    part: Part,
+    *,
+    tol: float = 1e-5,
+    writer: EvidenceWriter | None = None,
+) -> list[RepeatingRadialProfile]:
+    """Discover neutral radial correspondence and optionally issue its opposed faces."""
+
+    solids = list(part.solids())
+    if not solids:
+        solids = [part]
+    proposals = sorted(
+        (proposal for solid in solids for proposal in _recognise_solid(solid, tol=tol)),
+        key=lambda proposal: proposal.record,
+    )
+    records = [proposal.record for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending: list[tuple[RepeatingRadialProfile, tuple[FaceNode, FaceNode]]] = []
+    used: set[FaceNode] = set()
+    try:
+        for proposal in proposals:
+            lower = writer.graph.require_node(proposal.lower_face)
+            upper = writer.graph.require_node(proposal.upper_face)
+            if lower is upper or lower == upper:
+                raise _RepeatingRadialAttributionError(
+                    "repeating radial profile requires two distinct source faces"
+                )
+            nodes = (lower, upper)
+            if used.intersection(nodes):
+                raise _RepeatingRadialAttributionError(
+                    "repeating radial profile source face is reused by another occurrence"
+                )
+            if writer.graph.common_valid_solid(nodes) is None:
+                raise _RepeatingRadialAttributionError(
+                    "repeating radial profile faces do not prove one valid solid"
+                )
+            used.update(nodes)
+            pending.append((proposal.record, nodes))
+    except _RepeatingRadialAttributionError:
+        raise
+    except (AttributeError, RuntimeError, ValueError) as exc:
+        raise _RepeatingRadialAttributionError(
+            "repeating radial profile source identity does not belong to this run"
+        ) from exc
+
+    # EvidenceWriter's validated proposal operation is the publication contract. Every
+    # attributable geometry/identity/body refusal has been exhausted above; discovery does not
+    # pretend it can transact or roll back arbitrary failures injected into the issuer itself.
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.REPEATING_RADIAL_PROFILES)
+    return records
 
 
 def recognise_repeating_radial_profiles(
     part: Part, *, tol: float = 1e-5
 ) -> list[RepeatingRadialProfile]:
     """Return complete repeating outer-profile evidence for each independently owned solid."""
-    solids = list(part.solids())
-    if not solids:
-        solids = [part]
-    found = [profile for solid in solids for profile in _recognise_solid(solid, tol=tol)]
-    # Preserve equal records from distinct solids. Lint must see two possible physical
-    # occurrences as ambiguous rather than deduplicating them into false uniqueness.
-    return sorted(found)
+    return _discover_repeating_radial_profiles(part, tol=tol)
 
 
 __all__ = ["RepeatingRadialProfile", "recognise_repeating_radial_profiles"]

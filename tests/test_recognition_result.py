@@ -149,7 +149,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     )
     monkeypatch.setattr(registry_module, "_discover_rectangular_pads", counted("pads", []))
     monkeypatch.setattr(
-        registry_module, "recognise_repeating_radial_profiles", counted("radial_profiles", [])
+        registry_module, "_discover_repeating_radial_profiles", counted("radial_profiles", [])
     )
     monkeypatch.setattr(registry_module, "recognise_turned_steps", cyl_consumer("turned_steps", []))
     levels = [FaceLevel(4.0, (0.0, 8.0), (0.0, 6.0)), FaceLevel(9.0)]

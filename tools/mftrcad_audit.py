@@ -99,7 +99,7 @@ ALLOCATION_SPECS: Final = (
         F5_REPEATING_RADIAL_PROFILES_H1,
         "f5_repeating_radial_profiles_h1",
         frozenset({33}),
-        "sealed_unrevealed",
+        "consumed",
     ),
     AllocationSpec(F5_STEP_LEVELS_H1, "f5_step_levels_h1", frozenset({34}), "sealed_unrevealed"),
     AllocationSpec(F5_RISERS_H1, "f5_risers_h1", frozenset({35}), "sealed_unrevealed"),
