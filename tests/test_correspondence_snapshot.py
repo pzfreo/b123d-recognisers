@@ -37,6 +37,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.BRepGProp import BRepGProp
 from OCP.gp import gp_Pnt, gp_Pnt2d, gp_Trsf
 from OCP.GProp import GProp_GProps
+from OCP.Standard import Standard_Failure
 from OCP.TopAbs import TopAbs_Orientation
 
 import b123d_recognisers
@@ -131,9 +132,13 @@ def _raw_schema_three_incidence_oracle(part, matching: MatchingBoundaryGraph) ->
 
     raw_edges = []
     raw_incidence: dict[int, list[int]] = {}
+    raw_wires: dict[int, list[tuple[str, tuple[int, ...], tuple[Edge, ...]]]] = {}
     for raw_face_index, face in enumerate(faces):
+        outer = face.outer_wire()
         for wire in face.wires():
-            for edge in wire.edges():
+            wire_edges = tuple(wire.edges())
+            wire_indices = []
+            for edge in wire_edges:
                 edge_index = next(
                     (
                         index
@@ -146,6 +151,14 @@ def _raw_schema_three_incidence_oracle(part, matching: MatchingBoundaryGraph) ->
                     edge_index = len(raw_edges)
                     raw_edges.append(edge)
                 raw_incidence.setdefault(edge_index, []).append(face_map[raw_face_index])
+                wire_indices.append(edge_index)
+            raw_wires.setdefault(raw_face_index, []).append(
+                (
+                    "outer" if wire == outer else "inner",
+                    tuple(wire_indices),
+                    wire_edges,
+                )
+            )
     assert all(len(owners) == 2 for owners in raw_incidence.values())
     assert len(raw_edges) == len(matching.curves)
 
@@ -192,6 +205,94 @@ def _raw_schema_three_incidence_oracle(part, matching: MatchingBoundaryGraph) ->
         for curve, occurrences in matching.incidence
     }
     assert actual == expected
+
+    for raw_face_index, wire_roster in raw_wires.items():
+        matching_face = matching.faces[face_map[raw_face_index]]
+        for role, raw_curve_indices, wire_edges in wire_roster:
+            expected_curves = tuple(sorted(curve_map[index] for index in raw_curve_indices))
+            choices = tuple(
+                wire
+                for wire in matching_face.wires
+                if wire.role == role
+                and tuple(sorted(item.curve for item in wire.cycle)) == expected_curves
+            )
+            assert len(choices) == 1
+            matching_wire = choices[0]
+            assert len(matching_wire.cycle) == len(wire_edges)
+            if matching_face.kind != "CYLINDER":
+                continue
+            axis = matching_face.parameters[:3]
+            axis_point = matching_face.parameters[3:6]
+            reference_axes = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+            reference = min(
+                reference_axes,
+                key=lambda candidate: abs(
+                    sum(left * right for left, right in zip(candidate, axis, strict=True))
+                ),
+            )
+            projection = tuple(
+                value
+                - sum(left * right for left, right in zip(reference, axis, strict=True))
+                * normal
+                for value, normal in zip(reference, axis, strict=True)
+            )
+            norm = math.sqrt(sum(value * value for value in projection))
+            u_axis = tuple(value / norm for value in projection)
+            v_axis = (
+                axis[1] * u_axis[2] - axis[2] * u_axis[1],
+                axis[2] * u_axis[0] - axis[0] * u_axis[2],
+                axis[0] * u_axis[1] - axis[1] * u_axis[0],
+            )
+            surface = BRepAdaptor_Surface(faces[raw_face_index].wrapped)
+            raw_parameters = []
+            for edge in wire_edges:
+                pcurve = _body_geometry.BRepAdaptor_Curve2d(
+                    edge.wrapped, faces[raw_face_index].wrapped
+                )
+                for parameter in (pcurve.FirstParameter(), pcurve.LastParameter()):
+                    uv = pcurve.Value(parameter)
+                    point = surface.Value(uv.X(), uv.Y()).Coord()
+                    relative = tuple(
+                        value - origin - offset
+                        for value, origin, offset in zip(
+                            point, centre, axis_point, strict=True
+                        )
+                    )
+                    z = sum(
+                        value * normal
+                        for value, normal in zip(relative, axis, strict=True)
+                    )
+                    radial = tuple(
+                        value - z * normal
+                        for value, normal in zip(relative, axis, strict=True)
+                    )
+                    theta = math.atan2(
+                        sum(
+                            value * basis
+                            for value, basis in zip(radial, v_axis, strict=True)
+                        ),
+                        sum(
+                            value * basis
+                            for value, basis in zip(radial, u_axis, strict=True)
+                        ),
+                    ) % (2.0 * math.pi)
+                    raw_parameters.append((theta, z))
+            stored_parameters = [
+                (parameter[0] % (2.0 * math.pi), parameter[1])
+                for item in matching_wire.cycle
+                for parameter in (
+                    ()
+                    if item.start is None
+                    else (item.start.parameter, item.end.parameter)
+                )
+            ]
+            assert len(stored_parameters) <= len(raw_parameters)
+            for stored in stored_parameters:
+                assert any(
+                    abs(math.remainder(stored[0] - raw[0], 2.0 * math.pi)) <= 1e-8
+                    and abs(stored[1] - raw[1]) <= 1e-5
+                    for raw in raw_parameters
+                )
 
 
 def test_schema_three_matching_values_freeze_global_reference_shape() -> None:
@@ -341,7 +442,13 @@ def test_planar_full_circle_cycle_has_no_serialized_seam() -> None:
     )
 
     wire = _body_geometry._planar_cycle(
-        (0,), (curve,), "outer", face, 1e-9, ()
+        (0,),
+        (curve,),
+        "outer",
+        face,
+        1e-9,
+        (),
+        _body_geometry._MatchingConstructionBudget(),
     )
 
     assert wire == MatchingWire(
@@ -350,7 +457,13 @@ def test_planar_full_circle_cycle_has_no_serialized_seam() -> None:
 
     reversed_material = dataclasses.replace(face, material_side=-1)
     reversed_wire = _body_geometry._planar_cycle(
-        (0,), (curve,), "outer", reversed_material, 1e-9, ()
+        (0,),
+        (curve,),
+        "outer",
+        reversed_material,
+        1e-9,
+        (),
+        _body_geometry._MatchingConstructionBudget(),
     )
     assert reversed_wire.cycle[0].direction == -1
 
@@ -413,6 +526,26 @@ def test_cylindrical_seam_matching_graph_erases_wire_presentation(monkeypatch) -
     assert seam_thetas == pytest.approx((0.0, 2.0 * math.pi), abs=_body_geometry.ANGLE_TOL)
 
 
+def test_cylindrical_seam_matching_graph_erases_occurrence_orientation(
+    monkeypatch,
+) -> None:
+    part = Cylinder(10, 20)
+    graph = FaceGraph(part)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    descriptor = graph.body_geometry(solid).descriptor
+    source = matching_boundary_for_solid(part, descriptor)
+
+    wire_edges = Wire.edges
+    monkeypatch.setattr(
+        Wire,
+        "edges",
+        lambda self: [edge.reversed() for edge in reversed(wire_edges(self))],
+    )
+
+    assert matching_boundary_for_solid(part, descriptor) == source
+
+
 def test_schema_three_matching_incidence_mutation_refuses() -> None:
     snapshot = correspondence_snapshot(_take_inventory(_rrp()))
     occurrence = snapshot.occurrences[0]
@@ -423,6 +556,258 @@ def test_schema_three_matching_incidence_mutation_refuses() -> None:
 
     with pytest.raises(CorrespondenceSnapshotError, match="matching boundary"):
         correspondence_module._validate_snapshot(changed)
+
+
+def test_schema_three_coherent_parameter_mutation_refuses() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_rrp())).occurrences[0]
+    graph = occurrence.matching_boundary
+    face_index, wire_index, half_edge_index = next(
+        (face_index, wire_index, half_edge_index)
+        for face_index, face in enumerate(graph.faces)
+        for wire_index, wire in enumerate(face.wires)
+        for half_edge_index, half_edge in enumerate(wire.cycle)
+        if half_edge.start is not None
+    )
+    face = graph.faces[face_index]
+    wire = face.wires[wire_index]
+    half_edge = wire.cycle[half_edge_index]
+    assert half_edge.start is not None
+    changed_half_edge = dataclasses.replace(
+        half_edge,
+        start=dataclasses.replace(half_edge.start, parameter=(999.0, 999.0)),
+    )
+    changed_wire = dataclasses.replace(
+        wire,
+        cycle=tuple(
+            changed_half_edge if index == half_edge_index else item
+            for index, item in enumerate(wire.cycle)
+        ),
+    )
+    changed_face = dataclasses.replace(
+        face,
+        wires=tuple(
+            changed_wire if index == wire_index else item
+            for index, item in enumerate(face.wires)
+        ),
+    )
+    changed = dataclasses.replace(
+        graph,
+        faces=tuple(
+            changed_face if index == face_index else item
+            for index, item in enumerate(graph.faces)
+        ),
+    )
+
+    with pytest.raises(UnsupportedBodyGeometry, match="matching"):
+        _body_geometry.validate_matching_boundary_graph(
+            changed, occurrence.body.quantization
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "container",
+        "vertex",
+        "line_shape",
+        "line_reconstruction",
+        "circle_shape",
+        "circle_gauge",
+        "circle_reconstruction",
+        "face_count",
+        "face_gauge",
+        "cylinder_radius",
+        "wire_schema",
+        "canonical_start",
+        "half_edge_schema",
+        "full_endpoint",
+        "traversal",
+        "topology_join",
+        "plane_orientation",
+        "cylinder_orientation",
+        "theta_winding",
+        "incidence",
+    ],
+)
+def test_schema_three_semantic_validator_refuses_complete_mutation_roster(
+    mutation: str,
+) -> None:
+    part = (
+        Cylinder(10, 20)
+        if mutation.startswith(("circle", "cylinder", "theta"))
+        or mutation == "full_endpoint"
+        else Box(4, 5, 6)
+    )
+    graph_query = FaceGraph(part)
+    solid = graph_query.common_valid_solid(graph_query.nodes)
+    assert solid is not None
+    quantization = graph_query.body_geometry(solid).descriptor.quantization
+    graph = graph_query.matching_boundary(solid)
+
+    if mutation == "container":
+        changed = dataclasses.replace(graph, vertices=list(graph.vertices))
+    elif mutation == "vertex":
+        changed = dataclasses.replace(graph, vertices=((math.nan, 0.0, 0.0), *graph.vertices[1:]))
+    elif mutation.startswith("line"):
+        curve_index = next(
+            index for index, curve in enumerate(graph.curves) if curve.kind == "LINE"
+        )
+        curve = graph.curves[curve_index]
+        changed_curve = dataclasses.replace(
+            curve,
+            full=True if mutation == "line_shape" else curve.full,
+            length=curve.length + (1.0 if mutation == "line_reconstruction" else 0.0),
+        )
+        changed = dataclasses.replace(
+            graph,
+            curves=tuple(
+                changed_curve if index == curve_index else item
+                for index, item in enumerate(graph.curves)
+            ),
+        )
+    elif mutation.startswith("circle"):
+        curve_index = next(
+            index for index, curve in enumerate(graph.curves) if curve.kind == "CIRCLE"
+        )
+        curve = graph.curves[curve_index]
+        changed_curve = dataclasses.replace(
+            curve,
+            sweep=math.nan if mutation == "circle_shape" else curve.sweep,
+            axis=(0.5, 0.0, 0.0) if mutation == "circle_gauge" else curve.axis,
+            radius=(curve.radius + 1.0)
+            if mutation == "circle_reconstruction" and curve.radius is not None
+            else curve.radius,
+        )
+        changed = dataclasses.replace(
+            graph,
+            curves=tuple(
+                changed_curve if index == curve_index else item
+                for index, item in enumerate(graph.curves)
+            ),
+        )
+    elif mutation == "face_count":
+        changed = dataclasses.replace(graph, face_count=graph.face_count + 1)
+    elif mutation in {"face_gauge", "cylinder_radius"}:
+        face_index = next(
+            index
+            for index, face in enumerate(graph.faces)
+            if mutation == "face_gauge" or face.kind == "CYLINDER"
+        )
+        face = graph.faces[face_index]
+        parameters = list(face.parameters)
+        parameters[0] = 0.5 if mutation == "face_gauge" else parameters[0]
+        if mutation == "cylinder_radius":
+            parameters[6] = 0.0
+        changed_face = dataclasses.replace(face, parameters=tuple(parameters))
+        changed = dataclasses.replace(
+            graph,
+            faces=tuple(
+                changed_face if index == face_index else item
+                for index, item in enumerate(graph.faces)
+            ),
+        )
+    elif mutation in {
+        "wire_schema",
+        "canonical_start",
+        "half_edge_schema",
+        "full_endpoint",
+        "traversal",
+        "topology_join",
+        "plane_orientation",
+        "cylinder_orientation",
+        "theta_winding",
+    }:
+        face_index, wire_index = next(
+            (face_index, wire_index)
+            for face_index, face in enumerate(graph.faces)
+            for wire_index, wire in enumerate(face.wires)
+            if (
+                    (
+                        mutation
+                        in {"cylinder_orientation", "theta_winding", "full_endpoint"}
+                    )
+                == (face.kind == "CYLINDER")
+            )
+            and len(wire.cycle) > 1
+        )
+        face = graph.faces[face_index]
+        wire = face.wires[wire_index]
+        changed_face = face
+        changed_wire = wire
+        if mutation == "wire_schema":
+            changed_wire = dataclasses.replace(wire, role="bad")
+        elif mutation == "canonical_start":
+            changed_wire = dataclasses.replace(wire, cycle=wire.cycle[1:] + wire.cycle[:1])
+        elif mutation == "half_edge_schema":
+            changed_wire = dataclasses.replace(
+                wire, cycle=(dataclasses.replace(wire.cycle[0], direction=0), *wire.cycle[1:])
+            )
+        elif mutation == "full_endpoint":
+            full_index = next(
+                index
+                for index, item in enumerate(wire.cycle)
+                if graph.curves[item.curve].full
+            )
+            item = wire.cycle[full_index]
+            vertex = MatchingWireVertex(0, (0.0, 0.0))
+            changed_item = dataclasses.replace(item, start=vertex, end=vertex)
+            changed_wire = dataclasses.replace(
+                wire,
+                cycle=tuple(
+                    changed_item if index == full_index else candidate
+                    for index, candidate in enumerate(wire.cycle)
+                ),
+            )
+        elif mutation == "traversal":
+            item = next(item for item in wire.cycle if item.start is not None)
+            item_index = wire.cycle.index(item)
+            changed_item = dataclasses.replace(item, direction=-item.direction)
+            changed_wire = dataclasses.replace(
+                wire,
+                cycle=tuple(
+                    changed_item if index == item_index else candidate
+                    for index, candidate in enumerate(wire.cycle)
+                ),
+            )
+        elif mutation == "topology_join":
+            item = next(item for item in wire.cycle if item.start is not None)
+            item_index = wire.cycle.index(item)
+            assert item.start is not None
+            changed_start = dataclasses.replace(
+                item.start, vertex=(item.start.vertex + 1) % len(graph.vertices)
+            )
+            changed_item = dataclasses.replace(item, start=changed_start)
+            changed_wire = dataclasses.replace(
+                wire,
+                cycle=tuple(
+                    changed_item if index == item_index else candidate
+                    for index, candidate in enumerate(wire.cycle)
+                ),
+            )
+        elif mutation in {"plane_orientation", "cylinder_orientation"}:
+            changed_face = dataclasses.replace(face, material_side=-face.material_side)
+        else:
+            changed_wire = dataclasses.replace(wire, theta_winding=wire.theta_winding + 1)
+        if changed_wire is not wire:
+            changed_face = dataclasses.replace(
+                changed_face,
+                wires=tuple(
+                    changed_wire if index == wire_index else item
+                    for index, item in enumerate(face.wires)
+                ),
+            )
+        changed = dataclasses.replace(
+            graph,
+            faces=tuple(
+                changed_face if index == face_index else item
+                for index, item in enumerate(graph.faces)
+            ),
+        )
+    else:
+        changed = dataclasses.replace(graph, incidence=())
+
+    with pytest.raises(UnsupportedBodyGeometry):
+        _body_geometry.validate_matching_boundary_graph(changed, quantization)
 
 
 @pytest.mark.parametrize("mutation", ["curve", "parameter", "material", "role"])
@@ -483,7 +868,9 @@ def test_schema_three_nested_value_mutation_refuses(mutation: str) -> None:
             ),
         )
     with pytest.raises(UnsupportedBodyGeometry, match="matching"):
-        _body_geometry.validate_matching_boundary_graph(changed)
+        _body_geometry.validate_matching_boundary_graph(
+            changed, occurrence.body.quantization
+        )
 
 
 def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
@@ -507,6 +894,11 @@ def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
         @staticmethod
         def Value(_parameter):
             return gp_Pnt2d(1_000.0, 1_000.0)
+
+        @staticmethod
+        def D1(_parameter, point, tangent):
+            point.SetCoord(1_000.0, 1_000.0)
+            tangent.SetCoord(1.0, 0.0)
 
     monkeypatch.setattr(
         _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: DisplacedPcurve()
@@ -545,15 +937,31 @@ def test_schema_three_pcurve_reconstruction_bound_is_inclusive(
         def Value(_parameter):
             return gp_Pnt(0.0, 0.0, 0.0)
 
+        @staticmethod
+        def D1(_parameter, point, tangent):
+            point.SetCoord(0.0, 0.0, 0.0)
+            tangent.SetCoord(1.0, 0.0, 0.0)
+
     class Pcurve(Curve):
         @staticmethod
         def Value(_parameter):
             return gp_Pnt2d(0.0, 0.0)
 
+        @staticmethod
+        def D1(_parameter, point, tangent):
+            point.SetCoord(0.0, 0.0)
+            tangent.SetCoord(1.0, 0.0)
+
     class Surface:
         @staticmethod
         def Value(_u, _v):
             return gp_Pnt(displacement, 0.0, 0.0)
+
+        @staticmethod
+        def D1(_u, _v, point, tangent_u, tangent_v):
+            point.SetCoord(displacement, 0.0, 0.0)
+            tangent_u.SetCoord(1.0, 0.0, 0.0)
+            tangent_v.SetCoord(0.0, 1.0, 0.0)
 
     monkeypatch.setattr(
         _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: Pcurve()
@@ -571,6 +979,85 @@ def test_schema_three_pcurve_reconstruction_bound_is_inclusive(
         )
 
 
+@pytest.mark.parametrize(
+    ("failure", "message"),
+    [
+        ("unavailable", "unavailable"),
+        ("nonfinite", "non-finite"),
+        ("unsupported", "unsupported"),
+        ("kernel", "reconstruction failed"),
+        ("degenerate", "tangent is degenerate"),
+        ("angular", "angular bound"),
+    ],
+)
+def test_schema_three_pcurve_closed_refusal_roster(
+    monkeypatch, failure: str, message: str
+) -> None:
+    class Curve:
+        @staticmethod
+        def FirstParameter():
+            return math.nan if failure == "nonfinite" else 0.0
+
+        @staticmethod
+        def LastParameter():
+            return 1.0
+
+        @staticmethod
+        def D1(_parameter, point, tangent):
+            if failure == "kernel":
+                raise Standard_Failure("closed kernel failure")
+            point.SetCoord(0.0, 0.0, 0.0)
+            tangent.SetCoord(0.0, 0.0, 0.0) if failure == "degenerate" else tangent.SetCoord(
+                1.0, 0.0, 0.0
+            )
+
+    class Pcurve:
+        @staticmethod
+        def FirstParameter():
+            return 0.0
+
+        @staticmethod
+        def LastParameter():
+            return 1.0
+
+        @staticmethod
+        def D1(_parameter, point, tangent):
+            point.SetCoord(0.0, 0.0)
+            tangent.SetCoord(1.0, 0.0)
+
+    class Surface:
+        @staticmethod
+        def D1(_u, _v, point, tangent_u, tangent_v):
+            point.SetCoord(0.0, 0.0, 0.0)
+            if failure == "angular":
+                tangent_u.SetCoord(0.0, 1.0, 0.0)
+            else:
+                tangent_u.SetCoord(1.0, 0.0, 0.0)
+            tangent_v.SetCoord(0.0, 1.0, 0.0)
+
+    if failure == "unavailable":
+        def unavailable(_edge, _face):
+            raise Standard_Failure("closed adaptor failure")
+
+        monkeypatch.setattr(_body_geometry, "BRepAdaptor_Curve2d", unavailable)
+    else:
+        monkeypatch.setattr(
+            _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: Pcurve()
+        )
+    edge = Box(1, 1, 1).edges()[0]
+    face = Box(1, 1, 1).faces()[0]
+    with pytest.raises(UnsupportedBodyGeometry, match=message):
+        _body_geometry._validate_matching_pcurve(
+            edge,
+            face,
+            Curve(),
+            Surface(),
+            1e-7,
+            "BSPLINE" if failure == "unsupported" else "LINE",
+            False,
+        )
+
+
 def test_schema_three_construction_budget_is_inclusive() -> None:
     budget = _body_geometry._MatchingConstructionBudget(
         _body_geometry.CANONICAL_SERIALIZATION_BUDGET - 1
@@ -579,6 +1066,556 @@ def test_schema_three_construction_budget_is_inclusive() -> None:
     assert budget.attempts == _body_geometry.CANONICAL_SERIALIZATION_BUDGET
     with pytest.raises(UnsupportedBodyGeometry, match="construction budget"):
         budget.charge()
+
+
+def test_schema_three_planar_cycle_uses_the_global_inclusive_budget() -> None:
+    curve = MatchingCurve(
+        "CIRCLE",
+        None,
+        2.0 * math.pi,
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        1.0,
+        2.0 * math.pi,
+        True,
+    )
+    face = FaceGeometry(
+        "PLANE",
+        (0.0, 0.0, 1.0, 0.0),
+        math.pi,
+        (0.0, 0.0, 0.0),
+        1,
+        (),
+    )
+    accepted = _body_geometry._MatchingConstructionBudget(
+        _body_geometry.CANONICAL_SERIALIZATION_BUDGET - 2
+    )
+    _body_geometry._planar_cycle((0,), (curve,), "outer", face, 1e-7, (), accepted)
+    assert accepted.attempts == _body_geometry.CANONICAL_SERIALIZATION_BUDGET
+
+    refused = _body_geometry._MatchingConstructionBudget(
+        _body_geometry.CANONICAL_SERIALIZATION_BUDGET - 1
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="construction budget"):
+        _body_geometry._planar_cycle((0,), (curve,), "outer", face, 1e-7, (), refused)
+
+
+def test_schema_three_matching_leaf_refusal_roster(monkeypatch) -> None:
+    quantum = 1e-7
+    vertices = (
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (2.0, 0.0, 0.0),
+    )
+    line = MatchingCurve("LINE", (0, 1), 1.0, None, None, None, None, False)
+    plane = FaceGeometry(
+        "PLANE", (0.0, 0.0, 1.0, 0.0), 1.0, (0.0, 0.0, 0.0), 1, ()
+    )
+    budget = _body_geometry._MatchingConstructionBudget()
+
+    with pytest.raises(UnsupportedBodyGeometry, match="normal"):
+        _body_geometry._plane_parameter(
+            (0.0, 0.0, 0.0), dataclasses.replace(plane, parameters=()), quantum
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="no endpoints"):
+        _body_geometry._half_edge_integral(
+            MatchingHalfEdge(0, 1, None, None), (line,), plane, quantum
+        )
+    malformed_circle = MatchingCurve(
+        "CIRCLE", (0, 1), 1.0, None, None, 1.0, 1.0, False
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="malformed"):
+        _body_geometry._half_edge_integral(
+            MatchingHalfEdge(
+                0,
+                1,
+                MatchingWireVertex(0, (0.0, 0.0)),
+                MatchingWireVertex(1, (1.0, 0.0)),
+            ),
+            (malformed_circle,),
+            plane,
+            quantum,
+        )
+    off_axis_circle = dataclasses.replace(
+        malformed_circle, centre=(0.0, 0.0, 0.0), axis=(1.0, 0.0, 0.0)
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="face-normal"):
+        _body_geometry._half_edge_integral(
+            MatchingHalfEdge(
+                0,
+                1,
+                MatchingWireVertex(0, (0.0, 0.0)),
+                MatchingWireVertex(1, (1.0, 0.0)),
+            ),
+            (off_axis_circle,),
+            plane,
+            quantum,
+        )
+    circle = dataclasses.replace(
+        malformed_circle, centre=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0)
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="no endpoints"):
+        _body_geometry._half_edge_integral(
+            MatchingHalfEdge(0, 1, None, None), (circle,), plane, quantum
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="reconstruct"):
+        _body_geometry._half_edge_integral(
+            MatchingHalfEdge(
+                0,
+                1,
+                MatchingWireVertex(0, (1.0, 0.0)),
+                MatchingWireVertex(1, (-10.0, 0.0)),
+            ),
+            (circle,),
+            plane,
+            quantum,
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="complete wire"):
+        _body_geometry._planar_cycle(
+            (0, 1),
+            (
+                dataclasses.replace(circle, full=True, vertices=None, sweep=2.0 * math.pi),
+                line,
+            ),
+            "outer",
+            plane,
+            quantum,
+            vertices,
+            budget,
+        )
+    ambiguous_full = dataclasses.replace(
+        circle, full=True, vertices=None, sweep=0.0
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="orientation is ambiguous"):
+        _body_geometry._planar_cycle(
+            (0,),
+            (ambiguous_full,),
+            "outer",
+            plane,
+            quantum,
+            vertices,
+            budget,
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="malformed"):
+        _body_geometry._planar_cycle(
+            (0,),
+            (dataclasses.replace(line, vertices=None),),
+            "outer",
+            plane,
+            quantum,
+            vertices,
+            budget,
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="degree-two"):
+        _body_geometry._planar_cycle(
+            (0,), (line,), "outer", plane, quantum, vertices, budget
+        )
+    collinear = (
+        line,
+        MatchingCurve("LINE", (1, 2), 1.0, None, None, None, None, False),
+        MatchingCurve("LINE", (2, 0), 2.0, None, None, None, None, False),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="area"):
+        _body_geometry._planar_cycle(
+            (0, 1, 2), collinear, "outer", plane, quantum, vertices, budget
+        )
+
+    first = Edge.make_line((0, 0, 0), (1, 0, 0))
+    second = first.reversed()
+    items = [first]
+    assert _body_geometry._same_shape(first, second)
+    assert _body_geometry._identity_index(items, second) == 0
+    third = Edge.make_line((0, 1, 0), (1, 1, 0))
+    assert _body_geometry._identity_index(items, third) == 1
+
+    disconnected_vertices = (
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (3.0, 0.0, 0.0),
+        (4.0, 0.0, 0.0),
+        (3.0, 1.0, 0.0),
+    )
+    disconnected = tuple(
+        MatchingCurve("LINE", edge, 1.0, None, None, None, None, False)
+        for edge in ((0, 1), (1, 2), (2, 0), (3, 4), (4, 5), (5, 3))
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="does not close"):
+        _body_geometry._planar_cycle(
+            tuple(range(6)),
+            disconnected,
+            "outer",
+            plane,
+            quantum,
+            disconnected_vertices,
+            budget,
+        )
+
+    triangle_vertices = disconnected_vertices[:3]
+    triangle = disconnected[:3]
+    monkeypatch.setattr(_body_geometry, "_half_edge_integral", lambda *_args: 1.0)
+    with pytest.raises(UnsupportedBodyGeometry, match="material-oriented"):
+        _body_geometry._planar_cycle(
+            (0, 1, 2),
+            triangle,
+            "outer",
+            dataclasses.replace(plane, material_side=-1),
+            quantum,
+            triangle_vertices,
+            budget,
+        )
+
+
+def test_schema_three_cylinder_cycle_refusal_roster() -> None:
+    quantum = 1e-7
+    curves = tuple(
+        MatchingCurve(
+            "LINE", (index, (index + 1) % 4), 1.0, None, None, None, None, False
+        )
+        for index in range(4)
+    )
+    parameters = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
+    occurrences = tuple(
+        _body_geometry._CylinderPcurveOccurrence(
+            index,
+            index,
+            (index + 1) % 4,
+            parameters[index],
+            parameters[(index + 1) % 4],
+        )
+        for index in range(4)
+    )
+    face = FaceGeometry(
+        "CYLINDER",
+        (0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        1.0,
+        (0.0, 0.0, 0.0),
+        1,
+        (),
+    )
+    assert _body_geometry._cylinder_cycle(
+        occurrences,
+        curves,
+        "outer",
+        face,
+        quantum,
+        _body_geometry._MatchingConstructionBudget(),
+    ).cycle
+
+    with pytest.raises(UnsupportedBodyGeometry, match="empty"):
+        _body_geometry._cylinder_cycle(
+            (), curves, "outer", face, quantum, _body_geometry._MatchingConstructionBudget()
+        )
+
+    full = MatchingCurve(
+        "CIRCLE", None, 2.0 * math.pi, (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 1.0,
+        2.0 * math.pi, True,
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="seam vertex"):
+        _body_geometry._cylinder_cycle(
+            (
+                _body_geometry._CylinderPcurveOccurrence(
+                    0, 0, 0, (0.0, 0.0), (2.0 * math.pi, 0.0)
+                ),
+            ),
+            (full,),
+            "outer",
+            face,
+            quantum,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+    with pytest.raises(UnsupportedBodyGeometry, match="lost a topology vertex"):
+        _body_geometry._cylinder_cycle(
+            (
+                _body_geometry._CylinderPcurveOccurrence(
+                    0, None, None, (0.0, 0.0), (1.0, 0.0)
+                ),
+            ),
+            (curves[0],),
+            "outer",
+            face,
+            quantum,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+    with pytest.raises(UnsupportedBodyGeometry, match="global curve"):
+        _body_geometry._cylinder_cycle(
+            (
+                _body_geometry._CylinderPcurveOccurrence(
+                    0, 2, 3, (0.0, 0.0), (1.0, 0.0)
+                ),
+            ),
+            (curves[0],),
+            "outer",
+            face,
+            quantum,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+    broken = dataclasses.replace(
+        occurrences[1],
+        start_parameter=(occurrences[1].start_parameter[0], 10.0),
+        end_parameter=(occurrences[1].end_parameter[0], 10.0),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="does not join"):
+        _body_geometry._cylinder_cycle(
+            (occurrences[0], broken, *occurrences[2:]),
+            curves,
+            "outer",
+            face,
+            quantum,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+    flat = tuple(
+        dataclasses.replace(
+            occurrence,
+            start_parameter=(occurrence.start_parameter[0], 0.0),
+            end_parameter=(occurrence.end_parameter[0], 0.0),
+        )
+        for occurrence in occurrences
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="unique material-oriented"):
+        _body_geometry._cylinder_cycle(
+            flat,
+            curves,
+            "outer",
+            face,
+            quantum,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("shape", "mutation", "message"),
+    [
+        ("cylinder", "circle_gauge", "circle gauge"),
+        ("box", "face_gauge", "analytic gauge"),
+        ("box", "empty_wire", "wire schema"),
+        ("box", "planar_join", "cycle no longer joins"),
+        ("box", "planar_parameter", "parameter changed"),
+        ("cylinder", "circle_length", "reconstructs its length"),
+        ("notched", "circle_vertex", "reconstructs its vertices"),
+        ("cylinder", "cylinder_parameter", "parameter changed"),
+    ],
+)
+def test_schema_three_semantic_validator_specific_refusals(
+    shape: str, mutation: str, message: str
+) -> None:
+    part = (
+        Box(4, 5, 6)
+        if shape == "box"
+        else Cylinder(10, 20)
+        if shape == "cylinder"
+        else _rrp(7)
+    )
+    query = FaceGraph(part)
+    solid = query.common_valid_solid(query.nodes)
+    assert solid is not None
+    fact = query.body_geometry(solid)
+    graph = query.matching_boundary(solid)
+
+    if mutation.startswith("circle"):
+        curve_index = next(
+            index for index, curve in enumerate(graph.curves) if curve.kind == "CIRCLE"
+        )
+        curve = graph.curves[curve_index]
+        if mutation == "circle_length":
+            changed_curve = dataclasses.replace(curve, length=curve.length + 1.0)
+        elif mutation == "circle_gauge":
+            changed_curve = dataclasses.replace(curve, radius=1e-12)
+        else:
+            assert curve.centre is not None
+            changed_curve = dataclasses.replace(
+                curve, centre=(curve.centre[0] + 1.0, *curve.centre[1:])
+            )
+        changed = dataclasses.replace(
+            graph,
+            curves=tuple(
+                changed_curve if index == curve_index else item
+                for index, item in enumerate(graph.curves)
+            ),
+        )
+    else:
+        face_index, wire_index = next(
+            (face_index, wire_index)
+            for face_index, face in enumerate(graph.faces)
+            for wire_index, wire in enumerate(face.wires)
+            if face.kind == ("CYLINDER" if mutation == "cylinder_parameter" else "PLANE")
+            and wire.cycle
+            and any(item.start is not None for item in wire.cycle)
+        )
+        face = graph.faces[face_index]
+        wire = face.wires[wire_index]
+        changed_face = face
+        if mutation == "face_gauge":
+            changed_face = dataclasses.replace(
+                face, parameters=(1.0, 0.5e-10, 0.0, face.parameters[3])
+            )
+        elif mutation == "empty_wire":
+            changed_face = dataclasses.replace(
+                face,
+                wires=tuple(
+                    dataclasses.replace(item, cycle=()) if index == wire_index else item
+                    for index, item in enumerate(face.wires)
+                ),
+            )
+        else:
+            target = next(item for item in wire.cycle if item.start is not None)
+            assert target.start is not None
+            target_vertex = target.start.vertex
+
+            def alter(item: MatchingHalfEdge) -> MatchingHalfEdge:
+                start = item.start
+                end = item.end
+                if start is not None and start.vertex == target_vertex:
+                    start = dataclasses.replace(
+                        start, parameter=(start.parameter[0] + 1.0, start.parameter[1])
+                    )
+                if (
+                    mutation != "planar_join"
+                    and end is not None
+                    and end.vertex == target_vertex
+                ):
+                    end = dataclasses.replace(
+                        end, parameter=(end.parameter[0] + 1.0, end.parameter[1])
+                    )
+                return dataclasses.replace(item, start=start, end=end)
+
+            changed_wire = dataclasses.replace(wire, cycle=tuple(map(alter, wire.cycle)))
+            changed_face = dataclasses.replace(
+                face,
+                wires=tuple(
+                    changed_wire if index == wire_index else item
+                    for index, item in enumerate(face.wires)
+                ),
+            )
+        changed = dataclasses.replace(
+            graph,
+            faces=tuple(
+                changed_face if index == face_index else item
+                for index, item in enumerate(graph.faces)
+            ),
+        )
+
+    with pytest.raises(UnsupportedBodyGeometry, match=message):
+        _body_geometry.validate_matching_boundary_graph(
+            changed, fact.descriptor.quantization
+        )
+
+
+def test_schema_three_cached_face_authority_refusal_roster() -> None:
+    part = Box(4, 5, 6).solids()[0]
+    described = _body_geometry.describe_solid(part)
+    with pytest.raises(UnsupportedBodyGeometry, match="cached face authority"):
+        matching_boundary_for_solid(
+            part, described.descriptor, (*described.face_builds[:-1], object())
+        )
+
+    groups: list[tuple[object, list[tuple[int, int, int]]]] = []
+    for face_index, face_build in enumerate(described.face_builds):
+        for wire_index, wire_build in enumerate(face_build.wires):
+            for edge_index, (token, _direction) in enumerate(wire_build.occurrences[0]):
+                group = next(
+                    (
+                        positions
+                        for representative, positions in groups
+                        if _body_geometry._same_shape(representative, token)
+                    ),
+                    None,
+                )
+                if group is None:
+                    group = []
+                    groups.append((token, group))
+                group.append((face_index, wire_index, edge_index))
+    shared = next(positions for _token, positions in groups if len(positions) == 2)
+    face_index, wire_index, edge_index = shared[1]
+    face_build = described.face_builds[face_index]
+    wire_build = face_build.wires[wire_index]
+    geometry_edges = list(wire_build.geometry.edges)
+    geometry, direction = geometry_edges[edge_index]
+    geometry_edges[edge_index] = (
+        dataclasses.replace(geometry, length=geometry.length + 1.0),
+        direction,
+    )
+    changed_wire = dataclasses.replace(
+        wire_build,
+        geometry=dataclasses.replace(wire_build.geometry, edges=tuple(geometry_edges)),
+    )
+    changed_face = dataclasses.replace(
+        face_build,
+        wires=tuple(
+            changed_wire if index == wire_index else item
+            for index, item in enumerate(face_build.wires)
+        ),
+    )
+    changed_builds = tuple(
+        changed_face if index == face_index else item
+        for index, item in enumerate(described.face_builds)
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="curve authority disagrees"):
+        matching_boundary_for_solid(part, described.descriptor, changed_builds)
+
+    altered_builds = list(described.face_builds)
+    first_face, first_wire, first_edge = shared[0]
+    source_geometry = described.face_builds[first_face].wires[
+        first_wire
+    ].geometry.edges[first_edge][0]
+    assert source_geometry.start is not None
+    altered_geometry = dataclasses.replace(
+        source_geometry,
+        start=(source_geometry.start[0] + 1.0, *source_geometry.start[1:]),
+    )
+    for target_face, target_wire, target_edge in shared:
+        target_build = altered_builds[target_face]
+        target_wire_build = target_build.wires[target_wire]
+        target_edges = list(target_wire_build.geometry.edges)
+        _old_geometry, semantic = target_edges[target_edge]
+        target_edges[target_edge] = (altered_geometry, semantic)
+        replacement_wire = dataclasses.replace(
+            target_wire_build,
+            geometry=dataclasses.replace(
+                target_wire_build.geometry, edges=tuple(target_edges)
+            ),
+        )
+        altered_builds[target_face] = dataclasses.replace(
+            target_build,
+            wires=tuple(
+                replacement_wire if index == target_wire else item
+                for index, item in enumerate(target_build.wires)
+            ),
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="endpoints disagree"):
+        matching_boundary_for_solid(
+            part, described.descriptor, tuple(altered_builds)
+        )
+
+    empty_wire = dataclasses.replace(wire_build, occurrences=())
+    empty_face = dataclasses.replace(
+        face_build,
+        wires=tuple(
+            empty_wire if index == wire_index else item
+            for index, item in enumerate(face_build.wires)
+        ),
+    )
+    empty_builds = tuple(
+        empty_face if index == face_index else item
+        for index, item in enumerate(described.face_builds)
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="wire authority is empty"):
+        matching_boundary_for_solid(part, described.descriptor, empty_builds)
+
+    graph = matching_boundary_for_solid(
+        part, described.descriptor, described.face_builds
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="closed-shell pair"):
+        _body_geometry._matching_graph_canonical(
+            graph.vertices,
+            graph.curves,
+            graph.faces[:-1],
+            _body_geometry._MatchingConstructionBudget(),
+        )
 
 
 def test_schema_three_joint_canonicalization_preserves_equal_topology_tokens() -> None:
@@ -626,7 +1663,6 @@ def test_schema_three_joint_canonicalization_preserves_equal_topology_tokens() -
     assert len(graph.vertices) == 2
     assert len(graph.curves) == 2
     assert graph.symmetric
-    _body_geometry.validate_matching_boundary_graph(graph)
 
 
 def _rrp(repeats: int = 5):
@@ -766,7 +1802,11 @@ def test_raw_ocp_schema_three_oracle_proves_complete_labelled_incidence(part) ->
     graph = FaceGraph(part)
     solid = graph.common_valid_solid(graph.nodes)
     assert solid is not None
-    _raw_schema_three_incidence_oracle(part, graph.matching_boundary(solid))
+    matching = graph.matching_boundary(solid)
+    _raw_schema_three_incidence_oracle(part, matching)
+    _body_geometry.validate_matching_boundary_graph(
+        matching, graph.body_geometry(solid).descriptor.quantization
+    )
 
 
 def _body_descriptor(part):

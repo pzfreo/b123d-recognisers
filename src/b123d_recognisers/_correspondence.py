@@ -245,7 +245,8 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
     try:
         for occurrence in snapshot.occurrences:
             validate_matching_boundary_graph(
-                occurrence.matching_boundary
+                occurrence.matching_boundary,
+                occurrence.body.quantization,
             )
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("correspondence matching boundary is invalid") from error
