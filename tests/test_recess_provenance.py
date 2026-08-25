@@ -45,7 +45,7 @@ from b123d_recognisers._recess_reduce import (
     _RecessProposal,
     _same_channel_line,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, IncompleteAttribution
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 
 ROOT = Path(__file__).parents[1]
 
