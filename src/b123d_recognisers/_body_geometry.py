@@ -9,7 +9,7 @@ no graph handles or kernel objects and deliberately preserve equal multiplicity.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import permutations, product
 from typing import Any, TypeAlias, cast
 
@@ -194,6 +194,7 @@ class BodyGeometryDescriptor:
     boundary: BodyBoundaryGeometry
     placement: BodyPlacement
     quantization: DescriptorQuantization
+    matching: MatchingBoundaryGraph | None = None
 
 
 def validate_descriptor_quantization(value: DescriptorQuantization) -> None:
@@ -741,6 +742,7 @@ def describe_solid(solid) -> _DescribedBody:
             moment_quantum,
         ),
     )
+    descriptor = replace(descriptor, matching=matching_boundary_for_solid(solid, descriptor))
     return _DescribedBody(
         descriptor,
         raw_faces,
@@ -837,7 +839,9 @@ def _half_edge_integral(
         centre[0] + curve.radius * math.cos(end_angle),
         centre[1] + curve.radius * math.sin(end_angle),
     )
-    if math.dist(reconstructed_end, end) > 2.0 * quantum:
+    # Centre, radius and endpoint are independently reconstructed values.  Their
+    # conservative closed residual is the sum of the four two-quantum contracts.
+    if math.dist(reconstructed_end, end) > 8.0 * quantum:
         raise UnsupportedBodyGeometry("matching circle sweep does not reconstruct its endpoint")
     return 0.5 * (
         curve.radius * centre[0] * (math.sin(end_angle) - math.sin(start_angle))

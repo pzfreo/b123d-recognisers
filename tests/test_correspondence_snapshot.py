@@ -1137,10 +1137,14 @@ def test_every_descriptor_numeric_field_routes_through_closed_validators(monkeyp
 
     expected_scalar_quantum = {
         "plane offset": metric,
+        "pcurve u": metric,
+        "pcurve v": metric,
         "edge length": metric,
         "circle radius": metric,
         "circle sweep": _body_geometry.ANGLE_TOL,
         "cylinder radius": metric,
+        "cylinder theta": _body_geometry.ANGLE_TOL,
+        "cylinder z": metric,
         "face area": area,
         "body volume": volume,
         "body surface area": area,
@@ -1303,7 +1307,7 @@ def test_equal_coincident_bodies_retain_two_indistinguishable_occurrences() -> N
 
     assert len(snapshot.occurrences) == 2
     assert snapshot.occurrences[0] == snapshot.occurrences[1]
-    assert snapshot.schema_version == 2
+    assert snapshot.schema_version == 3
     assert snapshot.body_groups == ((0,), (1,))
 
 
@@ -1769,7 +1773,7 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
         "VolumeProperties_s": ("BRepGProp.VolumeProperties_s",),
         "SurfaceProperties_s": ("BRepGProp.SurfaceProperties_s",),
         "Plane": ("adaptor.Plane",),
-        "Cylinder": ("adaptor.Cylinder",),
+        "Cylinder": ("adaptor.Cylinder", "adaptor.Cylinder"),
         "Circle": ("curve.Circle",),
     }
     upper_names = {node.id for node in ast.walk(upper) if isinstance(node, ast.Name)}

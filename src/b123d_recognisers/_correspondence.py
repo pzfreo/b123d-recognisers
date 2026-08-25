@@ -189,7 +189,7 @@ def _occurrence(
 def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
     if type(snapshot) is not CorrespondenceSnapshot or type(snapshot.schema_version) is not int:
         raise CorrespondenceSnapshotError("correspondence snapshot schema is malformed")
-    if snapshot.schema_version != 2:
+    if snapshot.schema_version != 3:
         raise CorrespondenceSnapshotError("correspondence snapshot schema is unsupported")
     if type(snapshot.occurrences) is not tuple or type(snapshot.body_groups) is not tuple:
         raise CorrespondenceSnapshotError("correspondence body groups are malformed")
@@ -200,6 +200,7 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
         or type(occurrence.body.boundary) is not BodyBoundaryGeometry
         or type(occurrence.body.placement) is not BodyPlacement
         or type(occurrence.body.quantization) is not DescriptorQuantization
+        or type(occurrence.body.matching) is not MatchingBoundaryGraph
         or type(occurrence.summary) is not RepeatingProfileGeometrySummary
         for occurrence in snapshot.occurrences
     ):
@@ -349,7 +350,7 @@ class _CorrespondenceSnapshotAuthority:
                 owners.append(solid)
                 groups.append([position])
         body_groups = tuple(sorted(tuple(group) for group in groups))
-        snapshot = CorrespondenceSnapshot(2, occurrences, body_groups)
+        snapshot = CorrespondenceSnapshot(3, occurrences, body_groups)
         _validate_snapshot(snapshot)
         # The authority retains an independent immutable value, not aliases to the issued
         # dataclass graph. This detects object.__setattr__ mutation of any nested occurrence,
