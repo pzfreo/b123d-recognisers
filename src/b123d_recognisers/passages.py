@@ -65,7 +65,7 @@ from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _canonical
-from b123d_recognisers._section_passages import section_ring_proposals
+from b123d_recognisers._section_passages import SectionRingProposal, section_ring_proposals
 from b123d_recognisers._typing import Part
 
 #: Two walls belong to one ring when their spans along the run axis agree. A coordinate
@@ -73,6 +73,7 @@ from b123d_recognisers._typing import Part
 #: minimum-evidence threshold -- but it compares two derivations of the *same* extrusion, which
 #: differ only by kernel noise, so it is a float epsilon and not a length at all.
 _SPAN_EPS = 1e-6
+_SECTION_SERIALIZATION_LIMIT = 0.002
 
 
 @dataclass(frozen=True, order=True)
@@ -305,12 +306,52 @@ def _discover_section_passages(
             ),
             PassageEnds(False, False),
         )
+        if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
+            raise ValueError("section passage serialization exceeds the displacement bound")
         found.append((record, proposal.nodes))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
     if sink is not None:
         for record, nodes in found:
             sink.propose(FamilyId.PASSAGES, record, defining=nodes)
     return [record for record, _ in found]
+
+
+def _section_projection_displacement(
+    proposal: SectionRingProposal, record: SectionPassage
+) -> float:
+    """Maximum source-to-serialized movement over every section vertex at both ends."""
+
+    maximum = 0.0
+    for source_vertex, serialized_vertex in zip(
+        proposal.section.boundary, record.section.boundary, strict=True
+    ):
+        for source_t, serialized_t in zip(
+            proposal.run_interval, record.run_interval, strict=True
+        ):
+            source = tuple(
+                proposal.frame.origin[index]
+                + source_t * proposal.frame.run[index]
+                + source_vertex.point[0] * proposal.frame.u[index]
+                + source_vertex.point[1] * proposal.frame.v[index]
+                for index in range(3)
+            )
+            serialized = tuple(
+                record.frame.origin[index]
+                + serialized_t * record.frame.run[index]
+                + serialized_vertex.point[0] * record.frame.u[index]
+                + serialized_vertex.point[1] * record.frame.v[index]
+                for index in range(3)
+            )
+            maximum = max(
+                maximum,
+                math.sqrt(
+                    sum(
+                        (left - right) ** 2
+                        for left, right in zip(source, serialized, strict=True)
+                    )
+                ),
+            )
+    return maximum
 
 
 def _legacy_projection(record: SectionPassage) -> Passage | None:

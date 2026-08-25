@@ -185,6 +185,17 @@ def test_oblique_passage_step_round_trip_preserves_schema_and_wall_count(tmp_pat
     assert recognise_passages(imported) == []
 
 
+def test_whole_occurrence_serialization_displacement_refuses_before_evidence() -> None:
+    accepted = Rot(17, 23, 31) * (Box(60, 40, 5000) - Box(10, 10, 15000))
+    assert len(recognise_section_passages(accepted)) == 1
+
+    refused = Rot(17, 23, 31) * (Box(60, 40, 10000) - Box(10, 10, 30000))
+    ledger = ClaimLedger(FaceGraph(refused))
+    with pytest.raises(ValueError, match="serialization exceeds the displacement bound"):
+        recognise_section_passages(refused, ledger=ledger)
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
 @pytest.mark.parametrize(
     "record",
     [
