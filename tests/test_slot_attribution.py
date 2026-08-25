@@ -9,7 +9,9 @@ from pathlib import Path
 
 import pytest
 from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
+from OCP.GeomAbs import GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
@@ -23,6 +25,7 @@ from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all, _take_inventory
 
 ROOT = Path(__file__).parents[1]
+_AXIS = {"x": 0, "y": 1, "z": 2}
 
 
 def _obround(length: float, width: float, depth: float):
@@ -84,6 +87,29 @@ def test_route_matrix_matches_fresh_complete_role_inventory(part, planar: int, c
         actual_faces = [product.context.graph.face(node) for node in actual]
         assert all(any(face.is_same(want) for face in actual_faces) for want in expected_faces)
         assert product.context.graph.common_valid_solid(actual) is not None
+        for node in actual:
+            if product.context.graph.is_planar(node):
+                normal = product.context.graph.normal(node)
+                assert normal is not None
+                axis = max(range(3), key=lambda index: abs(normal[index]))
+                assert axis in {_AXIS[record.width_axis], _AXIS[record.long_axis]}
+                assert abs(normal[axis]) == pytest.approx(1.0)
+                lo, hi = product.context.graph.bounds(node)[axis]
+                assert lo == pytest.approx(hi)
+                if axis == _AXIS[record.width_axis]:
+                    assert abs(lo - record.w_center) == pytest.approx(record.width / 2)
+                else:
+                    assert abs(lo - (record.lo + record.hi) / 2) == pytest.approx(
+                        record.length / 2
+                    )
+            else:
+                surface = BRepAdaptor_Surface(product.context.graph.face(node).wrapped)
+                assert surface.GetType() == GeomAbs_Cylinder
+                cylinder = surface.Cylinder()
+                direction = cylinder.Axis().Direction()
+                components = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+                assert components[_AXIS[record.depth_axis]] == pytest.approx(1.0)
+                assert cylinder.Radius() == pytest.approx(record.width / 2)
 
 
 def test_public_claim_ledger_and_writer_use_the_same_complete_product() -> None:
