@@ -1021,6 +1021,8 @@ are not introduced by this attribution-only child.
 Graph-bound source sharing is valid only between unequal records whose complete role sets resolve
 to the same SolidRef. Equal-record identical sets collapse; competing assignments, cross-solid or
 stale provenance still refuse atomically. Sources are never subtracted or merged to force uniqueness.
+Likewise, a physically split corner floor remains the legacy no-output case: joining its patches
+would expand the corner recogniser's semantic domain and is deferred rather than fitted in F5.
 The executable invalid-topology boundary uses an open Shell. A bounded OCCT construction search did
 not produce a valid closed non-manifold Solid with one unambiguous Pocket occurrence: added
 incidence either remains open/invalid or makes the wall/floor assignment ambiguous, which the same

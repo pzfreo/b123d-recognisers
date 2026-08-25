@@ -777,27 +777,51 @@ def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
     assert _recognise_obround_from_ends(part, [], blind=True, graph=graph, proposals=True) == []
 
 
-@pytest.mark.parametrize(
-    ("bulge_ratio", "accepted"),
-    [
-        (1 - _OBROUND_RATIO_TOL + 1e-10, True),
-        (1 + _OBROUND_RATIO_TOL - 1e-10, True),
-        (1 - _OBROUND_RATIO_TOL - 1e-10, False),
-        (1 + _OBROUND_RATIO_TOL + 1e-10, False),
-    ],
-)
-def test_obround_ratio_tolerance_is_inclusive_only_at_boundary(bulge_ratio, accepted) -> None:
+@pytest.mark.parametrize("dimension", ["across", "bulge"])
+@pytest.mark.parametrize("side", [-1, 1])
+def test_obround_ratio_tolerance_is_exact_in_both_dimensions(dimension, side) -> None:
     radius = 10.0
-    bbox = SimpleNamespace(
-        min=Vector(-radius, 0, -5),
-        max=Vector(radius, radius * bulge_ratio, 5),
-    )
-    cap = (radius, "z", (0.0, 0.0, 0.0), bbox, True, FaceNode(0))
-    assert (_obround_end(cap) is not None) is accepted
+    nominal = 2.0 if dimension == "across" else 1.0
+    target = nominal + side * _OBROUND_RATIO_TOL
+
+    def probe(ratio):
+        across_ratio = ratio if dimension == "across" else 2.0
+        bulge_ratio = ratio if dimension == "bulge" else 1.0
+        bbox = SimpleNamespace(
+            min=Vector(-radius, 0, -5),
+            max=Vector(radius * (across_ratio - 1), radius * bulge_ratio, 5),
+        )
+        cap = (radius, "z", (0.0, 0.0, 0.0), bbox, True, FaceNode(0))
+        actual = (
+            (bbox.max.X - bbox.min.X) / radius
+            if dimension == "across"
+            else (bbox.max.Y - bbox.min.Y) / radius
+        )
+        return abs(actual - nominal) <= _OBROUND_RATIO_TOL, _obround_end(cap)
+
+    outside = target
+    while probe(outside)[0]:
+        outside = math.nextafter(outside, outside + side)
+    inside = math.nextafter(outside, nominal)
+    while not probe(inside)[0]:
+        inside = math.nextafter(inside, nominal)
+    assert probe(inside)[0] and probe(inside)[1] is not None
+    assert not probe(outside)[0] and probe(outside)[1] is None
 
 
+def test_obround_ratio_requires_exactly_one_across_and_bulge_axis() -> None:
+    radius = 10.0
+    full = SimpleNamespace(min=Vector(-10, -10, -5), max=Vector(10, 10, 5))
+    square = SimpleNamespace(min=Vector(0, 0, -5), max=Vector(10, 10, 5))
+    assert _obround_end((radius, "z", (0, 0, 0), full, True, FaceNode(0))) is None
+    assert _obround_end((radius, "z", (0, 0, 0), square, True, FaceNode(0))) is None
+
+
+@pytest.mark.parametrize("coordinate", [0, 1])
 @pytest.mark.parametrize("outside", [False, True])
-def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, outside) -> None:
+def test_cap_cluster_fraction_controls_split_patch_union(
+    monkeypatch, coordinate, outside
+) -> None:
     import b123d_recognisers._recess_obround as module
 
     radius = 10.0
@@ -806,15 +830,41 @@ def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, outside) -
     first = SimpleNamespace(min=Vector(-10, 0, -5), max=Vector(0, 10, 5))
     second = SimpleNamespace(min=Vector(0, 0, -5), max=Vector(10, 10, 5))
     first_node, second_node = FaceNode(0), FaceNode(1)
+    displaced = [0.0, 0.0, 0.0]
+    displaced[coordinate] = delta
     cylinders = [
         (radius, "z", (0.0, 0.0, 0.0), first, True, first_node),
-        (radius, "z", (delta, 0.0, 0.0), second, True, second_node),
+        (radius, "z", tuple(displaced), second, True, second_node),
     ]
     monkeypatch.setattr(module, "_cylinder_faces", lambda _part, _graph: cylinders)
     ends = _obround_ends(Box(1, 1, 1), cast(FaceGraph, object()))
     assert bool(ends) is (not outside)
     if ends:
         assert ends[0][9] == frozenset({first_node, second_node})
+
+
+def test_cap_cluster_outside_boundary_remains_two_competing_physical_ends(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    radius = 10.0
+    threshold = module.length_tol(radius, rel=_CAP_CLUSTER_FRAC)
+    bbox = SimpleNamespace(min=Vector(-10, 0, -5), max=Vector(10, 10, 5))
+    nodes = FaceNode(0), FaceNode(1)
+    cylinders = [
+        (radius, "z", (0.0, 0.0, 0.0), bbox, True, nodes[0]),
+        (
+            radius,
+            "z",
+            (math.nextafter(threshold, math.inf), 0.0, 0.0),
+            bbox,
+            True,
+            nodes[1],
+        ),
+    ]
+    monkeypatch.setattr(module, "_cylinder_faces", lambda _part, _graph: cylinders)
+    ends = _obround_ends(Box(1, 1, 1), cast(FaceGraph, object()))
+    assert len(ends) == 2
+    assert {end[9] for end in ends} == {frozenset({node}) for node in nodes}
 
 
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
@@ -842,7 +892,11 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
                         importers.append(path.name)
             elif isinstance(statement, ast.Import):
                 for alias in statement.names:
-                    bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+                    if alias.asname:
+                        bindings[alias.asname] = alias.name
+                    else:
+                        root = alias.name.split(".")[0]
+                        bindings[root] = root
 
         def canonical(node, names=bindings):
             if isinstance(node, ast.Name):
@@ -880,6 +934,45 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
     assert isinstance(public_keywords["writer"], ast.Name)
     assert public_keywords["writer"].id == "writer"
 
+    def resolved_call(source: str) -> str:
+        tree = ast.parse(source)
+        names = {}
+        for statement in tree.body:
+            if isinstance(statement, ast.Import):
+                for alias in statement.names:
+                    if alias.asname:
+                        names[alias.asname] = alias.name
+                    else:
+                        root = alias.name.split(".")[0]
+                        names[root] = root
+            elif isinstance(statement, ast.ImportFrom) and statement.module:
+                for alias in statement.names:
+                    names[alias.asname or alias.name] = f"{statement.module}.{alias.name}"
+
+        def resolve(node):
+            if isinstance(node, ast.Name):
+                return names.get(node.id, node.id)
+            if isinstance(node, ast.Attribute):
+                return f"{resolve(node.value)}.{node.attr}"
+            return ""
+
+        call = next(node for node in ast.walk(tree) if isinstance(node, ast.Call))
+        return resolve(call.func)
+
+    target = "b123d_recognisers._recess_features._discover_pockets"
+    assert resolved_call(
+        "import b123d_recognisers._recess_features\n"
+        "b123d_recognisers._recess_features._discover_pockets(part)"
+    ) == target
+    assert resolved_call(
+        "import b123d_recognisers._recess_features as recess\n"
+        "recess._discover_pockets(part)"
+    ) == target
+    assert resolved_call(
+        "from b123d_recognisers._recess_features import _discover_pockets as discover\n"
+        "discover(part)"
+    ) == target
+
 
 def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
     package = ROOT / "src/b123d_recognisers"
@@ -901,7 +994,11 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
                     names[alias.asname or alias.name] = f"{prefix}.{alias.name}"
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    names[alias.asname or alias.name.split(".")[0]] = alias.name
+                    if alias.asname:
+                        names[alias.asname] = alias.name
+                    else:
+                        root = alias.name.split(".")[0]
+                        names[root] = root
         return names
 
     def canonical(node, names):
@@ -1035,8 +1132,8 @@ def test_step_split_obround_cap_publishes_every_original_patch(tmp_path: Path) -
     assert sum(fresh.is_planar(node) for node in defining) == 2
 
 
-def test_step_split_corner_floor_publishes_every_original_patch(tmp_path: Path) -> None:
-    """A smooth split of the defining corner floor must not lose either patch."""
+def test_step_split_corner_floor_preserves_legacy_negative_parity(tmp_path: Path) -> None:
+    """Attribution does not add semantic support for a split corner floor."""
 
     part = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
     graph = FaceGraph(part)
@@ -1071,13 +1168,9 @@ def test_step_split_corner_floor_publishes_every_original_patch(tmp_path: Path) 
     )
     assert len(split_floors) == 2
     ledger = ClaimLedger(fresh)
-    (record,) = _discover_pockets(imported, writer=ledger.writer)
-    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
-    defining = ledger.defining_of(candidate)
-    assert record.edge_anchored
-    assert candidate.record is record
-    assert split_floors.issubset(defining)
-    assert len(defining) == 4
+    assert _discover_pockets(imported) == []
+    assert _discover_pockets(imported, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
 def test_step_split_opposed_floor_remains_consulted_not_defining(tmp_path: Path) -> None:
@@ -1280,6 +1373,10 @@ def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeyp
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
     assert FamilyId.POCKETS not in ledger._issuer._completed
     assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+    assert all(
+        FamilyId.POCKETS not in snapshot.occurrences
+        for snapshot in ledger._issuer._restricted_snapshots.values()
+    )
 
 
 def test_aggregate_stale_second_occurrence_has_no_completed_state(monkeypatch) -> None:
@@ -1310,7 +1407,10 @@ def test_aggregate_stale_second_occurrence_has_no_completed_state(monkeypatch) -
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
     assert FamilyId.POCKETS not in ledger._issuer._completed
     assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
-    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+    assert all(
+        FamilyId.POCKETS not in snapshot.occurrences
+        for snapshot in ledger._issuer._restricted_snapshots.values()
+    )
 
 
 def test_public_ledger_raw_writer_and_plain_projection_are_identical() -> None:
@@ -1363,7 +1463,6 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
         _discover_all(context, ledger)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
     assert FamilyId.POCKETS not in ledger._issuer._completed
-    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
     assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
 
 
