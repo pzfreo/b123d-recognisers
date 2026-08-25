@@ -50,6 +50,7 @@ from b123d_recognisers._registry import (
     FullyAttributed,
     ProjectionDiscoverer,
     ProjectionInputs,
+    _issue_projection_inputs,
     validate_output,
     validate_result_fields,
 )
@@ -431,7 +432,7 @@ def _take_inventory(
     passage_definition = next(
         item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.PASSAGES
     )
-    passage_projection = AcceptedProjectionInputs._restricted(
+    passage_projection = _issue_projection_inputs(
         accepted.candidate_set(FamilyId.PASSAGES),
         evidence,
     )

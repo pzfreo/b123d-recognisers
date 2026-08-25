@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pytest
 from build123d import (
@@ -40,8 +40,11 @@ from b123d_recognisers import (
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+from b123d_recognisers._run import start
 from b123d_recognisers._section_passages import _INTERVAL_TOL, _pair_line
 from b123d_recognisers._sections import LocalFrame
+from b123d_recognisers.result import _discover_all
 
 
 def _square():
@@ -343,6 +346,37 @@ def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch
     with pytest.raises(ValueError, match="not issued by this graph|body authority changed"):
         passages_module._discover_section_passages(part, graph, ledger.writer)
     assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
+def test_aggregate_late_passage_failure_has_no_completion_or_occurrence_capability(
+    monkeypatch,
+) -> None:
+    import b123d_recognisers.passages as passages_module
+    from b123d_recognisers._section_passages import section_ring_proposals
+
+    first = Rot(17, 23, 31) * _square()
+    part = Compound([first, Pos(150, 0, 0) * first])
+    context = start(part)
+    proposals = section_ring_proposals(part, context.graph)
+    assert len(proposals) == 2
+    foreign_part = Pos(400, 0, 0) * first
+    (foreign,) = section_ring_proposals(foreign_part, FaceGraph(foreign_part))
+    malformed = replace(proposals[1], solid=foreign.solid)
+    monkeypatch.setattr(
+        passages_module,
+        "section_ring_proposals",
+        lambda supplied_part, supplied_graph: [proposals[0], malformed],
+    )
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(ValueError, match="body authority changed"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+    assert FamilyId.PASSAGES not in ledger._issuer._completed
+    assert FamilyId.PASSAGES not in ledger._issuer._completed_occurrences
+    assert all(
+        FamilyId.PASSAGES not in snapshot.occurrences
+        for snapshot in ledger._issuer._restricted_snapshots.values()
+    )
 
 
 @pytest.mark.parametrize(

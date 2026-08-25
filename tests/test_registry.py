@@ -7,6 +7,7 @@ import types
 import typing
 from dataclasses import fields, replace
 from inspect import signature
+from pathlib import Path
 
 import pytest
 from build123d import Box, BuildPart, BuildSketch, Mode, Pos, RegularPolygon, extrude
@@ -192,7 +193,7 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
         extrude(amount=20, both=True, mode=Mode.SUBTRACT)
     product = _take_inventory(built.part)
     accepted = product.accepted.candidate_set(FamilyId.PASSAGES)
-    inputs = AcceptedProjectionInputs._restricted(accepted, product.evidence)
+    inputs = registry_module._issue_projection_inputs(accepted, product.evidence)
     expected = inputs.passage_views()
     assert len(expected) == len(accepted.candidates) == 1
 
@@ -219,21 +220,36 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
             frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence
         )
 
-    with pytest.raises((TypeError, ValueError), match="authority|argument"):
-        registry_module._ProjectionInputIssuer(object())
+    assert not hasattr(registry_module, "_PROJECTION_AUTHORITY_TOKEN")
+    assert not hasattr(registry_module, "_ProjectionInputIssuer")
 
 
-def test_projection_input_issuer_has_one_closed_production_mint_site() -> None:
-    tree = ast.parse(inspect.getsource(registry_module))
-    calls = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "_ProjectionInputIssuer"
-    ]
-    assert len(calls) == 1
-    assert ast.unparse(calls[0].args[0]) == "_PROJECTION_AUTHORITY_TOKEN"
+def test_projection_input_authority_has_one_closed_production_caller() -> None:
+    callers = []
+    references = []
+    for path in sorted(Path(registry_module.__file__).parent.glob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        if "_issue_projection_inputs" in source:
+            references.append(path.name)
+        tree = ast.parse(source, filename=str(path))
+        if any(
+            isinstance(node, ast.Call)
+            and (
+                (isinstance(node.func, ast.Name) and node.func.id == "_issue_projection_inputs")
+                or (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "_issue_projection_inputs"
+                )
+            )
+            for node in ast.walk(tree)
+        ):
+            callers.append(path.name)
+    assert callers == ["result.py"]
+    assert references == ["_registry.py", "result.py"]
+
+    registry_source = inspect.getsource(registry_module)
+    assert "_PROJECTION_AUTHORITY_TOKEN" not in registry_source
+    assert "class _ProjectionInputIssuer" not in registry_source
 
 
 def test_registry_rejects_wrong_typed_dependency_values() -> None:
