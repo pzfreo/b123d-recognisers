@@ -8,7 +8,8 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cylinder, Pos
+from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
@@ -96,6 +97,34 @@ def test_public_claim_ledger_and_writer_use_the_same_complete_product() -> None:
     assert [item.to_dict() for item in via_writer] == [item.to_dict() for item in plain]
     assert [len(claim.defining) for claim in public_ledger.claims] == [4]
     assert [len(claim.defining) for claim in writer_ledger.claims] == [4]
+
+
+def test_step_split_cap_publishes_every_original_patch(tmp_path: Path) -> None:
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    graph = FaceGraph(part)
+    proposal = _slot_proposals_one(part, graph=graph)[0]
+    cap_node = max(
+        (node for group in proposal.caps for node in group),
+        key=lambda node: graph.bounds(node)[0][1],
+    )
+    face = graph.face(cap_node)
+    bounds = face.bounding_box()
+    seam = Edge.make_line((21, 0, bounds.min.Z), (21, 0, bounds.max.Z))
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, face.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+    path = tmp_path / "slot-split-cap.step"
+    assert export_step(split, path)
+    imported = import_step(path)
+    ledger = ClaimLedger(FaceGraph(imported))
+    (record,) = _discover_slots(imported, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.SLOTS).candidates
+    defining = ledger.defining_of(candidate)
+    assert candidate.record is record
+    assert sum(not ledger.graph.is_planar(node) for node in defining) == 3
+    assert sum(ledger.graph.is_planar(node) for node in defining) == 2
 
 
 def test_equal_coincident_and_separate_occurrences_keep_identity_and_body_scope() -> None:
