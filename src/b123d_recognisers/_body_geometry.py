@@ -1149,6 +1149,41 @@ def _cylinder_parameter(
     )
 
 
+def _validate_matching_pcurve(edge: Any, face: Any, quantum: float) -> None:
+    """Prove one exact face-edge pcurve occurrence reconstructs its 3-D curve."""
+
+    try:
+        curve = BRepAdaptor_Curve(edge.wrapped)
+        pcurve = BRepAdaptor_Curve2d(edge.wrapped, face.wrapped)
+        surface = BRepAdaptor_Surface(face.wrapped)
+        curve_first, curve_last = curve.FirstParameter(), curve.LastParameter()
+        pcurve_first, pcurve_last = pcurve.FirstParameter(), pcurve.LastParameter()
+    except Standard_Failure as error:
+        raise UnsupportedBodyGeometry("matching pcurve is unavailable") from error
+    parameters = (curve_first, curve_last, pcurve_first, pcurve_last)
+    if not all(math.isfinite(value) for value in parameters):
+        raise UnsupportedBodyGeometry("matching pcurve parameter range is non-finite")
+    edge_geometry = edge.geom_type
+    fractions: tuple[float, ...]
+    if edge_geometry == GeomType.LINE:
+        fractions = (0.0, 0.5, 1.0)
+    elif edge_geometry == GeomType.CIRCLE:
+        fractions = (0.0, 0.25, 0.5, 0.75) + (() if edge.is_closed else (1.0,))
+    else:
+        raise UnsupportedBodyGeometry("matching pcurve has an unsupported 3-D curve")
+    for fraction in fractions:
+        curve_parameter = curve_first + fraction * (curve_last - curve_first)
+        pcurve_parameter = pcurve_first + fraction * (pcurve_last - pcurve_first)
+        try:
+            curve_point = curve.Value(curve_parameter)
+            uv = pcurve.Value(pcurve_parameter)
+            surface_point = surface.Value(uv.X(), uv.Y())
+        except Standard_Failure as error:
+            raise UnsupportedBodyGeometry("matching pcurve reconstruction failed") from error
+        if math.dist(curve_point.Coord(), surface_point.Coord()) > 2.0 * quantum:
+            raise UnsupportedBodyGeometry("matching pcurve does not reconstruct its 3-D curve")
+
+
 def _cylinder_cycle(
     face_wrapper: Any,
     wire: Any,
@@ -1433,6 +1468,7 @@ def matching_boundary_for_solid(
         for wire in face.wires():
             indices = []
             for edge in wire.edges():
+                _validate_matching_pcurve(edge, face, quantum)
                 index = _identity_index(raw_curves, edge)
                 if index == len(curve_examples):
                     curve_examples.append(edge)

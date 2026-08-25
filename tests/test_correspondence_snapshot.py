@@ -35,7 +35,7 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.BRepGProp import BRepGProp
-from OCP.gp import gp_Trsf
+from OCP.gp import gp_Pnt2d, gp_Trsf
 from OCP.GProp import GProp_GProps
 from OCP.TopAbs import TopAbs_Orientation
 
@@ -384,6 +384,35 @@ def test_schema_three_nested_value_mutation_refuses(mutation: str) -> None:
         )
     with pytest.raises(UnsupportedBodyGeometry, match="matching"):
         _body_geometry.validate_matching_boundary_graph(changed)
+
+
+def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
+    monkeypatch,
+) -> None:
+    face = Box(2, 3, 4).faces()[0]
+    edge = face.edges()[0]
+    original = _body_geometry.BRepAdaptor_Curve2d(edge.wrapped, face.wrapped)
+    first = original.FirstParameter()
+    last = original.LastParameter()
+
+    class DisplacedPcurve:
+        @staticmethod
+        def FirstParameter():
+            return first
+
+        @staticmethod
+        def LastParameter():
+            return last
+
+        @staticmethod
+        def Value(_parameter):
+            return gp_Pnt2d(1_000.0, 1_000.0)
+
+    monkeypatch.setattr(
+        _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: DisplacedPcurve()
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="does not reconstruct"):
+        _body_geometry._validate_matching_pcurve(edge, face, 1e-7)
 
 
 def test_schema_three_construction_budget_is_inclusive() -> None:
