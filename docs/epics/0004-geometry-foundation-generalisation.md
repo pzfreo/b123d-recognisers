@@ -530,6 +530,16 @@ Exit gate: all rotations, mirrors and traversal permutations give canonical fram
 goldens remain stable; a separately authorised oblique corpus set gains records with zero off-target
 defining claims; Draftwright explicitly reviews the schema transition before production pin movement.
 
+F4b Section Passage holdout chronology: after Draftwright schema acceptance, two independent
+exact-head implementation accepts and the full static/test/package/corpus/performance/CI gates,
+`F4B-SECTION-PASSAGES-H1` designates only bucket 36 with token
+`f4b_section_passages_h1`. The designation is neutral policy/tests/docs work and accesses no
+archive membership, annotation, STEP, geometry, recognition or outcome. Bucket 36 begins
+`sealed_unrevealed`; buckets 34/35 remain independently sealed and unauthorized; the ordinary
+complement becomes 37..999. A later exact authorization consumes bucket 36 permanently even on
+zero, invalid input or abort, with no retry, alternate allocation, replacement or post-reveal
+fitting.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
