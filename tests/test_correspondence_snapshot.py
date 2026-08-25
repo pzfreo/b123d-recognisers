@@ -1143,6 +1143,8 @@ def test_equal_coincident_bodies_retain_two_indistinguishable_occurrences() -> N
 
     assert len(snapshot.occurrences) == 2
     assert snapshot.occurrences[0] == snapshot.occurrences[1]
+    assert snapshot.schema_version == 2
+    assert snapshot.body_groups == ((0,), (1,))
 
 
 def test_two_unequal_occurrences_on_one_valid_solid_retain_one_body_authority() -> None:
@@ -1152,12 +1154,43 @@ def test_two_unequal_occurrences_on_one_valid_solid_retain_one_body_authority() 
     assert [item.summary.repeat_count for item in snapshot.occurrences] == [5, 7]
     assert snapshot.occurrences[0].body is snapshot.occurrences[1].body
     assert snapshot.occurrences[0].summary.centre != snapshot.occurrences[1].summary.centre
+    assert snapshot.body_groups == ((0, 1),)
 
 
 def test_arbitrary_rotation_changes_no_recognition_and_has_no_snapshot_entry() -> None:
     product = _take_inventory(Rot(13, 27, 9) * _rrp())
     assert not product.result.repeating_radial_profiles
     assert correspondence_snapshot(product).occurrences == ()
+    assert correspondence_snapshot(product).body_groups == ()
+
+
+def test_snapshot_revalidates_raw_derived_quantization_authority() -> None:
+    product = _take_inventory(_rrp())
+    snapshot = correspondence_snapshot(product)
+    quantization = snapshot.occurrences[0].body.quantization
+
+    assert quantization.metric_quantum == pytest.approx(
+        _body_geometry.DESCRIPTOR_REL * quantization.characteristic_scale
+        + _body_geometry.DESCRIPTOR_FLOOR
+    )
+    object.__setattr__(
+        quantization,
+        "metric_quantum",
+        math.nextafter(quantization.metric_quantum, math.inf),
+    )
+    with pytest.raises(CorrespondenceSnapshotError, match="quantization is invalid"):
+        correspondence_snapshot(product)
+
+
+def test_snapshot_revalidates_body_group_partition() -> None:
+    product = _take_inventory(_two_rrp_one_solid())
+    snapshot = correspondence_snapshot(product)
+    object.__setattr__(snapshot, "body_groups", ((0,), (1,)))
+
+    # Splitting one issuer-proved body into two groups is not made valid merely because both
+    # occurrences carry equal descriptor values.
+    with pytest.raises(CorrespondenceSnapshotError, match="body groups"):
+        correspondence_snapshot(product)
 
 
 def test_snapshot_is_lazy_and_body_descriptor_runs_once(monkeypatch) -> None:
