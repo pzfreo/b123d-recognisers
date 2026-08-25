@@ -5,7 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 import pytest
-from build123d import Box, Compound, Cylinder, Pos
+from build123d import Box, Compound, Cylinder, Plane, Pos, Rot
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -74,4 +74,38 @@ def test_unexpected_geometry_value_error_is_not_relabelled(monkeypatch) -> None:
     monkeypatch.setattr(module, "_body_scoped_proposals", fail)
     with pytest.raises(ValueError, match="geometry defect"):
         _discover_pockets(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Pos(17, -23, 11) * (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)),
+        Rot(90, 0, 0) * (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)),
+        Rot(0, 90, 0) * (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)),
+        (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)).mirror(Plane.YZ),
+        (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)).scale(0.2),
+        (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)).scale(5),
+    ],
+)
+def test_axis_transform_mirror_and_scale_keep_writer_parity(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    written = _discover_pockets(part, writer=ledger.writer)
+    plain = _discover_pockets(part)
+    assert [item.to_dict() for item in written] == [item.to_dict() for item in plain]
+    assert len(written) == len(ledger.candidate_set(FamilyId.POCKETS).candidates) == 1
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(60, 40, 12) - Box(20, 12, 12),  # through Slot: zero floors
+        Box(60, 40, 12) - Cylinder(5, 12),  # full cylinder
+        Box(60, 40, 12),
+        Box(60, 40, 12) - Pos(0, 0, 4) * Box(60, 12, 8),  # full-span Channel
+    ],
+)
+def test_non_pocket_routes_have_no_candidate_or_prefix(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_pockets(part, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
