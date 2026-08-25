@@ -1178,7 +1178,7 @@ def test_snapshot_revalidates_raw_derived_quantization_authority() -> None:
         "metric_quantum",
         math.nextafter(quantization.metric_quantum, math.inf),
     )
-    with pytest.raises(CorrespondenceSnapshotError, match="quantization is invalid"):
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence values changed"):
         correspondence_snapshot(product)
 
 
@@ -1247,7 +1247,7 @@ def test_descriptor_quantization_refuses_wrong_runtime_types(value: object) -> N
     product = _take_inventory(_rrp())
     snapshot = correspondence_snapshot(product)
     object.__setattr__(snapshot.occurrences[0].body, "quantization", value)
-    with pytest.raises(CorrespondenceSnapshotError, match="quantization is invalid"):
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence values changed"):
         correspondence_snapshot(product)
 
 
@@ -1257,6 +1257,13 @@ def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry()
         correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=1))
     with pytest.raises(CorrespondenceSnapshotError, match="schema is malformed"):
         correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=True))
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence schema is malformed"):
+        correspondence_module._validate_snapshot(dataclasses.replace(one, occurrences=(object(),)))
+    malformed_body = dataclasses.replace(one.occurrences[0], body=object())
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence schema is malformed"):
+        correspondence_module._validate_snapshot(
+            dataclasses.replace(one, occurrences=(malformed_body,))
+        )
     for groups in (((False,),), ((0.0,),), ([0],)):
         with pytest.raises(CorrespondenceSnapshotError, match="body groups are malformed"):
             correspondence_module._validate_snapshot(dataclasses.replace(one, body_groups=groups))
@@ -1270,6 +1277,14 @@ def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry()
     assert two.body_groups == ((0,), (1,))
     with pytest.raises(CorrespondenceSnapshotError, match="unequal geometry"):
         correspondence_module._validate_snapshot(dataclasses.replace(two, body_groups=((0, 1),)))
+
+
+def test_cached_snapshot_malformed_occurrence_refuses_before_dereference() -> None:
+    product = _take_inventory(_rrp())
+    snapshot = correspondence_snapshot(product)
+    object.__setattr__(snapshot, "occurrences", (object(),))
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence values changed"):
+        correspondence_snapshot(product)
 
 
 def test_snapshot_is_lazy_and_body_descriptor_runs_once(monkeypatch) -> None:

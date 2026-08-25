@@ -16,7 +16,11 @@ from typing import Any, Protocol, TypeAlias
 
 from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
 from b123d_recognisers._body_geometry import (
+    BodyBoundaryGeometry,
     BodyGeometryDescriptor,
+    BodyIntrinsic,
+    BodyPlacement,
+    DescriptorQuantization,
     FaceGeometry,
     UnsupportedBodyGeometry,
     validate_descriptor_quantization,
@@ -184,6 +188,17 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
     if type(snapshot.occurrences) is not tuple or type(snapshot.body_groups) is not tuple:
         raise CorrespondenceSnapshotError("correspondence body groups are malformed")
     if any(
+        type(occurrence) is not AcceptedOccurrenceSnapshot
+        or type(occurrence.body) is not BodyGeometryDescriptor
+        or type(occurrence.body.intrinsic) is not BodyIntrinsic
+        or type(occurrence.body.boundary) is not BodyBoundaryGeometry
+        or type(occurrence.body.placement) is not BodyPlacement
+        or type(occurrence.body.quantization) is not DescriptorQuantization
+        or type(occurrence.summary) is not RepeatingProfileGeometrySummary
+        for occurrence in snapshot.occurrences
+    ):
+        raise CorrespondenceSnapshotError("correspondence occurrence schema is malformed")
+    if any(
         type(group) is not tuple or any(type(position) is not int for position in group)
         for group in snapshot.body_groups
     ):
@@ -308,13 +323,13 @@ class _CorrespondenceSnapshotAuthority:
                 "accepted RRP record identity or value changed after inventory completion"
             )
         if self._snapshot is not None:
-            _validate_snapshot(self._snapshot)
             if self._snapshot.occurrences != self._bound_occurrences:
                 raise CorrespondenceSnapshotError(
                     "correspondence occurrence values changed after issue"
                 )
             if self._snapshot.body_groups != self._bound_body_groups:
                 raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
+            _validate_snapshot(self._snapshot)
             return self._snapshot
         staged = tuple(_occurrence(graph, product.evidence, item) for item in accepted.candidates)
         occurrences = tuple(item[0] for item in staged)
