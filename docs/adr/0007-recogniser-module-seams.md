@@ -350,3 +350,9 @@ reduction and core modules remain evidence-policy-free.
 Issue #236 makes `_recess_features._discover_pockets` the sole private writer-enabled Pocket
 adapter. The public compatibility facade and `_registry` are its only writer callers. Proposal,
 reduction and cap modules remain neutral identity carriers and do not read evidence or siblings.
+
+F6a adds `_body_geometry` below records/policy and `_correspondence` above the completed immutable
+inventory. The lower leaf may read bounded analytic kernel facts but imports no recogniser,
+Candidate, evidence, registry, reconciliation or result module. The upper module may read only its
+issuer-bound product authority, accepted RRP Candidates and terminal evidence. No discovery entry
+point imports it, and neither module is publicly exported.

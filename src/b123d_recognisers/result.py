@@ -13,13 +13,14 @@ from __future__ import annotations
 import math
 import warnings
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
 from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._correspondence import _CorrespondenceSnapshotAuthority
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
     ReasonCode,
@@ -209,6 +210,7 @@ class InventoryProduct:
     diagnostics: tuple[ResidualDiagnostic, ...]
     derived: DerivedInventory
     result: RecognitionResult
+    _correspondence_authority: object | None = field(default=None, repr=False, compare=False)
 
     @property
     def accepted(self) -> CandidateInventory:
@@ -418,7 +420,8 @@ def _take_inventory(
     )
     derived = _derive_patterns(accepted)
     result = _project_result(context, accepted, derived)
-    return InventoryProduct(
+    correspondence = _CorrespondenceSnapshotAuthority()
+    product = InventoryProduct(
         context=context,
         evidence=evidence,
         physical=physical,
@@ -426,7 +429,10 @@ def _take_inventory(
         diagnostics=diagnostics,
         derived=derived,
         result=result,
+        _correspondence_authority=correspondence,
     )
+    correspondence.bind(product)
+    return product
 
 
 def _discover_all(

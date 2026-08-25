@@ -164,3 +164,9 @@ whether its family is complete or partial, must resolve to one issuer-owned vali
 before Candidate publication and again from terminal frozen evidence. Empty incomplete-family
 evidence remains permitted. This proves body provenance only; each family still owns the geometric
 decision separating defining faces from stock, neighbours, probes and consulted context.
+
+Issue #185 adds a private, read-only post-reconciliation consumer for accepted Repeating Radial
+Profile evidence. It revalidates exactly two original defining faces and their one common graph-
+issued valid solid before projecting immutable geometry summaries. It cannot issue a Candidate,
+mutate evidence, invoke discovery/reconciliation, or expose FaceNode/SolidRef/kernel handles. Equal
+descriptor values preserve multiplicity and are compatibility evidence, never identity.

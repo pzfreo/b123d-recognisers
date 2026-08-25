@@ -382,3 +382,14 @@ Radius and closest-axis-line distance use `1e-9 * local + COORD_FLOOR`; axis equ
 `1 - abs(dot(left, right)) <= 1e-9`, through `_analytic_surfaces`. Edge roles and coverage use exact
 graph-issued occurrences and no coordinate tolerance. Part/world bounds, rounded records and
 fitted/recovered radii are forbidden authorities.
+
+## Amendment (F6 body descriptors, issue #185)
+
+Private body descriptors use a distinct correspondence quantization, not recognition or public
+record rounding. From raw positive finite mass properties derive the rigid-motion-invariant length
+`L = max(cbrt(volume), sqrt(surface_area))`. With `d = 1e-9 * L + 1e-7 mm`, metric values use `d`,
+areas use `(L+d)^2-L^2`, volumes `(L+d)^3-L^3`, and central mass moments `(L+d)^5-L^5`; round-half-
+to-even and normalize negative zero. Unit/direction and angular values use `1e-10`. Reconstructed
+analytic points/parameters must remain within `2d` inclusive. These values are collision-prone
+compatibility evidence, never identity or recognition thresholds. World-axis bounds are placement
+facts only and cannot influence intrinsic/boundary quantization.

@@ -268,6 +268,12 @@ class EvidenceIndex:
     _observations: tuple[Observation, ...] = field(repr=False)
     _issued_observations: Mapping[int, _IssuedObservation] = field(repr=False)
 
+    def _validate_graph(self, graph: FaceGraph) -> None:
+        """Prove this terminal index belongs to exactly *graph* without exposing its token."""
+
+        if self._graph is not graph or self._graph.run_token is not graph.run_token:
+            raise ValueError("evidence index belongs to another graph run")
+
     def candidate_set(self, family: FamilyId) -> CandidateSet[object]:
         """Return the source-ordered candidates for *family* in this snapshot."""
 
