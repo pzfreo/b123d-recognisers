@@ -308,8 +308,8 @@ def _edge_geometry(edge, centre: tuple[float, float, float], quantum: float) -> 
     raw_axis = _vector(circle.Axis().Direction())
     axis, axis_sign = _canonical_axis(raw_axis)
     sweep = axis_sign * _arc_sweep(edge, raw_axis)
-    first = (start, end, _snap(sweep, ANGLE_TOL))
-    second = (end, start, _snap(-sweep, ANGLE_TOL))
+    first = (start, end, _snap_checked(sweep, ANGLE_TOL, name="circle sweep"))
+    second = (end, start, _snap_checked(-sweep, ANGLE_TOL, name="circle sweep"))
     canonical_start, canonical_end, canonical_sweep = min(first, second)
     return EdgeGeometry(
         "CIRCLE",
@@ -566,7 +566,7 @@ def describe_solid(solid) -> _DescribedBody:
         moments = tuple(float(value) for value in props.PrincipalProperties().Moments())
     except UnsupportedBodyGeometry:
         raise
-    except (RuntimeError, Standard_Failure) as error:
+    except Standard_Failure as error:
         raise UnsupportedBodyGeometry("kernel mass properties are unavailable") from error
     if (
         not math.isfinite(volume)
@@ -583,12 +583,16 @@ def describe_solid(solid) -> _DescribedBody:
     moment_quantum = (scale + quantum) ** 5 - scale**5
     try:
         raw_faces = tuple(solid.faces())
-        raw_geometry = tuple(_face_geometry(face, centre, scale) for face in raw_faces)
-        faces, incidence, symmetric = _canonical_topology(raw_geometry)
-    except UnsupportedBodyGeometry:
-        raise
-    except (RuntimeError, Standard_Failure) as error:
+    except Standard_Failure as error:
         raise UnsupportedBodyGeometry("kernel body boundary is unavailable") from error
+    # Python validation/canonicalization failures are programmer errors and must not be
+    # relabelled as unsupported kernel geometry. Individual OCCT adaptor failures use the
+    # closed Standard_Failure boundary; build123d's solid.faces() RuntimeError is caught above.
+    try:
+        raw_geometry = tuple(_face_geometry(face, centre, scale) for face in raw_faces)
+    except Standard_Failure as error:
+        raise UnsupportedBodyGeometry("kernel body boundary is unavailable") from error
+    faces, incidence, symmetric = _canonical_topology(raw_geometry)
     wire_count = sum(len(face.wires) for face in faces)
     edge_count = sum(len(wire.edges) for face in faces for wire in face.wires)
     descriptor = BodyGeometryDescriptor(
