@@ -8,7 +8,8 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cylinder, Plane, Pos, Rot
+from build123d import Box, Compound, Cylinder, Edge, Plane, Pos, Rot, export_step, import_step
+from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -172,3 +173,58 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         "CompletedInputs",
     ):
         assert forbidden not in source
+
+
+def test_step_split_obround_cap_publishes_every_original_patch(tmp_path: Path) -> None:
+    """Select the physical cap from fresh topology before writer/Candidate inspection."""
+
+    part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
+    graph = FaceGraph(part)
+    curved = [node for node in graph.nodes if not graph.is_planar(node)]
+    assert len(curved) == 2
+    cap = max(curved, key=lambda node: graph.bounds(node)[0][1])
+    face = graph.face(cap)
+    bounds = face.bounding_box()
+    seam = Edge.make_line((20, 0, bounds.min.Z), (20, 0, bounds.max.Z))
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, face.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+    path = tmp_path / "pocket-split-cap.step"
+    assert export_step(split, path)
+    imported = import_step(path)
+    fresh = FaceGraph(imported)
+    expected_curved = frozenset(node for node in fresh.nodes if not fresh.is_planar(node))
+    assert len(expected_curved) == 3
+    ledger = ClaimLedger(fresh)
+    (record,) = _discover_pockets(imported, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
+    defining = ledger.defining_of(candidate)
+    assert candidate.record is record
+    assert expected_curved.issubset(defining)
+    assert sum(fresh.is_planar(node) for node in defining) == 2
+
+
+def test_reversed_face_traversal_preserves_records_and_roles(monkeypatch) -> None:
+    part = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+
+    def run():
+        ledger = ClaimLedger(FaceGraph(part))
+        records = _discover_pockets(part, writer=ledger.writer)
+        roles = [
+            frozenset(ledger.graph.face(node) for node in ledger.defining_of(candidate))
+            for candidate in ledger.candidate_set(FamilyId.POCKETS).candidates
+        ]
+        return records, roles
+
+    before_records, before_roles = run()
+    original = type(part).faces
+    monkeypatch.setattr(type(part), "faces", lambda self: list(reversed(original(self))))
+    after_records, after_roles = run()
+    assert [record.to_dict() for record in after_records] == [
+        record.to_dict() for record in before_records
+    ]
+    assert len(before_roles) == len(after_roles)
+    for before, after in zip(before_roles, after_roles, strict=True):
+        assert all(any(face.is_same(other) for other in after) for face in before)
