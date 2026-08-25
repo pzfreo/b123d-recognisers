@@ -154,3 +154,12 @@ Floors, caps, envelope ends, curved interruptions and other wall pairs remain co
 carries these wall identities through the existing per-solid exact-value reduction and global
 geometry sort; competing wall pairs for one value refuse aggregate publication rather than being
 rematched from the rounded record.
+
+## Amendment (Plate attribution, issue #228)
+
+An aggregate Plate owns the complete original low-negative and high-positive planar face clusters
+whose adjacent events establish its record. Every cluster member remains defining because its area
+and centroid contribute to admission or the weighted `u`/`v` projection. Other groups, bbox facts
+and TURNED_STEPS records remain consulted. Whole-part grouping that mixes bodies raises the private
+`_PlateAttributionError` before issuance or family completion; public geometry-only output remains
+unchanged for that bounded unsupported case.

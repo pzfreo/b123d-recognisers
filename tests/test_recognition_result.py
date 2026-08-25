@@ -196,7 +196,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
     monkeypatch.setattr(result_module, "diagnose_residuals", fake_diagnostics)
     monkeypatch.setattr(registry_module, "_discover_fillets", counted("fillets", []))
-    monkeypatch.setattr(registry_module, "recognise_plates", counted("plates", []))
+    monkeypatch.setattr(registry_module, "_discover_plates", counted("plates", []))
 
     # A part rather than a bare object: the orchestrator now builds one face graph for the
     # families that record which faces they were built from, and an empty inventory is all this

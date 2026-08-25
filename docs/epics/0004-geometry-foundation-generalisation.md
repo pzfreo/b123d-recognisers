@@ -860,6 +860,14 @@ inspection, recognition, or outcome evidence; the ordinary unselected complement
 exact-head reviews and all mechanical gates. Its authority is non-transferable, and any later zero,
 abort, invalid, or completed reveal consumes this allocation without replacement, retry, or fitting.
 
+F5 Plate attribution/#228 preserves the whole-part public recogniser and its record/order semantics.
+Each supported aggregate Plate owns every original planar face in its low-negative and high-positive
+coordinate clusters. TURNED_STEPS remains a restricted record-only global veto and contributes no
+Plate evidence. Whole-part grouping can mix provenance across compounds; that bounded unsupported
+aggregate path raises `_PlateAttributionError` before issuance or family completion while the public
+geometry-only facade remains unchanged. Bucket 29 stays sealed until exact-head semantic and
+mechanical gates and two independent reviews complete.
+
 The Polygonal Stock semantic child #232 is independently protected by
 `F5-POLYGONAL-STOCK-H1`, bucket 30. Its neutral seal adds the exact
 `f5_polygonal_stock_h1` selection and acknowledgement without archive access, membership

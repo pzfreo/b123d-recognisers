@@ -267,11 +267,11 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar wall gate",
     ),
-    "plates:recognise_plates:adaptor:1": (
+    "plates:_discover_plates:adaptor:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar plate inventory gate",
     ),
-    "plates:recognise_plates:adaptor:2": (
+    "plates:_discover_plates:adaptor:2": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "plate normal/offset read",
     ),
