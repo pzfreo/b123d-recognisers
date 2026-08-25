@@ -907,7 +907,17 @@ current-head CI, coverage and focused gates, the single authorized
 `f5_slots_h1`/`F5-SLOTS-H1` attempt found zero models. It stopped before annotation reading, STEP
 import or recognition and produced no report, digest, counts or outcomes. Temporary output was
 deleted and no retry, alternate root or allocation, replacement or fitting followed. Bucket 31 is
-permanently consumed and inconclusive, not regression evidence; bucket 32 remains sealed.
+permanently consumed and inconclusive, not regression evidence.
+
+At accepted pre-reveal PR #248 head `e20400c59b0381e03ca30eb9e6ab400689eea4dc`, after two independent exact-head accepts and every
+quality, package, performance, CI and coverage gate, the sole authorized Pocket attempt created
+temporary root `/tmp/mftrcad-pocket32.UdUMnL`. Archive extraction did not start because `unzip` was
+not installed. The scanner was then invoked exactly once with `f5_pockets_h1` and acknowledgement
+`F5-POCKETS-H1`; it rejected the empty root because `steps/` and `labels/` were absent. No archive
+content, allocation membership, annotation, STEP, recognition, report, digest, count or outcome was
+accessed or produced. The temporary root was deleted without retry, alternate extraction tool/root,
+allocation, replacement or fitting. Bucket 32 is permanently consumed and inconclusive, not
+regression evidence. Buckets 34 and 35 remain sealed and the complement remains 36..999.
 
 F5 Slot attribution/#235 promotes only `SLOTS`. Each occurrence owns every exact planar wall
 retained by intentional merge/collinear collapse plus every patch in the selected low/high
@@ -1012,7 +1022,8 @@ merged wall union while their floor remains consulted; corner notches define the
 footprint floor; elongated and recovered obrounds define every selected endpoint patch in addition
 to any retained walls. Discovery validates every occurrence, identity and SolidRef before the first
 issuance. Public records/order, Pocket reconciliation and derived patterns remain unchanged, and
-the independently authorized bucket 32 remains sealed pending all review and delivery gates.
+the independently authorized bucket 32 remained sealed through all review and delivery gates; its
+later extraction-precondition failure is the consumed, inconclusive lifecycle result above.
 The retained corner compatibility route is deliberately world-frame-specific: it considers only a
 world-Z floor with world-X/Y walls and derives `open_sign` on Z. Rotating a corner may therefore
 produce the established world-Z reinterpretation rather than a covariant rotation of its old

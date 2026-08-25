@@ -184,7 +184,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F5_POCKETS_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_POCKETS_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
         F5_REPEATING_RADIAL_PROFILES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F5_REPEATING_RADIAL_PROFILES_H1]),
