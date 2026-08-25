@@ -1082,7 +1082,14 @@ corpus access, alternate selection or fitting occurred.
 
 ### F5j Hole attribution (#220)
 
-Bucket 27 (`F5-HOLES-H1`) remains independently sealed and must not be accessed during development.
+Bucket 27 (`F5-HOLES-H1`) was kept independently sealed throughout development. At accepted
+pre-reveal PR #227 head `2ddf17e`, after 1,568 full tests, static/package/performance/CI gates and
+two independent exact-head accepts, its one authorised selection contained 35 model triples (105
+files). Annotation validation stopped on repeated instance membership in
+`20240124_001736_4786_result_rel.json` `relation[0]`, before a complete report or any Hole
+attribution result. The temporary selection/report were deleted and no retry, alternate mode,
+replacement or fitting followed. Bucket 27 is permanently consumed and inconclusive, not
+regression evidence; exact Hole ownership remains established by the frozen development matrix.
 Hole discovery uses one private optional-writer core while preserving the public signature and
 geometry-only path. Each issuable Hole owns all and only the original internal cylindrical patches
 that establish its bore/deep span and selected near-side counterbore or spotface lands. End and

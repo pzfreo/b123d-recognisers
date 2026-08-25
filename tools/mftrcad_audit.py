@@ -78,7 +78,7 @@ ALLOCATION_SPECS: Final = (
         "consumed",
     ),
     AllocationSpec(F5_PADS_H1, "f5_pads_h1", frozenset({26}), "consumed"),
-    AllocationSpec(F5_HOLES_H1, "f5_holes_h1", frozenset({27}), "sealed_unrevealed"),
+    AllocationSpec(F5_HOLES_H1, "f5_holes_h1", frozenset({27}), "consumed"),
     AllocationSpec(F5_CHANNELS_H1, "f5_channels_h1", frozenset({28}), "sealed_unrevealed"),
     AllocationSpec(F5_PLATES_H1, "f5_plates_h1", frozenset({29}), "sealed_unrevealed"),
 )
