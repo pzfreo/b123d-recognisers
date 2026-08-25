@@ -39,6 +39,7 @@ from b123d_recognisers import recognise_angled_steps, recognise_chamfers, recogn
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._dispositions import Outcome, ReasonCode
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
@@ -515,6 +516,70 @@ def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
         family: counts[STOCK] for family, counts in claimed.items() if counts.get(STOCK)
     }
     assert on_stock == {"Plate": 13}, f"unexpected claims on stock-labelled faces: {on_stock}"
+
+
+def test_10060_legacy_false_positive_is_omitted_without_reconciliation_or_census_drift(
+    corpus,
+) -> None:
+    """The rich authority keeps only the truthful member of a mixed legacy roster."""
+
+    part = next(part for name, part, *_rest in corpus if name == "10060.step")
+    legacy = recognition.recognise_passages(part)
+    assert [(record.axis, record.length) for record in legacy] == [
+        ("x", 11.886),
+        ("z", 33.245),
+    ]
+
+    product = _take_inventory(part)
+    passages = product.physical.candidate_set(FamilyId.PASSAGES).candidates
+    assert len(passages) == 1
+    assert product.result.section_passages == (passages[0].record,)
+    assert product.result.passages == (legacy[1],)
+    assert product.evidence.defining_of(passages[0])
+    assert [
+        (item.outcome, item.reason)
+        for item in product.reconciliation.for_family(FamilyId.PASSAGES)
+    ] == [(Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED)]
+
+    slot_dispositions = product.reconciliation.for_family(FamilyId.SLOTS)
+    assert len(slot_dispositions) == 1
+    assert slot_dispositions[0].outcome is Outcome.REJECTED
+    assert slot_dispositions[0].reason is ReasonCode.SLOT_SUPERSEDED_BY_POCKET
+    assert len(slot_dispositions[0].related) == 1
+    assert slot_dispositions[0].related[0].family is FamilyId.POCKETS
+    assert [
+        (item.outcome, item.reason)
+        for item in product.reconciliation.for_family(FamilyId.POCKETS)
+    ] == [
+        (Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED),
+        (Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED),
+    ]
+    assert product.physical.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates == ()
+    assert product.reconciliation.for_family(FamilyId.PRISMATIC_POCKETS) == ()
+    assert product.result.slots == ()
+    assert len(product.result.pockets) == 2
+    assert product.result.prismatic_pockets == ()
+
+    census = recognition.feature_census(part)
+    assert census["passage"] == 1
+    assert census == {
+        "hole": 1,
+        "hole_pattern": 0,
+        "boss": 0,
+        "step": 0,
+        "groove": 0,
+        "flat": 0,
+        "slot": 0,
+        "channel": 0,
+        "pocket": 2,
+        "prismatic_pocket": 0,
+        "passage": 1,
+        "chamfer": 0,
+        "angled_step": 0,
+        "fillet": 0,
+        "countersink": 0,
+        "plate": 1,
+    }
 
 
 def test_plate_stock_overlap_is_exact_low_high_boundary_evidence(corpus):

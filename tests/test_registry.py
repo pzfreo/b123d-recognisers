@@ -222,6 +222,7 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
 
     assert not hasattr(registry_module, "_PROJECTION_AUTHORITY_TOKEN")
     assert not hasattr(registry_module, "_ProjectionInputIssuer")
+    assert not hasattr(inputs._issuer, "_issued")
 
 
 def test_projection_input_authority_has_one_closed_production_caller() -> None:

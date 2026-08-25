@@ -367,13 +367,10 @@ def _discover_section_passages(
         if graph.common_valid_solid(proposal.nodes) is not proposal.solid:
             raise ValueError("section passage body authority changed before issuance")
         proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
-        projected = _legacy_projection(record)
-        if projected != full_precision_passage:
-            raise ValueError("serialized passage changed its compatibility projection")
         historical = legacy_by_nodes.get(frozenset(proposal.nodes))
         if historical is not None:
             legacy, ordinal = historical
-            if projected != legacy:
+            if full_precision_passage != legacy:
                 raise ValueError("rich passage cannot reproduce its historical legacy value")
             compatibility = compatibility_view(
                 (
@@ -390,9 +387,6 @@ def _discover_section_passages(
             compatibility = compatibility_view(full_precision_projection, eligible=False)
         found.append((record, proposal.nodes, proposal.solid, compatibility))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
-    matched_legacy = {frozenset(nodes) for _, nodes, _, fact in found if fact.eligible}
-    if matched_legacy != set(legacy_by_nodes):
-        raise ValueError("rich passage discovery lost a historical legacy occurrence")
     for at, (record, nodes, solid, _) in enumerate(found):
         for other_record, other_nodes, other_solid, _ in found[at + 1 :]:
             if record == other_record and solid is other_solid:
