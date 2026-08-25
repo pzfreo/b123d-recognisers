@@ -16,7 +16,13 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TypeAlias, TypeVar, cast
 
-from b123d_recognisers._candidates import Candidate, CompletedInputs, EvidenceIndex, FamilyId
+from b123d_recognisers._candidates import (
+    Candidate,
+    CandidateSet,
+    CompletedInputs,
+    EvidenceIndex,
+    FamilyId,
+)
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import (
     BoltCircle,
@@ -27,7 +33,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
 )
 from b123d_recognisers._hole_features import _discover_bosses, _discover_holes
-from b123d_recognisers._passage_compat import PassageCompatibilityView
+from b123d_recognisers._passage_compat import PassageCompatibilityView, passage_from_view
 from b123d_recognisers._recess_features import (
     _discover_channels,
     _discover_pockets,
@@ -165,35 +171,54 @@ class ProjectionInputs:
     projected: bool
 
 
-@dataclass(frozen=True, slots=True)
+_PROJECTION_INPUT_ISSUER = object()
+
+
+@dataclass(frozen=True, slots=True, init=False)
 class AcceptedProjectionInputs:
     """Exact accepted occurrence identities and their issuer-validated compatibility facts."""
 
     _allowed: frozenset[FamilyId]
-    _candidates: Mapping[FamilyId, tuple[Candidate[object], ...]]
+    _candidate_set: CandidateSet[object]
+    _candidates: tuple[Candidate[object], ...]
     _evidence: EvidenceIndex
+    _issuer: object
 
     @classmethod
-    def restricted(
+    def _restricted(
         cls,
-        allowed: tuple[FamilyId, ...],
-        accepted: Mapping[FamilyId, tuple[Candidate[object], ...]],
+        accepted: CandidateSet[object],
         evidence: EvidenceIndex,
     ) -> AcceptedProjectionInputs:
-        return cls(
-            frozenset(allowed),
-            MappingProxyType({family: accepted[family] for family in allowed}),
-            evidence,
-        )
+        if accepted.family is not FamilyId.PASSAGES:
+            raise ValueError("projection inputs require the accepted passages candidate set")
+        evidence.validate_candidate_set(accepted)
+        result = object.__new__(cls)
+        object.__setattr__(result, "_allowed", frozenset((FamilyId.PASSAGES,)))
+        object.__setattr__(result, "_candidate_set", accepted)
+        object.__setattr__(result, "_candidates", accepted.candidates)
+        object.__setattr__(result, "_evidence", evidence)
+        object.__setattr__(result, "_issuer", _PROJECTION_INPUT_ISSUER)
+        return result
 
     def passage_views(
         self,
     ) -> tuple[tuple[SectionPassage, PassageCompatibilityView], ...]:
         family = FamilyId.PASSAGES
-        if family not in self._allowed:
+        if self._issuer is not _PROJECTION_INPUT_ISSUER or family not in self._allowed:
             raise ValueError("passages is not a declared accepted projection source")
+        if (
+            self._candidate_set.family is not family
+            or self._candidate_set.candidates is not self._candidates
+        ):
+            raise ValueError("accepted passages projection roster changed after issuance")
+        self._evidence.validate_candidate_set(self._candidate_set)
         result: list[tuple[SectionPassage, PassageCompatibilityView]] = []
-        for candidate in self._candidates[family]:
+        seen: set[int] = set()
+        for candidate in self._candidates:
+            if id(candidate) in seen:
+                raise ValueError("accepted passages projection roster contains a duplicate")
+            seen.add(id(candidate))
             if not isinstance(candidate.record, SectionPassage):
                 raise TypeError("passages projection source has the wrong record type")
             result.append((candidate.record, self._evidence.passage_compatibility(candidate)))
@@ -294,20 +319,8 @@ def _passages_compat(
     for _, fact in inputs.passage_views():
         if not fact.eligible:
             continue
-        assert (
-            fact.axis is not None
-            and fact.sides is not None
-            and fact.length is not None
-            and fact.at is not None
-            and fact.section is not None
-            and fact.legacy_ordinal is not None
-        )
-        found.append(
-            (
-                Passage(fact.axis, fact.sides, fact.length, fact.at, fact.section),
-                fact.legacy_ordinal,
-            )
-        )
+        assert fact.legacy_ordinal is not None
+        found.append((passage_from_view(fact, Passage), fact.legacy_ordinal))
     found.sort(key=lambda item: (item[0].axis, item[0].at, item[1]))
     return [record for record, _ in found]
 
@@ -444,9 +457,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                _discover_slots(
-                    s.context.part, writer=s.writer, face_edges=s.context.face_edges
-                )
+                _discover_slots(s.context.part, writer=s.writer, face_edges=s.context.face_edges)
             )
         ),
         Counted("slot"),
@@ -501,9 +512,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                _discover_pockets(
-                    s.context.part, writer=s.writer, face_edges=s.context.face_edges
-                )
+                _discover_pockets(s.context.part, writer=s.writer, face_edges=s.context.face_edges)
             )
         ),
         Counted("pocket"),

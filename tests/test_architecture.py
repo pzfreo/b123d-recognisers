@@ -133,6 +133,7 @@ MODULE_SEAM_EDGES = {
         "_candidates",
         "_claims",
         "_dispositions",
+        "_passage_compat",
         "_recess_records",
         "angled_steps",
         "chamfers",
@@ -657,7 +658,7 @@ def test_all_recess_reconciler_call_sites_pass_completed_passages_and_evidence()
 def test_migrated_discovery_cores_receive_write_only_evidence() -> None:
     for module_name, function_name in (
         ("angled_steps", "_discover_angled_steps"),
-        ("passages", "_discover_passages"),
+        ("passages", "_discover_section_passages"),
     ):
         module = importlib.import_module(f"b123d_recognisers.{module_name}")
         hints = typing.get_type_hints(getattr(module, function_name))

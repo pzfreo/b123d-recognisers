@@ -64,9 +64,15 @@ from b123d_recognisers._adjacency import (
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
-from b123d_recognisers._passage_compat import PassageCompatibilityView
+from b123d_recognisers._passage_compat import (
+    PassageCompatibilityView,
+    PrincipalProjection,
+    compatibility_view,
+    passage_from_view,
+    principal_projection,
+)
 from b123d_recognisers._record import Record
-from b123d_recognisers._rings import _canonical, _centroid, rings
+from b123d_recognisers._rings import _centroid, rings
 from b123d_recognisers._section_passages import SectionRingProposal, section_ring_proposals
 from b123d_recognisers._typing import Part
 
@@ -329,6 +335,14 @@ def _discover_section_passages(
     ] = []
     for proposal in section_ring_proposals(part, graph):
         full_precision_projection = _proposal_legacy_projection(proposal)
+        full_precision_passage = (
+            passage_from_view(
+                compatibility_view(full_precision_projection, eligible=True, legacy_ordinal=0),
+                Passage,
+            )
+            if full_precision_projection is not None
+            else None
+        )
         record = SectionPassage(
             PassageFrame(
                 tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
@@ -354,32 +368,26 @@ def _discover_section_passages(
             raise ValueError("section passage body authority changed before issuance")
         proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
         projected = _legacy_projection(record)
-        if projected != full_precision_projection:
+        if projected != full_precision_passage:
             raise ValueError("serialized passage changed its compatibility projection")
         historical = legacy_by_nodes.get(frozenset(proposal.nodes))
         if historical is not None:
             legacy, ordinal = historical
             if projected != legacy:
                 raise ValueError("rich passage cannot reproduce its historical legacy value")
-            compatibility = PassageCompatibilityView(
-                legacy.axis,
-                legacy.section,
-                legacy.sides,
-                legacy.length,
-                legacy.at,
-                ordinal,
-                True,
+            compatibility = compatibility_view(
+                (
+                    legacy.axis,
+                    legacy.sides,
+                    legacy.length,
+                    legacy.at,
+                    legacy.section,
+                ),
+                eligible=True,
+                legacy_ordinal=ordinal,
             )
         else:
-            compatibility = PassageCompatibilityView(
-                projected.axis if projected is not None else None,
-                projected.section if projected is not None else None,
-                projected.sides if projected is not None else None,
-                None,
-                None,
-                None,
-                False,
-            )
+            compatibility = compatibility_view(full_precision_projection, eligible=False)
         found.append((record, proposal.nodes, proposal.solid, compatibility))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
     matched_legacy = {frozenset(nodes) for _, nodes, _, fact in found if fact.eligible}
@@ -442,85 +450,33 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
 
     if any(vertex.bulge != 0.0 for vertex in record.section.boundary):
         return None
-    axes = {
-        (1.0, 0.0, 0.0): ("x", 1, 2),
-        (0.0, 1.0, 0.0): ("y", 0, 2),
-        (0.0, 0.0, 1.0): ("z", 0, 1),
-    }
-    try:
-        axis, first, second = axes[record.frame.run]
-    except KeyError:
+    projection = principal_projection(
+        record.frame.origin,
+        record.frame.run,
+        record.frame.u,
+        record.frame.v,
+        record.run_interval,
+        tuple(vertex.point for vertex in record.section.boundary),
+    )
+    if projection is None:
         return None
-    lo, hi = record.run_interval
-    centre = [*record.frame.origin]
-    axis_index = "xyz".index(axis)
-    centre[axis_index] = 0.5 * (lo + hi)
-    section = []
-    for vertex in record.section.boundary:
-        world = tuple(
-            record.frame.origin[index]
-            + vertex.point[0] * record.frame.u[index]
-            + vertex.point[1] * record.frame.v[index]
-            for index in range(3)
-        )
-        section.append((round(world[first], 3), round(world[second], 3)))
-    canonical = _canonical(section)
-    if canonical is None:
-        return None
-    return Passage(
-        axis=axis,
-        sides=len(canonical),
-        length=round(hi - lo, 3),
-        at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
-        section=canonical,
+    return passage_from_view(
+        compatibility_view(projection, eligible=True, legacy_ordinal=0), Passage
     )
 
 
-def _proposal_legacy_projection(proposal: SectionRingProposal) -> Passage | None:
+def _proposal_legacy_projection(proposal: SectionRingProposal) -> PrincipalProjection | None:
     """Derive the principal compatibility fact from full-precision occurrence geometry."""
 
     if any(vertex.bulge != 0.0 for vertex in proposal.section.boundary):
         return None
-    axes = (
-        ((1.0, 0.0, 0.0), "x", 1, 2),
-        ((0.0, 1.0, 0.0), "y", 0, 2),
-        ((0.0, 0.0, 1.0), "z", 0, 1),
-    )
-    matched = next(
-        (
-            (axis, first, second)
-            for expected, axis, first, second in axes
-            if all(
-                abs(value - target) <= 1e-12
-                for value, target in zip(proposal.frame.run, expected, strict=True)
-            )
-        ),
-        None,
-    )
-    if matched is None:
-        return None
-    axis, first, second = matched
-    lo, hi = proposal.run_interval
-    centre = [*proposal.frame.origin]
-    centre["xyz".index(axis)] = 0.5 * (lo + hi)
-    section = []
-    for vertex in proposal.section.boundary:
-        world = tuple(
-            proposal.frame.origin[index]
-            + vertex.point[0] * proposal.frame.u[index]
-            + vertex.point[1] * proposal.frame.v[index]
-            for index in range(3)
-        )
-        section.append((round(world[first], 3), round(world[second], 3)))
-    canonical = _canonical(section)
-    if canonical is None:
-        return None
-    return Passage(
-        axis=axis,
-        sides=len(canonical),
-        length=round(hi - lo, 3),
-        at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
-        section=canonical,
+    return principal_projection(
+        proposal.frame.origin,
+        proposal.frame.run,
+        proposal.frame.u,
+        proposal.frame.v,
+        proposal.run_interval,
+        tuple(vertex.point for vertex in proposal.section.boundary),
     )
 
 

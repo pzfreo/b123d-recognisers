@@ -8,7 +8,7 @@ from dataclasses import fields, replace
 from inspect import signature
 
 import pytest
-from build123d import Box, Pos
+from build123d import Box, BuildPart, BuildSketch, Mode, Pos, RegularPolygon, extrude
 
 import b123d_recognisers as public
 import b123d_recognisers.result as result_module
@@ -20,6 +20,7 @@ from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
+    AcceptedProjectionInputs,
     Counted,
     DerivedId,
     FullyAttributed,
@@ -181,6 +182,33 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
         accepted.records(FamilyId.HOLES, object)
 
 
+def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> None:
+    with BuildPart() as built:
+        Box(30, 30, 10)
+        with BuildSketch():
+            RegularPolygon(5, 3)
+        extrude(amount=20, both=True, mode=Mode.SUBTRACT)
+    product = _take_inventory(built.part)
+    accepted = product.accepted.candidate_set(FamilyId.PASSAGES)
+    inputs = AcceptedProjectionInputs._restricted(accepted, product.evidence)
+    expected = inputs.passage_views()
+    assert len(expected) == len(accepted.candidates) == 1
+
+    object.__setattr__(inputs, "_candidates", ())
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_candidates", accepted.candidates + accepted.candidates)
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_candidates", accepted.candidates)
+    assert inputs.passage_views() == expected
+
+    with pytest.raises(TypeError):
+        AcceptedProjectionInputs(  # type: ignore[call-arg]
+            frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence
+        )
+
+
 def test_registry_rejects_wrong_typed_dependency_values() -> None:
     ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
     ledger.candidate_set_for(FamilyId.COUNTERSINKS, (object(),))
@@ -255,9 +283,9 @@ def test_registry_record_types_match_public_entrypoints_and_result_fields() -> N
     for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS):
         declared = set(definition.record_types)
         if definition.public_entrypoint is not None:
-            public_return = typing.get_type_hints(
-                getattr(public, definition.public_entrypoint)
-            )["return"]
+            public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
+                "return"
+            ]
             assert declared == _record_types(public_return), definition.public_entrypoint
         assert declared == _record_types(result_hints[definition.result_field]), (
             definition.result_field

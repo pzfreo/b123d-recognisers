@@ -431,9 +431,8 @@ def _take_inventory(
     passage_definition = next(
         item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.PASSAGES
     )
-    passage_projection = AcceptedProjectionInputs.restricted(
-        (FamilyId.PASSAGES,),
-        {FamilyId.PASSAGES: accepted.candidate_set(FamilyId.PASSAGES).candidates},
+    passage_projection = AcceptedProjectionInputs._restricted(
+        accepted.candidate_set(FamilyId.PASSAGES),
         evidence,
     )
     derived = replace(
