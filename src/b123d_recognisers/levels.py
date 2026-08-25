@@ -21,6 +21,9 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
     AXIS_ALIGNED_COS,
     AXIS_ZERO_COS,
@@ -28,7 +31,7 @@ from b123d_recognisers._geometry import (
     cluster_coordinates,
 )
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 
 
 @dataclass(frozen=True, order=True)
@@ -45,6 +48,18 @@ class FaceLevel(Record):
     z: float
     x_span: tuple[float, float] | None = None
     y_span: tuple[float, float] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _FaceLevelProposal:
+    """One level occurrence and every original horizontal face that establishes it."""
+
+    record: FaceLevel
+    faces: tuple[FaceLike, ...]
+
+
+class _StepLevelAttributionError(ValueError):
+    """A public level exists but its aggregate source ownership is unsupported."""
 
 
 @dataclass(frozen=True, order=True)
@@ -117,16 +132,29 @@ def recognise_face_levels(
     engraved text/numbers — that are not real steps and would otherwise be
     dimensioned as phantom shoulders.
     """
+    return [
+        proposal.record
+        for proposal in _face_level_proposals(part, tol=tol, min_area_frac=min_area_frac)
+    ]
+
+
+def _face_level_proposals(
+    part: Part, *, tol: float | None = None, min_area_frac: float = 0.0
+) -> list[_FaceLevelProposal]:
+    """Recognise raw levels while retaining their exact original face occurrences."""
+
     tol = _TOL if tol is None else tol
     zs: list[float] = []
     face_bounds: list[tuple[float, float, float, float]] = []
     face_areas: list[float] = []
+    source_faces: list[FaceLike] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
         if surf.GetType() == GeomAbs_Plane:
             ax = surf.Plane().Axis().Direction()
             if abs(ax.Z()) > AXIS_ALIGNED_COS:
                 zs.append(surf.Plane().Location().Z())
+                source_faces.append(face)
                 bb = face.bounding_box()
                 face_bounds.append((bb.min.X, bb.min.Y, bb.max.X, bb.max.Y))
                 if min_area_frac > 0.0:
@@ -139,7 +167,7 @@ def recognise_face_levels(
         bb = part.bounding_box()
         threshold = min_area_frac * (bb.max.X - bb.min.X) * (bb.max.Y - bb.min.Y)
 
-    levels = []
+    levels: list[_FaceLevelProposal] = []
     for cluster in cluster_coordinates(zs, tol=tol):
         if min_area_frac > 0.0 and not clears_threshold(
             sum(face_areas[i] for i in cluster), threshold
@@ -147,13 +175,16 @@ def recognise_face_levels(
             continue
         spans = [face_bounds[i] for i in cluster]
         levels.append(
-            FaceLevel(
-                min(zs[i] for i in cluster),
-                (min(s[0] for s in spans), max(s[2] for s in spans)),
-                (min(s[1] for s in spans), max(s[3] for s in spans)),
+            _FaceLevelProposal(
+                FaceLevel(
+                    min(zs[i] for i in cluster),
+                    (min(s[0] for s in spans), max(s[2] for s in spans)),
+                    (min(s[1] for s in spans), max(s[3] for s in spans)),
+                ),
+                tuple(source_faces[i] for i in cluster),
             )
         )
-    return sorted(levels)
+    return sorted(levels, key=lambda proposal: proposal.record)
 
 
 #: Band within which two horizontal faces are one level. **Absolute, per ADR 0008.** Scaling it
@@ -201,6 +232,53 @@ def step_level_records(part: Part, *, tol: float | None = None) -> list[FaceLeve
         for fl in recognise_face_levels(part, min_area_frac=_STEP_MIN_AREA_FRAC)
         if bb.min.Z + tol < fl.z < bb.max.Z - tol
     ]
+
+
+def _discover_step_levels(
+    part: Part, *, tol: float | None = None, writer: EvidenceWriter | None = None
+) -> list[FaceLevel]:
+    """Discover filtered levels and optionally issue complete one-body face clusters."""
+
+    bb = part.bounding_box()
+    margin = bounded_end_margin(bb.max.Z - bb.min.Z) if tol is None else tol
+    proposals = [
+        proposal
+        for proposal in _face_level_proposals(part, min_area_frac=_STEP_MIN_AREA_FRAC)
+        if bb.min.Z + margin < proposal.record.z < bb.max.Z - margin
+    ]
+    records = [proposal.record for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending = []
+    seen_records: dict[FaceLevel, frozenset] = {}
+    used_nodes: set[FaceNode] = set()
+    try:
+        for proposal in proposals:
+            nodes = frozenset(writer.graph.require_node(face) for face in proposal.faces)
+            if not nodes:
+                raise _StepLevelAttributionError("Step Level defining cluster is empty")
+            prior = seen_records.get(proposal.record)
+            if prior is not None and prior != nodes:
+                raise _StepLevelAttributionError(
+                    "equal Step Level records have competing defining clusters"
+                )
+            if used_nodes & nodes:
+                raise _StepLevelAttributionError("Step Level defining nodes are reused")
+            if writer.graph.common_valid_solid(nodes) is None:
+                raise _StepLevelAttributionError(
+                    "Step Level defining cluster does not prove one valid solid"
+                )
+            seen_records[proposal.record] = nodes
+            used_nodes.update(nodes)
+            pending.append((proposal.record, nodes))
+    except _StepLevelAttributionError:
+        raise
+    except (IndexError, KeyError, TypeError, ValueError) as error:
+        raise _StepLevelAttributionError("Step Level source identity cannot be bound") from error
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.STEP_LEVELS)
+    return records
 
 
 def step_level_zs(part: Part, *, tol: float | None = None) -> list[float]:
@@ -354,9 +432,7 @@ def recognise_risers(
             # test is the only live half of what used to be a two-part guard.
             if tol >= fb.max.Z - fb.min.Z:
                 continue
-            ramp = _ramp_positions(
-                fb, axis, other, ext, full_span=full_span, flo=flo, fhi=fhi
-            )
+            ramp = _ramp_positions(fb, axis, other, ext, full_span=full_span, flo=flo, fhi=fhi)
             if ramp is None:
                 continue
             positions, other_positions = ramp

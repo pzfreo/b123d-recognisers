@@ -36,7 +36,12 @@ from b123d_recognisers.countersinks import CounterSink, _discover_countersinks
 from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
-from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
+from b123d_recognisers.levels import (
+    FaceLevel,
+    RiserEvidence,
+    _discover_step_levels,
+    recognise_risers,
+)
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.plates import Plate, _discover_plates
@@ -492,11 +497,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_face_levels",
         (),
         always,
-        _simple(lambda s: list(step_level_records(s.context.part))),
+        _simple(lambda s: list(_discover_step_levels(s.context.part, writer=s.writer))),
         NotCounted("level substrate is not a distinct feature"),
-        IncompleteAttribution(
-            "level substrate lacks occurrence ownership", "review structural exclusion"
-        ),
+        FullyAttributed("every retained level owns its complete horizontal face cluster"),
     ),
     PhysicalDefinition(
         FamilyId.RISERS,
