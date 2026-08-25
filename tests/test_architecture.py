@@ -38,13 +38,22 @@ PUBLIC_MODULES = {
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
     "_analytic_surfaces": {"_geometry"},
-    "_adjacency": {"_analytic_surfaces", "_geometry", "_typing"},
+    "_body_geometry": set(),
+    "_adjacency": {"_analytic_surfaces", "_body_geometry", "_geometry", "_typing"},
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
     # Three recognisers begin with the same two questions of a face. Naming the layer is
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
     "_candidates": {"_adjacency"},
+    "_correspondence": {
+        "_adjacency",
+        "_body_geometry",
+        "_candidates",
+        "_dispositions",
+        "_run",
+        "repeating_profiles",
+    },
     "_dispositions": {"_candidates"},
     "_diagnostics": {"_candidates", "_dispositions", "chamfers"},
     "_claims": {"_adjacency", "_candidates"},

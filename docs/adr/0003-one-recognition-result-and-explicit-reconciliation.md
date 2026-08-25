@@ -299,3 +299,14 @@ states expected family completeness but cannot create evidence, accept a Candida
 reconciliation rule. After the sole evidence freeze, every fully attributed family occurrence must
 have non-empty issuer-snapshotted defining evidence; incomplete families may mix measured and empty
 occurrences. `candidate_set_for` remains the only record-occurrence binding path.
+
+## Amendment (F6 accepted correspondence snapshots, issue #185)
+
+Cross-run correspondence begins from a private optional snapshot issued only after terminal
+evidence validation and completed reconciliation. `_take_inventory` binds one lazy opaque authority
+to the exact `InventoryProduct`; copied, reconstructed, mutated or mixed products cannot reuse it.
+The snapshot selects exact accepted Candidate identities from reconciliation and never treats
+`RecognitionResult`, completed discovery order or record equality as authority. F6a records one
+run's accepted RRP facts only: it performs no matching, changes no disposition and publishes no
+result/schema/census surface. F6b may compare two such snapshots only after this substrate is
+independently accepted.

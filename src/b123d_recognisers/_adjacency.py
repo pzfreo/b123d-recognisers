@@ -43,6 +43,11 @@ from b123d_recognisers._analytic_surfaces import (
     native_primitive,
     validated_parameters,
 )
+from b123d_recognisers._body_geometry import (
+    BodyGeometryDescriptor,
+    FaceGeometry,
+    describe_solid,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
@@ -170,6 +175,25 @@ class SolidRef:
     ordinal: int
 
 
+class BodyGeometryAuthorityError(ValueError):
+    """A solid reference is foreign, stale, copied, or no longer graph-authorized."""
+
+
+@dataclass(frozen=True, slots=True)
+class BodyGeometryFact:
+    """One graph-authorized run-local body fact with a handle-free descriptor."""
+
+    _solid: SolidRef
+    descriptor: BodyGeometryDescriptor
+    _faces: tuple[tuple[FaceNode, FaceGeometry], ...]
+
+    def _defining_face(self, node: FaceNode) -> FaceGeometry:
+        for issued, geometry in self._faces:
+            if issued is node:
+                return geometry
+        raise BodyGeometryAuthorityError("face node is not part of this graph-authorized body fact")
+
+
 @dataclass(frozen=True, eq=False, slots=True)
 class EdgeOccurrenceRef:
     """One exact oriented edge occurrence in one original face wire traversal."""
@@ -224,6 +248,8 @@ class FaceGraphQuery(Protocol):
     def ownership(self, occurrence: SharedEdgeOccurrenceRef) -> EdgeOwnershipFact | None: ...
 
     def common_valid_solid(self, nodes: Iterable[FaceNode]) -> SolidRef | None: ...
+
+    def body_geometry(self, solid: SolidRef) -> BodyGeometryFact: ...
 
 
 class FaceGraph:
@@ -280,6 +306,8 @@ class FaceGraph:
         self._smooth_sides: dict[tuple[int, int], SmoothSide | None] = {}
         self._solid_refs: tuple[SolidRef, ...] | None = None
         self._issued_solid_refs: dict[SolidRef, int] = {}
+        self._solids: tuple | None = None
+        self._body_geometry: dict[SolidRef, BodyGeometryFact] = {}
         self._edge_occurrences: dict[FaceNode, tuple[EdgeOccurrenceRef, ...]] = {}
         self._issued_edge_occurrences: dict[EdgeOccurrenceRef, tuple] = {}
         self._shared_occurrences: dict[tuple[int, int], tuple[SharedEdgeOccurrenceRef, ...]] = {}
@@ -611,6 +639,7 @@ class FaceGraph:
                     owned[node_at].append(solid_at)
         self._face_solids = tuple(tuple(entries) for entries in owned)
         self._closed_solids = frozenset(closed)
+        self._solids = solids
         self._solid_refs = tuple(SolidRef(at) for at in range(len(solids)))
         self._issued_solid_refs = {solid: solid.ordinal for solid in self._solid_refs}
 
@@ -642,6 +671,36 @@ class FaceGraph:
         if self._issued_solid_refs.get(solid) != solid.ordinal:
             raise ValueError("solid reference changed after issuance")
         return solid
+
+    def body_geometry(self, solid: SolidRef) -> BodyGeometryFact:
+        """Return the complete supported descriptor for one exact graph-issued solid."""
+
+        self._build_solid_ownership()
+        issued = self._issued_solid_refs.get(solid)
+        if issued is None or issued != solid.ordinal:
+            raise BodyGeometryAuthorityError("solid reference was not issued by this graph")
+        assert self._solid_refs is not None
+        assert self._solids is not None
+        assert self._closed_solids is not None
+        if not (0 <= issued < len(self._solid_refs)) or self._solid_refs[issued] is not solid:
+            raise BodyGeometryAuthorityError("solid reference identity changed after issuance")
+        if issued not in self._closed_solids:
+            raise BodyGeometryAuthorityError(
+                "solid reference no longer maps to a valid closed solid"
+            )
+        cached = self._body_geometry.get(solid)
+        if cached is not None:
+            return cached
+        described = describe_solid(self._solids[issued])
+        face_facts: list[tuple[FaceNode, FaceGeometry]] = []
+        for face, geometry in zip(described.faces, described.face_geometry, strict=True):
+            node = self.node_of(face)
+            if node is None:
+                raise BodyGeometryAuthorityError("described solid face is not owned by this graph")
+            face_facts.append((node, geometry))
+        fact = BodyGeometryFact(solid, described.descriptor, tuple(face_facts))
+        self._body_geometry[solid] = fact
+        return fact
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:

@@ -1071,10 +1071,15 @@ record equality or Candidate identity.
 
 Required contract:
 
-- correspondence consumes two completed immutable inventory products; it is not discovery or
-  reconciliation;
-- exact stable fingerprints use record type, body signature, canonical frame/location and defining
-  geometry summaries;
+- F6a first adds an issuer-owned private optional snapshot of accepted occurrences from one
+  completed immutable inventory product; it is neither discovery, reconciliation nor matching;
+- F6a's first closed roster is Repeating Radial Profiles. A graph-authorized complete bounded-
+  analytic body descriptor separates scalar intrinsic, translation-normalized world-oriented
+  boundary and placement facts; complete defining-face and record summaries preserve multiplicity;
+- descriptors are collision-prone compatibility evidence, never stable body identity. Equal and
+  coincident bodies remain indistinguishable alternatives rather than receiving traversal IDs;
+- F6b later consumes exactly two accepted snapshots and constructs the cross-run compatibility
+  graph;
 - matching distinguishes unchanged, moved, resized, split, merged, added and removed occurrences;
 - ambiguity is explicit and never resolved by traversal index or nearest-neighbour guess alone;
 - run-local Candidate IDs and kernel face indices never become public persistent IDs;
@@ -1082,8 +1087,9 @@ Required contract:
 - equivalent unchanged geometry produces stable correspondence across STEP round-trips and platform
   traversal differences.
 
-This package begins as a private diagnostic consumed by tests and tooling. A public identity schema
-requires its own ADR and downstream consumer before publication.
+F6a is behavior-neutral: no recogniser/result/record/registry/census/manifest/allocation change and
+no holdout. This package begins as a private diagnostic consumed by tests and tooling. A public
+identity schema requires its own ADR and downstream consumer before publication.
 
 Exit gate: edit-sequence fixtures pin identity through harmless re-export, translation and dimension
 changes, while split/merge ambiguity fails closed; recognition results remain unchanged.
