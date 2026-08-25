@@ -171,8 +171,18 @@ CI, coverage and focused gates, the one authorized `f5_slots_h1` selection with 
 `F5-SLOTS-H1` found zero models. Discovery stopped before annotation reading, STEP import or
 recognition, so no report, artifact digest, counts or Slot attribution outcomes exist. The temporary
 output directory was deleted; no retry, alternate root/allocation, replacement or fitting followed.
-Bucket 31 is permanently consumed and inconclusive, not regression evidence. Bucket 32 remains
-independently `sealed_unrevealed`.
+Bucket 31 is permanently consumed and inconclusive, not regression evidence.
+At accepted pre-reveal PR #248 head `e20400c59b0381e03ca30eb9e6ab400689eea4dc`, after two independent exact-head accepts and all
+current-head quality, package, performance, CI and coverage gates, one authorized Pocket attempt
+created temporary root `/tmp/mftrcad-pocket32.UdUMnL`. The requested archive extraction could not
+start because this host had no `unzip` command. The scanner was nevertheless invoked exactly once
+with selection `f5_pockets_h1` and acknowledgement `F5-POCKETS-H1`; it rejected the still-empty
+root because `steps/` and `labels/` were absent. No archive content was extracted or accessed, and
+discovery never reached membership, annotations, STEP import, recognition, report construction,
+digest, count or outcome collection. The temporary root was deleted. No retry, alternate extraction
+tool/root/allocation, replacement or fitting followed. Bucket 32 is permanently consumed and
+inconclusive, not regression evidence. Buckets 34 and 35 remain independently sealed; the ordinary
+`unselected` complement remains buckets 36..999.
 `F5-REPEATING-RADIAL-PROFILES-H1`, `F5-STEP-LEVELS-H1` and `F5-RISERS-H1` were independently
 designated at buckets 33, 34 and 35 for #239, #240 and #241. Their combined neutral
 designation changed only allocation policy, tests and documentation: no archive membership,

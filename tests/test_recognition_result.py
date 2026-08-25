@@ -72,7 +72,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     holes: list[HoleRecord] = []
     # Fully-attributed Slots cannot be fabricated without original wall/cap evidence here.
     slots: list[Slot] = []
-    pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
+    # Fully-attributed Pockets likewise require original wall/cap evidence.
+    pockets: list[Pocket] = []
     # Fully-attributed families cannot be faked with output records but no original-face
     # evidence. This orchestration test owns dependency injection, so keep that separate
     # contract represented by an empty (but still invoked and bound) Passage family.
@@ -143,7 +144,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     )
     monkeypatch.setattr(registry_module, "recognise_grooves", cyl_consumer("grooves", []))
     monkeypatch.setattr(registry_module, "_discover_flats", cyl_consumer("flats", []))
-    monkeypatch.setattr(registry_module, "recognise_pockets", counted("pockets", pockets))
+    monkeypatch.setattr(registry_module, "_discover_pockets", counted("pockets", pockets))
     monkeypatch.setattr(registry_module, "recognise_passages", counted("passages", passages))
     monkeypatch.setattr(
         registry_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])

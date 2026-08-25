@@ -898,15 +898,26 @@ acknowledgements without archive access, membership inspection, recognition, ann
 outcome evidence. The combined neutral designation moves the ordinary unselected complement to
 buckets 33..999, but neither acknowledgement authorizes the sibling selection. Each allocation
 remains `sealed_unrevealed` until its own semantic child clears two independent exact-head reviews
-and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
-that allocation without replacement, retry or fitting.
+and all mechanical gates. Any authorized zero, abort, invalid or completed reveal consumes only
+that allocation without replacement, retry or fitting; only a completed valid report can become
+regression evidence, while zero/abort/invalid outcomes remain inconclusive.
 
 At accepted pre-reveal PR #246 head `d4343ad`, after two independent exact-head accepts and all
 current-head CI, coverage and focused gates, the single authorized
 `f5_slots_h1`/`F5-SLOTS-H1` attempt found zero models. It stopped before annotation reading, STEP
 import or recognition and produced no report, digest, counts or outcomes. Temporary output was
 deleted and no retry, alternate root or allocation, replacement or fitting followed. Bucket 31 is
-permanently consumed and inconclusive, not regression evidence; bucket 32 remains sealed.
+permanently consumed and inconclusive, not regression evidence.
+
+At accepted pre-reveal PR #248 head `e20400c59b0381e03ca30eb9e6ab400689eea4dc`, after two independent exact-head accepts and every
+quality, package, performance, CI and coverage gate, the sole authorized Pocket attempt created
+temporary root `/tmp/mftrcad-pocket32.UdUMnL`. Archive extraction did not start because `unzip` was
+not installed. The scanner was then invoked exactly once with `f5_pockets_h1` and acknowledgement
+`F5-POCKETS-H1`; it rejected the empty root because `steps/` and `labels/` were absent. No archive
+content, allocation membership, annotation, STEP, recognition, report, digest, count or outcome was
+accessed or produced. The temporary root was deleted without retry, alternate extraction tool/root,
+allocation, replacement or fitting. Bucket 32 is permanently consumed and inconclusive, not
+regression evidence. Buckets 34 and 35 remain sealed and the complement remains 36..999.
 
 F5 Slot attribution/#235 promotes only `SLOTS`. Each occurrence owns every exact planar wall
 retained by intentional merge/collinear collapse plus every patch in the selected low/high
@@ -984,8 +995,8 @@ census treatment while replacing the former structural exclusion. Each aggregate
 complete original eight-face solid boundary: the six ordered outward side faces and the unique lower
 and upper caps. Cap nodes are retained at selection time rather than inferred from the remaining
 inventory or rounded coordinates. Exact graph/writer authority, eight-node inventory equality and a
-single SolidRef are proved before issuance. Bucket 30 remains sealed until the exact implementation
-head clears the independent semantic and mechanical gates.
+single SolidRef are proved before issuance. Bucket 30 stayed sealed until the implementation gates;
+its later input-validation abort permanently consumed it inconclusively without regression evidence.
 
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
@@ -1002,8 +1013,32 @@ F5 recess prerequisite/#234 replaces the value-keyed Slot/Pocket reduction autho
 immutable occurrences. Exact planar source nodes and complete cylindrical endpoint patch clusters
 survive merge, collinear collapse, obround extension/recovery and body scoping, while record-only
 compatibility remains value/order identical. The compatibility ledger is projected from those
-occurrences and publishes no new cap evidence. SLOT and POCKET remain `IncompleteAttribution`; no
-allocation, schema, census, reconciliation or public-output change belongs to this prerequisite.
+occurrences and publishes no new cap evidence. At #234 landing, SLOT and POCKET remained
+`IncompleteAttribution`; Slot was later promoted by #235, while Pocket remains pending this #236
+child. No allocation, schema, census, reconciliation or public-output change belonged to #234.
+
+F5 Pocket attribution/#236 promotes only `POCKETS`. Opposed-wall routes define the intentionally
+merged wall union while their floor remains consulted; corner notches define their two walls and
+footprint floor; elongated and recovered obrounds define every selected endpoint patch in addition
+to any retained walls. Discovery validates every occurrence, identity and SolidRef before the first
+issuance. Public records/order, Pocket reconciliation and derived patterns remain unchanged, and
+the independently authorized bucket 32 remained sealed through all review and delivery gates; its
+later extraction-precondition failure is the consumed, inconclusive lifecycle result above.
+The retained corner compatibility route is deliberately world-frame-specific: it considers only a
+world-Z floor with world-X/Y walls and derives `open_sign` on Z. Rotating a corner may therefore
+produce the established world-Z reinterpretation rather than a covariant rotation of its old
+record. General all-axis corner semantics require a separately reviewed F4b geometry change and
+are not introduced by this attribution-only child.
+Graph-bound source sharing is valid only between unequal records whose complete role sets resolve
+to the same SolidRef. Equal-record identical sets collapse; competing assignments, cross-solid or
+stale provenance still refuse atomically. Sources are never subtracted or merged to force uniqueness.
+Likewise, a physically split corner floor remains the legacy no-output case: joining its patches
+would expand the corner recogniser's semantic domain and is deferred rather than fitted in F5.
+The executable invalid-topology boundary uses an open Shell. A bounded OCCT construction search did
+not produce a valid closed non-manifold Solid with one unambiguous Pocket occurrence: added
+incidence either remains open/invalid or makes the wall/floor assignment ambiguous, which the same
+common-SolidRef and complete-role checks already refuse. This is not claimed as an extra supported
+geometry route.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
@@ -1089,8 +1124,9 @@ Every child follows the evidence gate used for recent recogniser work:
    substrate PR.
 
 MFTRCAD development and holdout partitions must be disjoint by published dataset identity or a
-deterministic manifest rule. A completed reveal becomes regression evidence; an aborted reveal is
-permanently consumed but remains inconclusive. Further fitting requires a fresh draw.
+deterministic manifest rule. Only a completed valid reveal may become regression evidence. A zero,
+aborted or invalid reveal is permanently consumed but remains inconclusive. Further fitting requires
+a fresh draw.
 
 ## Architecture guards
 

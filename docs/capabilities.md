@@ -27,8 +27,7 @@ valid closed solid.
 
 | Status | Physical families | Reason / next boundary |
 | --- | --- | --- |
-| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `passages`, `plates`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
-| Incomplete, partially measured | `pockets` | Paired-wall/corner paths are measured, but cap-recovered obround outputs remain empty pending the Pocket migration. |
+| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
 | Incomplete | `risers`, `step_levels` | Step Levels can span multiple bodies and Riser value deduplication can collapse distinct faces/SolidRefs; both have reviewed structural exclusions pending occurrence-preserving identity or explicit multi-source ownership. |
 
 The registry is the closed machine-checked authority for these 22 internal dispositions. Per-face

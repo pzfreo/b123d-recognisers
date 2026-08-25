@@ -215,3 +215,16 @@ distinct exact Slot records on the same `SolidRef` (nested or adjacent reduction
 retains that node rather than imposing exclusive ownership. Graph-identical proposal duplicates
 collapse, while same-record competing role sets, cross-solid reuse, foreign identity, cap ambiguity
 or missing one-body proof refuse before any Slot issuance.
+
+## Amendment (Pocket attribution, issue #236)
+
+Each retained Pocket occurrence owns the complete original topology selected by its discovery
+route. Opposed-wall pockets own the intentionally merged planar walls but not their consulted
+floor; corner notches own both walls and the floor that establishes their footprint; obround
+pockets additionally own every patch in each selected endpoint cluster. Publication follows
+complete graph identity and one-solid validation and does not alter writer-free values or order.
+Corner compatibility remains exactly the existing world-Z-floor/world-X/Y-wall grammar, including
+Z-based `open_sign`; this attribution amendment does not generalize it to arbitrary local frames.
+An original face may define multiple unequal Pocket records on the same graph-issued solid (nested
+depth readings in established geometry). Equal records collapse only when their complete bound role
+sets are identical; competing assignments refuse before publication.
