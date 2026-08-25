@@ -367,9 +367,9 @@ def test_free_axis_passage_survives_translation_mirror_and_uniform_scale(part) -
 
 
 def test_face_and_solid_presentation_reversal_preserves_record_and_wall_shapes() -> None:
-    part = Box(80, 40, 20)
-    part = part - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
-    part = Rot(17, 23, 31) * part
+    first = Rot(17, 23, 31) * _square()
+    second = Pos(140, 0, 0) * Rot(17, 23, 31) * (Box(70, 50, 24) - Box(12, 8, 60))
+    part = Compound([first, second])
 
     def observed(supplied):
         graph = FaceGraph(supplied)
@@ -414,7 +414,14 @@ def test_full_discovery_accepts_one_junction_split_into_collinear_occurrences() 
     (record,) = recognise_section_passages(part, face_edges=memo, ledger=ledger)
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert candidate.record is record
-    assert len(ledger.defining_of(candidate)) == 4
+    defining = ledger.defining_of(candidate)
+    assert len(defining) == 4
+    assert all(
+        any(_same_shape(graph.face(node), wall) for wall in oracle.walls) for node in defining
+    )
+    assert all(
+        any(_same_shape(graph.face(node), wall) for node in defining) for wall in oracle.walls
+    )
     assert record == recognise_section_passages(part)[0]
 
 
