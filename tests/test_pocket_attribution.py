@@ -22,26 +22,59 @@ ROOT = Path(__file__).parents[1]
 
 def _obround(length: float, width: float, depth: float):
     end = Cylinder(width / 2, depth)
-    return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(
-        length / 2, 0, 0
-    ) * end
+    return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(length / 2, 0, 0) * end
 
 
 @pytest.mark.parametrize(
-    ("part", "planar", "curved"),
+    ("part", "planar", "curved", "expected"),
     [
-        (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8), 2, 0),
-        (Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8), 3, 0),
-        (Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10), 2, 2),
-        (Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8), 0, 2),
+        (
+            Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8),
+            2,
+            0,
+            ("y", "x", 12.0, 20.0, 6.0, 0.0, -10.0, 10.0, 0.0, 6.0, 1, False),
+        ),
+        (
+            Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8),
+            3,
+            0,
+            ("x", "y", 15.0, 15.0, 6.0, 22.5, 5.0, 20.0, 0.0, 6.0, 1, True),
+        ),
+        (
+            Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10),
+            2,
+            2,
+            ("y", "x", 10.0, 40.0, 8.0, 0.0, -20.0, 20.0, -1.0, 7.0, 1, False),
+        ),
+        (
+            Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8),
+            0,
+            2,
+            ("y", "x", 10.0, 13.0, 6.0, 0.0, -6.5, 6.5, 0.0, 6.0, 1, False),
+        ),
     ],
 )
-def test_route_selected_sources_are_complete_and_one_body(part, planar, curved) -> None:
+def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, expected) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     records = _discover_pockets(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
     assert len(records) == len(candidates) == 1
     assert candidates[0].record is records[0]
+    record = records[0]
+    assert (
+        record.width_axis,
+        record.long_axis,
+        record.width,
+        record.length,
+        record.depth,
+        record.w_center,
+        record.lo,
+        record.hi,
+        record.d_lo,
+        record.d_hi,
+        record.open_sign,
+        record.edge_anchored,
+    ) == expected
     nodes = ledger.defining_of(candidates[0])
     assert sum(ledger.graph.is_planar(node) for node in nodes) == planar
     assert sum(not ledger.graph.is_planar(node) for node in nodes) == curved
@@ -56,8 +89,7 @@ def test_equal_coincident_bodies_remain_distinct_occurrences() -> None:
     candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
     assert len(records) == len(candidates) == 2
     assert all(
-        candidate.record is record
-        for candidate, record in zip(candidates, records, strict=True)
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
     )
 
 
