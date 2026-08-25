@@ -56,6 +56,7 @@ from b123d_recognisers._recess_obround import (
     _CAP_CLUSTER_FRAC,
     _OBROUND_RATIO_TOL,
     _extend_obround_proposals,
+    _matching_end_groups,
     _obround_end,
     _obround_ends,
     _recognise_obround_from_ends,
@@ -581,6 +582,23 @@ def test_sealed_rib_and_incomplete_cap_shapes_do_not_leak_evidence(part) -> None
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+def test_real_d_cutouts_and_partial_or_displaced_floors_do_not_leak() -> None:
+    base = Box(60, 40, 12)
+    cylinder = Pos(0, 0, 4) * Cylinder(5, 8)
+    half_space = Pos(2.5, 0, 4) * Box(5, 10, 8)
+    half_cylinder = cylinder.intersect(half_space)[0]
+    d_cutouts = base - Pos(-10, 0, 0) * half_cylinder - Pos(10, 0, 0) * half_cylinder
+
+    through = base - Box(20, 12, 12)
+    below_coverage = through + Pos(-5.5, 0, 0) * Box(9, 12, 1)
+    wrong_location = through + Pos(-5.5, 0, 5) * Box(9, 12, 1)
+    for part in (d_cutouts, below_coverage, wrong_location):
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_pockets(part) == []
+        assert _discover_pockets(part, writer=ledger.writer) == []
+        assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
 def test_open_shell_geometry_cannot_publish_pocket_evidence() -> None:
     solid = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     shell = Shell(solid.faces())
@@ -865,6 +883,60 @@ def test_cap_cluster_outside_boundary_remains_two_competing_physical_ends(monkey
     ends = _obround_ends(Box(1, 1, 1), cast(FaceGraph, object()))
     assert len(ends) == 2
     assert {end[9] for end in ends} == {frozenset({node}) for node in nodes}
+
+
+def test_same_endpoint_distinct_cap_groups_refuse_direct_and_aggregate(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
+    graph = FaceGraph(part)
+    proposal = _pocket_proposals_one(part, graph=graph)[0]
+    record = proposal.record
+    radius = record.width / 2
+    assert radius == 5
+    threshold = module.length_tol(radius, rel=_CAP_CLUSTER_FRAC)
+    offset = math.nextafter(threshold, math.inf)
+    nodes = tuple(graph.nodes[:3])
+    assert len(nodes) == 3
+
+    def end(flat, w_center, patches, direction):
+        return (
+            record.width_axis,
+            record.long_axis,
+            record.depth_axis,
+            radius,
+            w_center,
+            flat,
+            direction,
+            record.d_lo,
+            record.d_hi,
+            patches,
+        )
+
+    low = record.lo + radius
+    high = record.hi - radius
+    ends = [
+        end(low - offset, record.w_center - offset, frozenset({nodes[0]}), -1),
+        end(low + offset, record.w_center + offset, frozenset({nodes[1]}), -1),
+        end(high, record.w_center, frozenset({nodes[2]}), 1),
+    ]
+    raw = replace(record, lo=low, hi=high, length=high - low)
+    assert len(_matching_end_groups(ends, raw, low)) == 2
+    monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: ends)
+    with pytest.raises(ValueError, match="multiple distinct obround cap clusters compete"):
+        _extend_obround_proposals([replace(proposal, record=raw)], part, graph)
+
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(_PocketAttributionError, match="cap ownership is ambiguous"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+    assert FamilyId.POCKETS not in ledger._issuer._completed
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+    assert all(
+        FamilyId.POCKETS not in snapshot.occurrences
+        for snapshot in ledger._issuer._restricted_snapshots.values()
+    )
 
 
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
