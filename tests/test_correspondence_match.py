@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from build123d import Box
+from build123d import Box, Pos
 
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
@@ -62,3 +62,14 @@ def test_product_authority_is_required_before_snapshot_matching() -> None:
     copied = replace(product)
     with pytest.raises(CorrespondenceMatchError, match="authority"):
         correspondence_changes(copied, product)
+
+
+def test_one_body_translation_has_one_shared_moved_witness() -> None:
+    before = _take_inventory(_line_rrp(5))
+    after = _take_inventory(Pos(11, -7, 3) * _line_rrp(5))
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [ChangeKind.MOVED]
+    (relation,) = result.relations
+    assert relation.witness is not None
+    assert relation.witness.scale == 1.0
+    assert relation.witness.translation == pytest.approx((11.0, -7.0, 3.0), abs=1e-6)
