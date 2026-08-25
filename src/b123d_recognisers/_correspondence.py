@@ -11,20 +11,36 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import Any, Protocol, TypeAlias
 
-from build123d import GeomType
-
-from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph, FaceNode
+from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
 from b123d_recognisers._body_geometry import (
     BodyGeometryDescriptor,
+    FaceGeometry,
     UnsupportedBodyGeometry,
 )
-from b123d_recognisers._candidates import Candidate, FamilyId
+from b123d_recognisers._candidates import Candidate, CandidateSet, EvidenceIndex, FamilyId
+from b123d_recognisers._dispositions import ReconciliationResult
+from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 
-if TYPE_CHECKING:
-    from b123d_recognisers.result import InventoryProduct
+
+class _InventoryProduct(Protocol):
+    @property
+    def context(self) -> RecognitionContext: ...
+
+    @property
+    def evidence(self) -> EvidenceIndex: ...
+
+    @property
+    def physical(self) -> Any: ...
+
+    @property
+    def reconciliation(self) -> ReconciliationResult: ...
+
+    @property
+    def _correspondence_authority(self) -> object | None: ...
+
 
 CORRESPONDENCE_FAMILIES = (FamilyId.REPEATING_RADIAL_PROFILES,)
 
@@ -43,21 +59,12 @@ class CorrespondenceSnapshotError(ValueError):
     """A completed product cannot produce one complete accepted snapshot."""
 
 
-@dataclass(frozen=True, order=True, slots=True)
-class DefiningFaceGeometry:
-    surface_kind: str
-    area: float
-    centroid_offset: tuple[float, float, float]
-    normal_axis: tuple[float, float, float]
-    boundary: tuple[tuple[str, float, float | None], ...]
-
-
 @dataclass(frozen=True, slots=True)
 class RepeatingProfileGeometrySummary:
     repeat_count: int
     edge_count: int
     sector_signature: FrozenValue
-    defining: tuple[DefiningFaceGeometry, DefiningFaceGeometry]
+    defining: tuple[FaceGeometry, FaceGeometry]
     axis: str
     centre: tuple[float, float, float]
     span: tuple[float, float]
@@ -96,48 +103,16 @@ def _freeze(value: object) -> FrozenValue:
     )
 
 
-def _face_summary(
-    graph: FaceGraph,
-    node: FaceNode,
-    centre: tuple[float, float, float],
-) -> DefiningFaceGeometry:
-    face = graph.face(node)
-    if face.geom_type != GeomType.PLANE:
-        raise CorrespondenceSnapshotError("RRP defining evidence contains a non-planar face")
-    face_centre = face.center()
-    offset = (
-        float(face_centre.X) - centre[0],
-        float(face_centre.Y) - centre[1],
-        float(face_centre.Z) - centre[2],
-    )
-    normal = face.normal_at(face_centre)
-    normal_axis = (float(normal.X), float(normal.Y), float(normal.Z))
-    for component in normal_axis:
-        if abs(component) >= 1e-10:
-            if component < 0.0:
-                normal_axis = tuple(-value for value in normal_axis)  # type: ignore[assignment]
-            break
-    boundary: list[tuple[str, float, float | None]] = []
-    try:
-        for wire in face.wires():
-            boundary.extend(
-                (
-                    getattr(edge.geom_type, "name", str(edge.geom_type)),
-                    float(edge.length),
-                    float(edge.radius) if edge.geom_type == GeomType.CIRCLE else None,
-                )
-                for edge in wire.edges()
-            )
-    except (AttributeError, RuntimeError, ValueError) as error:
-        raise CorrespondenceSnapshotError("RRP defining boundary is unavailable") from error
-    if not boundary or not math.isfinite(float(face.area)) or not all(
-        math.isfinite(length)
-        and (radius is None or math.isfinite(radius))
-        for _, length, radius in boundary
-    ):
-        raise CorrespondenceSnapshotError("RRP defining boundary is malformed")
-    return DefiningFaceGeometry(
-        "PLANE", float(face.area), offset, normal_axis, tuple(sorted(boundary))
+def _freeze_rrp(record: RepeatingRadialProfile) -> FrozenValue:
+    """Freeze the reviewed RRP schema explicitly, never through generic record reflection."""
+
+    return (
+        ("axis", _freeze(record.axis)),
+        ("centre", _freeze(record.centre)),
+        ("span", _freeze(record.span)),
+        ("repeat_count", _freeze(record.repeat_count)),
+        ("edge_count", _freeze(record.edge_count)),
+        ("sector_signature", _freeze(record.sector_signature)),
     )
 
 
@@ -149,8 +124,12 @@ def _occurrence(
     record = candidate.record
     if not isinstance(record, RepeatingRadialProfile):
         raise CorrespondenceSnapshotError("RRP inventory contains the wrong record type")
-    defining = evidence.defining_of(candidate)
-    if len(defining) != 2 or any(not graph.owns(node) for node in defining):
+    defining = tuple(evidence.defining_of(candidate))
+    if (
+        len(defining) != 2
+        or defining[0] is defining[1]
+        or any(not graph.owns(node) for node in defining)
+    ):
         raise CorrespondenceSnapshotError("RRP snapshot requires exactly two original faces")
     solid = graph.common_valid_solid(defining)
     if solid is None:
@@ -161,10 +140,12 @@ def _occurrence(
         raise CorrespondenceSnapshotError("RRP body geometry is unavailable") from error
     if body_fact._solid is not solid:
         raise CorrespondenceSnapshotError("RRP body fact lost its graph-issued solid")
-    centre = body_fact.descriptor.placement.centre_of_mass
-    defining_summary = tuple(
-        sorted(_face_summary(graph, node, centre) for node in defining)
-    )
+    try:
+        defining_summary = tuple(sorted(body_fact._defining_face(node) for node in defining))
+    except BodyGeometryAuthorityError as error:
+        raise CorrespondenceSnapshotError("RRP defining face geometry is unavailable") from error
+    if any(face.kind != "PLANE" for face in defining_summary):
+        raise CorrespondenceSnapshotError("RRP defining evidence contains a non-planar face")
     if len(defining_summary) != 2:
         raise CorrespondenceSnapshotError("RRP defining summary is incomplete")
     summary = RepeatingProfileGeometrySummary(
@@ -179,7 +160,7 @@ def _occurrence(
     return AcceptedOccurrenceSnapshot(
         FamilyId.REPEATING_RADIAL_PROFILES.value,
         type(record).__qualname__,
-        _freeze(record.to_dict()),
+        _freeze_rrp(record),
         body_fact.descriptor,
         summary,
     )
@@ -196,20 +177,22 @@ class _CorrespondenceSnapshotAuthority:
         "_evidence",
         "_physical",
         "_reconciliation",
+        "_bound_records",
         "_snapshot",
     )
 
     def __init__(self) -> None:
-        self._product: InventoryProduct | None = None
+        self._product: _InventoryProduct | None = None
         self._context: object | None = None
         self._graph: object | None = None
         self._run_token: object | None = None
         self._evidence: object | None = None
         self._physical: object | None = None
         self._reconciliation: object | None = None
+        self._bound_records: tuple[tuple[Candidate[object], FrozenValue], ...] = ()
         self._snapshot: CorrespondenceSnapshot | None = None
 
-    def bind(self, product: InventoryProduct) -> None:
+    def bind(self, product: _InventoryProduct) -> None:
         if self._product is not None:
             raise CorrespondenceSnapshotError("snapshot authority is already bound")
         self._product = product
@@ -219,21 +202,19 @@ class _CorrespondenceSnapshotAuthority:
         self._evidence = product.evidence
         self._physical = product.physical
         self._reconciliation = product.reconciliation
+        accepted = self._accepted_rrp(product)
+        self._bound_records = tuple(
+            (candidate, _freeze_rrp(candidate.record))
+            for candidate in accepted.candidates
+            if isinstance(candidate.record, RepeatingRadialProfile)
+        )
+        if len(self._bound_records) != len(accepted.candidates):
+            raise CorrespondenceSnapshotError("RRP inventory contains the wrong record type")
 
-    def snapshot(self, product: InventoryProduct) -> CorrespondenceSnapshot:
-        if (
-            self._product is not product
-            or self._context is not product.context
-            or self._graph is not product.context.graph
-            or self._run_token is not product.context.graph.run_token
-            or self._evidence is not product.evidence
-            or self._physical is not product.physical
-            or self._reconciliation is not product.reconciliation
-        ):
-            raise CorrespondenceSnapshotError("inventory product is not this authority's product")
-        graph = product.context.graph
+    @staticmethod
+    def _accepted_rrp(product: _InventoryProduct) -> CandidateSet[object]:
         try:
-            product.evidence._validate_graph(graph)
+            product.evidence._validate_graph(product.context.graph)
             source = product.physical.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES)
             product.evidence.validate_candidate_set(source)
             accepted = product.reconciliation.accepted_set(source)
@@ -248,6 +229,39 @@ class _CorrespondenceSnapshotAuthority:
             raise CorrespondenceSnapshotError(
                 "current RRP roster must equal its accepted reconciliation set"
             )
+        return accepted
+
+    def snapshot(self, product: _InventoryProduct) -> CorrespondenceSnapshot:
+        if (
+            self._product is not product
+            or self._context is not product.context
+            or self._graph is not product.context.graph
+            or self._run_token is not product.context.graph.run_token
+            or self._evidence is not product.evidence
+            or self._physical is not product.physical
+            or self._reconciliation is not product.reconciliation
+        ):
+            raise CorrespondenceSnapshotError("inventory product is not this authority's product")
+        graph = product.context.graph
+        accepted = self._accepted_rrp(product)
+        current_records = tuple(
+            (candidate, _freeze_rrp(candidate.record))
+            for candidate in accepted.candidates
+            if isinstance(candidate.record, RepeatingRadialProfile)
+        )
+        if (
+            len(current_records) != len(accepted.candidates)
+            or len(current_records) != len(self._bound_records)
+            or any(
+                current_candidate is not bound_candidate or current_value != bound_value
+                for (current_candidate, current_value), (bound_candidate, bound_value) in zip(
+                    current_records, self._bound_records, strict=True
+                )
+            )
+        ):
+            raise CorrespondenceSnapshotError(
+                "accepted RRP record identity or value changed after inventory completion"
+            )
         if self._snapshot is not None:
             return self._snapshot
         staged = tuple(_occurrence(graph, product.evidence, item) for item in accepted.candidates)
@@ -256,7 +270,7 @@ class _CorrespondenceSnapshotAuthority:
         return snapshot
 
 
-def correspondence_snapshot(product: InventoryProduct) -> CorrespondenceSnapshot:
+def correspondence_snapshot(product: _InventoryProduct) -> CorrespondenceSnapshot:
     """Return the optional accepted RRP snapshot issued with *product*."""
 
     authority = product._correspondence_authority

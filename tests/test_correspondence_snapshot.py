@@ -24,6 +24,8 @@ from build123d import (
     export_step,
     import_step,
 )
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
 
 import b123d_recognisers
 from b123d_recognisers import _body_geometry
@@ -54,11 +56,33 @@ def _body_descriptor(part):
     return graph, solid, graph.body_geometry(solid)
 
 
+def _raw_body_oracle(part):
+    """Fresh raw-kernel facts collected before any production descriptor is read."""
+
+    solids = tuple(part.solids())
+    assert len(solids) == 1
+    solid = solids[0]
+    volume = GProp_GProps()
+    surface = GProp_GProps()
+    BRepGProp.VolumeProperties_s(solid.wrapped, volume)
+    BRepGProp.SurfaceProperties_s(solid.wrapped, surface)
+    faces = tuple(solid.faces())
+    return {
+        "volume": float(volume.Mass()),
+        "surface_area": float(surface.Mass()),
+        "centre": tuple(float(value) for value in volume.CentreOfMass().Coord()),
+        "moments": tuple(sorted(float(value) for value in volume.PrincipalProperties().Moments())),
+        "face_count": len(faces),
+        "wire_count": sum(len(tuple(face.wires())) for face in faces),
+        "edge_occurrence_count": sum(
+            len(tuple(wire.edges())) for face in faces for wire in face.wires()
+        ),
+    }
+
+
 def _structure(value):
     if dataclasses.is_dataclass(value):
-        fields = tuple(
-            _structure(getattr(value, item.name)) for item in dataclasses.fields(value)
-        )
+        fields = tuple(_structure(getattr(value, item.name)) for item in dataclasses.fields(value))
         return type(value).__name__, fields
     if isinstance(value, tuple):
         return tuple(_structure(item) for item in value)
@@ -89,6 +113,30 @@ def test_body_geometry_is_translation_normalized_and_cached() -> None:
     assert translated.descriptor.placement.centre_of_mass == pytest.approx((7.0, 8.0, 9.0))
     assert source.descriptor.placement != translated.descriptor.placement
     assert translated_graph is not graph
+
+
+def test_raw_ocp_oracle_independently_reconstructs_mass_and_topology() -> None:
+    part = _rrp(7)
+    oracle = _raw_body_oracle(part)
+    _graph, _solid, fact = _body_descriptor(part)
+
+    scale = max(oracle["volume"] ** (1 / 3), math.sqrt(oracle["surface_area"]))
+    metric = _body_geometry._metric_tolerance(scale)
+    area_quantum = (scale + metric) ** 2 - scale**2
+    volume_quantum = (scale + metric) ** 3 - scale**3
+    moment_quantum = (scale + metric) ** 5 - scale**5
+    assert abs(fact.descriptor.intrinsic.volume - oracle["volume"]) <= 2 * volume_quantum
+    assert abs(fact.descriptor.intrinsic.surface_area - oracle["surface_area"]) <= 2 * area_quantum
+    assert all(
+        abs(actual - expected) <= 2 * moment_quantum
+        for actual, expected in zip(
+            fact.descriptor.intrinsic.principal_moments, oracle["moments"], strict=True
+        )
+    )
+    assert fact.descriptor.placement.centre_of_mass == pytest.approx(oracle["centre"])
+    assert fact.descriptor.boundary.face_count == oracle["face_count"]
+    assert fact.descriptor.boundary.wire_count == oracle["wire_count"]
+    assert fact.descriptor.boundary.edge_occurrence_count == oracle["edge_occurrence_count"]
 
 
 def test_scalar_intrinsic_is_rigid_motion_invariant_but_boundary_is_world_oriented() -> None:
@@ -165,13 +213,32 @@ def test_body_geometry_refuses_unsupported_surface_without_caching() -> None:
         graph.body_geometry(solid)
 
 
+def test_invalid_open_geometry_and_unexpected_programmer_errors_do_not_cache(
+    monkeypatch,
+) -> None:
+    shell = _rrp().shells()[0]
+    with pytest.raises(UnsupportedBodyGeometry, match="valid closed solid"):
+        _body_geometry.describe_solid(shell)
+
+    graph = FaceGraph(_rrp())
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+
+    def programmer_error(*_args):
+        raise KeyError("controlled programmer error")
+
+    monkeypatch.setattr(BRepGProp, "VolumeProperties_s", programmer_error)
+    with pytest.raises(KeyError, match="programmer error"):
+        graph.body_geometry(solid)
+    with pytest.raises(KeyError, match="programmer error"):
+        graph.body_geometry(solid)
+
+
 @pytest.mark.parametrize("end_angle", [180, 270])
 def test_trimmed_circle_geometry_is_direction_and_semicircle_safe(end_angle: float) -> None:
     edge = Edge.make_circle(5, Plane.XY, start_angle=0, end_angle=end_angle)
     direct = _body_geometry._edge_geometry(edge, (0.0, 0.0, 0.0), 1e-7)
-    reversed_geometry = _body_geometry._edge_geometry(
-        edge.reversed(), (0.0, 0.0, 0.0), 1e-7
-    )
+    reversed_geometry = _body_geometry._edge_geometry(edge.reversed(), (0.0, 0.0, 0.0), 1e-7)
 
     assert direct == reversed_geometry
     assert direct.start != direct.end
@@ -181,26 +248,81 @@ def test_trimmed_circle_geometry_is_direction_and_semicircle_safe(end_angle: flo
 
 
 def test_canonicalization_budget_is_inclusive(monkeypatch) -> None:
-    class EmptyFace:
-        def outer_wire(self):
-            return None
-
-        def wires(self):
-            return ()
-
     label = FaceGeometry("PLANE", (), 1.0, (0.0, 0.0, 0.0), 1, ())
-    faces = tuple(EmptyFace() for _ in range(8))
-    labels = (label,) * 8
+    builds = tuple(_body_geometry._FaceBuild(label, ()) for _ in range(8))
 
     monkeypatch.setattr(_body_geometry, "CANONICAL_SERIALIZATION_BUDGET", 40_320)
-    _ordered, _incidence, symmetric = _body_geometry._canonical_topology(
-        faces, labels, (0.0, 0.0, 0.0), 1.0
-    )
+    _ordered, _incidence, symmetric = _body_geometry._canonical_topology(builds)
     assert symmetric
 
     monkeypatch.setattr(_body_geometry, "CANONICAL_SERIALIZATION_BUDGET", 40_319)
     with pytest.raises(UnsupportedBodyGeometry, match="budget"):
-        _body_geometry._canonical_topology(faces, labels, (0.0, 0.0, 0.0), 1.0)
+        _body_geometry._canonical_topology(builds)
+
+
+def test_numeric_degeneracy_and_reconstruction_boundaries_are_inclusive(monkeypatch) -> None:
+    quantum = 0.25
+    assert _body_geometry._positive_fact(quantum, quantum, name="fact") == quantum
+    with pytest.raises(UnsupportedBodyGeometry, match="degenerate"):
+        _body_geometry._positive_fact(math.nextafter(quantum, 0.0), quantum, name="fact")
+
+    monkeypatch.setattr(_body_geometry, "_snap", lambda value, _quantum: value + 2.0 * quantum)
+    assert _body_geometry._snap_checked(1.0, quantum, name="fact") == 1.5
+    monkeypatch.setattr(
+        _body_geometry,
+        "_snap",
+        lambda value, _quantum: math.nextafter(value + 2.0 * quantum, math.inf),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="reconstruction"):
+        _body_geometry._snap_checked(1.0, quantum, name="fact")
+
+
+def test_plane_axis_parameterization_flip_is_identical_at_nonzero_offset() -> None:
+    positive = _body_geometry._plane_parameters(
+        (1.0, 0.0, 0.0), (7.0, 2.0, 3.0), (2.0, 2.0, 3.0), 1e-7
+    )
+    negative = _body_geometry._plane_parameters(
+        (-1.0, 0.0, 0.0), (7.0, 2.0, 3.0), (2.0, 2.0, 3.0), 1e-7
+    )
+    assert positive == negative == (1.0, 0.0, 0.0, 5.0)
+
+
+def test_complete_incidence_distinguishes_equal_labelled_nonisomorphic_graphs() -> None:
+    edge = _body_geometry.EdgeGeometry("LINE", (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 1.0)
+    wire = _body_geometry.WireGeometry("outer", 1, ((edge, 1), (edge, 1)))
+    face = FaceGeometry("PLANE", (), 1.0, (0.0, 0.0, 0.0), 1, (wire,))
+
+    def builds(pairs):
+        occurrences = [[] for _ in range(4)]
+        for token, (left, right) in enumerate(pairs):
+            occurrences[left].append((token, 1))
+            occurrences[right].append((token, 1))
+        return tuple(
+            _body_geometry._FaceBuild(
+                face,
+                (_body_geometry._WireBuild(wire, (tuple(items),)),),
+            )
+            for items in occurrences
+        )
+
+    cycle = builds(((0, 1), (1, 2), (2, 3), (3, 0)))
+    doubled = builds(((0, 1), (0, 1), (2, 3), (2, 3)))
+    assert _body_geometry._canonical_topology(cycle) != _body_geometry._canonical_topology(doubled)
+
+
+def test_wire_wrapper_reversal_normalizes_but_material_orientation_survives() -> None:
+    first = _body_geometry.EdgeGeometry("LINE", (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 1.0)
+    second = _body_geometry.EdgeGeometry("LINE", (0.0, 1.0, 0.0), (2.0, 1.0, 0.0), 2.0)
+    items = ((first, 1, "a"), (second, 1, "b"))
+    direct = _body_geometry._canonical_cycle_with_tokens(items, 1)
+    shallow_reversal = _body_geometry._canonical_cycle_with_tokens(
+        tuple((edge, -direction, token) for edge, direction, token in reversed(items)), -1
+    )
+    material_reversal = _body_geometry._canonical_cycle_with_tokens(items, -1)
+
+    assert direct[0] == shallow_reversal[0]
+    assert direct[2] == shallow_reversal[2]
+    assert direct[2] != material_reversal[2]
 
 
 def test_snapshot_contains_only_exact_accepted_rrp_occurrences() -> None:
@@ -218,6 +340,31 @@ def test_snapshot_contains_only_exact_accepted_rrp_occurrences() -> None:
     assert occurrence.summary.repeat_count == 7
     assert len(occurrence.summary.defining) == 2
     assert correspondence_snapshot(product) is snapshot
+
+
+@pytest.mark.parametrize(
+    "part, expected_axis, repeats",
+    [
+        (_rrp(5), "z", 5),
+        (Rot(90, 0, 0) * _rrp(7), "y", 7),
+        (Rot(0, 90, 0) * _rrp(8), "x", 8),
+    ],
+)
+def test_accepted_snapshot_roster_covers_principal_axes_and_mixed_curves(
+    part, expected_axis: str, repeats: int
+) -> None:
+    snapshot = correspondence_snapshot(_take_inventory(part))
+    assert len(snapshot.occurrences) == 1
+    summary = snapshot.occurrences[0].summary
+    assert summary.axis == expected_axis
+    assert summary.repeat_count == repeats
+    kinds = {
+        edge.kind
+        for face in summary.defining
+        for wire in face.wires
+        for edge, _direction in wire.edges
+    }
+    assert kinds == {"LINE", "CIRCLE"}
 
 
 def test_equal_coincident_bodies_retain_two_indistinguishable_occurrences() -> None:
@@ -300,6 +447,22 @@ def test_cross_solid_defining_evidence_refuses_atomically(monkeypatch) -> None:
         correspondence_snapshot(product)
 
 
+def test_foreign_defining_nodes_refuse_before_body_projection(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    foreign = FaceGraph(Pos(3, 4, 5) * _rrp())
+    nodes = foreign.nodes[:2]
+    original = EvidenceIndex.defining_of
+
+    def stale(self, subject):
+        if getattr(subject, "family", None) is FamilyId.REPEATING_RADIAL_PROFILES:
+            return frozenset(nodes)
+        return original(self, subject)
+
+    monkeypatch.setattr(EvidenceIndex, "defining_of", stale)
+    with pytest.raises(CorrespondenceSnapshotError, match="exactly two original faces"):
+        correspondence_snapshot(product)
+
+
 def test_copied_or_constructed_inventory_product_cannot_reuse_authority() -> None:
     product = _take_inventory(_rrp())
     copied = dataclasses.replace(product)
@@ -310,6 +473,58 @@ def test_copied_or_constructed_inventory_product_cannot_reuse_authority() -> Non
     with pytest.raises(CorrespondenceSnapshotError, match="no snapshot authority"):
         correspondence_snapshot(unissued)
     assert correspondence_snapshot(product).occurrences
+
+
+def test_record_mutation_after_inventory_binding_refuses() -> None:
+    product = _take_inventory(_rrp())
+    assert correspondence_snapshot(product).occurrences
+    candidate = product.physical.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates[0]
+    object.__setattr__(candidate.record, "repeat_count", candidate.record.repeat_count + 1)
+
+    with pytest.raises(CorrespondenceSnapshotError, match="identity or value changed"):
+        correspondence_snapshot(product)
+
+
+def test_bound_product_component_mutation_refuses() -> None:
+    product = _take_inventory(_rrp())
+    foreign = _take_inventory(_rrp(7))
+    object.__setattr__(product, "evidence", foreign.evidence)
+
+    with pytest.raises(CorrespondenceSnapshotError, match="not this authority"):
+        correspondence_snapshot(product)
+
+
+@pytest.mark.parametrize("count", [0, 1, 3])
+def test_wrong_defining_face_cardinality_refuses(count: int, monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    nodes = product.context.graph.nodes[:count]
+    original = EvidenceIndex.defining_of
+
+    def wrong(self, subject):
+        if getattr(subject, "family", None) is FamilyId.REPEATING_RADIAL_PROFILES:
+            return frozenset(nodes)
+        return original(self, subject)
+
+    monkeypatch.setattr(EvidenceIndex, "defining_of", wrong)
+    with pytest.raises(CorrespondenceSnapshotError, match="exactly two"):
+        correspondence_snapshot(product)
+
+
+def test_nonplanar_defining_faces_refuse(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    graph = product.context.graph
+    nonplanar = tuple(node for node in graph.nodes if not graph.is_planar(node))[:2]
+    assert len(nonplanar) == 2
+    original = EvidenceIndex.defining_of
+
+    def wrong(self, subject):
+        if getattr(subject, "family", None) is FamilyId.REPEATING_RADIAL_PROFILES:
+            return frozenset(nonplanar)
+        return original(self, subject)
+
+    monkeypatch.setattr(EvidenceIndex, "defining_of", wrong)
+    with pytest.raises(CorrespondenceSnapshotError, match="non-planar"):
+        correspondence_snapshot(product)
 
 
 def test_snapshot_is_private_and_changes_no_public_result() -> None:
@@ -346,9 +561,10 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
 
     forbidden_attributes = {"ordinal", "index"}
     for tree in (lower, upper):
-        assert not {
-            node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)
-        } & forbidden_attributes
+        assert (
+            not {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+            & forbidden_attributes
+        )
 
     body_callers = {
         node.name

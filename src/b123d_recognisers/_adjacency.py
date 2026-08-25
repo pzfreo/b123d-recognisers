@@ -43,7 +43,11 @@ from b123d_recognisers._analytic_surfaces import (
     native_primitive,
     validated_parameters,
 )
-from b123d_recognisers._body_geometry import BodyGeometryDescriptor, describe_solid
+from b123d_recognisers._body_geometry import (
+    BodyGeometryDescriptor,
+    FaceGeometry,
+    describe_solid,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
@@ -181,6 +185,13 @@ class BodyGeometryFact:
 
     _solid: SolidRef
     descriptor: BodyGeometryDescriptor
+    _faces: tuple[tuple[FaceNode, FaceGeometry], ...]
+
+    def _defining_face(self, node: FaceNode) -> FaceGeometry:
+        for issued, geometry in self._faces:
+            if issued is node:
+                return geometry
+        raise BodyGeometryAuthorityError("face node is not part of this graph-authorized body fact")
 
 
 @dataclass(frozen=True, eq=False, slots=True)
@@ -680,8 +691,14 @@ class FaceGraph:
         cached = self._body_geometry.get(solid)
         if cached is not None:
             return cached
-        descriptor = describe_solid(self._solids[issued])
-        fact = BodyGeometryFact(solid, descriptor)
+        described = describe_solid(self._solids[issued])
+        face_facts: list[tuple[FaceNode, FaceGeometry]] = []
+        for face, geometry in zip(described.faces, described.face_geometry, strict=True):
+            node = self.node_of(face)
+            if node is None:
+                raise BodyGeometryAuthorityError("described solid face is not owned by this graph")
+            face_facts.append((node, geometry))
+        fact = BodyGeometryFact(solid, described.descriptor, tuple(face_facts))
         self._body_geometry[solid] = fact
         return fact
 
