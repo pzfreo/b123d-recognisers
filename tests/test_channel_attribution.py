@@ -24,6 +24,7 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
+import b123d_recognisers._recess_core as core_module
 import b123d_recognisers._recess_features as feature_module
 from b123d_recognisers import recognise_channels
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
@@ -34,6 +35,7 @@ from b123d_recognisers._recess_core import (
     _bounds_one_void as production_bounds_one_void,
 )
 from b123d_recognisers._recess_core import (
+    _recognise_channels_one,
     _uninterrupted_long_span,
 )
 from b123d_recognisers._recess_faces import (
@@ -312,6 +314,15 @@ def test_canonical_channel_owns_only_two_opposed_walls() -> None:
     records, candidates, ledger = _assert_roles(build_fixture())
     assert len(records) == 1
     assert len(ledger.defining_of(candidates[0])) == 2
+
+
+def test_record_only_compatibility_wrapper_preserves_value_and_order() -> None:
+    part = Compound([Pos(80, 0, 0) * build_fixture(), Pos(-80, 0, 0) * build_fixture()])
+    records = [record for solid in part.solids() for record in _recognise_channels_one(solid)]
+    assert records
+    assert [record.to_dict() for record in records] == [
+        record.to_dict() for solid in part.solids() for record in recognise_channels(solid)
+    ]
 
 
 def test_public_ledger_remains_graph_only_and_writer_free() -> None:
@@ -692,10 +703,36 @@ def test_foreign_graph_copied_node_and_late_body_failure_are_atomic(monkeypatch)
     assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
     monkeypatch.setattr(feature_module, "_channel_proposals_one", original)
+
+    def same_node(*args, **kwargs):
+        proposals = original(*args, **kwargs)
+        return [replace(proposals[0], high_wall=proposals[0].low_wall)]
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", same_node)
+    with pytest.raises(ValueError, match="distinct"):
+        _discover_channels(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", original)
     monkeypatch.setattr(ledger.graph, "common_valid_solid", lambda _nodes: None)
     with pytest.raises(ValueError, match="one valid solid"):
         _discover_channels(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+
+
+def test_proposal_builder_refuses_a_candidate_without_graph_nodes(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    faces = core_module._planar_faces(part, graph=graph)
+    walls = [face for face in faces if face.wall and face.axis == "y"]
+    assert len(walls) >= 2
+    node_free = [replace(face, node=None) for face in faces]
+    expected = recognise_channels(part)[0]
+
+    monkeypatch.setattr(core_module, "_planar_faces", lambda *_args, **_kwargs: node_free)
+    monkeypatch.setattr(core_module, "_channel_candidate", lambda *_args, **_kwargs: expected)
+    with pytest.raises(ValueError, match="require graph nodes"):
+        core_module._channel_proposals_one(part, graph=graph)
 
 
 def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> None:
