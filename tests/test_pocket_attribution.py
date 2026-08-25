@@ -50,6 +50,7 @@ from b123d_recognisers._recess_faces import (
     _end_capped,
     _Face,
     _is_wall,
+    _planar_faces,
 )
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
 from b123d_recognisers._recess_obround import (
@@ -622,18 +623,22 @@ def test_opposing_d_caps_reach_and_fail_the_side_wall_gate(monkeypatch) -> None:
     half = cylinder.intersect(Pos(2.5, 0, 4) * Box(5, 10, 8))[0]
     part = base - Pos(-10, 0, 0) * half - Pos(10, 0, 0) * half
     graph = FaceGraph(part)
+    faces = _planar_faces(part, None, graph)
     ends = sorted(_obround_ends(part, graph), key=lambda end: end[5])
     assert len(ends) == 2
     opposed = [(*ends[0][:6], -1, *ends[0][7:]), (*ends[1][:6], 1, *ends[1][7:])]
     calls = []
+    real = module._has_side_walls
     monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: opposed)
-    monkeypatch.setattr(
-        module,
-        "_has_side_walls",
-        lambda faces, record: calls.append((faces, record)) or False,
-    )
-    assert _recognise_obround_from_ends(part, [], blind=True, graph=graph) == []
-    assert len(calls) == 1
+
+    def observed(faces, record):
+        result = real(faces, record)
+        calls.append((faces, record, result))
+        return result
+
+    monkeypatch.setattr(module, "_has_side_walls", observed)
+    assert _recognise_obround_from_ends(part, faces, blind=True, graph=graph) == []
+    assert len(calls) == 1 and calls[0][0] is faces and calls[0][2] is False
 
 
 def test_open_shell_geometry_cannot_publish_pocket_evidence() -> None:
