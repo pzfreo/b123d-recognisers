@@ -1,0 +1,194 @@
+"""#235: Slots own every selected planar wall and cylindrical cap patch."""
+
+from __future__ import annotations
+
+import ast
+from copy import deepcopy
+from functools import partial
+from pathlib import Path
+
+import pytest
+from build123d import Box, Compound, Cylinder, Pos
+
+from b123d_recognisers import recognise_slots
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._recess_core import _slot_proposals_one
+from b123d_recognisers._recess_features import _discover_slots, _SlotAttributionError
+from b123d_recognisers._recess_reduce import _body_scoped_proposals, _region_center
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from b123d_recognisers._run import start
+from b123d_recognisers.result import _discover_all, _take_inventory
+
+ROOT = Path(__file__).parents[1]
+
+
+def _obround(length: float, width: float, depth: float):
+    end = Cylinder(width / 2, depth)
+    return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(
+        length / 2, 0, 0
+    ) * end
+
+
+def _expected(part):
+    """Freeze exact route-selected occurrence roles on a fresh graph before Candidate reads."""
+    graph = FaceGraph(part)
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    proposals = _body_scoped_proposals(
+        sources, partial(_slot_proposals_one, graph=graph)
+    )
+    proposals.sort(key=lambda item: (item.record.width, _region_center(item.record)))
+    return graph, [
+        (
+            proposal.record,
+            frozenset(
+                (*proposal.planar, *(node for group in proposal.caps for node in group))
+            ),
+            proposal.planar,
+            proposal.caps,
+        )
+        for proposal in proposals
+    ]
+
+
+@pytest.mark.parametrize(
+    ("part", "planar", "caps"),
+    [
+        (Box(80, 50, 16) - Box(28, 10, 16), 2, 0),
+        (Box(120, 60, 20) - Box(20, 20, 20), 4, 0),
+        (Box(120, 120, 20) - Box(60, 14, 20) - Box(14, 60, 20), 4, 0),
+        (Box(100, 60, 20) - _obround(30, 12, 20), 2, 2),
+        (Box(100, 60, 20) - _obround(3, 12, 20), 0, 2),
+    ],
+)
+def test_route_matrix_matches_fresh_complete_role_inventory(part, planar: int, caps: int) -> None:
+    fresh, expected = _expected(part)
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.SLOTS).candidates
+    records = tuple(candidate.record for candidate in candidates)
+    assert [record.to_dict() for record in recognise_slots(part)] == [
+        item[0].to_dict() for item in expected
+    ]
+    assert len(records) == len(candidates) == len(expected)
+    for candidate, record, (_want, nodes, walls, groups) in zip(
+        candidates, records, expected, strict=True
+    ):
+        assert candidate.record is record
+        actual = product.evidence.defining_of(candidate)
+        assert len(walls) == planar and len(groups) == caps
+        assert len(actual) == len(nodes)
+        expected_faces = [fresh.face(node) for node in nodes]
+        actual_faces = [product.context.graph.face(node) for node in actual]
+        assert all(any(face.is_same(want) for face in actual_faces) for want in expected_faces)
+        assert product.context.graph.common_valid_solid(actual) is not None
+
+
+def test_public_claim_ledger_and_writer_use_the_same_complete_product() -> None:
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    public_ledger = ClaimLedger(FaceGraph(part))
+    via_ledger = recognise_slots(part, ledger=public_ledger)
+    writer_ledger = ClaimLedger(FaceGraph(part))
+    via_writer = recognise_slots(part, ledger=writer_ledger.writer)
+    plain = recognise_slots(part)
+    assert [item.to_dict() for item in via_ledger] == [item.to_dict() for item in plain]
+    assert [item.to_dict() for item in via_writer] == [item.to_dict() for item in plain]
+    assert [len(claim.defining) for claim in public_ledger.claims] == [4]
+    assert [len(claim.defining) for claim in writer_ledger.claims] == [4]
+
+
+def test_equal_coincident_and_separate_occurrences_keep_identity_and_body_scope() -> None:
+    first = Box(80, 50, 16) - Box(28, 10, 16)
+    for part in (
+        Compound([first, deepcopy(first)]),
+        Compound([first, Pos(150, 0, 0) * deepcopy(first)]),
+    ):
+        ledger = ClaimLedger(FaceGraph(part))
+        records = _discover_slots(part, writer=ledger.writer)
+        candidates = ledger.candidate_set(FamilyId.SLOTS).candidates
+        assert len(records) == len(candidates) == 2
+        assert all(
+            candidate.record is record
+            for candidate, record in zip(candidates, records, strict=True)
+        )
+        roles = [ledger.defining_of(candidate) for candidate in candidates]
+        assert roles[0].isdisjoint(roles[1])
+        assert all(ledger.graph.common_valid_solid(nodes) is not None for nodes in roles)
+
+
+def test_shared_graph_face_edges_and_foreign_authority_boundaries() -> None:
+    part = Box(80, 50, 16) - Box(28, 10, 16)
+    memo = FaceEdges()
+    ledger = ClaimLedger(FaceGraph(part, face_edges=memo))
+    assert _discover_slots(part, face_edges=memo, graph=ledger.graph) == recognise_slots(
+        part, face_edges=memo
+    )
+    assert _discover_slots(part, face_edges=memo, writer=ledger.writer)
+    foreign = ClaimLedger(FaceGraph(Pos(100, 0, 0) * part))
+    with pytest.raises(_SlotAttributionError):
+        _discover_slots(part, writer=foreign.writer)
+    assert foreign.candidate_set(FamilyId.SLOTS).candidates == ()
+    with pytest.raises(_SlotAttributionError, match="one authority"):
+        _discover_slots(part, graph=ledger.graph, writer=foreign.writer)
+
+
+def test_late_second_body_failure_is_atomic_and_uncompleted(monkeypatch) -> None:
+    first = Box(80, 50, 16) - Box(28, 10, 16)
+    part = Compound([first, Pos(150, 0, 0) * deepcopy(first)])
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    real = ledger.graph.common_valid_solid
+    owners = []
+
+    def fail_second(nodes):
+        owner = real(nodes)
+        if owner is not None and owner not in owners:
+            owners.append(owner)
+        return None if len(owners) > 1 else owner
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
+    with pytest.raises(_SlotAttributionError, match="one valid solid"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+    assert FamilyId.SLOTS not in ledger._issuer._completed
+    assert FamilyId.SLOTS not in ledger._issuer._completed_occurrences
+
+
+def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
+    definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.SLOTS)
+    assert isinstance(definition.attribution, FullyAttributed)
+    package = ROOT / "src/b123d_recognisers"
+    callers = []
+    importers = []
+    for path in package.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        if any(
+            isinstance(node, ast.ImportFrom)
+            and any(alias.name == "_discover_slots" for alias in node.names)
+            for node in ast.walk(tree)
+        ):
+            importers.append(path.name)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and (
+                (isinstance(node.func, ast.Name) and node.func.id == "_discover_slots")
+                or (isinstance(node.func, ast.Attribute) and node.func.attr == "_discover_slots")
+            ):
+                callers.append((path.name, node))
+    assert importers == ["_registry.py"]
+    assert {path for path, _call in callers} == {"_registry.py", "_recess_features.py"}
+    registry_call = next(call for path, call in callers if path == "_registry.py")
+    writer = {item.arg: item.value for item in registry_call.keywords}["writer"]
+    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert isinstance(writer.value, ast.Name) and writer.value.id == "s"
+    source = (package / "_recess_features.py").read_text(encoding="utf-8")
+    assert not any(
+        token in source
+        for token in (
+            "CandidateSet",
+            "EvidenceIndex",
+            "InventoryProduct",
+            "ReconciliationResult",
+            "CompletedInputs",
+        )
+    )

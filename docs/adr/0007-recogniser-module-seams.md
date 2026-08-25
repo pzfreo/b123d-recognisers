@@ -341,3 +341,8 @@ For Repeating Radial Profile attribution,
 core carries each exact returned record with its original lower/upper extremal faces through current
 correspondence and sorting, binds both before publication, and reads no Candidate set, evidence
 index, inventory, disposition, reconciliation output or sibling recogniser.
+
+Issue #235 adds `_recess_features._discover_slots` as the sole writer-enabled Slot adapter over the
+neutral proposal stack. The public compatibility facade and registry are its only production writer
+callers; the registry supplies the run `FaceEdges` and `services.writer`. Lower face, obround,
+reduction and core modules remain evidence-policy-free.

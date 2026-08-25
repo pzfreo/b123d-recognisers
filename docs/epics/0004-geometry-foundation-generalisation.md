@@ -901,6 +901,14 @@ remains `sealed_unrevealed` until its own semantic child clears two independent 
 and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
 that allocation without replacement, retry or fitting.
 
+F5 Slot attribution/#235 promotes only `SLOTS`. Each occurrence owns every exact planar wall
+retained by intentional merge/collinear collapse plus every patch in the selected low/high
+cylindrical cap groups. Rectangular, crossing, elongated-obround and cap-recovered routes therefore
+share one occurrence-safe proposal product while keeping their distinct defining roles. The public
+signature, values, order and ledger compatibility remain unchanged; the registry alone uses the
+private writer core with shared `FaceEdges`. All occurrence binding, source reuse and one-SolidRef
+checks complete before issuance. Bucket 31 remains sealed pending independent reviews and gates.
+
 The Repeating Radial Profile, Step Level and Riser semantic children #239, #240 and #241 have
 independent neutral allocations despite being designated together: `F5-REPEATING-RADIAL-PROFILES-H1`
 at bucket 33, `F5-STEP-LEVELS-H1` at bucket 34 and `F5-RISERS-H1` at bucket 35. Their exact

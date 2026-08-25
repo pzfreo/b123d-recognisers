@@ -204,3 +204,11 @@ All discoverable geometry, source-identity and one-body failures are exhausted a
 proposal roster before the first issue. Publication then relies on the issuer's validated proposal
 operation; this recogniser does not claim a separate transaction or rollback for arbitrary injected
 issuer failures.
+
+## Amendment (Slot attribution, issue #235)
+
+Each Slot occurrence now owns the complete route-selected original topology carried by #234:
+every planar wall retained by intentional merge/collinear collapse and every patch in the selected
+low/high cylindrical cap groups. The public writer-free values and order remain unchanged. Equal
+values on separate solids remain separate occurrences; unexplained source reuse, foreign identity,
+cap ambiguity or missing one-body proof refuses before any Slot issuance.

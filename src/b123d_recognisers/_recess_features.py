@@ -59,10 +59,10 @@ def recognise_slots(
     is refused rather than silently claiming nothing, because an empty ledger would otherwise
     read as "no overlap" to the reconciler it exists to serve.
 
-    A slot recovered from its end caps rather than from paired flat walls claims nothing, and is
-    absent from the ledger. Its evidence is two cylindrical caps, which are not walls, and no
-    consumer needs it: a caller reconciling against a ring of planar faces cannot be looking at
-    a slot whose ends are round.
+    Writer-enabled discovery records the complete source set selected by the occurrence route:
+    every planar wall intentionally retained by merge/collapse plus every patch in the selected
+    low/high cylindrical cap groups. Consumers that compare planar overlap continue to see the
+    same wall subset; cap-recovered occurrences now carry the evidence that establishes them.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
@@ -74,7 +74,9 @@ def recognise_slots(
         pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
         return [record for record, _nodes in pairs]
     writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
-    return _discover_slots(part, face_edges=face_edges, writer=writer)
+    return _discover_slots(
+        part, face_edges=face_edges, writer=writer, _wrap_identity_errors=False
+    )
 
 
 def _discover_slots(
@@ -83,6 +85,7 @@ def _discover_slots(
     face_edges: FaceEdges | None = None,
     graph: FaceGraph | None = None,
     writer: EvidenceWriter | None = None,
+    _wrap_identity_errors: bool = True,
 ) -> list[Slot]:
     """Discover Slots and optionally issue every selected wall and cap source patch."""
 
@@ -91,14 +94,16 @@ def _discover_slots(
     owner = writer.graph if writer is not None else graph
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    proposals = _body_scoped_proposals(
-        sources,
-        partial(
-            _slot_proposals_one,
-            face_edges=face_edges,
-            graph=owner,
-        ),
-    )
+    recognise_one = partial(_slot_proposals_one, face_edges=face_edges, graph=owner)
+    if writer is None:
+        proposals = _body_scoped_proposals(sources, recognise_one)
+    else:
+        try:
+            proposals = _body_scoped_proposals(sources, recognise_one)
+        except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+            if not _wrap_identity_errors:
+                raise
+            raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
     records = [proposal.record for proposal in proposals]
     if writer is None:
@@ -124,6 +129,8 @@ def _discover_slots(
     except _SlotAttributionError:
         raise
     except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+        if not _wrap_identity_errors:
+            raise
         raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.SLOTS)
