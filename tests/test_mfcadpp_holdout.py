@@ -19,7 +19,9 @@ development set is spent and is not vendored; what is vendored is the *next* dra
 no part in the fix.
 
 **The measurement, over 33 models and 1,037 labelled faces.** Angled steps: 8 records, every one
-on a face MFCAD++ labels a triangular blind step. Stock: 226 faces, none claimed by anything.
+on a face MFCAD++ labels a triangular blind step. Of 226 Stock-labelled faces, 14 are complete
+Plate boundary evidence and none is claimed by another family; each such Plate also owns its
+opposed non-Stock boundary. This is single-label taxonomy overlap, not a machined-stock feature.
 Chamfers: 2 records, both on faces labelled *triangular through slot* — a V-notch across a
 convex corner, which is a chamfer by this package's definition and a slot by MFCAD++'s. That
 is a taxonomy difference and was deliberately not "fixed"; changing a predicate to satisfy it
@@ -28,8 +30,8 @@ would have spent this draw the way the first one was spent.
 The per-label shares are recorded in ``corpus/mfcadpp_holdout/MANIFEST.json``'s sibling
 tooling rather than asserted here: recall against MFCAD++'s taxonomy is bounded by which
 families claim at all, so a share is a statement about the ledger as much as the recogniser.
-What is asserted is what a share cannot excuse -- a claim on stock is wrong whatever the
-taxonomy, and a step on a recess wall is the defect the held-out draw exists to catch.
+What is asserted is the family-aware boundary: only truthful Plate low/high material roles may
+overlap Stock, and a step on a recess wall remains the defect the held-out draw exists to catch.
 """
 
 from __future__ import annotations
@@ -45,7 +47,7 @@ from b123d_recognisers.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
-from per_face_scan import LABELS, scan  # noqa: E402
+from per_face_scan import _LABEL, LABELS, scan  # noqa: E402
 
 CORPUS = Path(__file__).parent / "corpus" / "mfcadpp_holdout"
 #: As for the design corpus: the sdist ships this module but not the STEP it reads.
@@ -82,17 +84,86 @@ def test_every_vendored_model_is_scored(scored, manifest):
     assert scored["models"] == len(manifest["models"])
 
 
-def test_no_claiming_family_claims_a_stock_face(scored):
-    """The negative control, and the one assertion no taxonomy argument can soften.
+def test_only_plate_boundary_roles_claim_stock_labelled_faces(scored):
+    """The family-aware negative control after complete Plate attribution.
 
-    Stock is the unmachined remainder of the billet. A record whose defining face is stock is
-    a feature reported where none was cut, and it would be wrong under any naming convention.
-    226 of the 1,037 labelled faces here are stock and nothing claims one.
+    MFCAD++ gives each face one label. A Plate is a material slab established by both bounding
+    face groups, so its defining boundary may truthfully be labelled Stock while the opposed
+    boundary carries a subtractive-feature label. No other family may claim Stock here.
     """
 
     stock = next(k for k, v in LABELS.items() if v == STOCK)
-    assert scored["faces_covered"].get(stock, 0) == 0
+    on_stock = {
+        family: counts.get(str(stock), counts.get(stock, 0))
+        for family, counts in scored["claimed"].items()
+        if counts.get(str(stock), counts.get(stock, 0))
+    }
+    assert on_stock == {"Plate": 14}
+    assert scored["faces_covered"].get(stock, 0) == 14
     assert scored["faces_per_label"][stock] > 0, "a control that is empty proves nothing"
+
+
+def test_holdout_plate_stock_overlap_is_exact_boundary_evidence() -> None:
+    from b123d_recognisers._candidates import FamilyId
+
+    expected = {
+        "181.step": 1,
+        "182.step": 3,
+        "183.step": 1,
+        "20273.step": 1,
+        "238.step": 1,
+        "257.step": 2,
+        "275.step": 2,
+        "340.step": 1,
+        "419.step": 1,
+        "808.step": 1,
+    }
+    observed = {}
+    for path in sorted(CORPUS.glob("*.step")):
+        labels = [int(value) for value in _LABEL.findall(path.read_bytes())]
+        part = import_step(str(path))
+        faces = list(part.faces())
+        product = _take_inventory(part)
+        graph = product.context.graph
+        face_nodes = [graph.require_node(face) for face in faces]
+        count = 0
+        for candidate in product.accepted.candidate_set(FamilyId.PLATES).candidates:
+            defining = product.evidence.defining_of(candidate)
+            labelled = [
+                (node, labels[index])
+                for index, node in enumerate(face_nodes)
+                if node in defining
+            ]
+            stock_nodes = [node for node, label in labelled if LABELS[label] == STOCK]
+            if not stock_nodes:
+                continue
+            count += len(stock_nodes)
+            assert any(LABELS[label] != STOCK for _node, label in labelled)
+            axis = "xyz".index(candidate.record.axis)
+            signed_labels = []
+            for node, label in labelled:
+                normal = graph.normal(node)
+                assert normal is not None and abs(normal[axis]) >= 0.99
+                signed_labels.append((normal[axis] > 0, label))
+            assert {sign for sign, _label in signed_labels} == {False, True}
+            stock_signs = {
+                sign for sign, label in signed_labels if LABELS[label] == STOCK
+            }
+            assert len(stock_signs) == 1
+            stock_sign = next(iter(stock_signs))
+            assert all(
+                LABELS[label] != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
+            assert any(
+                LABELS[label] != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
+        if count:
+            observed[path.name] = count
+    assert observed == expected
 
 
 def test_every_angled_step_on_unseen_geometry_is_a_triangular_blind_step(scored):

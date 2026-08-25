@@ -311,3 +311,9 @@ family core and `_registry` its sole production writer caller. The public `recog
 facade delegates without a writer even when its legacy `ledger=` parameter supplies a shared graph.
 The one-solid proposal seam remains in `_recess_core`, beside the unchanged wall-pair predicate;
 it carries exact low/high wall nodes but reads no evidence, inventory, sibling output or policy.
+
+For Plate attribution, `plates._discover_plates` is the sole private writer-enabled core and
+`_registry._plates` its sole production writer caller. The registry reads restricted completed
+TURNED_STEPS records once for the unchanged global veto, then passes only `writer=services.writer`.
+The core carries exact original low/high face clusters and reads no Candidate set, evidence index,
+inventory, disposition, reconciliation output, sibling recogniser or predecessor occurrence.
