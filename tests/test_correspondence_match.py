@@ -10,6 +10,7 @@ from b123d_recognisers._correspondence_match import (
     ChangeKind,
     CorrespondenceMatchError,
     _compare_snapshots,
+    _maximum_matchings,
     correspondence_changes,
 )
 from b123d_recognisers.result import _take_inventory
@@ -117,3 +118,33 @@ def test_two_occurrences_on_one_body_share_one_group_witness() -> None:
     assert first.witness == second.witness
     assert first.witness is not None
     assert first.witness.translation == pytest.approx((11.0, -7.0, 3.0), abs=1e-6)
+
+
+@pytest.mark.parametrize("scale", (1.0, 2.0))
+def test_swapping_products_inverts_the_identity_rotation_witness(scale: float) -> None:
+    before = _take_inventory(_line_rrp(5))
+    transformed = (Pos(11, -7, 3) * _line_rrp(5)).scale(scale)
+    after = _take_inventory(transformed)
+    forward = correspondence_changes(before, after).relations[0]
+    backward = correspondence_changes(after, before).relations[0]
+    assert forward.kind is backward.kind
+    assert forward.witness is not None and backward.witness is not None
+    assert backward.witness.scale == pytest.approx(1.0 / forward.witness.scale, rel=1e-9)
+    assert backward.witness.translation == pytest.approx(
+        tuple(-value / forward.witness.scale for value in forward.witness.translation),
+        abs=1e-6,
+    )
+
+
+def test_hypothesis_budget_is_inclusive_and_never_truncates(monkeypatch) -> None:
+    import b123d_recognisers._correspondence_match as module
+
+    edges = {0: (0, 1), 1: (0, 1)}
+    monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 7)
+    assert _maximum_matchings(2, 2, edges) == (
+        ((0, 0), (1, 1)),
+        ((0, 1), (1, 0)),
+    )
+    monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 6)
+    with pytest.raises(CorrespondenceMatchError, match="budget"):
+        _maximum_matchings(2, 2, edges)
