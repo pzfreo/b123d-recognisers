@@ -494,8 +494,9 @@ def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
     """A bounded taxonomy-overlap detector, not a universal no-stock invariant.
 
     Plate attribution truthfully owns both material-side slab boundaries. MFCAD++ labels one of
-    those boundaries ``Stock`` when no subtractive feature owns it, so the 13 Plate occurrences
-    below are expected overlap rather than claims that stock itself is a machined feature.
+    those boundaries ``Stock`` when no subtractive feature owns it, so the 13 Stock-labelled face
+    occurrences below are expected overlap rather than claims that stock itself is a machined
+    feature.
 
     **It is not a universal law, and an earlier version of this docstring said it was.** Over
     2,000 models four claims do land on *Stock*, and the clearest of them is not a defect:
@@ -549,14 +550,29 @@ def test_plate_stock_overlap_is_exact_low_high_boundary_evidence(corpus):
             count += len(stock_nodes)
             assert any(label != STOCK for _node, label in labelled)
             axis = "xyz".index(candidate.record.axis)
-            signs = []
-            for node, _label in labelled:
+            signed_labels = []
+            for node, label in labelled:
                 normal = graph.normal(node)
                 assert normal is not None
                 component = normal[axis]
                 assert abs(component) >= 0.99
-                signs.append(component > 0)
-            assert set(signs) == {False, True}
+                signed_labels.append((component > 0, label))
+            assert {sign for sign, _label in signed_labels} == {False, True}
+            stock_signs = {
+                sign for sign, label in signed_labels if label == STOCK
+            }
+            assert len(stock_signs) == 1
+            stock_sign = next(iter(stock_signs))
+            assert all(
+                label != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
+            assert any(
+                label != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
         if count:
             observed[name] = count
     assert observed == expected

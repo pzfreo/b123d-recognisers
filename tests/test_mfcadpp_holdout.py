@@ -140,12 +140,27 @@ def test_holdout_plate_stock_overlap_is_exact_boundary_evidence() -> None:
             count += len(stock_nodes)
             assert any(LABELS[label] != STOCK for _node, label in labelled)
             axis = "xyz".index(candidate.record.axis)
-            signs = []
-            for node, _label in labelled:
+            signed_labels = []
+            for node, label in labelled:
                 normal = graph.normal(node)
                 assert normal is not None and abs(normal[axis]) >= 0.99
-                signs.append(normal[axis] > 0)
-            assert set(signs) == {False, True}
+                signed_labels.append((normal[axis] > 0, label))
+            assert {sign for sign, _label in signed_labels} == {False, True}
+            stock_signs = {
+                sign for sign, label in signed_labels if LABELS[label] == STOCK
+            }
+            assert len(stock_signs) == 1
+            stock_sign = next(iter(stock_signs))
+            assert all(
+                LABELS[label] != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
+            assert any(
+                LABELS[label] != STOCK
+                for sign, label in signed_labels
+                if sign != stock_sign
+            )
         if count:
             observed[path.name] = count
     assert observed == expected
