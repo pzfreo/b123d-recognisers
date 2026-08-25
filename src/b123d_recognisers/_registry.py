@@ -495,7 +495,8 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         _simple(lambda s: list(step_level_records(s.context.part))),
         NotCounted("level substrate is not a distinct feature"),
         IncompleteAttribution(
-            "level substrate lacks occurrence ownership", "review structural exclusion"
+            "whole-part level clusters may combine equal-Z faces from multiple SolidRefs",
+            "requires body-scoped records or an explicit multi-body ownership framework",
         ),
     ),
     PhysicalDefinition(
@@ -508,7 +509,8 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         _simple(lambda s: list(recognise_risers(s.context.part))),
         NotCounted("riser evidence is not a distinct feature"),
         IncompleteAttribution(
-            "riser analysis lacks occurrence ownership", "review structural exclusion"
+            "public value deduplication collapses distinct Riser faces and SolidRefs",
+            "requires occurrence-preserving identity or explicit multi-source ownership",
         ),
     ),
     PhysicalDefinition(

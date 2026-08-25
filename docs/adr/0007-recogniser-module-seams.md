@@ -4,6 +4,11 @@
 - **Date:** 2026-08-16
 - **Review:** `b123d-recognisers` issue #21
 
+Writer capability is intentionally absent from the Step Level and Riser registry adapters. Their
+public values are not injective occurrence keys, so adding a writer seam would either select a
+source by traversal order or publish a cross-solid defining set. A future seam requires a reviewed
+identity or multi-source ownership contract first.
+
 ## Context
 
 `_features.py` combines the cylinder face scan, hole/boss interpretation, and pure pattern
