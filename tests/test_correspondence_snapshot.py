@@ -46,11 +46,57 @@ from b123d_recognisers._candidates import EvidenceIndex, FamilyId
 from b123d_recognisers._correspondence import (
     CORRESPONDENCE_FAMILIES,
     CorrespondenceSnapshotError,
+    MatchingBoundaryGraph,
+    MatchingCurve,
+    MatchingFace,
+    MatchingHalfEdge,
+    MatchingWire,
+    MatchingWireVertex,
     correspondence_snapshot,
 )
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
+
+
+def test_schema_three_matching_values_freeze_global_reference_shape() -> None:
+    line = MatchingCurve("LINE", (0, 1), 1.0, None, None, None, None, False)
+    circle = MatchingCurve(
+        "CIRCLE",
+        None,
+        2.0 * math.pi,
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        1.0,
+        2.0 * math.pi,
+        True,
+    )
+    start = MatchingWireVertex(0, (0.0, 0.0))
+    end = MatchingWireVertex(1, (1.0, 0.0))
+    line_use = MatchingHalfEdge(0, 1, start, end)
+    full_use = MatchingHalfEdge(1, -1, None, None)
+    wire = MatchingWire("outer", 0, (line_use, full_use))
+    face = MatchingFace(
+        "PLANE",
+        (0.0, 0.0, 1.0, 0.0),
+        1.0,
+        (0.0, 0.0, 0.0),
+        1,
+        (wire,),
+    )
+    graph = MatchingBoundaryGraph(
+        ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+        (line, circle),
+        (face,),
+        ((0, ((0, 0, 0),)), (1, ((0, 0, 1),))),
+        1,
+        1,
+        2,
+        False,
+    )
+    assert graph.curves[0].vertices == (0, 1)
+    assert graph.curves[1].vertices is None
+    assert graph.faces[0].wires[0].cycle[1].start is None
 
 
 def _rrp(repeats: int = 5):
