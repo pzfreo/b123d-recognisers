@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Plane, Pos, Rot, export_step, import_step
+from build123d import Box, Compound, Face, Plane, Pos, Rot, Shell, Vector, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
@@ -20,8 +20,10 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+from b123d_recognisers._run import start
 from b123d_recognisers.plates import Plate, _discover_plates, _PlateAttributionError
-from b123d_recognisers.result import _take_inventory
+from b123d_recognisers.result import _discover_all, _take_inventory
 from tests.golden.plates_pads_levels_and_slanted_steps.fixture import build_fixture
 
 ROOT = Path(__file__).parents[1]
@@ -92,7 +94,8 @@ def _fresh_expected(part, graph: FaceGraph, *, min_area=0.4, max_thick=0.5, tol=
         sides: tuple[list[tuple], list[tuple]] = ([], [])
         for fact in facts:
             component = fact[1][axis]
-            if abs(component) < 0.999:
+            # Independently pin the frozen production threshold rather than importing it.
+            if abs(component) < 0.99:
                 continue
             sides[component > 0].append(fact)
         groups = []
@@ -215,6 +218,30 @@ def test_u_structure_retains_two_unequal_location_occurrences() -> None:
     )
 
 
+def test_separated_valid_bodies_retain_distinct_occurrence_identity() -> None:
+    part = Compound([build_fixture(), Pos(200, 200, 200) * build_fixture()])
+    records, candidates, ledger = _claimed(part, min_area_frac=0.01)
+    assert len(records) == len(candidates) == 6
+    solids = [
+        ledger.graph.common_valid_solid(ledger.defining_of(candidate))
+        for candidate in candidates
+    ]
+    assert len(set(solids)) == 2 and None not in solids
+    for left, right in zip(candidates, candidates[1:], strict=False):
+        assert left.record is not right.record
+        assert ledger.defining_of(left).isdisjoint(ledger.defining_of(right))
+
+
+@pytest.mark.parametrize("offset", [(0, 0, 0), (0.2, 0.2, 0.2)])
+def test_coincident_and_near_interleaved_bodies_refuse(offset) -> None:
+    part = Compound([build_fixture(), Pos(*offset) * copy.deepcopy(build_fixture())])
+    ledger = ClaimLedger(FaceGraph(part))
+    assert recognise_plates(part)
+    with pytest.raises(_PlateAttributionError):
+        _discover_plates(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
 def test_fragmented_groups_keep_every_original_patch() -> None:
     part = build_fixture() - Pos(-50, 0, 20) * Box(20, 4, 6)
     records, candidates, ledger = _claimed(part)
@@ -289,6 +316,55 @@ def test_plate_area_and_coordinate_cluster_boundaries_are_strict() -> None:
     assert cluster_coordinates([1.5, 1.0, 2.0001], tol=0.5) == [[1, 0], [2]]
 
 
+@pytest.mark.parametrize(("delta", "z_nodes"), [(0.4999, 3), (0.5, 3), (0.5001, 2)])
+def test_real_face_coordinate_clusters_include_exact_tolerance_only(delta, z_nodes) -> None:
+    part = (Pos(-10, 0, 0) * Box(20, 20, 8)) + (
+        Pos(10, 0, delta / 2) * Box(20, 20, 8 + delta)
+    )
+    records, candidates, ledger = _claimed(part, max_thick_frac=1.1)
+    candidate = next(candidate for candidate in candidates if candidate.record.axis == "z")
+    assert next(record for record in records if record.axis == "z").hi == 4.0
+    assert len(ledger.defining_of(candidate)) == z_nodes
+
+
+def test_intervening_event_selects_two_adjacent_slabs_never_the_void_span() -> None:
+    part = (
+        Box(40, 40, 5)
+        + Pos(0, 0, 20) * Box(40, 40, 5)
+        + Pos(0, 0, 10) * Box(4, 4, 20)
+    )
+    records, _candidates, _ledger = _claimed(part, max_thick_frac=0.9)
+    z_intervals = [(record.lo, record.hi) for record in records if record.axis == "z"]
+    assert z_intervals == [(-2.5, 2.5), (17.5, 22.5)]
+    assert (-2.5, 22.5) not in z_intervals
+
+
+def test_same_coordinate_event_tie_orders_negative_before_positive() -> None:
+    touching = Compound([Box(40, 40, 5), Pos(0, 0, 5) * Box(40, 40, 5)])
+    # At their common coordinate the second solid's negative event precedes the first solid's
+    # positive event.  The resulting zero-thickness adjacent pair is rejected; neither event may
+    # be skipped to manufacture a Plate across the representation boundary.
+    assert recognise_plates(touching, max_thick_frac=0.9) == []
+
+
+@pytest.mark.parametrize(
+    ("component", "accepted"),
+    [(0.989999, False), (0.99, True), (0.990001, True)],
+)
+def test_axis_alignment_gate_below_equal_and_above(monkeypatch, component, accepted) -> None:
+    original = Face.normal_at
+
+    def adjusted(face, *args, **kwargs):
+        normal = original(face, *args, **kwargs)
+        values = [normal.X, normal.Y, normal.Z]
+        dominant = max(range(3), key=lambda index: abs(values[index]))
+        values[dominant] = math.copysign(component, values[dominant])
+        return Vector(*values)
+
+    monkeypatch.setattr(Face, "normal_at", adjusted)
+    assert bool(recognise_plates(build_fixture())) is accepted
+
+
 def test_record_projection_order_and_weighted_centroid_are_not_evidence_rematches() -> None:
     records, _candidates, _ledger = _claimed(build_fixture())
     assert [(record.axis, record.lo, record.hi) for record in records] == sorted(
@@ -322,6 +398,15 @@ def test_compound_mixed_provenance_refuses_without_prefix() -> None:
 def test_blocks_oblique_slabs_and_cavities_do_not_leak_plate_evidence(part) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     assert _discover_plates(part, writer=ledger.writer) == recognise_plates(part)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
+def test_open_shell_keeps_public_geometry_but_refuses_attribution() -> None:
+    part = Shell(build_fixture().faces())
+    assert recognise_plates(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    with pytest.raises(_PlateAttributionError):
+        _discover_plates(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
 
 
@@ -365,6 +450,56 @@ def test_invalid_proposal_identity_refuses_before_any_issue(monkeypatch, mode: s
     with pytest.raises(_PlateAttributionError):
         _discover_plates(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["empty", "overlap"])
+def test_empty_and_overlapping_bound_roles_refuse_atomically(monkeypatch, mode: str) -> None:
+    import b123d_recognisers.plates as module
+
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    proposal_type = module._PlateProposal
+
+    def changed(record, low_faces, high_faces):
+        if mode == "empty":
+            low_faces = ()
+        else:
+            high_faces = (low_faces[0], *high_faces)
+        return proposal_type(record, tuple(low_faces), tuple(high_faces))
+
+    monkeypatch.setattr(module, "_PlateProposal", changed)
+    with pytest.raises(_PlateAttributionError, match="empty or overlap"):
+        _discover_plates(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
+def test_late_second_body_failure_leaves_no_candidate_prefix(monkeypatch) -> None:
+    part = Compound([build_fixture(), Pos(200, 200, 200) * build_fixture()])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = ledger.graph.common_valid_solid
+    bodies = []
+
+    def fail_second(nodes):
+        solid = original(nodes)
+        if solid is not None and solid not in bodies:
+            bodies.append(solid)
+        return None if len(bodies) > 1 else solid
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
+    with pytest.raises(_PlateAttributionError):
+        _discover_plates(part, min_area_frac=0.01, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
+def test_attribution_error_precedes_family_completion_and_occurrence_capability() -> None:
+    part = Compound([build_fixture(), copy.deepcopy(build_fixture())])
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(_PlateAttributionError):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+    assert FamilyId.PLATES not in ledger._issuer._completed
+    assert FamilyId.PLATES not in ledger._issuer._completed_occurrences
 
 
 def test_terminal_plate_identity_and_evidence() -> None:
@@ -484,6 +619,7 @@ def test_registry_uses_restricted_turned_records_once_and_never_occurrences() ->
     function = next(
         node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_plates"
     )
+    assert not any(isinstance(node, ast.Try) for node in ast.walk(function))
     calls = _qualified_calls(function)
     assert sum(name.endswith(".records") for name, _call in calls) == 1
     assert not any(name.endswith(".occurrences") for name, _call in calls)
