@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from functools import partial
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
@@ -117,7 +117,7 @@ def _discover_slots(
     if writer is None:
         return records
 
-    pending = []
+    pending: list[tuple[Slot, frozenset[FaceNode], SolidRef]] = []
     try:
         for proposal in proposals:
             nodes = frozenset(
