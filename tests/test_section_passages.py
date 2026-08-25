@@ -306,6 +306,45 @@ def test_equal_coincident_solids_keep_two_occurrence_identities() -> None:
     assert candidates[0] is not candidates[1]
 
 
+@pytest.mark.parametrize(
+    "part",
+    (
+        Pos(17, -9, 4) * Rot(17, 23, 31) * _square(),
+        (Rot(17, 23, 31) * _square()).mirror(Plane.YZ),
+        (Rot(17, 23, 31) * _square()).scale(2.5),
+    ),
+)
+def test_free_axis_passage_survives_translation_mirror_and_uniform_scale(part) -> None:
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    records = recognise_section_passages(part, ledger=ledger)  # type: ignore[arg-type]
+    assert len(records) == 1
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is records[0]
+    assert len(ledger.defining_of(candidate)) == 4
+
+
+def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch) -> None:
+    import b123d_recognisers.passages as passages_module
+    from b123d_recognisers._section_passages import section_ring_proposals
+
+    part = Rot(17, 23, 31) * _square()
+    graph = FaceGraph(part)
+    valid = section_ring_proposals(part, graph)
+    foreign_part = Pos(100, 0, 0) * part
+    foreign = section_ring_proposals(foreign_part, FaceGraph(foreign_part))
+    assert len(valid) == len(foreign) == 1
+    monkeypatch.setattr(
+        passages_module,
+        "section_ring_proposals",
+        lambda supplied_part, supplied_graph: [valid[0], foreign[0]],
+    )
+    ledger = ClaimLedger(graph)
+    with pytest.raises(ValueError, match="not issued by this graph|body authority changed"):
+        passages_module._discover_section_passages(part, graph, ledger.writer)
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
 def test_candidate_compatibility_fact_is_issuer_revalidated() -> None:
     part = _square()
     ledger = ClaimLedger(FaceGraph(part))
