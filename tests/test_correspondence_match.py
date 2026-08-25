@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from build123d import Box, Pos
+from build123d import Box, Compound, Pos
 
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
@@ -13,7 +13,7 @@ from b123d_recognisers._correspondence_match import (
     correspondence_changes,
 )
 from b123d_recognisers.result import _take_inventory
-from tests.test_correspondence_snapshot import _line_rrp
+from tests.test_correspondence_snapshot import _line_rrp, _two_rrp_one_solid
 
 
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
@@ -83,3 +83,37 @@ def test_uniform_scale_precedes_its_placement_change() -> None:
     (relation,) = result.relations
     assert relation.witness is not None
     assert relation.witness.scale == pytest.approx(2.0, rel=1e-7)
+
+
+def test_one_group_cannot_distribute_into_two_equal_target_groups() -> None:
+    before = _take_inventory(_line_rrp(5))
+    after = _take_inventory(Compound([_line_rrp(5), _line_rrp(5)]))
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [ChangeKind.AMBIGUOUS]
+    (relation,) = result.relations
+    assert len(relation.before_refs) == 1
+    assert len(relation.after_refs) == 2
+    assert relation.witness is None
+
+
+def test_moved_coincident_groups_remain_one_whole_ambiguity_component() -> None:
+    before = _take_inventory(Compound([_line_rrp(5), _line_rrp(5)]))
+    after = _take_inventory(Pos(11, -7, 3) * Compound([_line_rrp(5), _line_rrp(5)]))
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [ChangeKind.AMBIGUOUS]
+    (relation,) = result.relations
+    assert len(relation.before_refs) == len(relation.after_refs) == 2
+
+
+def test_two_occurrences_on_one_body_share_one_group_witness() -> None:
+    before = _take_inventory(_two_rrp_one_solid())
+    after = _take_inventory(Pos(11, -7, 3) * _two_rrp_one_solid())
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [
+        ChangeKind.MOVED,
+        ChangeKind.MOVED,
+    ]
+    first, second = result.relations
+    assert first.witness == second.witness
+    assert first.witness is not None
+    assert first.witness.translation == pytest.approx((11.0, -7.0, 3.0), abs=1e-6)

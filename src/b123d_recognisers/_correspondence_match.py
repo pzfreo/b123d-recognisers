@@ -132,10 +132,21 @@ def _validate_ref(reference: SnapshotOccurrenceRef, snapshot: CorrespondenceSnap
 
 
 def _relation_key(relation: CorrespondenceRelation) -> tuple[object, ...]:
+    def occurrence_key(reference: SnapshotOccurrenceRef) -> tuple[object, ...]:
+        occurrence = reference.occurrence
+        return (
+            occurrence.family,
+            occurrence.record_type,
+            repr(occurrence.record_value),
+            repr(occurrence.body),
+            repr(occurrence.summary),
+            reference.position,
+        )
+
     return (
         relation.kind.value,
-        tuple((item.occurrence, item.position) for item in relation.before_refs),
-        tuple((item.occurrence, item.position) for item in relation.after_refs),
+        tuple(occurrence_key(item) for item in relation.before_refs),
+        tuple(occurrence_key(item) for item in relation.after_refs),
         relation.witness or RigidScaleWitness(IDENTITY_ROTATION, (0.0, 0.0, 0.0), 1.0),
     )
 
