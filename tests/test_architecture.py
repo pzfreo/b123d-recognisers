@@ -160,6 +160,9 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    "tests/test_slot_attribution:_fresh_occurrences_one:arc:1": "legacy-contract",
+    "tests/test_slot_attribution:_fresh_occurrences_one:arc:2": "legacy-contract",
+    "tests/test_slot_attribution:_fresh_occurrences_one:arc:3": "legacy-contract",
     "tests/test_channel_attribution:_bounds_one_void:arc:1": "pair-agreement",
     "tests/test_channel_attribution:_bounds_one_void:arc:2": "pair-agreement",
     "tests/test_channel_attribution:_bounds_one_void:arc:3": "exact-nonsmooth",

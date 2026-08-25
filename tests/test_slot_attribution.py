@@ -265,6 +265,22 @@ def _fresh_occurrences_one(solid, body_key):
                 round(depth[1], 2),
                 body_key,
             )
+            # Slot recovery is the zero-floor route: its cap patches traverse the
+            # entire owner depth. A blind obround has the same plan view but fails here.
+            owner_depth = (getattr(box.min, "XYZ"[depth_axis]), getattr(box.max, "XYZ"[depth_axis]))
+            if depth[0] != pytest.approx(owner_depth[0]) or depth[1] != pytest.approx(
+                owner_depth[1]
+            ):
+                continue
+            cap_nodes = left_nodes | right_nodes
+            # Each endpoint patch belongs to the same smooth cylindrical boundary and
+            # joins the planar side continuation tangentially. Stock cylinders without
+            # that endpoint connectivity are not obround cap evidence.
+            if not all(
+                any(graph.arc(node, neighbour) == "smooth" for neighbour in graph.neighbours(node))
+                for node in cap_nodes
+            ):
+                continue
             keeper = next(
                 (
                     old
@@ -421,6 +437,63 @@ def test_equal_coincident_and_separate_occurrences_keep_identity_and_body_scope(
         assert all(ledger.graph.common_valid_solid(nodes) is not None for nodes in roles)
 
 
+def test_same_body_equal_size_occurrences_and_traversal_keep_exact_identity(monkeypatch) -> None:
+    stock = Box(120, 70, 20)
+    part = stock - Pos(-32, 0, 0) * Box(24, 10, 20) - Pos(32, 0, 0) * Box(24, 10, 20)
+    fresh, expected = _expected(part)
+    assert len(expected) == 2
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_slots(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.SLOTS).candidates
+    assert [record.to_dict() for record in records] == [item[0].to_dict() for item in expected]
+    assert records[0].width == records[1].width
+    assert records[0].length == records[1].length
+    roles = [ledger.defining_of(candidate) for candidate in candidates]
+    assert roles[0].isdisjoint(roles[1])
+    assert all(
+        {fresh.require_node(ledger.graph.face(node)) for node in actual} == set(want[1])
+        for actual, want in zip(roles, expected, strict=True)
+    )
+
+    original = type(part).faces
+    monkeypatch.setattr(type(part), "faces", lambda self: list(reversed(original(self))))
+    reversed_ledger = ClaimLedger(FaceGraph(part))
+    reversed_records = _discover_slots(part, writer=reversed_ledger.writer)
+    assert [record.to_dict() for record in reversed_records] == [
+        record.to_dict() for record in records
+    ]
+    assert [
+        frozenset(reversed_ledger.graph.bounds(node) for node in reversed_ledger.defining_of(item))
+        for item in reversed_ledger.candidate_set(FamilyId.SLOTS).candidates
+    ] == [frozenset(ledger.graph.bounds(node) for node in nodes) for nodes in roles]
+
+
+@pytest.mark.parametrize(("length", "accepted"), [(89.99, True), (90.0, False), (90.01, False)])
+def test_max_span_boundary_is_strict_and_writer_matches_public(
+    length: float, accepted: bool
+) -> None:
+    part = Box(100, 60, 20) - Box(length, 10, 20)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_slots(part, writer=ledger.writer)
+    assert bool(records) is accepted
+    assert records == recognise_slots(part)
+    assert bool(ledger.candidate_set(FamilyId.SLOTS).candidates) is accepted
+
+
+def test_solid_membrane_d_cutout_and_blind_obround_do_not_leak() -> None:
+    membrane = Box(120, 60, 20) - Pos(-25, 0, 0) * Box(30, 10, 20) - Pos(25, 0, 0) * Box(30, 10, 20)
+    d_cutout = Box(100, 60, 20) - (Box(18, 12, 20) + Pos(9, 0, 0) * Cylinder(6, 20))
+    blind = Box(100, 60, 20) - Pos(0, 0, 5) * _obround(30, 12, 10)
+    membrane_ledger = ClaimLedger(FaceGraph(membrane))
+    membrane_records = _discover_slots(membrane, writer=membrane_ledger.writer)
+    assert len(membrane_records) == 2
+    assert len(membrane_ledger.candidate_set(FamilyId.SLOTS).candidates) == 2
+    for part in (d_cutout, blind):
+        ledger = ClaimLedger(FaceGraph(part))
+        assert _discover_slots(part, writer=ledger.writer) == recognise_slots(part) == []
+        assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
 @pytest.mark.parametrize(
     "part",
     [
@@ -504,8 +577,31 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
     package = ROOT / "src/b123d_recognisers"
     callers = []
     importers = []
+
+    def bindings(tree):
+        names = {}
+        modules = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    names[alias.asname or alias.name] = alias.name
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    modules[alias.asname or alias.name.split(".")[0]] = alias.name
+        return names, modules
+
+    def called_leaf(node, names, modules):
+        if isinstance(node, ast.Name):
+            return names.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            if isinstance(node.value, ast.Name) and node.value.id in modules:
+                return node.attr
+            return node.attr
+        return ""
+
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names, modules = bindings(tree)
         if any(
             isinstance(node, ast.ImportFrom)
             and any(alias.name == "_discover_slots" for alias in node.names)
@@ -513,9 +609,9 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
         ):
             importers.append(path.name)
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and (
-                (isinstance(node.func, ast.Name) and node.func.id == "_discover_slots")
-                or (isinstance(node.func, ast.Attribute) and node.func.attr == "_discover_slots")
+            if (
+                isinstance(node, ast.Call)
+                and called_leaf(node.func, names, modules) == "_discover_slots"
             ):
                 callers.append((path.name, node))
     assert importers == ["_registry.py"]
@@ -530,15 +626,25 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
         "ledger",
     )
 
-    watched = {"_slot_proposals_one", "_body_scoped_proposals", "_RecessProposal"}
+    watched = {
+        "_slot_proposals_one",
+        "_body_scoped_proposals",
+        "_RecessProposal",
+        "_merge_proposals",
+        "_collapse_collinear_proposals",
+        "_extend_obround_proposals",
+    }
     sites = {name: [] for name in watched}
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names, modules = bindings(tree)
 
         class Roster(ast.NodeVisitor):
-            def __init__(self, source_name):
+            def __init__(self, source_name, imported_names, imported_modules):
                 self.source_name = source_name
                 self.functions = []
+                self.imported_names = imported_names
+                self.imported_modules = imported_modules
 
             def visit_FunctionDef(self, node):
                 self.functions.append(node.name)
@@ -546,12 +652,12 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
                 self.functions.pop()
 
             def visit_Call(self, node):
-                leaf = node.func.id if isinstance(node.func, ast.Name) else ""
+                leaf = called_leaf(node.func, self.imported_names, self.imported_modules)
                 if leaf in sites:
                     sites[leaf].append((self.source_name, self.functions[-1]))
                 self.generic_visit(node)
 
-        Roster(path.name).visit(tree)
+        Roster(path.name, names, modules).visit(tree)
     assert sites["_slot_proposals_one"] == [
         ("_recess_core.py", "_recognise_slots_one"),
     ]
@@ -565,14 +671,38 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
         "_recess_obround.py",
         "_recess_reduce.py",
     }
-    source = (package / "_recess_features.py").read_text(encoding="utf-8")
-    assert not any(
-        token in source
-        for token in (
-            "CandidateSet",
-            "EvidenceIndex",
-            "InventoryProduct",
-            "ReconciliationResult",
-            "CompletedInputs",
-        )
-    )
+    assert {
+        function for path, function in sites["_merge_proposals"] if path == "_recess_core.py"
+    } == {
+        "_slot_proposals_one",
+        "_pocket_proposals_one",
+    }
+    assert sites["_collapse_collinear_proposals"] == [("_recess_core.py", "_slot_proposals_one")]
+    assert sites["_extend_obround_proposals"] == [
+        ("_recess_core.py", "_slot_proposals_one"),
+        ("_recess_core.py", "_pocket_proposals_one"),
+    ]
+
+    prohibited = {
+        "CandidateSet",
+        "EvidenceIndex",
+        "InventoryProduct",
+        "ReconciliationResult",
+        "CompletedInputs",
+        "candidate_set",
+        "accepted_set",
+        "disposition",
+    }
+    for module_name in (
+        "_recess_core.py",
+        "_recess_faces.py",
+        "_recess_obround.py",
+        "_recess_reduce.py",
+        "_recess_features.py",
+    ):
+        tree = ast.parse((package / module_name).read_text(encoding="utf-8"))
+        names, _modules = bindings(tree)
+        referenced = {
+            names.get(node.id, node.id) for node in ast.walk(tree) if isinstance(node, ast.Name)
+        } | {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+        assert prohibited.isdisjoint(referenced), (module_name, prohibited & referenced)
