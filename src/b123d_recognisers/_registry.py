@@ -219,49 +219,38 @@ def _projection_authority_factory():
 
     authority = object()
 
-    class Issuer:
-        def __init__(self, supplied: object) -> None:
-            if supplied is not authority:
-                raise ValueError("projection input issuer lacks orchestration authority")
-            self._issued: _ProjectionInputSnapshot | None = None
-
-        def issue(
-            self,
-            inputs: AcceptedProjectionInputs,
-            candidate_set: CandidateSet[object],
-            evidence: EvidenceIndex,
-        ) -> None:
-            if self._issued is not None:
-                raise RuntimeError("projection input issuer is already bound")
-            self._issued = _ProjectionInputSnapshot(
-                inputs, candidate_set, candidate_set.candidates, evidence
-            )
-
-        def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
-            snapshot = self._issued
-            if snapshot is None or snapshot.inputs is not inputs:
-                raise ValueError("accepted projection inputs were not issued by orchestration")
-            if (
-                inputs._issuer is not self
-                or inputs._candidate_set is not snapshot.candidate_set
-                or inputs._evidence is not snapshot.evidence
-                or snapshot.candidate_set.candidates is not snapshot.candidates
-                or len(inputs._candidates) != len(snapshot.candidates)
-                or any(
-                    current is not original
-                    for current, original in zip(
-                        inputs._candidates, snapshot.candidates, strict=True
-                    )
-                )
-            ):
-                raise ValueError("accepted passages projection roster changed after issuance")
-            snapshot.evidence.validate_candidate_set(snapshot.candidate_set)
-            return snapshot
-
     def mint(accepted: CandidateSet[object], evidence: EvidenceIndex) -> AcceptedProjectionInputs:
         if accepted.family is not FamilyId.PASSAGES:
             raise ValueError("projection inputs require the accepted passages candidate set")
         evidence.validate_candidate_set(accepted)
+        original: _ProjectionInputSnapshot | None = None
+
+        class Issuer:
+            def __init__(self, supplied: object) -> None:
+                if supplied is not authority:
+                    raise ValueError("projection input issuer lacks orchestration authority")
+
+            def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
+                snapshot = original
+                if snapshot is None or snapshot.inputs is not inputs:
+                    raise ValueError("accepted projection inputs were not issued by orchestration")
+                if (
+                    inputs._issuer is not self
+                    or inputs._candidate_set is not snapshot.candidate_set
+                    or inputs._evidence is not snapshot.evidence
+                    or snapshot.candidate_set.candidates is not snapshot.candidates
+                    or len(inputs._candidates) != len(snapshot.candidates)
+                    or any(
+                        current is not original_candidate
+                        for current, original_candidate in zip(
+                            inputs._candidates, snapshot.candidates, strict=True
+                        )
+                    )
+                ):
+                    raise ValueError("accepted passages projection roster changed after issuance")
+                snapshot.evidence.validate_candidate_set(snapshot.candidate_set)
+                return snapshot
+
         result = object.__new__(AcceptedProjectionInputs)
         object.__setattr__(result, "_allowed", frozenset((FamilyId.PASSAGES,)))
         object.__setattr__(result, "_candidate_set", accepted)
@@ -269,7 +258,7 @@ def _projection_authority_factory():
         object.__setattr__(result, "_evidence", evidence)
         issuer = Issuer(authority)
         object.__setattr__(result, "_issuer", issuer)
-        issuer.issue(result, accepted, evidence)
+        original = _ProjectionInputSnapshot(result, accepted, accepted.candidates, evidence)
         return result
 
     return mint
