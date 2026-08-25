@@ -895,6 +895,17 @@ remains `sealed_unrevealed` until its own semantic child clears two independent 
 and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
 that allocation without replacement, retry or fitting.
 
+The Repeating Radial Profile, Step Level and Riser semantic children #239, #240 and #241 have
+independent neutral allocations despite being designated together: `F5-REPEATING-RADIAL-PROFILES-H1`
+at bucket 33, `F5-STEP-LEVELS-H1` at bucket 34 and `F5-RISERS-H1` at bucket 35. Their exact
+selection tokens and acknowledgements are non-transferable, including between the three siblings.
+This designation changes only scanner policy, tests and documentation and moves the ordinary
+unselected complement to buckets 36..999; no archive membership, annotation, geometry,
+recognition result or outcome was inspected. Each remains `sealed_unrevealed` until its own
+semantic child has two independent exact-head accepts and all mechanical gates. Any authorized
+zero, abort, invalid or completed reveal consumes only that allocation without replacement, retry
+or fitting.
+
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
 geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and

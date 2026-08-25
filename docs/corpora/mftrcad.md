@@ -160,7 +160,14 @@ documentation: no archive, allocation membership, annotations, geometry or outco
 Each selection requires only its own exact acknowledgement; neither acknowledgement authorizes the
 other selection or any earlier allocation. An authorized zero, abort, invalid or completed reveal
 consumes only that family's allocation without retry, replacement or fitting. The ordinary
-`unselected` complement is now buckets 33..999.
+`unselected` complement was then buckets 33..999.
+`F5-REPEATING-RADIAL-PROFILES-H1`, `F5-STEP-LEVELS-H1` and `F5-RISERS-H1` are independently
+`sealed_unrevealed` at buckets 33, 34 and 35 for #239, #240 and #241. Their combined neutral
+designation changed only allocation policy, tests and documentation: no archive membership,
+annotation, geometry, recognition result or outcome was inspected. Each token requires its own
+exact acknowledgement and cannot authorize either sibling or any earlier allocation. An
+authorized zero, abort, invalid or completed reveal consumes only that allocation without retry,
+replacement or fitting. The ordinary `unselected` complement is now buckets 36..999.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become
@@ -184,9 +191,9 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 33–999 remain unselected; buckets 20 through 32 are the named Flat, Fillet,
-Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, Polygonal Stock, Slot and
-Pocket allocations. This keeps
+may be fitted. Buckets 36–999 remain unselected; buckets 20 through 35 are the named Flat, Fillet,
+Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, Polygonal Stock, Slot,
+Pocket, Repeating Radial Profile, Step Level and Riser allocations. This keeps
 each draw near one percent without depending on class, topology, recognition result, or archive
 traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`

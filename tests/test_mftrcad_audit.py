@@ -32,7 +32,10 @@ from mftrcad_audit import (  # noqa: E402
     F5_POCKETS_H1,
     F5_POLYGONAL_BOSSES_H1,
     F5_POLYGONAL_STOCK_H1,
+    F5_REPEATING_RADIAL_PROFILES_H1,
+    F5_RISERS_H1,
     F5_SLOTS_H1,
+    F5_STEP_LEVELS_H1,
     FEATURE_LABELS,
     HOLDOUT_BUCKETS,
     NAMED_ALLOCATIONS,
@@ -183,12 +186,24 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_POCKETS_H1]),
             "status": "sealed_unrevealed",
         },
+        F5_REPEATING_RADIAL_PROFILES_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_REPEATING_RADIAL_PROFILES_H1]),
+            "status": "sealed_unrevealed",
+        },
+        F5_STEP_LEVELS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_STEP_LEVELS_H1]),
+            "status": "sealed_unrevealed",
+        },
+        F5_RISERS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_RISERS_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 33
-    assert partition.isdisjoint(set(range(33, 1000)))
-    assert partition | set(range(33, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[33, 999]]
+    assert len(partition) == 36
+    assert partition.isdisjoint(set(range(36, 1000)))
+    assert partition | set(range(36, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[36, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,

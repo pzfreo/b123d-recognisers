@@ -45,6 +45,9 @@ F5_PLATES_H1: Final = "F5-PLATES-H1"
 F5_POLYGONAL_STOCK_H1: Final = "F5-POLYGONAL-STOCK-H1"
 F5_SLOTS_H1: Final = "F5-SLOTS-H1"
 F5_POCKETS_H1: Final = "F5-POCKETS-H1"
+F5_REPEATING_RADIAL_PROFILES_H1: Final = "F5-REPEATING-RADIAL-PROFILES-H1"
+F5_STEP_LEVELS_H1: Final = "F5-STEP-LEVELS-H1"
+F5_RISERS_H1: Final = "F5-RISERS-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -92,6 +95,14 @@ ALLOCATION_SPECS: Final = (
     ),
     AllocationSpec(F5_SLOTS_H1, "f5_slots_h1", frozenset({31}), "sealed_unrevealed"),
     AllocationSpec(F5_POCKETS_H1, "f5_pockets_h1", frozenset({32}), "sealed_unrevealed"),
+    AllocationSpec(
+        F5_REPEATING_RADIAL_PROFILES_H1,
+        "f5_repeating_radial_profiles_h1",
+        frozenset({33}),
+        "sealed_unrevealed",
+    ),
+    AllocationSpec(F5_STEP_LEVELS_H1, "f5_step_levels_h1", frozenset({34}), "sealed_unrevealed"),
+    AllocationSpec(F5_RISERS_H1, "f5_risers_h1", frozenset({35}), "sealed_unrevealed"),
 )
 
 
@@ -231,6 +242,9 @@ Selection = Literal[
     "f5_polygonal_stock_h1",
     "f5_slots_h1",
     "f5_pockets_h1",
+    "f5_repeating_radial_profiles_h1",
+    "f5_step_levels_h1",
+    "f5_risers_h1",
 ]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS
