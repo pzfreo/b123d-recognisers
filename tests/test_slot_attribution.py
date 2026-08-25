@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import inspect
+import math
 from copy import deepcopy
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_slots, _SlotAttributionError
+from b123d_recognisers._recess_records import Slot
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all, _take_inventory
@@ -33,64 +35,232 @@ def _obround(length: float, width: float, depth: float):
     ) * end
 
 
-def _expected(part):
-    """Fresh graph traversal derives all wall/cap roles before Candidate inspection."""
-    graph = FaceGraph(part)
-    expected = []
-    for record in recognise_slots(part):
-        width_index = _AXIS[record.width_axis]
-        long_index = _AXIS[record.long_axis]
-        depth_index = _AXIS[record.depth_axis]
-        walls = set()
-        caps = [set(), set()]
-        for node in graph.nodes:
-            bounds = graph.bounds(node)
-            if graph.is_planar(node):
-                normal = graph.normal(node)
-                if normal is None:
+def _body_key(solid) -> tuple[float, ...]:
+    box = solid.bounding_box()
+    return (
+        float(box.min.X), float(box.min.Y), float(box.min.Z),
+        float(box.max.X), float(box.max.Y), float(box.max.Z),
+        float(solid.volume), float(solid.area),
+    )
+
+
+def _empty_prism(part, spans: dict[int, tuple[float, float]]) -> bool:
+    sizes = [spans[i][1] - spans[i][0] - 2e-7 for i in range(3)]
+    if min(sizes) <= 0:
+        return False
+    centre = [(spans[i][0] + spans[i][1]) / 2 for i in range(3)]
+    probe = Pos(*centre) * Box(*sizes)
+    intersection = part.intersect(probe)
+    if intersection is None:
+        return True
+    volume = intersection.volume if hasattr(intersection, "volume") else sum(
+        shape.volume for shape in intersection
+    )
+    return volume == pytest.approx(0.0, abs=1e-10)
+
+
+def _fresh_occurrences_one(solid, body_key):
+    """Independent OCP/AAG reconstruction; no recogniser or reducer calls."""
+    graph = FaceGraph(solid)
+    box = solid.bounding_box()
+    extent = (box.size.X, box.size.Y, box.size.Z)
+    planes = []
+    cylinders = []
+    for node in graph.nodes:
+        bounds = graph.bounds(node)
+        if graph.is_planar(node):
+            normal = graph.normal(node)
+            if normal is None:
+                continue
+            axis = max(range(3), key=lambda index: abs(normal[index]))
+            if abs(normal[axis]) >= 0.999999:
+                planes.append((node, axis, normal[axis], bounds))
+            continue
+        adaptor = BRepAdaptor_Surface(graph.face(node).wrapped)
+        if adaptor.GetType() != GeomAbs_Cylinder:
+            continue
+        cylinder = adaptor.Cylinder()
+        direction = cylinder.Axis().Direction()
+        vector = (direction.X(), direction.Y(), direction.Z())
+        axis = max(range(3), key=lambda index: abs(vector[index]))
+        if abs(vector[axis]) < 0.999999:
+            continue
+        location = cylinder.Location()
+        cylinders.append(
+            (node, axis, cylinder.Radius(), (location.X(), location.Y(), location.Z()), bounds)
+        )
+
+    raw = []
+    for left_index, left in enumerate(planes):
+        for right in planes[left_index + 1 :]:
+            ln, width_axis, lsign, lb = left
+            rn, raxis, rsign, rb = right
+            if width_axis != raxis or lsign * rsign >= 0:
+                continue
+            la = sum(lb[width_axis]) / 2
+            ra = sum(rb[width_axis]) / 2
+            if (ra - la) * lsign <= 0:
+                ln, rn, lsign, rsign, lb, rb, la, ra = rn, ln, rsign, lsign, rb, lb, ra, la
+            if (ra - la) * lsign <= 0:
+                continue
+            others = [axis for axis in range(3) if axis != width_axis]
+            overlaps = [(axis, min(lb[axis][1], rb[axis][1]) - max(lb[axis][0], rb[axis][0])) for axis in others]
+            if min(value for _axis, value in overlaps) <= 0:
+                continue
+            overlaps.sort(key=lambda item: item[1], reverse=True)
+            (long_axis, length), (depth_axis, _depth) = overlaps
+            if overlaps[0][1] - overlaps[1][1] <= 0.05 * overlaps[0][1] and extent[depth_axis] > extent[long_axis]:
+                long_axis, depth_axis = depth_axis, long_axis
+                length = overlaps[1][1]
+            width = abs(ra - la)
+            if width > length or length >= 0.9 * extent[long_axis]:
+                continue
+            spans = {
+                width_axis: tuple(sorted((la, ra))),
+                long_axis: (max(lb[long_axis][0], rb[long_axis][0]), min(lb[long_axis][1], rb[long_axis][1])),
+                depth_axis: (max(lb[depth_axis][0], rb[depth_axis][0]), min(lb[depth_axis][1], rb[depth_axis][1])),
+            }
+            common = set(graph.neighbours(ln)) & set(graph.neighbours(rn))
+            if not common or not all(graph.arc(ln, node) == graph.arc(rn, node) for node in common if graph.is_planar(node)):
+                continue
+            if not _empty_prism(solid, spans):
+                continue
+            record = Slot(
+                "xyz"[width_axis], "xyz"[long_axis], round(width, 2),
+                round(spans[long_axis][1] - spans[long_axis][0], 2),
+                round((la + ra) / 2, 2), round(spans[long_axis][0], 2),
+                round(spans[long_axis][1], 2), round(spans[depth_axis][0], 2),
+                round(spans[depth_axis][1], 2), body_key,
+            )
+            raw.append([record, {ln, rn}, []])
+
+    # Same void through an orthogonal wall pair: retain the narrower public record and union roles.
+    merged = []
+    for item in sorted(raw, key=lambda item: (item[0].width, item[0].location)):
+        keeper = next((old for old in merged if math.dist(old[0].location, item[0].location) <= 0.1), None)
+        if keeper is None:
+            merged.append(item)
+        else:
+            keeper[1].update(item[1])
+
+    # A crossing void splits each run into collinear arms. Rejoin only when the entire
+    # intervening prism is empty; solid-separated equal channels remain distinct.
+    changed = True
+    while changed:
+        changed = False
+        for left_index, left in enumerate(merged):
+            a = left[0]
+            for right_index in range(left_index + 1, len(merged)):
+                right = merged[right_index]
+                b = right[0]
+                if (
+                    a.width_axis != b.width_axis
+                    or a.long_axis != b.long_axis
+                    or abs(a.width - b.width) > 0.1
+                    or abs(a.w_center - b.w_center) > 0.1
+                    or abs(a.d_lo - b.d_lo) > 0.1
+                    or abs(a.d_hi - b.d_hi) > 0.1
+                ):
                     continue
-                normal_index = max(range(3), key=lambda index: abs(normal[index]))
-                if normal_index == width_index:
-                    at = sum(bounds[width_index]) / 2
-                    if (
-                        abs(abs(at - record.w_center) - record.width / 2) <= 1e-6
-                        and bounds[long_index][0] >= record.lo - 1e-6
-                        and bounds[long_index][1] <= record.hi + 1e-6
-                        and bounds[depth_index][0] == pytest.approx(record.d_lo)
-                        and bounds[depth_index][1] == pytest.approx(record.d_hi)
-                    ):
-                        walls.add(node)
-                elif normal_index == long_index and record.length == pytest.approx(record.width):
-                    at = sum(bounds[long_index]) / 2
-                    if abs(abs(at - (record.lo + record.hi) / 2) - record.length / 2) <= 1e-6:
-                        walls.add(node)
+                if a.hi <= b.lo:
+                    gap = (a.hi, b.lo)
+                elif b.hi <= a.lo:
+                    gap = (b.hi, a.lo)
+                else:
+                    continue
+                axis = _AXIS[a.long_axis]
+                width_axis = _AXIS[a.width_axis]
+                depth_axis = _AXIS[a.depth_axis]
+                spans = {
+                    axis: gap,
+                    width_axis: (a.w_center - a.width / 2, a.w_center + a.width / 2),
+                    depth_axis: (a.d_lo, a.d_hi),
+                }
+                if not _empty_prism(solid, spans):
+                    continue
+                lo, hi = min(a.lo, b.lo), max(a.hi, b.hi)
+                left[0] = Slot(
+                    a.width_axis, a.long_axis, a.width, round(hi - lo, 2),
+                    a.w_center, round(lo, 2), round(hi, 2), a.d_lo, a.d_hi, body_key,
+                )
+                left[1].update(right[1])
+                left[2].extend(group for group in right[2] if group not in left[2])
+                merged.pop(right_index)
+                changed = True
+                break
+            if changed:
+                break
+
+    # Cylindrical endpoint regions independently establish obround records and cap patch groups.
+    cap_regions = {}
+    for node, depth_axis, radius, centre, bounds in cylinders:
+        key = (depth_axis, round(radius, 7), tuple(round(value, 7) for value in centre), tuple(round(v, 7) for v in bounds[depth_axis]))
+        cap_regions.setdefault(key, set()).add(node)
+    regions = [(key, nodes) for key, nodes in cap_regions.items()]
+    for index, (left_key, left_nodes) in enumerate(regions):
+        for right_key, right_nodes in regions[index + 1 :]:
+            depth_axis, radius, lc, depth = left_key
+            r_depth_axis, r_radius, rc, r_depth = right_key
+            if depth_axis != r_depth_axis or radius != r_radius or depth != r_depth:
                 continue
-            surface = BRepAdaptor_Surface(graph.face(node).wrapped)
-            if surface.GetType() != GeomAbs_Cylinder:
+            deltas = [abs(rc[axis] - lc[axis]) for axis in range(3)]
+            long_axis = max(range(3), key=deltas.__getitem__)
+            if long_axis == depth_axis or deltas[long_axis] <= 0:
                 continue
-            cylinder = surface.Cylinder()
-            direction = cylinder.Axis().Direction()
-            components = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
-            location = cylinder.Location()
-            coords = (location.X(), location.Y(), location.Z())
-            if (
-                components[depth_index] != pytest.approx(1.0)
-                or cylinder.Radius() != pytest.approx(record.width / 2)
-                or coords[width_index] != pytest.approx(record.w_center)
-                or bounds[depth_index][0] != pytest.approx(record.d_lo)
-                or bounds[depth_index][1] != pytest.approx(record.d_hi)
-            ):
+            width_axis = next(axis for axis in range(3) if axis not in (long_axis, depth_axis))
+            if abs(lc[width_axis] - rc[width_axis]) > 1e-6:
                 continue
-            flats = (record.lo + record.width / 2, record.hi - record.width / 2)
-            for index, flat in enumerate(flats):
-                if coords[long_index] == pytest.approx(flat, abs=0.1):
-                    caps[index].add(node)
-        groups = tuple(frozenset(group) for group in caps if group)
-        if groups and record.length < 2 * record.width:
-            walls.clear()  # stubby cap-recovered route has no admissible paired-wall occurrence
-        nodes = frozenset((*walls, *(node for group in groups for node in group)))
-        expected.append((record, nodes, frozenset(walls), groups))
-    return graph, expected
+            lo = min(lc[long_axis], rc[long_axis]) - radius
+            hi = max(lc[long_axis], rc[long_axis]) + radius
+            record = Slot(
+                "xyz"[width_axis], "xyz"[long_axis], round(2 * radius, 2), round(hi - lo, 2),
+                round((lc[width_axis] + rc[width_axis]) / 2, 2), round(lo, 2), round(hi, 2),
+                round(depth[0], 2), round(depth[1], 2), body_key,
+            )
+            keeper = next(
+                (
+                    old
+                    for old in merged
+                    if old[0].width_axis == record.width_axis
+                    and old[0].long_axis == record.long_axis
+                    and old[0].width == record.width
+                    and old[0].w_center == record.w_center
+                    and old[0].d_lo == record.d_lo
+                    and old[0].d_hi == record.d_hi
+                    and math.dist(old[0].location, record.location) <= 0.1
+                ),
+                None,
+            )
+            groups = [frozenset(left_nodes), frozenset(right_nodes)]
+            if keeper is None:
+                merged.append([record, set(), groups])
+            else:
+                keeper[0] = record
+                keeper[2] = groups
+    return graph, merged
+
+
+def _expected(part):
+    """Derive occurrences, values, dedup, order and roles before Candidate inspection."""
+    aggregate = FaceGraph(part)
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    keys = [_body_key(solid) for solid in sources]
+    expected = []
+    for solid, key in zip(sources, keys, strict=True):
+        local, occurrences = _fresh_occurrences_one(
+            solid, key if keys.count(key) == 1 else None
+        )
+        for record, walls, groups in occurrences:
+            mapped_walls = frozenset(aggregate.require_node(local.face(node)) for node in walls)
+            mapped_groups = tuple(
+                frozenset(aggregate.require_node(local.face(node)) for node in group)
+                for group in groups
+            )
+            nodes = frozenset((*mapped_walls, *(node for group in mapped_groups for node in group)))
+            expected.append((record, nodes, mapped_walls, mapped_groups))
+    expected.sort(key=lambda item: (item[0].width, item[0].location))
+    return aggregate, expected
 
 
 @pytest.mark.parametrize(
