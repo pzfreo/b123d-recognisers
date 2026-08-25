@@ -1154,94 +1154,153 @@ def _cylinder_cycle(
     return MatchingWire(role, theta_winding, min(rotations))
 
 
+def _matching_label_orders(
+    values: tuple[Any, ...], budget: _MatchingConstructionBudget
+) -> tuple[tuple[int, ...], ...]:
+    groups = []
+    for value in sorted(set(values)):
+        group = tuple(index for index, item in enumerate(values) if item == value)
+        choices = []
+        for choice in permutations(group):
+            budget.charge()
+            choices.append(choice)
+        groups.append(tuple(choices))
+    orders = []
+    for selection in product(*groups):
+        budget.charge()
+        orders.append(tuple(index for group in selection for index in group))
+    return tuple(orders)
+
+
 def _matching_graph_canonical(
     vertices: tuple[QPoint, ...],
     curves: tuple[MatchingCurve, ...],
     faces: tuple[MatchingFace, ...],
+    budget: _MatchingConstructionBudget,
 ) -> MatchingBoundaryGraph:
-    vertex_order = tuple(sorted(range(len(vertices)), key=lambda index: vertices[index]))
-    if len(set(vertices)) != len(vertices):
-        raise UnsupportedBodyGeometry("equal matching vertices require bounded permutation")
-    vertex_map = {old: new for new, old in enumerate(vertex_order)}
-    ordered_vertices = tuple(vertices[index] for index in vertex_order)
-
-    remapped_curves = tuple(
-        MatchingCurve(
-            curve.kind,
-            None
-            if curve.vertices is None
-            else (vertex_map[curve.vertices[0]], vertex_map[curve.vertices[1]]),
-            curve.length,
-            curve.centre,
-            curve.axis,
-            curve.radius,
-            curve.sweep,
-            curve.full,
-        )
-        for curve in curves
-    )
-    curve_order = tuple(sorted(range(len(curves)), key=lambda index: remapped_curves[index]))
-    if len(set(remapped_curves)) != len(remapped_curves):
-        raise UnsupportedBodyGeometry("equal matching curves require bounded permutation")
-    curve_map = {old: new for new, old in enumerate(curve_order)}
-    ordered_curves = tuple(remapped_curves[index] for index in curve_order)
-
-    remapped_faces = []
-    for face in faces:
-        remapped_wires = []
-        for wire in face.wires:
-            cycle = tuple(
-                MatchingHalfEdge(
-                    curve_map[item.curve],
-                    item.direction,
-                    None
-                    if item.start is None
-                    else MatchingWireVertex(
-                        vertex_map[cast(int, item.start.vertex)], item.start.parameter
-                    ),
-                    None
-                    if item.end is None
-                    else MatchingWireVertex(
-                        vertex_map[cast(int, item.end.vertex)], item.end.parameter
-                    ),
-                )
-                for item in wire.cycle
+    candidates: list[MatchingBoundaryGraph] = []
+    for vertex_order in _matching_label_orders(vertices, budget):
+        vertex_map = {old: new for new, old in enumerate(vertex_order)}
+        ordered_vertices = tuple(vertices[index] for index in vertex_order)
+        remapped_curves = tuple(
+            MatchingCurve(
+                curve.kind,
+                None
+                if curve.vertices is None
+                else (vertex_map[curve.vertices[0]], vertex_map[curve.vertices[1]]),
+                curve.length,
+                curve.centre,
+                curve.axis,
+                curve.radius,
+                curve.sweep,
+                curve.full,
             )
-            rotations = tuple(cycle[index:] + cycle[:index] for index in range(len(cycle)))
-            remapped_wires.append(MatchingWire(wire.role, wire.theta_winding, min(rotations)))
-        remapped_faces.append(
-            MatchingFace(
-                face.kind,
-                face.parameters,
-                face.area,
-                face.centroid,
-                face.material_side,
-                tuple(sorted(remapped_wires)),
-            )
+            for curve in curves
         )
-    ordered_faces = tuple(sorted(remapped_faces))
-    if len(set(remapped_faces)) != len(remapped_faces):
-        raise UnsupportedBodyGeometry("equal matching faces require bounded permutation")
-    incidence: dict[int, list[tuple[int, int, int]]] = {}
-    for face_index, face in enumerate(ordered_faces):
-        for wire_index, wire in enumerate(face.wires):
-            for occurrence, half_edge in enumerate(wire.cycle):
-                incidence.setdefault(half_edge.curve, []).append(
-                    (face_index, wire_index, occurrence)
+        for curve_order in _matching_label_orders(
+            remapped_curves, budget
+        ):
+            curve_map = {old: new for new, old in enumerate(curve_order)}
+            ordered_curves = tuple(remapped_curves[index] for index in curve_order)
+            remapped_faces = []
+            for face in faces:
+                remapped_wires = []
+                for wire in face.wires:
+                    cycle = tuple(
+                        MatchingHalfEdge(
+                            curve_map[item.curve],
+                            item.direction,
+                            None
+                            if item.start is None
+                            else MatchingWireVertex(
+                                vertex_map[cast(int, item.start.vertex)],
+                                item.start.parameter,
+                            ),
+                            None
+                            if item.end is None
+                            else MatchingWireVertex(
+                                vertex_map[cast(int, item.end.vertex)], item.end.parameter
+                            ),
+                        )
+                        for item in wire.cycle
+                    )
+                    rotations = tuple(
+                        cycle[index:] + cycle[:index] for index in range(len(cycle))
+                    )
+                    remapped_wires.append(
+                        MatchingWire(wire.role, wire.theta_winding, min(rotations))
+                    )
+                remapped_faces.append(
+                    MatchingFace(
+                        face.kind,
+                        face.parameters,
+                        face.area,
+                        face.centroid,
+                        face.material_side,
+                        tuple(sorted(remapped_wires)),
+                    )
                 )
-    if set(incidence) != set(range(len(ordered_curves))) or any(
-        len(occurrences) != 2 for occurrences in incidence.values()
-    ):
-        raise UnsupportedBodyGeometry("matching curve incidence is not a closed-shell pair")
+            remapped_faces_tuple = tuple(remapped_faces)
+            for face_order in _matching_label_orders(
+                remapped_faces_tuple, budget
+            ):
+                budget.charge()
+                ordered_faces = tuple(remapped_faces_tuple[index] for index in face_order)
+                incidence: dict[int, list[tuple[int, int, int]]] = {}
+                for face_index, face in enumerate(ordered_faces):
+                    for wire_index, wire in enumerate(face.wires):
+                        for occurrence, half_edge in enumerate(wire.cycle):
+                            incidence.setdefault(half_edge.curve, []).append(
+                                (face_index, wire_index, occurrence)
+                            )
+                if set(incidence) != set(range(len(ordered_curves))) or any(
+                    len(occurrences) != 2 for occurrences in incidence.values()
+                ):
+                    raise UnsupportedBodyGeometry(
+                        "matching curve incidence is not a closed-shell pair"
+                    )
+                candidates.append(
+                    MatchingBoundaryGraph(
+                        ordered_vertices,
+                        ordered_curves,
+                        ordered_faces,
+                        tuple(
+                            (index, tuple(sorted(incidence[index])))
+                            for index in range(len(ordered_curves))
+                        ),
+                        len(ordered_faces),
+                        sum(len(face.wires) for face in ordered_faces),
+                        sum(
+                            len(wire.cycle)
+                            for face in ordered_faces
+                            for wire in face.wires
+                        ),
+                        False,
+                    )
+                )
+    if not candidates:
+        raise UnsupportedBodyGeometry("matching graph has no canonical serialization")
+    def key(value: MatchingBoundaryGraph) -> tuple[object, ...]:
+        return (
+            value.vertices,
+            value.curves,
+            value.faces,
+            value.incidence,
+            value.face_count,
+            value.wire_count,
+            value.edge_occurrence_count,
+        )
+    selected = min(candidates, key=key)
+    minimum = key(selected)
     return MatchingBoundaryGraph(
-        ordered_vertices,
-        ordered_curves,
-        ordered_faces,
-        tuple((index, tuple(sorted(incidence[index]))) for index in range(len(ordered_curves))),
-        len(ordered_faces),
-        sum(len(face.wires) for face in ordered_faces),
-        sum(len(wire.cycle) for face in ordered_faces for wire in face.wires),
-        False,
+        selected.vertices,
+        selected.curves,
+        selected.faces,
+        selected.incidence,
+        selected.face_count,
+        selected.wire_count,
+        selected.edge_occurrence_count,
+        sum(key(candidate) == minimum for candidate in candidates) > 1,
     )
 
 
@@ -1375,4 +1434,4 @@ def matching_boundary_for_solid(
         len(occurrences) != 2 for occurrences in incidence.values()
     ):
         raise UnsupportedBodyGeometry("matching curve incidence is not a closed-shell pair")
-    return _matching_graph_canonical(vertex_labels, curves, tuple(matching_faces))
+    return _matching_graph_canonical(vertex_labels, curves, tuple(matching_faces), budget)

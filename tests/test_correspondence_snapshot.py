@@ -345,6 +345,54 @@ def test_schema_three_construction_budget_is_inclusive() -> None:
         budget.charge()
 
 
+def test_schema_three_joint_canonicalization_preserves_equal_topology_tokens() -> None:
+    vertices = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
+    curves = (
+        MatchingCurve("LINE", (0, 1), 1.0, None, None, None, None, False),
+        MatchingCurve("LINE", (0, 1), 1.0, None, None, None, None, False),
+    )
+    parameter = (0.0, 0.0)
+    faces = tuple(
+        MatchingFace(
+            "PLANE",
+            (0.0, 0.0, 1.0, 0.0),
+            1.0,
+            (0.0, 0.0, 0.0),
+            1,
+            (
+                MatchingWire(
+                    "outer",
+                    0,
+                    (
+                        MatchingHalfEdge(
+                            curve,
+                            1,
+                            MatchingWireVertex(0, parameter),
+                            MatchingWireVertex(1, parameter),
+                        ),
+                        MatchingHalfEdge(
+                            curve,
+                            -1,
+                            MatchingWireVertex(1, parameter),
+                            MatchingWireVertex(0, parameter),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        for curve in range(2)
+    )
+
+    graph = _body_geometry._matching_graph_canonical(
+        vertices, curves, faces, _body_geometry._MatchingConstructionBudget()
+    )
+
+    assert len(graph.vertices) == 2
+    assert len(graph.curves) == 2
+    assert graph.symmetric
+    _body_geometry.validate_matching_boundary_graph(graph)
+
+
 def _rrp(repeats: int = 5):
     part = Cylinder(20, 10)
     for index in range(repeats):
