@@ -1193,6 +1193,31 @@ def test_snapshot_revalidates_body_group_partition() -> None:
         correspondence_snapshot(product)
 
 
+@pytest.mark.parametrize("scale", [0.0, math.nan, math.inf])
+def test_descriptor_quantization_refuses_invalid_characteristic_scale(scale: float) -> None:
+    product = _take_inventory(_rrp())
+    quantization = correspondence_snapshot(product).occurrences[0].body.quantization
+    changed = dataclasses.replace(quantization, characteristic_scale=scale)
+    with pytest.raises(UnsupportedBodyGeometry, match="characteristic scale"):
+        _body_geometry.validate_descriptor_quantization(changed)
+
+
+def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry() -> None:
+    one = correspondence_snapshot(_take_inventory(_rrp()))
+    with pytest.raises(CorrespondenceSnapshotError, match="schema is unsupported"):
+        correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=1))
+    for groups in (((0,), ()), ((1,),), ((0, 0),)):
+        with pytest.raises(CorrespondenceSnapshotError, match="complete partition"):
+            correspondence_module._validate_snapshot(dataclasses.replace(one, body_groups=groups))
+
+    two = correspondence_snapshot(
+        _take_inventory(Compound([Pos(-50, 0, 0) * _rrp(5), Pos(50, 0, 0) * _rrp(7)]))
+    )
+    assert two.body_groups == ((0,), (1,))
+    with pytest.raises(CorrespondenceSnapshotError, match="unequal geometry"):
+        correspondence_module._validate_snapshot(dataclasses.replace(two, body_groups=((0, 1),)))
+
+
 def test_snapshot_is_lazy_and_body_descriptor_runs_once(monkeypatch) -> None:
     calls = 0
     original = FaceGraph.body_geometry
