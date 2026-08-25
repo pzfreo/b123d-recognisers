@@ -919,6 +919,10 @@ jointly establishes its Z, union spans, strict area admission and deterministic 
 footprint/end-margin facts and rejected clusters remain consulted. The private writer core validates
 all bindings, distinct role sets and one common SolidRef before issuance; a whole-part cluster that
 mixes bodies raises `_StepLevelAttributionError` without changing public geometry-only output.
+The existing `chamfers_fillets_and_flats` golden is the named executable instance of that boundary:
+its three solids share horizontal Z clusters, so its public level values remain pinned while the
+aggregate golden harness requires the named error, zero `STEP_LEVELS` prefix and no catch/drop
+fallback rather than pretending the mixed cluster has one owner.
 `STEP_LEVELS` becomes `FullyAttributed` but retains the exact `NotCounted("level substrate is not a
 distinct feature")` census disposition. Bucket 34 remains sealed until two exact-head accepts and
 all mechanical gates complete.

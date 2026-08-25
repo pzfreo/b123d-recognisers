@@ -263,6 +263,8 @@ def _discover_step_levels(
                 raise _StepLevelAttributionError(
                     "equal Step Level records have competing defining clusters"
                 )
+            if prior == nodes:
+                continue  # repeated wrappers of the same bound occurrence collapse by identity
             if used_nodes & nodes:
                 raise _StepLevelAttributionError("Step Level defining nodes are reused")
             if writer.graph.common_valid_solid(nodes) is None:

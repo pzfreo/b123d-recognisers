@@ -185,3 +185,6 @@ margin remain consulted. Public raw and filtered level APIs retain their two dis
 roles and exact values. Because clustering remains whole-part, an aggregate cluster spanning more
 than one valid solid raises the private `_StepLevelAttributionError` before any issuance; public
 geometry-only output remains unchanged. Step Levels remain `NotCounted` neutral substrate.
+The `chamfers_fillets_and_flats` compound golden pins this deliberate aggregate divergence: shared-Z
+faces across its three solids produce the named refusal and no candidate prefix; they are not
+silently omitted or assigned cross-body evidence.
