@@ -14,12 +14,14 @@ from itertools import permutations, product
 from typing import Any, TypeAlias, cast
 
 from build123d import GeomType
+from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
 from OCP.BRepCheck import BRepCheck_Analyzer
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 from OCP.Standard import Standard_Failure
 from OCP.TopAbs import TopAbs_Orientation, TopAbs_SOLID
+from OCP.TopExp import TopExp
 
 DESCRIPTOR_REL = 1e-9
 DESCRIPTOR_FLOOR = 1e-7
@@ -1119,30 +1121,11 @@ def _cylinder_parameter(
     adaptor: BRepAdaptor_Surface,
     raw_u: float,
     raw_v: float,
-    face: FaceGeometry,
     centre: QPoint,
     quantum: float,
+    gauge: tuple[QPoint, QPoint, float, float],
 ) -> tuple[float, float]:
-    axis = cast(QPoint, face.parameters[:3])
-    axis_point = cast(QPoint, face.parameters[3:6])
-    u_axis, v_axis = _plane_basis(axis)
-    cylinder = adaptor.Cylinder()
-    raw_axis = _vector(cylinder.Axis().Direction())
-    axis_sign = 1.0 if sum(a * b for a, b in zip(raw_axis, axis, strict=True)) > 0 else -1.0
-    origin = adaptor.Value(0.0, raw_v)
-    origin_relative = (
-        origin.X() - centre[0] - axis_point[0],
-        origin.Y() - centre[1] - axis_point[1],
-        origin.Z() - centre[2] - axis_point[2],
-    )
-    radial = tuple(
-        value - sum(x * n for x, n in zip(origin_relative, axis, strict=True)) * normal
-        for value, normal in zip(origin_relative, axis, strict=True)
-    )
-    phase = math.atan2(
-        sum(value * basis for value, basis in zip(radial, v_axis, strict=True)),
-        sum(value * basis for value, basis in zip(radial, u_axis, strict=True)),
-    )
+    axis, axis_point, phase, axis_sign = gauge
     point = adaptor.Value(raw_u, raw_v)
     relative = (
         point.X() - centre[0] - axis_point[0],
@@ -1209,6 +1192,29 @@ def _cylinder_cycle(
     budget: _MatchingConstructionBudget,
     surface: BRepAdaptor_Surface,
 ) -> MatchingWire:
+    axis = cast(QPoint, face.parameters[:3])
+    axis_point = cast(QPoint, face.parameters[3:6])
+    u_axis, v_axis = _plane_basis(axis)
+    raw_axis = _vector(surface.Cylinder().Axis().Direction())
+    axis_sign = (
+        1.0 if sum(a * b for a, b in zip(raw_axis, axis, strict=True)) > 0 else -1.0
+    )
+    origin = surface.Value(0.0, 0.0)
+    origin_relative = (
+        origin.X() - centre[0] - axis_point[0],
+        origin.Y() - centre[1] - axis_point[1],
+        origin.Z() - centre[2] - axis_point[2],
+    )
+    along = sum(x * n for x, n in zip(origin_relative, axis, strict=True))
+    radial = tuple(
+        value - along * normal
+        for value, normal in zip(origin_relative, axis, strict=True)
+    )
+    phase = math.atan2(
+        sum(value * basis for value, basis in zip(radial, v_axis, strict=True)),
+        sum(value * basis for value, basis in zip(radial, u_axis, strict=True)),
+    )
+    gauge = (axis, axis_point, phase, axis_sign)
     occurrences = []
     for edge, curve_index in zip(wire.edges(), curve_indices, strict=True):
         pcurve = BRepAdaptor_Curve2d(edge.wrapped, face_wrapper.wrapped)
@@ -1219,10 +1225,10 @@ def _cylinder_cycle(
         if edge.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED:
             raw_start, raw_end = raw_end, raw_start
         start_parameter = _cylinder_parameter(
-            surface, raw_start.X(), raw_start.Y(), face, centre, quantum
+            surface, raw_start.X(), raw_start.Y(), centre, quantum, gauge
         )
         end_parameter = _cylinder_parameter(
-            surface, raw_end.X(), raw_end.Y(), face, centre, quantum
+            surface, raw_end.X(), raw_end.Y(), centre, quantum, gauge
         )
         curve = curves[curve_index]
         if curve.full:
@@ -1471,7 +1477,6 @@ def matching_boundary_for_solid(
     budget = _MatchingConstructionBudget()
     raw_vertices: list[Any] = []
     raw_curves: list[Any] = []
-    raw_vertex_indices: dict[Any, int] = {}
     raw_curve_indices: dict[Any, int] = {}
     raw_curve_vertices: dict[Any, tuple[int, ...]] = {}
     curve_examples: list[Any] = []
@@ -1502,44 +1507,99 @@ def matching_boundary_for_solid(
                     cached_edge_labels[cast(Any, token)] = geometry
     face_curve_indices: list[list[tuple[str, tuple[int, ...]]]] = []
     face_adaptors = tuple(BRepAdaptor_Surface(face.wrapped) for face in faces)
-    for face, face_adaptor in zip(faces, face_adaptors, strict=True):
-        outer = face.outer_wire()
+    for face, face_adaptor, face_build in zip(
+        faces, face_adaptors, face_builds, strict=True
+    ):
         wires = []
-        for wire in face.wires():
-            indices = []
-            for edge in wire.edges():
-                cached_label = cached_edge_labels.get(edge)
-                if cached_label is None:
-                    raise UnsupportedBodyGeometry(
-                        "matching cached curve authority is incomplete"
-                    )
-                _validate_matching_pcurve(
-                    edge,
-                    face,
-                    face_adaptor,
-                    quantum,
-                    cached_label.kind,
-                    cached_label.full,
+
+        def register(
+            edge: Any, owner: Any = face, surface: BRepAdaptor_Surface = face_adaptor
+        ) -> int:
+            cached_label = cached_edge_labels.get(edge)
+            if cached_label is None:
+                raise UnsupportedBodyGeometry(
+                    "matching cached curve authority is incomplete"
                 )
-                index = raw_curve_indices.get(edge)
-                if index is None:
-                    index = len(raw_curves)
-                    raw_curve_indices[edge] = index
-                    raw_curves.append(edge)
-                    curve_examples.append(edge)
-                    vertex_indices = []
-                    for vertex in edge.vertices():
-                        if vertex not in raw_vertex_indices:
-                            raw_vertex_indices[vertex] = len(raw_vertices)
-                            raw_vertices.append(vertex)
-                        vertex_indices.append(raw_vertex_indices[vertex])
-                    raw_curve_vertices[edge] = tuple(vertex_indices)
-                indices.append(index)
-            wires.append(("outer" if wire == outer else "inner", tuple(indices)))
+            _validate_matching_pcurve(
+                edge,
+                owner,
+                surface,
+                quantum,
+                cached_label.kind,
+                cached_label.full,
+            )
+            index = raw_curve_indices.get(edge)
+            if index is not None:
+                return index
+            index = len(raw_curves)
+            raw_curve_indices[edge] = index
+            raw_curves.append(edge)
+            curve_examples.append(edge)
+            vertex_indices = []
+            topology_vertices = (
+                TopExp.FirstVertex_s(edge.wrapped, True),
+                TopExp.LastVertex_s(edge.wrapped, True),
+            )
+            for vertex in topology_vertices:
+                if vertex.IsNull():
+                    continue
+                vertex_index = next(
+                    (
+                        existing_index
+                        for existing_index, existing in enumerate(raw_vertices)
+                        if existing.IsSame(vertex)
+                    ),
+                    None,
+                )
+                if vertex_index is None:
+                    vertex_index = len(raw_vertices)
+                    raw_vertices.append(vertex)
+                vertex_indices.append(vertex_index)
+            raw_curve_vertices[edge] = tuple(vertex_indices)
+            return index
+
+        if face_build.geometry.kind == "PLANE":
+            for wire_build in face_build.wires:
+                if not wire_build.occurrences:
+                    raise UnsupportedBodyGeometry("matching cached wire authority is empty")
+                token_sets = tuple(
+                    (
+                        len(alignment),
+                        frozenset(cast(Any, token) for token, _direction in alignment),
+                    )
+                    for alignment in wire_build.occurrences
+                )
+                if any(tokens != token_sets[0] for tokens in token_sets[1:]):
+                    raise UnsupportedBodyGeometry(
+                        "matching cached wire token roster disagrees"
+                    )
+                indices = tuple(
+                    register(cast(Any, token))
+                    for token, _direction in wire_build.occurrences[0]
+                )
+                wires.append((wire_build.geometry.role, indices))
+            face_curve_indices.append(wires)
+            continue
+        outer = face.outer_wire()
+        for wire in face.wires():
+            cylinder_indices = []
+            for edge in wire.edges():
+                cylinder_indices.append(register(edge))
+            wires.append(
+                ("outer" if wire == outer else "inner", tuple(cylinder_indices))
+            )
         face_curve_indices.append(wires)
 
     vertex_labels = tuple(
-        _point(vertex, centre, quantum, name="matching vertex") for vertex in raw_vertices
+        _relative_point(
+            tuple(
+                value - origin
+                for value, origin in zip(BRep_Tool.Pnt_s(vertex).Coord(), centre, strict=True)
+            ),
+            quantum,
+            name="matching vertex",
+        )
+        for vertex in raw_vertices
     )
     matching_curves: list[MatchingCurve] = []
     for edge in curve_examples:
