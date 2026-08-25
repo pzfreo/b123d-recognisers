@@ -898,8 +898,9 @@ acknowledgements without archive access, membership inspection, recognition, ann
 outcome evidence. The combined neutral designation moves the ordinary unselected complement to
 buckets 33..999, but neither acknowledgement authorizes the sibling selection. Each allocation
 remains `sealed_unrevealed` until its own semantic child clears two independent exact-head reviews
-and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
-that allocation without replacement, retry or fitting.
+and all mechanical gates. Any authorized zero, abort, invalid or completed reveal consumes only
+that allocation without replacement, retry or fitting; only a completed valid report can become
+regression evidence, while zero/abort/invalid outcomes remain inconclusive.
 
 At accepted pre-reveal PR #246 head `d4343ad`, after two independent exact-head accepts and all
 current-head CI, coverage and focused gates, the single authorized
@@ -984,8 +985,8 @@ census treatment while replacing the former structural exclusion. Each aggregate
 complete original eight-face solid boundary: the six ordered outward side faces and the unique lower
 and upper caps. Cap nodes are retained at selection time rather than inferred from the remaining
 inventory or rounded coordinates. Exact graph/writer authority, eight-node inventory equality and a
-single SolidRef are proved before issuance. Bucket 30 remains sealed until the exact implementation
-head clears the independent semantic and mechanical gates.
+single SolidRef are proved before issuance. Bucket 30 stayed sealed until the implementation gates;
+its later input-validation abort permanently consumed it inconclusively without regression evidence.
 
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
@@ -1002,8 +1003,9 @@ F5 recess prerequisite/#234 replaces the value-keyed Slot/Pocket reduction autho
 immutable occurrences. Exact planar source nodes and complete cylindrical endpoint patch clusters
 survive merge, collinear collapse, obround extension/recovery and body scoping, while record-only
 compatibility remains value/order identical. The compatibility ledger is projected from those
-occurrences and publishes no new cap evidence. SLOT and POCKET remain `IncompleteAttribution`; no
-allocation, schema, census, reconciliation or public-output change belongs to this prerequisite.
+occurrences and publishes no new cap evidence. At #234 landing, SLOT and POCKET remained
+`IncompleteAttribution`; Slot was later promoted by #235, while Pocket remains pending this #236
+child. No allocation, schema, census, reconciliation or public-output change belonged to #234.
 
 F5 Pocket attribution/#236 promotes only `POCKETS`. Opposed-wall routes define the intentionally
 merged wall union while their floor remains consulted; corner notches define their two walls and
@@ -1104,8 +1106,9 @@ Every child follows the evidence gate used for recent recogniser work:
    substrate PR.
 
 MFTRCAD development and holdout partitions must be disjoint by published dataset identity or a
-deterministic manifest rule. A completed reveal becomes regression evidence; an aborted reveal is
-permanently consumed but remains inconclusive. Further fitting requires a fresh draw.
+deterministic manifest rule. Only a completed valid reveal may become regression evidence. A zero,
+aborted or invalid reveal is permanently consumed but remains inconclusive. Further fitting requires
+a fresh draw.
 
 ## Architecture guards
 
