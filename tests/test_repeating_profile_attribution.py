@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import inspect
 import math
 from copy import deepcopy
@@ -17,6 +18,8 @@ from b123d_recognisers import recognise_repeating_radial_profiles
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
 from b123d_recognisers.result import _take_inventory
 from tests.golden._common import toothed_prism
@@ -256,6 +259,12 @@ def _oracle(part, graph: FaceGraph, *, tol: float = 1e-5):
 
 
 def _assert_attributed(part, *, repeats: int):
+    # Freeze the complete expected topology before aggregate orchestration creates any Candidate
+    # or exposes any run evidence. Only the final comparison crosses into the run graph.
+    oracle_graph = FaceGraph(part)
+    (((axis, centre, span, oracle_repeats, edge_count, signature), oracle_nodes),) = _oracle(
+        part, oracle_graph
+    )
     public = recognise_repeating_radial_profiles(part)
     product = _take_inventory(part)
     records = product.result.repeating_radial_profiles
@@ -266,9 +275,6 @@ def _assert_attributed(part, *, repeats: int):
     record = records[0]
     assert candidate.record is record
     assert record.repeat_count == repeats
-    (((axis, centre, span, oracle_repeats, edge_count, signature), expected),) = _oracle(
-        part, product.context.graph
-    )
     assert (
         record.axis,
         record.centre,
@@ -277,8 +283,18 @@ def _assert_attributed(part, *, repeats: int):
         record.edge_count,
         record.sector_signature,
     ) == (axis, centre, span, oracle_repeats, edge_count, signature)
-    assert product.evidence.defining_of(candidate) == expected
-    assert product.context.graph.common_valid_solid(expected) is not None
+    actual = product.evidence.defining_of(candidate)
+    expected_faces = [oracle_graph.face(node) for node in oracle_nodes]
+    actual_faces = [product.context.graph.face(node) for node in actual]
+    assert all(
+        sum(candidate_face.is_same(expected_face) for candidate_face in actual_faces) == 1
+        for expected_face in expected_faces
+    )
+    assert all(
+        sum(candidate_face.is_same(expected_face) for expected_face in expected_faces) == 1
+        for candidate_face in actual_faces
+    )
+    assert product.context.graph.common_valid_solid(actual) is not None
     return record
 
 
@@ -339,6 +355,34 @@ def test_custom_tolerance_path_preserves_value_and_roles() -> None:
     actual = module._discover_repeating_radial_profiles(part, tol=2e-5, writer=ledger.writer)
     assert [item.to_dict() for item in actual] == [item.to_dict() for item in expected]
     assert len(ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates) == 1
+
+
+def test_metric_tolerance_floor_crossover_is_exact(monkeypatch) -> None:
+    part = toothed_prism().scale(2)
+    metric = part_scale(part.bounding_box()) * 1e-5
+    seen = []
+
+    def decline(_face, _bbox, *, tol):
+        seen.append(tol)
+        return None
+
+    monkeypatch.setattr(module, "_prove_boundary", decline)
+    assert module._recognise_solid(part, tol=metric) == []
+    assert set(seen) == {metric}
+    seen.clear()
+    explicit = metric * 1.01
+    assert module._recognise_solid(part, tol=explicit) == []
+    assert set(seen) == {explicit}
+
+
+@pytest.mark.parametrize("factory", [_notched_round, toothed_prism])
+def test_common_circle_and_bbox_centre_routes_are_independently_reconstructed(factory) -> None:
+    part = factory(8)
+    graph = FaceGraph(part)
+    expected = _oracle(part, graph)
+    assert len(expected) == 1
+    centre = expected[0][0][1]
+    assert centre[:2] == pytest.approx((0.0, 0.0), abs=1e-8)
 
 
 def test_equal_coincident_solids_remain_distinct_occurrences() -> None:
@@ -430,6 +474,45 @@ def test_foreign_writer_refusal_leaves_no_prefix() -> None:
     assert foreign.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
 
 
+def test_shallow_wrappers_resolve_but_deep_geometric_clones_refuse(monkeypatch) -> None:
+    part = _notched_round(5)
+    original = module._recognise_solid
+    proposals = original(part, tol=1e-5)
+
+    shallow = replace(
+        proposals[0],
+        lower_face=copy.copy(proposals[0].lower_face),
+        upper_face=copy.copy(proposals[0].upper_face),
+    )
+    monkeypatch.setattr(module, "_recognise_solid", lambda *_args, **_kwargs: [shallow])
+    ledger = ClaimLedger(FaceGraph(part))
+    assert len(module._discover_repeating_radial_profiles(part, writer=ledger.writer)) == 1
+
+    clone = replace(proposals[0], upper_face=deepcopy(proposals[0].upper_face))
+    monkeypatch.setattr(module, "_recognise_solid", lambda *_args, **_kwargs: [clone])
+    refused = ClaimLedger(FaceGraph(part))
+    with pytest.raises(module._RepeatingRadialAttributionError):
+        module._discover_repeating_radial_profiles(part, writer=refused.writer)
+    assert refused.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
+
+
+def test_open_shell_and_malformed_sampling_fail_closed(monkeypatch) -> None:
+    shell = _notched_round(5).shells()[0]
+    # Historical geometry-only recognition accepts the complete shell boundary; aggregate
+    # attribution refuses because no valid SolidRef owns it.
+    assert len(recognise_repeating_radial_profiles(shell)) == 1
+    ledger = ClaimLedger(FaceGraph(shell))
+    with pytest.raises(module._RepeatingRadialAttributionError, match="valid solid"):
+        module._discover_repeating_radial_profiles(shell, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
+    monkeypatch.setattr(
+        type(shell.faces()[0]),
+        "outer_wire",
+        lambda _self: (_ for _ in ()).throw(RuntimeError("bad wire")),
+    )
+    assert recognise_repeating_radial_profiles(shell) == []
+
+
 def test_second_occurrence_identity_failure_is_detected_before_any_issue(monkeypatch) -> None:
     first = Pos(-60, 0, 0) * _notched_round(5)
     second = Pos(60, 0, 0) * _notched_round(7)
@@ -477,6 +560,7 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
     package = ROOT / "src/b123d_recognisers"
     sites = []
     constructors = []
+    proposal_constructors = []
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         aliases = set()
@@ -490,6 +574,12 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
                     alias.asname or alias.name
                     for alias in statement.names
                     if alias.name == "_discover_repeating_radial_profiles"
+                )
+            if isinstance(statement, ast.ImportFrom) and statement.module == "b123d_recognisers":
+                module_aliases.update(
+                    alias.asname or alias.name
+                    for alias in statement.names
+                    if alias.name == "repeating_profiles"
                 )
             if isinstance(statement, ast.Import):
                 module_aliases.update(
@@ -514,6 +604,8 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
             name = node.func.id if isinstance(node.func, ast.Name) else ""
             if name == "RepeatingRadialProfile":
                 constructors.append(path.name)
+            if name == "_RepeatingRadialProposal":
+                proposal_constructors.append(path.name)
     assert {path for path, _call in sites} == {"repeating_profiles.py", "_registry.py"}
     registry_call = next(call for path, call in sites if path == "_registry.py")
     keywords = {keyword.arg: keyword.value for keyword in registry_call.keywords}
@@ -522,16 +614,47 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
     public_call = next(call for path, call in sites if path == "repeating_profiles.py")
     assert all(keyword.arg != "writer" for keyword in public_call.keywords)
     assert constructors == ["repeating_profiles.py"]
+    assert proposal_constructors == ["repeating_profiles.py"]
     assert tuple(inspect.signature(recognise_repeating_radial_profiles).parameters) == (
         "part",
         "tol",
     )
+    registry_keywords = {keyword.arg: keyword.value for keyword in registry_call.keywords}
+    writer = registry_keywords["writer"]
+    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert isinstance(writer.value, ast.Name) and writer.value.id == "s"
+    assert {key for key in SURFACE_READER_SITES if key.startswith("repeating_profiles:")} == {
+        "repeating_profiles:_sample_wire:geom_type:1",
+        "repeating_profiles:_sample_wire:geom_type:2",
+        "repeating_profiles:_prove_boundary:geom_type:1",
+    }
+    imported_modules = {
+        node.module
+        for node in ast.walk(
+            ast.parse((package / "repeating_profiles.py").read_text(encoding="utf-8"))
+        )
+        if isinstance(node, ast.ImportFrom) and node.module is not None
+    }
+    assert imported_modules == {
+        "__future__",
+        "dataclasses",
+        "math",
+        "build123d",
+        "b123d_recognisers._adjacency",
+        "b123d_recognisers._candidates",
+        "b123d_recognisers._claims",
+        "b123d_recognisers._geometry",
+        "b123d_recognisers._record",
+        "b123d_recognisers._typing",
+        "b123d_recognisers.profiled_bores",
+    }
     source = (package / "repeating_profiles.py").read_text(encoding="utf-8")
+    source_tree = ast.parse(source)
     assert "evidence publication was refused" not in source
     tree = ast.parse(source)
     publication_calls = [
         node
-        for node in ast.walk(tree)
+        for node in ast.walk(source_tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "add_defining"

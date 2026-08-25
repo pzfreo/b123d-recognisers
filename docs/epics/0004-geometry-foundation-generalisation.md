@@ -933,6 +933,14 @@ The family becomes `FullyAttributed` but retains
 evidence rather than a manufacturing classifier. Bucket 33 remains sealed until the independent
 exact-head reviews and all frozen mechanical gates complete.
 
+The frozen development matrix has real LINE-only bbox-centred and mixed LINE/CIRCLE
+common-circle-centred occurrences, including minimum five and higher prime counts. A bounded
+build123d/OCCT construction search did not produce a stable valid closed spline/freeform radial
+profile whose imported opposed wires preserve exact sampled bijection. This migration therefore
+makes no spline-specific acceptance claim and does not alter curve predicates to manufacture one;
+curve-kind mismatch and sampled-shape refusal remain pinned synthetically until a genuine supported
+fixture exists as a separately reviewed semantic prerequisite.
+
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
 geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and

@@ -20,9 +20,14 @@ from __future__ import annotations
 from math import cos, pi, sin
 
 from b123d_recognisers.repeating_profiles import (
+    _BoundaryEvidence,
     _CurveEvidence,
+    _curves_match,
+    _cyclic_edge_orbits,
     _one_closed_cycle,
     _polar_signature,
+    _profiles_correspond,
+    _sector_signature,
 )
 
 TOL = 1e-6
@@ -125,3 +130,94 @@ class TestPolarSignature:
         deeper = ((10.0, 0.0), (6.0, 3.0), (8.0, 5.0))
 
         assert _polar_signature(tooth, (0.0, 0.0)) != _polar_signature(deeper, (0.0, 0.0))
+
+
+class TestOrbitBoundaries:
+    def test_count_divisibility_and_complete_orbit_boundaries(self):
+        edges = _closed_polygon(10)
+        assert _cyclic_edge_orbits(edges, centre=(0.0, 0.0), repeat_count=5, tol=TOL)
+        assert _cyclic_edge_orbits(edges[:5], centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
+        assert _cyclic_edge_orbits(edges[:-1], centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
+        # A divisor with cycles shorter than the declared count is not a complete orbit.
+        assert _cyclic_edge_orbits(edges, centre=(0.0, 0.0), repeat_count=10, tol=TOL) is None
+
+    def test_unique_match_and_bijection_are_required(self):
+        edges = list(_closed_polygon(10))
+        edges[1] = edges[0]
+        assert _cyclic_edge_orbits(tuple(edges), centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
+
+    def test_curve_kind_length_and_metric_equality_are_exact(self):
+        source = _segment((10.0, 0.0), (8.0, 2.0))
+        angle = 2 * pi / 5
+
+        def rotate(point):
+            return (
+                point[0] * cos(angle) - point[1] * sin(angle),
+                point[0] * sin(angle) + point[1] * cos(angle),
+            )
+
+        target = _CurveEvidence("LINE", 1.0 + TOL, tuple(rotate(p) for p in source.points))
+        assert _curves_match(source, target, angle=angle, centre=(0.0, 0.0), tol=TOL)
+        assert not _curves_match(
+            source,
+            _CurveEvidence("LINE", 1.0 + 1.01 * TOL, target.points),
+            angle=angle,
+            centre=(0.0, 0.0),
+            tol=TOL,
+        )
+        assert not _curves_match(
+            source,
+            _CurveEvidence("CIRCLE", 1.0, target.points),
+            angle=angle,
+            centre=(0.0, 0.0),
+            tol=TOL,
+        )
+
+
+def _boundary(*, axis="z", at=0.0, centre=(0.0, 0.0), repeats=5, edge=None):
+    curve = _segment((10.0, 0.0), (8.0, 2.0)) if edge is None else edge
+    return _BoundaryEvidence(
+        face=object(),
+        axis=axis,
+        at=at,
+        plane_axes=("x", "y"),
+        centre=centre,
+        repeat_count=repeats,
+        edges=(curve,),
+        orbits=((0,),),
+    )
+
+
+class TestBilateralCorrespondence:
+    def test_centre_tolerance_equality_and_each_mismatch(self):
+        lower = _boundary()
+        shifted = _CurveEvidence(
+            "LINE",
+            1.0,
+            tuple((x + TOL, y) for x, y in lower.edges[0].points),
+        )
+        assert _profiles_correspond(
+            lower,
+            _boundary(at=10, centre=(TOL, 0.0), edge=shifted),
+            tol=TOL,
+        )
+        assert not _profiles_correspond(lower, _boundary(axis="x"), tol=TOL)
+        assert not _profiles_correspond(lower, _boundary(centre=(1.01 * TOL, 0.0)), tol=TOL)
+        assert not _profiles_correspond(lower, _boundary(repeats=6), tol=TOL)
+        assert not _profiles_correspond(
+            lower,
+            _BoundaryEvidence(
+                object(),
+                "z",
+                10,
+                ("x", "y"),
+                (0.0, 0.0),
+                5,
+                (lower.edges[0], lower.edges[0]),
+                ((0,),),
+            ),
+            tol=TOL,
+        )
+        changed = _CurveEvidence("LINE", 2.0, lower.edges[0].points)
+        assert _sector_signature(lower) != _sector_signature(_boundary(edge=changed))
+        assert not _profiles_correspond(lower, _boundary(edge=changed), tol=TOL)
