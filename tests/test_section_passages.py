@@ -435,6 +435,27 @@ def test_equal_coincident_solids_keep_two_occurrence_identities() -> None:
     assert candidates[0] is not candidates[1]
 
 
+def test_material_classification_reads_each_graph_authorized_solid_not_the_compound(
+    monkeypatch,
+) -> None:
+    import b123d_recognisers._section_passages as section_module
+
+    first = Rot(17, 23, 31) * _square()
+    second = Pos(140, 0, 0) * first
+    part = Compound([first, second])
+    original = section_module._material_fraction
+    classified = []
+
+    def same_solid_only(solid, probe):
+        assert len(solid.solids()) == 1
+        classified.append(solid)
+        return original(solid, probe)
+
+    monkeypatch.setattr(section_module, "_material_fraction", same_solid_only)
+    assert len(recognise_section_passages(part)) == 2  # type: ignore[arg-type]
+    assert classified
+
+
 @pytest.mark.parametrize(
     "part",
     (

@@ -666,7 +666,7 @@ def test_plate_stock_overlap_is_exact_low_high_boundary_evidence(corpus):
     assert observed == expected
 
 
-def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
+def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_baseline(corpus):
     """Per-face attribution for the four families MFCAD++ can see, as a change detector.
 
     Not a correctness baseline. Two of these are *invariants* and the other two are
@@ -691,7 +691,10 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
 
     ring = claimed["SectionPassage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
-    assert sum(ring.values()) == 115
+    # F4b's complete constant-section authority retains 100 truthfully labelled walls. The old
+    # 115-face compatibility baseline included partial-span rings such as 10060's X occurrence;
+    # those remain visible only from the frozen writer-free legacy API and cannot own evidence.
+    assert ring == Counter({4: 42, 3: 40, 2: 18})
 
     bevels = claimed["Chamfer"]
     assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14

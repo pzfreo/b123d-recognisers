@@ -214,19 +214,19 @@ def _material_fraction(part: Part, probe: Solid) -> float:
 
 
 def _void_and_open(
-    part: Part,
+    solid: Part,
     frame: LocalFrame,
     interval: tuple[float, float],
     section: PlanarSection,
 ) -> bool:
     try:
-        if _material_fraction(part, _probe_prism(frame, interval, section)) > _MATERIAL_VOL_FRAC:
+        if _material_fraction(solid, _probe_prism(frame, interval, section)) > _MATERIAL_VOL_FRAC:
             return False
         scale = max(1.0, interval[1] - interval[0])
         radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
         thickness = max(_END_PROBE, scale * 1e-4, radius * 1e-4)
         return all(
-            _material_fraction(part, _end_slab(frame, end, sign, thickness, section))
+            _material_fraction(solid, _end_slab(frame, end, sign, thickness, section))
             <= _MATERIAL_VOL_FRAC
             for end, sign in ((interval[0], -1.0), (interval[1], 1.0))
         )
@@ -417,7 +417,7 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
                 )
             except ValueError:
                 continue
-            if not _void_and_open(part, frame, (low, high), section):
+            if not _void_and_open(graph.solid_shape(solid), frame, (low, high), section):
                 continue
             seen.add(identity)
             occurrence = SectionOccurrence(

@@ -26,7 +26,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Literal, Protocol, TypeVar
 
-from build123d import Edge
+from build123d import Edge, Solid
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.GCPnts import GCPnts_AbscissaPoint
@@ -257,6 +257,8 @@ class FaceGraphQuery(Protocol):
     def ownership(self, occurrence: SharedEdgeOccurrenceRef) -> EdgeOwnershipFact | None: ...
 
     def common_valid_solid(self, nodes: Iterable[FaceNode]) -> SolidRef | None: ...
+
+    def solid_shape(self, solid: SolidRef) -> Solid: ...
 
     def body_geometry(self, solid: SolidRef) -> BodyGeometryFact: ...
 
@@ -752,6 +754,26 @@ class FaceGraph:
         return matching_boundary_for_solid(
             solid_shape, fact.descriptor, tuple(matching_builds)
         )
+
+    def solid_shape(self, solid: SolidRef) -> Solid:
+        """Return the borrowed exact solid for an issuer-owned reference.
+
+        This is a private recognition query for same-solid kernel classification.  The reference,
+        not its ordinal or shape equality, remains the authority on every read.
+        """
+
+        self._build_solid_ownership()
+        issued = self._issued_solid_refs.get(solid)
+        if issued is None or issued != solid.ordinal:
+            raise ValueError("solid reference was not issued by this graph")
+        assert self._solid_refs is not None
+        assert self._solids is not None
+        assert self._closed_solids is not None
+        if not (0 <= issued < len(self._solid_refs)) or self._solid_refs[issued] is not solid:
+            raise ValueError("solid reference identity changed after issuance")
+        if issued not in self._closed_solids:
+            raise ValueError("solid reference no longer maps to a valid closed solid")
+        return self._solids[issued]
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:
