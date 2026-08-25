@@ -141,10 +141,15 @@ validation stopped because `20240125_003844_2492_result_rel.json` repeats an ins
 complete report, so no aggregate Channel counts or attribution outcomes are available or
 claimable. The temporary selection was deleted; no retry, alternate mode, replacement or fitting
 followed. The allocation is permanently consumed and inconclusive, not regression evidence.
-`F5-PLATES-H1` is independently `sealed_unrevealed` at bucket 29 for #228. The Plates allocation
-was likewise added without archive access, membership inspection, recognition, or outcome evidence.
-The Plates acknowledgement cannot authorize any consumed allocation; the ordinary `unselected`
-complement was then buckets 30..999.
+`F5-PLATES-H1` bucket 29 was selected exactly once at accepted pre-reveal PR #231 head
+`b1bdcf3`. The deterministic selection contained 39 model triples (117 files; selected-artifact
+SHA-256 `e5b57ca085664bba044379d8f2aca8c7f7807f201f22a8bbdab507d26735fa89`). Annotation
+validation stopped because `20240124_001736_5206_result_rel.json` repeats an instance id in
+`relation[0]`, before that model's STEP import or recognition. The overall audit produced no
+complete report, so no aggregate Plate counts or attribution outcomes are available or claimable.
+The temporary selection was deleted; no retry, alternate mode, replacement or fitting followed.
+The allocation is permanently consumed and inconclusive, not regression evidence. The ordinary
+`unselected` complement was then buckets 30..999.
 `F5-POLYGONAL-STOCK-H1` is independently `sealed_unrevealed` at bucket 30 for #232. It was
 designated without archive access, membership inspection, recognition, annotation reading, or
 outcome evidence. Its exact acknowledgement is non-transferable, and the ordinary `unselected`

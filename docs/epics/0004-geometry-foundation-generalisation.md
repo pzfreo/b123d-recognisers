@@ -855,10 +855,16 @@ permanently consumed and inconclusive, not regression evidence.
 
 The Plates semantic child #228 is independently protected by `F5-PLATES-H1`, bucket 29. Its neutral
 seal adds the exact `f5_plates_h1` selection and acknowledgement without archive access, membership
-inspection, recognition, or outcome evidence; the ordinary unselected complement moves to buckets
-30..999. The allocation remains `sealed_unrevealed` until #228 completes its two independent
-exact-head reviews and all mechanical gates. Its authority is non-transferable, and any later zero,
-abort, invalid, or completed reveal consumes this allocation without replacement, retry, or fitting.
+inspection, recognition, or outcome evidence; the ordinary unselected complement moved to buckets
+30..999. At accepted pre-reveal PR #231 head `b1bdcf3`, after two exact-head accepts and all
+mechanical, performance and CI gates, its one authorised selection contained 39 model triples (117
+files). Annotation validation stopped on repeated instance membership in
+`20240124_001736_5206_result_rel.json` `relation[0]`, before that model's STEP import or
+recognition. The overall audit produced no complete report, so no aggregate Plate counts or
+attribution outcomes are available or claimable. Selected-artifact SHA-256:
+`e5b57ca085664bba044379d8f2aca8c7f7807f201f22a8bbdab507d26735fa89`. The temporary
+selection was deleted and no retry, alternate mode, replacement or fitting followed. Bucket 29 is
+permanently consumed and inconclusive, not regression evidence.
 
 F5 Plate attribution/#228 preserves the whole-part public recogniser and its record/order semantics.
 Each supported aggregate Plate owns every original planar face in its low-negative and high-positive
@@ -867,8 +873,9 @@ Plate evidence. Whole-part grouping can mix provenance across compounds; that bo
 aggregate path raises `_PlateAttributionError` before issuance or family completion while the public
 geometry-only facade remains unchanged. Aggregate ambiguity is decided only after graph binding:
 identical low/high node-role pairs collapse independent of face wrappers and traversal order, and
-more than one distinct role pair for a public deduplication key refuses before any issue. Bucket 29
-stays sealed until exact-head semantic and mechanical gates and two independent reviews complete.
+more than one distinct role pair for a public deduplication key refuses before any issue. Exact
+Plate ownership therefore remains established by the frozen development matrix rather than the
+inconclusive consumed allocation.
 
 The Polygonal Stock semantic child #232 is independently protected by
 `F5-POLYGONAL-STOCK-H1`, bucket 30. Its neutral seal adds the exact
