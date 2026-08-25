@@ -4,6 +4,11 @@
 - **Date:** 2026-08-15
 - **Decider:** Paul Fremantle
 
+Step Level and Riser determinism is value-level, not occurrence identity. Their legacy whole-part
+clustering and `sorted(set(...))` projection can collapse sources across bodies. Deterministic value
+order must not be misrepresented as authority to choose one defining face; both remain record-only
+until an occurrence-preserving schema exists.
+
 ## Context
 
 Recognition functions historically differed in naming, signatures, return shapes, dependency

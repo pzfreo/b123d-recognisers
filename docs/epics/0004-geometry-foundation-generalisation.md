@@ -912,6 +912,15 @@ semantic child has two independent exact-head accepts and all mechanical gates. 
 zero, abort, invalid or completed reveal consumes only that allocation without replacement, retry
 or fitting.
 
+Step Levels and Risers have now reached reviewed structural exclusions rather than semantic
+promotions. Whole-part Step Level clustering can combine equal-Z source faces from different
+`SolidRef`s into one value. Riser `sorted(set(...))` likewise collapses distinct source faces,
+including equal records on different solids. Choosing one face is incomplete and traversal-based;
+unioning cross-solid faces violates the one-body evidence invariant. Both registry paths therefore
+remain writer-free, `IncompleteAttribution` and `NotCounted`, with their public values and aggregate
+behaviour unchanged. Occurrence-preserving/body-scoped records or an explicit multi-source ownership
+ADR are prerequisites to revisit them. Buckets 34 and 35 remain sealed and were not revealed.
+
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
 geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and
