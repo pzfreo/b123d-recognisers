@@ -50,7 +50,7 @@ from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prism
 from b123d_recognisers.profiled_bores import DoubleDBore, _discover_double_d_bores
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
-    recognise_repeating_radial_profiles,
+    _discover_repeating_radial_profiles,
 )
 from b123d_recognisers.slots import (
     Channel,
@@ -463,11 +463,12 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_repeating_radial_profiles",
         (),
         always,
-        _simple(lambda s: list(recognise_repeating_radial_profiles(s.context.part))),
+        _simple(
+            lambda s: list(_discover_repeating_radial_profiles(s.context.part, writer=s.writer))
+        ),
         NotCounted("correspondence evidence is not a distinct feature"),
-        IncompleteAttribution(
-            "correspondence records lack occurrence ownership",
-            "review structural exclusion or prove source-face mapping",
+        FullyAttributed(
+            "every returned repeating radial profile owns its exact opposed source faces"
         ),
     ),
     PhysicalDefinition(

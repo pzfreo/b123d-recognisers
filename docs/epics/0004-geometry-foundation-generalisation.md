@@ -921,6 +921,16 @@ remain writer-free, `IncompleteAttribution` and `NotCounted`, with their public 
 behaviour unchanged. Occurrence-preserving/body-scoped records or an explicit multi-source ownership
 ADR are prerequisites to revisit them. Buckets 34 and 35 remain sealed and were not revealed.
 
+F5 Repeating Radial Profile attribution/#239 uses one private writer-capable discovery core while
+preserving the public writer-free values, order and schema. Each retained occurrence carries its
+exact lower and upper extremal planar source faces through correspondence and sorting; the aggregate
+binds both to one valid solid and publishes the exact two defining nodes only after every occurrence
+has validated. Boundary curves, sampling, side regions and rejected alternatives remain consulted.
+The family becomes `FullyAttributed` but retains
+`NotCounted("correspondence evidence is not a distinct feature")`; it remains neutral correspondence
+evidence rather than a manufacturing classifier. Bucket 33 remains sealed until the independent
+exact-head reviews and all frozen mechanical gates complete.
+
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
 geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and

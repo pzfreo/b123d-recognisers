@@ -334,3 +334,10 @@ planar/cylindrical topology facts, `_recess_obround` groups exact cap patches, `
 owns occurrence-preserving merge/body projections, and `_recess_core` creates Slot/Pocket
 proposals. `_recess_features` may project their planar nodes into the pre-existing compatibility
 ledger, but no lower module imports `_claims`, candidates, inventory, dispositions or reconciliation.
+
+For Repeating Radial Profile attribution,
+`repeating_profiles._discover_repeating_radial_profiles` is the sole private writer-enabled core and
+`_registry` its sole production writer caller. The public facade delegates without a writer. The
+core carries each exact returned record with its original lower/upper extremal faces through current
+correspondence and sorting, binds both before publication, and reads no Candidate set, evidence
+index, inventory, disposition, reconciliation output or sibling recogniser.
