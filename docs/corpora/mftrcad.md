@@ -139,7 +139,11 @@ it supplies no outcome evidence. Authority remains exact and non-transferable be
 `F5-PLATES-H1` is independently `sealed_unrevealed` at bucket 29 for #228. The Plates allocation
 was likewise added without archive access, membership inspection, recognition, or outcome evidence.
 Neither allocation's acknowledgement authorizes the other, and the ordinary `unselected`
-complement is now buckets 30..999.
+complement was then buckets 30..999.
+`F5-POLYGONAL-STOCK-H1` is independently `sealed_unrevealed` at bucket 30 for #232. It was
+designated without archive access, membership inspection, recognition, annotation reading, or
+outcome evidence. Its exact acknowledgement is non-transferable, and the ordinary `unselected`
+complement is now buckets 31..999.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become
@@ -163,8 +167,9 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 30–999 remain unselected; buckets 20 through 29 are the named Flat, Fillet,
-Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, and Plate allocations. This keeps
+may be fitted. Buckets 31–999 remain unselected; buckets 20 through 30 are the named Flat, Fillet,
+Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, and Polygonal Stock
+allocations. This keeps
 each draw near one percent without depending on class, topology, recognition result, or archive
 traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
