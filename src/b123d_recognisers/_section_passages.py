@@ -9,30 +9,77 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import cast
 
+from build123d import Face, Solid, Vector, Wire
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_OUT
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef, connected_components
 from b123d_recognisers._rings import _turn, _within
-from b123d_recognisers._sections import LocalFrame, PlanarSection, SectionEnds, SectionVertex
+from b123d_recognisers._sections import (
+    BodyRef,
+    BodyRefIssuer,
+    LocalFrame,
+    PlanarSection,
+    SectionEnds,
+    SectionOccurrence,
+    SectionVertex,
+    validate_occurrence,
+)
 from b123d_recognisers._typing import Part
 
 _DIRECTION_TOL = 2e-8
 _INTERVAL_TOL = 1e-6
 _VOID_TOL = 1e-6
 _END_PROBE = 2e-5
+_COORD_FLOOR = 1e-6
+_MATERIAL_VOL_FRAC = 1e-9
 
 Vector3 = tuple[float, float, float]
 
 
 @dataclass(frozen=True, slots=True)
 class SectionRingProposal:
-    frame: LocalFrame
-    run_interval: tuple[float, float]
-    section: PlanarSection
-    ends: SectionEnds
+    occurrence: SectionOccurrence
     nodes: tuple[FaceNode, ...]
+    solid: SolidRef
+    body_adapter: _BodyAdapter
+
+    @property
+    def frame(self) -> LocalFrame:
+        return self.occurrence.frame
+
+    @property
+    def run_interval(self) -> tuple[float, float]:
+        return self.occurrence.run_interval
+
+    @property
+    def section(self) -> PlanarSection:
+        return self.occurrence.section
+
+    @property
+    def ends(self) -> SectionEnds:
+        return self.occurrence.ends
+
+
+class _BodyAdapter:
+    """One-to-one bridge between graph and neutral section body authorities."""
+
+    def __init__(self) -> None:
+        self._issuer = BodyRefIssuer()
+        self._pairs: dict[SolidRef, BodyRef] = {}
+
+    def body(self, solid: SolidRef) -> BodyRef:
+        current = self._pairs.get(solid)
+        if current is None:
+            current = self._issuer.issue()
+            self._pairs[solid] = current
+        return current
+
+    def validate(self, solid: SolidRef, occurrence: SectionOccurrence) -> None:
+        if self._pairs.get(solid) is not occurrence.body:
+            raise ValueError("section occurrence body does not match its graph solid")
+        validate_occurrence(occurrence, body_refs=self._issuer)
 
 
 def _dot(left: Vector3, right: Vector3) -> float:
@@ -109,6 +156,36 @@ def _outside(part: Part, point: Vector3) -> bool:
     return bool(classifier.State() == TopAbs_OUT)
 
 
+def _probe_prism(
+    frame: LocalFrame,
+    interval: tuple[float, float],
+    section: PlanarSection,
+) -> Solid:
+    low, high = interval
+    if high - low <= 2 * _COORD_FLOOR:
+        raise ValueError("section prism is too short to classify")
+    points = tuple(
+        Vector(*_world(frame, low + _COORD_FLOOR, vertex.point))
+        for vertex in section.boundary
+    )
+    wire = Wire.make_polygon((*points, points[0]))
+    vector = Vector(
+        *(component * (high - low - 2 * _COORD_FLOOR) for component in frame.run)
+    )
+    return Solid.extrude(Face(wire), vector)
+
+
+def _material_fraction(part: Part, probe: Solid) -> float:
+    intersection = part.intersect(probe)
+    if intersection is None:
+        volume = 0.0
+    elif hasattr(intersection, "volume"):
+        volume = float(intersection.volume)
+    else:
+        volume = sum(float(shape.volume) for shape in intersection)
+    return volume / float(probe.volume)
+
+
 def _void_and_open(
     part: Part,
     frame: LocalFrame,
@@ -119,8 +196,10 @@ def _void_and_open(
     probes = _triangle_probes(polygon)
     if not probes:
         return False
-    middle = 0.5 * (interval[0] + interval[1])
-    if not all(_outside(part, _world(frame, middle, point)) for point in probes):
+    try:
+        if _material_fraction(part, _probe_prism(frame, interval, section)) > _MATERIAL_VOL_FRAC:
+            return False
+    except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return False
     scale = max(1.0, interval[1] - interval[0])
     radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
@@ -192,6 +271,7 @@ def _ordered_cycle(
 def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingProposal, ...]:
     """Return every supported line-walled, constant-section, two-open-end void."""
 
+    bodies = _BodyAdapter()
     for face in part.faces():
         graph.require_node(face)
     planar = tuple(node for node in graph.nodes if graph.is_planar(node))
@@ -252,7 +332,8 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
             if len(component) < 3 or any(len(adjacency[node] & members) != 2 for node in component):
                 continue
             identity = tuple(sorted(node.index for node in component))
-            if identity in seen or graph.common_valid_solid(component) is None:
+            solid = graph.common_valid_solid(component)
+            if identity in seen or solid is None:
                 continue
             order = _ordered_cycle(graph, component, adjacency)
             lines = tuple(
@@ -293,8 +374,21 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
             if not _void_and_open(part, frame, (low, high), section):
                 continue
             seen.add(identity)
+            occurrence = SectionOccurrence(
+                bodies.body(solid),
+                frame,
+                (low, high),
+                section,
+                SectionEnds(False, False),
+            )
+            bodies.validate(solid, occurrence)
             proposals.append(
-                SectionRingProposal(frame, (low, high), section, SectionEnds(False, False), order)
+                SectionRingProposal(
+                    occurrence,
+                    order,
+                    solid,
+                    bodies,
+                )
             )
     proposals.sort(key=lambda item: (item.frame.run, item.run_interval, item.frame.origin))
     return tuple(proposals)

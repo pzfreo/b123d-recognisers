@@ -4,22 +4,23 @@ This inventory states what the current recognisers prove, rather than what their
 records might someday be able to represent. It is the reviewed input to the
 machine-readable capability contract specified by
 [ADR 0005](adr/0005-versioned-cross-repository-capability-contract.md). The installed package
-exposes the implemented format-1 document without requiring access to package internals:
+exposes the implemented format-2 document without requiring access to package internals:
 
 ```python
 from b123d_recognisers import capability_manifest
 
-manifest = capability_manifest(format_version=1)
+manifest = capability_manifest(format_version=2)
 ```
 
 Downstream CI can export the identical deterministic JSON with
-`b123d-recognisers-capabilities --format-version 1`. Unknown format versions fail closed. This
+`b123d-recognisers-capabilities --format-version 2`. Unknown format versions fail closed. This
 page remains the human explanation of the machine-readable boundary.
 
 ## Defining-face attribution status
 
-Attribution is a private Candidate/evidence contract, not a new capability-manifest field. Format 1
-therefore remains unchanged. `Fully attributed` means every aggregate record occurrence on every
+Attribution remains a private Candidate/evidence contract. Format 2 adds API roles and the counted
+aggregate output so compatibility projections cannot masquerade as a second physical authority;
+it does not expose face claims. `Fully attributed` means every aggregate record occurrence on every
 current output path has non-empty original-face defining evidence. `Incomplete` may include useful
 measured occurrences while at least one path remains empty; it does not mean the recogniser returns
 nothing. Every non-empty aggregate defining set, complete or partial, must belong to one graph-proved

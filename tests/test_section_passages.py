@@ -8,7 +8,7 @@ import math
 from dataclasses import dataclass
 
 import pytest
-from build123d import Box, Face, Rot, export_step, import_step
+from build123d import Box, Cone, Face, Pos, Rot, Shell, export_step, import_step
 
 from b123d_recognisers import (
     PassageCompatibilityError,
@@ -197,6 +197,31 @@ def test_whole_occurrence_serialization_displacement_refuses_before_evidence() -
 
 
 @pytest.mark.parametrize(
+    "part",
+    [
+        Box(60, 40, 20) - Pos(0, 0, 5) * Box(10, 10, 20),
+        (Box(60, 40, 20) - Box(10, 10, 60)) + Box(10, 10, 2),
+        (Box(60, 40, 20) - Box(10, 10, 60)) + Pos(0, 4, 0) * Box(10, 0.1, 5),
+        Box(60, 40, 20) - Cone(5, 7, 60),
+    ],
+    ids=("one-cap", "membrane", "partial-rib", "taper"),
+)
+def test_caps_obstructions_and_taper_refuse_without_evidence(part) -> None:
+    part = Rot(17, 23, 31) * part
+    ledger = ClaimLedger(FaceGraph(part))
+    assert recognise_section_passages(part, ledger=ledger) == []
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
+def test_open_shell_cannot_supply_body_authority() -> None:
+    solid = Rot(17, 23, 31) * _square()
+    shell = Shell(solid.faces())
+    ledger = ClaimLedger(FaceGraph(shell))
+    assert recognise_section_passages(shell, ledger=ledger) == []  # type: ignore[arg-type]
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
+@pytest.mark.parametrize(
     "record",
     [
         lambda: PassageFrame(
@@ -204,6 +229,18 @@ def test_whole_occurrence_serialization_displacement_refuses_before_evidence() -
             (0.0, 0.0, -1.0),
             (1.0, 0.0, 0.0),
             (0.0, -1.0, 0.0),
+        ),
+        lambda: PassageFrame(
+            (0.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (0.707107, 0.707107, 0.0),
+            (-0.707107, 0.707107, 0.0),
+        ),
+        lambda: PassageFrame(
+            (0.0, 0.0, 0.0),
+            (0.1234567, 0.0, 0.992349952),
+            (0.0, 1.0, 0.0),
+            (-0.992349952, 0.0, 0.1234567),
         ),
         lambda: PassageEnds(0, False),
         lambda: SectionPassage(

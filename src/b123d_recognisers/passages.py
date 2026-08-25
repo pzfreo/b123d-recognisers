@@ -60,6 +60,7 @@ from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
     FaceNode,
+    SolidRef,
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
@@ -129,6 +130,18 @@ def _cross(
     )
 
 
+def _unit(value: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = math.sqrt(_dot(value, value))
+    if not math.isfinite(length) or length == 0.0:
+        raise ValueError("frame direction must be finite and nonzero")
+    return tuple(component / length for component in value)  # type: ignore[return-value]
+
+
+def _serialized(values: tuple[float, ...], digits: int, *, name: str) -> None:
+    if any(value != round(value, digits) for value in values):
+        raise ValueError(f"{name} must use at most {digits} decimal places")
+
+
 @dataclass(frozen=True, order=True, slots=True)
 class PassageFrame(Record):
     """Canonical serialized placement frame for a section passage."""
@@ -143,6 +156,9 @@ class PassageFrame(Record):
         run = cast(tuple[float, float, float], _numbers(self.run, 3, name="run"))
         u = cast(tuple[float, float, float], _numbers(self.u, 3, name="u"))
         v = cast(tuple[float, float, float], _numbers(self.v, 3, name="v"))
+        _serialized(origin, 3, name="origin")
+        for name, direction in (("run", run), ("u", u), ("v", v)):
+            _serialized(direction, 6, name=name)
         for direction in (run, u, v):
             if abs(_dot(direction, direction) - 1.0) > 1e-6:
                 raise ValueError("frame directions must be unit length")
@@ -155,6 +171,21 @@ class PassageFrame(Record):
         dominant = next(index for index in (2, 1, 0) if rounded[index] == peak)
         if run[dominant] < -3e-6:
             raise ValueError("frame run direction is not in the canonical gauge")
+        normalized_run = _unit(run)
+        seeds = ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
+        seed = seeds[dominant]
+        expected_u = _unit(
+            tuple(
+                seed[index] - _dot(seed, normalized_run) * normalized_run[index]
+                for index in range(3)
+            )  # type: ignore[arg-type]
+        )
+        expected_v = _cross(normalized_run, expected_u)
+        if any(
+            math.dist(actual, expected) > 3e-6
+            for actual, expected in ((u, expected_u), (v, expected_v))
+        ):
+            raise ValueError("frame in-plane basis is not canonical")
         if abs(_dot(origin, run)) > 8e-4:
             raise ValueError("frame origin must be perpendicular to its run")
         object.__setattr__(self, "origin", origin)
@@ -170,11 +201,13 @@ class PassageSectionVertex(Record):
 
     def __post_init__(self) -> None:
         point = _numbers(self.point, 2, name="point")
+        _serialized(point, 3, name="point")
         if isinstance(self.bulge, bool) or not isinstance(self.bulge, int | float):
             raise ValueError("bulge must be a finite number")
         bulge = float(self.bulge)
         if not math.isfinite(bulge):
             raise ValueError("bulge must be a finite number")
+        _serialized((bulge,), 12, name="bulge")
         object.__setattr__(self, "point", point)
         object.__setattr__(self, "bulge", 0.0 if bulge == 0.0 else bulge)
 
@@ -223,6 +256,7 @@ class SectionPassage(Record):
         if not isinstance(self.frame, PassageFrame):
             raise ValueError("frame must be a PassageFrame")
         interval = _numbers(self.run_interval, 2, name="run_interval")
+        _serialized(interval, 3, name="run_interval")
         if interval[1] - interval[0] <= 1e-9:
             raise ValueError("run_interval must be increasing")
         if not isinstance(self.section, PassageSection):
@@ -285,11 +319,11 @@ def recognise_section_passages(
 def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
-    found: list[tuple[SectionPassage, tuple[FaceNode, ...]]] = []
+    found: list[tuple[SectionPassage, tuple[FaceNode, ...], SolidRef]] = []
     for proposal in section_ring_proposals(part, graph):
         record = SectionPassage(
             PassageFrame(
-                tuple(round(value, 6) for value in proposal.frame.origin),  # type: ignore[arg-type]
+                tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
                 tuple(round(value, 6) for value in proposal.frame.run),  # type: ignore[arg-type]
                 tuple(round(value, 6) for value in proposal.frame.u),  # type: ignore[arg-type]
                 tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
@@ -308,12 +342,23 @@ def _discover_section_passages(
         )
         if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
             raise ValueError("section passage serialization exceeds the displacement bound")
-        found.append((record, proposal.nodes))
+        if graph.common_valid_solid(proposal.nodes) is not proposal.solid:
+            raise ValueError("section passage body authority changed before issuance")
+        proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
+        found.append((record, proposal.nodes, proposal.solid))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
+    for at, (record, nodes, solid) in enumerate(found):
+        for other_record, other_nodes, other_solid in found[at + 1 :]:
+            if record == other_record and solid is other_solid:
+                same_nodes = len(nodes) == len(other_nodes) and all(
+                    any(left is right for right in other_nodes) for left in nodes
+                )
+                if not same_nodes:
+                    raise ValueError("equal section passage proposals compete on one solid")
     if sink is not None:
-        for record, nodes in found:
+        for record, nodes, _ in found:
             sink.propose(FamilyId.PASSAGES, record, defining=nodes)
-    return [record for record, _ in found]
+    return [record for record, _, _ in found]
 
 
 def _section_projection_displacement(

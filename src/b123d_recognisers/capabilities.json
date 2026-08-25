@@ -984,9 +984,8 @@
           "schema_version": 1
         },
         {
-          "aggregate_membership": [
-            "RecognitionResult.section_passages"
-          ],
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage; retained to preserve explicit end topology.",
           "fields": {
             "high_capped": {
               "required": true,
@@ -1005,9 +1004,8 @@
           "schema_version": 1
         },
         {
-          "aggregate_membership": [
-            "RecognitionResult.section_passages"
-          ],
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage.",
           "fields": {
             "origin": {
               "required": true,
@@ -1017,17 +1015,17 @@
             "run": {
               "required": true,
               "type": "tuple[float,3]",
-              "units": "mm"
+              "units": "unit-vector"
             },
             "u": {
               "required": true,
               "type": "tuple[float,3]",
-              "units": "mm"
+              "units": "unit-vector"
             },
             "v": {
               "required": true,
               "type": "tuple[float,3]",
-              "units": "mm"
+              "units": "unit-vector"
             }
           },
           "name": "PassageFrame",
@@ -1036,9 +1034,8 @@
           "schema_version": 1
         },
         {
-          "aggregate_membership": [
-            "RecognitionResult.section_passages"
-          ],
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage.",
           "fields": {
             "boundary": {
               "required": true,
@@ -1052,14 +1049,13 @@
           "schema_version": 1
         },
         {
-          "aggregate_membership": [
-            "RecognitionResult.section_passages"
-          ],
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in PassageSection.",
           "fields": {
             "bulge": {
               "required": true,
               "type": "float",
-              "units": "mm"
+              "units": "none"
             },
             "point": {
               "required": true,
@@ -1154,12 +1150,12 @@
             "u": {
               "required": true,
               "type": "float",
-              "units": "mm"
+              "units": "unit-vector"
             },
             "v": {
               "required": true,
               "type": "float",
-              "units": "mm"
+              "units": "unit-vector"
             }
           },
           "name": "Plate",

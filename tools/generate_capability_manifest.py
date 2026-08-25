@@ -50,10 +50,10 @@ FAMILIES = {
         ],
         "records": [
             ("Passage", "projection", ["RecognitionResult.passages"]),
-            ("PassageEnds", "nested", ["RecognitionResult.section_passages"]),
-            ("PassageFrame", "nested", ["RecognitionResult.section_passages"]),
-            ("PassageSection", "nested", ["RecognitionResult.section_passages"]),
-            ("PassageSectionVertex", "nested", ["RecognitionResult.section_passages"]),
+            ("PassageEnds", "nested", []),
+            ("PassageFrame", "nested", []),
+            ("PassageSection", "nested", []),
+            ("PassageSectionVertex", "nested", []),
             ("SectionPassage", "output", ["RecognitionResult.section_passages"]),
         ],
         "census": "passage",
@@ -245,6 +245,10 @@ NO_MEMBERSHIP_RATIONALE = {
     ),
     "StepShoulder": "Pure consumer projection from RiserEvidence plus a caller-supplied level set.",
     "TurnedProfile": "Consumer aggregate built on demand from RecognitionResult.turned_steps.",
+    "PassageEnds": "Nested only in SectionPassage; retained to preserve explicit end topology.",
+    "PassageFrame": "Nested only in SectionPassage.",
+    "PassageSection": "Nested only in SectionPassage.",
+    "PassageSectionVertex": "Nested only in PassageSection.",
 }
 
 
@@ -281,11 +285,19 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
     rendered = _type_name(annotation)
     if name in {"angle", "included_angle"}:
         return "deg"
-    if name in {"axis_direction", "direction", "flat_direction", "flat_directions"}:
+    if name in {
+        "axis_direction",
+        "direction",
+        "flat_direction",
+        "flat_directions",
+        "run",
+        "u",
+        "v",
+    }:
         return "unit-vector"
     if name == "axis" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"
-    if rendered in {"bool", "int", "str"} or rendered.startswith("record:"):
+    if name == "bulge" or rendered in {"bool", "int", "str"} or rendered.startswith("record:"):
         return "none"
     if rendered.startswith("list[record:") or name in {
         "body_key",
