@@ -145,7 +145,9 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(registry_module, "recognise_grooves", cyl_consumer("grooves", []))
     monkeypatch.setattr(registry_module, "_discover_flats", cyl_consumer("flats", []))
     monkeypatch.setattr(registry_module, "_discover_pockets", counted("pockets", pockets))
-    monkeypatch.setattr(registry_module, "recognise_passages", counted("passages", passages))
+    monkeypatch.setattr(
+        registry_module, "recognise_section_passages", counted("passages", passages)
+    )
     monkeypatch.setattr(
         registry_module, "recognise_pocket_patterns", derived("pocket_patterns", pockets, [])
     )
@@ -287,8 +289,15 @@ def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> No
 
     assert len(result_module.PHYSICAL_FAMILIES) == len(set(result_module.PHYSICAL_FAMILIES))
     assert set(result_module.PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
-    nonphysical = {"cylinders", "rotational", "hole_patterns", "slot_patterns", "pocket_patterns"}
-    assert {family.value for family in result_module.PHYSICAL_FAMILIES} == (
+    nonphysical = {
+        "cylinders",
+        "rotational",
+        "hole_patterns",
+        "slot_patterns",
+        "pocket_patterns",
+        "passages",
+    }
+    assert {definition.result_field for definition in result_module.PHYSICAL_DEFINITIONS} == (
         set(RecognitionResult.__dataclass_fields__) - nonphysical
     )
 

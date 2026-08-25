@@ -102,6 +102,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         "planar wall normals participate in material-side geometry",
     ),
     "_rings": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar ring membership gate"),
+    "_section_passages": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b neutral line-wall ring and planar membership grammar",
+    ),
     "chamfers": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cone and neighbouring-plane directions participate in the family predicate",
@@ -195,6 +199,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "_body_geometry:_face_geometry:geom_type:3": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F6 unsupported-surface refusal label",
+    ),
+    "_section_passages:_canonical_run:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b bounded straight junction-edge grammar",
+    ),
+    "_section_passages:section_ring_proposals:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b original planar wall-cycle membership",
     ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (

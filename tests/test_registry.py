@@ -38,7 +38,7 @@ from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionRes
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
     assert len(PHYSICAL_DEFINITIONS) == 22
-    assert len(DERIVED_DEFINITIONS) == 3
+    assert len(DERIVED_DEFINITIONS) == 4
     assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
     assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
     assert tuple(item.identifier for item in DERIVED_DEFINITIONS) == tuple(DerivedId)
@@ -168,6 +168,7 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
         DerivedId.HOLE_PATTERNS: (FamilyId.HOLES,),
         DerivedId.SLOT_PATTERNS: (FamilyId.SLOTS,),
         DerivedId.POCKET_PATTERNS: (FamilyId.POCKETS,),
+        DerivedId.PASSAGES_COMPAT: (FamilyId.PASSAGES,),
     }
     ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
     ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())

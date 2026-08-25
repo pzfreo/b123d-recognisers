@@ -14,7 +14,7 @@ from typing import Any, TypeAlias, cast
 from b123d_recognisers import __version__
 
 CAPABILITY_FORMAT = "b123d-recognisers-capabilities"
-CAPABILITY_FORMAT_VERSION = 1
+CAPABILITY_FORMAT_VERSION = 2
 JSONValue: TypeAlias = None | bool | int | float | str | list["JSONValue"] | dict[str, "JSONValue"]
 CapabilityManifest: TypeAlias = dict[str, JSONValue]
 _FAMILY_ID = re.compile(r"^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$")
@@ -216,14 +216,16 @@ def _validate_record(record: object, family_id: str, index: int) -> str:
         if not isinstance(field["required"], bool):
             raise CapabilityManifestError(f"{field_context}.required must be boolean")
         if not _valid_type(field["type"]):
-            raise CapabilityManifestError(f"{field_context}.type is outside format 1 grammar")
+            raise CapabilityManifestError(
+                f"{field_context}.type is outside capability type grammar"
+            )
         if field["units"] not in _UNITS:
             raise CapabilityManifestError(f"{field_context} has unknown units {field['units']!r}")
     return name
 
 
 def validate_capability_manifest(manifest: object) -> None:
-    """Validate format-1 document structure without trusting its capability claims.
+    """Validate format-2 document structure without trusting its capability claims.
 
     Package CI separately derives runtime and archive inventories; this function is the
     supported fail-closed schema check useful to callers before they join consumer declarations.
@@ -261,6 +263,7 @@ def validate_capability_manifest(manifest: object) -> None:
     entry_points = []
     family_allowed = {
         "census_name",
+        "census_output",
         "census_rationale",
         "documentation",
         "golden_evidence",
@@ -309,12 +312,18 @@ def validate_capability_manifest(manifest: object) -> None:
         for recogniser in recognisers:
             if not isinstance(recogniser, dict):
                 raise CapabilityManifestError(f"family {family_id!r} recogniser must be an object")
-            _keys(recogniser, {"entry_point", "kind"}, f"family {family_id!r} recogniser")
-            if set(recogniser) != {"entry_point", "kind"} or recogniser["kind"] not in {
+            _keys(
+                recogniser,
+                {"entry_point", "kind", "role"},
+                f"family {family_id!r} recogniser",
+            )
+            if set(recogniser) != {"entry_point", "kind", "role"} or recogniser["kind"] not in {
                 "derived",
                 "part",
             }:
                 raise CapabilityManifestError(f"family {family_id!r} recogniser is invalid")
+            if recogniser["role"] not in {"compatibility", "derived", "physical"}:
+                raise CapabilityManifestError(f"family {family_id!r} recogniser role is invalid")
             entry = recogniser["entry_point"]
             if not isinstance(entry, str) or not entry.startswith("b123d_recognisers.recognise_"):
                 raise CapabilityManifestError(f"family {family_id!r} entry point is not public")
@@ -334,8 +343,14 @@ def validate_capability_manifest(manifest: object) -> None:
                 or not family["census_rationale"]
             ):
                 raise CapabilityManifestError(f"family {family_id!r} needs census_rationale")
+            if family["census_output"] is not None:
+                raise CapabilityManifestError(f"family {family_id!r} has census output without key")
         elif not isinstance(family["census_name"], str) or not family["census_name"]:
             raise CapabilityManifestError(f"family {family_id!r}.census_name is invalid")
+        elif not isinstance(family["census_output"], str) or not family[
+            "census_output"
+        ].startswith("RecognitionResult."):
+            raise CapabilityManifestError(f"family {family_id!r}.census_output is invalid")
         for key in ("documentation", "golden_evidence", "test_evidence"):
             _paths(family[key], f"family {family_id!r}.{key}", allow_empty=status != "supported")
     if ids != sorted(ids) or len(ids) != len(set(ids)):

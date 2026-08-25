@@ -93,7 +93,7 @@ def test_manifest_query_is_deterministic_isolated_and_versioned() -> None:
     first["families"].clear()
     assert capability_manifest()["families"], "callers must not mutate the cached contract"
     with pytest.raises(CapabilityManifestError, match="unsupported requested"):
-        capability_manifest(format_version=2)
+        capability_manifest(format_version=1)
 
 
 def test_manifest_inventories_are_derived_independently_from_public_runtime() -> None:
@@ -162,7 +162,18 @@ def test_aggregate_membership_paths_resolve_to_the_declared_record() -> None:
                             next_candidates.update(_record_types(annotation))
                     candidates = next_candidates
                     assert candidates, path
-                assert record["name"] in {candidate.__name__ for candidate in candidates}, path
+                reachable = set(candidates)
+                pending = list(candidates)
+                while pending:
+                    candidate = pending.pop()
+                    if not inspect.isclass(candidate) or not dataclasses.is_dataclass(candidate):
+                        continue
+                    for annotation in typing.get_type_hints(candidate).values():
+                        for nested in _record_types(annotation):
+                            if nested not in reachable:
+                                reachable.add(nested)
+                                pending.append(nested)
+                assert record["name"] in {candidate.__name__ for candidate in reachable}, path
 
 
 def test_manifest_census_names_match_the_runtime_census_exactly() -> None:
@@ -215,7 +226,7 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
         (lambda value: value.clear(), "missing required top-level"),
         (lambda value: value.update({"format": "something-else"}), "document kind"),
         (lambda value: value.update({"future_policy": {}}), "unknown fields"),
-        (lambda value: value.update({"format_version": 2}), "unsupported capability format"),
+        (lambda value: value.update({"format_version": 3}), "unsupported capability format"),
         (lambda value: value.update({"package": None}), "package must be"),
         (lambda value: value["package"].update({"name": "other"}), "package identity"),
         (lambda value: value["package"].update({"version": ""}), "non-empty string"),
@@ -308,25 +319,25 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             lambda value: value["families"][0]["records"][0]["fields"]["axis"].update(
                 {"type": "whatever"}
             ),
-            "outside format 1 grammar",
+            "outside capability type grammar",
         ),
         (
             lambda value: value["families"][0]["records"][0]["fields"]["axis"].update(
                 {"type": "float]"}
             ),
-            "outside format 1 grammar",
+            "outside capability type grammar",
         ),
         (
             lambda value: value["families"][0]["records"][0]["fields"]["axis"].update(
                 {"type": "list[float"}
             ),
-            "outside format 1 grammar",
+            "outside capability type grammar",
         ),
         (
             lambda value: value["families"][0]["records"][0]["fields"]["axis"].update(
                 {"type": "list[float ]"}
             ),
-            "outside format 1 grammar",
+            "outside capability type grammar",
         ),
         (
             lambda value: value["families"][0]["records"][0]["fields"]["axis"].update(
@@ -371,7 +382,7 @@ def test_alias_transition_validation_accepts_a_live_alias_and_rejects_stale_remo
         "kind": "family",
         "old": "cylindrical-bosses",
         "rationale": "Retained for one compatibility cycle after the stable ID was clarified.",
-        "remove_in": "0.4.0",
+        "remove_in": "0.5.0",
         "replacement": "bosses",
     }
     manifest["aliases"] = [alias]
@@ -387,7 +398,7 @@ def test_alias_validation_rejects_unknown_targets_cycles_reuse_and_bad_order() -
         "deprecated_in": "0.1.0",
         "kind": "family",
         "rationale": "Compatibility alias.",
-        "remove_in": "0.4.0",
+        "remove_in": "0.5.0",
     }
 
     manifest = capability_manifest()
@@ -455,6 +466,7 @@ def test_reserved_family_shape_and_global_uniqueness_rules_fail_closed() -> None
     family["records"] = []
     family["golden_evidence"] = []
     family["census_name"] = None
+    family["census_output"] = None
     family["census_rationale"] = "No runtime family exists to count."
     validate_capability_manifest(manifest)
 
@@ -493,5 +505,5 @@ def test_runtime_version_mismatch_and_cli_are_fail_closed(monkeypatch, capsys) -
         capability_manifest()
 
     monkeypatch.setattr(capabilities_module, "__version__", recognition.__version__)
-    assert capabilities_module.main(["--format-version", "1"]) == 0
+    assert capabilities_module.main(["--format-version", "2"]) == 0
     assert capsys.readouterr().out == MANIFEST.read_text(encoding="utf-8")
