@@ -20,6 +20,7 @@ from mftrcad_audit import (  # noqa: E402
     DATASET_REF,
     DATASET_VERSION,
     DEVELOPMENT_BUCKETS,
+    F4B_SECTION_PASSAGES_H1,
     F5_BOSSES_H1,
     F5_CHANNELS_H1,
     F5_COUNTERSINKS_H1,
@@ -198,12 +199,16 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_RISERS_H1]),
             "status": "sealed_unrevealed",
         },
+        F4B_SECTION_PASSAGES_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F4B_SECTION_PASSAGES_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 36
-    assert partition.isdisjoint(set(range(36, 1000)))
-    assert partition | set(range(36, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[36, 999]]
+    assert len(partition) == 37
+    assert partition.isdisjoint(set(range(37, 1000)))
+    assert partition | set(range(37, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[37, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,

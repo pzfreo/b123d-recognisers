@@ -190,6 +190,16 @@ annotation, geometry, recognition result or outcome was inspected. Each token re
 exact acknowledgement and cannot authorize either sibling or any earlier allocation. An
 authorized zero, abort, invalid or completed reveal consumes only that allocation without retry,
 replacement or fitting. The ordinary `unselected` complement is now buckets 36..999.
+
+`F4B-SECTION-PASSAGES-H1` is independently designated at bucket 36 for #184 after its public
+schema was accepted by Draftwright, two independent exact-head implementation reviews accepted,
+and all pre-allocation gates passed. This neutral designation changes only allocation policy,
+tests and documentation: no archive membership, annotation, geometry, recognition result or
+outcome was accessed. Its exact token is `f4b_section_passages_h1`; no earlier or sibling
+acknowledgement authorizes it. Bucket 36 starts `sealed_unrevealed`, buckets 34 and 35 remain
+independently sealed and unauthorized, and the ordinary `unselected` complement becomes buckets
+37..999. Any later authorized attempt permanently consumes only bucket 36 even if empty, invalid
+or aborted, with no retry, alternate selection, replacement or fitting.
 At accepted PR #245 head `6ccbedc`, after two independent exact-head accepts and every local,
 package, performance, CI and coverage gate, the one authorized
 `f5_repeating_radial_profiles_h1` selection with acknowledgement
@@ -221,9 +231,9 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 36–999 remain unselected; buckets 20 through 35 are the named Flat, Fillet,
+may be fitted. Buckets 37–999 remain unselected; buckets 20 through 36 are the named Flat, Fillet,
 Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, Polygonal Stock, Slot,
-Pocket, Repeating Radial Profile, Step Level and Riser allocations. This keeps
+Pocket, Repeating Radial Profile, Step Level, Riser and F4b Section Passage allocations. This keeps
 each draw near one percent without depending on class, topology, recognition result, or archive
 traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
