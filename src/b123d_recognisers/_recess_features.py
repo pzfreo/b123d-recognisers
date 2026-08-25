@@ -241,8 +241,7 @@ def _discover_pockets(
     if writer is None:
         return records
 
-    pending = []
-    used: set = set()
+    staged = []
     try:
         for proposal in proposals:
             nodes = frozenset(
@@ -250,20 +249,31 @@ def _discover_pockets(
             )
             if not nodes:
                 raise _PocketAttributionError("Pocket occurrence has no defining source faces")
-            if used & nodes:
-                raise _PocketAttributionError("Pocket source face is reused by another occurrence")
             for node in nodes:
                 writer.graph.face(node)
-            if writer.graph.common_valid_solid(nodes) is None:
+            solid = writer.graph.common_valid_solid(nodes)
+            if solid is None:
                 raise _PocketAttributionError("Pocket source faces do not prove one valid solid")
-            used.update(nodes)
-            pending.append((proposal.record, nodes))
+            staged.append((proposal.record, nodes, solid))
     except _PocketAttributionError:
         raise
     except (IndexError, KeyError, ValueError) as exc:
         if not _wrap_errors:
             raise
         raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc
+    pending = []
+    seen: dict[tuple[Pocket, object], frozenset] = {}
+    for record, nodes, solid in staged:
+        key = (record, solid)
+        prior = seen.get(key)
+        if prior is not None:
+            if prior != nodes:
+                raise _PocketAttributionError(
+                    "equal Pocket value has competing source assignments"
+                )
+            continue
+        seen[key] = nodes
+        pending.append((record, nodes))
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.POCKETS)
     return records

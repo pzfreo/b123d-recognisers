@@ -1011,6 +1011,9 @@ footprint floor; elongated and recovered obrounds define every selected endpoint
 to any retained walls. Discovery validates every occurrence, identity and SolidRef before the first
 issuance. Public records/order, Pocket reconciliation and derived patterns remain unchanged, and
 the independently authorized bucket 32 remains sealed pending all review and delivery gates.
+Graph-bound source sharing is valid only between unequal records whose complete role sets resolve
+to the same SolidRef. Equal-record identical sets collapse; competing assignments, cross-solid or
+stale provenance still refuse atomically. Sources are never subtracted or merged to force uniqueness.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same

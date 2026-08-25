@@ -260,3 +260,46 @@ def test_reversed_face_traversal_preserves_records_and_roles(monkeypatch) -> Non
     assert len(before_roles) == len(after_roles)
     for before, after in zip(before_roles, after_roles, strict=True):
         assert all(any(face.is_same(other) for other in after) for face in before)
+
+
+def test_checked_1000_shared_walls_are_distinct_same_solid_occurrences() -> None:
+    part = import_step(ROOT / "tests/corpus/mfcadpp/1000.step")
+    ledger = ClaimLedger(FaceGraph(part))
+    public = _discover_pockets(part)
+    records = _discover_pockets(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
+    assert len(records) == len(candidates) == 11
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
+    assert all(
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
+    )
+    roles = [ledger.defining_of(candidate) for candidate in candidates]
+    overlaps = {
+        (left, right): roles[left] & roles[right]
+        for left in range(len(roles))
+        for right in range(left + 1, len(roles))
+        if roles[left] & roles[right]
+    }
+    assert set(overlaps) == {(0, 9), (2, 9), (3, 10), (5, 10)}
+    assert all(len(nodes) == 1 for nodes in overlaps.values())
+    owners = [ledger.graph.common_valid_solid(nodes) for nodes in roles]
+    assert owners[0] is not None and all(owner == owners[0] for owner in owners)
+
+
+def test_same_record_competing_bound_role_sets_refuse_without_prefix(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    record = _discover_pockets(part)[0]
+    planar = [node for node in graph.nodes if graph.is_planar(node)]
+    proposals = [
+        _RecessProposal(record, frozenset(planar[:2])),
+        _RecessProposal(record, frozenset(planar[2:4])),
+    ]
+    monkeypatch.setattr(module, "_body_scoped_proposals", lambda *_args, **_kwargs: proposals)
+    ledger = ClaimLedger(graph)
+    with pytest.raises(_PocketAttributionError, match="competing source assignments"):
+        _discover_pockets(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
