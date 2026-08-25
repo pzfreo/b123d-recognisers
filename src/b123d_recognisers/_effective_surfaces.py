@@ -176,6 +176,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F6 circle-radius projection gate",
     ),
+    "_body_geometry:_cylinder_cycle:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F6 schema-three canonical cylinder pcurve gauge",
+    ),
     "_body_geometry:_face_geometry:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F6 graph-authorized plane/cylinder parameter projection",
