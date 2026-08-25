@@ -31,6 +31,7 @@ from OCP.GeomAbs import GeomAbs_Cylinder
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_core import (
     _bounds_one_void,
     _pocket_proposals_one,
@@ -52,8 +53,13 @@ from b123d_recognisers._recess_obround import (
     _obround_ends,
     _recognise_obround_from_ends,
 )
-from b123d_recognisers._recess_records import Pocket
-from b123d_recognisers._recess_reduce import _RecessProposal
+from b123d_recognisers._recess_records import Pocket, Slot
+from b123d_recognisers._recess_reduce import (
+    _VOID_VOL_FRAC,
+    _gap_is_void,
+    _prism_is_empty,
+    _RecessProposal,
+)
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all
@@ -523,6 +529,21 @@ def test_open_sign_deep_and_all_corner_routes_publish_complete_occurrences(part,
         assert all(any(face.is_same(expected_face) for face in actual) for expected_face in want)
 
 
+@pytest.mark.parametrize("rotation", [Rot(90, 0, 0), Rot(0, 90, 0)])
+def test_rotated_corner_preserves_legacy_world_z_interpretation(rotation) -> None:
+    source = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+    part = rotation * source
+    fresh_graph, expected = _fresh_occurrences(part)
+    assert len(expected) == 1 and expected[0][0].depth_axis == "z"
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_pockets(part, writer=ledger.writer)
+    assert records == [expected[0][0]]
+    candidate = ledger.candidate_set(FamilyId.POCKETS).candidates[0]
+    actual = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
+    wanted = [fresh_graph.face(node) for node in expected[0][1]]
+    assert all(any(face.is_same(want) for face in actual) for want in wanted)
+
+
 def test_supplied_face_edges_and_generic_step_keep_exact_writer_projection(tmp_path: Path) -> None:
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     path = tmp_path / "pocket.step"
@@ -649,6 +670,31 @@ def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> No
         bounds={curved: ((0, 0), (0, 0), (0, 10))},
     )
     assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, collapsed)) is None
+
+
+def test_candidate_empty_prism_and_reduction_void_allowance_are_separate(monkeypatch) -> None:
+    import b123d_recognisers._recess_reduce as module
+
+    spans = {"x": (-5.0, 5.0), "y": (-5.0, 5.0), "z": (-5.0, 5.0)}
+    empty = Pos(20, 0, 0) * Box(1, 1, 1)
+    assert _prism_is_empty(spans, empty, inset=COORD_FLOOR)
+    membrane = Box(2 * COORD_FLOOR, 10, 10)
+    assert not _prism_is_empty(spans, membrane, inset=COORD_FLOOR)
+
+    arm = Slot("y", "x", 10, 20, 0, -10, 10, -5, 5)
+    gap = (-5.0, 5.0)
+    for fraction, accepted in (
+        (_VOID_VOL_FRAC - 1e-4, True),
+        (_VOID_VOL_FRAC, True),
+        (_VOID_VOL_FRAC + 1e-4, False),
+    ):
+        monkeypatch.setattr(module, "_prism_material_fraction", lambda *_a, value=fraction: value)
+        assert _gap_is_void(gap, arm, empty) is accepted
+
+    monkeypatch.undo()
+    for fraction, accepted in ((_VOID_VOL_FRAC - 1e-4, True), (_VOID_VOL_FRAC + 1e-4, False)):
+        material = Box(9.8 * fraction, 10, 10)
+        assert _gap_is_void(gap, arm, material) is accepted
 
 
 @pytest.mark.parametrize("mutation", ["missing", "one", "axis", "radius", "depth"])

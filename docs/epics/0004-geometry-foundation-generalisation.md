@@ -1011,6 +1011,11 @@ footprint floor; elongated and recovered obrounds define every selected endpoint
 to any retained walls. Discovery validates every occurrence, identity and SolidRef before the first
 issuance. Public records/order, Pocket reconciliation and derived patterns remain unchanged, and
 the independently authorized bucket 32 remains sealed pending all review and delivery gates.
+The retained corner compatibility route is deliberately world-frame-specific: it considers only a
+world-Z floor with world-X/Y walls and derives `open_sign` on Z. Rotating a corner may therefore
+produce the established world-Z reinterpretation rather than a covariant rotation of its old
+record. General all-axis corner semantics require a separately reviewed F4b geometry change and
+are not introduced by this attribution-only child.
 Graph-bound source sharing is valid only between unequal records whose complete role sets resolve
 to the same SolidRef. Equal-record identical sets collapse; competing assignments, cross-solid or
 stale provenance still refuse atomically. Sources are never subtracted or merged to force uniqueness.
