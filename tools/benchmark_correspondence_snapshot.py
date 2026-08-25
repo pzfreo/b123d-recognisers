@@ -31,15 +31,16 @@ def _notched_round(repeats: int):
 
 def _line_profile(repeats: int = 8):
     points = []
-    for index in range(2 * repeats):
-        angle = 2 * math.pi * index / (2 * repeats)
-        radius = 20 if index % 2 == 0 else 16
-        points.append((radius * math.cos(angle), radius * math.sin(angle)))
+    radii = (20.0, 16.0, 20.0, 18.0)
+    for sector in range(repeats):
+        for offset, radius in enumerate(radii):
+            angle = 2 * math.pi * (sector / repeats + offset / (4 * repeats))
+            points.append((radius * math.cos(angle), radius * math.sin(angle)))
     return extrude(Polygon(*points), 10)
 
 
 def _matrix():
-    return (_notched_round(5), _notched_round(7), _line_profile())
+    return (_line_profile(5), _notched_round(7), _line_profile(8))
 
 
 def _inventory_sample(parts) -> float:
@@ -99,11 +100,15 @@ def main() -> int:
         },
     }
     print(json.dumps(evidence, indent=2, sort_keys=True))
-    return 0 if (
-        evidence["cache_miss_ratio"] <= MISS_RATIO_CEILING
-        and evidence["cache_hit_ratio"] <= HIT_RATIO_CEILING
-        and rss_ratio <= RSS_RATIO_CEILING
-    ) else 1
+    return (
+        0
+        if (
+            evidence["cache_miss_ratio"] <= MISS_RATIO_CEILING
+            and evidence["cache_hit_ratio"] <= HIT_RATIO_CEILING
+            and rss_ratio <= RSS_RATIO_CEILING
+        )
+        else 1
+    )
 
 
 if __name__ == "__main__":

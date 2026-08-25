@@ -151,16 +151,21 @@ def _positive_fact(value: float, quantum: float, *, name: str) -> float:
 
 
 def _point(value, centre: tuple[float, float, float], quantum: float) -> QPoint:
-    raw = tuple(
+    raw_values = tuple(
         component - origin
         for component, origin in zip(_finite(value.X, value.Y, value.Z), centre, strict=True)
     )
+    raw = (raw_values[0], raw_values[1], raw_values[2])
+    return _relative_point(raw, quantum, name="point")
+
+
+def _relative_point(raw: tuple[float, float, float], quantum: float, *, name: str) -> QPoint:
     snapped = tuple(_snap(component, quantum) for component in raw)
     displacement = math.sqrt(
         sum((after - before) ** 2 for before, after in zip(raw, snapped, strict=True))
     )
     if displacement > 2.0 * quantum:
-        raise UnsupportedBodyGeometry("point exceeds the reconstruction bound")
+        raise UnsupportedBodyGeometry(f"{name} exceeds the reconstruction bound")
     return snapped  # type: ignore[return-value]
 
 
@@ -356,15 +361,13 @@ def _face_geometry(face, centre: tuple[float, float, float], scale: float) -> _F
         loc = _finite(location.X(), location.Y(), location.Z())
         delta = tuple(component - origin for component, origin in zip(loc, centre, strict=True))
         along = sum(component * direction for component, direction in zip(delta, axis, strict=True))
-        closest = tuple(
+        closest_values = tuple(
             component - along * direction for component, direction in zip(delta, axis, strict=True)
         )
+        closest = (closest_values[0], closest_values[1], closest_values[2])
         parameters = (
             *_qaxis(axis),
-            *(
-                _snap_checked(component, quantum, name="cylinder axis point")
-                for component in closest
-            ),
+            *_relative_point(closest, quantum, name="cylinder axis point"),
             _positive_fact(float(cylinder.Radius()), quantum, name="cylinder radius"),
         )
         sample = face.center()
@@ -407,9 +410,10 @@ def _face_geometry(face, centre: tuple[float, float, float], scale: float) -> _F
             for edge in wire.edges()
         )
         role = "outer" if wire == outer else "inner"
-        raw_orientation = (
+        raw_wire_orientation = (
             -1 if wire.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED else 1
         )
+        raw_orientation = raw_wire_orientation * material_side
         canonical, alignments, semantic_winding = _canonical_cycle_with_tokens(
             occurrences, raw_orientation
         )
@@ -440,10 +444,10 @@ def _canonical_topology(
     for index, build in enumerate(face_builds):
         by_label.setdefault(build.geometry, []).append(index)
     classes = tuple(tuple(indices) for _label, indices in sorted(by_label.items()))
-    choices = 1
+    face_choices = 1
     for entries in classes:
-        choices *= math.factorial(len(entries))
-        if choices > CANONICAL_SERIALIZATION_BUDGET:
+        face_choices *= math.factorial(len(entries))
+        if face_choices > CANONICAL_SERIALIZATION_BUDGET:
             raise UnsupportedBodyGeometry("body topology canonicalization budget is exhausted")
 
     wire_variants: dict[
@@ -457,19 +461,22 @@ def _canonical_topology(
             by_wire.setdefault(wire.geometry, []).append(wire_index)
         for _label, wire_entries in sorted(by_wire.items()):
             wire_classes.append(tuple(wire_entries))
-            choices *= math.factorial(len(wire_entries))
-            if choices > CANONICAL_SERIALIZATION_BUDGET:
-                raise UnsupportedBodyGeometry("body topology canonicalization budget is exhausted")
         variants = []
         for groups in product(*(permutations(entries) for entries in wire_classes)):
             order = tuple(index for group in groups for index in group)
             for alignments in product(*(build.wires[index].occurrences for index in order)):
                 variants.append((order, alignments))
-                if len(variants) * choices > CANONICAL_SERIALIZATION_BUDGET:
+                if len(variants) > CANONICAL_SERIALIZATION_BUDGET:
                     raise UnsupportedBodyGeometry(
                         "body topology canonicalization budget is exhausted"
                     )
         wire_variants[face_index] = tuple(variants)
+
+    complete_choices = face_choices
+    for face_index in range(len(face_builds)):
+        complete_choices *= len(wire_variants[face_index])
+        if complete_choices > CANONICAL_SERIALIZATION_BUDGET:
+            raise UnsupportedBodyGeometry("body topology canonicalization budget is exhausted")
 
     minimum = None
     minimizing = 0
@@ -483,7 +490,7 @@ def _canonical_topology(
                 raise UnsupportedBodyGeometry("body topology canonicalization budget is exhausted")
             ordered_faces: list[FaceGeometry] = []
             occurrence_map: dict[object, list[tuple[int, int, int, int]]] = {}
-            edge_labels: dict[object, EdgeGeometry] = {}
+            edge_labels: dict[object, list[EdgeGeometry]] = {}
             for canonical_face, (raw_face, selected_face) in enumerate(
                 zip(ordered_raw, selected_faces, strict=True)
             ):
@@ -507,7 +514,7 @@ def _canonical_topology(
                     for occurrence, ((edge, _), (token, direction)) in enumerate(
                         zip(wire.geometry.edges, selected_alignment, strict=True)
                     ):
-                        edge_labels.setdefault(token, edge)
+                        edge_labels.setdefault(token, []).append(edge)
                         occurrence_map.setdefault(token, []).append(
                             (
                                 canonical_face,
@@ -516,15 +523,17 @@ def _canonical_topology(
                                 direction,
                             )
                         )
-            incidence = tuple(
-                sorted(
-                    (
-                        edge_labels[token],
-                        tuple(sorted(occurrences)),
+            incidence_items = []
+            for token, occurrences in occurrence_map.items():
+                labels = edge_labels[token]
+                if len(occurrences) != 2:
+                    raise UnsupportedBodyGeometry(
+                        "body edge incidence is not a supported closed-shell pair"
                     )
-                    for token, occurrences in occurrence_map.items()
-                )
-            )
+                if any(label != labels[0] for label in labels[1:]):
+                    raise UnsupportedBodyGeometry("one body edge has conflicting analytic labels")
+                incidence_items.append((labels[0], tuple(sorted(occurrences))))
+            incidence = tuple(sorted(incidence_items))
             candidate = (tuple(ordered_faces), incidence)
             if minimum is None or candidate < minimum:
                 minimum = candidate
@@ -539,10 +548,13 @@ def _canonical_topology(
 def describe_solid(solid) -> _DescribedBody:
     """Build one complete supported descriptor or refuse without a partial value."""
 
-    if solid.wrapped.ShapeType() != TopAbs_SOLID or not BRepCheck_Analyzer(solid.wrapped).IsValid():
-        raise UnsupportedBodyGeometry("body is not one valid closed solid")
     props = GProp_GProps()
     try:
+        if (
+            solid.wrapped.ShapeType() != TopAbs_SOLID
+            or not BRepCheck_Analyzer(solid.wrapped).IsValid()
+        ):
+            raise UnsupportedBodyGeometry("body is not one valid closed solid")
         BRepGProp.VolumeProperties_s(solid.wrapped, props)
         volume = float(props.Mass())
         centre_point = props.CentreOfMass()
@@ -557,7 +569,9 @@ def describe_solid(solid) -> _DescribedBody:
     except (RuntimeError, Standard_Failure) as error:
         raise UnsupportedBodyGeometry("kernel mass properties are unavailable") from error
     if (
-        volume <= 0.0
+        not math.isfinite(volume)
+        or not math.isfinite(surface_area)
+        or volume <= 0.0
         or surface_area <= 0.0
         or not all(math.isfinite(value) and value >= 0.0 for value in moments)
     ):
@@ -567,9 +581,14 @@ def describe_solid(solid) -> _DescribedBody:
     area_quantum = (scale + quantum) ** 2 - scale**2
     volume_quantum = (scale + quantum) ** 3 - scale**3
     moment_quantum = (scale + quantum) ** 5 - scale**5
-    raw_faces = tuple(solid.faces())
-    raw_geometry = tuple(_face_geometry(face, centre, scale) for face in raw_faces)
-    faces, incidence, symmetric = _canonical_topology(raw_geometry)
+    try:
+        raw_faces = tuple(solid.faces())
+        raw_geometry = tuple(_face_geometry(face, centre, scale) for face in raw_faces)
+        faces, incidence, symmetric = _canonical_topology(raw_geometry)
+    except UnsupportedBodyGeometry:
+        raise
+    except (RuntimeError, Standard_Failure) as error:
+        raise UnsupportedBodyGeometry("kernel body boundary is unavailable") from error
     wire_count = sum(len(face.wires) for face in faces)
     edge_count = sum(len(wire.edges) for face in faces for wire in face.wires)
     descriptor = BodyGeometryDescriptor(
