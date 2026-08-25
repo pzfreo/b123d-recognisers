@@ -154,24 +154,25 @@ Three limits on how far this evidence reaches:
 - **Attribution is reported separately from corpus labels.** `tools/per_face_scan.py` reads one
   completed frozen inventory and reports records, physical Candidates, accepted Candidates and
   measured defining faces for all 22 physical families, alongside each registry attribution
-  status. The MFCAD++ label comparison is a separate accepted-only view. These corpora contain
-  measured output from six prismatic families — slots, pockets, prismatic pockets, passages,
-  chamfers and angled steps — while grooves and turned steps also write defining evidence but do
-  not occur in the 50 vendored milled parts. Families still migrating may have partial or no
-  measured face attribution; their registry status says so rather than replacing it with a
-  statistical ownership claim. The
+  status. The MFCAD++ label comparison is a separate accepted-only view. When this corpus study was
+  recorded, it contained measured output from six prismatic families — slots, pockets, prismatic
+  pockets, passages, chamfers and angled steps — while grooves and turned steps also wrote defining
+  evidence but did not occur in the 50 vendored milled parts. Families then still migrating had
+  partial or no measured face attribution; their registry status stated that limitation rather
+  than replacing it with a statistical ownership claim. The
   figures quoted as precision — 100% for angled steps, 44% → 78% for chamfers over 120 models —
   are counted per face rather than fitted. The chamfer figure is the *reconciled* answer, which is what the
   aggregate and the census report; called directly the recogniser proposes a blind step's slant
   as well and scores lower — 50% against 79% over the 40 vendored models — for the reason the
   row above gives.
 
-  Every other family still has to be fitted: it writes no claims, so the MFCAD++ figures for it
-  come from comparing record counts against labelled-face counts across models rather than from
-  observing ownership. That fit is strong for holes, fillets and bosses and weak for plates and
-  countersinks; only the former should be read. The difference between the two halves of this
-  bullet is the difference between measuring a recogniser and estimating it, and closing it is a
-  matter of writing claims in the remaining families rather than of new machinery.
+  Those quoted corpus figures preserve the measurement method used when each study was run; some
+  older rows compare record counts with labelled-face counts and therefore remain fit estimates,
+  even though later F5 development evidence established exact defining ownership independently.
+  The current registry truth is the 20/2 table above: twenty families now publish complete original-
+  face evidence, while Step Levels and Risers deliberately remain writer-free structural
+  exclusions. External taxonomy labels still do not prove those defining roles, so historical
+  count-fit figures must not be upgraded retrospectively into per-face corpus measurements.
 - **Synthetic parts, generated features.** Both corpora are procedurally built, and
   synthetic-to-real transfer is an open research problem. They are sound as a false-negative
   detector and unsound as ground truth about real drawings.
