@@ -1094,6 +1094,8 @@ def test_mirror_and_translation_snapshots_preserve_intrinsic_multiplicity() -> N
     assert mirrored.body.intrinsic == source.body.intrinsic
     assert translated.body.intrinsic == source.body.intrinsic
     assert translated.body.boundary == source.body.boundary
+    assert translated.matching_boundary == source.matching_boundary
+    assert mirrored.matching_boundary != source.matching_boundary
     assert translated.body.placement.centre_of_mass == pytest.approx((17.0, -13.0, 34.0))
 
 
@@ -1121,6 +1123,12 @@ def test_representation_preserving_step_round_trip_has_the_same_descriptor(tmp_p
     assert _structure(native_occurrence.summary) == _structure(stepped_occurrence.summary)
     assert _numbers(native_occurrence.summary) == pytest.approx(
         _numbers(stepped_occurrence.summary), rel=1e-8, abs=1e-7
+    )
+    assert _structure(native_occurrence.matching_boundary) == _structure(
+        stepped_occurrence.matching_boundary
+    )
+    assert _numbers(native_occurrence.matching_boundary) == pytest.approx(
+        _numbers(stepped_occurrence.matching_boundary), rel=1e-8, abs=1e-7
     )
 
 
@@ -1179,6 +1187,7 @@ def test_controlled_material_face_reversal_changes_physical_orientation(monkeypa
     graph = FaceGraph(part)
     solid = graph.common_valid_solid(graph.nodes)
     assert solid is not None
+    source_matching = graph.matching_boundary(solid)
     solid_faces = Solid.faces
 
     monkeypatch.setattr(
@@ -1186,10 +1195,18 @@ def test_controlled_material_face_reversal_changes_physical_orientation(monkeypa
         "faces",
         lambda self: [Face.cast(face.wrapped.Reversed()) for face in solid_faces(self)],
     )
-    reversed_descriptor = graph.body_geometry(solid).descriptor
+    reversed_graph = FaceGraph(part)
+    reversed_solid = reversed_graph.common_valid_solid(reversed_graph.nodes)
+    assert reversed_solid is not None
+    reversed_descriptor = reversed_graph.body_geometry(reversed_solid).descriptor
+    reversed_matching = reversed_graph.matching_boundary(reversed_solid)
     assert reversed_descriptor != source
     assert tuple(face.material_side for face in reversed_descriptor.boundary.faces) != tuple(
         face.material_side for face in source.boundary.faces
+    )
+    assert reversed_matching != source_matching
+    assert tuple(face.material_side for face in reversed_matching.faces) != tuple(
+        face.material_side for face in source_matching.faces
     )
 
 
