@@ -37,7 +37,9 @@ from b123d_recognisers._recess_obround import (
 from b123d_recognisers._recess_reduce import (
     _body_scoped_proposals,
     _Claims,
+    _collapse_collinear,
     _collapse_collinear_proposals,
+    _merge,
     _merge_proposals,
     _RecessProposal,
 )
@@ -197,6 +199,45 @@ def test_real_crossing_collapse_absorbs_every_arm_in_geometric_order(monkeypatch
             for node in arm.planar
         )
         assert proposal.planar == absorbed and len(absorbed) == 4
+
+
+def test_legacy_crossing_and_merge_projections_absorb_all_source_claims(monkeypatch) -> None:
+    """The retained record-only reducers mirror the occurrence-safe provenance union."""
+    import b123d_recognisers._recess_core as module
+
+    part = Box(120, 120, 20) - Box(60, 14, 20) - Box(14, 60, 20)
+    graph = FaceGraph(part)
+    raw = []
+
+    def capture(proposals, _part):
+        raw.extend(proposals)
+        return proposals
+
+    monkeypatch.setattr(module, "_collapse_collinear_proposals", capture)
+    module._slot_proposals_one(part, graph=graph)
+    claims: _Claims = {proposal.record: set(proposal.planar) for proposal in raw}
+    collapsed = _collapse_collinear([proposal.record for proposal in raw], part, claims)
+    assert len(collapsed) == 2
+    for record in collapsed:
+        expected = set().union(
+            *(
+                set(proposal.planar)
+                for proposal in raw
+                if proposal.record.long_axis == record.long_axis
+            )
+        )
+        assert claims[record] == expected
+
+    first = raw[0]
+    duplicate = replace(first.record, width=first.record.width + 1)
+    merge_claims: _Claims = {
+        first.record: set(first.planar),
+        duplicate: {next(node for node in graph.nodes if node not in first.planar)},
+    }
+    assert _merge([duplicate, first.record], merge_claims) == [first.record]
+    assert merge_claims[first.record] == set().union(*merge_claims.values())
+    # Compatibility callers without claims remain valid and take the same geometry path.
+    assert len(_collapse_collinear([proposal.record for proposal in raw], part)) == 2
 
 
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:
