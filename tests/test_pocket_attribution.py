@@ -17,12 +17,247 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
+from b123d_recognisers._recess_records import Pocket
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all
 
 ROOT = Path(__file__).parents[1]
 AXIS = {"x": 0, "y": 1, "z": 2}
+
+
+def _body_key(solid):
+    box = solid.bounding_box()
+    return (*tuple(box.min), *tuple(box.max), float(solid.volume), float(solid.area))
+
+
+def _fresh_occurrences(part):
+    """Topology-first Pocket inventory; deliberately uses no recess implementation helper."""
+    aggregate = FaceGraph(part)
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    body_keys = [_body_key(solid) for solid in sources]
+    out = []
+    for solid, raw_key in zip(sources, body_keys, strict=True):
+        graph = FaceGraph(solid)
+        box = solid.bounding_box()
+        extent = (box.size.X, box.size.Y, box.size.Z)
+        planes = []
+        cylinders = []
+        for node in graph.nodes:
+            if not graph.is_planar(node):
+                adaptor = BRepAdaptor_Surface(graph.face(node).wrapped)
+                if adaptor.GetType() == GeomAbs_Cylinder:
+                    cylinder = adaptor.Cylinder()
+                    direction = cylinder.Axis().Direction()
+                    vector = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+                    axis = max(range(3), key=vector.__getitem__)
+                    if vector[axis] >= 0.999999:
+                        point = cylinder.Location()
+                        cylinders.append(
+                            (
+                                node,
+                                axis,
+                                cylinder.Radius(),
+                                (point.X(), point.Y(), point.Z()),
+                                graph.bounds(node),
+                            )
+                        )
+                continue
+            normal = graph.normal(node)
+            if normal is None:
+                continue
+            axis = max(range(3), key=lambda i: abs(normal[i]))
+            if abs(normal[axis]) >= 0.999999:
+                planes.append((node, axis, normal[axis], graph.bounds(node)))
+        records = []
+        for i, left in enumerate(planes):
+            for right in planes[i + 1 :]:
+                ln, wi, ls, lb = left
+                rn, ri, rs, rb = right
+                if wi != ri or ls * rs >= 0:
+                    continue
+                la, ra = sum(lb[wi]) / 2, sum(rb[wi]) / 2
+                if (ra - la) * ls <= 0:
+                    ln, rn, ls, lb, rb, la, ra = rn, ln, rs, rb, lb, ra, la
+                if (ra - la) * ls <= 0:
+                    continue
+                others = [a for a in range(3) if a != wi]
+                ranges = {a: (max(lb[a][0], rb[a][0]), min(lb[a][1], rb[a][1])) for a in others}
+                if any(hi <= lo for lo, hi in ranges.values()):
+                    continue
+                for di in others:
+                    li = next(a for a in others if a != di)
+                    lo, hi = ranges[li]
+                    dlo, dhi = ranges[di]
+                    width, length = abs(ra - la), hi - lo
+                    if width > length or length >= 0.9 * extent[li]:
+                        continue
+                    # Exactly one planar boundary spans the footprint at a depth end.
+                    caps = []
+                    for end, sign in ((dlo, 1), (dhi, -1)):
+                        matches = [
+                            n
+                            for n, a, ns, b in planes
+                            if a == di
+                            and ns * sign > 0
+                            and abs(sum(b[di]) / 2 - end) <= 1e-6
+                            and b[wi][0] <= min(la, ra) + 1e-6
+                            and b[wi][1] >= max(la, ra) - 1e-6
+                            and b[li][0] <= lo + 1e-6
+                            and b[li][1] >= hi - 1e-6
+                        ]
+                        caps.append(matches)
+                    if bool(caps[0]) == bool(caps[1]):
+                        continue
+                    rec = Pocket(
+                        "xyz"[wi],
+                        "xyz"[li],
+                        round(width, 2),
+                        round(length, 2),
+                        round(dhi - dlo, 2),
+                        round((la + ra) / 2, 2),
+                        round(lo, 2),
+                        round(hi, 2),
+                        round(dlo, 2),
+                        round(dhi, 2),
+                        1 if caps[0] else -1,
+                        False,
+                        raw_key if body_keys.count(raw_key) == 1 else None,
+                    )
+                    nodes = frozenset((ln, rn))
+                    records.append((rec, nodes))
+        # Corner route: three mutually perpendicular inward faces, represented by a bounded floor.
+        for floor, di, fs, fb in planes:
+            if (
+                di != 2
+                or min(abs(sum(fb[2]) / 2 - box.min.Z), abs(sum(fb[2]) / 2 - box.max.Z)) <= 1e-6
+            ):
+                continue
+            if not (
+                (abs(fb[0][0] - box.min.X) <= 1e-6 or abs(fb[0][1] - box.max.X) <= 1e-6)
+                and (abs(fb[1][0] - box.min.Y) <= 1e-6 or abs(fb[1][1] - box.max.Y) <= 1e-6)
+            ):
+                continue
+            x0, x1 = fb[0]
+            y0, y1 = fb[1]
+            xinner = x1 if abs(x0 - box.min.X) <= 1e-6 else x0
+            yinner = y1 if abs(y0 - box.min.Y) <= 1e-6 else y0
+            xwalls = [
+                (n, b)
+                for n, a, _s, b in planes
+                if a == 0
+                and abs(sum(b[0]) / 2 - xinner) <= 1e-6
+                and b[1][0] <= y0 + 1e-6
+                and b[1][1] >= y1 - 1e-6
+            ]
+            ywalls = [
+                (n, b)
+                for n, a, _s, b in planes
+                if a == 1
+                and abs(sum(b[1]) / 2 - yinner) <= 1e-6
+                and b[0][0] <= x0 + 1e-6
+                and b[0][1] >= x1 - 1e-6
+            ]
+            if len(xwalls) != 1 or len(ywalls) != 1:
+                continue
+            sx, sy = x1 - x0, y1 - y0
+            wa, li = (0, 1) if sx <= sy else (1, 0)
+            width, length = (sx, sy) if sx <= sy else (sy, sx)
+            wc = sum(fb[wa]) / 2
+            lo, hi = fb[li]
+            dlo = max(xwalls[0][1][2][0], ywalls[0][1][2][0])
+            dhi = min(xwalls[0][1][2][1], ywalls[0][1][2][1])
+            rec = Pocket(
+                "xyz"[wa],
+                "xyz"[li],
+                round(width, 2),
+                round(length, 2),
+                round(dhi - dlo, 2),
+                round(wc, 2),
+                round(lo, 2),
+                round(hi, 2),
+                round(dlo, 2),
+                round(dhi, 2),
+                1 if fs > 0 else -1,
+                True,
+                raw_key if body_keys.count(raw_key) == 1 else None,
+            )
+            records.append((rec, frozenset((floor, xwalls[0][0], ywalls[0][0]))))
+        # Blind obrounds are established by two equal cylindrical endpoint regions.
+        for i, left in enumerate(cylinders):
+            for right in cylinders[i + 1 :]:
+                ln, di, radius, lc, lb = left
+                rn, rdi, rr, rc, rb = right
+                if di != rdi or abs(radius - rr) > 1e-7 or lb[di] != rb[di]:
+                    continue
+                delta = [abs(rc[a] - lc[a]) for a in range(3)]
+                li = max(range(3), key=delta.__getitem__)
+                if li == di or delta[li] <= 1e-7:
+                    continue
+                wi = next(a for a in range(3) if a not in (li, di))
+                if abs(lc[wi] - rc[wi]) > 1e-6:
+                    continue
+                dlo, dhi = lb[di]
+                lo = min(lc[li], rc[li]) - radius
+                hi = max(lc[li], rc[li]) + radius
+                floor_nodes = [
+                    (n, s, b)
+                    for n, a, s, b in planes
+                    if a == di
+                    and (
+                        (abs(sum(b[di]) / 2 - dlo) <= 1e-6 and s > 0)
+                        or (abs(sum(b[di]) / 2 - dhi) <= 1e-6 and s < 0)
+                    )
+                    and b[li][1] > lo
+                    and b[li][0] < hi
+                ]
+                if not floor_nodes:
+                    continue
+                rec = Pocket(
+                    "xyz"[wi],
+                    "xyz"[li],
+                    round(2 * radius, 2),
+                    round(hi - lo, 2),
+                    round(dhi - dlo, 2),
+                    round((lc[wi] + rc[wi]) / 2, 2),
+                    round(lo, 2),
+                    round(hi, 2),
+                    round(dlo, 2),
+                    round(dhi, 2),
+                    1 if floor_nodes[0][1] > 0 else -1,
+                    False,
+                    raw_key if body_keys.count(raw_key) == 1 else None,
+                )
+                # Elongated routes also own their two planar side walls; stubby routes do not.
+                walls = {
+                    n
+                    for n, a, _s, b in planes
+                    if a == wi
+                    and abs(abs(sum(b[wi]) / 2 - rec.w_center) - rec.width / 2) <= 1e-6
+                    and b[li][0] >= lo - 1e-6
+                    and b[li][1] <= hi + 1e-6
+                    and b[di] == (dlo, dhi)
+                }
+                nodes = frozenset(({ln, rn} | walls) if rec.length >= 2 * rec.width else {ln, rn})
+                records = [
+                    item
+                    for item in records
+                    if not (
+                        item[0].width_axis == rec.width_axis
+                        and item[0].long_axis == rec.long_axis
+                        and item[0].width == rec.width
+                        and item[0].w_center == rec.w_center
+                        and item[0].d_lo == rec.d_lo
+                        and item[0].d_hi == rec.d_hi
+                        and abs((item[0].lo + item[0].hi - rec.lo - rec.hi) / 2) <= 0.1
+                    )
+                ]
+                records.append((rec, nodes))
+        for record, nodes in records:
+            out.append((record, frozenset(aggregate.require_node(graph.face(n)) for n in nodes)))
+    out.sort(key=lambda item: (item[0].width, item[0].location))
+    return aggregate, out
 
 
 def _obround(length: float, width: float, depth: float):
@@ -123,8 +358,9 @@ def _fresh_expected_nodes(graph: FaceGraph, expected, *, edge_anchored: bool):
     ],
 )
 def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, expected) -> None:
-    graph = FaceGraph(part)
-    expected_nodes = _fresh_expected_nodes(graph, expected, edge_anchored=expected[-1])
+    graph, fresh = _fresh_occurrences(part)
+    assert len(fresh) == 1
+    fresh_record, expected_nodes = fresh[0]
     assert sum(graph.is_planar(node) for node in expected_nodes) == planar
     assert sum(not graph.is_planar(node) for node in expected_nodes) == curved
     ledger = ClaimLedger(graph)
@@ -133,6 +369,7 @@ def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, 
     assert len(records) == len(candidates) == 1
     assert candidates[0].record is records[0]
     record = records[0]
+    assert record == fresh_record
     assert (
         record.width_axis,
         record.long_axis,
@@ -469,14 +706,21 @@ def test_public_ledger_raw_writer_and_plain_projection_are_identical() -> None:
 
 def test_same_body_multiple_pockets_keep_geometry_order_and_exact_identity() -> None:
     part = Box(100, 60, 16) - Pos(-25, 0, 5) * Box(18, 10, 8) - Pos(25, 0, 5) * Box(24, 12, 8)
+    fresh_graph, expected = _fresh_occurrences(part)
+    assert len(expected) == 2
     ledger = ClaimLedger(FaceGraph(part))
     records = _discover_pockets(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
     assert len(records) == len(candidates) == 2
     assert [record.width for record in records] == sorted(record.width for record in records)
+    assert records == [record for record, _nodes in expected]
     assert all(
         candidate.record is record for candidate, record in zip(candidates, records, strict=True)
     )
+    for candidate, (_record, nodes) in zip(candidates, expected, strict=True):
+        actual_faces = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
+        expected_faces = [fresh_graph.face(node) for node in nodes]
+        assert all(any(face.is_same(want) for face in actual_faces) for want in expected_faces)
 
 
 def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
