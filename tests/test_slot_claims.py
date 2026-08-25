@@ -106,18 +106,14 @@ def test_arms_collapsed_into_one_channel_pool_their_walls():
     assert sorted(len(claim.defining) for claim in ledger.claims) == [4, 4]
 
 
-def test_a_slot_recovered_from_its_end_caps_claims_nothing():
-    """Documented absence rather than a claim over faces that are not walls.
-
-    A stubby obround has no pairable flat walls, so it is recovered from its two semicircular
-    caps. Those are cylindrical, and a caller reconciling a ring of planar faces against slots
-    cannot be looking at this one — so the slot is simply absent from the ledger, and the
-    ledger's refusal of an empty claim is what keeps that explicit.
-    """
+def test_a_slot_recovered_from_its_end_caps_claims_both_caps():
+    """A stubby obround owns the two cylindrical cap groups that establish it."""
 
     ledger, slots = claimed(Box(100, 60, 20) - obround(3, 12, 20))
     assert len(slots) == 1
-    assert len(ledger) == 0
+    assert len(ledger) == 1
+    assert len(ledger.claims[0].defining) == 2
+    assert all(not ledger.graph.is_planar(node) for node in ledger.claims[0].defining)
 
 
 def test_a_compound_does_not_pool_claims_across_its_solids():

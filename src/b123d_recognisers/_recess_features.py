@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from functools import partial
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
@@ -25,6 +25,10 @@ from b123d_recognisers._recess_reduce import (
     _region_center,
 )
 from b123d_recognisers._typing import Part
+
+
+class _SlotAttributionError(ValueError):
+    """A public Slot occurrence whose complete original ownership cannot be issued."""
 
 
 def recognise_slots(
@@ -55,10 +59,10 @@ def recognise_slots(
     is refused rather than silently claiming nothing, because an empty ledger would otherwise
     read as "no overlap" to the reconciler it exists to serve.
 
-    A slot recovered from its end caps rather than from paired flat walls claims nothing, and is
-    absent from the ledger. Its evidence is two cylindrical caps, which are not walls, and no
-    consumer needs it: a caller reconciling against a ring of planar faces cannot be looking at
-    a slot whose ends are round.
+    Writer-enabled discovery records the complete source set selected by the occurrence route:
+    every planar wall intentionally retained by merge/collapse plus every patch in the selected
+    low/high cylindrical cap groups. Consumers that compare planar overlap continue to see the
+    same wall subset; cap-recovered occurrences now carry the evidence that establishes them.
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
@@ -69,20 +73,89 @@ def recognise_slots(
         )
         pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
         return [record for record, _nodes in pairs]
-    proposals = _body_scoped_proposals(
-        sources,
-        partial(
-            _slot_proposals_one,
-            face_edges=face_edges,
-            graph=ledger.graph,
-        ),
-    )
+    writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
+    return _discover_slots(part, face_edges=face_edges, writer=writer, _wrap_identity_errors=False)
+
+
+def _discover_slots(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+    _wrap_identity_errors: bool = True,
+) -> list[Slot]:
+    """Discover Slots and optionally issue every selected wall and cap source patch."""
+
+    if graph is not None and writer is not None and graph is not writer.graph:
+        raise _SlotAttributionError("Slot graph and writer must share one authority")
+    owner = writer.graph if writer is not None else graph
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    recognise_one = partial(_slot_proposals_one, face_edges=face_edges, graph=owner)
+    if writer is None:
+        proposals = _body_scoped_proposals(sources, recognise_one)
+    else:
+        # Close the graph/run authority boundary before geometry discovery. Once every source
+        # face resolves, unrelated kernel and predicate defects remain geometry failures and are
+        # deliberately not relabelled as attribution errors.
+        try:
+            for face in part.faces():
+                writer.graph.require_node(face)
+        except ValueError as exc:
+            if not _wrap_identity_errors:
+                raise
+            raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
+        try:
+            proposals = _body_scoped_proposals(sources, recognise_one)
+        except ValueError as exc:
+            if "obround cap clusters compete" not in str(exc):
+                raise
+            raise _SlotAttributionError("Slot endpoint cap ownership is ambiguous") from exc
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
-    if ledger is not None:
+    records = [proposal.record for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending: list[tuple[Slot, frozenset[FaceNode], SolidRef]] = []
+    try:
         for proposal in proposals:
-            if proposal.planar:
-                ledger.add_defining(proposal.record, proposal.planar, family=FamilyId.SLOTS)
-    return [proposal.record for proposal in proposals]
+            nodes = frozenset(
+                (*proposal.planar, *(node for group in proposal.caps for node in group))
+            )
+            if not nodes:
+                raise _SlotAttributionError("Slot occurrence has no defining source faces")
+            for node in nodes:
+                writer.graph.face(node)
+            solid = writer.graph.common_valid_solid(nodes)
+            if solid is None:
+                raise _SlotAttributionError("Slot source faces do not prove one valid solid")
+            duplicate = False
+            for other_record, other_nodes, other_solid in pending:
+                if proposal.record == other_record and solid == other_solid:
+                    if nodes == other_nodes:
+                        duplicate = True
+                        break
+                    raise _SlotAttributionError(
+                        "equal Slot record has competing source roles on one solid"
+                    )
+                if not nodes.isdisjoint(other_nodes) and solid != other_solid:
+                    raise _SlotAttributionError(
+                        "Slot source face is ambiguously reused by another occurrence"
+                    )
+            if duplicate:
+                continue
+            pending.append((proposal.record, nodes, solid))
+    except _SlotAttributionError:
+        raise
+    except (IndexError, KeyError, ValueError) as exc:
+        if not _wrap_identity_errors:
+            raise
+        raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
+    records = [record for record, _nodes, _solid in pending]
+    for record, nodes, _solid in pending:
+        writer.add_defining(record, nodes, family=FamilyId.SLOTS)
+    return records
 
 
 def recognise_pockets(

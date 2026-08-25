@@ -101,3 +101,8 @@ The neutral #234 provenance carrier does not add a filter. Geometry-only and pro
 the same Slot/Pocket candidates and reducers; the latter merely retain exact nodes and cap clusters.
 Ambiguous competing physical cap clusters refuse only the private provenance read, while the frozen
 record-only compatibility projection keeps its historical first-win behavior.
+
+Issue #235 does not move any Slot predicate into the evidence layer. The same proposal inventory,
+merge/collapse decisions and cap selection establish both writer-free records and writer-enabled
+occurrences. The writer adapter validates identity and one-body provenance only; it neither reads
+other family outputs nor adds an acceptance or reconciliation filter.

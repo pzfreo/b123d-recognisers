@@ -93,7 +93,7 @@ ALLOCATION_SPECS: Final = (
         frozenset({30}),
         "consumed",
     ),
-    AllocationSpec(F5_SLOTS_H1, "f5_slots_h1", frozenset({31}), "sealed_unrevealed"),
+    AllocationSpec(F5_SLOTS_H1, "f5_slots_h1", frozenset({31}), "consumed"),
     AllocationSpec(F5_POCKETS_H1, "f5_pockets_h1", frozenset({32}), "sealed_unrevealed"),
     AllocationSpec(
         F5_REPEATING_RADIAL_PROFILES_H1,

@@ -70,7 +70,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # Fully-attributed Holes cannot be fabricated without original cylindrical evidence in this
     # dependency-injection test; the dedicated lifecycle matrix owns nonempty attribution.
     holes: list[HoleRecord] = []
-    slots = [Slot("x", "y", 3.0, 10.0, 0.0, -5.0, 5.0, -1.0, 1.0)]
+    # Fully-attributed Slots cannot be fabricated without original wall/cap evidence here.
+    slots: list[Slot] = []
     pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
     # Fully-attributed families cannot be faked with output records but no original-face
     # evidence. This orchestration test owns dependency injection, so keep that separate
@@ -136,7 +137,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         registry_module, "_discover_polygonal_stock", counted("polygonal_stock", [])
     )
     monkeypatch.setattr(registry_module, "_discover_channels", counted("channels", []))
-    monkeypatch.setattr(registry_module, "recognise_slots", counted("slots", slots))
+    monkeypatch.setattr(registry_module, "_discover_slots", counted("slots", slots))
     monkeypatch.setattr(
         registry_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
     )

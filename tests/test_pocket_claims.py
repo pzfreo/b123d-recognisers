@@ -122,18 +122,18 @@ def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypa
 
     seen = {}
     real_pockets = registry_module.recognise_pockets
-    real_slots = registry_module.recognise_slots
+    real_slots = registry_module._discover_slots
 
     def capture_pockets(part, **kwargs):
         seen["pockets"] = kwargs.get("ledger")
         return real_pockets(part, **kwargs)
 
     def capture_slots(part, **kwargs):
-        seen["slots"] = kwargs.get("ledger")
+        seen["slots"] = kwargs.get("writer")
         return real_slots(part, **kwargs)
 
     monkeypatch.setattr(registry_module, "recognise_pockets", capture_pockets)
-    monkeypatch.setattr(registry_module, "recognise_slots", capture_slots)
+    monkeypatch.setattr(registry_module, "_discover_slots", capture_slots)
 
     part = (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)) - Pos(0, -14, 0) * Box(8, 12, 40)
     result = r.build_recognition_result(part)

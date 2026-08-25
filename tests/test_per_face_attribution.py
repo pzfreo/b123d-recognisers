@@ -59,15 +59,14 @@ def test_generic_attribution_report_covers_all_physical_families_from_one_produc
     assert report[FamilyId.HOLES.value]["status"] == "fully_attributed"
 
 
-def test_generic_report_counts_partial_attribution_without_calling_it_complete() -> None:
-    # A straight through slot follows the measured paired-wall path; the family remains globally
-    # incomplete because its separate cap-recovered path has no defining ownership proof yet.
+def test_generic_report_counts_complete_slot_attribution() -> None:
+    # Every Slot route now has complete original wall/cap evidence, including this straight path.
     part = Box(30, 30, 10) - Box(12, 5, 20)
     report = inventory_attribution(_take_inventory(part))
     slots = report[FamilyId.SLOTS.value]
 
-    assert slots["status"] == "incomplete_attribution"
-    assert slots["attributed_candidates"] <= slots["candidates"]
+    assert slots["status"] == "fully_attributed"
+    assert slots["attributed_candidates"] == slots["candidates"]
 
 
 def test_generic_report_keeps_rejected_physical_attribution_separate() -> None:
