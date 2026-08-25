@@ -869,7 +869,7 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
     assert sites["_body_scoped_proposals"] == [
         ("_recess_features.py", "_discover_slots"),
         ("_recess_features.py", "_discover_slots"),
-        ("_recess_features.py", "recognise_pockets"),
+        ("_recess_features.py", "_discover_pockets"),
     ]
     assert {path for path, _function in sites["_RecessProposal"]} == {
         "_recess_core.py",
