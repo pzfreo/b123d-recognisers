@@ -881,9 +881,15 @@ The Polygonal Stock semantic child #232 is independently protected by
 `F5-POLYGONAL-STOCK-H1`, bucket 30. Its neutral seal adds the exact
 `f5_polygonal_stock_h1` selection and acknowledgement without archive access, membership
 inspection, recognition, annotation reading, or outcome evidence; the ordinary unselected
-complement moved to buckets 31..999. The allocation remains `sealed_unrevealed` until #232 clears
-two independent exact-head reviews and all mechanical gates. Its authority is non-transferable,
-and zero, abort, invalid, or completed reveal consumes it without replacement, retry, or fitting.
+complement moved to buckets 31..999. After #232 cleared two independent exact-head reviews and all
+mechanical gates at accepted pre-reveal head `e884768`, its one authorized selection contained 37
+model triples (111 files; selected-artifact SHA-256
+`9b987707e0307f8dcdd9cce2daffa2113c482e1c1069479ba58b3b31ed7f725e`). Annotation
+validation stopped because `20240116_231044_1243_result_rel.json` was not a JSON object, before that
+model's STEP import or recognition. The overall audit produced no complete report, so no aggregate
+Polygonal Stock counts or attribution outcomes are available or claimable. The temporary selection
+was deleted without retry, alternate mode, replacement or fitting. The allocation is permanently
+consumed and inconclusive, not regression evidence, and may not be reused.
 
 The Slot and Pocket semantic children #235 and #236 share neutral occurrence/cap-provenance
 prerequisite #234, but their outcome evidence remains independent. `F5-SLOTS-H1`/bucket 31 and

@@ -150,9 +150,14 @@ complete report, so no aggregate Plate counts or attribution outcomes are availa
 The temporary selection was deleted; no retry, alternate mode, replacement or fitting followed.
 The allocation is permanently consumed and inconclusive, not regression evidence. The ordinary
 `unselected` complement was then buckets 30..999.
-`F5-POLYGONAL-STOCK-H1` is independently `sealed_unrevealed` at bucket 30 for #232. It was
-designated without archive access, membership inspection, recognition, annotation reading, or
-outcome evidence. Its exact acknowledgement is non-transferable, and the ordinary `unselected`
+`F5-POLYGONAL-STOCK-H1` bucket 30 was selected exactly once at accepted pre-reveal PR #237 head
+`e884768`. The deterministic selection contained 37 model triples (111 files; selected-artifact
+SHA-256 `9b987707e0307f8dcdd9cce2daffa2113c482e1c1069479ba58b3b31ed7f725e`). Annotation
+validation stopped because `20240116_231044_1243_result_rel.json` was not a JSON object, before
+that model's STEP import or recognition. The overall audit produced no complete report, so no
+aggregate Polygonal Stock counts or attribution outcomes are available or claimable. The temporary
+selection was deleted; no retry, alternate mode, replacement or fitting followed. The allocation
+is permanently consumed and inconclusive, not regression evidence. The ordinary `unselected`
 complement was then buckets 31..999.
 `F5-SLOTS-H1` and `F5-POCKETS-H1` are independently `sealed_unrevealed` at buckets 31 and 32 for
 #235 and #236. Their neutral combined designation changed only the allocation policy, tests and

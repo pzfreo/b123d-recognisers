@@ -91,7 +91,7 @@ ALLOCATION_SPECS: Final = (
         F5_POLYGONAL_STOCK_H1,
         "f5_polygonal_stock_h1",
         frozenset({30}),
-        "sealed_unrevealed",
+        "consumed",
     ),
     AllocationSpec(F5_SLOTS_H1, "f5_slots_h1", frozenset({31}), "sealed_unrevealed"),
     AllocationSpec(F5_POCKETS_H1, "f5_pockets_h1", frozenset({32}), "sealed_unrevealed"),
