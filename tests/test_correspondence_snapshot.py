@@ -415,6 +415,7 @@ def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
         _body_geometry._validate_matching_pcurve(
             edge,
             face,
+            BRepAdaptor_Curve(edge.wrapped),
             BRepAdaptor_Surface(face.wrapped),
             1e-7,
             "LINE",

@@ -1058,9 +1058,28 @@ def _planar_cycle(
         return MatchingWire(role, 0, (full_oriented[0],))
     if not adjacency or any(len(entries) != 2 for entries in adjacency.values()):
         raise UnsupportedBodyGeometry("matching wire is not one degree-two cycle")
-    parameters = {
-        vertex: _plane_parameter(vertices[vertex], face, quantum) for vertex in adjacency
-    }
+    normal = cast(QPoint, face.parameters[:3])
+    offset = face.parameters[3]
+    u_axis, v_axis = _plane_basis(normal)
+    plane_origin = tuple(offset * item for item in normal)
+    parameters = {}
+    for vertex in adjacency:
+        delta = tuple(
+            value - origin
+            for value, origin in zip(vertices[vertex], plane_origin, strict=True)
+        )
+        parameters[vertex] = (
+            _snap_checked(
+                sum(a * b for a, b in zip(delta, u_axis, strict=True)),
+                quantum,
+                name="pcurve u",
+            ),
+            _snap_checked(
+                sum(a * b for a, b in zip(delta, v_axis, strict=True)),
+                quantum,
+                name="pcurve v",
+            ),
+        )
 
     candidates: list[tuple[MatchingHalfEdge, ...]] = []
     minimum_vertex = min(vertices[index] for index in adjacency)
@@ -1142,6 +1161,7 @@ def _cylinder_parameter(
 def _validate_matching_pcurve(
     edge: Any,
     face: Any,
+    curve: BRepAdaptor_Curve,
     surface: BRepAdaptor_Surface,
     quantum: float,
     kind: str,
@@ -1150,7 +1170,6 @@ def _validate_matching_pcurve(
     """Prove one exact face-edge pcurve occurrence reconstructs its 3-D curve."""
 
     try:
-        curve = BRepAdaptor_Curve(edge.wrapped)
         pcurve = BRepAdaptor_Curve2d(edge.wrapped, face.wrapped)
         curve_first, curve_last = curve.FirstParameter(), curve.LastParameter()
         pcurve_first, pcurve_last = pcurve.FirstParameter(), pcurve.LastParameter()
@@ -1479,6 +1498,7 @@ def matching_boundary_for_solid(
     raw_curves: list[Any] = []
     raw_curve_indices: dict[Any, int] = {}
     raw_curve_vertices: dict[Any, tuple[int, ...]] = {}
+    curve_adaptors: dict[Any, BRepAdaptor_Curve] = {}
     curve_examples: list[Any] = []
     faces = tuple(solid.faces())
     if cached_face_builds is None:
@@ -1520,9 +1540,14 @@ def matching_boundary_for_solid(
                 raise UnsupportedBodyGeometry(
                     "matching cached curve authority is incomplete"
                 )
+            curve_adaptor = curve_adaptors.get(edge)
+            if curve_adaptor is None:
+                curve_adaptor = BRepAdaptor_Curve(edge.wrapped)
+                curve_adaptors[edge] = curve_adaptor
             _validate_matching_pcurve(
                 edge,
                 owner,
+                curve_adaptor,
                 surface,
                 quantum,
                 cached_label.kind,
