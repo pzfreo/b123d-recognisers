@@ -115,12 +115,13 @@ def test_occurrence_matrix_preserves_public_parity_and_exact_planar_roles(
     assert {claim.claimant for claim in ledger.claims} == {
         proposal.record for proposal in proposals if proposal.planar
     }
-    assert all(
-        claim.defining.isdisjoint(
-            frozenset(node for proposal in proposals for group in proposal.caps for node in group)
-        )
-        for claim in ledger.claims
+    cap_nodes = frozenset(
+        node for proposal in proposals for group in proposal.caps for node in group
     )
+    if family == "slot":
+        assert all(claim.defining.isdisjoint(cap_nodes) for claim in ledger.claims)
+    else:
+        assert cap_nodes.issubset(frozenset().union(*(claim.defining for claim in ledger.claims)))
 
 
 def test_equal_occurrences_on_separate_solids_remain_distinct() -> None:
@@ -624,7 +625,7 @@ def test_competing_endpoint_cap_clusters_fail_closed(monkeypatch) -> None:
     assert [record.to_dict() for record in recognise_slots(part)] == public_before
 
 
-def test_slot_child_promotes_only_slots_and_keeps_pockets_incomplete() -> None:
+def test_slot_and_pocket_children_promote_only_their_families() -> None:
     by_family = {definition.family: definition for definition in PHYSICAL_DEFINITIONS}
     assert isinstance(by_family[FamilyId.SLOTS].attribution, FullyAttributed)
-    assert isinstance(by_family[FamilyId.POCKETS].attribution, IncompleteAttribution)
+    assert isinstance(by_family[FamilyId.POCKETS].attribution, FullyAttributed)

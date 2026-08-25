@@ -89,13 +89,8 @@ def test_a_corner_notch_claims_its_floor_as_well_as_its_two_walls():
     assert len(horizontal) == 1, "exactly one claimed face is the floor"
 
 
-def test_a_pocket_recovered_from_round_ends_claims_nothing():
-    """The blind obround path, which has no flat walls to name.
-
-    Its evidence is two cylindrical caps, and `_planar_faces` never yielded them. Absent from
-    the ledger is the honest answer -- the same one the through-slot obround path gives, and
-    it is why `add_defining` refuses an empty claim rather than recording one.
-    """
+def test_a_pocket_recovered_from_round_ends_claims_both_caps():
+    """The blind obround path owns both cylindrical faces that establish it."""
 
     end = Cylinder(5, 8)
     stub = Box(6, 10, 8) + Pos(-3, 0, 0) * end + Pos(3, 0, 0) * end
@@ -104,7 +99,9 @@ def test_a_pocket_recovered_from_round_ends_claims_nothing():
 
     assert len(pockets) == 1 and not pockets[0].edge_anchored
     assert pockets[0].width == 10.0, "the round ends are what set the width"
-    assert ledger.claims == (), "no flat wall established it, so there is nothing to claim"
+    (claim,) = ledger.claims
+    assert len(claim.defining) == 2
+    assert all(not ledger.graph.is_planar(node) for node in claim.defining)
 
 
 def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypatch):
@@ -121,18 +118,18 @@ def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypa
     import b123d_recognisers._registry as registry_module
 
     seen = {}
-    real_pockets = registry_module.recognise_pockets
+    real_pockets = registry_module._discover_pockets
     real_slots = registry_module._discover_slots
 
     def capture_pockets(part, **kwargs):
-        seen["pockets"] = kwargs.get("ledger")
+        seen["pockets"] = kwargs.get("writer")
         return real_pockets(part, **kwargs)
 
     def capture_slots(part, **kwargs):
         seen["slots"] = kwargs.get("writer")
         return real_slots(part, **kwargs)
 
-    monkeypatch.setattr(registry_module, "recognise_pockets", capture_pockets)
+    monkeypatch.setattr(registry_module, "_discover_pockets", capture_pockets)
     monkeypatch.setattr(registry_module, "_discover_slots", capture_slots)
 
     part = (Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)) - Pos(0, -14, 0) * Box(8, 12, 40)
