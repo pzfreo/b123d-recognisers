@@ -326,6 +326,9 @@ def recognise_section_passages(
 def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
+    proposals = section_ring_proposals(part, graph)
+    if not proposals:
+        return []
     legacy_roster = _legacy_roster(part, graph)
     legacy_by_nodes: dict[frozenset[FaceNode], tuple[Passage, int]] = {}
     for ordinal, (legacy, nodes) in enumerate(legacy_roster):
@@ -336,7 +339,7 @@ def _discover_section_passages(
     found: list[
         tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
     ] = []
-    for proposal in section_ring_proposals(part, graph):
+    for proposal in proposals:
         full_precision_projection = _proposal_legacy_projection(proposal)
         full_precision_passage = (
             passage_from_view(

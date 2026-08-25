@@ -310,7 +310,9 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
     for face in part.faces():
         graph.require_node(face)
     planar = tuple(node for node in graph.nodes if graph.is_planar(node))
-    directions: dict[tuple[float, float, float], list[Vector3]] = defaultdict(list)
+    direction_pairs: dict[
+        tuple[float, float, float], list[tuple[FaceNode, FaceNode, Vector3]]
+    ] = defaultdict(list)
     inspected_pairs: set[frozenset[FaceNode]] = set()
     for left in planar:
         for right in graph.neighbours(left):
@@ -322,49 +324,50 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
                 run = _canonical_run(edge)
                 if run is not None:
                     key = cast(Vector3, tuple(round(value, 9) for value in run))
-                    directions[key].append(run)
+                    direction_pairs[key].append((left, right, run))
 
     proposals: list[SectionRingProposal] = []
     seen: set[frozenset[FaceNode]] = set()
-    for key in sorted(directions):
-        run = min(directions[key])
+    for key in sorted(direction_pairs):
+        candidates = direction_pairs[key]
+        run = min(item[2] for item in candidates)
         base = LocalFrame.canonical(run, (0.0, 0.0, 0.0))
-        walls = tuple(
+        candidate_nodes = {node for left, right, _run in candidates for node in (left, right)}
+        walls = frozenset(
             node
-            for node in planar
+            for node in candidate_nodes
             if (normal := graph.normal(node)) is not None
             and abs(_dot(normal, base.run)) <= _DIRECTION_TOL
         )
         pair_lines: dict[frozenset[FaceNode], tuple[float, float, float, float]] = {}
         adjacency: dict[FaceNode, set[FaceNode]] = defaultdict(set)
-        inspected_pairs = set()
-        for left in walls:
-            for right in graph.neighbours(left):
-                pair = frozenset((left, right))
-                if right not in walls or pair in inspected_pairs:
-                    continue
-                inspected_pairs.add(pair)
-                line = _pair_line(graph, left, right, base)
-                if line is None:
-                    continue
-                left_span = _face_interval(graph, left, base.run)
-                right_span = _face_interval(graph, right, base.run)
-                if (
-                    left_span is None
-                    or right_span is None
-                    or any(
-                        abs(actual - expected) > _INTERVAL_TOL
-                        for actual, expected in zip(
-                            (*left_span, *right_span),
-                            (line[2], line[3], line[2], line[3]),
-                            strict=True,
-                        )
+        candidate_pairs = {
+            frozenset((left, right)): (left, right) for left, right, _run in candidates
+        }
+        for left, right in candidate_pairs.values():
+            if left not in walls or right not in walls:
+                continue
+            line = _pair_line(graph, left, right, base)
+            if line is None:
+                continue
+            left_span = _face_interval(graph, left, base.run)
+            right_span = _face_interval(graph, right, base.run)
+            if (
+                left_span is None
+                or right_span is None
+                or any(
+                    abs(actual - expected) > _INTERVAL_TOL
+                    for actual, expected in zip(
+                        (*left_span, *right_span),
+                        (line[2], line[3], line[2], line[3]),
+                        strict=True,
                     )
-                ):
-                    continue
-                pair_lines[frozenset((left, right))] = line
-                adjacency[left].add(right)
-                adjacency[right].add(left)
+                )
+            ):
+                continue
+            pair_lines[frozenset((left, right))] = line
+            adjacency[left].add(right)
+            adjacency[right].add(left)
 
         def connected(
             left: FaceNode,
