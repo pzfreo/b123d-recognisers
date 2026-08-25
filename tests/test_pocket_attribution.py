@@ -4,18 +4,42 @@ from __future__ import annotations
 
 import ast
 import inspect
+import math
 from copy import deepcopy
 from pathlib import Path
+from typing import cast
 
 import pytest
-from build123d import Box, Compound, Cylinder, Edge, Plane, Pos, Rot, export_step, import_step
+from build123d import (
+    Box,
+    Compound,
+    Cylinder,
+    Edge,
+    GeomType,
+    Plane,
+    Pos,
+    Rot,
+    export_step,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._recess_core import _bounds_one_void, _uninterrupted_long_span
+from b123d_recognisers._recess_faces import (
+    _AXIS_ALIGNED_TOL,
+    _FLOOR_COVER_FRAC,
+    _FLOOR_TOL,
+    _MERGE_TOL,
+    _dominant_axis,
+    _end_capped,
+    _Face,
+    _is_wall,
+)
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
 from b123d_recognisers._recess_records import Pocket
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
@@ -514,6 +538,95 @@ def test_sealed_rib_and_incomplete_cap_shapes_do_not_leak_evidence(part) -> None
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> None:
+    assert (_AXIS_ALIGNED_TOL, _MERGE_TOL, _FLOOR_TOL, _FLOOR_COVER_FRAC) == (
+        1e-3,
+        0.5,
+        0.3,
+        0.5,
+    )
+    axis_at = 1 - _AXIS_ALIGNED_TOL
+    assert _dominant_axis((math.nextafter(axis_at, 1), 0, 0)) == "x"
+    assert _dominant_axis((math.nextafter(axis_at, 0), 0, 0)) is None
+    assert round(1.2349, 2) == 1.23
+    assert round(1.2351, 2) == 1.24
+
+    class FakeEdge:
+        def __init__(self, kind) -> None:
+            self.geom_type = kind
+
+    class FakeFace:
+        def __init__(self, kinds) -> None:
+            self._edges = [FakeEdge(kind) for kind in kinds]
+
+        def edges(self):
+            return self._edges
+
+    assert not _is_wall(FakeFace([]))
+    assert _is_wall(FakeFace([GeomType.LINE, GeomType.CIRCLE]))
+    assert not _is_wall(FakeFace([GeomType.CIRCLE, GeomType.CIRCLE]))
+    assert not _is_wall(FakeFace([GeomType.LINE, GeomType.BSPLINE]))
+
+    reference = Box(10, 10, 1).faces().sort_by().last
+    bb = reference.bounding_box()
+    centre = sum((bb.min.Z, bb.max.Z)) / 2
+    foot = {"x": (-5, 5), "y": (-5, 5)}
+    plus = _Face((0, 0, 1), "z", bb, True)
+    minus = _Face((0, 0, -1), "z", bb, True)
+    assert _end_capped([plus], foot, 100, "z", centre, 1)
+    assert not _end_capped([minus], foot, 100, "z", centre, 1)
+    assert _end_capped([minus], foot, 100, "z", centre, -1)
+    assert _end_capped([plus], foot, 200, "z", centre, 1)
+    assert not _end_capped([plus], foot, math.nextafter(200, math.inf), "z", centre, 1)
+    assert _end_capped([plus], foot, 100, "z", math.nextafter(centre + _FLOOR_TOL, centre), 1)
+    assert not _end_capped([plus], foot, 100, "z", math.nextafter(centre + _FLOOR_TOL, math.inf), 1)
+
+    left, right, curved, a, b = object(), object(), object(), object(), object()
+    face_box = Box(1, 1, 1).bounding_box()
+    fa = _Face((1, 0, 0), "x", face_box, True, cast(FaceNode, left))
+    fb = _Face((-1, 0, 0), "x", face_box, True, cast(FaceNode, right))
+
+    class Graph:
+        def __init__(self, common=(), arcs=None, regions=None, bounds=None):
+            self.common = set(common)
+            self.arcs = arcs or {}
+            self.regions = regions or {}
+            self.node_bounds = bounds or {}
+
+        def neighbours(self, node):
+            return self.common or ({a} if node is left else {b})
+
+        def is_planar(self, _node):
+            return False
+
+        def arc(self, first, second):
+            return self.arcs[first, second]
+
+        def smooth_region(self, node):
+            return self.regions.get(node, frozenset({node}))
+
+        def bounds(self, node):
+            return self.node_bounds[node]
+
+    shared = frozenset({a, b})
+    fragmented = Graph(
+        arcs={(left, a): "concave", (right, b): "concave"}, regions={a: shared, b: shared}
+    )
+    assert _bounds_one_void(fa, fb, cast(FaceGraph, fragmented))
+    trimming = Graph(
+        common={curved},
+        arcs={(left, curved): "convex", (right, curved): "concave"},
+        bounds={curved: ((0, 0), (0, 0), (0, 2))},
+    )
+    assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, trimming)) == (2, 10)
+    collapsed = Graph(
+        common={curved},
+        arcs={(left, curved): "convex", (right, curved): "concave"},
+        bounds={curved: ((0, 0), (0, 0), (0, 10))},
+    )
+    assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, collapsed)) is None
+
+
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
     package = ROOT / "src/b123d_recognisers"
     calls = []
@@ -877,12 +990,48 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    proposals = module._body_scoped_proposals(
+        list(part.solids()),
+        lambda solid: module._pocket_proposals_one(solid, graph=context.graph),
+    )
+    assert len(proposals) == 2
+    shared = next(iter(proposals[0].planar))
+    mixed = _RecessProposal(
+        proposals[1].record,
+        proposals[1].planar | {shared},
+        proposals[1].caps,
+    )
+    real = module._body_scoped_proposals
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        lambda sources, recognise_one: (
+            [proposals[0], mixed]
+            if recognise_one.func is module._pocket_proposals_one
+            else real(sources, recognise_one)
+        ),
+    )
+    with pytest.raises(_PocketAttributionError, match="one valid solid"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+    assert FamilyId.POCKETS not in ledger._issuer._completed
+
+
 def test_empty_roles_and_cap_ambiguity_are_atomic_without_completion(monkeypatch) -> None:
     import b123d_recognisers._recess_features as module
     from b123d_recognisers._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     plain = _discover_pockets(part)[0]
+    real = module._body_scoped_proposals
     for failure, message in (
         (lambda *_args, **_kwargs: [_RecessProposal(plain, frozenset(), ())], "no defining"),
         (
@@ -892,10 +1041,19 @@ def test_empty_roles_and_cap_ambiguity_are_atomic_without_completion(monkeypatch
             "cap ownership is ambiguous",
         ),
     ):
-        ledger = ClaimLedger(FaceGraph(part))
-        monkeypatch.setattr(module, "_body_scoped_proposals", failure)
+        context = start(part)
+        ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+        monkeypatch.setattr(
+            module,
+            "_body_scoped_proposals",
+            lambda sources, recognise_one, fail=failure: (
+                fail(sources, recognise_one)
+                if recognise_one.func is module._pocket_proposals_one
+                else real(sources, recognise_one)
+            ),
+        )
         with pytest.raises(_PocketAttributionError, match=message):
-            _discover_pockets(part, writer=ledger.writer)
+            _discover_all(context, ledger)
         assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
         assert FamilyId.POCKETS not in ledger._issuer._completed
         assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
