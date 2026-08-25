@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import ast
 import inspect
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
+from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cylinder, Pos
+from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import recognise_pockets, recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
@@ -19,8 +22,12 @@ from b123d_recognisers._recess_core import (
     _pocket_proposals_one,
     _slot_proposals_one,
 )
-from b123d_recognisers._recess_faces import _planar_faces
-from b123d_recognisers._recess_obround import _extend_obround_proposals, _obround_ends
+from b123d_recognisers._recess_faces import _cylinder_faces, _planar_faces
+from b123d_recognisers._recess_obround import (
+    _extend_obround_proposals,
+    _obround_end,
+    _obround_ends,
+)
 from b123d_recognisers._recess_reduce import (
     _body_scoped_proposals,
     _collapse_collinear_proposals,
@@ -28,6 +35,8 @@ from b123d_recognisers._recess_reduce import (
     _RecessProposal,
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, IncompleteAttribution
+
+ROOT = Path(__file__).parents[1]
 
 
 def _obround(length: float, width: float, depth: float):
@@ -148,6 +157,41 @@ def test_merge_and_collapse_union_occurrence_provenance() -> None:
     assert _collapse_collinear_proposals(raw, part) == raw
 
 
+def test_real_crossing_collapse_absorbs_every_arm_in_geometric_order(monkeypatch) -> None:
+    import b123d_recognisers._recess_core as module
+
+    part = Box(120, 120, 20) - Box(60, 14, 20) - Box(14, 60, 20)
+    graph = FaceGraph(part)
+    raw = []
+    real = module._collapse_collinear_proposals
+
+    def capture(proposals, owner):
+        raw.extend(proposals)
+        return real(proposals, owner)
+
+    monkeypatch.setattr(module, "_collapse_collinear_proposals", capture)
+    reduced = module._slot_proposals_one(part, graph=graph)
+
+    assert [(p.record.long_axis, p.record.lo, p.record.hi) for p in raw] == [
+        ("x", -30.0, -7.0),
+        ("y", -30.0, -7.0),
+        ("y", 7.0, 30.0),
+        ("x", 7.0, 30.0),
+    ]
+    assert [(p.record.long_axis, p.record.lo, p.record.hi) for p in reduced] == [
+        ("x", -30.0, 30.0),
+        ("y", -30.0, 30.0),
+    ]
+    for proposal in reduced:
+        absorbed = frozenset(
+            node
+            for arm in raw
+            if arm.record.long_axis == proposal.record.long_axis
+            for node in arm.planar
+        )
+        assert proposal.planar == absorbed and len(absorbed) == 4
+
+
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:
     part = Box(120, 60, 20) - _obround(30, 12, 20)
     graph = FaceGraph(part)
@@ -162,6 +206,81 @@ def test_merge_preserves_distinct_split_cap_patch_groups() -> None:
 
     assert len(merged) == 1
     assert merged[0].caps == (frozenset(nodes[:2]), frozenset(nodes[2:]))
+
+
+def test_imported_split_cylindrical_cap_retains_every_original_patch(tmp_path: Path) -> None:
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    graph = FaceGraph(part)
+    cap = max(_obround_ends(part, graph), key=lambda end: end[5])
+    (cap_node,) = cap[9]
+    face = graph.face(cap_node)
+    seam = Edge.make_line((21, 0, face.bounding_box().min.Z), (21, 0, face.bounding_box().max.Z))
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, face.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+    path = tmp_path / "split-cap.step"
+    assert export_step(split, path)
+
+    imported = import_step(path)
+    imported_graph = FaceGraph(imported)
+    ends = _obround_ends(imported, imported_graph)
+    assert sorted(len(end[9]) for end in ends) == [1, 2]
+    proposals = _slot_proposals_one(imported, graph=imported_graph)
+    assert len(proposals) == 1
+    assert sorted(len(group) for group in proposals[0].caps) == [1, 2]
+    assert frozenset(node for group in proposals[0].caps for node in group) == frozenset(
+        node for end in ends for node in end[9]
+    )
+
+
+def test_full_cylinder_and_lone_d_end_do_not_supply_obround_cap_pairs() -> None:
+    round_hole = Box(80, 60, 20) - Cylinder(6, 20)
+    round_graph = FaceGraph(round_hole)
+    cylinder = next(item for item in _cylinder_faces(round_hole, round_graph) if item[4])
+    assert _obround_end(cylinder, frozenset({cylinder[5]})) is None
+    assert _obround_ends(round_hole, round_graph) == []
+
+    lone_d = Box(80, 60, 20) - (Box(40, 12, 20) + Pos(-20, 0, 0) * Cylinder(6, 20))
+    (proposal,) = _slot_proposals_one(lone_d, graph=FaceGraph(lone_d))
+    assert proposal.caps == () and proposal.record.length == 40.0
+
+
+@pytest.mark.parametrize("mutation", ["missing", "one", "axis", "radius", "depth"])
+def test_cap_matching_refusals_leave_the_legacy_record_unextended(monkeypatch, mutation) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    graph = FaceGraph(part)
+    extended = _slot_proposals_one(part, graph=graph)[0]
+    radius = extended.record.width / 2
+    raw = _RecessProposal(
+        replace(
+            extended.record,
+            lo=extended.record.lo + radius,
+            hi=extended.record.hi - radius,
+            length=extended.record.length - 2 * radius,
+        ),
+        extended.planar,
+    )
+    ends = _obround_ends(part, graph)
+    if mutation == "missing":
+        changed = []
+    elif mutation == "one":
+        changed = ends[:1]
+    else:
+        target = ends[0]
+        index, value = {
+            "axis": (2, "x" if target[2] != "x" else "y"),
+            "radius": (3, target[3] * 1.1),
+            "depth": (8, target[8] + 1.0),
+        }[mutation]
+        changed_end = (*target[:index], value, *target[index + 1 :])
+        changed = [changed_end, *ends[1:]]
+    monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: changed)
+
+    assert _extend_obround_proposals([raw], part, graph) == [raw]
 
 
 @pytest.mark.parametrize(
@@ -218,6 +337,102 @@ def test_corner_notch_provenance_has_no_value_keyed_intermediate() -> None:
     source = inspect.getsource(_pocket_proposals_one)
     assert "_Claims" not in source
     assert "_corner_notch_proposals" in source
+
+
+def test_occurrence_proposal_and_cap_helper_seams_are_closed() -> None:
+    package = ROOT / "src/b123d_recognisers"
+    watched = {
+        "_slot_proposals_one",
+        "_pocket_proposals_one",
+        "_corner_notch_proposals",
+        "_merge_proposals",
+        "_collapse_collinear_proposals",
+        "_extend_obround_proposals",
+        "_obround_ends",
+        "_cylinder_faces",
+    }
+    calls = {name: [] for name in watched}
+    imports = {name: set() for name in watched}
+    for path in sorted(package.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        direct = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name in watched:
+                        direct[alias.asname or alias.name] = alias.name
+                        imports[alias.name].add(path.name)
+
+        class Visitor(ast.NodeVisitor):
+            def __init__(self, source_path, aliases):
+                self.source_path = source_path
+                self.aliases = aliases
+                self.functions = []
+
+            def visit_FunctionDef(self, node):
+                self.functions.append(node.name)
+                self.generic_visit(node)
+                self.functions.pop()
+
+            def visit_Call(self, node):
+                leaf = ""
+                if isinstance(node.func, ast.Name):
+                    leaf = self.aliases.get(node.func.id, node.func.id)
+                elif isinstance(node.func, ast.Attribute):
+                    leaf = node.func.attr
+                if leaf in watched:
+                    calls[leaf].append(
+                        (
+                            self.source_path.name,
+                            self.functions[-1] if self.functions else "<module>",
+                        )
+                    )
+                self.generic_visit(node)
+
+        Visitor(path, direct).visit(tree)
+
+    assert calls == {
+        "_slot_proposals_one": [("_recess_core.py", "_recognise_slots_one")],
+        "_pocket_proposals_one": [("_recess_core.py", "_recognise_pockets_one")],
+        "_corner_notch_proposals": [
+            ("_recess_core.py", "_pocket_proposals_one"),
+            ("_recess_core.py", "_recognise_corner_notches"),
+        ],
+        "_merge_proposals": [
+            ("_recess_core.py", "_slot_proposals_one"),
+            ("_recess_core.py", "_pocket_proposals_one"),
+        ],
+        "_collapse_collinear_proposals": [("_recess_core.py", "_slot_proposals_one")],
+        "_extend_obround_proposals": [
+            ("_recess_core.py", "_slot_proposals_one"),
+            ("_recess_core.py", "_pocket_proposals_one"),
+        ],
+        "_obround_ends": [
+            ("_recess_obround.py", "_extend_obround_proposals"),
+            ("_recess_obround.py", "_recognise_obround_from_ends"),
+        ],
+        "_cylinder_faces": [
+            ("_recess_obround.py", "_extend_obround_ends"),
+            ("_recess_obround.py", "_obround_ends"),
+        ],
+    }
+    assert imports["_slot_proposals_one"] == {"_recess_features.py"}
+    assert imports["_pocket_proposals_one"] == {"_recess_features.py"}
+    assert imports["_cylinder_faces"] == {"_recess_obround.py"}
+
+    for name in ("_recess_faces.py", "_recess_obround.py", "_recess_reduce.py"):
+        source = (package / name).read_text(encoding="utf-8")
+        assert not any(
+            prohibited in source
+            for prohibited in (
+                "CandidateSet",
+                "EvidenceIndex",
+                "InventoryProduct",
+                "ReconciliationResult",
+                "FullyAttributed",
+                "IncompleteAttribution",
+            )
+        )
 
 
 def test_competing_endpoint_cap_clusters_fail_closed(monkeypatch) -> None:
