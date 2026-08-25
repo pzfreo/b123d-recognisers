@@ -215,6 +215,12 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
     object.__setattr__(inputs, "_candidates", original_candidates)
     assert inputs.passage_views() == expected
 
+    object.__setattr__(inputs, "_allowed", frozenset())
+    with pytest.raises(ValueError, match="not a declared"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_allowed", frozenset((FamilyId.PASSAGES,)))
+    assert inputs.passage_views() == expected
+
     with pytest.raises(TypeError):
         AcceptedProjectionInputs(  # type: ignore[call-arg]
             frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence
@@ -440,6 +446,13 @@ def test_registry_validation_rejects_incomplete_physical_contract_metadata() -> 
     with pytest.raises(ValueError, match="reasons must be non-empty"):
         validate_definitions(empty_reason, DERIVED_DEFINITIONS)
 
+    missing_attribution = tuple(
+        replace(item, attribution=None) if item is first else item  # type: ignore[arg-type]
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="attribution disposition"):
+        validate_definitions(missing_attribution, DERIVED_DEFINITIONS)
+
 
 def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> None:
     first = DERIVED_DEFINITIONS[0]
@@ -482,6 +495,20 @@ def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> N
     )
     with pytest.raises(ValueError, match="reasons must be non-empty"):
         validate_definitions(PHYSICAL_DEFINITIONS, empty_reason)
+
+    missing_record_types = (
+        replace(first, record_types=()),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="record contracts"):
+        validate_definitions(PHYSICAL_DEFINITIONS, missing_record_types)
+
+    unknown_role = (
+        replace(first, role="unknown"),  # type: ignore[arg-type]
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="role is not recognized"):
+        validate_definitions(PHYSICAL_DEFINITIONS, unknown_role)
 
     invalid_source = (
         replace(first, sources=(FamilyId.LEGACY,)),

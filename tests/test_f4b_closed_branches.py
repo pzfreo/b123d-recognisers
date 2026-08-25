@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import pytest
 from build123d import Box, Pos, Rot
 
+from b123d_recognisers._adjacency import FaceGraph, SolidRef
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._passage_compat import (
     PassageCompatibilityView,
     _canonical_section,
@@ -35,6 +37,7 @@ from b123d_recognisers.passages import (
     _legacy_projection,
     _proposal_legacy_projection,
     _unit,
+    recognise_passages,
 )
 
 
@@ -54,6 +57,22 @@ class _BadEndpoint:
 
     def position_at(self, at):
         raise RuntimeError("closed kernel boundary")
+
+
+class _LineEdge:
+    geom_type = SimpleNamespace(name="LINE")
+
+    def __init__(self, start, end, tangent=(0.0, 0.0, 1.0)) -> None:
+        self._points = (start, end)
+        self._tangent = tangent
+
+    def tangent_at(self):
+        x, y, z = self._tangent
+        return SimpleNamespace(normalized=lambda: SimpleNamespace(X=x, Y=y, Z=z))
+
+    def position_at(self, at):
+        x, y, z = self._points[int(at)]
+        return SimpleNamespace(X=x, Y=y, Z=z)
 
 
 def _frame() -> PassageFrame:
@@ -102,6 +121,18 @@ def test_pair_line_and_face_interval_closed_refusals() -> None:
     )
     assert _face_interval(missing, object(), neutral.run) is None  # type: ignore[arg-type]
     assert _face_interval(failing, object(), neutral.run) is None  # type: ignore[arg-type]
+
+
+def test_pair_line_refuses_nonparallel_and_noncollinear_shared_occurrences() -> None:
+    neutral = LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
+    nonparallel = _LineEdge((1.0, 2.0, 0.0), (1.0, 2.0, 1.0), (1.0, 0.0, 0.0))
+    assert _pair_line(_Edges((nonparallel,)), object(), object(), neutral) is None  # type: ignore[arg-type]
+
+    separated = (
+        _LineEdge((1.0, 2.0, 0.0), (1.0, 2.0, 1.0)),
+        _LineEdge((1.01, 2.0, 1.0), (1.01, 2.0, 2.0)),
+    )
+    assert _pair_line(_Edges(separated), object(), object(), neutral) is None  # type: ignore[arg-type]
 
 
 def test_material_fraction_handles_all_closed_intersection_shapes() -> None:
@@ -154,6 +185,58 @@ def test_body_adapter_revalidates_the_occurrence_mapping() -> None:
         adapter.validate(object(), occurrence)  # type: ignore[arg-type]
 
 
+def test_section_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatch) -> None:
+    import b123d_recognisers._section_passages as module
+    from tests.test_section_passages import _square
+
+    part = _square()
+    proposal = module.section_ring_proposals(part, FaceGraph(part))[0]
+    assert proposal.ends.low_capped is False
+    assert proposal.ends.high_capped is False
+
+    monkeypatch.setattr(module, "_face_interval", lambda *_args: None)
+    assert module.section_ring_proposals(part, FaceGraph(part)) == ()
+
+
+def test_section_proposal_refuses_disagreeing_complete_wall_spans(monkeypatch) -> None:
+    import b123d_recognisers._section_passages as module
+    from tests.test_section_passages import _square
+
+    part = _square()
+    graph = FaceGraph(part)
+    first = module.section_ring_proposals(part, graph)[0].nodes[0]
+    monkeypatch.setattr(
+        module,
+        "_face_interval",
+        lambda _graph, node, _run: (0.0, 10.0 if node is first else 11.0),
+    )
+    assert module.section_ring_proposals(part, graph) == ()
+
+
+def test_solid_shape_revalidates_ordinal_identity_and_closed_membership() -> None:
+    graph = FaceGraph(Box(2, 2, 2))
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    assert graph.solid_shape(solid).is_valid
+
+    copied = SolidRef(solid.ordinal)
+    with pytest.raises(ValueError, match="not issued"):
+        graph.solid_shape(copied)
+    graph._issued_solid_refs[copied] = solid.ordinal
+    with pytest.raises(ValueError, match="identity changed"):
+        graph.solid_shape(copied)
+
+    object.__setattr__(solid, "ordinal", 99)
+    with pytest.raises(ValueError, match="not issued"):
+        graph.solid_shape(solid)
+    object.__setattr__(solid, "ordinal", 0)
+
+    assert graph._closed_solids is not None
+    graph._closed_solids = frozenset()
+    with pytest.raises(ValueError, match="no longer maps"):
+        graph.solid_shape(solid)
+
+
 @pytest.mark.parametrize(
     "factory",
     (
@@ -182,6 +265,22 @@ def test_body_adapter_revalidates_the_occurrence_mapping() -> None:
 def test_public_schema_closed_refusal_roster(factory) -> None:
     with pytest.raises(ValueError):
         factory()
+
+
+def test_section_centring_and_legacy_ledger_transition_refuse() -> None:
+    with pytest.raises(ValueError, match="origin-centred"):
+        PassageSection(
+            (
+                PassageSectionVertex((1.0, 1.0), 0.0),
+                PassageSectionVertex((3.0, 1.0), 0.0),
+                PassageSectionVertex((2.0, 4.0), 0.0),
+            )
+        )
+
+    part = Box(10, 10, 10)
+    ledger = ClaimLedger(FaceGraph(part))
+    with pytest.raises(RuntimeError, match="recognise_passages"):
+        recognise_passages(part, ledger=ledger)
 
 
 @pytest.mark.parametrize(
@@ -215,6 +314,17 @@ def test_compatibility_projection_closed_absence_and_construction() -> None:
             (0.0, 1.0, 0.0),
             (0.0, 1.0),
             ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0)),
+        )
+        is None
+    )
+    assert (
+        principal_projection(
+            (0.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0),
+            ((0.0, 0.0), (1.0, 0.0), (2.0, 0.0)),
         )
         is None
     )

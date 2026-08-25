@@ -296,17 +296,31 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             ),
             "aggregate_membership is invalid",
         ),
+        (
+            lambda value: value["families"][0]["records"][0].update(
+                {"aggregate_membership": ["RecognitionResult.bosses"] * 2}
+            ),
+            "aggregate_membership must be unique",
+        ),
+        (
+            lambda value: value["families"][0]["records"][0].update(
+                {"aggregate_membership": [], "aggregate_membership_rationale": ""}
+            ),
+            "empty-membership rationale",
+        ),
+        (
+            lambda value: value["families"][0]["records"][0].update(
+                {"aggregate_membership_rationale": "not applicable"}
+            ),
+            "rationale despite aggregate membership",
+        ),
         (lambda value: value["families"][0]["records"][0]["fields"].clear(), "non-empty"),
         (
-            lambda value: value["families"][0]["records"][0]["fields"].__setitem__(
-                "axis", None
-            ),
+            lambda value: value["families"][0]["records"][0]["fields"].__setitem__("axis", None),
             "axis must be an object",
         ),
         (
-            lambda value: value["families"][0]["records"][0]["fields"]["axis"].pop(
-                "units"
-            ),
+            lambda value: value["families"][0]["records"][0]["fields"]["axis"].pop("units"),
             "missing schema data",
         ),
         (
@@ -365,12 +379,80 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             lambda value: value["families"][0].update({"documentation": ["../private"]}),
             "invalid source-relative",
         ),
+        (
+            lambda value: value["families"][0].update(
+                {"documentation": ["docs/capabilities.md", "docs/capabilities.md"]}
+            ),
+            "unique, sorted paths",
+        ),
         (lambda value: value.update({"aliases": {}}), "aliases must be an array"),
     ],
 )
 def test_schema_validation_fails_closed(mutate, message: str) -> None:
     manifest = capability_manifest()
     mutate(manifest)
+    with pytest.raises(CapabilityManifestError, match=message):
+        validate_capability_manifest(manifest)
+
+
+def test_additional_format2_container_and_order_refusals() -> None:
+    with pytest.raises(CapabilityManifestError, match="JSON object"):
+        validate_capability_manifest(())
+
+    manifest = capability_manifest()
+    manifest["aliases"] = [{"kind": "family"}]
+    with pytest.raises(CapabilityManifestError, match="missing required fields"):
+        validate_capability_manifest(manifest)
+
+    manifest = capability_manifest()
+    passages = next(family for family in manifest["families"] if family["id"] == "passages")
+    passages["recognisers"].reverse()
+    with pytest.raises(CapabilityManifestError, match="recognisers are not sorted"):
+        validate_capability_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    (
+        ({"role": "unknown"}, "recogniser role is invalid"),
+        ({"ledger_state": "available"}, "compatibility ledger state is invalid"),
+        ({"remove_in": "eventually"}, "semantic package version"),
+        ({"replacement": "private.recognise_section_passages"}, "replacement is invalid"),
+    ),
+)
+def test_compatibility_recogniser_contract_fails_closed(changes, message: str) -> None:
+    manifest = capability_manifest()
+    passages = next(family for family in manifest["families"] if family["id"] == "passages")
+    compatibility = next(
+        recogniser
+        for recogniser in passages["recognisers"]
+        if recogniser["role"] == "compatibility"
+    )
+    if changes.get("role") == "unknown":
+        for key in ("ledger_state", "remove_in", "replacement"):
+            compatibility.pop(key)
+    compatibility.update(changes)
+    with pytest.raises(CapabilityManifestError, match=message):
+        validate_capability_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    (
+        (
+            {
+                "census_name": None,
+                "census_rationale": "recorded elsewhere",
+                "census_output": "RecognitionResult.bosses",
+            },
+            "census output without key",
+        ),
+        ({"census_output": "private.bosses"}, "census_output is invalid"),
+    ),
+)
+def test_census_contract_fails_closed(changes, message: str) -> None:
+    manifest = capability_manifest()
+    manifest["families"][0].update(changes)
     with pytest.raises(CapabilityManifestError, match=message):
         validate_capability_manifest(manifest)
 
