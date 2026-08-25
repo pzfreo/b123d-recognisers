@@ -150,21 +150,21 @@ def _positive_fact(value: float, quantum: float, *, name: str) -> float:
     return snapped
 
 
-def _point(value, centre: tuple[float, float, float], quantum: float) -> QPoint:
+def _point(value, centre: tuple[float, float, float], quantum: float, *, name: str) -> QPoint:
     raw_values = tuple(
         component - origin
         for component, origin in zip(_finite(value.X, value.Y, value.Z), centre, strict=True)
     )
     raw = (raw_values[0], raw_values[1], raw_values[2])
-    return _relative_point(raw, quantum, name="point")
+    return _relative_point(raw, quantum, name=name)
 
 
 def _relative_point(raw: tuple[float, float, float], quantum: float, *, name: str) -> QPoint:
     snapped = tuple(_snap(component, quantum) for component in raw)
-    displacement = math.sqrt(
-        sum((after - before) ** 2 for before, after in zip(raw, snapped, strict=True))
+    displacement_squared = sum(
+        (after - before) ** 2 for before, after in zip(raw, snapped, strict=True)
     )
-    if displacement > 2.0 * quantum:
+    if displacement_squared > math.nextafter((2.0 * quantum) ** 2, math.inf):
         raise UnsupportedBodyGeometry(f"{name} exceeds the reconstruction bound")
     return snapped  # type: ignore[return-value]
 
@@ -194,10 +194,8 @@ def _qaxis(raw: tuple[float, float, float]) -> QPoint:
     if abs(norm - 1.0) > DIRECTION_TOL:
         raise UnsupportedBodyGeometry("quantized analytic direction is not unit length")
     if (
-        math.sqrt(
-            sum((after - before) ** 2 for before, after in zip(canonical, snapped, strict=True))
-        )
-        > 2.0 * DIRECTION_TOL
+        sum((after - before) ** 2 for before, after in zip(canonical, snapped, strict=True))
+        > math.nextafter((2.0 * DIRECTION_TOL) ** 2, math.inf)
     ):
         raise UnsupportedBodyGeometry("analytic direction exceeds the reconstruction bound")
     return snapped  # type: ignore[return-value]
@@ -220,6 +218,12 @@ def _plane_parameters(
 def _reverse_edge(item: tuple[EdgeGeometry, int]) -> tuple[EdgeGeometry, int]:
     edge, direction = item
     return edge, -direction
+
+
+def _wire_orientation(wire) -> int:
+    """Return raw wrapper orientation before presentation canonicalization."""
+
+    return -1 if wire.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED else 1
 
 
 def _canonical_cycle(
@@ -295,8 +299,8 @@ def _arc_sweep(edge, axis: tuple[float, float, float]) -> float:
 
 def _edge_geometry(edge, centre: tuple[float, float, float], quantum: float) -> EdgeGeometry:
     kind = getattr(edge.geom_type, "name", str(edge.geom_type))
-    start = _point(edge.position_at(0.0), centre, quantum)
-    end = _point(edge.position_at(1.0), centre, quantum)
+    start = _point(edge.position_at(0.0), centre, quantum, name="edge endpoint")
+    end = _point(edge.position_at(1.0), centre, quantum, name="edge endpoint")
     length = float(edge.length)
     qlength = _positive_fact(length, quantum, name="edge length")
     if edge.geom_type == GeomType.LINE:
@@ -316,7 +320,7 @@ def _edge_geometry(edge, centre: tuple[float, float, float], quantum: float) -> 
         canonical_start,
         canonical_end,
         qlength,
-        _point(edge.arc_center, centre, quantum),
+        _point(edge.arc_center, centre, quantum, name="circle centre"),
         _qaxis(axis),
         _positive_fact(float(edge.radius), quantum, name="circle radius"),
         canonical_sweep,
@@ -410,9 +414,7 @@ def _face_geometry(face, centre: tuple[float, float, float], scale: float) -> _F
             for edge in wire.edges()
         )
         role = "outer" if wire == outer else "inner"
-        raw_wire_orientation = (
-            -1 if wire.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED else 1
-        )
+        raw_wire_orientation = _wire_orientation(wire)
         raw_orientation = raw_wire_orientation * material_side
         canonical, alignments, semantic_winding = _canonical_cycle_with_tokens(
             occurrences, raw_orientation
@@ -424,7 +426,7 @@ def _face_geometry(face, centre: tuple[float, float, float], scale: float) -> _F
         kind,
         tuple(parameters),
         _positive_fact(area, area_quantum, name="face area"),
-        _point(face_centre, centre, quantum),
+        _point(face_centre, centre, quantum, name="face centroid"),
         material_side,
         tuple(item.geometry for item in wire_builds),
     )
@@ -583,7 +585,7 @@ def describe_solid(solid) -> _DescribedBody:
     moment_quantum = (scale + quantum) ** 5 - scale**5
     try:
         raw_faces = tuple(solid.faces())
-    except Standard_Failure as error:
+    except (RuntimeError, Standard_Failure) as error:
         raise UnsupportedBodyGeometry("kernel body boundary is unavailable") from error
     # Python validation/canonicalization failures are programmer errors and must not be
     # relabelled as unsupported kernel geometry. Individual OCCT adaptor failures use the

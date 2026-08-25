@@ -9,10 +9,12 @@ import copy
 import dataclasses
 import math
 from collections.abc import Mapping
+from itertools import product
 from pathlib import Path
 
 import pytest
 from build123d import (
+    Align,
     Box,
     Compound,
     Cylinder,
@@ -65,6 +67,15 @@ def _line_rrp(repeats: int):
             angle = 2 * math.pi * (sector / repeats + offset / (4 * repeats))
             points.append((radius * math.cos(angle), radius * math.sin(angle)))
     return extrude(Polygon(*points), 10)
+
+
+def _two_rrp_one_solid():
+    left = Pos(-35, 0, 0) * _line_rrp(5)
+    right = Pos(35, 0, 0) * _line_rrp(7)
+    bridge = Pos(0, 0, 5) * Box(40, 4, 2, align=(Align.CENTER, Align.CENTER, Align.CENTER))
+    part = left + right + bridge
+    assert len(part.solids()) == 1
+    return part
 
 
 def _body_descriptor(part):
@@ -143,7 +154,7 @@ def _raw_body_oracle(part):
             )
 
         outer = face.outer_wire()
-        wires = []
+        wire_entries = []
         for wire in face.wires():
             edges = []
             for edge in wire.edges():
@@ -218,11 +229,15 @@ def _raw_body_oracle(part):
             raw_wire_orientation = (
                 -1 if wire.wrapped.Orientation() == TopAbs_Orientation.TopAbs_REVERSED else 1
             )
-            canonical, semantic, tokens = _oracle_cycle(
+            canonical, semantic, alignments = _oracle_cycle(
                 tuple(edges), raw_wire_orientation * material_side
             )
-            wires.append(("outer" if wire == outer else "inner", semantic, canonical))
-            occurrence_tokens.append(tokens)
+            wire_entries.append(
+                (("outer" if wire == outer else "inner", semantic, canonical), alignments)
+            )
+        wire_entries.sort(key=lambda item: item[0])
+        wires = tuple(item[0] for item in wire_entries)
+        occurrence_tokens.extend(item[1] for item in wire_entries)
         face_label = (
             surface_kind,
             tuple(_rounded(value) for value in parameters),
@@ -232,7 +247,7 @@ def _raw_body_oracle(part):
                 for value, origin in zip(tuple(face_centre), centre, strict=True)
             ),
             material_side,
-            tuple(sorted(wires)),
+            wires,
         )
         face_geometry.append(face_label)
 
@@ -241,26 +256,42 @@ def _raw_body_oracle(part):
     face_indices = {label: index for index, label in enumerate(ordered_faces)}
     token_occurrences: dict[object, list[tuple[int, int, int, int]]] = {}
     token_labels: dict[object, object] = {}
-    token_index = 0
-    for face_label in face_geometry:
-        canonical_face_index = face_indices[face_label]
-        for wire_index, wire in enumerate(face_label[-1]):
-            tokens = occurrence_tokens[token_index]
-            token_index += 1
-            for edge_index, ((edge_label, direction), token) in enumerate(
-                zip(wire[2], tokens, strict=True)
-            ):
-                token_labels.setdefault(token, edge_label)
-                assert token_labels[token] == edge_label
-                token_occurrences.setdefault(token, []).append(
-                    (canonical_face_index, wire_index, edge_index, direction)
+    alignment_candidates = []
+    for chosen_alignments in product(*occurrence_tokens):
+        token_occurrences = {}
+        token_labels = {}
+        token_index = 0
+        valid = True
+        for face_label in face_geometry:
+            canonical_face_index = face_indices[face_label]
+            for wire_index, wire in enumerate(face_label[-1]):
+                tokens = chosen_alignments[token_index]
+                token_index += 1
+                for edge_index, ((edge_label, direction), token) in enumerate(
+                    zip(wire[2], tokens, strict=True)
+                ):
+                    prior = token_labels.setdefault(token, edge_label)
+                    if prior != edge_label:
+                        valid = False
+                        break
+                    token_occurrences.setdefault(token, []).append(
+                        (canonical_face_index, wire_index, edge_index, direction)
+                    )
+                if not valid:
+                    break
+            if not valid:
+                break
+        if valid:
+            alignment_candidates.append(
+                tuple(
+                    sorted(
+                        (token_labels[token], tuple(sorted(items)))
+                        for token, items in token_occurrences.items()
+                    )
                 )
-    canonical_incidence = tuple(
-        sorted(
-            (token_labels[token], tuple(sorted(items)))
-            for token, items in token_occurrences.items()
-        )
-    )
+            )
+    assert alignment_candidates, "oracle found no consistent physical alignment"
+    canonical_incidence = min(alignment_candidates)
     return {
         "volume": float(volume.Mass()),
         "surface_area": float(surface_props.Mass()),
@@ -307,7 +338,8 @@ def _oracle_cycle(items, raw_orientation: int):
     matching = tuple(item for item in candidates if item[0] == canonical)
     semantics = {semantic for _label, semantic, _tokens in matching}
     assert len(semantics) == 1
-    return canonical, semantics.pop(), matching[0][2]
+    alignments = tuple({tokens for _label, semantic, tokens in matching if semantic in semantics})
+    return canonical, semantics.pop(), alignments
 
 
 def _descriptor_face_payload(face: FaceGeometry):
@@ -368,6 +400,42 @@ def _numbers(value) -> tuple[float, ...]:
     if isinstance(value, Mapping):
         return tuple(number for item in value.values() for number in _numbers(item))
     return (value,) if isinstance(value, float) else ()
+
+
+def _alias_aware_calls(tree: ast.AST, target: str) -> tuple[ast.Call, ...]:
+    """Find direct, qualified, imported, rebound and re-exported calls by leaf identity."""
+
+    aliases = {target}
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            introduced: str | None = None
+            source: str | None = None
+            if isinstance(node, ast.ImportFrom):
+                for item in node.names:
+                    if item.name in aliases:
+                        introduced = item.asname or item.name
+                        source = item.name
+                        break
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(
+                node.value, (ast.Name, ast.Attribute)
+            ):
+                source = node.value.id if isinstance(node.value, ast.Name) else node.value.attr
+                targets = node.targets if isinstance(node, ast.Assign) else (node.target,)
+                introduced = next((item.id for item in targets if isinstance(item, ast.Name)), None)
+            if source in aliases and introduced is not None and introduced not in aliases:
+                aliases.add(introduced)
+                changed = True
+    return tuple(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id in aliases)
+            or (isinstance(node.func, ast.Attribute) and node.func.attr in aliases)
+        )
+    )
 
 
 def test_body_geometry_is_translation_normalized_and_cached() -> None:
@@ -434,6 +502,21 @@ def test_raw_ocp_oracle_independently_reconstructs_mass_and_topology(
     assert len(oracle_caps) == 2
     assert tuple(sorted(map(_descriptor_face_payload, occurrence.summary.defining))) == tuple(
         sorted(oracle_caps)
+    )
+
+
+def test_raw_oracle_enumerates_tied_outer_inner_and_seam_alignments() -> None:
+    part = Cylinder(10, 5) - Cylinder(3, 5)
+    oracle = _raw_body_oracle(part)
+    descriptor = _body_descriptor(part)[2].descriptor
+    assert oracle["faces"] == tuple(
+        sorted(map(_descriptor_face_payload, descriptor.boundary.faces))
+    )
+    assert oracle["incidence"] == tuple(
+        sorted(
+            (_descriptor_edge_payload(edge), occurrences)
+            for edge, occurrences in descriptor.boundary.incidence
+        )
     )
 
 
@@ -540,6 +623,42 @@ def test_face_and_cyclic_wire_traversal_permutations_are_descriptor_neutral(
     monkeypatch.setattr(Wire, "edges", shifted)
     permuted = _body_descriptor(part)[2].descriptor
     assert permuted == source
+
+
+def test_whole_wire_reversal_with_reversed_half_edges_is_descriptor_neutral(
+    monkeypatch,
+) -> None:
+    part = _line_rrp(5)
+    source = _body_descriptor(part)[2].descriptor
+    wire_edges = Wire.edges
+    wire_orientation = _body_geometry._wire_orientation
+
+    def reversed_wrapper(self):
+        return [edge.reversed() for edge in reversed(wire_edges(self))]
+
+    monkeypatch.setattr(Wire, "edges", reversed_wrapper)
+    monkeypatch.setattr(_body_geometry, "_wire_orientation", lambda wire: -wire_orientation(wire))
+    assert _body_descriptor(part)[2].descriptor == source
+
+
+def test_controlled_material_face_reversal_changes_physical_orientation(monkeypatch) -> None:
+    part = _line_rrp(5)
+    source = _body_descriptor(part)[2].descriptor
+    graph = FaceGraph(part)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    solid_faces = Solid.faces
+
+    monkeypatch.setattr(
+        Solid,
+        "faces",
+        lambda self: [Face.cast(face.wrapped.Reversed()) for face in solid_faces(self)],
+    )
+    reversed_descriptor = graph.body_geometry(solid).descriptor
+    assert reversed_descriptor != source
+    assert tuple(face.material_side for face in reversed_descriptor.boundary.faces) != tuple(
+        face.material_side for face in source.boundary.faces
+    )
 
 
 def test_body_geometry_refuses_foreign_and_copied_solid_refs() -> None:
@@ -680,6 +799,22 @@ def test_internal_runtime_boundary_failure_propagates_and_does_not_cache(
         graph.body_geometry(solid)
 
 
+def test_solid_face_enumeration_runtime_failure_is_closed_and_does_not_cache(monkeypatch) -> None:
+    graph = FaceGraph(_rrp())
+    solid_ref = graph.common_valid_solid(graph.nodes)
+    assert solid_ref is not None
+
+    monkeypatch.setattr(
+        Solid,
+        "faces",
+        lambda _self: (_ for _ in ()).throw(RuntimeError("controlled wrapper failure")),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="body boundary"):
+        graph.body_geometry(solid_ref)
+    with pytest.raises(UnsupportedBodyGeometry, match="body boundary"):
+        graph.body_geometry(solid_ref)
+
+
 @pytest.mark.parametrize("end_angle", [180, 270])
 def test_trimmed_circle_geometry_is_direction_and_semicircle_safe(end_angle: float) -> None:
     edge = Edge.make_circle(5, Plane.XY, start_angle=0, end_angle=end_angle)
@@ -808,19 +943,26 @@ def test_vector_reconstruction_uses_combined_world_distance(monkeypatch) -> None
 
 
 def test_every_descriptor_numeric_field_routes_through_closed_validators(monkeypatch) -> None:
-    scalar_names: list[str] = []
-    vector_names: list[str] = []
+    part = _rrp(7)
+    oracle = _raw_body_oracle(part)
+    scale = max(oracle["volume"] ** (1 / 3), math.sqrt(oracle["surface_area"]))
+    metric = _body_geometry._metric_tolerance(scale)
+    area = (scale + metric) ** 2 - scale**2
+    volume = (scale + metric) ** 3 - scale**3
+    moment = (scale + metric) ** 5 - scale**5
+    scalar_calls: list[tuple[str, float]] = []
+    vector_calls: list[tuple[str, float]] = []
     axis_calls = 0
     original_scalar = _body_geometry._snap_checked
     original_vector = _body_geometry._relative_point
     original_axis = _body_geometry._qaxis
 
     def scalar(value, quantum, *, name):
-        scalar_names.append(name)
+        scalar_calls.append((name, quantum))
         return original_scalar(value, quantum, name=name)
 
     def vector(raw, quantum, *, name):
-        vector_names.append(name)
+        vector_calls.append((name, quantum))
         return original_vector(raw, quantum, name=name)
 
     def axis(raw):
@@ -831,21 +973,70 @@ def test_every_descriptor_numeric_field_routes_through_closed_validators(monkeyp
     monkeypatch.setattr(_body_geometry, "_snap_checked", scalar)
     monkeypatch.setattr(_body_geometry, "_relative_point", vector)
     monkeypatch.setattr(_body_geometry, "_qaxis", axis)
-    _body_descriptor(_rrp(7))
+    _body_descriptor(part)
 
-    assert {
-        "plane offset",
-        "edge length",
-        "circle radius",
-        "circle sweep",
-        "cylinder radius",
-        "face area",
-        "body volume",
-        "body surface area",
-        "principal moment",
-    } <= set(scalar_names)
-    assert {"point", "cylinder axis point"} <= set(vector_names)
+    expected_scalar_quantum = {
+        "plane offset": metric,
+        "edge length": metric,
+        "circle radius": metric,
+        "circle sweep": _body_geometry.ANGLE_TOL,
+        "cylinder radius": metric,
+        "face area": area,
+        "body volume": volume,
+        "body surface area": area,
+        "principal moment": moment,
+    }
+    assert set(expected_scalar_quantum) <= {name for name, _quantum in scalar_calls}
+    for name, quantum in scalar_calls:
+        assert quantum == pytest.approx(expected_scalar_quantum[name])
+    expected_vector_names = {
+        "edge endpoint",
+        "circle centre",
+        "face centroid",
+        "cylinder axis point",
+    }
+    assert expected_vector_names <= {name for name, _quantum in vector_calls}
+    assert all(quantum == pytest.approx(metric) for _name, quantum in vector_calls)
     assert axis_calls > 0
+
+    # Every production scalar quantum uses the same inclusive closed validator. Exercise the
+    # exact equality and nextafter-outside reconstruction rule for each caller-supplied quantum.
+    for name, quantum in expected_scalar_quantum.items():
+        with monkeypatch.context() as boundary:
+            boundary.setattr(
+                _body_geometry,
+                "_snap",
+                lambda value, _q, quantum=quantum: value + 2.0 * quantum,
+            )
+            assert _body_geometry._snap_checked(0.0, quantum, name=name) == 2.0 * quantum
+        with monkeypatch.context() as boundary:
+            boundary.setattr(
+                _body_geometry,
+                "_snap",
+                lambda value, _q, quantum=quantum: math.nextafter(value + 2.0 * quantum, math.inf),
+            )
+            with pytest.raises(UnsupportedBodyGeometry, match="reconstruction"):
+                _body_geometry._snap_checked(0.0, quantum, name=name)
+
+
+def test_direction_quantization_boundaries_are_inclusive(monkeypatch) -> None:
+    tolerance = _body_geometry.DIRECTION_TOL
+    component = 2.0 * tolerance / math.sqrt(2.0)
+    raw = (1.0, 0.0, 0.0)
+    monkeypatch.setattr(
+        _body_geometry,
+        "_snap",
+        lambda value, _quantum: value + (component if value == 0.0 else 0.0),
+    )
+    _body_geometry._qaxis(raw)
+    outside = math.nextafter(component, math.inf)
+    monkeypatch.setattr(
+        _body_geometry,
+        "_snap",
+        lambda value, _quantum: value + (outside if value == 0.0 else 0.0),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="direction"):
+        _body_geometry._qaxis(raw)
 
 
 @pytest.mark.parametrize("scale", [1e-3, 1e3])
@@ -952,6 +1143,15 @@ def test_equal_coincident_bodies_retain_two_indistinguishable_occurrences() -> N
 
     assert len(snapshot.occurrences) == 2
     assert snapshot.occurrences[0] == snapshot.occurrences[1]
+
+
+def test_two_unequal_occurrences_on_one_valid_solid_retain_one_body_authority() -> None:
+    part = _two_rrp_one_solid()
+    snapshot = correspondence_snapshot(_take_inventory(part))
+    assert len(snapshot.occurrences) == 2
+    assert [item.summary.repeat_count for item in snapshot.occurrences] == [5, 7]
+    assert snapshot.occurrences[0].body is snapshot.occurrences[1].body
+    assert snapshot.occurrences[0].summary.centre != snapshot.occurrences[1].summary.centre
 
 
 def test_arbitrary_rotation_changes_no_recognition_and_has_no_snapshot_entry() -> None:
@@ -1227,17 +1427,14 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
     correspondence_importers = []
     for path in source_paths:
         tree = ast.parse(path.read_text())
+        body_call_nodes = {id(node) for node in _alias_aware_calls(tree, "body_geometry")}
         for node in ast.walk(tree):
             if (
                 isinstance(node, ast.ImportFrom)
                 and node.module == "b123d_recognisers._correspondence"
             ):
                 correspondence_importers.append(path.name)
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr == "body_geometry"
-            ):
+            if id(node) in body_call_nodes:
                 owner = next(
                     (
                         parent.name
@@ -1252,19 +1449,21 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
     assert correspondence_importers == ["result.py"]
 
     lower_calls = {
-        ast.unparse(node.func)
-        for node in ast.walk(lower)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr
-        in {"VolumeProperties_s", "SurfaceProperties_s", "Plane", "Cylinder", "Circle"}
+        target: tuple(ast.unparse(node.func) for node in _alias_aware_calls(lower, target))
+        for target in {
+            "VolumeProperties_s",
+            "SurfaceProperties_s",
+            "Plane",
+            "Cylinder",
+            "Circle",
+        }
     }
     assert lower_calls == {
-        "BRepGProp.VolumeProperties_s",
-        "BRepGProp.SurfaceProperties_s",
-        "adaptor.Plane",
-        "adaptor.Cylinder",
-        "curve.Circle",
+        "VolumeProperties_s": ("BRepGProp.VolumeProperties_s",),
+        "SurfaceProperties_s": ("BRepGProp.SurfaceProperties_s",),
+        "Plane": ("adaptor.Plane",),
+        "Cylinder": ("adaptor.Cylinder",),
+        "Circle": ("curve.Circle",),
     }
     upper_names = {node.id for node in ast.walk(upper) if isinstance(node, ast.Name)}
     assert {"CORRESPONDENCE_FAMILIES", "RepeatingRadialProfile", "accepted"} <= upper_names
@@ -1273,6 +1472,19 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
     )
     assert "correspondence_snapshot" not in b123d_recognisers.__all__
     assert not hasattr(b123d_recognisers, "CorrespondenceSnapshot")
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "def f(graph, solid):\n    return graph.body_geometry(solid)\n",
+        "def f(graph, solid):\n    query = graph.body_geometry\n    return query(solid)\n",
+        "from x import body_geometry as query\ndef f(solid):\n    return query(solid)\n",
+        "import package\ndef f(graph, solid):\n    return package.graph.body_geometry(solid)\n",
+    ],
+)
+def test_alias_aware_body_query_guard_detects_every_supported_call_form(source: str) -> None:
+    assert len(_alias_aware_calls(ast.parse(source), "body_geometry")) == 1
 
 
 def test_snapshot_values_contain_no_run_or_kernel_handles() -> None:
