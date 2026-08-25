@@ -7,6 +7,7 @@ import copy
 import math
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from build123d import (
@@ -28,6 +29,13 @@ from b123d_recognisers import recognise_channels
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import COORD_FLOOR
+from b123d_recognisers._recess_core import (
+    _bounds_one_void as production_bounds_one_void,
+)
+from b123d_recognisers._recess_core import (
+    _uninterrupted_long_span,
+)
 from b123d_recognisers._recess_faces import (
     _AXIS_ALIGNED_TOL,
     _FLOOR_COVER_FRAC,
@@ -36,6 +44,7 @@ from b123d_recognisers._recess_faces import (
     _dominant_axis,
     _end_capped,
     _Face,
+    _is_wall,
 )
 from b123d_recognisers._recess_features import _discover_channels
 from b123d_recognisers._recess_records import Channel
@@ -434,6 +443,146 @@ def test_closed_channel_threshold_and_projection_contract() -> None:
     refused_end = math.nextafter(centre + _FLOOR_TOL, math.inf)
     assert _end_capped([cap], foot, 100.0, "z", accepted_end, 1)
     assert not _end_capped([cap], foot, 100.0, "z", refused_end, 1)
+
+
+def test_closed_wall_cap_and_void_helper_boundaries() -> None:
+    class Edge:
+        def __init__(self, kind) -> None:
+            self.geom_type = kind
+
+    class Face:
+        def __init__(self, kinds) -> None:
+            self._edges = [Edge(kind) for kind in kinds]
+
+        def edges(self):
+            return self._edges
+
+    assert not _is_wall(Face([]))
+    assert _is_wall(Face([GeomType.LINE, GeomType.LINE]))
+    assert _is_wall(Face([GeomType.LINE, GeomType.CIRCLE]))
+    assert not _is_wall(Face([GeomType.CIRCLE, GeomType.CIRCLE]))
+    assert not _is_wall(Face([GeomType.LINE, GeomType.BSPLINE]))
+
+    reference = Box(10, 10, 1).faces().sort_by().last
+    bb = reference.bounding_box()
+    foot = {"x": (-5, 5), "y": (-5, 5)}
+    plus = _Face((0, 0, 1), "z", bb, True)
+    minus = _Face((0, 0, -1), "z", bb, True)
+    end = _bbox_center(reference, "z")
+    assert _end_capped([plus], foot, 100, "z", end, 1)
+    assert not _end_capped([minus], foot, 100, "z", end, 1)
+    assert _end_capped([minus], foot, 100, "z", end, -1)
+
+    record = recognise_channels(build_fixture())[0]
+    spans = {
+        record.width_axis: (record.w_center - record.width / 2, record.w_center + record.width / 2),
+        record.long_axis: (record.lo, record.hi),
+        ({"x", "y", "z"} - {record.width_axis, record.long_axis}).pop(): (record.d_lo, record.d_hi),
+    }
+    assert _whole_inset_prism_is_empty(build_fixture(), spans)
+    membrane = build_fixture() + Pos(0, 0, 13) * Box(2 * COORD_FLOOR, 2, 16)
+    assert not _whole_inset_prism_is_empty(membrane, spans)
+
+
+def test_closed_aag_boundary_and_long_span_branches() -> None:
+    left, right, curved, a, b = object(), object(), object(), object(), object()
+    face_box = Box(1, 1, 1).bounding_box()
+    fa = _Face((1, 0, 0), "x", face_box, True, cast(FaceNode, left))
+    fb = _Face((-1, 0, 0), "x", face_box, True, cast(FaceNode, right))
+
+    class Graph:
+        def __init__(self, *, common=(), arcs=None, regions=None, bounds=None) -> None:
+            self.common = set(common)
+            self.arcs = arcs or {}
+            self.regions = regions or {}
+            self.node_bounds = bounds or {}
+
+        def neighbours(self, node):
+            if node in (left, right):
+                return self.common or ({a} if node is left else {b})
+            return set()
+
+        def is_planar(self, _node):
+            return False
+
+        def arc(self, first, second):
+            return self.arcs[first, second]
+
+        def smooth_region(self, node):
+            return self.regions.get(node, frozenset({node}))
+
+        def bounds(self, node):
+            return self.node_bounds[node]
+
+    shared = frozenset({a, b})
+    fragmented = Graph(
+        arcs={(left, a): "concave", (right, b): "concave"},
+        regions={a: shared, b: shared},
+    )
+    assert production_bounds_one_void(fa, fb, cast(FaceGraph, fragmented))
+    smooth = Graph(
+        arcs={(left, a): "convex", (right, b): "convex"},
+        regions={left: frozenset({left, right})},
+    )
+    assert production_bounds_one_void(fa, fb, cast(FaceGraph, smooth))
+
+    trimming = Graph(
+        common={curved},
+        arcs={(left, curved): "convex", (right, curved): "concave"},
+        bounds={curved: ((0, 0), (0, 0), (0, 2))},
+    )
+    assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, trimming)) == (2, 10)
+    same_turn = Graph(
+        common={curved},
+        arcs={(left, curved): "concave", (right, curved): "concave"},
+        bounds={curved: ((0, 0), (0, 0), (0, 2))},
+    )
+    assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, same_turn)) == (0, 10)
+
+
+def test_channel_envelope_floor_tolerance_and_open_sign() -> None:
+    inside = _FLOOR_TOL - COORD_FLOOR
+    outside = _FLOOR_TOL + COORD_FLOOR
+    accepted = (
+        Box(60, 50, 10)
+        + Pos(0, -20, 13) * Box(60 - 2 * inside, 10, 16)
+        + Pos(0, 20, 13) * Box(60 - 2 * inside, 10, 16)
+    )
+    refused = (
+        Box(60, 50, 10)
+        + Pos(0, -20, 13) * Box(60 - 2 * outside, 10, 16)
+        + Pos(0, 20, 13) * Box(60 - 2 * outside, 10, 16)
+    )
+    assert recognise_channels(accepted)
+    assert recognise_channels(refused) == []
+
+    low_floor = build_fixture()
+    high_floor = Rot(180, 0, 0) * low_floor
+    low = recognise_channels(low_floor)
+    high = recognise_channels(high_floor)
+    assert len(low) == len(high) == 1
+    assert {low[0].open_sign, high[0].open_sign} == {-1, 1}
+
+
+def test_equal_serialized_value_public_first_wins_writer_refuses(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    original = feature_module._channel_proposals_one
+    proposal = original(part, None, graph)[0]
+    other = next(
+        node for node in graph.nodes if node not in {proposal.low_wall, proposal.high_wall}
+    )
+
+    def collision(*_args, **_kwargs):
+        return [proposal, replace(proposal, high_wall=other)]
+
+    monkeypatch.setattr(feature_module, "_channel_proposals_one", collision)
+    # Geometry-only compatibility retains the first occurrence for an equal 2dp record.
+    assert _discover_channels(part, graph=graph) == [proposal.record]
+    ledger = ClaimLedger(graph)
+    with pytest.raises(ValueError, match="ambiguous"):
+        _discover_channels(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
 
 def test_open_shell_and_late_second_body_refuse_atomically(monkeypatch) -> None:
