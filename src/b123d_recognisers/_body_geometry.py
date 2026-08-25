@@ -1251,7 +1251,7 @@ def matching_boundary_for_solid(
     solid: Any,
     descriptor: BodyGeometryDescriptor,
 ) -> MatchingBoundaryGraph:
-    """Build the first schema-3 LINE/PLANE boundary slice without wrapper ordering authority."""
+    """Build the bounded LINE/CIRCLE and PLANE/CYLINDER schema-three boundary graph."""
 
     centre = descriptor.placement.centre_of_mass
     quantum = descriptor.quantization.metric_quantum

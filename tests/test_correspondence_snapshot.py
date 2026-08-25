@@ -339,6 +339,16 @@ def test_schema_three_matching_incidence_mutation_refuses() -> None:
         correspondence_module._validate_snapshot(changed)
 
 
+def test_schema_three_construction_budget_is_inclusive() -> None:
+    budget = _body_geometry._MatchingConstructionBudget(
+        _body_geometry.CANONICAL_SERIALIZATION_BUDGET - 1
+    )
+    budget.charge()
+    assert budget.attempts == _body_geometry.CANONICAL_SERIALIZATION_BUDGET
+    with pytest.raises(UnsupportedBodyGeometry, match="construction budget"):
+        budget.charge()
+
+
 def _rrp(repeats: int = 5):
     part = Cylinder(20, 10)
     for index in range(repeats):
@@ -837,6 +847,7 @@ def test_body_geometry_is_translation_normalized_and_cached() -> None:
     assert graph.body_geometry(solid) is source
     assert source.descriptor.intrinsic == translated.descriptor.intrinsic
     assert source.descriptor.boundary == translated.descriptor.boundary
+    assert source.descriptor.matching == translated.descriptor.matching
     assert translated.descriptor.placement.centre_of_mass == pytest.approx((7.0, 8.0, 9.0))
     assert source.descriptor.placement != translated.descriptor.placement
     assert translated_graph is not graph
