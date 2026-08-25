@@ -17,7 +17,12 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
+from b123d_recognisers._registry import (
+    PHYSICAL_DEFINITIONS,
+    FullyAttributed,
+    NotCounted,
+)
+from b123d_recognisers._run import start
 from b123d_recognisers.levels import (
     FaceLevel,
     _discover_step_levels,
@@ -28,7 +33,7 @@ from b123d_recognisers.levels import (
     recognise_face_levels,
     step_level_records,
 )
-from b123d_recognisers.result import _take_inventory
+from b123d_recognisers.result import _discover_all, _take_inventory
 
 ROOT = Path(__file__).parents[1]
 
@@ -152,6 +157,17 @@ def test_mixed_body_cluster_refuses_atomically_but_public_output_is_preserved() 
     with pytest.raises(_StepLevelAttributionError, match="one valid solid"):
         _discover_step_levels(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.STEP_LEVELS).candidates == ()
+
+
+def test_aggregate_refusal_precedes_completion_and_occurrence_capability() -> None:
+    part = Compound([_stepped(), Pos(100, 0, 0) * _stepped()])
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(_StepLevelAttributionError, match="one valid solid"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.STEP_LEVELS).candidates == ()
+    assert FamilyId.STEP_LEVELS not in ledger._issuer._completed
+    assert FamilyId.STEP_LEVELS not in ledger._issuer._completed_occurrences
 
 
 def test_foreign_writer_refuses_without_candidate_prefix() -> None:
@@ -436,6 +452,7 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
     assert keywords["writer"].value.id == "s"
 
     importers = []
+    module_importers = []
     core_call_sites = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -445,6 +462,12 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
+        if any(
+            isinstance(node, ast.Import)
+            and any(alias.name == "b123d_recognisers.levels" for alias in node.names)
+            for node in ast.walk(tree)
+        ):
+            module_importers.append(path.name)
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -457,6 +480,7 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
             ):
                 core_call_sites.append(path.name)
     assert importers == ["_registry.py"]
+    assert module_importers == []
     assert core_call_sites == ["_registry.py"]
 
     constructors = {"FaceLevel": [], "_FaceLevelProposal": []}
@@ -490,7 +514,15 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
         ("levels.py", "recognise_face_levels"),
         ("levels.py", "_discover_step_levels"),
     ]
-    source = inspect.getsource(module._discover_step_levels)
+    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+
+    assert SURFACE_READER_SITES["levels:_face_level_proposals:adaptor:1"][1] == (
+        "planar face-level gate"
+    )
+    assert all(
+        not key.startswith("levels:_discover_step_levels:") for key in SURFACE_READER_SITES
+    )
+    source = inspect.getsource(module)
     assert not any(
         name in source
         for name in ("CandidateSet", "EvidenceIndex", "Inventory", "Disposition", "reconcile")
