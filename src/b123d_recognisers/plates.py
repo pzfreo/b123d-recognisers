@@ -222,31 +222,38 @@ def _discover_plates(
                 )
             )
 
-    # Dedup by (axis, lo, hi); keep the first (deterministic) representative point.
-    seen: dict[tuple[str, float, float], _PlateProposal] = {}
-    uniq: list[_PlateProposal] = []
-    for proposal in sorted(out, key=lambda p: (p.record.axis, p.record.lo, p.record.hi)):
-        p = proposal.record
-        key = (p.axis, p.lo, p.hi)
-        if key in seen:
-            if writer is not None and (
-                seen[key].low_faces != proposal.low_faces
-                or seen[key].high_faces != proposal.high_faces
-            ):
-                raise _PlateAttributionError("Plate key has competing defining groups")
-            continue
-        seen[key] = proposal
-        uniq.append(proposal)
-
-    if writer is not None:
-        pending: list[tuple[Plate, tuple[FaceNode, ...]]] = []
+    ordered = sorted(out, key=lambda p: (p.record.axis, p.record.lo, p.record.hi))
+    if writer is None:
+        # Public geometry-only compatibility remains value-deduplicated.  Attribution cannot
+        # make that choice until the graph has resolved wrappers to original topology identity.
+        seen: set[tuple[str, float, float]] = set()
+        uniq = []
+        for proposal in ordered:
+            key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
+            if key not in seen:
+                seen.add(key)
+                uniq.append(proposal)
+    else:
+        bound: dict[
+            tuple[str, float, float],
+            dict[tuple[frozenset[FaceNode], frozenset[FaceNode]], _PlateProposal],
+        ] = {}
         used: set[FaceNode] = set()
         try:
-            for proposal in uniq:
-                low = {writer.graph.require_node(face) for face in proposal.low_faces}
-                high = {writer.graph.require_node(face) for face in proposal.high_faces}
+            for proposal in ordered:
+                low = frozenset(writer.graph.require_node(face) for face in proposal.low_faces)
+                high = frozenset(writer.graph.require_node(face) for face in proposal.high_faces)
                 if not low or not high or low & high:
                     raise _PlateAttributionError("Plate role groups are empty or overlap")
+                key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
+                bound.setdefault(key, {}).setdefault((low, high), proposal)
+            if any(len(role_pairs) > 1 for role_pairs in bound.values()):
+                raise _PlateAttributionError("Plate key has competing defining groups")
+
+            pending: list[tuple[Plate, tuple[FaceNode, ...]]] = []
+            uniq = []
+            for role_pairs in bound.values():
+                (low, high), proposal = next(iter(role_pairs.items()))
                 resolved = low | high
                 nodes = tuple(node for node in writer.graph.nodes if node in resolved)
                 if used & resolved:
@@ -257,6 +264,7 @@ def _discover_plates(
                     )
                 used.update(resolved)
                 pending.append((proposal.record, nodes))
+                uniq.append(proposal)
         except _PlateAttributionError:
             raise
         except (KeyError, RuntimeError, ValueError) as exc:

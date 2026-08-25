@@ -162,4 +162,7 @@ whose adjacent events establish its record. Every cluster member remains definin
 and centroid contribute to admission or the weighted `u`/`v` projection. Other groups, bbox facts
 and TURNED_STEPS records remain consulted. Whole-part grouping that mixes bodies raises the private
 `_PlateAttributionError` before issuance or family completion; public geometry-only output remains
-unchanged for that bounded unsupported case.
+unchanged for that bounded unsupported case. Geometry-key dedup remains the public contract, but an
+aggregate resolves every staged low/high face through the run graph before deciding ambiguity:
+wrapper- or traversal-duplicate role pairs collapse by graph-issued node identity, while two
+distinct bound role pairs competing for one key refuse atomically.

@@ -19,11 +19,33 @@ from b123d_recognisers import recognise_plates
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
 from b123d_recognisers.plates import Plate, _discover_plates, _PlateAttributionError
 from b123d_recognisers.result import _take_inventory
 from tests.golden.plates_pads_levels_and_slanted_steps.fixture import build_fixture
 
 ROOT = Path(__file__).parents[1]
+
+
+def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+
+    def name(node: ast.expr) -> str:
+        if isinstance(node, ast.Name):
+            return aliases.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            base = name(node.value)
+            return f"{base}.{node.attr}" if base else node.attr
+        return ""
+
+    return [(name(node.func), node) for node in ast.walk(tree) if isinstance(node, ast.Call)]
 
 
 @dataclass(frozen=True)
@@ -157,11 +179,77 @@ def test_plate_groups_survive_axes_mirror_and_scale(part) -> None:
     assert _claimed(part)[0]
 
 
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(40, 10, 30) + Pos(-15, 10, 0) * Box(10, 30, 30),
+        Box(40, 10, 30) + Pos(0, 10, 0) * Box(10, 30, 30),
+        Box(40, 10, 30)
+        + Pos(-15, 10, 0) * Box(10, 30, 30)
+        + Pos(15, 10, 0) * Box(10, 30, 30),
+        Pos(123, -87, 41) * build_fixture(),
+    ],
+)
+def test_l_t_u_multiple_occurrence_and_translation_lifecycle(part) -> None:
+    records, candidates, _ledger = _claimed(
+        part, min_area_frac=0.2, max_thick_frac=0.8
+    )
+    assert records and len(records) == len(candidates)
+
+
+def test_u_structure_retains_two_unequal_location_occurrences() -> None:
+    part = (
+        Box(40, 10, 30)
+        + Pos(-15, 10, 0) * Box(10, 30, 30)
+        + Pos(15, 10, 0) * Box(10, 30, 30)
+    )
+    records, candidates, ledger = _claimed(
+        part, min_area_frac=0.2, max_thick_frac=0.8
+    )
+    x_records = [record for record in records if record.axis == "x"]
+    assert [(record.lo, record.hi) for record in x_records] == [(-20, -10), (10, 20)]
+    x_candidates = [candidate for candidate in candidates if candidate.record.axis == "x"]
+    assert len(x_candidates) == 2
+    assert ledger.defining_of(x_candidates[0]).isdisjoint(
+        ledger.defining_of(x_candidates[1])
+    )
+
+
 def test_fragmented_groups_keep_every_original_patch() -> None:
     part = build_fixture() - Pos(-50, 0, 20) * Box(20, 4, 6)
     records, candidates, ledger = _claimed(part)
     assert records
     assert any(len(ledger.defining_of(candidate)) > 2 for candidate in candidates)
+
+
+def test_bound_identity_collapses_wrappers_duplicates_and_reversed_order(monkeypatch) -> None:
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = list(part.faces())
+    kind = type(part)
+    monkeypatch.setattr(
+        kind,
+        "faces",
+        lambda _self: list(reversed([copy.copy(face) for face in original]))
+        + [copy.copy(face) for face in original],
+    )
+    records = _discover_plates(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.PLATES).candidates
+    assert len(records) == len(candidates) == 2
+    assert tuple(candidate.record for candidate in candidates) == tuple(records)
+    assert all(ledger.defining_of(candidate) for candidate in candidates)
+
+
+def test_same_key_distinct_bound_role_pairs_refuse_atomically(monkeypatch) -> None:
+    import b123d_recognisers.plates as module
+
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    record = Plate("x", -55, -45, 0, 20)
+    monkeypatch.setattr(module, "Plate", lambda **_kwargs: record)
+    with pytest.raises(_PlateAttributionError, match="competing defining groups"):
+        _discover_plates(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
 
 
 def test_step_traversal_custom_thresholds_and_shared_graph(monkeypatch, tmp_path: Path) -> None:
@@ -176,6 +264,42 @@ def test_step_traversal_custom_thresholds_and_shared_graph(monkeypatch, tmp_path
     _claimed(part)
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "present"),
+    [
+        ({"tol": 7.9999}, True),
+        ({"tol": 8.0}, False),
+        ({"max_thick_frac": 0.200001}, True),
+        ({"max_thick_frac": 0.2}, False),
+    ],
+)
+def test_plate_thickness_boundaries_are_strict(kwargs, present: bool) -> None:
+    records = _discover_plates(build_fixture(), **kwargs)
+    assert any(record.axis == "z" for record in records) is present
+
+
+def test_plate_area_and_coordinate_cluster_boundaries_are_strict() -> None:
+    part = Box(40, 10, 30) + Pos(-15, 10, 0) * Box(10, 30, 30)
+    below = recognise_plates(part, min_area_frac=0.749999, max_thick_frac=0.8)
+    tied = recognise_plates(part, min_area_frac=0.75, max_thick_frac=0.8)
+    assert any(record.axis == "y" for record in below)
+    assert tied == []
+    assert clears_threshold(75.0, 75.0) is False
+    assert clears_threshold(75.0001, 75.0) is True
+    assert cluster_coordinates([1.5, 1.0, 2.0001], tol=0.5) == [[1, 0], [2]]
+
+
+def test_record_projection_order_and_weighted_centroid_are_not_evidence_rematches() -> None:
+    records, _candidates, _ledger = _claimed(build_fixture())
+    assert [(record.axis, record.lo, record.hi) for record in records] == sorted(
+        (record.axis, record.lo, record.hi) for record in records
+    )
+    z_plate = next(record for record in records if record.axis == "z")
+    assert (z_plate.lo, z_plate.hi) == (-4.0, 4.0)
+    assert z_plate.u == pytest.approx(0.9025270758122739)
+    assert z_plate.u != round(z_plate.u, 3)
+
+
 def test_compound_mixed_provenance_refuses_without_prefix() -> None:
     part = Compound([build_fixture(), copy.deepcopy(build_fixture())])
     assert recognise_plates(part)
@@ -187,6 +311,20 @@ def test_compound_mixed_provenance_refuses_without_prefix() -> None:
         _take_inventory(part)
 
 
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(40, 30, 10),
+        Rot(7, 11, 0) * Box(40, 5, 30),
+        Box(40, 30, 20) - Pos(0, 0, 5) * Box(20, 10, 20),
+    ],
+)
+def test_blocks_oblique_slabs_and_cavities_do_not_leak_plate_evidence(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_plates(part, writer=ledger.writer) == recognise_plates(part)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
 def test_foreign_and_late_body_failure_are_atomic(monkeypatch) -> None:
     part = build_fixture()
     foreign = ClaimLedger(FaceGraph(Pos(200, 0, 0) * build_fixture()))
@@ -196,6 +334,34 @@ def test_foreign_and_late_body_failure_are_atomic(monkeypatch) -> None:
 
     ledger = ClaimLedger(FaceGraph(part))
     monkeypatch.setattr(ledger.graph, "common_valid_solid", lambda _nodes: None)
+    with pytest.raises(_PlateAttributionError):
+        _discover_plates(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+
+
+@pytest.mark.parametrize("mode", ["deep", "stale", "reuse"])
+def test_invalid_proposal_identity_refuses_before_any_issue(monkeypatch, mode: str) -> None:
+    import b123d_recognisers.plates as module
+
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    proposal_type = module._PlateProposal
+    first = None
+
+    def changed(record, low_faces, high_faces):
+        nonlocal first
+        if mode == "deep":
+            low_faces = (copy.deepcopy(low_faces[0]), *low_faces[1:])
+        elif mode == "stale":
+            low_faces = (Pos(1, 0, 0) * copy.deepcopy(low_faces[0]), *low_faces[1:])
+        elif first is None:
+            first = (low_faces, high_faces)
+        else:
+            assert first is not None
+            low_faces, high_faces = first
+        return proposal_type(record, tuple(low_faces), tuple(high_faces))
+
+    monkeypatch.setattr(module, "_PlateProposal", changed)
     with pytest.raises(_PlateAttributionError):
         _discover_plates(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
@@ -247,3 +413,83 @@ def test_plate_private_core_and_registry_route_are_closed() -> None:
         )
         == 1
     )
+
+
+def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
+    package = ROOT / "src/b123d_recognisers"
+    core_sites: list[tuple[str, ast.Call]] = []
+    constructors: list[tuple[str, ast.Call]] = []
+    proposal_sites: list[tuple[str, ast.Call]] = []
+    prohibited = {
+        "CandidateSet",
+        "EvidenceIndex",
+        "AcceptedInputs",
+        "ReconciliationResult",
+        "CompletedOccurrence",
+    }
+    plate_tree = ast.parse((package / "plates.py").read_text(encoding="utf-8"))
+    imported = {
+        alias.name
+        for node in ast.walk(plate_tree)
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    assert imported.isdisjoint(prohibited)
+
+    for path in package.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for qualified, call in _qualified_calls(tree):
+            leaf = qualified.rsplit(".", 1)[-1]
+            if leaf == "_discover_plates":
+                core_sites.append((path.name, call))
+            if leaf == "Plate":
+                constructors.append((path.name, call))
+            if leaf == "_PlateProposal":
+                proposal_sites.append((path.name, call))
+
+    assert {path for path, _call in core_sites} == {"plates.py", "_registry.py"}
+    assert sum(path == "_registry.py" for path, _call in core_sites) == 1
+    registry_call = next(call for path, call in core_sites if path == "_registry.py")
+    writer = next(keyword.value for keyword in registry_call.keywords if keyword.arg == "writer")
+    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert isinstance(writer.value, ast.Name) and writer.value.id == "services"
+    public_call = next(
+        call
+        for path, call in core_sites
+        if path == "plates.py" and call.lineno < 140
+    )
+    assert all(keyword.arg != "writer" for keyword in public_call.keywords)
+    assert [(path, len(call.args)) for path, call in constructors] == [("plates.py", 0)]
+    assert [(path, len(call.args)) for path, call in proposal_sites] == [("plates.py", 3)]
+
+    discover = next(
+        node
+        for node in plate_tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_discover_plates"
+    )
+    face_scans = [
+        call
+        for call in ast.walk(discover)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Attribute)
+        and call.func.attr == "faces"
+    ]
+    assert len(face_scans) == 1
+
+
+def test_registry_uses_restricted_turned_records_once_and_never_occurrences() -> None:
+    tree = ast.parse(
+        (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
+    )
+    function = next(
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_plates"
+    )
+    calls = _qualified_calls(function)
+    assert sum(name.endswith(".records") for name, _call in calls) == 1
+    assert not any(name.endswith(".occurrences") for name, _call in calls)
+    assert sum(name.endswith(".from_steps") for name, _call in calls) == 1
+    discover = next(call for name, call in calls if name.endswith("_discover_plates"))
+    keywords = {keyword.arg: keyword.value for keyword in discover.keywords}
+    writer = keywords["writer"]
+    assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
+    assert isinstance(writer.value, ast.Name) and writer.value.id == "services"

@@ -865,8 +865,10 @@ Each supported aggregate Plate owns every original planar face in its low-negati
 coordinate clusters. TURNED_STEPS remains a restricted record-only global veto and contributes no
 Plate evidence. Whole-part grouping can mix provenance across compounds; that bounded unsupported
 aggregate path raises `_PlateAttributionError` before issuance or family completion while the public
-geometry-only facade remains unchanged. Bucket 29 stays sealed until exact-head semantic and
-mechanical gates and two independent reviews complete.
+geometry-only facade remains unchanged. Aggregate ambiguity is decided only after graph binding:
+identical low/high node-role pairs collapse independent of face wrappers and traversal order, and
+more than one distinct role pair for a public deduplication key refuses before any issue. Bucket 29
+stays sealed until exact-head semantic and mechanical gates and two independent reviews complete.
 
 The Polygonal Stock semantic child #232 is independently protected by
 `F5-POLYGONAL-STOCK-H1`, bucket 30. Its neutral seal adds the exact
