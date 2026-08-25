@@ -175,3 +175,13 @@ unchanged for that bounded unsupported case. Geometry-key dedup remains the publ
 aggregate resolves every staged low/high face through the run graph before deciding ambiguity:
 wrapper- or traversal-duplicate role pairs collapse by graph-issued node identity, while two
 distinct bound role pairs competing for one key refuse atomically.
+
+## Amendment (Step Level attribution, issue #240)
+
+Each retained aggregate Step Level owns every original horizontal planar face in its admitted
+coordinate cluster. Those faces jointly establish the lowest actual Z, union X/Y spans, strict
+area admission, membership and order. Whole-part footprint, rejected clusters and the interior end
+margin remain consulted. Public raw and filtered level APIs retain their two distinct tolerance
+roles and exact values. Because clustering remains whole-part, an aggregate cluster spanning more
+than one valid solid raises the private `_StepLevelAttributionError` before any issuance; public
+geometry-only output remains unchanged. Step Levels remain `NotCounted` neutral substrate.

@@ -912,6 +912,17 @@ semantic child has two independent exact-head accepts and all mechanical gates. 
 zero, abort, invalid or completed reveal consumes only that allocation without replacement, retry
 or fitting.
 
+F5 Step Level attribution/#240 preserves the public raw `recognise_face_levels` clustering
+tolerance and the separate filtered `step_level_records` interior-margin tolerance. Each retained
+aggregate occurrence owns the complete graph-deduplicated original horizontal face cluster that
+jointly establishes its Z, union spans, strict area admission and deterministic order. Whole-part
+footprint/end-margin facts and rejected clusters remain consulted. The private writer core validates
+all bindings, distinct role sets and one common SolidRef before issuance; a whole-part cluster that
+mixes bodies raises `_StepLevelAttributionError` without changing public geometry-only output.
+`STEP_LEVELS` becomes `FullyAttributed` but retains the exact `NotCounted("level substrate is not a
+distinct feature")` census disposition. Bucket 34 remains sealed until two exact-head accepts and
+all mechanical gates complete.
+
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
 geometrically ordered low/high inward side walls; floors, caps, envelope facts, interruptions and

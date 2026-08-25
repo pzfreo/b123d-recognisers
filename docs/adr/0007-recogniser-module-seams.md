@@ -323,3 +323,10 @@ For Plate attribution, `plates._discover_plates` is the sole private writer-enab
 TURNED_STEPS records once for the unchanged global veto, then passes only `writer=services.writer`.
 The core carries exact original low/high face clusters and reads no Candidate set, evidence index,
 inventory, disposition, reconciliation output, sibling recogniser or predecessor occurrence.
+
+For Step Level attribution, `levels._discover_step_levels` is the sole private writer-enabled core
+and `_registry` its sole production writer caller. The public `recognise_face_levels`,
+`step_level_records` and `step_level_zs` facades remain writer-free. The core carries exact source
+faces through clustering and filtering, reads no Candidate set, evidence index, inventory,
+disposition, reconciliation result, sibling output or predecessor input, and validates every
+retained occurrence before its first write.
