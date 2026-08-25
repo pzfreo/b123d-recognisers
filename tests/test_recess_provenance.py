@@ -41,7 +41,9 @@ from b123d_recognisers._recess_reduce import (
     _collapse_collinear_proposals,
     _merge,
     _merge_proposals,
+    _prism_material_fraction,
     _RecessProposal,
+    _same_channel_line,
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, IncompleteAttribution
 
@@ -238,6 +240,39 @@ def test_legacy_crossing_and_merge_projections_absorb_all_source_claims(monkeypa
     assert merge_claims[first.record] == set().union(*merge_claims.values())
     # Compatibility callers without claims remain valid and take the same geometry path.
     assert len(_collapse_collinear([proposal.record for proposal in raw], part)) == 2
+
+
+def test_legacy_reducer_geometric_measurement_boundaries() -> None:
+    """Compatibility reducers retain their documented closed prism and interval semantics."""
+    base = _slot_proposals_one(Box(80, 50, 16) - Box(28, 10, 16))[0].record
+    before = replace(base, lo=base.lo - 20, hi=base.lo - 10)
+    after = replace(base, lo=base.hi + 10, hi=base.hi + 20)
+    overlap = replace(base, lo=base.lo + 1, hi=base.hi - 1)
+    assert _same_channel_line(before, base) == (before.hi, base.lo)
+    assert _same_channel_line(after, base) == (base.hi, after.lo)
+    assert _same_channel_line(overlap, base) is None
+    assert _collapse_collinear([base], Box(80, 50, 16)) == [base]
+
+    spans = {"x": (-1.0, 1.0), "y": (-1.0, 1.0), "z": (-1.0, 1.0)}
+
+    class IntersectionPart:
+        def __init__(self, result):
+            self.result = result
+
+        def intersect(self, _probe):
+            return self.result
+
+    class Volume:
+        def __init__(self, volume):
+            self.volume = volume
+
+    assert _prism_material_fraction(spans, IntersectionPart(None), inset=0) == 0.0
+    assert _prism_material_fraction(spans, IntersectionPart(Volume(4.0)), inset=0) == 0.5
+    assert _prism_material_fraction(
+        spans, IntersectionPart([Volume(1.0), Volume(3.0)]), inset=0
+    ) == 0.5
+    with pytest.raises(ValueError, match="positive extent"):
+        _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
 
 
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:
