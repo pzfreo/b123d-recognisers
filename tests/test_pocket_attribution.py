@@ -6,6 +6,7 @@ import ast
 import inspect
 import math
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -19,6 +20,7 @@ from build123d import (
     Plane,
     Pos,
     Rot,
+    Shell,
     export_step,
     import_step,
 )
@@ -29,7 +31,11 @@ from OCP.GeomAbs import GeomAbs_Cylinder
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._recess_core import _bounds_one_void, _uninterrupted_long_span
+from b123d_recognisers._recess_core import (
+    _bounds_one_void,
+    _pocket_proposals_one,
+    _uninterrupted_long_span,
+)
 from b123d_recognisers._recess_faces import (
     _AXIS_ALIGNED_TOL,
     _FLOOR_COVER_FRAC,
@@ -41,7 +47,13 @@ from b123d_recognisers._recess_faces import (
     _is_wall,
 )
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
+from b123d_recognisers._recess_obround import (
+    _extend_obround_proposals,
+    _obround_ends,
+    _recognise_obround_from_ends,
+)
 from b123d_recognisers._recess_records import Pocket
+from b123d_recognisers._recess_reduce import _RecessProposal
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all
@@ -427,9 +439,12 @@ def test_equal_coincident_bodies_remain_distinct_occurrences() -> None:
     )
 
 
-def test_foreign_graph_refuses_without_prefix() -> None:
+@pytest.mark.parametrize(
+    "foreign", [lambda part: deepcopy(part), lambda part: Pos(100, 0, 0) * part]
+)
+def test_deep_and_translated_foreign_graph_refuse_without_prefix(foreign) -> None:
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
-    ledger = ClaimLedger(FaceGraph(Pos(100, 0, 0) * part))
+    ledger = ClaimLedger(FaceGraph(foreign(part)))
     with pytest.raises(_PocketAttributionError, match="identity"):
         _discover_pockets(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
@@ -530,11 +545,22 @@ def test_supplied_face_edges_and_generic_step_keep_exact_writer_projection(tmp_p
     [
         Box(60, 40, 12) - Pos(0, 0, 0) * Box(20, 12, 6),  # sealed/two-floor void
         Box(60, 40, 12) - Pos(0, 0, 4) * Cylinder(5, 8),
+        Box(60, 40, 12) - Pos(0, 0, 4) * (Cylinder(5, 8) + Pos(3, 0, 0) * Box(6, 10, 8)),
+        Box(60, 40, 12) - Pos(0, 0, 4) * (Rot(0, 0, 17) * Box(20, 12, 8)),
     ],
 )
 def test_sealed_rib_and_incomplete_cap_shapes_do_not_leak_evidence(part) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     assert _discover_pockets(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_open_shell_geometry_cannot_publish_pocket_evidence() -> None:
+    solid = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    shell = Shell(solid.faces())
+    ledger = ClaimLedger(FaceGraph(shell))
+    with pytest.raises(_PocketAttributionError, match="one valid solid"):
+        _discover_pockets(shell, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
@@ -625,6 +651,51 @@ def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> No
         bounds={curved: ((0, 0), (0, 0), (0, 10))},
     )
     assert _uninterrupted_long_span("z", (0, 10), fa, fb, cast(FaceGraph, collapsed)) is None
+
+
+@pytest.mark.parametrize("mutation", ["missing", "one", "axis", "radius", "depth"])
+def test_blind_pocket_cap_contract_refuses_every_mismatched_endpoint(monkeypatch, mutation) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
+    graph = FaceGraph(part)
+    extended = _pocket_proposals_one(part, graph=graph)[0]
+    radius = extended.record.width / 2
+    raw = _RecessProposal(
+        replace(
+            extended.record,
+            lo=extended.record.lo + radius,
+            hi=extended.record.hi - radius,
+            length=extended.record.length - 2 * radius,
+        ),
+        extended.planar,
+    )
+    ends = _obround_ends(part, graph)
+    if mutation == "missing":
+        changed = []
+    elif mutation == "one":
+        changed = ends[:1]
+    else:
+        target = ends[0]
+        index, value = {
+            "axis": (2, "x" if target[2] != "x" else "y"),
+            "radius": (3, target[3] * 1.1),
+            "depth": (8, target[8] + 1.0),
+        }[mutation]
+        changed = [(*target[:index], value, *target[index + 1 :]), *ends[1:]]
+    monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: changed)
+    assert _extend_obround_proposals([raw], part, graph) == [raw]
+
+
+def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8)
+    graph = FaceGraph(part)
+    ends = _obround_ends(part, graph)
+    changed = [(*ends[0][:6], -ends[0][6], *ends[0][7:]), *ends[1:]]
+    monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: changed)
+    assert _recognise_obround_from_ends(part, [], blind=True, graph=graph, proposals=True) == []
 
 
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
@@ -974,7 +1045,8 @@ def test_same_body_multiple_pockets_keep_geometry_order_and_exact_identity() -> 
 def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
     first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
-    ledger = ClaimLedger(FaceGraph(part))
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
     real = ledger.graph.common_valid_solid
     owners = []
 
@@ -986,8 +1058,10 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
 
     monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
     with pytest.raises(_PocketAttributionError, match="one valid solid"):
-        _discover_pockets(part, writer=ledger.writer)
+        _discover_all(context, ledger)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+    assert FamilyId.POCKETS not in ledger._issuer._completed
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
 
 
 def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -> None:
