@@ -25,9 +25,8 @@ from b123d_recognisers._features import (
     LinearArray,
     RectGrid,
     recognise_hole_patterns,
-    recognise_holes,
 )
-from b123d_recognisers._hole_features import _discover_bosses
+from b123d_recognisers._hole_features import _discover_bosses, _discover_holes
 from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
@@ -200,12 +199,15 @@ def _simple(call: Callable[[DiscoveryServices], list[object]]) -> PhysicalDiscov
 
 def _holes(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
     countersinks = list(inputs.records(FamilyId.COUNTERSINKS, CounterSink))
+    occurrences = inputs.occurrences(FamilyId.COUNTERSINKS, CounterSink)
     return list(
-        recognise_holes(
+        _discover_holes(
             services.context.part,
             cyls=services.cylinders,
             csinks=countersinks,
             face_edges=services.context.face_edges,
+            writer=services.writer,
+            predecessor_occurrences=occurrences,
         )
     )
 
@@ -250,8 +252,8 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _holes,
         Counted("hole"),
-        IncompleteAttribution(
-            "no defining evidence is issued", "define bore and countersink roles"
+        FullyAttributed(
+            "every returned Hole claims its complete original cylindrical occurrence faces"
         ),
     ),
     PhysicalDefinition(
@@ -312,9 +314,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             )
         ),
         NotCounted("not a distinct census key"),
-        FullyAttributed(
-            "every returned Polygonal Boss claims its six original side faces"
-        ),
+        FullyAttributed("every returned Polygonal Boss claims its six original side faces"),
     ),
     PhysicalDefinition(
         FamilyId.POLYGONAL_STOCK,

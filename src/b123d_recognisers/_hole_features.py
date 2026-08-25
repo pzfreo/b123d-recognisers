@@ -11,8 +11,14 @@ from build123d import Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
-from b123d_recognisers._adjacency import FaceEdges, edge_face_map, frame_points_outward, neighbours
-from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    FaceNode,
+    edge_face_map,
+    frame_points_outward,
+    neighbours,
+)
+from b123d_recognisers._candidates import CompletedOccurrence, FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._cylinder_substrate import (
     _STACK_GAP_FRAC,
@@ -64,6 +70,7 @@ def _same_diameter(a: float, b: float) -> bool:
     # real comparison -- it only stops one from dividing the world by nothing.
     return abs(a - b) <= _SAME_DIAMETER_FRAC * max(abs(a), abs(b), _DIAMETER_FLOOR)
 
+
 # A counterbore-like step shallower than this fraction of its diameter is a spotface.
 _SPOTFACE_MAX_RATIO = 0.2
 
@@ -106,6 +113,32 @@ class HoleRecord(Record):
     # from the standalone :func:`recognise_countersinks` so the hole's spec/grouping and
     # the callout-width estimate all see it.
     csink: CounterSink | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _NearSideSelection:
+    """Serialized near-side steps and the cylinder patches that establish them."""
+
+    cbore: CounterBore | None
+    spotface: CounterBore | None
+    faces: tuple[Face, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _DepthSelection:
+    """Serialized bore depth and the bore/deep-extension patches that establish it."""
+
+    depth: float
+    faces: tuple[Face, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _HoleProposal:
+    """One exact Hole occurrence with its original cylindrical provenance."""
+
+    record: HoleRecord
+    cylindrical_faces: tuple[Face, ...]
+    matching_csinks: tuple[CounterSink, ...]
 
 
 @dataclass(frozen=True)
@@ -411,7 +444,7 @@ def _drilled_from(
     return from_hi, opening_seg, opening_s, {"open": "through"}.get(bottom_state, bottom_state)
 
 
-def _near_side_steps(steps: list[SegmentEvidence]) -> tuple[CounterBore | None, CounterBore | None]:
+def _near_side_steps(steps: list[SegmentEvidence]) -> _NearSideSelection:
     """Classify the segments between the opening and the bore as counterbore and spotface.
 
     *steps* is ordered from the opening inward. Diameters must narrow monotonically: a segment
@@ -424,6 +457,7 @@ def _near_side_steps(steps: list[SegmentEvidence]) -> tuple[CounterBore | None, 
     """
 
     spans: dict = {}
+    contributors: dict[float, list[SegmentEvidence]] = {}
     step_order = []
     min_d = math.inf
     for step in steps:
@@ -433,25 +467,35 @@ def _near_side_steps(steps: list[SegmentEvidence]) -> tuple[CounterBore | None, 
         key = quantise(step["diameter"], figures=4)
         if key not in spans:
             spans[key] = [step["s_lo"], step["s_hi"]]
+            contributors[key] = [step]
             step_order.append(key)
         else:
             spans[key][0] = min(spans[key][0], step["s_lo"])
             spans[key][1] = max(spans[key][1], step["s_hi"])
+            contributors[key].append(step)
 
     cbore = spotface = None
+    selected_keys: list[float] = []
     for key in step_order:
         lo, hi = spans[key]
         spec = CounterBore(key, round(hi - lo, 2))
         if spec.depth < _SPOTFACE_MAX_RATIO * spec.diameter:
-            spotface = spotface or spec
+            if spotface is None:
+                spotface = spec
+                selected_keys.append(key)
         else:
-            cbore = cbore or spec
-    return cbore, spotface
+            if cbore is None:
+                cbore = spec
+                selected_keys.append(key)
+    faces = tuple(
+        face for key in selected_keys for segment in contributors[key] for face in segment["faces"]
+    )
+    return _NearSideSelection(cbore, spotface, faces)
 
 
 def _bore_depth(
     stack: list[SegmentEvidence], bore: SegmentEvidence, *, bottom: str, from_hi: bool
-) -> float:
+) -> _DepthSelection:
     """Depth from the top of the bore to the hole's deep end.
 
     The two ends are measured against different segment sets on purpose. The near end is the
@@ -464,9 +508,21 @@ def _bore_depth(
     deep_segs = bore_segs if bottom == "through" else stack
     # float() rather than a cast: the segment dicts are untyped, so the arithmetic is Any and
     # the annotation would be a claim rather than a guarantee.
+    defining = list(bore_segs)
     if from_hi:
-        return float(max(s["s_hi"] for s in bore_segs)) - float(min(s["s_lo"] for s in deep_segs))
-    return float(max(s["s_hi"] for s in deep_segs)) - float(min(s["s_lo"] for s in bore_segs))
+        deep_end = min(s["s_lo"] for s in deep_segs)
+        depth = float(max(s["s_hi"] for s in bore_segs)) - float(deep_end)
+        if bottom != "through":
+            defining.extend(s for s in deep_segs if s["s_lo"] == deep_end)
+    else:
+        deep_end = max(s["s_hi"] for s in deep_segs)
+        depth = float(deep_end) - float(min(s["s_lo"] for s in bore_segs))
+        if bottom != "through":
+            defining.extend(s for s in deep_segs if s["s_hi"] == deep_end)
+    return _DepthSelection(
+        depth,
+        tuple(face for segment in defining for face in segment["faces"]),
+    )
 
 
 def recognise_holes(
@@ -494,6 +550,20 @@ def recognise_holes(
     caller owns the single inventory and injects it.
     With ``csinks=None`` the holes come back without countersink attribution.
     """
+    return _discover_holes(part, cyls=cyls, csinks=csinks, face_edges=face_edges)
+
+
+def _discover_holes(
+    part: Part,
+    *,
+    cyls: CylinderInventory | None = None,
+    csinks: Sequence[CounterSink] | None = None,
+    face_edges: FaceEdges | None = None,
+    writer: EvidenceWriter | None = None,
+    predecessor_occurrences: Sequence[CompletedOccurrence] = (),
+) -> list[HoleRecord]:
+    """Discover Holes and stage exact cylindrical/predecessor evidence atomically."""
+
     z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
@@ -505,7 +575,7 @@ def recognise_holes(
     cache: dict = {}
     stacks = _merge_stacks(_merge_runs(_segments(internal), _line_key), edge_faces, cache)
 
-    holes = []
+    proposals: list[_HoleProposal] = []
     for stack in stacks:
         d = stack[0]["dir_xyz"]
         from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache)
@@ -521,33 +591,76 @@ def recognise_holes(
         # segment between same-diameter lands is a groove (e.g. an O-ring
         # gland inside a counterbore), not a step. Lands of one step span
         # their groove.
-        cbore, spotface = _near_side_steps(ordered[:bore_i])
+        near = _near_side_steps(ordered[:bore_i])
 
         # The bore's depth runs from its top to the hole's deep end: bore
         # lands span a mid-bore groove, and a blind hole's depth includes a
         # bottom relief groove — but not a through hole's far-side steps.
         depth = _bore_depth(stack, bore, bottom=bottom, from_hi=from_hi)
-        holes.append(
-            HoleRecord(
-                axis=_unit(tuple(-c for c in d) if from_hi else d),
-                location=_axis_point(opening_seg, opening_s),
-                diameter=bore["diameter"],
-                depth=round(depth, 2),
-                bottom=bottom,
-                cbore=cbore,
-                spotface=spotface,
-            )
+        record = HoleRecord(
+            axis=_unit(tuple(-c for c in d) if from_hi else d),
+            location=_axis_point(opening_seg, opening_s),
+            diameter=bore["diameter"],
+            depth=round(depth.depth, 2),
+            bottom=bottom,
+            cbore=near.cbore,
+            spotface=near.spotface,
         )
+        proposals.append(_HoleProposal(record, depth.faces + near.faces, ()))
     # Compose the injected countersinks: a coaxial cone flaring from the bore is
     # a hole attribute (like a counterbore), so it rides on the HoleRecord — HoleSpec
     # grouping and the callout-width estimate then see it for free. The caller injects the
     # inventory (package ADR 0002 — no sibling re-recognition here).
     if csinks:
-        holes = [
-            (replace(h, csink=cs) if (cs := _csink_for_hole(h, csinks)) is not None else h)
-            for h in holes
-        ]
-    return holes
+        composed: list[_HoleProposal] = []
+        for proposal in proposals:
+            matches = tuple(cs for cs in csinks if countersink_matches_hole(cs, proposal.record))
+            record = replace(proposal.record, csink=matches[0]) if matches else proposal.record
+            composed.append(replace(proposal, record=record, matching_csinks=matches))
+        proposals = composed
+
+    if writer is not None:
+        occurrences_by_record: dict[int, list[CompletedOccurrence]] = {}
+        for occurrence in predecessor_occurrences:
+            predecessor_record = occurrence.record(CounterSink)
+            occurrences_by_record.setdefault(id(predecessor_record), []).append(occurrence)
+
+        pending: list[tuple[HoleRecord, tuple[FaceNode, ...]]] = []
+        used_nodes: set[FaceNode] = set()
+        used_predecessors: set[int] = set()
+        for proposal in proposals:
+            resolved = {writer.graph.require_node(face) for face in proposal.cylindrical_faces}
+            nodes = tuple(node for node in writer.graph.nodes if node in resolved)
+            solid = writer.graph.common_valid_solid(nodes)
+            if not nodes or solid is None:
+                raise ValueError("Hole cylindrical evidence does not prove one valid solid")
+            if used_nodes & resolved:
+                raise ValueError("Hole occurrences share defining cylindrical faces")
+
+            if proposal.matching_csinks:
+                if len(proposal.matching_csinks) != 1:
+                    raise ValueError("Hole has ambiguous matching CounterSink occurrences")
+                selected = proposal.matching_csinks[0]
+                predecessor_matches = occurrences_by_record.get(id(selected), ())
+                if (
+                    len(predecessor_matches) != 1
+                    or predecessor_matches[0].record(CounterSink) is not selected
+                ):
+                    raise ValueError("Hole CounterSink predecessor identity is unavailable")
+                occurrence = predecessor_matches[0]
+                if id(occurrence) in used_predecessors:
+                    raise ValueError("CounterSink predecessor is shared by Hole occurrences")
+                if occurrence.solid() != solid:
+                    raise ValueError("Hole and CounterSink predecessors belong to different solids")
+                used_predecessors.add(id(occurrence))
+
+            used_nodes.update(resolved)
+            pending.append((proposal.record, nodes))
+
+        for record, nodes in pending:
+            writer.add_defining(record, nodes, family=FamilyId.HOLES)
+
+    return [proposal.record for proposal in proposals]
 
 
 def recognise_bosses(
@@ -604,9 +717,7 @@ def _discover_bosses(
     if writer is not None:
         pending = []
         for proposal in proposals:
-            resolved = {
-                writer.graph.require_node(face) for face in proposal.segment_faces
-            }
+            resolved = {writer.graph.require_node(face) for face in proposal.segment_faces}
             nodes = tuple(node for node in writer.graph.nodes if node in resolved)
             if not nodes or writer.graph.common_valid_solid(nodes) is None:
                 raise ValueError("Boss defining faces do not prove one valid solid")

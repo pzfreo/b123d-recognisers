@@ -1079,3 +1079,34 @@ Selected-artifact SHA-256: `20a25c12b9da60142c60526cf20fcd1e1435b7a2b0c2f9dae4d6
 report SHA-256: `3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1f`.
 Bucket 26 is permanently consumed; the temporary selection/report were deleted and no rerun after
 corpus access, alternate selection or fitting occurred.
+
+### F5j Hole attribution (#220)
+
+Bucket 27 (`F5-HOLES-H1`) was kept independently sealed throughout development. At accepted
+pre-reveal PR #227 head `2ddf17e`, after 1,568 full tests, static/package/performance/CI gates and
+two independent exact-head accepts, its one authorised selection contained 35 model triples (105
+files). Annotation validation stopped on repeated instance membership in
+`20240124_001736_4786_result_rel.json` `relation[0]`. The failing model did not reach STEP import or
+recognition; because the overall audit produced no complete report, no aggregate Hole counts or
+attribution outcomes are available or claimable. The temporary selection/report were deleted and no retry, alternate mode,
+replacement or fitting followed. Bucket 27 is permanently consumed and inconclusive, not
+regression evidence; exact Hole ownership remains established by the frozen development matrix.
+Hole discovery uses one private optional-writer core while preserving the public signature and
+geometry-only path. Each issuable Hole owns all and only the original internal cylindrical patches
+that establish its bore/deep span and selected near-side counterbore or spotface lands. End and
+bottom faces, transition cones/tori, crossing faces, skipped grooves and through-hole far-side steps
+remain consulted. A composed countersink is linked through the restricted completed-predecessor
+capability introduced by #219; its cone stays defining solely for COUNTERSINKS. Every face,
+common-solid and optional predecessor identity/body check completes before first Hole issuance.
+Promotion to `FullyAttributed` and any one-shot bucket reveal require the same exact head to prove
+the complete lifecycle, independent topology-first role oracle, static/package/full/performance/CI
+gates and two independent accepts. Zero, invalid input, abort or completion consumes the allocation
+without retry or fitting and without implying geometry the scanner does not reconstruct.
+
+The frozen development evidence also pins the recognition-owned helper boundaries rather than
+inferring them from final records: six-significant cylinder measurement and four-significant
+grouping, projected line identity, scale-relative stack gaps, high-coordinate opening ties,
+narrowest-bore/monotonic near-step selection, through-versus-blind depth ownership, and all closed
+CounterSink association tolerances. Original-topology fixtures exercise plane, cone, inward/outward
+torus, sphere and crossing-cylinder end partners; these are role and lifecycle evidence only, not
+new recognition claims or holdout-derived tuning.

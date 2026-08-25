@@ -123,8 +123,16 @@ reconstruct the top-versus-wall roles, maximal-base choice or tier context. The 
 `3d63840c836ae9925f2903c8f338c8b8a2d17a4e44f7c7692f3e048741396e1f`. No selected-scan rerun
 after corpus access, alternate selection or fitting was performed, and the temporary extracted
 selection/report were deleted.
-`F5-HOLES-H1` remains independently `sealed_unrevealed` at bucket 27. The Wave 1 allocations were
-designated by neutral #216 without outcome access; authority remains exact and non-transferable.
+`F5-HOLES-H1` bucket 27 is now `consumed`. It was selected once at accepted pre-reveal PR #227
+head `2ddf17e`, after 1,568 full tests, static/package/performance/CI gates and two independent
+exact-head accepts. The deterministic selection contained 35 model triples (105 files). The
+scanner stopped while validating annotations because
+`20240124_001736_4786_result_rel.json` repeats an instance id in `relation[0]`, before that model's
+STEP import or recognition. The overall audit produced no complete report, so no aggregate Hole
+counts or attribution outcomes are available or claimable. The temporary selection/report were deleted;
+no retry, alternate mode, replacement or fitting followed. The allocation is permanently
+inconclusive and is not regression evidence. The Wave 1 allocations were designated by neutral
+#216 without outcome access; authority remains exact and non-transferable.
 `F5-CHANNELS-H1` is independently `sealed_unrevealed` at bucket 28 for #225. The Channels
 allocation was added without opening the archive, inspecting membership, or running recognition;
 it supplies no outcome evidence. Authority remains exact and non-transferable between allocations,

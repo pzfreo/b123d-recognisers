@@ -67,7 +67,9 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # Fully-attributed Countersinks cannot be fabricated without original cone evidence in this
     # dependency-injection test; the dedicated lifecycle matrix owns nonempty attribution.
     countersinks: list[CounterSink] = []
-    holes = [HoleRecord((0.0, 0.0, 1.0), (0.0, 0.0, 0.0), 3.0, 10.0, "through")]
+    # Fully-attributed Holes cannot be fabricated without original cylindrical evidence in this
+    # dependency-injection test; the dedicated lifecycle matrix owns nonempty attribution.
+    holes: list[HoleRecord] = []
     slots = [Slot("x", "y", 3.0, 10.0, 0.0, -5.0, 5.0, -1.0, 1.0)]
     pockets = [Pocket("x", "y", 3.0, 10.0, 2.0, 0.0, -5.0, 5.0, -2.0, 0.0)]
     # Fully-attributed families cannot be faked with output records but no original-face
@@ -119,7 +121,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(
         registry_module, "_discover_countersinks", counted("countersinks", countersinks)
     )
-    monkeypatch.setattr(registry_module, "recognise_holes", fake_holes)
+    monkeypatch.setattr(registry_module, "_discover_holes", fake_holes)
     monkeypatch.setattr(
         registry_module,
         "_discover_double_d_bores",
