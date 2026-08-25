@@ -447,8 +447,13 @@ def _discover_repeating_radial_profiles(
             "repeating radial profile source identity does not belong to this run"
         ) from exc
 
-    for record, nodes in pending:
-        writer.add_defining(record, nodes, family=FamilyId.REPEATING_RADIAL_PROFILES)
+    try:
+        for record, nodes in pending:
+            writer.add_defining(record, nodes, family=FamilyId.REPEATING_RADIAL_PROFILES)
+    except (AttributeError, RuntimeError, ValueError) as exc:
+        raise _RepeatingRadialAttributionError(
+            "repeating radial profile evidence publication was refused"
+        ) from exc
     return records
 
 
