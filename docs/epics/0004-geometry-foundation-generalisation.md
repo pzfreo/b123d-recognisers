@@ -916,6 +916,14 @@ ambiguity, graph identity and common-body checks complete before the first propo
 Channel ownership therefore remains established by the frozen development matrix rather than the
 inconclusive consumed allocation.
 
+F5 Polygonal Stock attribution/#232 preserves the exact-prism public predicate and its `NotCounted`
+census treatment while replacing the former structural exclusion. Each aggregate record owns its
+complete original eight-face solid boundary: the six ordered outward side faces and the unique lower
+and upper caps. Cap nodes are retained at selection time rather than inferred from the remaining
+inventory or rounded coordinates. Exact graph/writer authority, eight-node inventory equality and a
+single SolidRef are proved before issuance. Bucket 30 remains sealed until the exact implementation
+head clears the independent semantic and mechanical gates.
+
 F5 prerequisite/#219 closes the record-only physical-dependency gap before Holes attribution. Each
 registry family now completes atomically immediately after discovery: returned occurrences bind to
 one exact CandidateSet, deliberate empty Candidates are staged without prefix leakage, later writes

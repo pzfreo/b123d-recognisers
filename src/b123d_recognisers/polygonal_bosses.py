@@ -91,6 +91,16 @@ class PolygonalStock(Record):
 class _PolygonalProposal:
     record: PolygonalBoss | PolygonalStock
     side_faces: tuple[FaceLike, ...]
+    lower_cap: FaceLike
+    upper_cap: FaceLike
+
+
+@dataclass(frozen=True, slots=True)
+class _CapSelection:
+    """One unique terminal cap retained with the coordinate it establishes."""
+
+    node: FaceNode
+    z: float
 
 
 def _heading(graph: FaceGraph, node: FaceNode) -> tuple[float, float, float]:
@@ -148,7 +158,7 @@ def _common_cap(
     positive: bool,
     wall_lo: float,
     wall_hi: float,
-) -> float | None:
+) -> _CapSelection | None:
     """The single cap Z shared by every side of the ring, or ``None``.
 
     Each side must reach the end through exactly one neighbour — an ambiguous choice means the
@@ -176,8 +186,8 @@ def _common_cap(
     else:
         candidates = set.intersection(*(adjacent_to(face) for face in boundary_set))
         candidates -= component_set | boundary_set
-    cap_zs = [
-        cap
+    cap_selections = [
+        _CapSelection(node, cap)
         for node in candidates
         if (
             cap := _cap_z(
@@ -191,7 +201,7 @@ def _common_cap(
         )
         is not None
     ]
-    return cap_zs[0] if len(cap_zs) == 1 else None
+    return cap_selections[0] if len(cap_selections) == 1 else None
 
 
 def _side_rings(
@@ -423,9 +433,9 @@ def _recognise_one(
             wall_lo=wall_lo,
             wall_hi=wall_hi,
         )
-        if base is None or top is None or top - base <= tol:
+        if base is None or top is None or top.z - base.z <= tol:
             continue
-        if whole_stock and (abs(base - wall_lo) > tol or abs(top - wall_hi) > tol):
+        if whole_stock and (abs(base.z - wall_lo) > tol or abs(top.z - wall_hi) > tol):
             continue
         flat_centres = tuple(
             (round(float(point.X), 3), round(float(point.Y), 3), round(float(point.Z), 3))
@@ -437,11 +447,11 @@ def _recognise_one(
         record_type = PolygonalStock if whole_stock else PolygonalBoss
         record = record_type(
             axis="z",
-            center=(round(cx, 4), round(cy, 4), round((base + top) / 2, 4)),
+            center=(round(cx, 4), round(cy, 4), round((base.z + top.z) / 2, 4)),
             side_count=side_count,
             across_flats=round(across, 4),
-            base=round(base, 4),
-            top=round(top, 4),
+            base=round(base.z, 4),
+            top=round(top.z, 4),
             flat_directions=flat_directions,
             flat_centres=flat_centres,
         )
@@ -449,6 +459,8 @@ def _recognise_one(
             _PolygonalProposal(
                 record,
                 tuple(graph.face(node) for node in ordered),
+                graph.face(base.node),
+                graph.face(top.node),
             )
         )
     return found
@@ -537,12 +549,55 @@ def recognise_polygonal_stock(
     only ever with a single solid, so there is no case where the caller's graph is the wrong
     inventory.
     """
+    return _discover_polygonal_stock(
+        part,
+        tol=tol,
+        angle_tol=angle_tol,
+        graph=graph,
+    )
+
+
+def _discover_polygonal_stock(
+    part: Part,
+    *,
+    tol: float | None = None,
+    angle_tol: float = math.radians(2),
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[PolygonalStock]:
+    """Discover exact-prism stock and optionally issue its complete eight-face boundary."""
+
     if len(list(part.solids())) != 1 or len(list(part.faces())) != 8:
         return []
-    return sorted(
-        proposal.record
-        for proposal in _recognise_one(
-            part, tol=tol, angle_tol=angle_tol, whole_stock=True, graph=graph
-        )
-        if isinstance(proposal.record, PolygonalStock)
+    if graph is not None and writer is not None and graph is not writer.graph:
+        raise ValueError("Polygonal Stock graph and writer must share one authority")
+    owner = writer.graph if writer is not None else graph
+    proposals = sorted(
+        (
+            proposal
+            for proposal in _recognise_one(
+                part, tol=tol, angle_tol=angle_tol, whole_stock=True, graph=owner
+            )
+            if isinstance(proposal.record, PolygonalStock)
+        ),
+        key=lambda proposal: proposal.record,
     )
+    records = [cast("PolygonalStock", proposal.record) for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending: list[tuple[PolygonalStock, tuple[FaceNode, ...]]] = []
+    for proposal, record in zip(proposals, records, strict=True):
+        resolved = {
+            writer.graph.require_node(face)
+            for face in (*proposal.side_faces, proposal.lower_cap, proposal.upper_cap)
+        }
+        nodes = tuple(node for node in writer.graph.nodes if node in resolved)
+        if len(nodes) != 8 or resolved != set(writer.graph.nodes):
+            raise ValueError("Polygonal Stock requires its complete eight-face graph inventory")
+        if writer.graph.common_valid_solid(nodes) is None:
+            raise ValueError("Polygonal Stock boundary does not prove one valid solid")
+        pending.append((record, nodes))
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.POLYGONAL_STOCK)
+    return records

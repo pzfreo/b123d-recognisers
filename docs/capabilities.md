@@ -27,9 +27,9 @@ valid closed solid.
 
 | Status | Physical families | Reason / next boundary |
 | --- | --- | --- |
-| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `passages`, `prismatic_pockets`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. |
+| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `passages`, `polygonal_stock`, `prismatic_pockets`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census. |
 | Incomplete, partially measured | `pockets`, `slots` | Paired-wall/corner paths are measured, but cap-recovered obround outputs deliberately remain empty pending separate migrations. |
-| Incomplete | `channels`, `holes`, `pads`, `plates`, `polygonal_bosses`, `polygonal_stock`, `repeating_radial_profiles`, `risers`, `step_levels` | No complete occurrence-to-defining-face contract yet. `polygonal_stock` is stock context; level/riser/repetition records are analysis or correspondence facts and require a reviewed ownership proof or structural exclusion. |
+| Incomplete | `channels`, `holes`, `pads`, `plates`, `polygonal_bosses`, `repeating_radial_profiles`, `risers`, `step_levels` | No complete occurrence-to-defining-face contract yet. Level/riser/repetition records are analysis or correspondence facts and require a reviewed ownership proof or structural exclusion. |
 
 The registry is the closed machine-checked authority for these 22 internal dispositions. Per-face
 tools consume the completed frozen inventory and report records, Candidates, accepted occurrences,
