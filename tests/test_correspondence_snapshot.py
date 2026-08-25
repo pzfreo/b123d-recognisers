@@ -412,7 +412,14 @@ def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
         _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: DisplacedPcurve()
     )
     with pytest.raises(UnsupportedBodyGeometry, match="does not reconstruct"):
-        _body_geometry._validate_matching_pcurve(edge, face, 1e-7)
+        _body_geometry._validate_matching_pcurve(
+            edge,
+            face,
+            BRepAdaptor_Surface(face.wrapped),
+            1e-7,
+            "LINE",
+            False,
+        )
 
 
 def test_schema_three_construction_budget_is_inclusive() -> None:

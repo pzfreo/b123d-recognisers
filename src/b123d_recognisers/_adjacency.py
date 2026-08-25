@@ -188,12 +188,19 @@ class BodyGeometryFact:
     _solid: SolidRef
     descriptor: BodyGeometryDescriptor
     _faces: tuple[tuple[FaceNode, FaceGeometry], ...]
+    _matching_faces: tuple[tuple[FaceNode, object], ...]
 
     def _defining_face(self, node: FaceNode) -> FaceGeometry:
         for issued, geometry in self._faces:
             if issued is node:
                 return geometry
         raise BodyGeometryAuthorityError("face node is not part of this graph-authorized body fact")
+
+    def _matching_face(self, node: FaceNode) -> object:
+        for issued, geometry in self._matching_faces:
+            if issued is node:
+                return geometry
+        raise BodyGeometryAuthorityError("face node is not part of this matching body fact")
 
 
 @dataclass(frozen=True, eq=False, slots=True)
@@ -698,12 +705,18 @@ class FaceGraph:
             return cached
         described = describe_solid(self._solids[issued])
         face_facts: list[tuple[FaceNode, FaceGeometry]] = []
-        for face, geometry in zip(described.faces, described.face_geometry, strict=True):
+        matching_face_facts: list[tuple[FaceNode, object]] = []
+        for face, geometry, face_build in zip(
+            described.faces, described.face_geometry, described.face_builds, strict=True
+        ):
             node = self.node_of(face)
             if node is None:
                 raise BodyGeometryAuthorityError("described solid face is not owned by this graph")
             face_facts.append((node, geometry))
-        fact = BodyGeometryFact(solid, described.descriptor, tuple(face_facts))
+            matching_face_facts.append((node, face_build))
+        fact = BodyGeometryFact(
+            solid, described.descriptor, tuple(face_facts), tuple(matching_face_facts)
+        )
         self._body_geometry[solid] = fact
         return fact
 
@@ -733,7 +746,16 @@ class FaceGraph:
             return cached
         if fact._solid is not solid:
             raise BodyGeometryAuthorityError("matching boundary lost its graph-issued solid")
-        matching = matching_boundary_for_solid(self._solids[issued], fact.descriptor)
+        solid_shape = self._solids[issued]
+        matching_builds = []
+        for face in solid_shape.faces():
+            node = self.node_of(face)
+            if node is None:
+                raise BodyGeometryAuthorityError("matching solid face is not graph-owned")
+            matching_builds.append(fact._matching_face(node))
+        matching = matching_boundary_for_solid(
+            solid_shape, fact.descriptor, tuple(matching_builds)
+        )
         self._matching_boundaries[solid] = matching
         return matching
 

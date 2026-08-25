@@ -9,8 +9,8 @@ edit classification and exports nothing from the package public surface.
 from __future__ import annotations
 
 import math
+import pickle
 from collections.abc import Mapping
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeAlias
 
@@ -116,6 +116,15 @@ def _freeze(value: object) -> FrozenValue:
     raise CorrespondenceSnapshotError(
         f"record value contains unsupported {type(value).__name__} state"
     )
+
+
+def _authority_value(value: object) -> bytes:
+    """Retain the complete issued value as collision-free, run-local bytes."""
+
+    try:
+        return pickle.dumps(value, protocol=5)
+    except (pickle.PickleError, TypeError, ValueError) as error:
+        raise CorrespondenceSnapshotError("authority value cannot be frozen") from error
 
 
 def _freeze_rrp(record: RepeatingRadialProfile) -> FrozenValue:
@@ -268,7 +277,7 @@ class _CorrespondenceSnapshotAuthority:
         self._physical: object | None = None
         self._reconciliation: object | None = None
         self._bound_records: tuple[tuple[Candidate[object], FrozenValue], ...] = ()
-        self._bound_occurrences: tuple[AcceptedOccurrenceSnapshot, ...] | None = None
+        self._bound_occurrences: object | None = None
         self._bound_body_groups: tuple[tuple[int, ...], ...] | None = None
         self._snapshot: CorrespondenceSnapshot | None = None
 
@@ -343,13 +352,24 @@ class _CorrespondenceSnapshotAuthority:
                 "accepted RRP record identity or value changed after inventory completion"
             )
         if self._snapshot is not None:
-            if self._snapshot.occurrences != self._bound_occurrences:
+            if self._snapshot.body_groups != self._bound_body_groups:
+                raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
+            try:
+                _validate_snapshot(self._snapshot)
+            except CorrespondenceSnapshotError as error:
+                raise CorrespondenceSnapshotError(
+                    "correspondence occurrence values changed after issue"
+                ) from error
+            try:
+                current_occurrences = _authority_value(self._snapshot.occurrences)
+            except CorrespondenceSnapshotError as error:
+                raise CorrespondenceSnapshotError(
+                    "correspondence occurrence values changed after issue"
+                ) from error
+            if current_occurrences != self._bound_occurrences:
                 raise CorrespondenceSnapshotError(
                     "correspondence occurrence values changed after issue"
                 )
-            if self._snapshot.body_groups != self._bound_body_groups:
-                raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
-            _validate_snapshot(self._snapshot)
             return self._snapshot
         staged = tuple(_occurrence(graph, product.evidence, item) for item in accepted.candidates)
         occurrences = tuple(item[0] for item in staged)
@@ -369,7 +389,7 @@ class _CorrespondenceSnapshotAuthority:
         # The authority retains an independent immutable value, not aliases to the issued
         # dataclass graph. This detects object.__setattr__ mutation of any nested occurrence,
         # descriptor, summary, record value, or quantization field on every cached read.
-        self._bound_occurrences = deepcopy(occurrences)
+        self._bound_occurrences = _authority_value(occurrences)
         self._bound_body_groups = body_groups
         self._snapshot = snapshot
         return snapshot

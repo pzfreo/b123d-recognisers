@@ -404,6 +404,7 @@ class _DescribedBody:
     descriptor: BodyGeometryDescriptor
     faces: tuple[Any, ...]
     face_geometry: tuple[FaceGeometry, ...]
+    face_builds: tuple[_FaceBuild, ...]
 
 
 def _finite(*values: float) -> tuple[float, ...]:
@@ -914,6 +915,7 @@ def describe_solid(solid) -> _DescribedBody:
         descriptor,
         raw_faces,
         tuple(build.geometry for build in raw_geometry),
+        raw_geometry,
     )
 
 
@@ -1054,9 +1056,14 @@ def _planar_cycle(
         return MatchingWire(role, 0, (full_oriented[0],))
     if not adjacency or any(len(entries) != 2 for entries in adjacency.values()):
         raise UnsupportedBodyGeometry("matching wire is not one degree-two cycle")
+    parameters = {
+        vertex: _plane_parameter(vertices[vertex], face, quantum) for vertex in adjacency
+    }
 
     candidates: list[tuple[MatchingHalfEdge, ...]] = []
-    for start in adjacency:
+    minimum_vertex = min(vertices[index] for index in adjacency)
+    starts = tuple(index for index in adjacency if vertices[index] == minimum_vertex)
+    for start in starts:
         for first_curve, first_next in adjacency[start]:
             cycle: list[MatchingHalfEdge] = []
             current = start
@@ -1074,11 +1081,11 @@ def _planar_cycle(
                         direction,
                         MatchingWireVertex(
                             current,
-                            _plane_parameter(vertices[current], face, quantum),
+                            parameters[current],
                         ),
                         MatchingWireVertex(
                             following,
-                            _plane_parameter(vertices[following], face, quantum),
+                            parameters[following],
                         ),
                     )
                 )
@@ -1149,13 +1156,19 @@ def _cylinder_parameter(
     )
 
 
-def _validate_matching_pcurve(edge: Any, face: Any, quantum: float) -> None:
+def _validate_matching_pcurve(
+    edge: Any,
+    face: Any,
+    surface: BRepAdaptor_Surface,
+    quantum: float,
+    kind: str,
+    full: bool,
+) -> None:
     """Prove one exact face-edge pcurve occurrence reconstructs its 3-D curve."""
 
     try:
         curve = BRepAdaptor_Curve(edge.wrapped)
         pcurve = BRepAdaptor_Curve2d(edge.wrapped, face.wrapped)
-        surface = BRepAdaptor_Surface(face.wrapped)
         curve_first, curve_last = curve.FirstParameter(), curve.LastParameter()
         pcurve_first, pcurve_last = pcurve.FirstParameter(), pcurve.LastParameter()
     except Standard_Failure as error:
@@ -1163,12 +1176,11 @@ def _validate_matching_pcurve(edge: Any, face: Any, quantum: float) -> None:
     parameters = (curve_first, curve_last, pcurve_first, pcurve_last)
     if not all(math.isfinite(value) for value in parameters):
         raise UnsupportedBodyGeometry("matching pcurve parameter range is non-finite")
-    edge_geometry = edge.geom_type
     fractions: tuple[float, ...]
-    if edge_geometry == GeomType.LINE:
+    if kind == "LINE":
         fractions = (0.0, 0.5, 1.0)
-    elif edge_geometry == GeomType.CIRCLE:
-        fractions = (0.0, 0.25, 0.5, 0.75) + (() if edge.is_closed else (1.0,))
+    elif kind == "CIRCLE":
+        fractions = (0.0, 0.25, 0.5, 0.75) + (() if full else (1.0,))
     else:
         raise UnsupportedBodyGeometry("matching pcurve has an unsupported 3-D curve")
     for fraction in fractions:
@@ -1195,8 +1207,8 @@ def _cylinder_cycle(
     quantum: float,
     vertex_labels: tuple[QPoint, ...],
     budget: _MatchingConstructionBudget,
+    surface: BRepAdaptor_Surface,
 ) -> MatchingWire:
-    surface = BRepAdaptor_Surface(face_wrapper.wrapped)
     occurrences = []
     for edge, curve_index in zip(wire.edges(), curve_indices, strict=True):
         pcurve = BRepAdaptor_Curve2d(edge.wrapped, face_wrapper.wrapped)
@@ -1298,8 +1310,11 @@ def _matching_label_orders(
     values: tuple[Any, ...], budget: _MatchingConstructionBudget
 ) -> tuple[tuple[int, ...], ...]:
     groups = []
-    for value in sorted(set(values)):
-        group = tuple(index for index, item in enumerate(values) if item == value)
+    grouped: dict[Any, list[int]] = {}
+    for index, value in enumerate(values):
+        grouped.setdefault(value, []).append(index)
+    for value in sorted(grouped):
+        group = tuple(grouped[value])
         choices = []
         for choice in permutations(group):
             budget.charge()
@@ -1447,6 +1462,7 @@ def _matching_graph_canonical(
 def matching_boundary_for_solid(
     solid: Any,
     descriptor: BodyGeometryDescriptor,
+    cached_face_builds: tuple[object, ...] | None = None,
 ) -> MatchingBoundaryGraph:
     """Build the bounded LINE/CIRCLE and PLANE/CYLINDER schema-three boundary graph."""
 
@@ -1455,26 +1471,70 @@ def matching_boundary_for_solid(
     budget = _MatchingConstructionBudget()
     raw_vertices: list[Any] = []
     raw_curves: list[Any] = []
+    raw_vertex_indices: dict[Any, int] = {}
+    raw_curve_indices: dict[Any, int] = {}
+    raw_curve_vertices: dict[Any, tuple[int, ...]] = {}
     curve_examples: list[Any] = []
     faces = tuple(solid.faces())
-    face_builds = tuple(
-        _face_geometry(face, centre, descriptor.quantization.characteristic_scale)
-        for face in faces
-    )
+    if cached_face_builds is None:
+        face_builds = tuple(
+            _face_geometry(face, centre, descriptor.quantization.characteristic_scale)
+            for face in faces
+        )
+    elif len(cached_face_builds) != len(faces) or any(
+        type(build) is not _FaceBuild for build in cached_face_builds
+    ):
+        raise UnsupportedBodyGeometry("matching cached face authority is malformed")
+    else:
+        face_builds = cast(tuple[_FaceBuild, ...], cached_face_builds)
+    cached_edge_labels: dict[Any, EdgeGeometry] = {}
+    for face_build in face_builds:
+        for wire_build in face_build.wires:
+            for alignment in wire_build.occurrences:
+                for (geometry, _semantic_direction), (token, _direction) in zip(
+                    wire_build.geometry.edges, alignment, strict=True
+                ):
+                    previous = cached_edge_labels.get(token)
+                    if previous is not None and previous != geometry:
+                        raise UnsupportedBodyGeometry(
+                            "matching cached curve authority disagrees"
+                        )
+                    cached_edge_labels[cast(Any, token)] = geometry
     face_curve_indices: list[list[tuple[str, tuple[int, ...]]]] = []
-    for face in faces:
+    face_adaptors = tuple(BRepAdaptor_Surface(face.wrapped) for face in faces)
+    for face, face_adaptor in zip(faces, face_adaptors, strict=True):
         outer = face.outer_wire()
         wires = []
         for wire in face.wires():
             indices = []
             for edge in wire.edges():
-                _validate_matching_pcurve(edge, face, quantum)
-                index = _identity_index(raw_curves, edge)
-                if index == len(curve_examples):
+                cached_label = cached_edge_labels.get(edge)
+                if cached_label is None:
+                    raise UnsupportedBodyGeometry(
+                        "matching cached curve authority is incomplete"
+                    )
+                _validate_matching_pcurve(
+                    edge,
+                    face,
+                    face_adaptor,
+                    quantum,
+                    cached_label.kind,
+                    cached_label.full,
+                )
+                index = raw_curve_indices.get(edge)
+                if index is None:
+                    index = len(raw_curves)
+                    raw_curve_indices[edge] = index
+                    raw_curves.append(edge)
                     curve_examples.append(edge)
+                    vertex_indices = []
+                    for vertex in edge.vertices():
+                        if vertex not in raw_vertex_indices:
+                            raw_vertex_indices[vertex] = len(raw_vertices)
+                            raw_vertices.append(vertex)
+                        vertex_indices.append(raw_vertex_indices[vertex])
+                    raw_curve_vertices[edge] = tuple(vertex_indices)
                 indices.append(index)
-                for vertex in edge.vertices():
-                    _identity_index(raw_vertices, vertex)
             wires.append(("outer" if wire == outer else "inner", tuple(indices)))
         face_curve_indices.append(wires)
 
@@ -1483,15 +1543,15 @@ def matching_boundary_for_solid(
     )
     matching_curves: list[MatchingCurve] = []
     for edge in curve_examples:
-        edge_geometry = _edge_geometry(edge, centre, quantum)
+        edge_geometry = cached_edge_labels.get(edge)
+        if edge_geometry is None:
+            raise UnsupportedBodyGeometry("matching cached curve authority is incomplete")
         if edge_geometry.kind not in {"LINE", "CIRCLE"}:
             raise UnsupportedBodyGeometry("matching curve grammar is unsupported")
         if edge_geometry.full:
             ordered = None
         else:
-            endpoints = tuple(
-                _identity_index(raw_vertices, vertex) for vertex in edge.vertices()
-            )
+            endpoints = raw_curve_vertices[edge]
             if len(endpoints) != 2:
                 raise UnsupportedBodyGeometry("matching curve does not have two vertices")
             ordered = (
@@ -1552,6 +1612,7 @@ def matching_boundary_for_solid(
                     quantum,
                     vertex_labels,
                     budget,
+                    face_adaptors[face_index],
                 )
             else:
                 raise UnsupportedBodyGeometry("matching boundary surface is unsupported")
