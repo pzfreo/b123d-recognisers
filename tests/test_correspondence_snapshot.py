@@ -2041,7 +2041,25 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
                     None,
                 )
                 all_body_callers.append((path.name, owner))
-    assert all_body_callers == [("_correspondence.py", "_occurrence")]
+    assert set(all_body_callers) == {
+        ("_correspondence.py", "_occurrence"),
+        ("_adjacency.py", "matching_boundary"),
+    }
+    matching_callers = set()
+    for path in source_paths:
+        tree = ast.parse(path.read_text())
+        for node in _alias_aware_calls(tree, "matching_boundary"):
+            owner = next(
+                (
+                    parent.name
+                    for parent in ast.walk(tree)
+                    if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and node in tuple(ast.walk(parent))
+                ),
+                None,
+            )
+            matching_callers.add((path.name, owner))
+    assert matching_callers == {("_correspondence.py", "_occurrence")}
     assert correspondence_importers == ["result.py"]
 
     lower_calls = {
