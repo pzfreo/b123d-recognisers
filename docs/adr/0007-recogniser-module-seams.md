@@ -323,3 +323,9 @@ For Plate attribution, `plates._discover_plates` is the sole private writer-enab
 TURNED_STEPS records once for the unchanged global veto, then passes only `writer=services.writer`.
 The core carries exact original low/high face clusters and reads no Candidate set, evidence index,
 inventory, disposition, reconciliation output, sibling recogniser or predecessor occurrence.
+
+Issue #234 keeps recess provenance inside the existing lower stack. `_recess_faces` issues raw
+planar/cylindrical topology facts, `_recess_obround` groups exact cap patches, `_recess_reduce`
+owns occurrence-preserving merge/body projections, and `_recess_core` creates Slot/Pocket
+proposals. `_recess_features` may project their planar nodes into the pre-existing compatibility
+ledger, but no lower module imports `_claims`, candidates, inventory, dispositions or reconciliation.

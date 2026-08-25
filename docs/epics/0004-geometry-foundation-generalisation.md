@@ -941,6 +941,13 @@ acceptance or reconciliation state. This neutral seam changes no family output/s
 no holdout; it permits the later COUNTERSINKS-to-HOLES adapter to prove nested occurrence/body identity
 without cone re-recognition or double ownership.
 
+F5 recess prerequisite/#234 replaces the value-keyed Slot/Pocket reduction authority with private
+immutable occurrences. Exact planar source nodes and complete cylindrical endpoint patch clusters
+survive merge, collinear collapse, obround extension/recovery and body scoping, while record-only
+compatibility remains value/order identical. The compatibility ledger is projected from those
+occurrences and publishes no new cap evidence. SLOT and POCKET remain `IncompleteAttribution`; no
+allocation, schema, census, reconciliation or public-output change belongs to this prerequisite.
+
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
 frozen inventory and no parallel claim path remains. A family may remain incomplete only with a
