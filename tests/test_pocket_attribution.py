@@ -558,6 +558,87 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         "writer",
         "_wrap_errors",
     )
+
+
+def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
+    package = ROOT / "src/b123d_recognisers"
+
+    def bindings(tree):
+        names = {}
+        modules = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    names[alias.asname or alias.name] = alias.name
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    modules[alias.asname or alias.name.split(".")[0]] = alias.name
+        return names, modules
+
+    def leaf(node, names, modules):
+        if isinstance(node, ast.Name):
+            return names.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            return node.attr
+        return ""
+
+    watched = {
+        "_pocket_proposals_one",
+        "_body_scoped_proposals",
+        "_RecessProposal",
+        "_merge_proposals",
+        "_extend_obround_proposals",
+    }
+    sites = {name: [] for name in watched}
+    for path in package.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names, modules = bindings(tree)
+
+        class Visitor(ast.NodeVisitor):
+            def __init__(self, source, imported_names, imported_modules):
+                self.functions = []
+                self.source = source
+                self.names = imported_names
+                self.modules = imported_modules
+
+            def visit_FunctionDef(self, node):
+                self.functions.append(node.name)
+                self.generic_visit(node)
+                self.functions.pop()
+
+            def visit_Call(self, node):
+                name = leaf(node.func, self.names, self.modules)
+                if name in sites:
+                    sites[name].append((self.source, self.functions[-1]))
+                self.generic_visit(node)
+
+        Visitor(path.name, names, modules).visit(tree)
+    assert sites["_pocket_proposals_one"] == [("_recess_core.py", "_recognise_pockets_one")]
+    assert ("_recess_features.py", "_discover_pockets") in sites["_body_scoped_proposals"]
+    assert {path for path, _function in sites["_RecessProposal"]} == {
+        "_recess_core.py",
+        "_recess_obround.py",
+        "_recess_reduce.py",
+    }
+    assert ("_recess_core.py", "_pocket_proposals_one") in sites["_merge_proposals"]
+    assert ("_recess_core.py", "_pocket_proposals_one") in sites["_extend_obround_proposals"]
+    prohibited = {
+        "CandidateSet",
+        "EvidenceIndex",
+        "InventoryProduct",
+        "ReconciliationResult",
+        "CompletedInputs",
+        "candidate_set",
+        "accepted_set",
+        "disposition",
+    }
+    for name in ("_recess_core.py", "_recess_faces.py", "_recess_obround.py", "_recess_reduce.py"):
+        tree = ast.parse((package / name).read_text(encoding="utf-8"))
+        names, _modules = bindings(tree)
+        references = {
+            names.get(node.id, node.id) for node in ast.walk(tree) if isinstance(node, ast.Name)
+        } | {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+        assert prohibited.isdisjoint(references), (name, prohibited & references)
     definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.POCKETS)
     assert isinstance(definition.attribution, FullyAttributed)
     source = (package / "_recess_features.py").read_text(encoding="utf-8")
