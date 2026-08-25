@@ -151,6 +151,23 @@ def _relation_key(relation: CorrespondenceRelation) -> tuple[object, ...]:
     )
 
 
+def _validate_witness(witness: RigidScaleWitness) -> None:
+    if (
+        type(witness) is not RigidScaleWitness
+        or witness.rotation not in PROPER_ROTATIONS
+        or type(witness.translation) is not tuple
+        or len(witness.translation) != 3
+        or any(
+            type(value) is not float or not math.isfinite(value)
+            for value in witness.translation
+        )
+        or type(witness.scale) is not float
+        or not math.isfinite(witness.scale)
+        or witness.scale <= 0.0
+    ):
+        raise CorrespondenceMatchError("correspondence transform witness is malformed")
+
+
 def _validate_result(
     result: CorrespondenceResult,
     before: CorrespondenceSnapshot,
@@ -167,7 +184,13 @@ def _validate_result(
     before_positions: list[int] = []
     after_positions: list[int] = []
     for relation in result.relations:
-        if type(relation) is not CorrespondenceRelation or type(relation.kind) is not ChangeKind:
+        if (
+            type(relation) is not CorrespondenceRelation
+            or type(relation.kind) is not ChangeKind
+            or type(relation.before_refs) is not tuple
+            or type(relation.after_refs) is not tuple
+            or type(relation.candidate_witnesses) is not tuple
+        ):
             raise CorrespondenceMatchError("correspondence relation is malformed")
         for reference in relation.before_refs:
             _validate_ref(reference, before)
@@ -179,14 +202,42 @@ def _validate_result(
             if reference.side != "after":
                 raise CorrespondenceMatchError("correspondence relation has a wrong-side reference")
             after_positions.append(reference.position)
-        if relation.kind is ChangeKind.ADDED and (relation.before_refs or not relation.after_refs):
+        if relation.witness is not None:
+            _validate_witness(relation.witness)
+        for candidate_witness in relation.candidate_witnesses:
+            _validate_witness(candidate_witness)
+        if relation.kind is ChangeKind.ADDED and (
+            relation.before_refs
+            or not relation.after_refs
+            or relation.witness is not None
+            or relation.candidate_witnesses
+        ):
             raise CorrespondenceMatchError("added correspondence relation is malformed")
         if relation.kind is ChangeKind.REMOVED and (
-            not relation.before_refs or relation.after_refs
+            not relation.before_refs
+            or relation.after_refs
+            or relation.witness is not None
+            or relation.candidate_witnesses
         ):
             raise CorrespondenceMatchError("removed correspondence relation is malformed")
-        if relation.kind is ChangeKind.UNCHANGED and relation.witness is not None:
-            raise CorrespondenceMatchError("unchanged correspondence carries a witness")
+        if relation.kind is ChangeKind.UNCHANGED and (
+            len(relation.before_refs) != 1
+            or len(relation.after_refs) != 1
+            or relation.witness is not None
+            or relation.candidate_witnesses
+        ):
+            raise CorrespondenceMatchError("unchanged correspondence relation is malformed")
+        if relation.kind in {ChangeKind.MOVED, ChangeKind.RESIZED} and (
+            len(relation.before_refs) != 1
+            or len(relation.after_refs) != 1
+            or relation.witness is None
+            or relation.candidate_witnesses
+        ):
+            raise CorrespondenceMatchError("transformed correspondence relation is malformed")
+        if relation.kind is ChangeKind.AMBIGUOUS and (
+            not relation.before_refs or not relation.after_refs or relation.witness is not None
+        ):
+            raise CorrespondenceMatchError("ambiguous correspondence relation is malformed")
     if sorted(before_positions) != list(range(len(before.occurrences))) or sorted(
         after_positions
     ) != list(range(len(after.occurrences))):

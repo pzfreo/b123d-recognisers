@@ -7,10 +7,15 @@ from build123d import Box, Compound, Pos
 
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
+    IDENTITY_ROTATION,
     ChangeKind,
     CorrespondenceMatchError,
+    CorrespondenceRelation,
+    CorrespondenceResult,
+    RigidScaleWitness,
     _compare_snapshots,
     _maximum_matchings,
+    _validate_result,
     correspondence_changes,
 )
 from b123d_recognisers.result import _take_inventory
@@ -148,3 +153,48 @@ def test_hypothesis_budget_is_inclusive_and_never_truncates(monkeypatch) -> None
     monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 6)
     with pytest.raises(CorrespondenceMatchError, match="budget"):
         _maximum_matchings(2, 2, edges)
+
+
+@pytest.mark.parametrize(
+    "witness",
+    (
+        RigidScaleWitness(((1, 0, 0), (0, -1, 0), (0, 0, 1)), (0.0, 0.0, 0.0), 1.0),
+        RigidScaleWitness(IDENTITY_ROTATION, (0.0, float("nan"), 0.0), 1.0),
+        RigidScaleWitness(IDENTITY_ROTATION, (0.0, 0.0, 0.0), 0.0),
+    ),
+)
+def test_closed_result_validation_refuses_malformed_witnesses(
+    witness: RigidScaleWitness,
+) -> None:
+    before_product = _take_inventory(_line_rrp(5))
+    after_product = _take_inventory(Pos(2, 0, 0) * _line_rrp(5))
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    relation = correspondence_changes(before_product, after_product).relations[0]
+    malformed = CorrespondenceResult(1, 2, 2, (replace(relation, witness=witness),))
+    with pytest.raises(CorrespondenceMatchError, match="witness"):
+        _validate_result(malformed, before, after)
+
+
+def test_closed_result_validation_refuses_kind_shape_drift() -> None:
+    before_product = _take_inventory(_line_rrp(5))
+    after_product = _take_inventory(Pos(2, 0, 0) * _line_rrp(5))
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    moved = correspondence_changes(before_product, after_product).relations[0]
+    malformed = CorrespondenceResult(
+        1,
+        2,
+        2,
+        (
+            CorrespondenceRelation(
+                ChangeKind.ADDED,
+                moved.before_refs,
+                moved.after_refs,
+                moved.witness,
+                (moved.witness,) if moved.witness is not None else (),
+            ),
+        ),
+    )
+    with pytest.raises(CorrespondenceMatchError, match="added"):
+        _validate_result(malformed, before, after)
