@@ -2080,6 +2080,35 @@ def test_late_second_body_failure_returns_no_snapshot_and_can_retry(monkeypatch)
     assert len(snapshot.occurrences) == 2
 
 
+def test_late_second_matching_graph_failure_returns_no_snapshot_and_can_retry(
+    monkeypatch,
+) -> None:
+    product = _take_inventory(
+        Compound([Pos(-50, 0, 0) * _rrp(5), Pos(50, 0, 0) * _rrp(7)])
+    )
+    authority = product._correspondence_authority
+    assert authority is not None
+    original = FaceGraph.matching_boundary
+    calls = 0
+
+    def fail_second(self, solid):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise UnsupportedBodyGeometry("controlled late matching failure")
+        return original(self, solid)
+
+    monkeypatch.setattr(FaceGraph, "matching_boundary", fail_second)
+    with pytest.raises(CorrespondenceSnapshotError, match="matching boundary is unavailable"):
+        correspondence_snapshot(product)
+    assert authority._snapshot is None
+    assert authority._bound_occurrences is None
+    assert authority._bound_body_groups is None
+
+    monkeypatch.setattr(FaceGraph, "matching_boundary", original)
+    assert len(correspondence_snapshot(product).occurrences) == 2
+
+
 def test_cross_solid_defining_evidence_refuses_atomically(monkeypatch) -> None:
     part = Compound([Pos(-50, 0, 0) * _rrp(5), Pos(50, 0, 0) * _rrp(7)])
     product = _take_inventory(part)

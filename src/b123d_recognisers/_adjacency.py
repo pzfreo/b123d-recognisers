@@ -319,7 +319,6 @@ class FaceGraph:
         self._issued_solid_refs: dict[SolidRef, int] = {}
         self._solids: tuple | None = None
         self._body_geometry: dict[SolidRef, BodyGeometryFact] = {}
-        self._matching_boundaries: dict[SolidRef, MatchingBoundaryGraph] = {}
         self._edge_occurrences: dict[FaceNode, tuple[EdgeOccurrenceRef, ...]] = {}
         self._issued_edge_occurrences: dict[EdgeOccurrenceRef, tuple] = {}
         self._shared_occurrences: dict[tuple[int, int], tuple[SharedEdgeOccurrenceRef, ...]] = {}
@@ -741,9 +740,6 @@ class FaceGraph:
         fact = self._body_geometry.get(solid)
         if fact is None:
             fact = self.body_geometry(solid)
-        cached = self._matching_boundaries.get(solid)
-        if cached is not None:
-            return cached
         if fact._solid is not solid:
             raise BodyGeometryAuthorityError("matching boundary lost its graph-issued solid")
         solid_shape = self._solids[issued]
@@ -753,11 +749,9 @@ class FaceGraph:
             if node is None:
                 raise BodyGeometryAuthorityError("matching solid face is not graph-owned")
             matching_builds.append(fact._matching_face(node))
-        matching = matching_boundary_for_solid(
+        return matching_boundary_for_solid(
             solid_shape, fact.descriptor, tuple(matching_builds)
         )
-        self._matching_boundaries[solid] = matching
-        return matching
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:
