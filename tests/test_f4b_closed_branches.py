@@ -1,0 +1,290 @@
+from __future__ import annotations
+
+import math
+from types import SimpleNamespace
+
+import pytest
+from build123d import Box, Pos, Rot
+
+from b123d_recognisers._passage_compat import (
+    PassageCompatibilityView,
+    _canonical_section,
+    compatibility_view,
+    grouping_from_view,
+    passage_from_view,
+    principal_projection,
+)
+from b123d_recognisers._section_passages import (
+    _BodyAdapter,
+    _canonical_run,
+    _end_slab,
+    _face_interval,
+    _material_fraction,
+    _ordered_cycle,
+    _pair_line,
+    _void_and_open,
+)
+from b123d_recognisers._sections import LocalFrame
+from b123d_recognisers.passages import (
+    Passage,
+    PassageEnds,
+    PassageFrame,
+    PassageSection,
+    PassageSectionVertex,
+    SectionPassage,
+    _legacy_projection,
+    _proposal_legacy_projection,
+    _unit,
+)
+
+
+class _Edges:
+    def __init__(self, edges=()):
+        self._edges = edges
+
+    def shared_edges(self, left, right):
+        return self._edges
+
+
+class _BadEndpoint:
+    geom_type = SimpleNamespace(name="LINE")
+
+    def tangent_at(self):
+        return SimpleNamespace(normalized=lambda: SimpleNamespace(X=0.0, Y=0.0, Z=1.0))
+
+    def position_at(self, at):
+        raise RuntimeError("closed kernel boundary")
+
+
+def _frame() -> PassageFrame:
+    return PassageFrame(
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+
+def _section() -> PassageSection:
+    return PassageSection(
+        (
+            PassageSectionVertex((-1.0, -1.0), 0.0),
+            PassageSectionVertex((1.0, -1.0), 0.0),
+            PassageSectionVertex((0.0, 2.0), 0.0),
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        object(),
+        SimpleNamespace(geom_type=SimpleNamespace(name="CIRCLE")),
+        SimpleNamespace(
+            geom_type=SimpleNamespace(name="LINE"),
+            tangent_at=lambda: SimpleNamespace(
+                normalized=lambda: (_ for _ in ()).throw(ValueError())
+            ),
+        ),
+    ),
+)
+def test_canonical_run_refuses_unsupported_or_malformed_edges(value) -> None:
+    assert _canonical_run(value) is None
+
+
+def test_pair_line_and_face_interval_closed_refusals() -> None:
+    neutral = LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
+    assert _pair_line(_Edges(), object(), object(), neutral) is None  # type: ignore[arg-type]
+    assert _pair_line(_Edges((_BadEndpoint(),)), object(), object(), neutral) is None  # type: ignore[arg-type]
+    missing = SimpleNamespace(face=lambda node: SimpleNamespace(vertices=lambda: ()))
+    failing = SimpleNamespace(
+        face=lambda node: SimpleNamespace(vertices=lambda: (_ for _ in ()).throw(RuntimeError()))
+    )
+    assert _face_interval(missing, object(), neutral.run) is None  # type: ignore[arg-type]
+    assert _face_interval(failing, object(), neutral.run) is None  # type: ignore[arg-type]
+
+
+def test_material_fraction_handles_all_closed_intersection_shapes() -> None:
+    probe = SimpleNamespace(volume=10.0)
+    assert _material_fraction(SimpleNamespace(intersect=lambda item: None), probe) == 0.0
+    assert (
+        _material_fraction(
+            SimpleNamespace(intersect=lambda item: SimpleNamespace(volume=2.0)), probe
+        )
+        == 0.2
+    )
+    assert (
+        _material_fraction(
+            SimpleNamespace(
+                intersect=lambda item: (SimpleNamespace(volume=1.0), SimpleNamespace(volume=2.0))
+            ),
+            probe,
+        )
+        == 0.3
+    )
+
+
+def test_end_and_void_kernel_failures_are_closed() -> None:
+    frame = LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
+    section = _section()
+    neutral = SimpleNamespace(
+        boundary=tuple(SimpleNamespace(point=vertex.point) for vertex in section.boundary)
+    )
+    with pytest.raises(ValueError, match="too thin"):
+        _end_slab(frame, 0.0, 1.0, 1e-6, neutral)  # type: ignore[arg-type]
+    assert not _void_and_open(
+        SimpleNamespace(intersect=lambda item: (_ for _ in ()).throw(RuntimeError())),
+        frame,
+        (0.0, 10.0),
+        neutral,  # type: ignore[arg-type]
+    )
+
+
+def test_ordered_cycle_refuses_a_branch_instead_of_choosing_by_order() -> None:
+    a, b, c, d = object(), object(), object(), object()
+    adjacency = {a: {b}, b: {a, c, d}, c: {b}, d: {b}}
+    with pytest.raises(ValueError, match="simple cycle"):
+        _ordered_cycle((a, b, c, d), adjacency, {})  # type: ignore[arg-type]
+
+
+def test_body_adapter_revalidates_the_occurrence_mapping() -> None:
+    adapter = _BodyAdapter()
+    occurrence = SimpleNamespace(body=object())
+    with pytest.raises(ValueError, match="does not match"):
+        adapter.validate(object(), occurrence)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "factory",
+    (
+        lambda: PassageFrame([], (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        lambda: PassageFrame((False, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        lambda: PassageFrame(
+            (math.nan, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
+        ),
+        lambda: PassageFrame((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        lambda: PassageFrame((0.0, 0.0, 0.0), (0.0, 0.0, 2.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        lambda: PassageFrame((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (0.0, 0.0, 1.0), (0.0, 1.0, 0.0)),
+        lambda: PassageFrame((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, -1.0, 0.0)),
+        lambda: PassageFrame((0.0, 0.0, 0.001), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        lambda: PassageSectionVertex((0.0, 0.0), False),
+        lambda: PassageSectionVertex((0.0, 0.0), math.inf),
+        lambda: PassageSectionVertex((0.0, 0.0), 1e-13),
+        lambda: PassageSection((object(),)),
+        lambda: PassageSection(()),
+        lambda: PassageEnds(False, 0),
+        lambda: SectionPassage(object(), (0.0, 1.0), _section(), PassageEnds(False, False)),
+        lambda: SectionPassage(_frame(), (False, 1.0), _section(), PassageEnds(False, False)),
+        lambda: SectionPassage(_frame(), (0.0, 1.0), object(), PassageEnds(False, False)),
+        lambda: SectionPassage(_frame(), (0.0, 1.0), _section(), PassageEnds(True, False)),
+    ),
+)
+def test_public_schema_closed_refusal_roster(factory) -> None:
+    with pytest.raises(ValueError):
+        factory()
+
+
+@pytest.mark.parametrize(
+    "view",
+    (
+        lambda: PassageCompatibilityView("bad", (), 3, 1.0, (0.0, 0.0, 0.0), 0, True),
+        lambda: PassageCompatibilityView("x", None, 3, 1.0, (0.0, 0.0, 0.0), 0, True),
+        lambda: PassageCompatibilityView("x", (), 3, None, (0.0, 0.0, 0.0), 0, True),
+        lambda: PassageCompatibilityView("x", (), 3, 1.0, (0.0, 0.0, 0.0), 0, False),
+        lambda: PassageCompatibilityView(None, None, 3, None, None, None, False),
+    ),
+)
+def test_compatibility_fact_refusal_roster(view) -> None:
+    with pytest.raises(ValueError):
+        view()
+
+
+def test_compatibility_projection_closed_absence_and_construction() -> None:
+    assert compatibility_view(None, eligible=False).eligible is False
+    with pytest.raises(ValueError, match="no principal"):
+        compatibility_view(None, eligible=True)
+    absent = PassageCompatibilityView(None, None, None, None, None, None, False)
+    assert grouping_from_view(absent) is None
+    with pytest.raises(ValueError, match="no legacy"):
+        passage_from_view(absent, Passage)
+    assert (
+        principal_projection(
+            (0.0, 0.0, 0.0),
+            (0.5, 0.5, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0),
+            ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0)),
+        )
+        is None
+    )
+    assert _canonical_section(((0.0, 0.0), (1.0, 0.0))) is None
+    assert _canonical_section(((0.0, 0.0), (1.0, 0.0), (2.0, 0.0))) is None
+
+
+def test_private_projection_and_unit_refusal_branches() -> None:
+    with pytest.raises(ValueError, match="nonzero"):
+        _unit((0.0, 0.0, 0.0))
+    record = SectionPassage(_frame(), (0.0, 10.0), _section(), PassageEnds(False, False))
+    assert _legacy_projection(record) is not None
+    curved = SectionPassage(_frame(), (0.0, 10.0), _section(), PassageEnds(False, False))
+    object.__setattr__(curved.section.boundary[0], "bulge", 0.25)
+    assert _legacy_projection(curved) is None
+    oblique = SectionPassage(_frame(), (0.0, 10.0), _section(), PassageEnds(False, False))
+    object.__setattr__(oblique.frame, "run", (0.707107, 0.0, 0.707107))
+    assert _legacy_projection(oblique) is None
+
+
+def test_legacy_compatibility_mismatch_refuses_before_publication(monkeypatch) -> None:
+    import b123d_recognisers.passages as module
+    from b123d_recognisers._adjacency import FaceGraph
+    from tests.test_section_passages import _square
+
+    part = _square()
+    graph = FaceGraph(part)
+    ((legacy, nodes),) = module._legacy_roster(part, graph)
+    monkeypatch.setattr(
+        module,
+        "_legacy_roster",
+        lambda *_args: [
+            (
+                Passage(legacy.axis, legacy.sides, legacy.length + 1, legacy.at, legacy.section),
+                nodes,
+            )
+        ],
+    )
+    with pytest.raises(ValueError, match="historical legacy"):
+        module._discover_section_passages(part, graph, None)
+
+
+def test_equal_rich_records_on_distinct_wall_sets_refuse(monkeypatch) -> None:
+    import b123d_recognisers.passages as module
+    from b123d_recognisers._adjacency import FaceGraph
+    from b123d_recognisers._section_passages import section_ring_proposals
+
+    part = Box(80, 40, 20)
+    part = part - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
+    part = Rot(17, 23, 31) * part
+    graph = FaceGraph(part)
+    first, second = section_ring_proposals(part, graph)
+    competing = type(second)(first.occurrence, second.nodes, second.solid, second.body_adapter)
+    monkeypatch.setattr(module, "section_ring_proposals", lambda *_args: [first, competing])
+    with pytest.raises(ValueError, match="equal section passage"):
+        module._discover_section_passages(part, graph, None)
+
+
+def test_proposal_projection_refuses_arc_boundary(monkeypatch) -> None:
+    from b123d_recognisers._adjacency import FaceGraph
+    from b123d_recognisers._section_passages import section_ring_proposals
+    from tests.test_section_passages import _square
+
+    part = _square()
+    (proposal,) = section_ring_proposals(part, FaceGraph(part))
+    curved = type(proposal.section)(
+        tuple(
+            type(vertex)(vertex.point, 0.25 if at == 0 else vertex.bulge)
+            for at, vertex in enumerate(proposal.section.boundary)
+        )
+    )
+    object.__setattr__(proposal.occurrence, "section", curved)
+    assert _proposal_legacy_projection(proposal) is None

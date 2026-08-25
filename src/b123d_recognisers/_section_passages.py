@@ -10,12 +10,8 @@ from dataclasses import dataclass
 from typing import cast
 
 from build123d import Face, Solid, Vector, Wire
-from OCP.BRepClass3d import BRepClass3d_SolidClassifier
-from OCP.gp import gp_Pnt
-from OCP.TopAbs import TopAbs_OUT
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef, connected_components
-from b123d_recognisers._rings import _turn, _within
 from b123d_recognisers._sections import (
     BodyRef,
     BodyRefIssuer,
@@ -166,12 +162,6 @@ def _world(frame: LocalFrame, t: float, point: tuple[float, float]) -> Vector3:
     )  # type: ignore[return-value]
 
 
-def _outside(part: Part, point: Vector3) -> bool:
-    classifier = BRepClass3d_SolidClassifier(part.wrapped)
-    classifier.Perform(gp_Pnt(*point), _VOID_TOL)
-    return bool(classifier.State() == TopAbs_OUT)
-
-
 def _probe_prism(
     frame: LocalFrame,
     interval: tuple[float, float],
@@ -240,50 +230,6 @@ def _void_and_open(
         )
     except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return False
-
-
-def _triangle_probes(
-    polygon: tuple[tuple[float, float], ...],
-) -> tuple[tuple[float, float], ...]:
-    """One interior point per ear in a deterministic triangulation."""
-
-    remaining = list(range(len(polygon)))
-    probes: list[tuple[float, float]] = []
-
-    def add_triangle(
-        a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]
-    ) -> None:
-        for weights in ((1 / 3, 1 / 3, 1 / 3), (0.6, 0.2, 0.2), (0.2, 0.6, 0.2), (0.2, 0.2, 0.6)):
-            probes.append(
-                (
-                    weights[0] * a[0] + weights[1] * b[0] + weights[2] * c[0],
-                    weights[0] * a[1] + weights[1] * b[1] + weights[2] * c[1],
-                )
-            )
-
-    while len(remaining) > 3:
-        removed = False
-        for offset, current in enumerate(remaining):
-            before = remaining[offset - 1]
-            after = remaining[(offset + 1) % len(remaining)]
-            a, b, c = polygon[before], polygon[current], polygon[after]
-            if _turn(a, b, c) <= _VOID_TOL:
-                continue
-            if any(
-                _within(polygon[other], a, b, c)
-                for other in remaining
-                if other not in {before, current, after}
-            ):
-                continue
-            add_triangle(a, b, c)
-            remaining.pop(offset)
-            removed = True
-            break
-        if not removed:
-            return ()
-    a, b, c = (polygon[index] for index in remaining)
-    add_triangle(a, b, c)
-    return tuple(probes)
 
 
 def _ordered_cycle(
