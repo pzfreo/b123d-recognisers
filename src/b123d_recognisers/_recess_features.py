@@ -31,6 +31,10 @@ class _SlotAttributionError(ValueError):
     """A public Slot occurrence whose complete original ownership cannot be issued."""
 
 
+class _PocketAttributionError(ValueError):
+    """A Pocket occurrence whose complete original ownership cannot be issued."""
+
+
 def recognise_slots(
     part: Part,
     *,
@@ -194,20 +198,65 @@ def recognise_pockets(
         )
         pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
         return [record for record, _nodes in pairs]
-    proposals = _body_scoped_proposals(
-        sources,
-        partial(
-            _pocket_proposals_one,
-            face_edges=face_edges,
-            graph=ledger.graph,
-        ),
-    )
+    writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
+    return _discover_pockets(part, face_edges=face_edges, writer=writer, _wrap_errors=False)
+
+
+def _discover_pockets(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+    _wrap_errors: bool = True,
+) -> list[Pocket]:
+    """Discover Pockets and optionally issue complete route-selected source faces."""
+
+    if graph is not None and writer is not None and graph is not writer.graph:
+        raise _PocketAttributionError("Pocket graph and writer must share one authority")
+    owner = writer.graph if writer is not None else graph
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
+    try:
+        proposals = _body_scoped_proposals(
+            sources,
+            partial(_pocket_proposals_one, face_edges=face_edges, graph=owner),
+        )
+    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+        if not _wrap_errors:
+            raise
+        raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
-    if ledger is not None:
+    records = [proposal.record for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending = []
+    used: set = set()
+    try:
         for proposal in proposals:
-            if proposal.planar:
-                ledger.add_defining(proposal.record, proposal.planar, family=FamilyId.POCKETS)
-    return [proposal.record for proposal in proposals]
+            nodes = frozenset(
+                (*proposal.planar, *(node for group in proposal.caps for node in group))
+            )
+            if not nodes:
+                raise _PocketAttributionError("Pocket occurrence has no defining source faces")
+            if used & nodes:
+                raise _PocketAttributionError("Pocket source face is reused by another occurrence")
+            for node in nodes:
+                writer.graph.face(node)
+            if writer.graph.common_valid_solid(nodes) is None:
+                raise _PocketAttributionError("Pocket source faces do not prove one valid solid")
+            used.update(nodes)
+            pending.append((proposal.record, nodes))
+    except _PocketAttributionError:
+        raise
+    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+        if not _wrap_errors:
+            raise
+        raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.POCKETS)
+    return records
 
 
 def recognise_channels(
