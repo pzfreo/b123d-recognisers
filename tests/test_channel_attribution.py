@@ -297,14 +297,13 @@ def _assert_roles(part, **kwargs):
         for node in nodes:
             face = ledger.graph.face(node)
             assert ledger.graph.is_planar(node)
-            centre = face.center()
-            centres.append((centre.X, centre.Y, centre.Z)[axis])
+            centres.append(_bbox_center(face, record.width_axis))
             normal = ledger.graph.normal(node)
             assert normal is not None
             signs.append(normal[axis])
         ordered = sorted(zip(centres, signs, strict=True))
-        assert ordered[0][0] == pytest.approx(record.w_center - record.width / 2)
-        assert ordered[1][0] == pytest.approx(record.w_center + record.width / 2)
+        assert round(ordered[1][0] - ordered[0][0], 2) == record.width
+        assert round((ordered[0][0] + ordered[1][0]) / 2, 2) == record.w_center
         assert ordered[0][1] > 0 and ordered[1][1] < 0
     return records, candidates, ledger
 
@@ -628,7 +627,7 @@ def test_step_traversal_and_supplied_edges_preserve_roles(monkeypatch, tmp_path:
     _assert_roles(part, face_edges=FaceEdges())
 
 
-def test_ambiguous_pair_and_reused_wall_refuse_without_prefix(monkeypatch) -> None:
+def test_equal_record_competing_pair_refuses_without_prefix(monkeypatch) -> None:
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
     original = feature_module._channel_proposals_one
@@ -651,20 +650,21 @@ def test_ambiguous_pair_and_reused_wall_refuse_without_prefix(monkeypatch) -> No
         _discover_channels(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
-    monkeypatch.setattr(feature_module, "_channel_proposals_one", original)
-    proposals = original(part, None, ledger.graph)
 
-    def reused(*_args, **_kwargs):
-        second = replace(
-            proposals[0],
-            record=replace(proposals[0].record, d_hi=proposals[0].record.d_hi + 1),
-        )
-        return [proposals[0], second]
-
-    monkeypatch.setattr(feature_module, "_channel_proposals_one", reused)
-    with pytest.raises(ValueError, match="reuse"):
-        _discover_channels(part, writer=ledger.writer)
-    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
+def test_distinct_channels_may_truthfully_share_one_original_wall() -> None:
+    part = import_step(ROOT / "tests/corpus/mfcadpp_holdout/274.step")
+    records, candidates, ledger = _assert_roles(part)
+    assert len(records) == len(candidates) == 3
+    defining = [ledger.defining_of(candidate) for candidate in candidates]
+    shared = defining[0] & defining[1]
+    assert len(shared) == 1
+    assert defining[0] != defining[1]
+    assert records[0] != records[1]
+    assert records[0].open_sign == -records[1].open_sign
+    assert defining[2].isdisjoint(defining[0] | defining[1])
+    assert all(
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
+    )
 
 
 def test_foreign_graph_copied_node_and_late_body_failure_are_atomic(monkeypatch) -> None:

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from functools import partial
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
@@ -180,7 +180,6 @@ def _discover_channels(
     retained.sort(key=lambda proposal: _channel_sort_key(proposal.record))
     if writer is not None:
         pending = []
-        used: set[FaceNode] = set()
         for proposal in retained:
             nodes = (proposal.low_wall, proposal.high_wall)
             if nodes[0] == nodes[1]:
@@ -188,11 +187,8 @@ def _discover_channels(
             # Revalidate the graph-issued snapshots immediately before publication.
             writer.graph.face(nodes[0])
             writer.graph.face(nodes[1])
-            if used.intersection(nodes):
-                raise ValueError("Channel occurrences reuse defining side walls")
             if writer.graph.common_valid_solid(nodes) is None:
                 raise ValueError("Channel side walls do not prove one valid solid")
-            used.update(nodes)
             pending.append((proposal.record, nodes))
         for record, nodes in pending:
             writer.add_defining(record, nodes, family=FamilyId.CHANNELS)
