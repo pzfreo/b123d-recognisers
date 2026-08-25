@@ -901,6 +901,13 @@ remains `sealed_unrevealed` until its own semantic child clears two independent 
 and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
 that allocation without replacement, retry or fitting.
 
+At accepted pre-reveal PR #246 head `d4343ad`, after two independent exact-head accepts and all
+current-head CI, coverage and focused gates, the single authorized
+`f5_slots_h1`/`F5-SLOTS-H1` attempt found zero models. It stopped before annotation reading, STEP
+import or recognition and produced no report, digest, counts or outcomes. Temporary output was
+deleted and no retry, alternate root or allocation, replacement or fitting followed. Bucket 31 is
+permanently consumed and inconclusive, not regression evidence; bucket 32 remains sealed.
+
 F5 Slot attribution/#235 promotes only `SLOTS`. Each occurrence owns every exact planar wall
 retained by intentional merge/collinear collapse plus every patch in the selected low/high
 cylindrical cap groups. Rectangular, crossing, elongated-obround and cap-recovered routes therefore
@@ -909,7 +916,8 @@ signature, values, order and ledger compatibility remain unchanged; the registry
 private writer core with shared `FaceEdges`. All occurrence binding and one-SolidRef checks complete
 before issuance. Distinct exact records on that same solid may share a truthful wall node; identical
 bound proposals collapse, while same-record competing roles and cross-solid reuse refuse atomically.
-Bucket 31 remains sealed pending independent reviews and gates.
+Bucket 31 remained sealed through independent reviews and gates; its later zero-population attempt
+is the consumed, inconclusive lifecycle result recorded above.
 
 The Repeating Radial Profile, Step Level and Riser semantic children #239, #240 and #241 have
 independent neutral allocations despite being designated together: `F5-REPEATING-RADIAL-PROFILES-H1`

@@ -159,13 +159,20 @@ aggregate Polygonal Stock counts or attribution outcomes are available or claima
 selection was deleted; no retry, alternate mode, replacement or fitting followed. The allocation
 is permanently consumed and inconclusive, not regression evidence. The ordinary `unselected`
 complement was then buckets 31..999.
-`F5-SLOTS-H1` and `F5-POCKETS-H1` are independently `sealed_unrevealed` at buckets 31 and 32 for
-#235 and #236. Their neutral combined designation changed only the allocation policy, tests and
+`F5-SLOTS-H1` and `F5-POCKETS-H1` were independently designated at buckets 31 and 32 for #235 and
+#236. Their neutral combined designation changed only the allocation policy, tests and
 documentation: no archive, allocation membership, annotations, geometry or outcomes were opened.
 Each selection requires only its own exact acknowledgement; neither acknowledgement authorizes the
 other selection or any earlier allocation. An authorized zero, abort, invalid or completed reveal
 consumes only that family's allocation without retry, replacement or fitting. The ordinary
 `unselected` complement was then buckets 33..999.
+At accepted PR #246 head `d4343ad`, after two independent exact-head accepts and all current-head
+CI, coverage and focused gates, the one authorized `f5_slots_h1` selection with acknowledgement
+`F5-SLOTS-H1` found zero models. Discovery stopped before annotation reading, STEP import or
+recognition, so no report, artifact digest, counts or Slot attribution outcomes exist. The temporary
+output directory was deleted; no retry, alternate root/allocation, replacement or fitting followed.
+Bucket 31 is permanently consumed and inconclusive, not regression evidence. Bucket 32 remains
+independently `sealed_unrevealed`.
 `F5-REPEATING-RADIAL-PROFILES-H1`, `F5-STEP-LEVELS-H1` and `F5-RISERS-H1` were independently
 designated at buckets 33, 34 and 35 for #239, #240 and #241. Their combined neutral
 designation changed only allocation policy, tests and documentation: no archive membership,
