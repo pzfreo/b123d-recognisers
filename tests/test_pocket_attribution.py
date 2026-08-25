@@ -13,7 +13,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
@@ -460,6 +460,60 @@ def test_non_pocket_routes_have_no_candidate_or_prefix(part) -> None:
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+@pytest.mark.parametrize(
+    ("part", "sign"),
+    [
+        (Box(60, 40, 12) - Pos(0, 0, -4) * Box(20, 12, 8), -1),
+        (Box(40, 30, 20) - Pos(0, 0, 6) * Box(8, 6, 16), 1),
+        *[
+            (Box(60, 40, 12) - Pos(x, y, 4) * Box(20, 20, 8), 1)
+            for x in (-25, 25)
+            for y in (-15, 15)
+        ],
+    ],
+)
+def test_open_sign_deep_and_all_corner_routes_publish_complete_occurrences(part, sign) -> None:
+    fresh_graph, expected = _fresh_occurrences(part)
+    assert expected
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_pockets(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
+    assert records == [record for record, _nodes in expected]
+    assert all(record.open_sign == sign for record in records)
+    for candidate, (_record, expected_nodes) in zip(candidates, expected, strict=True):
+        actual = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
+        want = [fresh_graph.face(node) for node in expected_nodes]
+        assert all(any(face.is_same(expected_face) for face in actual) for expected_face in want)
+
+
+def test_supplied_face_edges_and_generic_step_keep_exact_writer_projection(tmp_path: Path) -> None:
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    path = tmp_path / "pocket.step"
+    assert export_step(part, path)
+    imported = import_step(path)
+    graph = FaceGraph(imported)
+    ledger = ClaimLedger(graph)
+    supplied = FaceEdges()
+    records = _discover_pockets(imported, face_edges=supplied, writer=ledger.writer)
+    assert [record.to_dict() for record in records] == [
+        record.to_dict() for record in _discover_pockets(imported, face_edges=supplied)
+    ]
+    assert len(records) == len(ledger.candidate_set(FamilyId.POCKETS).candidates) == 1
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(60, 40, 12) - Pos(0, 0, 0) * Box(20, 12, 6),  # sealed/two-floor void
+        Box(60, 40, 12) - Pos(0, 0, 4) * Cylinder(5, 8),
+    ],
+)
+def test_sealed_rib_and_incomplete_cap_shapes_do_not_leak_evidence(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_pockets(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
     package = ROOT / "src/b123d_recognisers"
     calls = []
@@ -740,3 +794,27 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
     with pytest.raises(_PocketAttributionError, match="one valid solid"):
         _discover_pockets(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_empty_roles_and_cap_ambiguity_are_atomic_without_completion(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    plain = _discover_pockets(part)[0]
+    for failure, message in (
+        (lambda *_args, **_kwargs: [_RecessProposal(plain, frozenset(), ())], "no defining"),
+        (
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                ValueError("obround cap clusters compete at one endpoint")
+            ),
+            "cap ownership is ambiguous",
+        ),
+    ):
+        ledger = ClaimLedger(FaceGraph(part))
+        monkeypatch.setattr(module, "_body_scoped_proposals", failure)
+        with pytest.raises(_PocketAttributionError, match=message):
+            _discover_pockets(part, writer=ledger.writer)
+        assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+        assert FamilyId.POCKETS not in ledger._issuer._completed
+        assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
