@@ -22,11 +22,15 @@ from b123d_recognisers._body_geometry import (
     BodyPlacement,
     DescriptorQuantization,
     FaceGeometry,
-    QPoint,
-    QScalar,
     UnsupportedBodyGeometry,
     validate_descriptor_quantization,
 )
+from b123d_recognisers._body_geometry import MatchingBoundaryGraph as MatchingBoundaryGraph
+from b123d_recognisers._body_geometry import MatchingCurve as MatchingCurve
+from b123d_recognisers._body_geometry import MatchingFace as MatchingFace
+from b123d_recognisers._body_geometry import MatchingHalfEdge as MatchingHalfEdge
+from b123d_recognisers._body_geometry import MatchingWire as MatchingWire
+from b123d_recognisers._body_geometry import MatchingWireVertex as MatchingWireVertex
 from b123d_recognisers._candidates import Candidate, CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._dispositions import ReconciliationResult
 from b123d_recognisers._run import RecognitionContext
@@ -76,73 +80,6 @@ class RepeatingProfileGeometrySummary:
     axis: str
     centre: tuple[float, float, float]
     span: tuple[float, float]
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class MatchingCurve:
-    """One graph-global analytic curve label for schema-3 matching."""
-
-    kind: str
-    vertices: tuple[int, int] | None
-    length: QScalar
-    centre: QPoint | None
-    axis: QPoint | None
-    radius: QScalar | None
-    sweep: QScalar | None
-    full: bool
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class MatchingWireVertex:
-    """One body-global vertex in one canonical face parameter gauge."""
-
-    vertex: int | None
-    parameter: tuple[QScalar, QScalar]
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class MatchingHalfEdge:
-    """One material-oriented use of a graph-global curve."""
-
-    curve: int
-    direction: int
-    start: MatchingWireVertex | None
-    end: MatchingWireVertex | None
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class MatchingWire:
-    """One material-oriented wire with a canonical cyclic start."""
-
-    role: str
-    theta_winding: int
-    cycle: tuple[MatchingHalfEdge, ...]
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class MatchingFace:
-    """One canonical analytic face and its stable matching wires."""
-
-    kind: str
-    parameters: tuple[QScalar, ...]
-    area: QScalar
-    centroid: QPoint
-    material_side: int
-    wires: tuple[MatchingWire, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class MatchingBoundaryGraph:
-    """Complete token-erased schema-3 boundary topology for one body."""
-
-    vertices: tuple[QPoint, ...]
-    curves: tuple[MatchingCurve, ...]
-    faces: tuple[MatchingFace, ...]
-    incidence: tuple[tuple[int, tuple[tuple[int, int, int], ...]], ...]
-    face_count: int
-    wire_count: int
-    edge_occurrence_count: int
-    symmetric: bool
 
 
 @dataclass(frozen=True, slots=True)

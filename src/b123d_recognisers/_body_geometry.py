@@ -89,6 +89,73 @@ class FaceGeometry:
     wires: tuple[WireGeometry, ...]
 
 
+@dataclass(frozen=True, order=True, slots=True)
+class MatchingCurve:
+    """One graph-global analytic curve label for schema-3 matching."""
+
+    kind: str
+    vertices: tuple[int, int] | None
+    length: QScalar
+    centre: QPoint | None
+    axis: QPoint | None
+    radius: QScalar | None
+    sweep: QScalar | None
+    full: bool
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class MatchingWireVertex:
+    """One body-global vertex in one canonical face parameter gauge."""
+
+    vertex: int | None
+    parameter: tuple[QScalar, QScalar]
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class MatchingHalfEdge:
+    """One material-oriented use of a graph-global curve."""
+
+    curve: int
+    direction: int
+    start: MatchingWireVertex | None
+    end: MatchingWireVertex | None
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class MatchingWire:
+    """One material-oriented wire with a canonical cyclic start."""
+
+    role: str
+    theta_winding: int
+    cycle: tuple[MatchingHalfEdge, ...]
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class MatchingFace:
+    """One canonical analytic face and its stable matching wires."""
+
+    kind: str
+    parameters: tuple[QScalar, ...]
+    area: QScalar
+    centroid: QPoint
+    material_side: int
+    wires: tuple[MatchingWire, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MatchingBoundaryGraph:
+    """Complete token-erased schema-3 boundary topology for one body."""
+
+    vertices: tuple[QPoint, ...]
+    curves: tuple[MatchingCurve, ...]
+    faces: tuple[MatchingFace, ...]
+    incidence: tuple[tuple[int, tuple[tuple[int, int, int], ...]], ...]
+    face_count: int
+    wire_count: int
+    edge_occurrence_count: int
+    symmetric: bool
+
+
 @dataclass(frozen=True, slots=True)
 class _WireBuild:
     geometry: WireGeometry
