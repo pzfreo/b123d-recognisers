@@ -246,9 +246,8 @@ def _discover_step_levels(
         for proposal in _face_level_proposals(part, min_area_frac=_STEP_MIN_AREA_FRAC)
         if bb.min.Z + margin < proposal.record.z < bb.max.Z - margin
     ]
-    records = [proposal.record for proposal in proposals]
     if writer is None:
-        return records
+        return [proposal.record for proposal in proposals]
 
     pending = []
     seen_records: dict[FaceLevel, frozenset] = {}
@@ -280,7 +279,10 @@ def _discover_step_levels(
         raise _StepLevelAttributionError("Step Level source identity cannot be bound") from error
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.STEP_LEVELS)
-    return records
+    # Bound wrapper aliases collapse to one physical occurrence, so the returned roster must
+    # be the same one-to-one roster that was issued. Returning the raw proposal projection here
+    # would make candidate_set_for see two equal record occurrences but only one Candidate.
+    return [record for record, _nodes in pending]
 
 
 def step_level_zs(part: Part, *, tol: float | None = None) -> list[float]:

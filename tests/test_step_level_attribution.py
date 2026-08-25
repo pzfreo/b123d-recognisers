@@ -6,9 +6,10 @@ import ast
 import copy
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-from build123d import Box, Compound, Pos, Rot, export_step, import_step
+from build123d import Axis, Box, Compound, Pos, Rot, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
@@ -20,13 +21,35 @@ from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, N
 from b123d_recognisers.levels import (
     FaceLevel,
     _discover_step_levels,
+    _face_level_proposals,
     _FaceLevelProposal,
     _StepLevelAttributionError,
+    bounded_end_margin,
+    recognise_face_levels,
     step_level_records,
 )
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
+
+
+class _FacePart:
+    """A test-owned face traversal with an independently supplied whole-part envelope."""
+
+    def __init__(self, faces, bbox):
+        self._faces = faces
+        self._bbox = bbox
+
+    def faces(self):
+        return list(self._faces)
+
+    def bounding_box(self):
+        return self._bbox
+
+
+def _horizontal_face(width: float, depth: float, z: float):
+    solid = Pos(0, 0, z - 0.5) * Box(width, depth, 1)
+    return solid.faces().sort_by(Axis.Z)[-1]
 
 
 def _stepped(*, fragmented: bool = False):
@@ -198,7 +221,7 @@ def test_equal_bound_wrapper_occurrence_collapses_but_competing_roles_refuse(mon
         module, "_face_level_proposals", lambda *_args, **_kwargs: [retained[0], alias]
     )
     records = _discover_step_levels(part, writer=ledger.writer)
-    assert records == [retained[0].record, retained[0].record]
+    assert records == [retained[0].record]
     assert len(ledger.candidate_set(FamilyId.STEP_LEVELS).candidates) == 1
 
     graph = FaceGraph(part)
@@ -249,6 +272,108 @@ def test_public_tolerance_routes_and_strict_interior_boundaries() -> None:
     assert step_level_records(part, tol=6.0) == []
     assert _discover_step_levels(part, tol=4.99) == step_level_records(part, tol=4.99)
     assert _discover_step_levels(part, tol=5.0) == []
+
+
+def test_axis_alignment_boundary_is_strict(monkeypatch) -> None:
+    import b123d_recognisers.levels as module
+
+    face = _horizontal_face(2, 2, 1)
+    envelope = Box(10, 10, 10).bounding_box()
+
+    class Direction:
+        def __init__(self, z):
+            self._z = z
+
+        def Z(self):
+            return self._z
+
+    class AxisValue:
+        def __init__(self, z):
+            self._z = z
+
+        def Direction(self):
+            return Direction(self._z)
+
+    class Location:
+        def Z(self):
+            return 1.0
+
+    class PlaneValue:
+        def __init__(self, z):
+            self._z = z
+
+        def Axis(self):
+            return AxisValue(self._z)
+
+        def Location(self):
+            return Location()
+
+    class Surface:
+        def __init__(self, _wrapped):
+            pass
+
+        def GetType(self):
+            return GeomAbs_Plane
+
+        def Plane(self):
+            return PlaneValue(current[0])
+
+    monkeypatch.setattr(module, "BRepAdaptor_Surface", Surface)
+    current = [AXIS_ALIGNED_COS - 1e-9]
+    part = _FacePart([face], envelope)
+    assert recognise_face_levels(part) == []
+    current[0] = AXIS_ALIGNED_COS
+    assert recognise_face_levels(part) == []
+    current[0] = AXIS_ALIGNED_COS + 1e-9
+    assert len(recognise_face_levels(part)) == 1
+
+
+def test_raw_coordinate_clustering_is_linked_and_not_grid_bucketed() -> None:
+    envelope = Box(20, 20, 10).bounding_box()
+    faces = [_horizontal_face(2, 2, z) for z in (0.49, 0.51, 0.99)]
+    # 0.49 and 0.51 straddle a hypothetical 0.5-wide grid boundary; 0.99 joins by
+    # distance to 0.51. The cluster reports the lowest actual coordinate.
+    records = recognise_face_levels(_FacePart(faces, envelope), tol=0.5)
+    assert [record.z for record in records] == [0.49]
+    assert len(_face_level_proposals(_FacePart(faces, envelope), tol=0.5)[0].faces) == 3
+
+
+@pytest.mark.parametrize(("area", "kept"), [(0.99, False), (1.0, False), (1.01, True)])
+def test_strict_one_percent_area_boundary(area: float, kept: bool) -> None:
+    envelope = Box(10, 10, 10).bounding_box()
+    face = _horizontal_face(area, 1, 1)
+    records = recognise_face_levels(_FacePart([face], envelope), min_area_frac=0.01)
+    assert bool(records) is kept
+
+
+def test_fragmented_asymmetric_cluster_uses_area_sum_and_union_bounds() -> None:
+    envelope = Box(10, 10, 10).bounding_box()
+    left = Pos(-2, 0, 0) * _horizontal_face(0.6, 1, 1)
+    right = Pos(3, 1, 0) * _horizontal_face(0.6, 1, 1)
+    (proposal,) = _face_level_proposals(
+        _FacePart([left, right], envelope), min_area_frac=0.01
+    )
+    assert len(proposal.faces) == 2
+    assert proposal.record.x_span == pytest.approx((-2.3, 3.3))
+    assert proposal.record.y_span == pytest.approx((-0.5, 1.5))
+
+
+@pytest.mark.parametrize(("minimum", "maximum"), [(0.0, 0.0), (1.0, 0.0)])
+def test_zero_or_negative_plan_footprint_keeps_positive_area(minimum, maximum) -> None:
+    def point(x, y, z):
+        return SimpleNamespace(X=x, Y=y, Z=z)
+
+    bbox = SimpleNamespace(min=point(minimum, 0.0, 0.0), max=point(maximum, 10.0, 10.0))
+    records = recognise_face_levels(
+        _FacePart([_horizontal_face(1, 1, 1)], bbox), min_area_frac=0.01
+    )
+    assert len(records) == 1
+
+
+def test_default_margin_is_quarter_span_for_small_parts() -> None:
+    part = Box(10, 10, 1) + Pos(2.5, 0, 1) * Box(5, 10, 1)
+    assert bounded_end_margin(2.0) == 0.5
+    assert [record.z for record in step_level_records(part)] == [0.5]
 
 
 def test_step_round_trip_preserves_record_and_complete_roles(tmp_path: Path) -> None:
@@ -311,6 +436,7 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
     assert keywords["writer"].value.id == "s"
 
     importers = []
+    core_call_sites = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         if any(
@@ -319,7 +445,51 @@ def test_public_signatures_and_private_registry_seam_are_closed() -> None:
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "_discover_step_levels"
+            ) or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "_discover_step_levels"
+            ):
+                core_call_sites.append(path.name)
     assert importers == ["_registry.py"]
+    assert core_call_sites == ["_registry.py"]
+
+    constructors = {"FaceLevel": [], "_FaceLevelProposal": []}
+    proposal_calls = []
+    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        class Roster(ast.NodeVisitor):
+            def __init__(self, source_name):
+                self.source_name = source_name
+                self.functions = []
+
+            def visit_FunctionDef(self, node):
+                self.functions.append(node.name)
+                self.generic_visit(node)
+                self.functions.pop()
+
+            def visit_Call(self, node):
+                leaf = node.func.id if isinstance(node.func, ast.Name) else ""
+                if leaf in constructors:
+                    constructors[leaf].append((self.source_name, self.functions[-1]))
+                if leaf == "_face_level_proposals":
+                    proposal_calls.append((self.source_name, self.functions[-1]))
+                self.generic_visit(node)
+
+        Roster(path.name).visit(tree)
+    assert constructors == {
+        "FaceLevel": [("levels.py", "_face_level_proposals")],
+        "_FaceLevelProposal": [("levels.py", "_face_level_proposals")],
+    }
+    assert proposal_calls == [
+        ("levels.py", "recognise_face_levels"),
+        ("levels.py", "_discover_step_levels"),
+    ]
     source = inspect.getsource(module._discover_step_levels)
     assert not any(
         name in source
