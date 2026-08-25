@@ -619,12 +619,12 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     # Pockets are the blind counterpart and land mostly where the name says. Complete ring
     # containment removes the old passage fragments; partial intersections deliberately remain.
     pockets = claimed["Pocket"]
-    # #142 removes cross-feature and incomplete rectangular interpretations in 10131, 10170 and
-    # 10212. Their proposed prisms are respectively 7%, 31% and 27% solid. Four removed defining
-    # faces carry the corpus's rectangular-pocket label, illustrating why the corpus is diagnostic
-    # evidence rather than the feature definition.
-    assert sum(pockets.values()) == 87
-    assert pockets[14] == 38, "most of what Pocket claims is labelled Rectangular pocket"
+    # #236 publishes the complete route-selected role set rather than the earlier planar-only
+    # compatibility projection. Distinct nested records may therefore share one original wall;
+    # per-face totals count every Candidate/face attribution occurrence, not unique topology.
+    assert sum(pockets.values()) == 129
+    assert pockets[16] == 54, "most Pocket evidence is labelled Circular end pocket"
+    assert pockets[14] == 38, "rectangular ownership remains the next largest population"
     assert pockets[3] == 2, "complete passage rings remove the old pocket fragments"
 
 
