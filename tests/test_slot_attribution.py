@@ -559,6 +559,19 @@ def test_competing_cap_clusters_are_a_closed_atomic_attribution_failure(monkeypa
     assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
 
 
+def test_unrelated_geometry_value_error_is_not_relabelled(monkeypatch) -> None:
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    ledger = ClaimLedger(FaceGraph(part))
+
+    def geometry_failure(_sources, _recognise_one):
+        raise ValueError("kernel classification failed")
+
+    monkeypatch.setattr(recess_features, "_body_scoped_proposals", geometry_failure)
+    with pytest.raises(ValueError, match="kernel classification failed"):
+        _discover_slots(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
 def test_shared_node_across_solidrefs_refuses_before_issue(monkeypatch) -> None:
     first = Box(80, 50, 16) - Box(28, 10, 16)
     part = Compound([first, Pos(150, 0, 0) * deepcopy(first)])
@@ -629,6 +642,19 @@ def test_candidate_node_resolution_preserves_the_public_error_boundary(monkeypat
     error = _SlotAttributionError if wrap else KeyError
     with pytest.raises(error):
         _discover_slots(part, writer=ledger.writer, _wrap_identity_errors=wrap)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
+def test_public_compatibility_path_does_not_relabel_source_identity(monkeypatch) -> None:
+    part = Box(80, 50, 16) - Box(28, 10, 16)
+    ledger = ClaimLedger(FaceGraph(part))
+
+    def stale(_face):
+        raise ValueError("foreign source face")
+
+    monkeypatch.setattr(ledger.graph, "require_node", stale)
+    with pytest.raises(ValueError, match="foreign source face"):
+        recognise_slots(part, ledger=ledger)
     assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
 
 
