@@ -881,9 +881,19 @@ The Polygonal Stock semantic child #232 is independently protected by
 `F5-POLYGONAL-STOCK-H1`, bucket 30. Its neutral seal adds the exact
 `f5_polygonal_stock_h1` selection and acknowledgement without archive access, membership
 inspection, recognition, annotation reading, or outcome evidence; the ordinary unselected
-complement moves to buckets 31..999. The allocation remains `sealed_unrevealed` until #232 clears
+complement moved to buckets 31..999. The allocation remains `sealed_unrevealed` until #232 clears
 two independent exact-head reviews and all mechanical gates. Its authority is non-transferable,
 and zero, abort, invalid, or completed reveal consumes it without replacement, retry, or fitting.
+
+The Slot and Pocket semantic children #235 and #236 share neutral occurrence/cap-provenance
+prerequisite #234, but their outcome evidence remains independent. `F5-SLOTS-H1`/bucket 31 and
+`F5-POCKETS-H1`/bucket 32 add the exact `f5_slots_h1` and `f5_pockets_h1` selections and
+acknowledgements without archive access, membership inspection, recognition, annotation reading or
+outcome evidence. The combined neutral designation moves the ordinary unselected complement to
+buckets 33..999, but neither acknowledgement authorizes the sibling selection. Each allocation
+remains `sealed_unrevealed` until its own semantic child clears two independent exact-head reviews
+and all mechanical gates; any authorized zero, abort, invalid or completed reveal consumes only
+that allocation without replacement, retry or fitting.
 
 F5 Channel attribution/#225 preserves the public graph-only `ledger=` compatibility path while the
 aggregate registry uses a private writer seam. Each issuable Channel owns exactly its original
