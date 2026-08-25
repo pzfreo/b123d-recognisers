@@ -125,7 +125,10 @@ the MFCAD++ *val* split — disjoint from the vendored design set by constructio
 twenty classes the design set does not target. It was scored once, after the last predicate
 change. Angled steps: eight records, every one on a face labelled a triangular blind step, with
 forty-eight triangular-pocket faces and twenty-two slanted-through-step faces available to go
-wrong on. Stock: 226 faces, none claimed. It found one defect before it was sealed — a
+wrong on. Of 226 Stock-labelled faces, fourteen are complete Plate boundary evidence and none is
+claimed by another family; every affected Plate also owns its opposed non-Stock boundary. That is
+expected overlap between this package's material-slab semantics and MFCAD++'s single face label,
+not a Stock machining feature. It found one defect before it was sealed — a
 right-triangular pocket wall reported as an angled step — which is now rejected by a gate and
 pinned by a fixture. Scoring that set again is fine; changing a predicate to satisfy it is not,
 and would cost a fresh draw.

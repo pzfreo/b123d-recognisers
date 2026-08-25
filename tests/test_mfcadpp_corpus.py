@@ -490,12 +490,12 @@ def _per_face(corpus):
     return totals
 
 
-def test_no_claim_lands_on_a_stock_face(corpus):
-    """A change detector on this subset, and not the invariant it first claimed to be.
+def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
+    """A bounded taxonomy-overlap detector, not a universal no-stock invariant.
 
-    ``Stock`` labels 271 of these models' faces, and no family claims one. That is worth
-    pinning: a family could start claiming unmachined billet and still score well on precision
-    if it claimed enough real faces alongside, so this catches something a rate cannot.
+    Plate attribution truthfully owns both material-side slab boundaries. MFCAD++ labels one of
+    those boundaries ``Stock`` when no subtractive feature owns it, so the 13 Plate occurrences
+    below are expected overlap rather than claims that stock itself is a machined feature.
 
     **It is not a universal law, and an earlier version of this docstring said it was.** Over
     2,000 models four claims do land on *Stock*, and the clearest of them is not a defect:
@@ -505,15 +505,61 @@ def test_no_claim_lands_on_a_stock_face(corpus):
     *Chamfer* and one bounded by raw billet is labelled *Stock*. ``Stock`` means "assigned to
     no feature", which is weaker and corpus-specific.
 
-    So a failure here is a prompt to look, not a proof of a bug -- and fitting a recogniser to
-    this corpus's label assignment would cost more than it bought.
+    All other families remain the negative control. A change is a prompt to inspect exact roles,
+    not a reason to fit production recognition to this corpus's single-label assignment.
     """
 
     claimed = _per_face(corpus)
     on_stock = {
         family: counts[STOCK] for family, counts in claimed.items() if counts.get(STOCK)
     }
-    assert on_stock == {}, f"claims on unmachined stock: {on_stock}"
+    assert on_stock == {"Plate": 13}, f"unexpected claims on stock-labelled faces: {on_stock}"
+
+
+def test_plate_stock_overlap_is_exact_low_high_boundary_evidence(corpus):
+    expected = {
+        "1000.step": 1,
+        "10007.step": 1,
+        "10033.step": 1,
+        "10038.step": 2,
+        "10047.step": 1,
+        "10060.step": 1,
+        "1007.step": 1,
+        "10096.step": 1,
+        "10119.step": 1,
+        "10155.step": 1,
+        "1017.step": 2,
+    }
+    observed = {}
+    for name, part, labels, faces, _at in corpus:
+        product = _take_inventory(part)
+        graph = product.context.graph
+        face_nodes = [graph.require_node(face) for face in faces]
+        count = 0
+        for candidate in product.accepted.candidate_set(FamilyId.PLATES).candidates:
+            defining = product.evidence.defining_of(candidate)
+            labelled = [
+                (node, labels[index])
+                for index, node in enumerate(face_nodes)
+                if node in defining
+            ]
+            stock_nodes = [node for node, label in labelled if label == STOCK]
+            if not stock_nodes:
+                continue
+            count += len(stock_nodes)
+            assert any(label != STOCK for _node, label in labelled)
+            axis = "xyz".index(candidate.record.axis)
+            signs = []
+            for node, _label in labelled:
+                normal = graph.normal(node)
+                assert normal is not None
+                component = normal[axis]
+                assert abs(component) >= 0.99
+                signs.append(component > 0)
+            assert set(signs) == {False, True}
+        if count:
+            observed[name] = count
+    assert observed == expected
 
 
 def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
