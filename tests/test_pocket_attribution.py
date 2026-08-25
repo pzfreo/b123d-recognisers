@@ -165,45 +165,43 @@ def _fresh_occurrences(part):
                     records.append((rec, nodes))
         # Corner route: three mutually perpendicular inward faces, represented by a bounded floor.
         for floor, di, fs, fb in planes:
-            if (
-                di != 2
-                or min(abs(sum(fb[2]) / 2 - box.min.Z), abs(sum(fb[2]) / 2 - box.max.Z)) <= 1e-6
+            if di != 2:  # Frozen public corner grammar; axis redesign is under review.
+                continue
+            envelope = ((box.min.X, box.max.X), (box.min.Y, box.max.Y), (box.min.Z, box.max.Z))
+            if min(abs(sum(fb[di]) / 2 - end) for end in envelope[di]) <= 1e-6:
+                continue
+            footprint = [axis for axis in range(3) if axis != di]
+            if not all(
+                abs(fb[axis][0] - envelope[axis][0]) <= 1e-6
+                or abs(fb[axis][1] - envelope[axis][1]) <= 1e-6
+                for axis in footprint
             ):
                 continue
-            if not (
-                (abs(fb[0][0] - box.min.X) <= 1e-6 or abs(fb[0][1] - box.max.X) <= 1e-6)
-                and (abs(fb[1][0] - box.min.Y) <= 1e-6 or abs(fb[1][1] - box.max.Y) <= 1e-6)
-            ):
+            wall_groups = []
+            for axis in footprint:
+                other = next(item for item in footprint if item != axis)
+                lo, hi = fb[axis]
+                inner = hi if abs(lo - envelope[axis][0]) <= 1e-6 else lo
+                wall_groups.append(
+                    [
+                        (node, bounds)
+                        for node, wall_axis, _sign, bounds in planes
+                        if wall_axis == axis
+                        and abs(sum(bounds[axis]) / 2 - inner) <= 1e-6
+                        and bounds[other][0] <= fb[other][0] + 1e-6
+                        and bounds[other][1] >= fb[other][1] - 1e-6
+                    ]
+                )
+            if any(len(group) != 1 for group in wall_groups):
                 continue
-            x0, x1 = fb[0]
-            y0, y1 = fb[1]
-            xinner = x1 if abs(x0 - box.min.X) <= 1e-6 else x0
-            yinner = y1 if abs(y0 - box.min.Y) <= 1e-6 else y0
-            xwalls = [
-                (n, b)
-                for n, a, _s, b in planes
-                if a == 0
-                and abs(sum(b[0]) / 2 - xinner) <= 1e-6
-                and b[1][0] <= y0 + 1e-6
-                and b[1][1] >= y1 - 1e-6
-            ]
-            ywalls = [
-                (n, b)
-                for n, a, _s, b in planes
-                if a == 1
-                and abs(sum(b[1]) / 2 - yinner) <= 1e-6
-                and b[0][0] <= x0 + 1e-6
-                and b[0][1] >= x1 - 1e-6
-            ]
-            if len(xwalls) != 1 or len(ywalls) != 1:
-                continue
-            sx, sy = x1 - x0, y1 - y0
-            wa, li = (0, 1) if sx <= sy else (1, 0)
-            width, length = (sx, sy) if sx <= sy else (sy, sx)
+            first, second = footprint
+            sizes = {axis: fb[axis][1] - fb[axis][0] for axis in footprint}
+            wa, li = (first, second) if sizes[first] <= sizes[second] else (second, first)
+            width, length = sizes[wa], sizes[li]
             wc = sum(fb[wa]) / 2
             lo, hi = fb[li]
-            dlo = max(xwalls[0][1][2][0], ywalls[0][1][2][0])
-            dhi = min(xwalls[0][1][2][1], ywalls[0][1][2][1])
+            dlo = max(group[0][1][di][0] for group in wall_groups)
+            dhi = min(group[0][1][di][1] for group in wall_groups)
             rec = Pocket(
                 "xyz"[wa],
                 "xyz"[li],
@@ -219,7 +217,7 @@ def _fresh_occurrences(part):
                 True,
                 raw_key if body_keys.count(raw_key) == 1 else None,
             )
-            records.append((rec, frozenset((floor, xwalls[0][0], ywalls[0][0]))))
+            records.append((rec, frozenset((floor, *(group[0][0] for group in wall_groups)))))
         # Blind obrounds are established by two equal cylindrical endpoint regions.
         for i, left in enumerate(cylinders):
             for right in cylinders[i + 1 :]:
@@ -685,6 +683,34 @@ def test_blind_pocket_cap_contract_refuses_every_mismatched_endpoint(monkeypatch
         changed = [(*target[:index], value, *target[index + 1 :]), *ends[1:]]
     monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: changed)
     assert _extend_obround_proposals([raw], part, graph) == [raw]
+
+
+def test_merge_tolerance_and_max_span_boundaries_drive_pocket_lifecycle(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    below = _MERGE_TOL - 1e-6
+    above = _MERGE_TOL + 1e-6
+    base = Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8)
+    graph = FaceGraph(base)
+    ends = _obround_ends(base, graph)
+    monkeypatch.setattr(module, "_has_side_walls", lambda _faces, _record: True)
+    monkeypatch.setattr(module, "_floor_ends", lambda _faces, _record: 1)
+    for run, accepted in ((below, False), (_MERGE_TOL, False), (above, True)):
+        changed = [
+            (*ends[0][:5], -run / 2, *ends[0][6:]),
+            (*ends[1][:5], run / 2, *ends[1][6:]),
+        ]
+        monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph, value=changed: value)
+        records = _recognise_obround_from_ends(base, [], blind=True, graph=graph, proposals=True)
+        assert bool(records) is accepted
+
+    monkeypatch.undo()
+    for length, accepted in ((53.99, True), (54.0, False)):
+        part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(length, 10, 8)
+        ledger = ClaimLedger(FaceGraph(part))
+        records = _discover_pockets(part, writer=ledger.writer)
+        assert bool(records) is accepted
+        assert bool(ledger.candidate_set(FamilyId.POCKETS).candidates) is accepted
 
 
 def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
