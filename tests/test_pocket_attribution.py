@@ -303,3 +303,23 @@ def test_same_record_competing_bound_role_sets_refuse_without_prefix(monkeypatch
     with pytest.raises(_PocketAttributionError, match="competing source assignments"):
         _discover_pockets(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    record = _discover_pockets(part)[0]
+    nodes = frozenset(node for node in graph.nodes if graph.is_planar(node))
+    proposal = _RecessProposal(record, nodes)
+    monkeypatch.setattr(
+        module, "_body_scoped_proposals", lambda *_args, **_kwargs: [proposal, proposal]
+    )
+    ledger = ClaimLedger(graph)
+    returned = _discover_pockets(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
+    assert returned == [record]
+    assert len(candidates) == 1 and candidates[0].record is returned[0]
+    assert ledger.defining_of(candidates[0]) == nodes

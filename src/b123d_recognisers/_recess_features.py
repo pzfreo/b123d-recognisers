@@ -183,8 +183,8 @@ def recognise_pockets(
     only had to exist -- the same line the through-slot draws, since the depth is the walls'
     own overlap rather than the floor's position. From a corner notch it claims the floor too,
     because that path iterates floors and reads the notch's footprint off the one it finds. A
-    stubby obround pocket recovered from its cylindrical end caps claims nothing and is absent
-    from the ledger, as its through-slot counterpart is.
+    stubby obround pocket owns the complete low/high cylindrical cap patch clusters that establish
+    it. An elongated obround owns those cap patches in addition to its retained planar walls.
 
     *ledger*'s graph must have been built from *part*; a face that does not resolve is refused
     rather than silently claiming nothing.
@@ -276,7 +276,7 @@ def _discover_pockets(
         pending.append((record, nodes))
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.POCKETS)
-    return records
+    return [record for record, _nodes in pending]
 
 
 def recognise_channels(
