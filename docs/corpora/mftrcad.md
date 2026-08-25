@@ -153,7 +153,14 @@ The allocation is permanently consumed and inconclusive, not regression evidence
 `F5-POLYGONAL-STOCK-H1` is independently `sealed_unrevealed` at bucket 30 for #232. It was
 designated without archive access, membership inspection, recognition, annotation reading, or
 outcome evidence. Its exact acknowledgement is non-transferable, and the ordinary `unselected`
-complement is now buckets 31..999.
+complement was then buckets 31..999.
+`F5-SLOTS-H1` and `F5-POCKETS-H1` are independently `sealed_unrevealed` at buckets 31 and 32 for
+#235 and #236. Their neutral combined designation changed only the allocation policy, tests and
+documentation: no archive, allocation membership, annotations, geometry or outcomes were opened.
+Each selection requires only its own exact acknowledgement; neither acknowledgement authorizes the
+other selection or any earlier allocation. An authorized zero, abort, invalid or completed reveal
+consumes only that family's allocation without retry, replacement or fitting. The ordinary
+`unselected` complement is now buckets 33..999.
 Repository chronology recorded no earlier unselected scan, which is an attestation about recorded
 runs rather than a claim that external access was impossible. Each authorised family issue owned
 its one reveal and transition to a permanently consumed allocation. Completed reveals become
@@ -177,9 +184,9 @@ remains development-matrix evidence rather than an H1 claim.
 The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
 outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 31–999 remain unselected; buckets 20 through 30 are the named Flat, Fillet,
-Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, and Polygonal Stock
-allocations. This keeps
+may be fitted. Buckets 33–999 remain unselected; buckets 20 through 32 are the named Flat, Fillet,
+Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, Polygonal Stock, Slot and
+Pocket allocations. This keeps
 each draw near one percent without depending on class, topology, recognition result, or archive
 traversal order.
 The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`

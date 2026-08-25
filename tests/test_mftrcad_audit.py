@@ -29,8 +29,10 @@ from mftrcad_audit import (  # noqa: E402
     F5_HOLES_H1,
     F5_PADS_H1,
     F5_PLATES_H1,
+    F5_POCKETS_H1,
     F5_POLYGONAL_BOSSES_H1,
     F5_POLYGONAL_STOCK_H1,
+    F5_SLOTS_H1,
     FEATURE_LABELS,
     HOLDOUT_BUCKETS,
     NAMED_ALLOCATIONS,
@@ -99,17 +101,7 @@ def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
     assert {value for value in selected.values()} == {
         "development",
         "holdout",
-        "f5_fillets_h1",
-        "f5_flats_h1",
-        "f5_countersinks_h1",
-        "f5_bosses_h1",
-        "f5_double_d_bores_h1",
-        "f5_polygonal_bosses_h1",
-        "f5_pads_h1",
-        "f5_holes_h1",
-        "f5_channels_h1",
-        "f5_plates_h1",
-        "f5_polygonal_stock_h1",
+        *(spec.selection_token for spec in audit_module.ALLOCATION_SPECS),
     }
     assert not (
         {name for name, value in selected.items() if value == "development"}
@@ -183,12 +175,20 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
             "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_STOCK_H1]),
             "status": "sealed_unrevealed",
         },
+        F5_SLOTS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_SLOTS_H1]),
+            "status": "sealed_unrevealed",
+        },
+        F5_POCKETS_H1: {
+            "buckets": sorted(NAMED_ALLOCATIONS[F5_POCKETS_H1]),
+            "status": "sealed_unrevealed",
+        },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 31
-    assert partition.isdisjoint(set(range(31, 1000)))
-    assert partition | set(range(31, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[31, 999]]
+    assert len(partition) == 33
+    assert partition.isdisjoint(set(range(33, 1000)))
+    assert partition | set(range(33, 1000)) == set(range(1000))
+    assert selection["selection"]["unselected_bucket_ranges"] == [[33, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -246,27 +246,8 @@ def test_all_selection_cannot_bypass_the_holdout_gate(
 @pytest.mark.parametrize(
     ("token", "policy_id", "bucket", "status"),
     [
-        ("f5_flats_h1", F5_FLATS_H1, 20, "consumed"),
-        ("f5_fillets_h1", F5_FILLETS_H1, 21, "consumed"),
-        ("f5_countersinks_h1", F5_COUNTERSINKS_H1, 22, "consumed"),
-        ("f5_bosses_h1", F5_BOSSES_H1, 23, "consumed"),
-        ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, 24, "consumed"),
-        (
-            "f5_polygonal_bosses_h1",
-            F5_POLYGONAL_BOSSES_H1,
-            25,
-            "consumed",
-        ),
-        ("f5_pads_h1", F5_PADS_H1, 26, "consumed"),
-        ("f5_holes_h1", F5_HOLES_H1, 27, "consumed"),
-        ("f5_channels_h1", F5_CHANNELS_H1, 28, "consumed"),
-        ("f5_plates_h1", F5_PLATES_H1, 29, "consumed"),
-        (
-            "f5_polygonal_stock_h1",
-            F5_POLYGONAL_STOCK_H1,
-            30,
-            "sealed_unrevealed",
-        ),
+        (spec.selection_token, spec.policy_id, next(iter(spec.buckets)), spec.status)
+        for spec in audit_module.ALLOCATION_SPECS
     ],
 )
 def test_named_allocation_requires_exact_nontransferable_authority(
@@ -308,20 +289,12 @@ def test_named_allocation_requires_exact_nontransferable_authority(
 @pytest.mark.parametrize(
     ("token", "policy_id", "wrong_policy_id"),
     [
-        ("f5_fillets_h1", F5_FILLETS_H1, F5_FLATS_H1),
-        ("f5_countersinks_h1", F5_COUNTERSINKS_H1, F5_FILLETS_H1),
-        ("f5_bosses_h1", F5_BOSSES_H1, F5_COUNTERSINKS_H1),
-        ("f5_double_d_bores_h1", F5_DOUBLE_D_BORES_H1, F5_BOSSES_H1),
         (
-            "f5_polygonal_bosses_h1",
-            F5_POLYGONAL_BOSSES_H1,
-            F5_DOUBLE_D_BORES_H1,
-        ),
-        ("f5_pads_h1", F5_PADS_H1, F5_POLYGONAL_BOSSES_H1),
-        ("f5_holes_h1", F5_HOLES_H1, F5_PADS_H1),
-        ("f5_channels_h1", F5_CHANNELS_H1, F5_HOLES_H1),
-        ("f5_plates_h1", F5_PLATES_H1, F5_CHANNELS_H1),
-        ("f5_polygonal_stock_h1", F5_POLYGONAL_STOCK_H1, F5_PLATES_H1),
+            spec.selection_token,
+            spec.policy_id,
+            audit_module.ALLOCATION_SPECS[index - 1].policy_id,
+        )
+        for index, spec in enumerate(audit_module.ALLOCATION_SPECS)
     ],
 )
 def test_named_allocation_requires_its_own_exact_authority(
@@ -347,19 +320,7 @@ def test_named_allocation_requires_its_own_exact_authority(
 
 @pytest.mark.parametrize(
     "token",
-    [
-        "f5_flats_h1",
-        "f5_fillets_h1",
-        "f5_countersinks_h1",
-        "f5_bosses_h1",
-        "f5_double_d_bores_h1",
-        "f5_polygonal_bosses_h1",
-        "f5_pads_h1",
-        "f5_holes_h1",
-        "f5_channels_h1",
-        "f5_plates_h1",
-        "f5_polygonal_stock_h1",
-    ],
+    [spec.selection_token for spec in audit_module.ALLOCATION_SPECS],
 )
 def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path, token: str) -> None:
     missing = tmp_path / "must-not-be-read"
@@ -377,19 +338,7 @@ def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path, token
 
 @pytest.mark.parametrize(
     "token",
-    [
-        "f5_flats_h1",
-        "f5_fillets_h1",
-        "f5_countersinks_h1",
-        "f5_bosses_h1",
-        "f5_double_d_bores_h1",
-        "f5_polygonal_bosses_h1",
-        "f5_pads_h1",
-        "f5_holes_h1",
-        "f5_channels_h1",
-        "f5_plates_h1",
-        "f5_polygonal_stock_h1",
-    ],
+    [spec.selection_token for spec in audit_module.ALLOCATION_SPECS],
 )
 def test_cli_named_allocation_refuses_before_touching_the_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, token: str
