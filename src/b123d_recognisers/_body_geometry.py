@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from itertools import permutations, product
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, cast
 
 from build123d import GeomType
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
@@ -736,3 +736,324 @@ def describe_solid(solid) -> _DescribedBody:
         raw_faces,
         tuple(build.geometry for build in raw_geometry),
     )
+
+
+def _same_shape(left: Any, right: Any) -> bool:
+    return bool(left.wrapped.IsSame(right.wrapped))
+
+
+def _identity_index(items: list[Any], value: Any) -> int:
+    for index, item in enumerate(items):
+        if _same_shape(item, value):
+            return index
+    items.append(value)
+    return len(items) - 1
+
+
+def _plane_basis(normal: QPoint) -> tuple[QPoint, QPoint]:
+    axes: tuple[QPoint, ...] = (
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    )
+    reference = min(
+        axes,
+        key=lambda axis: abs(sum(a * n for a, n in zip(axis, normal, strict=True))),
+    )
+    projection = tuple(
+        axis - sum(a * n for a, n in zip(reference, normal, strict=True)) * component
+        for axis, component in zip(reference, normal, strict=True)
+    )
+    length = math.sqrt(sum(component * component for component in projection))
+    if length <= DIRECTION_TOL:
+        raise UnsupportedBodyGeometry("matching plane basis is degenerate")
+    u = cast(QPoint, tuple(component / length for component in projection))
+    v = (
+        normal[1] * u[2] - normal[2] * u[1],
+        normal[2] * u[0] - normal[0] * u[2],
+        normal[0] * u[1] - normal[1] * u[0],
+    )
+    return u, v
+
+
+def _plane_parameter(point: QPoint, face: FaceGeometry, quantum: float) -> tuple[float, float]:
+    normal = face.parameters[:3]
+    if len(normal) != 3:
+        raise UnsupportedBodyGeometry("matching plane normal is malformed")
+    u, v = _plane_basis(normal)
+    origin = tuple(face.parameters[3] * component for component in normal)
+    delta = tuple(component - offset for component, offset in zip(point, origin, strict=True))
+    return (
+        _snap_checked(sum(a * b for a, b in zip(delta, u, strict=True)), quantum, name="pcurve u"),
+        _snap_checked(sum(a * b for a, b in zip(delta, v, strict=True)), quantum, name="pcurve v"),
+    )
+
+
+def _cycle_area(parameters: tuple[tuple[float, float], ...]) -> float:
+    return 0.5 * sum(
+        left[0] * right[1] - right[0] * left[1]
+        for left, right in zip(parameters, parameters[1:] + parameters[:1], strict=True)
+    )
+
+
+def _line_cycle(
+    curve_indices: tuple[int, ...],
+    curves: tuple[MatchingCurve, ...],
+    role: str,
+    face: FaceGeometry,
+    quantum: float,
+    vertices: tuple[QPoint, ...],
+) -> MatchingWire:
+    adjacency: dict[int, list[tuple[int, int]]] = {}
+    for curve_index in curve_indices:
+        curve = curves[curve_index]
+        if curve.kind != "LINE" or curve.vertices is None:
+            raise UnsupportedBodyGeometry("initial matching cycle grammar is line-only")
+        left, right = curve.vertices
+        adjacency.setdefault(left, []).append((curve_index, right))
+        adjacency.setdefault(right, []).append((curve_index, left))
+    if not adjacency or any(len(entries) != 2 for entries in adjacency.values()):
+        raise UnsupportedBodyGeometry("matching wire is not one degree-two cycle")
+
+    candidates: list[tuple[MatchingHalfEdge, ...]] = []
+    for start in adjacency:
+        for first_curve, first_next in adjacency[start]:
+            cycle: list[MatchingHalfEdge] = []
+            current = start
+            curve_index = first_curve
+            following = first_next
+            used: set[int] = set()
+            while curve_index not in used:
+                used.add(curve_index)
+                curve = curves[curve_index]
+                assert curve.vertices is not None
+                direction = 1 if curve.vertices == (current, following) else -1
+                cycle.append(
+                    MatchingHalfEdge(
+                        curve_index,
+                        direction,
+                        MatchingWireVertex(
+                            current,
+                            _plane_parameter(vertices[current], face, quantum),
+                        ),
+                        MatchingWireVertex(
+                            following,
+                            _plane_parameter(vertices[following], face, quantum),
+                        ),
+                    )
+                )
+                current = following
+                choices = [item for item in adjacency[current] if item[0] not in used]
+                if not choices:
+                    break
+                if len(choices) != 1:
+                    raise UnsupportedBodyGeometry("matching wire cycle is ambiguous")
+                curve_index, following = choices[0]
+            if current == start and len(used) == len(curve_indices):
+                candidates.append(tuple(cycle))
+    if not candidates:
+        raise UnsupportedBodyGeometry("matching wire does not close")
+    oriented: list[tuple[MatchingHalfEdge, ...]] = []
+    expected_positive = role == "outer"
+    for candidate in candidates:
+        parameters = tuple(
+            item.start.parameter for item in candidate if item.start is not None
+        )
+        area = _cycle_area(parameters)
+        if abs(area) <= quantum**2:
+            raise UnsupportedBodyGeometry("matching wire signed area is degenerate")
+        if (area > 0.0) == expected_positive:
+            oriented.append(candidate)
+    if not oriented:
+        raise UnsupportedBodyGeometry("matching wire has no material-oriented cycle")
+    return MatchingWire(role, 0, min(oriented))
+
+
+def _matching_graph_canonical(
+    vertices: tuple[QPoint, ...],
+    curves: tuple[MatchingCurve, ...],
+    faces: tuple[MatchingFace, ...],
+) -> MatchingBoundaryGraph:
+    vertex_order = tuple(sorted(range(len(vertices)), key=lambda index: vertices[index]))
+    if len(set(vertices)) != len(vertices):
+        raise UnsupportedBodyGeometry("equal matching vertices require bounded permutation")
+    vertex_map = {old: new for new, old in enumerate(vertex_order)}
+    ordered_vertices = tuple(vertices[index] for index in vertex_order)
+
+    remapped_curves = tuple(
+        MatchingCurve(
+            curve.kind,
+            None
+            if curve.vertices is None
+            else (vertex_map[curve.vertices[0]], vertex_map[curve.vertices[1]]),
+            curve.length,
+            curve.centre,
+            curve.axis,
+            curve.radius,
+            curve.sweep,
+            curve.full,
+        )
+        for curve in curves
+    )
+    curve_order = tuple(sorted(range(len(curves)), key=lambda index: remapped_curves[index]))
+    if len(set(remapped_curves)) != len(remapped_curves):
+        raise UnsupportedBodyGeometry("equal matching curves require bounded permutation")
+    curve_map = {old: new for new, old in enumerate(curve_order)}
+    ordered_curves = tuple(remapped_curves[index] for index in curve_order)
+
+    remapped_faces = []
+    for face in faces:
+        remapped_wires = []
+        for wire in face.wires:
+            cycle = tuple(
+                MatchingHalfEdge(
+                    curve_map[item.curve],
+                    item.direction,
+                    None
+                    if item.start is None
+                    else MatchingWireVertex(
+                        vertex_map[cast(int, item.start.vertex)], item.start.parameter
+                    ),
+                    None
+                    if item.end is None
+                    else MatchingWireVertex(
+                        vertex_map[cast(int, item.end.vertex)], item.end.parameter
+                    ),
+                )
+                for item in wire.cycle
+            )
+            rotations = tuple(cycle[index:] + cycle[:index] for index in range(len(cycle)))
+            remapped_wires.append(MatchingWire(wire.role, wire.theta_winding, min(rotations)))
+        remapped_faces.append(
+            MatchingFace(
+                face.kind,
+                face.parameters,
+                face.area,
+                face.centroid,
+                face.material_side,
+                tuple(sorted(remapped_wires)),
+            )
+        )
+    ordered_faces = tuple(sorted(remapped_faces))
+    if len(set(remapped_faces)) != len(remapped_faces):
+        raise UnsupportedBodyGeometry("equal matching faces require bounded permutation")
+    incidence: dict[int, list[tuple[int, int, int]]] = {}
+    for face_index, face in enumerate(ordered_faces):
+        for wire_index, wire in enumerate(face.wires):
+            for occurrence, half_edge in enumerate(wire.cycle):
+                incidence.setdefault(half_edge.curve, []).append(
+                    (face_index, wire_index, occurrence)
+                )
+    if set(incidence) != set(range(len(ordered_curves))) or any(
+        len(occurrences) != 2 for occurrences in incidence.values()
+    ):
+        raise UnsupportedBodyGeometry("matching curve incidence is not a closed-shell pair")
+    return MatchingBoundaryGraph(
+        ordered_vertices,
+        ordered_curves,
+        ordered_faces,
+        tuple((index, tuple(sorted(incidence[index]))) for index in range(len(ordered_curves))),
+        len(ordered_faces),
+        sum(len(face.wires) for face in ordered_faces),
+        sum(len(wire.cycle) for face in ordered_faces for wire in face.wires),
+        False,
+    )
+
+
+def matching_boundary_for_solid(
+    solid: Any,
+    descriptor: BodyGeometryDescriptor,
+) -> MatchingBoundaryGraph:
+    """Build the first schema-3 LINE/PLANE boundary slice without wrapper ordering authority."""
+
+    centre = descriptor.placement.centre_of_mass
+    quantum = descriptor.quantization.metric_quantum
+    raw_vertices: list[Any] = []
+    raw_curves: list[Any] = []
+    curve_examples: list[Any] = []
+    faces = tuple(solid.faces())
+    face_builds = tuple(
+        _face_geometry(face, centre, descriptor.quantization.characteristic_scale)
+        for face in faces
+    )
+    face_curve_indices: list[list[tuple[str, tuple[int, ...]]]] = []
+    for face in faces:
+        outer = face.outer_wire()
+        wires = []
+        for wire in face.wires():
+            indices = []
+            for edge in wire.edges():
+                index = _identity_index(raw_curves, edge)
+                if index == len(curve_examples):
+                    curve_examples.append(edge)
+                indices.append(index)
+                for vertex in edge.vertices():
+                    _identity_index(raw_vertices, vertex)
+            wires.append(("outer" if wire == outer else "inner", tuple(indices)))
+        face_curve_indices.append(wires)
+
+    vertex_labels = tuple(
+        _point(vertex, centre, quantum, name="matching vertex") for vertex in raw_vertices
+    )
+    matching_curves: list[MatchingCurve] = []
+    for edge in curve_examples:
+        edge_geometry = _edge_geometry(edge, centre, quantum)
+        if edge_geometry.kind != "LINE":
+            raise UnsupportedBodyGeometry("initial matching boundary grammar is line-only")
+        endpoints = tuple(_identity_index(raw_vertices, vertex) for vertex in edge.vertices())
+        if len(endpoints) != 2:
+            raise UnsupportedBodyGeometry("matching line does not have two vertices")
+        ordered = (
+            endpoints
+            if vertex_labels[endpoints[0]] == edge_geometry.start
+            else (endpoints[1], endpoints[0])
+        )
+        if (
+            vertex_labels[ordered[0]] != edge_geometry.start
+            or vertex_labels[ordered[1]] != edge_geometry.end
+        ):
+            raise UnsupportedBodyGeometry("matching line endpoints disagree with its geometry")
+        matching_curves.append(
+            MatchingCurve(
+                "LINE", ordered, edge_geometry.length, None, None, None, None, False
+            )
+        )
+    curves = tuple(matching_curves)
+    matching_faces = []
+    incidence: dict[int, list[tuple[int, int, int]]] = {}
+    for face_index, (build, wire_roster) in enumerate(
+        zip(face_builds, face_curve_indices, strict=True)
+    ):
+        if build.geometry.kind != "PLANE":
+            raise UnsupportedBodyGeometry("initial matching boundary grammar is planar")
+        matching_wires = []
+        for wire_index, (role, curve_indices) in enumerate(wire_roster):
+            matching = _line_cycle(
+                curve_indices,
+                curves,
+                role,
+                build.geometry,
+                quantum,
+                vertex_labels,
+            )
+            matching_wires.append(matching)
+            for occurrence, half_edge in enumerate(matching.cycle):
+                incidence.setdefault(half_edge.curve, []).append(
+                    (face_index, wire_index, occurrence)
+                )
+        face_geometry = build.geometry
+        matching_faces.append(
+            MatchingFace(
+                face_geometry.kind,
+                face_geometry.parameters,
+                face_geometry.area,
+                face_geometry.centroid,
+                face_geometry.material_side,
+                tuple(matching_wires),
+            )
+        )
+    if set(incidence) != set(range(len(curves))) or any(
+        len(occurrences) != 2 for occurrences in incidence.values()
+    ):
+        raise UnsupportedBodyGeometry("matching curve incidence is not a closed-shell pair")
+    return _matching_graph_canonical(vertex_labels, curves, tuple(matching_faces))

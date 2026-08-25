@@ -41,7 +41,11 @@ import b123d_recognisers
 from b123d_recognisers import _body_geometry
 from b123d_recognisers import _correspondence as correspondence_module
 from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
-from b123d_recognisers._body_geometry import FaceGeometry, UnsupportedBodyGeometry
+from b123d_recognisers._body_geometry import (
+    FaceGeometry,
+    UnsupportedBodyGeometry,
+    matching_boundary_for_solid,
+)
 from b123d_recognisers._candidates import EvidenceIndex, FamilyId
 from b123d_recognisers._correspondence import (
     CORRESPONDENCE_FAMILIES,
@@ -97,6 +101,23 @@ def test_schema_three_matching_values_freeze_global_reference_shape() -> None:
     assert graph.curves[0].vertices == (0, 1)
     assert graph.curves[1].vertices is None
     assert graph.faces[0].wires[0].cycle[1].start is None
+
+
+def test_line_plane_matching_graph_erases_face_and_edge_traversal_order(monkeypatch) -> None:
+    part = Box(10, 20, 30)
+    graph = FaceGraph(part)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    descriptor = graph.body_geometry(solid).descriptor
+    source = matching_boundary_for_solid(part, descriptor)
+    solid_faces = Solid.faces
+    wire_edges = Wire.edges
+    monkeypatch.setattr(Solid, "faces", lambda self: list(reversed(solid_faces(self))))
+    monkeypatch.setattr(Wire, "edges", lambda self: list(reversed(wire_edges(self))))
+    assert matching_boundary_for_solid(part, descriptor) == source
+    assert source.face_count == 6
+    assert source.wire_count == 6
+    assert source.edge_occurrence_count == 24
 
 
 def _rrp(repeats: int = 5):
