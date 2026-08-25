@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import inspect
 import math
 from dataclasses import replace
@@ -97,6 +98,7 @@ def _fresh_oracle(part, graph: FaceGraph):
     bx = sum(nx * offset for nx, _ny, offset in midplanes)
     by = sum(ny * offset for _nx, ny, offset in midplanes)
     determinant = sxx * syy - sxy * sxy
+    assert determinant > 0.0
     cx = (bx * syy - by * sxy) / determinant
     cy = (sxx * by - sxy * bx) / determinant
     supports = [
@@ -185,6 +187,26 @@ def test_height_at_or_below_tol_is_not_stock_but_just_above_is() -> None:
     assert recognise_polygonal_stock(hex_prism(height=module._TOL)) == []
     assert recognise_polygonal_stock(hex_prism(height=module._TOL - 1e-8)) == []
     _claim(hex_prism(height=module._TOL + 1e-8))
+    assert recognise_polygonal_stock(hex_prism(height=0.037), tol=0.037) == []
+    _claim(hex_prism(height=0.037 + 1e-8), tol=0.037)
+
+
+def test_default_and_custom_tolerances_reach_the_single_core_exactly(monkeypatch) -> None:
+    original = module._recognise_one
+    seen = []
+
+    def observed(*args, **kwargs):
+        seen.append((kwargs["tol"], kwargs["angle_tol"], kwargs["whole_stock"]))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "_recognise_one", observed)
+    assert recognise_polygonal_stock(build_fixture())
+    assert recognise_polygonal_stock(build_fixture(), tol=0.037, angle_tol=0.019)
+    assert seen == [(None, math.radians(2), True), (0.037, 0.019, True)]
+
+
+def test_shallow_compound_wrapper_keeps_the_one_solid_positive() -> None:
+    _claim(Compound([hex_prism(height=module._TOL + 1e-8)]))
 
 
 class _ThresholdGraph:
@@ -201,6 +223,29 @@ class _ThresholdGraph:
 
     def bounds(self, _node):
         return ((0.0, 1.0), (0.0, 1.0), self._z_bounds)
+
+
+class _SpanGraph:
+    def __init__(self, spans):
+        self.spans = spans
+
+    def bounds(self, node):
+        return ((0.0, 1.0), (0.0, 1.0), self.spans[node])
+
+
+class _CommonCapGraph:
+    def __init__(self, bounds, normals):
+        self._bounds = bounds
+        self._normals = normals
+
+    def bounds(self, node):
+        return ((0.0, 1.0), (0.0, 1.0), self._bounds[node])
+
+    def is_planar(self, _node):
+        return True
+
+    def normal(self, node):
+        return self._normals[node]
 
 
 def test_cap_and_side_threshold_equalities_are_frozen() -> None:
@@ -224,6 +269,22 @@ def test_cap_and_side_threshold_equalities_are_frozen() -> None:
         positive=True,
         lower_than=None,
         higher_than=None,
+    ) is None
+    assert module._cap_z(
+        _ThresholdGraph(normal_z=1.0, z_bounds=(4.0, 4.0)),
+        node,
+        module._TOL,
+        positive=True,
+        lower_than=4.0 - module._TOL - 1e-8,
+        higher_than=None,
+    ) is None
+    assert module._cap_z(
+        _ThresholdGraph(normal_z=1.0, z_bounds=(4.0, 4.0)),
+        node,
+        module._TOL,
+        positive=True,
+        lower_than=None,
+        higher_than=4.0 + module._TOL + 1e-8,
     ) is None
     assert module._cap_z(
         _ThresholdGraph(
@@ -250,6 +311,155 @@ def test_cap_and_side_threshold_equalities_are_frozen() -> None:
         normal_z=module._SIDE_VERTICAL_COS, z_bounds=(0.0, module._TOL)
     )
     assert module._vertical_side_faces(exactly_shallow, module._TOL) == []
+
+    negative = _ThresholdGraph(
+        normal_z=-module.AXIS_ALIGNED_COS,
+        z_bounds=(-module._TOL / 2, module._TOL / 2),
+    )
+    assert module._cap_z(
+        negative,
+        node,
+        module._TOL,
+        positive=False,
+        lower_than=0.0,
+        higher_than=0.0,
+    ) == pytest.approx(0.0)
+    assert module._cap_z(
+        _ThresholdGraph(
+            normal_z=-module.AXIS_ALIGNED_COS + 1e-8,
+            z_bounds=(-module._TOL / 2, module._TOL / 2),
+        ),
+        node,
+        module._TOL,
+        positive=False,
+        lower_than=None,
+        higher_than=None,
+    ) is None
+
+
+def test_same_span_and_connectivity_boundaries_are_frozen() -> None:
+    nodes = tuple(FaceNode(index) for index in range(4))
+    graph = _SpanGraph(
+        {
+            nodes[0]: (0.0, 10.0),
+            nodes[1]: (module._TOL, 10.0 + module._TOL),
+            nodes[2]: (2 * module._TOL + 1e-8, 10.0),
+            nodes[3]: (0.0, 10.0),
+        }
+    )
+    edges = {frozenset((nodes[0], nodes[1])), frozenset((nodes[1], nodes[2]))}
+    components = module._side_rings(
+        list(nodes), graph, module._TOL, lambda a, b: frozenset((a, b)) in edges
+    )
+    assert {frozenset(component) for component in components} == {
+        frozenset((nodes[0], nodes[1])),
+        frozenset((nodes[2],)),
+        frozenset((nodes[3],)),
+    }
+
+
+def test_direct_common_and_ambiguous_cap_paths_are_frozen() -> None:
+    side_a, side_b, boundary_a, boundary_b, cap, rival = (
+        FaceNode(index) for index in range(6)
+    )
+    graph = _CommonCapGraph(
+        {
+            side_a: (0.0, 10.0),
+            side_b: (0.0, 10.0),
+            boundary_a: (10.0, 10.0),
+            boundary_b: (10.0, 10.0),
+            cap: (10.0, 10.0),
+            rival: (10.0, 10.0),
+        },
+        {cap: (0.0, 0.0, 1.0), rival: (0.0, 0.0, 1.0)},
+    )
+    component = (side_a, side_b)
+
+    direct = {side_a: {cap}, side_b: {cap}, cap: set()}
+    selected = module._common_cap(
+        component,
+        graph,
+        lambda node: set(direct.get(node, set())),
+        module._TOL,
+        upper=True,
+        positive=True,
+        wall_lo=0.0,
+        wall_hi=10.0,
+    )
+    assert selected is not None and selected.node is cap and selected.z == 10.0
+
+    indirect = {
+        side_a: {boundary_a},
+        side_b: {boundary_b},
+        boundary_a: {cap},
+        boundary_b: {cap},
+    }
+    selected = module._common_cap(
+        component,
+        graph,
+        lambda node: set(indirect.get(node, set())),
+        module._TOL,
+        upper=True,
+        positive=True,
+        wall_lo=0.0,
+        wall_hi=10.0,
+    )
+    assert selected is not None and selected.node is cap
+
+    ambiguous = {side_a: {cap, rival}, side_b: {cap, rival}}
+    assert module._common_cap(
+        component,
+        graph,
+        lambda node: set(ambiguous.get(node, set())),
+        module._TOL,
+        upper=True,
+        positive=True,
+        wall_lo=0.0,
+        wall_hi=10.0,
+    ) is None
+
+
+def test_ring_degree_two_guard_rejects_an_extra_side_neighbour(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    sides = module._vertical_side_faces(graph, module._TOL)
+    original = graph.neighbours
+
+    def neighbours(node):
+        found = set(original(node))
+        if node is sides[0]:
+            found.add(sides[3])
+        elif node is sides[3]:
+            found.add(sides[0])
+        return tuple(found)
+
+    monkeypatch.setattr(graph, "neighbours", neighbours)
+    assert module._recognise_one(
+        part, tol=None, angle_tol=math.radians(2), whole_stock=True, graph=graph
+    ) == []
+
+
+def test_actual_proposal_retains_distinct_ordered_cap_roles_and_projection() -> None:
+    part = Pos(0.12345, -0.45678, 7.89123) * hex_prism(height=11.23456)
+    proposal = module._recognise_one(part, tol=None, angle_tol=math.radians(2), whole_stock=True)[0]
+    record = proposal.record
+    lower_z = proposal.lower_cap.bounding_box().min.Z
+    upper_z = proposal.upper_cap.bounding_box().max.Z
+    assert proposal.lower_cap != proposal.upper_cap
+    assert record.base == round(lower_z, 4)
+    assert record.top == round(upper_z, 4)
+    assert record.center[2] == round((lower_z + upper_z) / 2, 4)
+    swapped = replace(proposal, lower_cap=proposal.upper_cap, upper_cap=proposal.lower_cap)
+    assert swapped.lower_cap != proposal.lower_cap and swapped.upper_cap != proposal.upper_cap
+
+
+def test_real_extra_cap_ambiguity_fails_the_exact_inventory_gate() -> None:
+    stock = build_fixture()
+    wrapped = Compound([stock, Pos(0, 0, 30) * RegularPolygon(10, 6)])
+    ledger = ClaimLedger(FaceGraph(wrapped))
+    assert recognise_polygonal_stock(wrapped) == []
+    assert _discover_polygonal_stock(wrapped, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
 
 def test_step_and_reversed_traversal_keep_identity(monkeypatch, tmp_path: Path) -> None:
@@ -329,6 +539,50 @@ def test_foreign_translated_graph_and_late_cap_binding_fail_without_prefix(monke
 
     monkeypatch.setattr(ledger.graph, "require_node", fail_on_last_cap)
     with pytest.raises(ValueError, match="late cap identity"):
+        _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
+
+
+@pytest.mark.parametrize("role", ["clone", "side", "lower", "upper", "duplicate"])
+def test_copied_translated_or_duplicate_boundary_identity_fails_atomically(
+    monkeypatch, role
+) -> None:
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._recognise_one
+
+    def corrupted(*args, **kwargs):
+        proposal = original(*args, **kwargs)[0]
+        if role == "clone":
+            sides = (copy.deepcopy(proposal.side_faces[0]), *proposal.side_faces[1:])
+            return [replace(proposal, side_faces=sides)]
+        if role == "side":
+            sides = (Pos(100, 0, 0) * proposal.side_faces[0], *proposal.side_faces[1:])
+            return [replace(proposal, side_faces=sides)]
+        if role == "lower":
+            return [replace(proposal, lower_cap=Pos(0, 0, -100) * proposal.lower_cap)]
+        if role == "upper":
+            return [replace(proposal, upper_cap=Pos(0, 0, 100) * proposal.upper_cap)]
+        return [replace(proposal, upper_cap=proposal.lower_cap)]
+
+    monkeypatch.setattr(module, "_recognise_one", corrupted)
+    with pytest.raises(ValueError, match="different part|complete eight-face|no bbox"):
+        _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
+
+
+def test_late_second_inventory_identity_failure_does_not_publish_first(monkeypatch) -> None:
+    part = build_fixture()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._recognise_one
+
+    def two_proposals(*args, **kwargs):
+        first = original(*args, **kwargs)[0]
+        broken = replace(first, upper_cap=Pos(0, 0, 100) * first.upper_cap)
+        return [first, broken]
+
+    monkeypatch.setattr(module, "_recognise_one", two_proposals)
+    with pytest.raises(ValueError, match="different part|no bbox"):
         _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
