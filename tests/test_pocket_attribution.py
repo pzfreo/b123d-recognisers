@@ -9,20 +9,88 @@ from pathlib import Path
 
 import pytest
 from build123d import Box, Compound, Cylinder, Edge, Plane, Pos, Rot, export_step, import_step
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
+from OCP.GeomAbs import GeomAbs_Cylinder
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from b123d_recognisers._run import start
+from b123d_recognisers.result import _discover_all
 
 ROOT = Path(__file__).parents[1]
+AXIS = {"x": 0, "y": 1, "z": 2}
 
 
 def _obround(length: float, width: float, depth: float):
     end = Cylinder(width / 2, depth)
     return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(length / 2, 0, 0) * end
+
+
+def _fresh_expected_nodes(graph: FaceGraph, expected, *, edge_anchored: bool):
+    """Reconstruct exact route roles from fresh topology before writer/Candidate access."""
+
+    wa, la, width, length, _depth, wc, lo, hi, dlo, dhi, sign, _anchored = expected
+    wi, li = AXIS[wa], AXIS[la]
+    di = next(index for index in range(3) if index not in (wi, li))
+    selected = set()
+    for node in graph.nodes:
+        bounds = graph.bounds(node)
+        if graph.is_planar(node):
+            normal = graph.normal(node)
+            if normal is None:
+                continue
+            axis = max(range(3), key=lambda index: abs(normal[index]))
+            at = sum(bounds[axis]) / 2
+            wall = (
+                axis == wi
+                and abs(abs(at - wc) - width / 2) <= 1e-6
+                and bounds[li][0] >= lo - 1e-6
+                and bounds[li][1] <= hi + 1e-6
+                and bounds[di][0] == pytest.approx(dlo)
+                and bounds[di][1] == pytest.approx(dhi)
+            )
+            corner_wall = (
+                edge_anchored
+                and axis == li
+                and (at == pytest.approx(lo) or at == pytest.approx(hi))
+                and bounds[wi][1] > wc - width / 2
+                and bounds[wi][0] < wc + width / 2
+                and bounds[di][0] == pytest.approx(dlo)
+                and bounds[di][1] == pytest.approx(dhi)
+            )
+            floor_at = dlo if sign > 0 else dhi
+            floor = (
+                edge_anchored
+                and axis == di
+                and at == pytest.approx(floor_at)
+                and bounds[wi][1] > wc - width / 2
+                and bounds[wi][0] < wc + width / 2
+                and bounds[li][1] > lo
+                and bounds[li][0] < hi
+            )
+            if wall or corner_wall or floor:
+                selected.add(node)
+            continue
+        adaptor = BRepAdaptor_Surface(graph.face(node).wrapped)
+        if adaptor.GetType() != GeomAbs_Cylinder:
+            continue
+        cylinder = adaptor.Cylinder()
+        direction = cylinder.Axis().Direction()
+        vector = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+        if (
+            vector[di] == pytest.approx(1.0)
+            and cylinder.Radius() == pytest.approx(width / 2)
+            and bounds[di][0] == pytest.approx(dlo)
+            and bounds[di][1] == pytest.approx(dhi)
+        ):
+            selected.add(node)
+    if length < 2 * width and any(not graph.is_planar(node) for node in selected):
+        selected = {node for node in selected if not graph.is_planar(node)}
+    return frozenset(selected)
 
 
 @pytest.mark.parametrize(
@@ -55,7 +123,11 @@ def _obround(length: float, width: float, depth: float):
     ],
 )
 def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, expected) -> None:
-    ledger = ClaimLedger(FaceGraph(part))
+    graph = FaceGraph(part)
+    expected_nodes = _fresh_expected_nodes(graph, expected, edge_anchored=expected[-1])
+    assert sum(graph.is_planar(node) for node in expected_nodes) == planar
+    assert sum(not graph.is_planar(node) for node in expected_nodes) == curved
+    ledger = ClaimLedger(graph)
     records = _discover_pockets(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
     assert len(records) == len(candidates) == 1
@@ -76,6 +148,7 @@ def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, 
         record.edge_anchored,
     ) == expected
     nodes = ledger.defining_of(candidates[0])
+    assert nodes == expected_nodes
     assert sum(ledger.graph.is_planar(node) for node in nodes) == planar
     assert sum(not ledger.graph.is_planar(node) for node in nodes) == curved
     assert ledger.graph.common_valid_solid(nodes) is not None
@@ -323,3 +396,103 @@ def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypat
     assert returned == [record]
     assert len(candidates) == 1 and candidates[0].record is returned[0]
     assert ledger.defining_of(candidates[0]) == nodes
+
+
+def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    context = start(part)
+    record = _discover_pockets(part)[0]
+    nodes = frozenset(node for node in context.graph.nodes if context.graph.is_planar(node))
+    proposal = _RecessProposal(record, nodes)
+    real = module._body_scoped_proposals
+
+    def staged(sources, recognise_one):
+        return (
+            [proposal, proposal]
+            if recognise_one.func is module._pocket_proposals_one
+            else real(sources, recognise_one)
+        )
+
+    monkeypatch.setattr(module, "_body_scoped_proposals", staged)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    _discover_all(context, ledger)
+    assert len(ledger.candidate_set(FamilyId.POCKETS).candidates) == 1
+    assert FamilyId.POCKETS in ledger._issuer._completed
+    assert len(ledger._issuer._completed_occurrences[FamilyId.POCKETS]) == 1
+
+
+def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+    from b123d_recognisers._recess_reduce import _RecessProposal
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    context = start(part)
+    record = _discover_pockets(part)[0]
+    planar = [node for node in context.graph.nodes if context.graph.is_planar(node)]
+    real = module._body_scoped_proposals
+
+    def staged(sources, recognise_one):
+        if recognise_one.func is not module._pocket_proposals_one:
+            return real(sources, recognise_one)
+        return [
+            _RecessProposal(record, frozenset(planar[:2])),
+            _RecessProposal(record, frozenset(planar[2:4])),
+        ]
+
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        staged,
+    )
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(_PocketAttributionError, match="competing source assignments"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+    assert FamilyId.POCKETS not in ledger._issuer._completed
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+
+
+def test_public_ledger_raw_writer_and_plain_projection_are_identical() -> None:
+    part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
+    plain = _discover_pockets(part)
+    public_ledger = ClaimLedger(FaceGraph(part))
+    public = _discover_pockets(part, writer=public_ledger.writer)
+    raw_ledger = ClaimLedger(FaceGraph(part))
+    raw = _discover_pockets(part, writer=raw_ledger.writer)
+    assert [record.to_dict() for record in public] == [record.to_dict() for record in plain]
+    assert [record.to_dict() for record in raw] == [record.to_dict() for record in plain]
+    assert len(public_ledger.claims) == len(raw_ledger.claims) == len(plain)
+
+
+def test_same_body_multiple_pockets_keep_geometry_order_and_exact_identity() -> None:
+    part = Box(100, 60, 16) - Pos(-25, 0, 5) * Box(18, 10, 8) - Pos(25, 0, 5) * Box(24, 12, 8)
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_pockets(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.POCKETS).candidates
+    assert len(records) == len(candidates) == 2
+    assert [record.width for record in records] == sorted(record.width for record in records)
+    assert all(
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
+    )
+
+
+def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
+    first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
+    ledger = ClaimLedger(FaceGraph(part))
+    real = ledger.graph.common_valid_solid
+    owners = []
+
+    def fail_second(nodes):
+        owner = real(nodes)
+        if owner is not None and owner not in owners:
+            owners.append(owner)
+        return None if len(owners) > 1 else owner
+
+    monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
+    with pytest.raises(_PocketAttributionError, match="one valid solid"):
+        _discover_pockets(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
