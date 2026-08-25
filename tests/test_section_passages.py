@@ -272,6 +272,93 @@ def test_aggregate_has_one_rich_authority_and_legacy_projection() -> None:
     assert result.passages == tuple(recognise_passages(_square()))
 
 
+def test_duplicate_legacy_defining_roster_refuses_before_publication(monkeypatch) -> None:
+    import b123d_recognisers.passages as passages_module
+
+    part = _square()
+    graph = FaceGraph(part)
+    roster = passages_module._legacy_roster(part, graph)
+    assert len(roster) == 1
+    monkeypatch.setattr(passages_module, "_legacy_roster", lambda *_args: roster + roster)
+    ledger = ClaimLedger(graph)
+    with pytest.raises(ValueError, match="competing defining-node matches"):
+        passages_module._discover_section_passages(part, graph, ledger.writer)
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
+def test_graph_identical_duplicate_rich_proposal_collapses_to_one_candidate(monkeypatch) -> None:
+    import b123d_recognisers.passages as passages_module
+    from b123d_recognisers._section_passages import section_ring_proposals
+
+    part = _square()
+    graph = FaceGraph(part)
+    (proposal,) = section_ring_proposals(part, graph)
+    monkeypatch.setattr(
+        passages_module,
+        "section_ring_proposals",
+        lambda *_args: [proposal, proposal],
+    )
+    ledger = ClaimLedger(graph)
+    records = passages_module._discover_section_passages(part, graph, ledger.sink)
+    assert len(records) == 1
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is records[0]
+
+
+def test_legacy_roster_assigns_ordinals_after_the_stable_public_sort(monkeypatch) -> None:
+    import b123d_recognisers.passages as passages_module
+    from b123d_recognisers._rings import Ring
+
+    part = _square()
+    graph = FaceGraph(part)
+    nodes = graph.nodes
+    square = Ring(
+        nodes[:4],
+        ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)),
+        2,
+        -5.0,
+        5.0,
+        (False, False),
+    )
+    triangle = Ring(
+        nodes[4:7],
+        ((-1.0, -1.0), (1.0, -1.0), (0.0, 2.0)),
+        2,
+        -5.0,
+        5.0,
+        (False, False),
+    )
+    monkeypatch.setattr(passages_module, "rings", lambda *_args: iter((square, triangle)))
+    roster = passages_module._legacy_roster(part, graph)
+    assert [record.sides for record, _nodes in roster] == [4, 3]
+    assert [record for record, _nodes in roster] == passages_module._discover_passages(
+        part, graph, None
+    )
+
+
+def test_same_legacy_defining_set_cannot_issue_competing_rich_records(monkeypatch) -> None:
+    import b123d_recognisers.passages as passages_module
+    from b123d_recognisers._section_passages import section_ring_proposals
+
+    part = Rot(17, 23, 31) * (
+        Box(80, 40, 20)
+        - Pos(-20, 0, 0) * Box(8, 8, 60)
+        - Pos(20, 0, 0) * Box(12, 6, 60)
+    )
+    graph = FaceGraph(part)
+    first, second = section_ring_proposals(part, graph)
+    competing = replace(second, nodes=first.nodes)
+    monkeypatch.setattr(
+        passages_module,
+        "section_ring_proposals",
+        lambda *_args: [first, competing],
+    )
+    ledger = ClaimLedger(graph)
+    with pytest.raises(ValueError, match="one passage defining set produced competing records"):
+        passages_module._discover_section_passages(part, graph, ledger.sink)
+    assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
+
+
 def test_oblique_passage_is_rich_only_and_keeps_exact_wall_ownership() -> None:
     part = Rot(17, 23, 31) * _square()
     oracle = _raw_square_oracle(part)

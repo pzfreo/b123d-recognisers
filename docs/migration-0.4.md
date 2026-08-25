@@ -29,6 +29,12 @@ sole aggregate projection in its original relative order. Consequently `feature_
 one Passage instead of the historical two; all other census keys and the exact Slot, Pocket and
 Prismatic Pocket dispositions remain unchanged on that part.
 
+The compatibility projection is frozen from the full-precision occurrence at Candidate issuance;
+it is not value-rematched from the rounded rich record. This distinction is necessary for an odd
+number of three-decimal span quanta: `10060.step` serializes the Z interval as `(0.0, 33.245)`,
+whose half-quantum midpoint cannot itself be represented to three decimals, while the historical
+full-precision midpoint correctly rounds to `16.623`.
+
 The package capability manifest is format 2. Each recogniser declares whether it is a physical
 authority, compatibility projection, or derived API, and each counted family names its
 authoritative aggregate output. Consumers must explicitly support format 2 before accepting the

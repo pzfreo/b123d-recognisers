@@ -364,7 +364,7 @@ def _passages_compat(
             continue
         assert fact.legacy_ordinal is not None
         found.append((passage_from_view(fact, Passage), fact.legacy_ordinal))
-    found.sort(key=lambda item: (item[0].axis, item[0].at, item[1]))
+    found.sort(key=lambda item: item[1])
     return [record for record, _ in found]
 
 

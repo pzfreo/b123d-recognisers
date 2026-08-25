@@ -44,7 +44,9 @@ from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
 )
-from b123d_recognisers.result import _take_inventory
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+from b123d_recognisers._run import start
+from b123d_recognisers.result import _discover_all, _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -518,7 +520,7 @@ def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
     assert on_stock == {"Plate": 13}, f"unexpected claims on stock-labelled faces: {on_stock}"
 
 
-def test_10060_legacy_false_positive_is_omitted_without_reconciliation_or_census_drift(
+def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narrowing(
     corpus,
 ) -> None:
     """The rich authority keeps only the truthful member of a mixed legacy roster."""
@@ -535,18 +537,27 @@ def test_10060_legacy_false_positive_is_omitted_without_reconciliation_or_census
     assert len(passages) == 1
     assert product.result.section_passages == (passages[0].record,)
     assert product.result.passages == (legacy[1],)
+    # Three-decimal endpoint serialization cannot encode this odd-quantum span's historical
+    # midpoint: the issuer-frozen full-precision compatibility fact, not record rematching, owns
+    # the exact legacy value.
+    assert passages[0].record.run_interval == (0.0, 33.245)
+    assert 0.5 * sum(passages[0].record.run_interval) == 16.6225
+    assert legacy[1].at[2] == 16.623
     assert product.evidence.defining_of(passages[0])
-    assert [
-        (item.outcome, item.reason)
-        for item in product.reconciliation.for_family(FamilyId.PASSAGES)
-    ] == [(Outcome.ACCEPTED, ReasonCode.DEFAULT_ACCEPTED)]
+    (passage_disposition,) = product.reconciliation.for_family(FamilyId.PASSAGES)
+    assert passage_disposition.candidate is passages[0]
+    assert (passage_disposition.outcome, passage_disposition.reason) == (
+        Outcome.ACCEPTED,
+        ReasonCode.DEFAULT_ACCEPTED,
+    )
 
     slot_dispositions = product.reconciliation.for_family(FamilyId.SLOTS)
     assert len(slot_dispositions) == 1
     assert slot_dispositions[0].outcome is Outcome.REJECTED
     assert slot_dispositions[0].reason is ReasonCode.SLOT_SUPERSEDED_BY_POCKET
+    pocket_candidates = product.physical.candidate_set(FamilyId.POCKETS).candidates
     assert len(slot_dispositions[0].related) == 1
-    assert slot_dispositions[0].related[0].family is FamilyId.POCKETS
+    assert slot_dispositions[0].related[0] is pocket_candidates[1]
     assert [
         (item.outcome, item.reason)
         for item in product.reconciliation.for_family(FamilyId.POCKETS)
@@ -559,6 +570,18 @@ def test_10060_legacy_false_positive_is_omitted_without_reconciliation_or_census
     assert product.result.slots == ()
     assert len(product.result.pockets) == 2
     assert product.result.prismatic_pockets == ()
+
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    _discover_all(context, ledger)
+    (completed,) = ledger._issuer._completed_occurrences[FamilyId.PASSAGES]
+    (issued,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert ledger.snapshot_index().passage_compatibility(issued).legacy_ordinal == 1
+    assert completed.record(type(issued.record)) is issued.record
+    assert frozenset(completed.defining()) == ledger.defining_of(issued)
+    assert completed.solid() is context.graph.common_valid_solid(completed.defining())
+    terminal = ledger.snapshot_index()
+    assert all(item.family is not FamilyId.PASSAGES for item in terminal._observations)
 
     census = recognition.feature_census(part)
     assert census["passage"] == 1

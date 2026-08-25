@@ -327,9 +327,12 @@ def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
     legacy_roster = _legacy_roster(part, graph)
-    legacy_by_nodes = {
-        frozenset(nodes): (legacy, ordinal) for ordinal, (legacy, nodes) in enumerate(legacy_roster)
-    }
+    legacy_by_nodes: dict[frozenset[FaceNode], tuple[Passage, int]] = {}
+    for ordinal, (legacy, nodes) in enumerate(legacy_roster):
+        key = frozenset(nodes)
+        if key in legacy_by_nodes:
+            raise ValueError("legacy passage roster has competing defining-node matches")
+        legacy_by_nodes[key] = (legacy, ordinal)
     found: list[
         tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
     ] = []
@@ -370,6 +373,11 @@ def _discover_section_passages(
         historical = legacy_by_nodes.get(frozenset(proposal.nodes))
         if historical is not None:
             legacy, ordinal = historical
+            # Compatibility is an issuance-time fact from the full-precision occurrence.  It
+            # cannot in general be re-derived byte-for-byte from the public three-decimal span:
+            # an odd number of millimetre quanta has a half-quantum midpoint (10060.step is the
+            # concrete case).  The source displacement is bounded above; the frozen old finder is
+            # the authority for its legacy value.
             if full_precision_passage != legacy:
                 raise ValueError("rich passage cannot reproduce its historical legacy value")
             compatibility = compatibility_view(
@@ -385,7 +393,27 @@ def _discover_section_passages(
             )
         else:
             compatibility = compatibility_view(full_precision_projection, eligible=False)
-        found.append((record, proposal.nodes, proposal.solid, compatibility))
+        duplicate = False
+        for other_record, other_nodes, other_solid, other_compatibility in found:
+            same_nodes = len(proposal.nodes) == len(other_nodes) and all(
+                any(left is right for right in other_nodes) for left in proposal.nodes
+            )
+            if proposal.solid is other_solid and same_nodes:
+                if record != other_record or (
+                    compatibility.issued_snapshot()
+                    != other_compatibility.issued_snapshot()
+                ):
+                    raise ValueError("one passage defining set produced competing records")
+                duplicate = True
+                break
+            if (
+                compatibility.eligible
+                and other_compatibility.eligible
+                and compatibility.legacy_ordinal == other_compatibility.legacy_ordinal
+            ):
+                raise ValueError("one legacy passage occurrence matched multiple rich proposals")
+        if not duplicate:
+            found.append((record, proposal.nodes, proposal.solid, compatibility))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
     for at, (record, nodes, solid, _) in enumerate(found):
         for other_record, other_nodes, other_solid, _ in found[at + 1 :]:
@@ -500,6 +528,7 @@ def _legacy_roster(part: Part, graph: FaceGraph) -> list[tuple[Passage, tuple[Fa
                 tuple(ring.nodes),
             )
         )
+    found.sort(key=lambda item: (item[0].axis, item[0].at))
     return found
 
 
@@ -510,6 +539,4 @@ def _discover_passages(
 ) -> list[Passage]:
     if sink is not None:
         raise PassageCompatibilityError(_LEDGER_ERROR)
-    found = [record for record, _ in _legacy_roster(part, graph)]
-    found.sort(key=lambda record: (record.axis, record.at))
-    return found
+    return [record for record, _ in _legacy_roster(part, graph)]
