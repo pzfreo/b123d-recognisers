@@ -9,7 +9,7 @@ import copy
 import dataclasses
 import math
 from collections.abc import Mapping
-from itertools import product
+from itertools import permutations, product
 from pathlib import Path
 
 import pytest
@@ -33,7 +33,9 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.BRepGProp import BRepGProp
+from OCP.gp import gp_Trsf
 from OCP.GProp import GProp_GProps
 from OCP.TopAbs import TopAbs_Orientation
 
@@ -61,6 +63,45 @@ from b123d_recognisers._correspondence import (
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
+
+
+def _proper_signed_permutations():
+    matrices = []
+    for axes in permutations(range(3)):
+        for signs in product((-1, 1), repeat=3):
+            matrix = tuple(
+                tuple(signs[row] if axes[row] == column else 0 for column in range(3))
+                for row in range(3)
+            )
+            determinant = round(
+                matrix[0][0]
+                * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
+                - matrix[0][1]
+                * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
+                + matrix[0][2]
+                * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+            )
+            if determinant == 1:
+                matrices.append(matrix)
+    return tuple(matrices)
+
+
+def _proper_transform(part, matrix):
+    transform = gp_Trsf()
+    values = tuple(item for row in matrix for item in row)
+    transform.SetValues(
+        values[0], values[1], values[2], 0.0,
+        values[3], values[4], values[5], 0.0,
+        values[6], values[7], values[8], 0.0,
+    )
+    return Solid(BRepBuilderAPI_Transform(part.wrapped, transform, True).Shape())
+
+
+def _apply_rotation(matrix, value):
+    return tuple(
+        sum(matrix[row][column] * value[column] for column in range(3))
+        for row in range(3)
+    )
 
 
 def test_schema_three_matching_values_freeze_global_reference_shape() -> None:
@@ -118,6 +159,77 @@ def test_line_plane_matching_graph_erases_face_and_edge_traversal_order(monkeypa
     assert source.face_count == 6
     assert source.wire_count == 6
     assert source.edge_occurrence_count == 24
+
+
+def test_schema_three_box_half_edges_covary_under_all_24_proper_rotations() -> None:
+    source_part = Box(10, 20, 30)
+    source_graph = FaceGraph(source_part)
+    source_solid = source_graph.common_valid_solid(source_graph.nodes)
+    assert source_solid is not None
+    source = source_graph.body_geometry(source_solid).descriptor.matching
+    assert source is not None
+
+    for rotation in _proper_signed_permutations():
+        target_part = _proper_transform(source_part, rotation)
+        target_graph = FaceGraph(target_part)
+        target_solid = target_graph.common_valid_solid(target_graph.nodes)
+        assert target_solid is not None
+        target = target_graph.body_geometry(target_solid).descriptor.matching
+        assert target is not None
+        vertex_map = {
+            index: min(
+                range(len(target.vertices)),
+                key=lambda other: math.dist(
+                    _apply_rotation(rotation, vertex), target.vertices[other]
+                ),
+            )
+            for index, vertex in enumerate(source.vertices)
+        }
+        assert len(set(vertex_map.values())) == len(source.vertices)
+        face_map = {
+            index: min(
+                range(len(target.faces)),
+                key=lambda other: math.dist(
+                    _apply_rotation(rotation, face.centroid), target.faces[other].centroid
+                ),
+            )
+            for index, face in enumerate(source.faces)
+        }
+        assert len(set(face_map.values())) == len(source.faces)
+        curve_map = {}
+        presentation = {}
+        for index, curve in enumerate(source.curves):
+            assert curve.kind == "LINE" and curve.vertices is not None
+            transformed = tuple(vertex_map[item] for item in curve.vertices)
+            matches = tuple(
+                other
+                for other, candidate in enumerate(target.curves)
+                if candidate.kind == "LINE"
+                and candidate.vertices is not None
+                and set(candidate.vertices) == set(transformed)
+            )
+            assert len(matches) == 1
+            curve_map[index] = matches[0]
+            presentation[index] = (
+                1 if target.curves[matches[0]].vertices == transformed else -1
+            )
+        mapped = sorted(
+            (
+                face_map[face_index],
+                curve_map[half_edge.curve],
+                half_edge.direction * presentation[half_edge.curve],
+            )
+            for face_index, face in enumerate(source.faces)
+            for wire in face.wires
+            for half_edge in wire.cycle
+        )
+        expected = sorted(
+            (face_index, half_edge.curve, half_edge.direction)
+            for face_index, face in enumerate(target.faces)
+            for wire in face.wires
+            for half_edge in wire.cycle
+        )
+        assert mapped == expected
 
 
 def test_planar_full_circle_cycle_has_no_serialized_seam() -> None:
@@ -232,6 +344,112 @@ def _rrp(repeats: int = 5):
     for index in range(repeats):
         part -= Rot(0, 0, 360 * index / repeats) * Pos(18, 0, 0) * Box(8, 3, 10)
     return part
+
+
+@pytest.mark.parametrize("repeats", [5, 7])
+def test_schema_three_rrp_half_edges_covary_under_all_24_proper_rotations(
+    repeats: int,
+) -> None:
+    source_part = _rrp(repeats)
+    source_graph = FaceGraph(source_part)
+    source_solid = source_graph.common_valid_solid(source_graph.nodes)
+    assert source_solid is not None
+    source = source_graph.body_geometry(source_solid).descriptor.matching
+    assert source is not None
+    for rotation in _proper_signed_permutations():
+        target_part = _proper_transform(source_part, rotation)
+        target_graph = FaceGraph(target_part)
+        target_solid = target_graph.common_valid_solid(target_graph.nodes)
+        assert target_solid is not None
+        target = target_graph.body_geometry(target_solid).descriptor.matching
+        assert target is not None
+        vertex_map = {
+            index: min(
+                range(len(target.vertices)),
+                key=lambda other: math.dist(
+                    _apply_rotation(rotation, vertex), target.vertices[other]
+                ),
+            )
+            for index, vertex in enumerate(source.vertices)
+        }
+        assert len(set(vertex_map.values())) == len(source.vertices)
+        curve_map = {}
+        presentation = {}
+        for index, curve in enumerate(source.curves):
+            transformed_vertices = (
+                None
+                if curve.vertices is None
+                else tuple(vertex_map[item] for item in curve.vertices)
+            )
+            transformed_centre = (
+                None
+                if curve.centre is None
+                else _apply_rotation(rotation, curve.centre)
+            )
+            matches = tuple(
+                other
+                for other, candidate in enumerate(target.curves)
+                if candidate.kind == curve.kind
+                and abs(candidate.length - curve.length) < 1e-5
+                and (
+                    (
+                        transformed_vertices is not None
+                        and candidate.vertices is not None
+                        and set(candidate.vertices) == set(transformed_vertices)
+                    )
+                    or (
+                        transformed_vertices is None
+                        and candidate.vertices is None
+                        and candidate.centre is not None
+                        and transformed_centre is not None
+                        and math.dist(candidate.centre, transformed_centre) < 1e-5
+                        and candidate.radius == pytest.approx(curve.radius, abs=1e-5)
+                    )
+                )
+            )
+            assert len(matches) == 1
+            target_index = matches[0]
+            curve_map[index] = target_index
+            if transformed_vertices is not None:
+                presentation[index] = (
+                    1
+                    if target.curves[target_index].vertices == transformed_vertices
+                    else -1
+                )
+            else:
+                assert curve.axis is not None
+                transformed_axis = _apply_rotation(rotation, curve.axis)
+                gauge = -1 if next(item for item in transformed_axis if item != 0.0) < 0 else 1
+                presentation[index] = gauge
+        face_map = {}
+        for index, face in enumerate(source.faces):
+            transformed_centre = _apply_rotation(rotation, face.centroid)
+            matches = tuple(
+                other
+                for other, candidate in enumerate(target.faces)
+                if candidate.kind == face.kind
+                and abs(candidate.area - face.area) < 1e-4
+                and math.dist(candidate.centroid, transformed_centre) < 1e-4
+            )
+            assert len(matches) == 1
+            face_map[index] = matches[0]
+        mapped = sorted(
+            (
+                face_map[face_index],
+                curve_map[half_edge.curve],
+                half_edge.direction * presentation[half_edge.curve],
+            )
+            for face_index, face in enumerate(source.faces)
+            for wire in face.wires
+            for half_edge in wire.cycle
+        )
+        expected = sorted(
+            (face_index, half_edge.curve, half_edge.direction)
+            for face_index, face in enumerate(target.faces)
+            for wire in face.wires
+            for half_edge in wire.cycle
+        )
+        assert mapped == expected
 
 
 def _line_rrp(repeats: int):
