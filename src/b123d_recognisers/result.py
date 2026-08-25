@@ -64,7 +64,7 @@ from b123d_recognisers.levels import (
     bounded_end_margin,
 )
 from b123d_recognisers.pads import RaisedPad
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import Passage, SectionPassage
 from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -197,6 +197,7 @@ class DerivedInventory:
     hole_patterns: tuple[BoltCircle | LinearArray | RectGrid, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
     pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+    passages: tuple[Passage, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,6 +295,7 @@ class RecognitionResult:
     #: Prismatic voids running through the material, one record per closed ring. Discovery still
     #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
     #: proposals, but this public tuple is then projected as ``()``.
+    section_passages: tuple[SectionPassage, ...]
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
@@ -534,6 +536,7 @@ def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
         pocket_patterns=cast(
             tuple[PocketArray | PocketGrid, ...], derived[DerivedId.POCKET_PATTERNS]
         ),
+        passages=cast(tuple[Passage, ...], derived[DerivedId.PASSAGES_COMPAT]),
     )
 
 
@@ -581,11 +584,12 @@ def _project_result(
         risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
         chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
-        passages=(
-            tuple(_records(accepted, FamilyId.PASSAGES, Passage))
+        section_passages=(
+            tuple(_records(accepted, FamilyId.PASSAGES, SectionPassage))
             if passage_definition.projected(context)
             else ()
         ),
+        passages=derived.passages if passage_definition.projected(context) else (),
         fillets=tuple(_records(accepted, FamilyId.FILLETS, Fillet)),
         plates=tuple(_records(accepted, FamilyId.PLATES, Plate)),
     )

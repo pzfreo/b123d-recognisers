@@ -49,7 +49,7 @@ CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
     ("channel", "channels"),
     ("pocket", "pockets"),
     ("prismatic_pocket", "prismatic_pockets"),
-    ("passage", "passages"),
+    ("passage", "section_passages"),
     ("chamfer", "chamfers"),
     ("angled_step", "angled_steps"),
     ("fillet", "fillets"),

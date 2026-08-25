@@ -42,7 +42,12 @@ from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
-from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.passages import (
+    Passage,
+    SectionPassage,
+    _legacy_projection,
+    recognise_section_passages,
+)
 from b123d_recognisers.plates import Plate, _discover_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -111,6 +116,7 @@ class DerivedId(Enum):
     HOLE_PATTERNS = "hole_patterns"
     SLOT_PATTERNS = "slot_patterns"
     POCKET_PATTERNS = "pocket_patterns"
+    PASSAGES_COMPAT = "passages_compat"
 
 
 @dataclass(frozen=True, slots=True)
@@ -556,14 +562,16 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,
-        (Passage,),
-        "passages",
-        "recognise_passages",
+        (SectionPassage,),
+        "section_passages",
+        "recognise_section_passages",
         (),
         always,
         _simple(
             lambda s: list(
-                recognise_passages(s.context.part, ledger=s.writer, face_edges=s.context.face_edges)
+                recognise_section_passages(
+                    s.context.part, ledger=s.writer, face_edges=s.context.face_edges
+                )
             )
         ),
         Counted("passage"),
@@ -634,6 +642,19 @@ DERIVED_DEFINITIONS: tuple[DerivedDefinition, ...] = (
         (FamilyId.POCKETS,),
         _pocket_patterns,
         NotCounted("not a distinct census key"),
+    ),
+    DerivedDefinition(
+        DerivedId.PASSAGES_COMPAT,
+        (Passage,),
+        "passages",
+        "recognise_passages",
+        (FamilyId.PASSAGES,),
+        lambda inputs: [
+            legacy
+            for record in inputs.records(FamilyId.PASSAGES, SectionPassage)
+            if (legacy := _legacy_projection(record)) is not None
+        ],
+        NotCounted("compatibility projection of accepted section passages"),
     ),
 )
 

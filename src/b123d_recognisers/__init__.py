@@ -109,7 +109,14 @@ from b123d_recognisers.levels import (
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
 from b123d_recognisers.passages import (
     Passage,
+    PassageCompatibilityError,
+    PassageEnds,
+    PassageFrame,
+    PassageSection,
+    PassageSectionVertex,
+    SectionPassage,
     recognise_passages,
+    recognise_section_passages,
 )
 from b123d_recognisers.plates import Plate, has_multi_axis_plates, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
@@ -168,6 +175,12 @@ __all__ = [
     "STEP_LADDER_BOUNDARY_MARGIN",
     "AngledStep",
     "Passage",
+    "PassageCompatibilityError",
+    "PassageEnds",
+    "PassageFrame",
+    "PassageSection",
+    "PassageSectionVertex",
+    "SectionPassage",
     "BoltCircle",
     "Chamfer",
     "Channel",
@@ -221,6 +234,7 @@ __all__ = [
     "recognise_angled_steps",
     "PrismaticPocket",
     "recognise_passages",
+    "recognise_section_passages",
     "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",

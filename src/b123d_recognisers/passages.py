@@ -52,7 +52,9 @@ to stop. Ring-finding is :func:`b123d_recognisers._adjacency.connected_component
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from typing import cast
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
@@ -100,6 +102,144 @@ class Passage(Record):
     section: tuple[tuple[float, float], ...]
 
 
+def _numbers(value: object, size: int, *, name: str) -> tuple[float, ...]:
+    if not isinstance(value, tuple) or len(value) != size:
+        raise ValueError(f"{name} must be a {size}-tuple")
+    if any(isinstance(item, bool) or not isinstance(item, int | float) for item in value):
+        raise ValueError(f"{name} must contain finite numbers")
+    result = tuple(float(item) for item in value)
+    if not all(math.isfinite(item) for item in result):
+        raise ValueError(f"{name} must contain finite numbers")
+    return tuple(0.0 if item == 0.0 else item for item in result)
+
+
+def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+    return sum(a * b for a, b in zip(left, right, strict=True))
+
+
+def _cross(
+    left: tuple[float, float, float], right: tuple[float, float, float]
+) -> tuple[float, float, float]:
+    return (
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    )
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageFrame(Record):
+    """Canonical serialized placement frame for a section passage."""
+
+    origin: tuple[float, float, float]
+    run: tuple[float, float, float]
+    u: tuple[float, float, float]
+    v: tuple[float, float, float]
+
+    def __post_init__(self) -> None:
+        origin = cast(tuple[float, float, float], _numbers(self.origin, 3, name="origin"))
+        run = cast(tuple[float, float, float], _numbers(self.run, 3, name="run"))
+        u = cast(tuple[float, float, float], _numbers(self.u, 3, name="u"))
+        v = cast(tuple[float, float, float], _numbers(self.v, 3, name="v"))
+        for direction in (run, u, v):
+            if abs(_dot(direction, direction) - 1.0) > 1e-6:
+                raise ValueError("frame directions must be unit length")
+        if any(abs(_dot(a, b)) > 2e-6 for a, b in ((run, u), (run, v), (u, v))):
+            raise ValueError("frame directions must be orthogonal")
+        if max(abs(a - b) for a, b in zip(_cross(run, u), v, strict=True)) > 3e-6:
+            raise ValueError("frame must be right handed")
+        rounded = tuple(round(abs(value), 6) for value in run)
+        peak = max(rounded)
+        dominant = next(index for index in (2, 1, 0) if rounded[index] == peak)
+        if run[dominant] < -3e-6:
+            raise ValueError("frame run direction is not in the canonical gauge")
+        if abs(_dot(origin, run)) > 8e-4:
+            raise ValueError("frame origin must be perpendicular to its run")
+        object.__setattr__(self, "origin", origin)
+        object.__setattr__(self, "run", run)
+        object.__setattr__(self, "u", u)
+        object.__setattr__(self, "v", v)
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageSectionVertex(Record):
+    point: tuple[float, float]
+    bulge: float
+
+    def __post_init__(self) -> None:
+        point = _numbers(self.point, 2, name="point")
+        if isinstance(self.bulge, bool) or not isinstance(self.bulge, int | float):
+            raise ValueError("bulge must be a finite number")
+        bulge = float(self.bulge)
+        if not math.isfinite(bulge):
+            raise ValueError("bulge must be a finite number")
+        object.__setattr__(self, "point", point)
+        object.__setattr__(self, "bulge", 0.0 if bulge == 0.0 else bulge)
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageSection(Record):
+    boundary: tuple[PassageSectionVertex, ...]
+
+    def __post_init__(self) -> None:
+        from b123d_recognisers._sections import PlanarSection, SectionVertex
+
+        if not isinstance(self.boundary, tuple) or not all(
+            isinstance(vertex, PassageSectionVertex) for vertex in self.boundary
+        ):
+            raise ValueError("boundary must contain PassageSectionVertex values")
+        try:
+            canonical = PlanarSection(
+                tuple(SectionVertex(vertex.point, vertex.bulge) for vertex in self.boundary)
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("section boundary is invalid") from exc
+        expected = tuple((vertex.point, vertex.bulge) for vertex in canonical.boundary)
+        actual = tuple((vertex.point, vertex.bulge) for vertex in self.boundary)
+        if actual != expected or math.hypot(*canonical.centroid) > 8e-4:
+            raise ValueError("section boundary must be canonical and origin-centred")
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageEnds(Record):
+    low_capped: bool
+    high_capped: bool
+
+    def __post_init__(self) -> None:
+        if type(self.low_capped) is not bool or type(self.high_capped) is not bool:
+            raise ValueError("passage end conditions must be booleans")
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class SectionPassage(Record):
+    frame: PassageFrame
+    run_interval: tuple[float, float]
+    section: PassageSection
+    ends: PassageEnds
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.frame, PassageFrame):
+            raise ValueError("frame must be a PassageFrame")
+        interval = _numbers(self.run_interval, 2, name="run_interval")
+        if interval[1] - interval[0] <= 1e-9:
+            raise ValueError("run_interval must be increasing")
+        if not isinstance(self.section, PassageSection):
+            raise ValueError("section must be a PassageSection")
+        if not isinstance(self.ends, PassageEnds) or self.ends != PassageEnds(False, False):
+            raise ValueError("SectionPassage must be open at both ends")
+        object.__setattr__(self, "run_interval", interval)
+
+
+class PassageCompatibilityError(RuntimeError):
+    """The retired attributed legacy Passage API was requested."""
+
+
+_LEDGER_ERROR = (
+    "recognise_passages(..., ledger=...) is unavailable from 0.4.0; "
+    "use recognise_section_passages(..., ledger=...)"
+)
+
+
 def recognise_passages(
     part: Part,
     *,
@@ -122,8 +262,93 @@ def recognise_passages(
     memo that graph was built with rather than one taken here.
     """
 
+    if ledger is not None:
+        raise PassageCompatibilityError(_LEDGER_ERROR)
+    graph = FaceGraph(part, face_edges=face_edges)
+    return _discover_passages(part, graph, None)
+
+
+def recognise_section_passages(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
+) -> list[SectionPassage]:
+    """Recognise canonical section passages, with optional defining-wall evidence."""
+
     graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
-    return _discover_passages(part, graph, None if ledger is None else ledger.sink)
+    return _discover_section_passages(part, graph, None if ledger is None else ledger.sink)
+
+
+def _discover_section_passages(
+    part: Part, graph: FaceGraph, sink: EvidenceSink | None
+) -> list[SectionPassage]:
+    found: list[tuple[SectionPassage, tuple[FaceNode, ...]]] = []
+    for ring in rings(part, graph):
+        if any(ring.caps):
+            continue
+        axis, section = ring.axis, ring.section
+        others = [value for value in (0, 1, 2) if value != axis]
+        middle = _centroid(section)
+        origin = [0.0, 0.0, 0.0]
+        origin[others[0]], origin[others[1]] = middle
+        bases = (
+            ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+            ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)),
+            ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        )
+        run, u, v = bases[axis]
+        record = SectionPassage(
+            PassageFrame(tuple(origin), run, u, v),  # type: ignore[arg-type]
+            (ring.low, ring.high),
+            PassageSection(
+                tuple(
+                    PassageSectionVertex((point[0] - middle[0], point[1] - middle[1]), 0.0)
+                    for point in section
+                )
+            ),
+            PassageEnds(False, False),
+        )
+        found.append((record, tuple(ring.nodes)))
+    found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
+    if sink is not None:
+        for record, nodes in found:
+            sink.propose(FamilyId.PASSAGES, record, defining=nodes)
+    return [record for record, _ in found]
+
+
+def _legacy_projection(record: SectionPassage) -> Passage | None:
+    """Return the exact historical principal line-polygon view when representable."""
+
+    if any(vertex.bulge != 0.0 for vertex in record.section.boundary):
+        return None
+    axes = {
+        (1.0, 0.0, 0.0): ("x", 1, 2),
+        (0.0, 1.0, 0.0): ("y", 2, 0),
+        (0.0, 0.0, 1.0): ("z", 0, 1),
+    }
+    try:
+        axis, first, second = axes[record.frame.run]
+    except KeyError:
+        return None
+    lo, hi = record.run_interval
+    centre = [*record.frame.origin]
+    axis_index = "xyz".index(axis)
+    centre[axis_index] = 0.5 * (lo + hi)
+    section = tuple(
+        (
+            round(record.frame.origin[first] + vertex.point[0], 3),
+            round(record.frame.origin[second] + vertex.point[1], 3),
+        )
+        for vertex in record.section.boundary
+    )
+    return Passage(
+        axis=axis,
+        sides=len(section),
+        length=round(hi - lo, 3),
+        at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
+        section=section,
+    )
 
 
 def _discover_passages(
