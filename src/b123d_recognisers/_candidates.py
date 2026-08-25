@@ -23,7 +23,7 @@ from types import MappingProxyType
 from typing import Generic, TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
-from b123d_recognisers._passage_compat import PassageCompatibilityView
+from b123d_recognisers._passage_compat import CompatibilitySnapshot, PassageCompatibilityView
 
 RecordT = TypeVar("RecordT")
 
@@ -229,9 +229,7 @@ class EvidenceSink:
     ) -> Candidate[RecordT]:
         """Atomically validate evidence and issue one identity-safe candidate."""
 
-        return self.__issuer.propose(
-            family, record, defining=defining, compatibility=compatibility
-        )
+        return self.__issuer.propose(family, record, defining=defining, compatibility=compatibility)
 
     def observe(
         self,
@@ -382,9 +380,7 @@ class EvidenceIndex:
             self._validate(candidate)
         return candidates
 
-    def passage_compatibility(
-        self, candidate: Candidate[object]
-    ) -> PassageCompatibilityView:
+    def passage_compatibility(self, candidate: Candidate[object]) -> PassageCompatibilityView:
         """Return one validated issuer-frozen Passage compatibility fact."""
 
         issued = self._validate(candidate)
@@ -405,6 +401,10 @@ class EvidenceIndex:
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
             or candidate.compatibility is not issued.compatibility
+            or (
+                issued.compatibility is not None
+                and issued.compatibility.issued_snapshot() != issued.compatibility_snapshot
+            )
         ):
             raise ValueError("candidate no longer matches its issued state")
         return issued
@@ -437,6 +437,7 @@ class _IssuedCandidate:
     evidence: Evidence
     defining: frozenset[FaceNode]
     compatibility: PassageCompatibilityView | None
+    compatibility_snapshot: CompatibilitySnapshot | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -538,6 +539,7 @@ class _CandidateIssuer:
             candidate.evidence,
             candidate.evidence.defining,
             compatibility,
+            compatibility.issued_snapshot() if compatibility is not None else None,
         )
         self._by_record.setdefault(id(record), []).append(candidate)
         for node in nodes:
@@ -658,7 +660,13 @@ class _CandidateIssuer:
                     (
                         candidate,
                         _IssuedCandidate(
-                            candidate, family, record, evidence, evidence.defining, None
+                            candidate,
+                            family,
+                            record,
+                            evidence,
+                            evidence.defining,
+                            None,
+                            None,
                         ),
                     )
                 )

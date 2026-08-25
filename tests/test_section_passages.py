@@ -8,7 +8,23 @@ import math
 from dataclasses import dataclass
 
 import pytest
-from build123d import Box, Cone, Face, Pos, Rot, Shell, export_step, import_step
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Compound,
+    Cone,
+    Face,
+    Plane,
+    Polygon,
+    Pos,
+    RegularPolygon,
+    Rot,
+    Shell,
+    export_step,
+    extrude,
+    import_step,
+)
 
 from b123d_recognisers import (
     PassageCompatibilityError,
@@ -28,6 +44,17 @@ from b123d_recognisers._claims import ClaimLedger
 
 def _square():
     return Box(60, 40, 20) - Box(10, 10, 60)
+
+
+def _polygonal_tool(sides_or_points):
+    with BuildPart() as tool:
+        with BuildSketch(Plane.XY):
+            if isinstance(sides_or_points, int):
+                RegularPolygon(7, sides_or_points)
+            else:
+                Polygon(*sides_or_points)
+        extrude(amount=60, both=True)
+    return tool.part
 
 
 @dataclass(frozen=True)
@@ -68,8 +95,7 @@ def _raw_square_oracle(part) -> _RawPassageOracle:
     directions = tuple(_canonical_direction(edge.tangent_at()) for edge in long_edges)
     run = directions[0]
     assert all(
-        sum(a * b for a, b in zip(run, item, strict=True)) > 1.0 - 1e-9
-        for item in directions
+        sum(a * b for a, b in zip(run, item, strict=True)) > 1.0 - 1e-9 for item in directions
     )
     adjacency = {
         at: {
@@ -180,6 +206,53 @@ def test_oblique_passage_is_rich_only_and_keeps_exact_wall_ownership() -> None:
     assert result.passages == ()
 
 
+@pytest.mark.parametrize(
+    ("section", "wall_count"),
+    [
+        (3, 3),
+        (6, 6),
+        (((-8, -8), (8, -8), (8, 8), (3, 8), (3, -3), (-3, -3), (-3, 8), (-8, 8)), 8),
+    ],
+    ids=("triangle", "hexagon", "concave-u"),
+)
+def test_free_axis_line_sections_preserve_complete_wall_cycles(section, wall_count) -> None:
+    part = Rot(17, 23, 31) * (Box(60, 40, 20) - _polygonal_tool(section))
+    ledger = ClaimLedger(FaceGraph(part))
+    (record,) = recognise_section_passages(part, ledger=ledger)
+    assert len(record.section.boundary) == wall_count
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is record
+    assert len(ledger.defining_of(candidate)) == wall_count
+    assert recognise_passages(part) == []
+
+
+def test_multiple_unequal_free_axis_occurrences_on_one_solid_are_distinct() -> None:
+    part = Box(80, 40, 20)
+    part = part - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
+    part = Rot(17, 23, 31) * part
+    ledger = ClaimLedger(FaceGraph(part))
+    records = recognise_section_passages(part, ledger=ledger)
+    candidates = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert len(records) == len(candidates) == 2
+    assert all(
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
+    )
+    assert records[0] != records[1]
+
+
+def test_equal_coincident_solids_keep_two_occurrence_identities() -> None:
+    first = Rot(17, 23, 31) * _square()
+    second = Rot(17, 23, 31) * _square()
+    part = Compound([first, second])
+    ledger = ClaimLedger(FaceGraph(part))
+    records = recognise_section_passages(part, ledger=ledger)  # type: ignore[arg-type]
+    candidates = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert len(records) == len(candidates) == 2
+    assert records[0] == records[1]
+    assert records[0] is not records[1]
+    assert candidates[0] is not candidates[1]
+
+
 def test_candidate_compatibility_fact_is_issuer_revalidated() -> None:
     part = _square()
     ledger = ClaimLedger(FaceGraph(part))
@@ -191,6 +264,12 @@ def test_candidate_compatibility_fact_is_issuer_revalidated() -> None:
     with pytest.raises(ValueError, match="issued state"):
         index.passage_compatibility(candidate)
     object.__setattr__(candidate, "compatibility", original)
+    assert original is not None
+    object.__setattr__(original, "axis", "bad")
+    with pytest.raises(ValueError, match="compatibility axis is invalid"):
+        index.passage_compatibility(candidate)
+    object.__setattr__(original, "axis", "z")
+    assert index.passage_compatibility(candidate) is original
 
 
 def test_oblique_passage_step_round_trip_preserves_schema_and_wall_count(tmp_path) -> None:

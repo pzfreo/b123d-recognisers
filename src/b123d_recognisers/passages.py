@@ -328,6 +328,7 @@ def _discover_section_passages(
         tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
     ] = []
     for proposal in section_ring_proposals(part, graph):
+        full_precision_projection = _proposal_legacy_projection(proposal)
         record = SectionPassage(
             PassageFrame(
                 tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
@@ -353,6 +354,8 @@ def _discover_section_passages(
             raise ValueError("section passage body authority changed before issuance")
         proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
         projected = _legacy_projection(record)
+        if projected != full_precision_projection:
+            raise ValueError("serialized passage changed its compatibility projection")
         historical = legacy_by_nodes.get(frozenset(proposal.nodes))
         if historical is not None:
             legacy, ordinal = historical
@@ -410,9 +413,7 @@ def _section_projection_displacement(
     for source_vertex, serialized_vertex in zip(
         proposal.section.boundary, record.section.boundary, strict=True
     ):
-        for source_t, serialized_t in zip(
-            proposal.run_interval, record.run_interval, strict=True
-        ):
+        for source_t, serialized_t in zip(proposal.run_interval, record.run_interval, strict=True):
             source = tuple(
                 proposal.frame.origin[index]
                 + source_t * proposal.frame.run[index]
@@ -430,10 +431,7 @@ def _section_projection_displacement(
             maximum = max(
                 maximum,
                 math.sqrt(
-                    sum(
-                        (left - right) ** 2
-                        for left, right in zip(source, serialized, strict=True)
-                    )
+                    sum((left - right) ** 2 for left, right in zip(source, serialized, strict=True))
                 ),
             )
     return maximum
@@ -478,9 +476,55 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
     )
 
 
-def _legacy_roster(
-    part: Part, graph: FaceGraph
-) -> list[tuple[Passage, tuple[FaceNode, ...]]]:
+def _proposal_legacy_projection(proposal: SectionRingProposal) -> Passage | None:
+    """Derive the principal compatibility fact from full-precision occurrence geometry."""
+
+    if any(vertex.bulge != 0.0 for vertex in proposal.section.boundary):
+        return None
+    axes = (
+        ((1.0, 0.0, 0.0), "x", 1, 2),
+        ((0.0, 1.0, 0.0), "y", 0, 2),
+        ((0.0, 0.0, 1.0), "z", 0, 1),
+    )
+    matched = next(
+        (
+            (axis, first, second)
+            for expected, axis, first, second in axes
+            if all(
+                abs(value - target) <= 1e-12
+                for value, target in zip(proposal.frame.run, expected, strict=True)
+            )
+        ),
+        None,
+    )
+    if matched is None:
+        return None
+    axis, first, second = matched
+    lo, hi = proposal.run_interval
+    centre = [*proposal.frame.origin]
+    centre["xyz".index(axis)] = 0.5 * (lo + hi)
+    section = []
+    for vertex in proposal.section.boundary:
+        world = tuple(
+            proposal.frame.origin[index]
+            + vertex.point[0] * proposal.frame.u[index]
+            + vertex.point[1] * proposal.frame.v[index]
+            for index in range(3)
+        )
+        section.append((round(world[first], 3), round(world[second], 3)))
+    canonical = _canonical(section)
+    if canonical is None:
+        return None
+    return Passage(
+        axis=axis,
+        sides=len(canonical),
+        length=round(hi - lo, 3),
+        at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
+        section=canonical,
+    )
+
+
+def _legacy_roster(part: Part, graph: FaceGraph) -> list[tuple[Passage, tuple[FaceNode, ...]]]:
     """Replay the frozen pre-0.4 finder and its global discovery order exactly."""
 
     found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
@@ -500,8 +544,7 @@ def _legacy_roster(
                     length=round(ring.high - ring.low, 3),
                     at=tuple(round(value, 3) for value in at),  # type: ignore[arg-type]
                     section=tuple(
-                        (round(first, 3), round(second, 3))
-                        for first, second in ring.section
+                        (round(first, 3), round(second, 3)) for first, second in ring.section
                     ),
                 ),
                 tuple(ring.nodes),
@@ -515,8 +558,6 @@ def _discover_passages(
     graph: FaceGraph,
     sink: EvidenceSink | None,
 ) -> list[Passage]:
-    if sink is not None:
-        raise PassageCompatibilityError(_LEDGER_ERROR)
     if sink is not None:
         raise PassageCompatibilityError(_LEDGER_ERROR)
     found = [record for record, _ in _legacy_roster(part, graph)]

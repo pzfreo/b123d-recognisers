@@ -6,6 +6,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+CompatibilitySnapshot = tuple[
+    str | None,
+    tuple[tuple[float, float], ...] | None,
+    int | None,
+    float | None,
+    tuple[float, float, float] | None,
+    int | None,
+    bool,
+]
+
 
 @dataclass(frozen=True, slots=True)
 class PassageCompatibilityView:
@@ -33,3 +43,25 @@ class PassageCompatibilityView:
             raise ValueError("ineligible passage compatibility cannot carry a legacy value")
         if self.axis is None and self.sides is not None:
             raise ValueError("passage grouping sides require a principal grouping key")
+
+    def issued_snapshot(self) -> CompatibilitySnapshot:
+        """Return and revalidate the complete primitive state frozen at issuance."""
+
+        validated = PassageCompatibilityView(
+            self.axis,
+            self.section,
+            self.sides,
+            self.length,
+            self.at,
+            self.legacy_ordinal,
+            self.eligible,
+        )
+        return (
+            validated.axis,
+            validated.section,
+            validated.sides,
+            validated.length,
+            validated.at,
+            validated.legacy_ordinal,
+            validated.eligible,
+        )

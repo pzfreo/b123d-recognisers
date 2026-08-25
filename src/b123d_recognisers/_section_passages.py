@@ -173,14 +173,33 @@ def _probe_prism(
     if high - low <= 2 * _COORD_FLOOR:
         raise ValueError("section prism is too short to classify")
     points = tuple(
-        Vector(*_world(frame, low + _COORD_FLOOR, vertex.point))
-        for vertex in section.boundary
+        Vector(*_world(frame, low + _COORD_FLOOR, vertex.point)) for vertex in section.boundary
     )
     wire = Wire.make_polygon((*points, points[0]))
-    vector = Vector(
-        *(component * (high - low - 2 * _COORD_FLOOR) for component in frame.run)
-    )
+    vector = Vector(*(component * (high - low - 2 * _COORD_FLOOR) for component in frame.run))
     return Solid.extrude(Face(wire), vector)
+
+
+def _end_slab(
+    frame: LocalFrame,
+    end: float,
+    sign: float,
+    thickness: float,
+    section: PlanarSection,
+) -> Solid:
+    """Build the complete section slab strictly outside one occurrence end."""
+
+    inner = end + sign * _COORD_FLOOR
+    outer = end + sign * thickness
+    low, high = sorted((inner, outer))
+    if high - low <= _COORD_FLOOR:
+        raise ValueError("section end slab is too thin to classify")
+    points = tuple(Vector(*_world(frame, low, vertex.point)) for vertex in section.boundary)
+    wire = Wire.make_polygon((*points, points[0]))
+    return Solid.extrude(
+        Face(wire),
+        Vector(*(component * (high - low) for component in frame.run)),
+    )
 
 
 def _material_fraction(part: Part, probe: Solid) -> float:
@@ -200,24 +219,19 @@ def _void_and_open(
     interval: tuple[float, float],
     section: PlanarSection,
 ) -> bool:
-    polygon = tuple(vertex.point for vertex in section.boundary)
-    probes = _triangle_probes(polygon)
-    if not probes:
-        return False
     try:
         if _material_fraction(part, _probe_prism(frame, interval, section)) > _MATERIAL_VOL_FRAC:
             return False
+        scale = max(1.0, interval[1] - interval[0])
+        radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
+        thickness = max(_END_PROBE, scale * 1e-4, radius * 1e-4)
+        return all(
+            _material_fraction(part, _end_slab(frame, end, sign, thickness, section))
+            <= _MATERIAL_VOL_FRAC
+            for end, sign in ((interval[0], -1.0), (interval[1], 1.0))
+        )
     except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return False
-    scale = max(1.0, interval[1] - interval[0])
-    radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
-    deltas = (max(_END_PROBE, scale * 1e-4), max(_END_PROBE, 0.5 * radius))
-    return all(
-        _outside(part, _world(frame, end + sign * delta, point))
-        for end, sign in ((interval[0], -1.0), (interval[1], 1.0))
-        for delta in deltas
-        for point in probes
-    )
 
 
 def _triangle_probes(
@@ -271,9 +285,7 @@ def _ordered_cycle(
 ) -> tuple[FaceNode, ...]:
     """Choose the cycle by its geometric corner sequence, never node/traversal order."""
 
-    candidates: list[
-        tuple[tuple[tuple[float, float], ...], tuple[FaceNode, ...]]
-    ] = []
+    candidates: list[tuple[tuple[tuple[float, float], ...], tuple[FaceNode, ...]]] = []
     for start in members:
         for first in adjacency[start]:
             order = [start, first]
@@ -337,12 +349,16 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
                     continue
                 left_span = _face_interval(graph, left, base.run)
                 right_span = _face_interval(graph, right, base.run)
-                if left_span is None or right_span is None or any(
-                    abs(actual - expected) > _INTERVAL_TOL
-                    for actual, expected in zip(
-                        (*left_span, *right_span),
-                        (line[2], line[3], line[2], line[3]),
-                        strict=True,
+                if (
+                    left_span is None
+                    or right_span is None
+                    or any(
+                        abs(actual - expected) > _INTERVAL_TOL
+                        for actual, expected in zip(
+                            (*left_span, *right_span),
+                            (line[2], line[3], line[2], line[3]),
+                            strict=True,
+                        )
                     )
                 ):
                     continue

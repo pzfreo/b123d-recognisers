@@ -52,7 +52,7 @@ MODULE_SEAM_EDGES = {
     # Three recognisers begin with the same two questions of a face. Naming the layer is
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
-    "_candidates": {"_adjacency"},
+    "_candidates": {"_adjacency", "_passage_compat"},
     "_correspondence": {
         "_adjacency",
         "_body_geometry",
@@ -146,6 +146,7 @@ MODULE_SEAM_EDGES = {
     "_registry": {
         "_candidates",
         "_claims",
+        "_passage_compat",
         "_features",
         "_hole_features",
         "_recess_features",
@@ -477,6 +478,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         "_reconcile_existing": {"physical", "evidence", "return"},
         "diagnose_residuals": {"reconciliation", "evidence", "return"},
         "_derive_patterns": {"accepted", "return"},
+        "_derive_passage_compat": {"inputs", "projection", "return"},
         "_project_result": {"context", "accepted", "derived", "return"},
     }
     for name, parameters in expected.items():

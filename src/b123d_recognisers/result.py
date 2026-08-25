@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 import warnings
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from types import MappingProxyType
 from typing import TypeVar, cast
@@ -427,7 +427,22 @@ def _take_inventory(
     accepted = CandidateInventory.complete(
         reconciliation.accepted_set(physical.candidate_set(family)) for family in PHYSICAL_FAMILIES
     )
-    derived = _derive_patterns(context, accepted, evidence)
+    derived = _derive_patterns(accepted)
+    passage_definition = next(
+        item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.PASSAGES
+    )
+    passage_projection = AcceptedProjectionInputs.restricted(
+        (FamilyId.PASSAGES,),
+        {FamilyId.PASSAGES: accepted.candidate_set(FamilyId.PASSAGES).candidates},
+        evidence,
+    )
+    derived = replace(
+        derived,
+        passages=_derive_passage_compat(
+            passage_projection,
+            ProjectionInputs(passage_definition.projected(context)),
+        ),
+    )
     result = _project_result(context, accepted, derived)
     correspondence = _CorrespondenceSnapshotAuthority()
     product = InventoryProduct(
@@ -524,39 +539,17 @@ def _reconcile_existing(
     )
 
 
-def _derive_patterns(
-    context: RecognitionContext, accepted: CandidateInventory, evidence: EvidenceIndex
-) -> DerivedInventory:
+def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
     """Derive pattern projections only from accepted member records."""
 
     accepted_records = {family: tuple(accepted.records(family)) for family in PHYSICAL_FAMILIES}
-    accepted_candidates = {
-        family: accepted.candidate_set(family).candidates for family in PHYSICAL_FAMILIES
-    }
     derived: dict[DerivedId, tuple[object, ...]] = {}
     for definition in DERIVED_DEFINITIONS:
         if definition.role == "projection":
-            projection_inputs = AcceptedProjectionInputs.restricted(
-                definition.sources, accepted_candidates, evidence
-            )
-            projection_derive = cast(ProjectionDiscoverer, definition.derive)
-            records = projection_derive(
-                projection_inputs,
-                ProjectionInputs(
-                    all(
-                        next(
-                            item
-                            for item in PHYSICAL_DEFINITIONS
-                            if item.family is source
-                        ).projected(context)
-                        for source in definition.sources
-                    )
-                ),
-            )
-        else:
-            inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
-            standard_derive = cast(Callable[[AcceptedInputs], list[object]], definition.derive)
-            records = standard_derive(inputs)
+            continue
+        inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
+        standard_derive = cast(Callable[[AcceptedInputs], list[object]], definition.derive)
+        records = standard_derive(inputs)
         validate_output(definition, records)
         derived[definition.identifier] = tuple(records)
     return DerivedInventory(
@@ -568,8 +561,20 @@ def _derive_patterns(
         pocket_patterns=cast(
             tuple[PocketArray | PocketGrid, ...], derived[DerivedId.POCKET_PATTERNS]
         ),
-        passages=cast(tuple[Passage, ...], derived[DerivedId.PASSAGES_COMPAT]),
+        passages=(),
     )
+
+
+def _derive_passage_compat(
+    inputs: AcceptedProjectionInputs, projection: ProjectionInputs
+) -> tuple[Passage, ...]:
+    definition = next(
+        item for item in DERIVED_DEFINITIONS if item.identifier is DerivedId.PASSAGES_COMPAT
+    )
+    derive = cast(ProjectionDiscoverer, definition.derive)
+    records = derive(inputs, projection)
+    validate_output(definition, records)
+    return cast(tuple[Passage, ...], tuple(records))
 
 
 def _project_result(
@@ -581,9 +586,7 @@ def _project_result(
 
     z_cyls, cross_cyls = context.cylinders
     passage_definition = next(
-        definition
-        for definition in PHYSICAL_DEFINITIONS
-        if definition.family is FamilyId.PASSAGES
+        definition for definition in PHYSICAL_DEFINITIONS if definition.family is FamilyId.PASSAGES
     )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
