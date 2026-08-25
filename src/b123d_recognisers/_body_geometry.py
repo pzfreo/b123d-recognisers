@@ -166,6 +166,70 @@ class _MatchingConstructionBudget:
             raise UnsupportedBodyGeometry("matching boundary construction budget exceeded")
 
 
+def validate_matching_boundary_graph(value: MatchingBoundaryGraph) -> None:
+    """Fail closed on a copied or mutated schema-three boundary value."""
+
+    if (
+        type(value) is not MatchingBoundaryGraph
+        or type(value.vertices) is not tuple
+        or type(value.curves) is not tuple
+        or type(value.faces) is not tuple
+        or type(value.incidence) is not tuple
+        or type(value.face_count) is not int
+        or type(value.wire_count) is not int
+        or type(value.edge_occurrence_count) is not int
+        or type(value.symmetric) is not bool
+    ):
+        raise UnsupportedBodyGeometry("matching boundary schema is malformed")
+    if any(
+        type(vertex) is not tuple
+        or len(vertex) != 3
+        or any(type(item) is not float or not math.isfinite(item) for item in vertex)
+        for vertex in value.vertices
+    ) or any(type(curve) is not MatchingCurve for curve in value.curves):
+        raise UnsupportedBodyGeometry("matching boundary vertex or curve schema is malformed")
+    occurrences = []
+    if len(value.faces) != value.face_count:
+        raise UnsupportedBodyGeometry("matching boundary face count changed")
+    for face_index, face in enumerate(value.faces):
+        if type(face) is not MatchingFace or type(face.wires) is not tuple:
+            raise UnsupportedBodyGeometry("matching boundary face schema is malformed")
+        for wire_index, wire in enumerate(face.wires):
+            if type(wire) is not MatchingWire or type(wire.cycle) is not tuple or not wire.cycle:
+                raise UnsupportedBodyGeometry("matching boundary wire schema is malformed")
+            for occurrence_index, half_edge in enumerate(wire.cycle):
+                if (
+                    type(half_edge) is not MatchingHalfEdge
+                    or type(half_edge.curve) is not int
+                    or half_edge.curve < 0
+                    or half_edge.curve >= len(value.curves)
+                    or half_edge.direction not in {-1, 1}
+                    or (half_edge.start is None) != (half_edge.end is None)
+                    or (
+                        half_edge.start is not None
+                        and (
+                            type(half_edge.start) is not MatchingWireVertex
+                            or type(half_edge.end) is not MatchingWireVertex
+                        )
+                    )
+                ):
+                    raise UnsupportedBodyGeometry("matching boundary half-edge is malformed")
+                occurrences.append(
+                    (half_edge.curve, (face_index, wire_index, occurrence_index))
+                )
+    expected = tuple(
+        (curve, tuple(item for key, item in occurrences if key == curve))
+        for curve in range(len(value.curves))
+    )
+    if (
+        value.wire_count != sum(len(face.wires) for face in value.faces)
+        or value.edge_occurrence_count != len(occurrences)
+        or value.incidence != expected
+        or any(len(items) != 2 for _, items in expected)
+    ):
+        raise UnsupportedBodyGeometry("matching boundary incidence changed")
+
+
 @dataclass(frozen=True, slots=True)
 class _WireBuild:
     geometry: WireGeometry

@@ -12,7 +12,7 @@ import math
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias, cast
 
 from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
 from b123d_recognisers._body_geometry import (
@@ -24,6 +24,7 @@ from b123d_recognisers._body_geometry import (
     FaceGeometry,
     UnsupportedBodyGeometry,
     validate_descriptor_quantization,
+    validate_matching_boundary_graph,
 )
 from b123d_recognisers._body_geometry import MatchingBoundaryGraph as MatchingBoundaryGraph
 from b123d_recognisers._body_geometry import MatchingCurve as MatchingCurve
@@ -226,6 +227,13 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
             validate_descriptor_quantization(occurrence.body.quantization)
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("correspondence quantization is invalid") from error
+    try:
+        for occurrence in snapshot.occurrences:
+            validate_matching_boundary_graph(
+                cast(MatchingBoundaryGraph, occurrence.body.matching)
+            )
+    except UnsupportedBodyGeometry as error:
+        raise CorrespondenceSnapshotError("correspondence matching boundary is invalid") from error
 
 
 class _CorrespondenceSnapshotAuthority:

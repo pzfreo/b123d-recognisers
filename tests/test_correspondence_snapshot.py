@@ -213,6 +213,20 @@ def test_cylindrical_seam_matching_graph_erases_wire_presentation(monkeypatch) -
     assert seam_thetas == pytest.approx((0.0, 2.0 * math.pi), abs=_body_geometry.ANGLE_TOL)
 
 
+def test_schema_three_matching_incidence_mutation_refuses() -> None:
+    snapshot = correspondence_snapshot(_take_inventory(_rrp()))
+    occurrence = snapshot.occurrences[0]
+    matching = occurrence.body.matching
+    assert matching is not None
+    malformed = dataclasses.replace(matching, incidence=())
+    changed_body = dataclasses.replace(occurrence.body, matching=malformed)
+    changed_occurrence = dataclasses.replace(occurrence, body=changed_body)
+    changed = dataclasses.replace(snapshot, occurrences=(changed_occurrence,))
+
+    with pytest.raises(CorrespondenceSnapshotError, match="matching boundary"):
+        correspondence_module._validate_snapshot(changed)
+
+
 def _rrp(repeats: int = 5):
     part = Cylinder(20, 10)
     for index in range(repeats):
