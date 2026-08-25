@@ -13,11 +13,17 @@ from b123d_recognisers._recess_core import (
     _channel_proposals_one,
     _channel_sort_key,
     _ChannelProposal,
+    _pocket_proposals_one,
     _recognise_pockets_one,
     _recognise_slots_one,
+    _slot_proposals_one,
 )
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
-from b123d_recognisers._recess_reduce import _body_scoped_pairs, _Claims, _region_center
+from b123d_recognisers._recess_reduce import (
+    _body_scoped_pairs,
+    _body_scoped_proposals,
+    _region_center,
+)
 from b123d_recognisers._typing import Part
 
 
@@ -56,23 +62,27 @@ def recognise_slots(
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    claims: _Claims | None = {} if ledger is not None else None
-    pairs = _body_scoped_pairs(
+    if ledger is None:
+        pairs = _body_scoped_pairs(
+            sources,
+            partial(_recognise_slots_one, face_edges=face_edges),
+        )
+        pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+        return [record for record, _nodes in pairs]
+    proposals = _body_scoped_proposals(
         sources,
         partial(
-            _recognise_slots_one,
+            _slot_proposals_one,
             face_edges=face_edges,
-            graph=None if ledger is None else ledger.graph,
-            claims=claims,
+            graph=ledger.graph,
         ),
-        claims,
     )
-    pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+    proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
     if ledger is not None:
-        for slot, nodes in pairs:
-            if nodes:
-                ledger.add_defining(slot, nodes, family=FamilyId.SLOTS)
-    return [slot for slot, _ in pairs]
+        for proposal in proposals:
+            if proposal.planar:
+                ledger.add_defining(proposal.record, proposal.planar, family=FamilyId.SLOTS)
+    return [proposal.record for proposal in proposals]
 
 
 def recognise_pockets(
@@ -104,23 +114,27 @@ def recognise_pockets(
     """
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
-    claims: _Claims | None = {} if ledger is not None else None
-    pairs = _body_scoped_pairs(
+    if ledger is None:
+        pairs = _body_scoped_pairs(
+            sources,
+            partial(_recognise_pockets_one, face_edges=face_edges),
+        )
+        pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+        return [record for record, _nodes in pairs]
+    proposals = _body_scoped_proposals(
         sources,
         partial(
-            _recognise_pockets_one,
+            _pocket_proposals_one,
             face_edges=face_edges,
-            graph=None if ledger is None else ledger.graph,
-            claims=claims,
+            graph=ledger.graph,
         ),
-        claims,
     )
-    pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
+    proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
     if ledger is not None:
-        for pocket, nodes in pairs:
-            if nodes:
-                ledger.add_defining(pocket, nodes, family=FamilyId.POCKETS)
-    return [pocket for pocket, _ in pairs]
+        for proposal in proposals:
+            if proposal.planar:
+                ledger.add_defining(proposal.record, proposal.planar, family=FamilyId.POCKETS)
+    return [proposal.record for proposal in proposals]
 
 
 def recognise_channels(

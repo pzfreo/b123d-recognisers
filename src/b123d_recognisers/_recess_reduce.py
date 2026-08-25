@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from dataclasses import replace
-from typing import TypeVar
+from dataclasses import dataclass, replace
+from typing import Generic, TypeVar
 
 from build123d import Box, Pos
 
@@ -32,6 +32,36 @@ from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
 
 _R = TypeVar("_R", Slot, Pocket)
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class _RecessProposal(Generic[_R]):
+    """One exact recess occurrence and the original topology carried through reduction.
+
+    ``record`` remains the public value.  Proposal identity is deliberately object identity:
+    equal records on separate solids are separate occurrences until the body-scoped projection.
+    Planar defining nodes and cylindrical cap groups stay separate because this is neutral
+    plumbing; later family migrations decide which roles become published defining evidence.
+    """
+
+    record: _R
+    planar: frozenset[FaceNode] = frozenset()
+    caps: tuple[frozenset[FaceNode], ...] = ()
+
+
+def _replace_proposal(proposal: _RecessProposal[_R], record: _R) -> _RecessProposal[_R]:
+    return _RecessProposal(record, proposal.planar, proposal.caps)
+
+
+def _combine_proposals(record: _R, proposals: list[_RecessProposal[_R]]) -> _RecessProposal[_R]:
+    planar = frozenset(node for proposal in proposals for node in proposal.planar)
+    cap_groups: list[frozenset[FaceNode]] = []
+    for proposal in proposals:
+        for group in proposal.caps:
+            if group not in cap_groups:
+                cap_groups.append(group)
+    return _RecessProposal(record, planar, tuple(cap_groups))
+
 
 #: Which faces a record was built from, while it is being built. Keyed by the record's *value*,
 #: which is safe here and nowhere else: this map lives inside one recognition of one part, and
@@ -112,6 +142,22 @@ def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) ->
     return out
 
 
+def _body_scoped_proposals(sources, recognise_one) -> list[_RecessProposal]:
+    """Body-scope exact occurrences without using record values as provenance authority."""
+
+    signatures = [_body_signature(solid) for solid in sources]
+    counts = Counter(signatures)
+    out: list[_RecessProposal] = []
+    for solid, signature in zip(sources, signatures, strict=True):
+        for proposal in recognise_one(solid):
+            keyed = replace(
+                proposal.record,
+                body_key=signature if counts[signature] == 1 else None,
+            )
+            out.append(_replace_proposal(proposal, keyed))
+    return out
+
+
 def _same_channel_line(a: Slot, b: Slot) -> tuple[float, float] | None:
     """When ``a`` and ``b`` are collinear co-axial slot *arms* — same wall plane
     (width axis, centreline, width and depth extent) but disjoint along their run
@@ -170,9 +216,7 @@ def _prism_material_fraction(
     return float(inter_vol / box_vol)
 
 
-def _prism_is_empty(
-    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
-) -> bool:
+def _prism_is_empty(spans: dict[str, tuple[float, float]], part: Part, *, inset: float) -> bool:
     """Whether an inset prism has no volumetric intersection with *part*.
 
     OCCT represents a genuinely empty Boolean intersection as no solids (volume zero). Boundary
@@ -258,6 +302,57 @@ def _collapse_collinear(slots: list[Slot], part: Part, claims: _Claims | None = 
     return sorted(out, key=lambda c: (c.width, _region_center(c)))
 
 
+def _collapse_collinear_proposals(
+    proposals: list[_RecessProposal[Slot]], part: Part
+) -> list[_RecessProposal[Slot]]:
+    """Occurrence-safe counterpart of :func:`_collapse_collinear`."""
+
+    slots = [proposal.record for proposal in proposals]
+    parent = list(range(len(slots)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    for left in range(len(slots)):
+        for right in range(left + 1, len(slots)):
+            gap = _same_channel_line(slots[left], slots[right])
+            if gap is not None and _gap_is_void(gap, slots[left], part):
+                parent[find(left)] = find(right)
+    groups: dict[int, list[_RecessProposal[Slot]]] = {}
+    for index, proposal in enumerate(proposals):
+        groups.setdefault(find(index), []).append(proposal)
+    out: list[_RecessProposal[Slot]] = []
+    for members in groups.values():
+        if len(members) == 1:
+            out.append(members[0])
+            continue
+        base = members[0].record
+        lo = min(member.record.lo for member in members)
+        hi = max(member.record.hi for member in members)
+        spanned = Slot(
+            width_axis=base.width_axis,
+            long_axis=base.long_axis,
+            width=base.width,
+            length=round(hi - lo, 2),
+            w_center=base.w_center,
+            lo=round(lo, 2),
+            hi=round(hi, 2),
+            d_lo=base.d_lo,
+            d_hi=base.d_hi,
+        )
+        out.append(_combine_proposals(spanned, members))
+    return sorted(
+        out,
+        key=lambda proposal: (
+            proposal.record.width,
+            _region_center(proposal.record),
+        ),
+    )
+
+
 def _region_center(s: Slot | Pocket) -> tuple[float, float, float]:
     """The slot's mid-point in part coordinates (axis-ordered)."""
     c = {
@@ -287,4 +382,24 @@ def _merge(candidates: list[_R], claims: _Claims | None = None) -> list[_R]:
             _absorb(claims, keeper, s)
             continue
         kept.append(s)
+    return kept
+
+
+def _merge_proposals(proposals: list[_RecessProposal[_R]]) -> list[_RecessProposal[_R]]:
+    """Preserve first-win public reduction while unioning exact occurrence provenance."""
+
+    kept: list[_RecessProposal[_R]] = []
+    for proposal in sorted(
+        proposals, key=lambda item: (item.record.width, _region_center(item.record))
+    ):
+        centre = _region_center(proposal.record)
+        keeper = next(
+            (item for item in kept if math.dist(centre, _region_center(item.record)) <= _MERGE_TOL),
+            None,
+        )
+        if keeper is None:
+            kept.append(proposal)
+            continue
+        index = kept.index(keeper)
+        kept[index] = _combine_proposals(keeper.record, [keeper, proposal])
     return kept

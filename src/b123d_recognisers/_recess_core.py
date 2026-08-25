@@ -23,6 +23,7 @@ share nothing above them.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
@@ -44,15 +45,16 @@ from b123d_recognisers._recess_faces import (
     _planar_faces,
 )
 from b123d_recognisers._recess_obround import (
-    _extend_obround_ends,
+    _extend_obround_proposals,
     _recognise_obround_from_ends,
 )
 from b123d_recognisers._recess_records import Channel, Pocket, Slot
 from b123d_recognisers._recess_reduce import (
     _Claims,
-    _collapse_collinear,
-    _merge,
+    _collapse_collinear_proposals,
+    _merge_proposals,
     _prism_is_empty,
+    _RecessProposal,
 )
 from b123d_recognisers._typing import Part
 
@@ -258,19 +260,14 @@ def _candidate(
     )
 
 
-def _recognise_slots_one(
+def _slot_proposals_one(
     part: Part,
     face_edges: FaceEdges | None = None,
     graph: FaceGraph | None = None,
-    claims: _Claims | None = None,
-) -> list[Slot]:
-    """Recognise slots using one solid's faces and bounds.
-
-    *graph* and *claims* travel together: without the graph no face resolves to a node, so a
-    caller passing only *claims* would silently claim nothing. Nothing enforces that here
-    because the family's own claim tests do -- they assert the walls a slot names, which an
-    unpaired call cannot produce.
-    """
+    *,
+    strict_cap_ambiguity: bool = True,
+) -> list[_RecessProposal[Slot]]:
+    """Recognise one solid's Slot occurrences with exact original topology identity."""
 
     owner = FaceGraph(part, face_edges=face_edges) if graph is None else graph
     faces = _planar_faces(part, face_edges, owner)
@@ -286,7 +283,7 @@ def _recognise_slots_one(
         # that is a real limit of the pairing strategy and it is now visible as one.
         if f.wall and f.axis is not None:
             by_axis.setdefault(f.axis, []).append(f)
-    candidates: list[Slot] = []
+    candidates: list[_RecessProposal[Slot]] = []
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
@@ -294,26 +291,38 @@ def _recognise_slots_one(
                 # Keep only through-slots: a blind pocket (or the floored gap
                 # between bosses) is capped by a floor and is out of scope.
                 if s is not None and not _has_floor(faces, s):
-                    candidates.append(s)
-                    # The two walls are what established this slot. Nothing else here is
-                    # defining: the floor test consults other faces without being bounded by
-                    # them, and treating consultation as consumption would have this slot
-                    # contest every feature it merely looked at.
-                    if claims is not None:
-                        # `is not None` narrows the field's type; it is not tolerance. With a
-                        # graph every face resolves or `_planar_faces` has already raised.
-                        claims.setdefault(s, set()).update(
-                            node for node in (walls[i].node, walls[j].node) if node is not None
-                        )
+                    nodes = frozenset(
+                        node for node in (walls[i].node, walls[j].node) if node is not None
+                    )
+                    candidates.append(_RecessProposal(s, nodes))
     # Stubby obround through-slots (straight section < width) have no pairable flat walls, so
     # recover them from their end caps. Emitted at the straight-wall junctions like the
     # flat-wall path, so `_merge` folds any duplicate an elongated obround also produced.
-    candidates.extend(_recognise_obround_from_ends(part, faces))
+    recovered = _recognise_obround_from_ends(part, faces, graph=owner, proposals=True)
+    candidates.extend(cast(list[_RecessProposal[Slot]], recovered))
     # Recombine arms of a crossing channel split by the intersection, then extend any
     # radiused-end (obround) slot to its overall length.
-    return _extend_obround_ends(
-        _collapse_collinear(_merge(candidates, claims), part, claims), part, claims
+    return _extend_obround_proposals(
+        _collapse_collinear_proposals(_merge_proposals(candidates), part),
+        part,
+        owner,
+        strict_ambiguity=strict_cap_ambiguity,
     )
+
+
+def _recognise_slots_one(
+    part: Part,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    claims: _Claims | None = None,
+) -> list[Slot]:
+    """Record-only compatibility projection; legacy claims are derived, never authoritative."""
+
+    proposals = _slot_proposals_one(part, face_edges, graph, strict_cap_ambiguity=False)
+    if claims is not None:
+        for proposal in proposals:
+            claims.setdefault(proposal.record, set()).update(proposal.planar)
+    return [proposal.record for proposal in proposals]
 
 
 def _floored_candidate(
@@ -468,13 +477,14 @@ class _ChannelProposal:
     high_wall: FaceNode
 
 
-def _recognise_pockets_one(
+def _pocket_proposals_one(
     part: Part,
     face_edges: FaceEdges | None = None,
     graph: FaceGraph | None = None,
-    claims: _Claims | None = None,
-) -> list[Pocket]:
-    """Recognise pockets using one solid's faces and bounds.
+    *,
+    strict_cap_ambiguity: bool = True,
+) -> list[_RecessProposal[Pocket]]:
+    """Recognise one solid's Pocket occurrences with exact original topology identity.
 
     *graph* and *claims* travel together exactly as they do in
     :func:`_recognise_slots_one`, and the two paths below claim differently on purpose:
@@ -497,24 +507,44 @@ def _recognise_pockets_one(
     for f in faces:
         if f.wall and f.axis is not None:
             by_axis.setdefault(f.axis, []).append(f)  # oblique declined here -- see slots
-    candidates: list[Pocket] = []
+    candidates: list[_RecessProposal[Pocket]] = []
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
                 p = _pocket_candidate(walls[i], walls[j], part, faces, part_ext, axis, owner)
                 if p is not None:
-                    candidates.append(p)
-                    if claims is not None:
-                        claims.setdefault(p, set()).update(
-                            node for node in (walls[i].node, walls[j].node) if node is not None
-                        )
-    candidates.extend(_recognise_corner_notches(faces, pbb, claims))
+                    nodes = frozenset(
+                        node for node in (walls[i].node, walls[j].node) if node is not None
+                    )
+                    candidates.append(_RecessProposal(p, nodes))
+    candidates.extend(_corner_notch_proposals(faces, pbb))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path, and
     # claiming nothing for the same reason: its evidence is two cylindrical caps, which
     # `_planar_faces` never yielded and which no consumer reconciling planar walls can want.
-    candidates.extend(_recognise_obround_from_ends(part, faces, blind=True))
-    return _extend_obround_ends(_merge(candidates, claims), part, claims)
+    recovered = _recognise_obround_from_ends(part, faces, blind=True, graph=owner, proposals=True)
+    candidates.extend(cast(list[_RecessProposal[Pocket]], recovered))
+    return _extend_obround_proposals(
+        _merge_proposals(candidates),
+        part,
+        owner,
+        strict_ambiguity=strict_cap_ambiguity,
+    )
+
+
+def _recognise_pockets_one(
+    part: Part,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    claims: _Claims | None = None,
+) -> list[Pocket]:
+    """Record-only compatibility projection; legacy claims are derived from occurrences."""
+
+    proposals = _pocket_proposals_one(part, face_edges, graph, strict_cap_ambiguity=False)
+    if claims is not None:
+        for proposal in proposals:
+            claims.setdefault(proposal.record, set()).update(proposal.planar)
+    return [proposal.record for proposal in proposals]
 
 
 def _recognise_channels_one(
@@ -569,9 +599,7 @@ def _channel_proposals_one(
     return proposals
 
 
-def _recognise_corner_notches(
-    faces: list[_Face], pbb, claims: _Claims | None = None
-) -> list[Pocket]:
+def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Pocket]]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -588,7 +616,7 @@ def _recognise_corner_notches(
         c = "XYZ"[_AXES[axis]]
         return getattr(bb.min, c), getattr(bb.max, c)
 
-    out: list[Pocket] = []
+    out: list[_RecessProposal[Pocket]] = []
     bx = (pbb.min.X, pbb.max.X)
     by = (pbb.min.Y, pbb.max.Y)
     bz = (pbb.min.Z, pbb.max.Z)
@@ -644,26 +672,38 @@ def _recognise_corner_notches(
         else:
             width_axis, long_axis = "y", "x"
             width, length, w_center, lo, hi = sy, sx, (y0 + y1) / 2, x0, x1
+        record = Pocket(
+            width_axis=width_axis,
+            long_axis=long_axis,
+            width=round(width, 2),
+            length=round(length, 2),
+            depth=round(d_hi - d_lo, 2),
+            w_center=round(w_center, 2),
+            lo=round(lo, 2),
+            hi=round(hi, 2),
+            d_lo=round(d_lo, 2),
+            d_hi=round(d_hi, 2),
+            open_sign=1 if floor.normal[2] > 0 else -1,
+            edge_anchored=True,
+        )
         out.append(
-            Pocket(
-                width_axis=width_axis,
-                long_axis=long_axis,
-                width=round(width, 2),
-                length=round(length, 2),
-                depth=round(d_hi - d_lo, 2),
-                w_center=round(w_center, 2),
-                lo=round(lo, 2),
-                hi=round(hi, 2),
-                d_lo=round(d_lo, 2),
-                d_hi=round(d_hi, 2),
-                open_sign=1 if floor.normal[2] > 0 else -1,
-                edge_anchored=True,
+            _RecessProposal(
+                record,
+                frozenset(
+                    node for node in (floor.node, xwall.node, ywall.node) if node is not None
+                ),
             )
         )
-        if claims is not None:
-            # The floor belongs here, unlike the opposed-wall path above: this loop is *over*
-            # floors, and the notch's footprint is read straight off this one's bounding box.
-            claims.setdefault(out[-1], set()).update(
-                node for node in (floor.node, xwall.node, ywall.node) if node is not None
-            )
     return out
+
+
+def _recognise_corner_notches(
+    faces: list[_Face], pbb, claims: _Claims | None = None
+) -> list[Pocket]:
+    """Compatibility projection of occurrence-safe corner-notch proposals."""
+
+    proposals = _corner_notch_proposals(faces, pbb)
+    if claims is not None:
+        for proposal in proposals:
+            claims.setdefault(proposal.record, set()).update(proposal.planar)
+    return [proposal.record for proposal in proposals]

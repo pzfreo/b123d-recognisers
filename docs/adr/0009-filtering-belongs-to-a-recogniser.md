@@ -96,3 +96,8 @@ planar faces and retains graph identity; Channel discovery itself continues to d
 edge-ineligible walls and carries only the accepted opposed pair into its proposal. The floor and
 boundary facts consulted by the predicate do not become defining evidence merely because the
 shared reduction exposed them.
+
+The neutral #234 provenance carrier does not add a filter. Geometry-only and provenance reads use
+the same Slot/Pocket candidates and reducers; the latter merely retain exact nodes and cap clusters.
+Ambiguous competing physical cap clusters refuse only the private provenance read, while the frozen
+record-only compatibility projection keeps its historical first-win behavior.

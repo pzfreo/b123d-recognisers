@@ -860,7 +860,7 @@ def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() 
         filename="_recess_core.py",
     )
     functions = {node.name: node for node in core.body if isinstance(node, ast.FunctionDef)}
-    for name in ("_recognise_slots_one", "_recognise_pockets_one", "_channel_proposals_one"):
+    for name in ("_slot_proposals_one", "_pocket_proposals_one", "_channel_proposals_one"):
         scans = [
             node
             for node in ast.walk(functions[name])

@@ -48,12 +48,14 @@ _FLOOR_TOL = 0.3
 
 _FLOOR_COVER_FRAC = 0.5
 
+
 def _dominant_axis(nrm) -> str | None:
     """Return the axis letter when ``nrm`` is axis-aligned, else None."""
     for axis, k in _AXES.items():
         if abs(abs(nrm[k]) - 1.0) <= _AXIS_ALIGNED_TOL:
             return axis
     return None
+
 
 @dataclass(frozen=True)
 class _Face:
@@ -73,6 +75,7 @@ class _Face:
     #: face -- so before this field there was no way to say which faces a slot was built from,
     #: and passage/slot reconciliation compared record coordinates instead.
     node: FaceNode | None = None
+
 
 def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
     """True when *face* can be a slot wall: bounded only by straight (LINE) or circular-arc
@@ -94,6 +97,7 @@ def _is_wall(face, face_edges: FaceEdges | None = None) -> bool:
     n_line = sum(1 for t in types if t == GeomType.LINE)
     n_circle = sum(1 for t in types if t == GeomType.CIRCLE)
     return n_line >= 1 and n_circle <= 1
+
 
 def _planar_faces(
     part: Part, face_edges: FaceEdges | None = None, graph: FaceGraph | None = None
@@ -152,8 +156,10 @@ def _planar_faces(
         )
     return faces
 
+
 def _center(bb, k) -> float:
     return float(getattr(bb.min, "XYZ"[k]) + getattr(bb.max, "XYZ"[k])) / 2
+
 
 def _overlap_len(bb_a, bb_b, axis) -> float:
     """Length of the overlap of two bboxes along ``axis`` (0 if disjoint)."""
@@ -162,9 +168,8 @@ def _overlap_len(bb_a, bb_b, axis) -> float:
     hi = min(getattr(bb_a.max, c), getattr(bb_b.max, c))
     return float(hi - lo)
 
-def _end_capped(
-    faces: list[_Face], foot, foot_area, depth_axis, end, want
-) -> bool:
+
+def _end_capped(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> bool:
     """True when inward-facing planar faces at ``end`` on ``depth_axis`` together cover at
     least :data:`_FLOOR_COVER_FRAC` of the ``foot`` (width×length) footprint — one end's
     half of the floor test.
@@ -191,6 +196,7 @@ def _end_capped(
         covered += area
     return bool(covered >= _FLOOR_COVER_FRAC * foot_area)
 
+
 def _floor_ends(faces: list[_Face], s: Slot) -> int:
     """How many of *s*'s two depth ends a planar floor caps: ``0`` = through (open both ends),
     ``1`` = a blind recess (one floor + one opening — a real pocket), ``2`` = a sealed internal
@@ -205,6 +211,7 @@ def _floor_ends(faces: list[_Face], s: Slot) -> int:
         _end_capped(faces, foot, foot_area, s.depth_axis, s.d_hi, -1.0)
     )
 
+
 def _open_sign(faces: list[_Face], s) -> int:
     """Which depth end *s* opens toward: ``+1`` (floor at ``d_lo``, opens +depth) or ``-1``
     (floor at ``d_hi``, opens -depth). The capped end is the floor; the pocket opens the other
@@ -216,14 +223,22 @@ def _open_sign(faces: list[_Face], s) -> int:
     foot_area = math.prod(hi - lo for lo, hi in foot.values())
     return 1 if _end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0) else -1
 
+
 def _has_floor(faces: list[_Face], s: Slot) -> bool:
     """True when a planar floor caps the slot at *either* depth end — i.e. it is not a through
     slot. The through/blind split for :func:`recognise_slots`'s flat-wall path; the obround end-cap
     path uses the finer :func:`_floor_ends` count (a pocket is capped on exactly one end)."""
     return _floor_ends(faces, s) >= 1
 
-def _cylinder_faces(part: Part) -> list[tuple]:
-    """``(radius, axis_letter, axis_location, bbox, concave)`` for each axis-aligned cylindrical
+
+def _cylinder_faces(part: Part, graph: FaceGraph | None = None) -> list[tuple]:
+    """``(radius, axis_letter, axis_location, bbox, concave, node)`` per cylinder patch.
+
+    ``node`` is present when a caller supplies the run graph.  Keeping the exact patch identity
+    here lets obround clustering retain every STEP-split quarter cylinder without a second scan.
+    The public geometry-only path supplies no graph and receives ``None`` in that private field.
+
+    Each entry describes an axis-aligned cylindrical
     face of *part* — the candidate obround end caps. ``axis_location`` is a point on the
     cylinder axis; ``bbox`` bounds the face (used to confirm the cap spans the slot's depth, not
     some unrelated cylinder at a different depth); ``concave`` is True when the face bounds a
@@ -243,8 +258,19 @@ def _cylinder_faces(part: Part) -> list[tuple]:
             continue
         loc = cyl.Axis().Location()
         concave = not frame_points_outward(face)
-        out.append((cyl.Radius(), axis, (loc.X(), loc.Y(), loc.Z()), face.bounding_box(), concave))
+        node = None if graph is None else graph.require_node(face)
+        out.append(
+            (
+                cyl.Radius(),
+                axis,
+                (loc.X(), loc.Y(), loc.Z()),
+                face.bounding_box(),
+                concave,
+                node,
+            )
+        )
     return out
+
 
 def _has_side_walls(faces: list[_Face], s: Slot) -> bool:
     """True when the two flat side walls of obround slot *s* are present: **inward-facing** wall
@@ -272,6 +298,7 @@ def _has_side_walls(faces: list[_Face], s: Slot) -> bool:
         if abs(c - (s.w_center + s.width / 2)) <= _MERGE_TOL and f.normal[wk] < 0:
             hi_wall = True
     return lo_wall and hi_wall
+
 
 def _union_bb(a, b) -> SimpleNamespace:
     """Axis-aligned union of two bounding boxes, as a ``min``/``max`` namespace matching the
