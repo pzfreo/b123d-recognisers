@@ -171,7 +171,49 @@ class ProjectionInputs:
     projected: bool
 
 
-_PROJECTION_INPUT_ISSUER = object()
+@dataclass(frozen=True, slots=True)
+class _ProjectionInputSnapshot:
+    inputs: AcceptedProjectionInputs
+    candidate_set: CandidateSet[object]
+    candidates: tuple[Candidate[object], ...]
+    evidence: EvidenceIndex
+
+
+class _ProjectionInputIssuer:
+    def __init__(self) -> None:
+        self._issued: dict[int, _ProjectionInputSnapshot] = {}
+
+    def issue(
+        self,
+        inputs: AcceptedProjectionInputs,
+        candidate_set: CandidateSet[object],
+        evidence: EvidenceIndex,
+    ) -> None:
+        self._issued[id(inputs)] = _ProjectionInputSnapshot(
+            inputs, candidate_set, candidate_set.candidates, evidence
+        )
+
+    def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
+        snapshot = self._issued.get(id(inputs))
+        if snapshot is None or snapshot.inputs is not inputs:
+            raise ValueError("accepted projection inputs were not issued by orchestration")
+        if (
+            inputs._issuer is not self
+            or inputs._candidate_set is not snapshot.candidate_set
+            or inputs._evidence is not snapshot.evidence
+            or snapshot.candidate_set.candidates is not snapshot.candidates
+            or len(inputs._candidates) != len(snapshot.candidates)
+            or any(
+                current is not original
+                for current, original in zip(inputs._candidates, snapshot.candidates, strict=True)
+            )
+        ):
+            raise ValueError("accepted passages projection roster changed after issuance")
+        snapshot.evidence.validate_candidate_set(snapshot.candidate_set)
+        return snapshot
+
+
+_PROJECTION_INPUT_ISSUER = _ProjectionInputIssuer()
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -199,20 +241,18 @@ class AcceptedProjectionInputs:
         object.__setattr__(result, "_candidates", accepted.candidates)
         object.__setattr__(result, "_evidence", evidence)
         object.__setattr__(result, "_issuer", _PROJECTION_INPUT_ISSUER)
+        _PROJECTION_INPUT_ISSUER.issue(result, accepted, evidence)
         return result
 
     def passage_views(
         self,
     ) -> tuple[tuple[SectionPassage, PassageCompatibilityView], ...]:
         family = FamilyId.PASSAGES
-        if self._issuer is not _PROJECTION_INPUT_ISSUER or family not in self._allowed:
+        if family not in self._allowed:
             raise ValueError("passages is not a declared accepted projection source")
-        if (
-            self._candidate_set.family is not family
-            or self._candidate_set.candidates is not self._candidates
-        ):
-            raise ValueError("accepted passages projection roster changed after issuance")
-        self._evidence.validate_candidate_set(self._candidate_set)
+        snapshot = _PROJECTION_INPUT_ISSUER.validate(self)
+        if snapshot.candidate_set.family is not family:
+            raise ValueError("accepted passages projection source family changed")
         result: list[tuple[SectionPassage, PassageCompatibilityView]] = []
         seen: set[int] = set()
         for candidate in self._candidates:

@@ -203,6 +203,15 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
     object.__setattr__(inputs, "_candidates", accepted.candidates)
     assert inputs.passage_views() == expected
 
+    original_candidates = accepted.candidates
+    object.__setattr__(accepted, "candidates", ())
+    object.__setattr__(inputs, "_candidates", accepted.candidates)
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(accepted, "candidates", original_candidates)
+    object.__setattr__(inputs, "_candidates", original_candidates)
+    assert inputs.passage_views() == expected
+
     with pytest.raises(TypeError):
         AcceptedProjectionInputs(  # type: ignore[call-arg]
             frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence

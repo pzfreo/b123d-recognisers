@@ -40,10 +40,63 @@ from b123d_recognisers import (
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._section_passages import _INTERVAL_TOL, _pair_line
+from b123d_recognisers._sections import LocalFrame
 
 
 def _square():
     return Box(60, 40, 20) - Box(10, 10, 60)
+
+
+class _LineVector:
+    def __init__(self, xyz: tuple[float, float, float]) -> None:
+        self.X, self.Y, self.Z = xyz
+
+    def normalized(self) -> _LineVector:
+        return self
+
+
+class _LineEdge:
+    geom_type = type("GeometryType", (), {"name": "LINE"})()
+
+    def __init__(self, low: float, high: float) -> None:
+        self._ends = (_LineVector((0.0, 0.0, low)), _LineVector((0.0, 0.0, high)))
+
+    def tangent_at(self) -> _LineVector:
+        return _LineVector((0.0, 0.0, 1.0))
+
+    def position_at(self, at: float) -> _LineVector:
+        return self._ends[0 if at == 0.0 else 1]
+
+
+class _SharedEdges:
+    def __init__(self, intervals: tuple[tuple[float, float], ...]) -> None:
+        self._edges = tuple(_LineEdge(*interval) for interval in intervals)
+
+    def shared_edges(self, left: object, right: object) -> tuple[_LineEdge, ...]:
+        del left, right
+        return self._edges
+
+
+@pytest.mark.parametrize(
+    ("intervals", "accepted"),
+    (
+        (((-10.0, 0.0), (0.0, 10.0)), True),
+        (((-10.0, 0.0), (_INTERVAL_TOL, 10.0)), True),
+        (((-10.0, 0.0), (math.nextafter(_INTERVAL_TOL, math.inf), 10.0)), False),
+        (((-10.0, 0.0), (-_INTERVAL_TOL, 10.0)), True),
+        (((-10.0, 0.0), (math.nextafter(-_INTERVAL_TOL, -math.inf), 10.0)), False),
+        (((-10.0, 10.0), (-10.0, 10.0)), False),
+    ),
+)
+def test_segmented_junction_union_has_closed_gap_and_overlap_boundaries(
+    intervals: tuple[tuple[float, float], ...], accepted: bool
+) -> None:
+    frame = LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
+    result = _pair_line(_SharedEdges(intervals), object(), object(), frame)  # type: ignore[arg-type]
+    assert (result is not None) is accepted
+    if result is not None:
+        assert result[2:] == (-10.0, 10.0)
 
 
 def _polygonal_tool(sides_or_points):
