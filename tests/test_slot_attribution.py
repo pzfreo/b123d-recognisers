@@ -8,7 +8,7 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from build123d import Box, Compound, Cylinder, Edge, Plane, Pos, Rot, export_step, import_step
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
@@ -170,6 +170,45 @@ def test_equal_coincident_and_separate_occurrences_keep_identity_and_body_scope(
         roles = [ledger.defining_of(candidate) for candidate in candidates]
         assert roles[0].isdisjoint(roles[1])
         assert all(ledger.graph.common_valid_solid(nodes) is not None for nodes in roles)
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Pos(37, -19, 11) * (Box(80, 50, 16) - Box(28, 10, 16)),
+        Rot(90, 0, 0) * (Box(80, 50, 16) - Box(28, 10, 16)),
+        Rot(0, 90, 0) * (Box(80, 50, 16) - Box(28, 10, 16)),
+        (Box(80, 50, 16) - Box(28, 10, 16)).mirror(Plane.YZ),
+        (Box(80, 50, 16) - Box(28, 10, 16)).scale(0.2),
+        (Box(80, 50, 16) - Box(28, 10, 16)).scale(5),
+        Rot(90, 0, 0) * (Box(100, 60, 20) - _obround(30, 12, 20)),
+    ],
+)
+def test_principal_axes_translation_mirror_and_scale_preserve_complete_roles(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    records = _discover_slots(part, writer=ledger.writer)
+    assert [record.to_dict() for record in records] == [
+        record.to_dict() for record in recognise_slots(part)
+    ]
+    candidates = ledger.candidate_set(FamilyId.SLOTS).candidates
+    assert len(records) == len(candidates) == 1
+    assert candidates[0].record is records[0]
+    assert ledger.defining_of(candidates[0])
+    assert ledger.graph.common_valid_solid(ledger.defining_of(candidates[0])) is not None
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(80, 60, 20) - Pos(0, 0, 5) * Box(30, 10, 10),  # floored Pocket
+        Box(80, 60, 20) - Cylinder(6, 20),  # full cylindrical hole
+        Box(80, 60, 20),
+    ],
+)
+def test_non_slot_controls_publish_nothing(part) -> None:
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_slots(part, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
 
 
 def test_shared_graph_face_edges_and_foreign_authority_boundaries() -> None:
