@@ -492,20 +492,25 @@ def test_checked_nested_slots_share_truthful_wall_evidence_on_one_solid() -> Non
 
 def test_same_record_competing_role_sets_still_refuse_atomically(monkeypatch) -> None:
     part = Box(80, 50, 16) - Box(28, 10, 16)
-    ledger = ClaimLedger(FaceGraph(part))
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
     (proposal,) = recess_features._body_scoped_proposals(
         [part], lambda solid: recess_features._slot_proposals_one(solid, graph=ledger.graph)
     )
-    extra = next(node for node in ledger.graph.nodes if node not in proposal.planar)
-    competing = _RecessProposal(proposal.record, proposal.planar | {extra}, proposal.caps)
+    disjoint = frozenset(node for node in ledger.graph.nodes if node not in proposal.planar)
+    assert disjoint and disjoint.isdisjoint(proposal.planar)
+    assert ledger.graph.common_valid_solid(disjoint) is not None
+    competing = _RecessProposal(proposal.record, disjoint, ())
     monkeypatch.setattr(
         recess_features,
         "_body_scoped_proposals",
         lambda _sources, _recognise_one: [proposal, competing],
     )
-    with pytest.raises(_SlotAttributionError, match="ambiguously reused"):
-        _discover_slots(part, writer=ledger.writer)
+    with pytest.raises(_SlotAttributionError, match="competing source roles"):
+        _discover_all(context, ledger)
     assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+    assert FamilyId.SLOTS not in ledger._issuer._completed
+    assert FamilyId.SLOTS not in ledger._issuer._completed_occurrences
 
 
 def test_graph_identical_proposal_duplicate_collapses_before_issue(monkeypatch) -> None:
@@ -523,6 +528,47 @@ def test_graph_identical_proposal_duplicate_collapses_before_issue(monkeypatch) 
     (candidate,) = ledger.candidate_set(FamilyId.SLOTS).candidates
     assert candidate.record is record
     assert ledger.defining_of(candidate) == frozenset(proposal.planar)
+
+
+def test_shared_node_across_solidrefs_refuses_before_issue(monkeypatch) -> None:
+    first = Box(80, 50, 16) - Box(28, 10, 16)
+    part = Compound([first, Pos(150, 0, 0) * deepcopy(first)])
+    ledger = ClaimLedger(FaceGraph(part))
+    sources = list(part.solids())
+    proposals = recess_features._body_scoped_proposals(
+        sources,
+        lambda solid: recess_features._slot_proposals_one(solid, graph=ledger.graph),
+    )
+    assert len(proposals) == 2
+    shared = next(iter(proposals[0].planar))
+    mixed = _RecessProposal(
+        proposals[1].record,
+        proposals[1].planar | {shared},
+        proposals[1].caps,
+    )
+    monkeypatch.setattr(
+        recess_features,
+        "_body_scoped_proposals",
+        lambda _sources, _recognise_one: [proposals[0], mixed],
+    )
+    with pytest.raises(_SlotAttributionError, match="one valid solid"):
+        _discover_slots(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    "foreign_part",
+    [
+        deepcopy(Box(80, 50, 16) - Box(28, 10, 16)),
+        Pos(0.25, 0, 0) * (Box(80, 50, 16) - Box(28, 10, 16)),
+    ],
+)
+def test_deep_and_translated_stale_graphs_refuse_without_prefix(foreign_part) -> None:
+    part = Box(80, 50, 16) - Box(28, 10, 16)
+    ledger = ClaimLedger(FaceGraph(foreign_part))
+    with pytest.raises((_SlotAttributionError, ValueError)):
+        _discover_slots(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
 
 
 @pytest.mark.parametrize(("length", "accepted"), [(89.99, True), (90.0, False), (90.01, False)])

@@ -132,12 +132,14 @@ def _discover_slots(
                 raise _SlotAttributionError("Slot source faces do not prove one valid solid")
             duplicate = False
             for other_record, other_nodes, other_solid in pending:
-                if proposal.record == other_record and nodes == other_nodes:
-                    duplicate = True
-                    break
-                if not nodes.isdisjoint(other_nodes) and (
-                    proposal.record == other_record or solid != other_solid
-                ):
+                if proposal.record == other_record and solid == other_solid:
+                    if nodes == other_nodes:
+                        duplicate = True
+                        break
+                    raise _SlotAttributionError(
+                        "equal Slot record has competing source roles on one solid"
+                    )
+                if not nodes.isdisjoint(other_nodes) and solid != other_solid:
                     raise _SlotAttributionError(
                         "Slot source face is ambiguously reused by another occurrence"
                     )
