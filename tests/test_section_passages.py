@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from build123d import Box
+from build123d import Box, Rot
 
 from b123d_recognisers import (
     PassageCompatibilityError,
@@ -79,6 +79,21 @@ def test_aggregate_has_one_rich_authority_and_legacy_projection() -> None:
     result = build_recognition_result(_square())
     assert len(result.section_passages) == len(result.passages) == 1
     assert result.passages == tuple(recognise_passages(_square()))
+
+
+def test_oblique_passage_is_rich_only_and_keeps_exact_wall_ownership() -> None:
+    part = Rot(17, 23, 31) * _square()
+    assert recognise_passages(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    (record,) = recognise_section_passages(part, ledger=ledger)
+    assert record.frame.run == (0.390731, -0.26913, 0.880283)
+    assert len(record.section.boundary) == 4
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is record
+    assert len(ledger.defining_of(candidate)) == 4
+    result = build_recognition_result(part)
+    assert result.section_passages == (record,)
+    assert result.passages == ()
 
 
 @pytest.mark.parametrize(

@@ -65,6 +65,7 @@ from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
+from b123d_recognisers._section_passages import section_ring_proposals
 from b123d_recognisers._typing import Part
 
 #: Two walls belong to one ring when their spans along the run axis agree. A coordinate
@@ -284,8 +285,30 @@ def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
     found: list[tuple[SectionPassage, tuple[FaceNode, ...]]] = []
+    for proposal in section_ring_proposals(part, graph):
+        record = SectionPassage(
+            PassageFrame(
+                tuple(round(value, 6) for value in proposal.frame.origin),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.run),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.u),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
+            ),
+            tuple(round(value, 3) for value in proposal.run_interval),  # type: ignore[arg-type]
+            PassageSection(
+                tuple(
+                    PassageSectionVertex(
+                        (round(vertex.point[0], 3), round(vertex.point[1], 3)),
+                        round(vertex.bulge, 12),
+                    )
+                    for vertex in proposal.section.boundary
+                )
+            ),
+            PassageEnds(False, False),
+        )
+        found.append((record, proposal.nodes))
+    owned = {frozenset(nodes) for _, nodes in found}
     for ring in rings(part, graph):
-        if any(ring.caps):
+        if any(ring.caps) or frozenset(ring.nodes) in owned:
             continue
         axis, section = ring.axis, ring.section
         others = [value for value in (0, 1, 2) if value != axis]
@@ -298,15 +321,15 @@ def _discover_section_passages(
             ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
         )
         run, u, v = bases[axis]
+        frame = PassageFrame(tuple(origin), run, u, v)  # type: ignore[arg-type]
+        local = tuple((point[0] - middle[0], point[1] - middle[1]) for point in section)
+        # Principal LocalFrame bases already express the section in their u/v order.
+        if axis == 1:
+            local = tuple((point[1] - middle[1], point[0] - middle[0]) for point in section)
         record = SectionPassage(
-            PassageFrame(tuple(origin), run, u, v),  # type: ignore[arg-type]
+            frame,
             (ring.low, ring.high),
-            PassageSection(
-                tuple(
-                    PassageSectionVertex((point[0] - middle[0], point[1] - middle[1]), 0.0)
-                    for point in section
-                )
-            ),
+            PassageSection(tuple(PassageSectionVertex(point, 0.0) for point in local)),
             PassageEnds(False, False),
         )
         found.append((record, tuple(ring.nodes)))
@@ -335,19 +358,21 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
     centre = [*record.frame.origin]
     axis_index = "xyz".index(axis)
     centre[axis_index] = 0.5 * (lo + hi)
-    section = tuple(
-        (
-            round(record.frame.origin[first] + vertex.point[0], 3),
-            round(record.frame.origin[second] + vertex.point[1], 3),
+    section = []
+    for vertex in record.section.boundary:
+        world = tuple(
+            record.frame.origin[index]
+            + vertex.point[0] * record.frame.u[index]
+            + vertex.point[1] * record.frame.v[index]
+            for index in range(3)
         )
-        for vertex in record.section.boundary
-    )
+        section.append((round(world[first], 3), round(world[second], 3)))
     return Passage(
         axis=axis,
         sides=len(section),
         length=round(hi - lo, 3),
         at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
-        section=section,
+        section=tuple(section),
     )
 
 
