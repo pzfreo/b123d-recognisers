@@ -335,6 +335,57 @@ def test_schema_three_matching_incidence_mutation_refuses() -> None:
         correspondence_module._validate_snapshot(changed)
 
 
+@pytest.mark.parametrize("mutation", ["curve", "parameter", "material"])
+def test_schema_three_nested_value_mutation_refuses(mutation: str) -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_rrp())).occurrences[0]
+    graph = occurrence.matching_boundary
+    if mutation == "curve":
+        curve = graph.curves[0]
+        changed = dataclasses.replace(
+            graph, curves=(dataclasses.replace(curve, length=math.nan), *graph.curves[1:])
+        )
+    else:
+        face = graph.faces[0]
+        if mutation == "parameter":
+            face_index, wire_index, half_edge_index = next(
+                (face_index, wire_index, half_edge_index)
+                for face_index, candidate_face in enumerate(graph.faces)
+                for wire_index, candidate_wire in enumerate(candidate_face.wires)
+                for half_edge_index, candidate in enumerate(candidate_wire.cycle)
+                if candidate.start is not None
+            )
+            face = graph.faces[face_index]
+            wire = face.wires[wire_index]
+            half_edge = wire.cycle[half_edge_index]
+            assert half_edge.start is not None
+            start = dataclasses.replace(half_edge.start, parameter=(math.nan, 0.0))
+            changed_half_edge = dataclasses.replace(half_edge, start=start)
+            changed_wire = dataclasses.replace(
+                wire,
+                cycle=tuple(
+                    changed_half_edge if index == half_edge_index else item
+                    for index, item in enumerate(wire.cycle)
+                ),
+            )
+            changed_face = dataclasses.replace(
+                face,
+                wires=tuple(
+                    changed_wire if index == wire_index else item
+                    for index, item in enumerate(face.wires)
+                ),
+            )
+        else:
+            changed_face = dataclasses.replace(face, material_side=0)
+        changed = dataclasses.replace(
+            graph,
+            faces=tuple(
+                changed_face if item is face else item for item in graph.faces
+            ),
+        )
+    with pytest.raises(UnsupportedBodyGeometry, match="matching"):
+        _body_geometry.validate_matching_boundary_graph(changed)
+
+
 def test_schema_three_construction_budget_is_inclusive() -> None:
     budget = _body_geometry._MatchingConstructionBudget(
         _body_geometry.CANONICAL_SERIALIZATION_BUDGET - 1

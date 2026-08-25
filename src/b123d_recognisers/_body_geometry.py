@@ -181,6 +181,12 @@ def validate_matching_boundary_graph(value: MatchingBoundaryGraph) -> None:
         or type(value.symmetric) is not bool
     ):
         raise UnsupportedBodyGeometry("matching boundary schema is malformed")
+    def valid_point(point: object) -> bool:
+        return (
+            type(point) is tuple
+            and len(point) == 3
+            and all(type(item) is float and math.isfinite(item) for item in point)
+        )
     if any(
         type(vertex) is not tuple
         or len(vertex) != 3
@@ -188,14 +194,84 @@ def validate_matching_boundary_graph(value: MatchingBoundaryGraph) -> None:
         for vertex in value.vertices
     ) or any(type(curve) is not MatchingCurve for curve in value.curves):
         raise UnsupportedBodyGeometry("matching boundary vertex or curve schema is malformed")
+    for curve in value.curves:
+        if (
+            curve.kind not in {"LINE", "CIRCLE"}
+            or type(curve.length) is not float
+            or not math.isfinite(curve.length)
+            or curve.length <= 0.0
+            or type(curve.full) is not bool
+        ):
+            raise UnsupportedBodyGeometry("matching curve value is malformed")
+        if curve.kind == "LINE":
+            if (
+                curve.full
+                or type(curve.vertices) is not tuple
+                or len(curve.vertices) != 2
+                or curve.vertices[0] == curve.vertices[1]
+                or any(
+                    type(item) is not int or item < 0 or item >= len(value.vertices)
+                    for item in curve.vertices
+                )
+                or any(
+                    item is not None
+                    for item in (curve.centre, curve.axis, curve.radius, curve.sweep)
+                )
+            ):
+                raise UnsupportedBodyGeometry("matching line value is malformed")
+        elif (
+            not valid_point(curve.centre)
+            or not valid_point(curve.axis)
+            or type(curve.radius) is not float
+            or not math.isfinite(curve.radius)
+            or curve.radius <= 0.0
+            or type(curve.sweep) is not float
+            or not math.isfinite(curve.sweep)
+            or (
+                curve.full
+                and (curve.vertices is not None or curve.sweep != 2.0 * math.pi)
+            )
+            or (
+                not curve.full
+                and (
+                    type(curve.vertices) is not tuple
+                    or len(curve.vertices) != 2
+                    or curve.vertices[0] == curve.vertices[1]
+                    or any(
+                        type(item) is not int or item < 0 or item >= len(value.vertices)
+                        for item in curve.vertices
+                    )
+                )
+            )
+        ):
+            raise UnsupportedBodyGeometry("matching circle value is malformed")
     occurrences = []
     if len(value.faces) != value.face_count:
         raise UnsupportedBodyGeometry("matching boundary face count changed")
     for face_index, face in enumerate(value.faces):
-        if type(face) is not MatchingFace or type(face.wires) is not tuple:
+        if (
+            type(face) is not MatchingFace
+            or face.kind not in {"PLANE", "CYLINDER"}
+            or type(face.parameters) is not tuple
+            or len(face.parameters) != (4 if face.kind == "PLANE" else 7)
+            or any(type(item) is not float or not math.isfinite(item) for item in face.parameters)
+            or type(face.area) is not float
+            or not math.isfinite(face.area)
+            or face.area <= 0.0
+            or not valid_point(face.centroid)
+            or face.material_side not in {-1, 1}
+            or type(face.wires) is not tuple
+        ):
             raise UnsupportedBodyGeometry("matching boundary face schema is malformed")
         for wire_index, wire in enumerate(face.wires):
-            if type(wire) is not MatchingWire or type(wire.cycle) is not tuple or not wire.cycle:
+            if (
+                type(wire) is not MatchingWire
+                or wire.role not in {"outer", "inner"}
+                or type(wire.theta_winding) is not int
+                or (face.kind == "PLANE" and wire.theta_winding != 0)
+                or type(wire.cycle) is not tuple
+                or not wire.cycle
+            ):
                 raise UnsupportedBodyGeometry("matching boundary wire schema is malformed")
             for occurrence_index, half_edge in enumerate(wire.cycle):
                 if (
@@ -214,6 +290,35 @@ def validate_matching_boundary_graph(value: MatchingBoundaryGraph) -> None:
                     )
                 ):
                     raise UnsupportedBodyGeometry("matching boundary half-edge is malformed")
+                curve = value.curves[half_edge.curve]
+                if curve.full != (half_edge.start is None):
+                    raise UnsupportedBodyGeometry("matching full-circle endpoint schema changed")
+                if half_edge.start is not None and half_edge.end is not None:
+                    if any(
+                        vertex.vertex is None
+                        or type(vertex.vertex) is not int
+                        or vertex.vertex < 0
+                        or vertex.vertex >= len(value.vertices)
+                        or type(vertex.parameter) is not tuple
+                        or len(vertex.parameter) != 2
+                        or any(
+                            type(item) is not float or not math.isfinite(item)
+                            for item in vertex.parameter
+                        )
+                        for vertex in (half_edge.start, half_edge.end)
+                    ):
+                        raise UnsupportedBodyGeometry(
+                            "matching half-edge parameter schema changed"
+                        )
+                    expected_vertices = (
+                        cast(tuple[int, int], curve.vertices)
+                        if half_edge.direction == 1
+                        else tuple(reversed(cast(tuple[int, int], curve.vertices)))
+                    )
+                    if (half_edge.start.vertex, half_edge.end.vertex) != expected_vertices:
+                        raise UnsupportedBodyGeometry(
+                            "matching half-edge traversal disagrees with its curve"
+                        )
                 occurrences.append(
                     (half_edge.curve, (face_index, wire_index, occurrence_index))
                 )
