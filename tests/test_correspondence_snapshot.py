@@ -52,7 +52,7 @@ from OCP.TopAbs import (
     TopAbs_REVERSED,
 )
 from OCP.TopExp import TopExp
-from OCP.TopoDS import TopoDS
+from OCP.TopoDS import TopoDS, TopoDS_Vertex
 
 import b123d_recognisers
 from b123d_recognisers import _body_geometry
@@ -2361,6 +2361,400 @@ def test_schema_three_cached_face_authority_refusal_roster() -> None:
             graph.faces[:-1],
             _body_geometry._MatchingConstructionBudget(),
         )
+
+
+def test_schema_three_cached_matching_roster_refuses_deep_drift(monkeypatch) -> None:
+    part = Box(4, 5, 6).solids()[0]
+    described = _body_geometry.describe_solid(part)
+
+    first_build = described.face_builds[0]
+    first_wire = first_build.wires[0]
+    alignment = first_wire.occurrences[0]
+    conflicting_alignment = ((object(), alignment[0][1]), *alignment[1:])
+    conflicting_wire = dataclasses.replace(
+        first_wire, occurrences=(alignment, conflicting_alignment)
+    )
+    conflicting_build = dataclasses.replace(
+        first_build,
+        wires=(conflicting_wire, *first_build.wires[1:]),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="token roster disagrees"):
+        matching_boundary_for_solid(
+            part,
+            described.descriptor,
+            (conflicting_build, *described.face_builds[1:]),
+        )
+
+    original_faces = Solid.faces
+    monkeypatch.setattr(Solid, "faces", lambda self: original_faces(self)[:-1])
+    with pytest.raises(UnsupportedBodyGeometry, match="closed-shell pair"):
+        matching_boundary_for_solid(
+            part, described.descriptor, described.face_builds[:-1]
+        )
+
+
+def test_schema_three_validator_refuses_a_reordered_disconnected_wire() -> None:
+    graph, solid, fact = _body_descriptor(Box(4, 5, 6))
+    matching = graph.matching_boundary(solid)
+    face_index = next(
+        index
+        for index, face in enumerate(matching.faces)
+        if face.kind == "PLANE" and len(face.wires[0].cycle) >= 4
+    )
+    face = matching.faces[face_index]
+    wire = face.wires[0]
+    cycle = wire.cycle
+    reordered = dataclasses.replace(
+        wire,
+        cycle=(cycle[0], cycle[2], cycle[1], *cycle[3:]),
+    )
+    changed_face = dataclasses.replace(
+        face,
+        wires=(reordered, *face.wires[1:]),
+    )
+    changed = dataclasses.replace(
+        matching,
+        faces=tuple(
+            changed_face if index == face_index else item
+            for index, item in enumerate(matching.faces)
+        ),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="topology no longer joins"):
+        _body_geometry.validate_matching_boundary_graph(
+            changed, fact.descriptor.quantization
+        )
+
+
+def test_schema_three_validator_refuses_a_disconnected_planar_pcurve() -> None:
+    graph, solid, fact = _body_descriptor(Box(4, 5, 6))
+    matching = graph.matching_boundary(solid)
+    face_index = next(
+        index
+        for index, face in enumerate(matching.faces)
+        if face.kind == "PLANE" and len(face.wires[0].cycle) >= 4
+    )
+    face = matching.faces[face_index]
+    wire = face.wires[0]
+    half_edge = wire.cycle[1]
+    assert half_edge.start is not None
+    changed_start = dataclasses.replace(
+        half_edge.start,
+        parameter=(
+            half_edge.start.parameter[0] + 5.0 * fact.descriptor.quantization.metric_quantum,
+            half_edge.start.parameter[1],
+        ),
+    )
+    changed_half_edge = dataclasses.replace(half_edge, start=changed_start)
+    changed_wire = dataclasses.replace(
+        wire,
+        cycle=(wire.cycle[0], changed_half_edge, *wire.cycle[2:]),
+    )
+    changed_face = dataclasses.replace(
+        face,
+        wires=(changed_wire, *face.wires[1:]),
+    )
+    changed = dataclasses.replace(
+        matching,
+        faces=tuple(
+            changed_face if index == face_index else item
+            for index, item in enumerate(matching.faces)
+        ),
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="pcurve cycle no longer joins"):
+        _body_geometry.validate_matching_boundary_graph(
+            changed, fact.descriptor.quantization
+        )
+
+
+def test_schema_three_cylinder_pcurve_roster_kernel_and_closure_refusals(
+    monkeypatch,
+) -> None:
+    part = Cylinder(10, 20).solids()[0]
+    described = _body_geometry.describe_solid(part)
+    raw_faces = tuple(part.faces())
+    at = next(
+        index
+        for index, face in enumerate(raw_faces)
+        if BRepAdaptor_Surface(face.wrapped).GetType().name == "GeomAbs_Cylinder"
+    )
+    face = raw_faces[at]
+    face_build = described.face_builds[at]
+    adaptor = BRepAdaptor_Surface(face.wrapped)
+    gauge = _body_geometry._cylinder_gauge(
+        adaptor, face_build.geometry, described.descriptor.placement.centre_of_mass
+    )
+    edge = next(
+        edge for edge in face.edges() if BRep_Tool.IsClosed_s(edge.wrapped, face.wrapped)
+    )
+    label = next(
+        geometry
+        for wire in face_build.wires
+        for geometry, _direction in wire.geometry.edges
+        if geometry.kind == "LINE"
+    )
+    monkeypatch.setattr(_body_geometry, "_validate_matching_pcurve", lambda *_args: None)
+
+    def unavailable(_edge, _face):
+        raise Standard_Failure("closed pcurve failure")
+
+    monkeypatch.setattr(_body_geometry, "BRepAdaptor_Curve2d", unavailable)
+    with pytest.raises(UnsupportedBodyGeometry, match="roster is unavailable"):
+        _body_geometry._cylinder_pcurve_variants(
+            edge,
+            face,
+            adaptor,
+            described.descriptor.placement.centre_of_mass,
+            described.descriptor.quantization.metric_quantum,
+            gauge,
+            label.kind,
+            label.full,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+    class OnePcurve:
+        @staticmethod
+        def FirstParameter():
+            return 0.0
+
+        @staticmethod
+        def LastParameter():
+            return 1.0
+
+        @staticmethod
+        def Value(parameter):
+            return gp_Pnt2d(parameter, 0.0)
+
+    monkeypatch.setattr(
+        _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: OnePcurve()
+    )
+    with pytest.raises(UnsupportedBodyGeometry, match="closure roster is incomplete"):
+        _body_geometry._cylinder_pcurve_variants(
+            edge,
+            face,
+            adaptor,
+            described.descriptor.placement.centre_of_mass,
+            described.descriptor.quantization.metric_quantum,
+            gauge,
+            label.kind,
+            label.full,
+            _body_geometry._MatchingConstructionBudget(),
+        )
+
+
+def test_schema_three_kernel_failure_mapping_is_narrow(monkeypatch) -> None:
+    solid = Box(1, 1, 1).solids()[0]
+
+    def mass_failure(*_args):
+        raise Standard_Failure("mass failure")
+
+    monkeypatch.setattr(_body_geometry.BRepGProp, "VolumeProperties_s", mass_failure)
+    with pytest.raises(UnsupportedBodyGeometry, match="mass properties"):
+        _body_geometry.describe_solid(solid)
+
+    monkeypatch.undo()
+
+    def boundary_failure(*_args):
+        raise Standard_Failure("boundary failure")
+
+    monkeypatch.setattr(_body_geometry, "_face_geometry", boundary_failure)
+    with pytest.raises(UnsupportedBodyGeometry, match="body boundary"):
+        _body_geometry.describe_solid(solid)
+
+
+def test_graph_matching_boundary_revalidates_every_authority_layer(monkeypatch) -> None:
+    graph, solid, fact = _body_descriptor(Box(4, 5, 6))
+    copied = copy.copy(solid)
+    assert copied is not solid
+    with pytest.raises(BodyGeometryAuthorityError, match="graph-authorized"):
+        graph.matching_boundary(copied)
+
+    object.__setattr__(fact, "_solid", copied)
+    with pytest.raises(BodyGeometryAuthorityError, match="lost its graph-issued solid"):
+        graph.matching_boundary(solid)
+    object.__setattr__(fact, "_solid", solid)
+
+    monkeypatch.setattr(FaceGraph, "node_of", lambda _self, _face: None)
+    with pytest.raises(BodyGeometryAuthorityError, match="face is not graph-owned"):
+        graph.matching_boundary(solid)
+
+
+def test_correspondence_closed_authority_failure_roster(monkeypatch) -> None:
+    monkeypatch.setattr(
+        correspondence_module.pickle,
+        "dumps",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(TypeError("not picklable")),
+    )
+    with pytest.raises(CorrespondenceSnapshotError, match="cannot be frozen"):
+        correspondence_module._authority_value(object())
+
+    monkeypatch.undo()
+    product = _take_inventory(_rrp())
+    candidate = product.physical.candidate_set(
+        FamilyId.REPEATING_RADIAL_PROFILES
+    ).candidates[0]
+    object.__setattr__(candidate, "record", object())
+    with pytest.raises(CorrespondenceSnapshotError, match="wrong record type"):
+        correspondence_module._occurrence(
+            product.context.graph, product.evidence, candidate
+        )
+
+
+def test_cached_correspondence_pickle_failure_is_closed(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    correspondence_snapshot(product)
+
+    def fail(*_args, **_kwargs):
+        raise TypeError("not picklable")
+
+    monkeypatch.setattr(correspondence_module.pickle, "dumps", fail)
+    with pytest.raises(CorrespondenceSnapshotError, match="changed after issue"):
+        correspondence_snapshot(product)
+
+
+def test_schema_three_complete_topology_budget_preflight_refuses(monkeypatch) -> None:
+    edge = _body_geometry.EdgeGeometry(
+        "LINE", (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 1.0
+    )
+    wire = _body_geometry.WireGeometry("outer", 1, ((edge, 1), (edge, -1)))
+
+    def build(area: float):
+        alignments = tuple(
+            ((object(), 1), (object(), -1)) for _index in range(2)
+        )
+        wire_build = _body_geometry._WireBuild(wire, alignments)
+        face = FaceGeometry("PLANE", (), area, (0.0, 0.0, 0.0), 1, (wire,))
+        return _body_geometry._FaceBuild(face, (wire_build,))
+
+    monkeypatch.setattr(_body_geometry, "CANONICAL_SERIALIZATION_BUDGET", 3)
+    with pytest.raises(UnsupportedBodyGeometry, match="budget"):
+        _body_geometry._canonical_topology((build(1.0), build(2.0)))
+
+
+def test_schema_three_empty_canonical_search_refuses(monkeypatch) -> None:
+    monkeypatch.setattr(_body_geometry, "_matching_label_orders", lambda *_args: ())
+    with pytest.raises(UnsupportedBodyGeometry, match="no canonical serialization"):
+        _body_geometry._matching_graph_canonical(
+            (), (), (), _body_geometry._MatchingConstructionBudget()
+        )
+
+
+def test_schema_three_cylinder_empty_wire_refuses(monkeypatch) -> None:
+    part = Cylinder(10, 20).solids()[0]
+    described = _body_geometry.describe_solid(part)
+    monkeypatch.setattr(Wire, "edges", lambda _self: [])
+    with pytest.raises(UnsupportedBodyGeometry, match="cylinder wire is empty"):
+        matching_boundary_for_solid(
+            part, described.descriptor, described.face_builds
+        )
+
+
+@pytest.mark.parametrize("failure", ["null", "foreign"])
+def test_schema_three_cylinder_vertex_authority_refuses(monkeypatch, failure: str) -> None:
+    part = Cylinder(10, 20).solids()[0]
+    described = _body_geometry.describe_solid(part)
+    cylinder = next(
+        face
+        for face in part.faces()
+        if BRepAdaptor_Surface(face.wrapped).GetType().name == "GeomAbs_Cylinder"
+    )
+    seam = next(
+        edge
+        for edge in cylinder.edges()
+        if BRepAdaptor_Curve(edge.wrapped).GetType().name == "GeomAbs_Line"
+    )
+    original = TopExp.FirstVertex_s
+    foreign = original(Box(1, 1, 1).edges()[0].wrapped, False)
+    calls = 0
+
+    def first(edge, oriented):
+        nonlocal calls
+        if edge.IsSame(seam.wrapped):
+            calls += 1
+            if calls == 2:
+                return TopoDS_Vertex() if failure == "null" else foreign
+        return original(edge, oriented)
+
+    monkeypatch.setattr(_body_geometry.TopExp, "FirstVertex_s", first)
+    message = "lost a topology vertex" if failure == "null" else "outside its global curve roster"
+    with pytest.raises(UnsupportedBodyGeometry, match=message):
+        matching_boundary_for_solid(
+            part, described.descriptor, described.face_builds
+        )
+
+
+def test_schema_three_curve_grammar_and_vertex_cardinality_refuse(monkeypatch) -> None:
+    part = Box(4, 5, 6).solids()[0]
+    described = _body_geometry.describe_solid(part)
+    target = described.face_builds[0].wires[0].occurrences[0][0][0]
+
+    changed_builds = []
+    for build in described.face_builds:
+        changed_wires = []
+        for wire in build.wires:
+            changed_edges = tuple(
+                (
+                    dataclasses.replace(geometry, kind="BSPLINE")
+                    if _body_geometry._same_shape(token, target)
+                    else geometry,
+                    semantic,
+                )
+                for (geometry, semantic), (token, _direction) in zip(
+                    wire.geometry.edges, wire.occurrences[0], strict=True
+                )
+            )
+            changed_wires.append(
+                dataclasses.replace(
+                    wire,
+                    geometry=dataclasses.replace(
+                        wire.geometry, edges=changed_edges
+                    ),
+                )
+            )
+        changed_builds.append(dataclasses.replace(build, wires=tuple(changed_wires)))
+    monkeypatch.setattr(_body_geometry, "_validate_matching_pcurve", lambda *_args: None)
+    with pytest.raises(UnsupportedBodyGeometry, match="curve grammar"):
+        matching_boundary_for_solid(
+            part, described.descriptor, tuple(changed_builds)
+        )
+
+    monkeypatch.undo()
+    original_last = TopExp.LastVertex_s
+
+    def last(edge, oriented):
+        if edge.IsSame(target.wrapped):
+            return TopoDS_Vertex()
+        return original_last(edge, oriented)
+
+    monkeypatch.setattr(_body_geometry.TopExp, "LastVertex_s", last)
+    with pytest.raises(UnsupportedBodyGeometry, match="two vertices"):
+        matching_boundary_for_solid(
+            part, described.descriptor, described.face_builds
+        )
+
+
+def test_correspondence_binding_refuses_filtered_and_rejected_rosters(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    candidate = product.physical.candidate_set(
+        FamilyId.REPEATING_RADIAL_PROFILES
+    ).candidates[0]
+    object.__setattr__(candidate, "record", object())
+    monkeypatch.setattr(EvidenceIndex, "validate_candidate_set", lambda *_args: None)
+    with pytest.raises(CorrespondenceSnapshotError, match="wrong record type"):
+        correspondence_module._CorrespondenceSnapshotAuthority().bind(product)
+
+    monkeypatch.undo()
+    product = _take_inventory(_rrp())
+
+    def empty(_self, source):
+        result = object.__new__(type(source))
+        object.__setattr__(result, "family", source.family)
+        object.__setattr__(result, "candidates", ())
+        object.__setattr__(result, "_issuer", source._issuer)
+        return result
+
+    monkeypatch.setattr(type(product.reconciliation), "accepted_set", empty)
+    with pytest.raises(CorrespondenceSnapshotError, match="accepted reconciliation"):
+        correspondence_module._CorrespondenceSnapshotAuthority().bind(product)
 
 
 def test_schema_three_joint_canonicalization_preserves_equal_topology_tokens() -> None:
