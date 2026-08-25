@@ -259,7 +259,7 @@ def _discover_plates(
                 pending.append((proposal.record, nodes))
         except _PlateAttributionError:
             raise
-        except (KeyError, ValueError) as exc:
+        except (KeyError, RuntimeError, ValueError) as exc:
             raise _PlateAttributionError("Plate face binding failed") from exc
         for record, nodes in pending:
             writer.add_defining(record, nodes, family=FamilyId.PLATES)
