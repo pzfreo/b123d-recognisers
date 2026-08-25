@@ -210,5 +210,8 @@ issuer failures.
 Each Slot occurrence now owns the complete route-selected original topology carried by #234:
 every planar wall retained by intentional merge/collinear collapse and every patch in the selected
 low/high cylindrical cap groups. The public writer-free values and order remain unchanged. Equal
-values on separate solids remain separate occurrences; unexplained source reuse, foreign identity,
-cap ambiguity or missing one-body proof refuses before any Slot issuance.
+values on separate solids remain separate occurrences. One original wall may truthfully define
+distinct exact Slot records on the same `SolidRef` (nested or adjacent reductions); each Candidate
+retains that node rather than imposing exclusive ownership. Graph-identical proposal duplicates
+collapse, while same-record competing role sets, cross-solid reuse, foreign identity, cap ambiguity
+or missing one-body proof refuse before any Slot issuance.

@@ -74,9 +74,7 @@ def recognise_slots(
         pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
         return [record for record, _nodes in pairs]
     writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
-    return _discover_slots(
-        part, face_edges=face_edges, writer=writer, _wrap_identity_errors=False
-    )
+    return _discover_slots(part, face_edges=face_edges, writer=writer, _wrap_identity_errors=False)
 
 
 def _discover_slots(
@@ -120,7 +118,6 @@ def _discover_slots(
         return records
 
     pending = []
-    used: set = set()
     try:
         for proposal in proposals:
             nodes = frozenset(
@@ -128,21 +125,33 @@ def _discover_slots(
             )
             if not nodes:
                 raise _SlotAttributionError("Slot occurrence has no defining source faces")
-            if used & nodes:
-                raise _SlotAttributionError("Slot source face is reused by another occurrence")
             for node in nodes:
                 writer.graph.face(node)
-            if writer.graph.common_valid_solid(nodes) is None:
+            solid = writer.graph.common_valid_solid(nodes)
+            if solid is None:
                 raise _SlotAttributionError("Slot source faces do not prove one valid solid")
-            used.update(nodes)
-            pending.append((proposal.record, nodes))
+            duplicate = False
+            for other_record, other_nodes, other_solid in pending:
+                if proposal.record == other_record and nodes == other_nodes:
+                    duplicate = True
+                    break
+                if not nodes.isdisjoint(other_nodes) and (
+                    proposal.record == other_record or solid != other_solid
+                ):
+                    raise _SlotAttributionError(
+                        "Slot source face is ambiguously reused by another occurrence"
+                    )
+            if duplicate:
+                continue
+            pending.append((proposal.record, nodes, solid))
     except _SlotAttributionError:
         raise
     except (IndexError, KeyError, ValueError) as exc:
         if not _wrap_identity_errors:
             raise
         raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
-    for record, nodes in pending:
+    records = [record for record, _nodes, _solid in pending]
+    for record, nodes, _solid in pending:
         writer.add_defining(record, nodes, family=FamilyId.SLOTS)
     return records
 

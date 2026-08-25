@@ -906,8 +906,10 @@ retained by intentional merge/collinear collapse plus every patch in the selecte
 cylindrical cap groups. Rectangular, crossing, elongated-obround and cap-recovered routes therefore
 share one occurrence-safe proposal product while keeping their distinct defining roles. The public
 signature, values, order and ledger compatibility remain unchanged; the registry alone uses the
-private writer core with shared `FaceEdges`. All occurrence binding, source reuse and one-SolidRef
-checks complete before issuance. Bucket 31 remains sealed pending independent reviews and gates.
+private writer core with shared `FaceEdges`. All occurrence binding and one-SolidRef checks complete
+before issuance. Distinct exact records on that same solid may share a truthful wall node; identical
+bound proposals collapse, while same-record competing roles and cross-solid reuse refuse atomically.
+Bucket 31 remains sealed pending independent reviews and gates.
 
 The Repeating Radial Profile, Step Level and Riser semantic children #239, #240 and #241 have
 independent neutral allocations despite being designated together: `F5-REPEATING-RADIAL-PROFILES-H1`

@@ -15,11 +15,13 @@ from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_slots
+from b123d_recognisers import _recess_features as recess_features
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_features import _discover_slots, _SlotAttributionError
 from b123d_recognisers._recess_records import Slot
+from b123d_recognisers._recess_reduce import _RecessProposal
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all, _take_inventory
@@ -466,6 +468,61 @@ def test_same_body_equal_size_occurrences_and_traversal_keep_exact_identity(monk
         frozenset(reversed_ledger.graph.bounds(node) for node in reversed_ledger.defining_of(item))
         for item in reversed_ledger.candidate_set(FamilyId.SLOTS).candidates
     ] == [frozenset(ledger.graph.bounds(node) for node in nodes) for nodes in roles]
+
+
+def test_checked_nested_slots_share_truthful_wall_evidence_on_one_solid() -> None:
+    part = import_step(ROOT / "tests/corpus/mfcadpp/10190.step")
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.SLOTS).candidates
+    assert candidates
+    shared = []
+    for index, left in enumerate(candidates):
+        left_nodes = product.evidence.defining_of(left)
+        for right in candidates[index + 1 :]:
+            right_nodes = product.evidence.defining_of(right)
+            overlap = left_nodes & right_nodes
+            if overlap:
+                shared.append((left, right, overlap))
+                assert left.record != right.record
+                assert product.context.graph.common_valid_solid(left_nodes) == (
+                    product.context.graph.common_valid_solid(right_nodes)
+                )
+    assert shared
+
+
+def test_same_record_competing_role_sets_still_refuse_atomically(monkeypatch) -> None:
+    part = Box(80, 50, 16) - Box(28, 10, 16)
+    ledger = ClaimLedger(FaceGraph(part))
+    (proposal,) = recess_features._body_scoped_proposals(
+        [part], lambda solid: recess_features._slot_proposals_one(solid, graph=ledger.graph)
+    )
+    extra = next(node for node in ledger.graph.nodes if node not in proposal.planar)
+    competing = _RecessProposal(proposal.record, proposal.planar | {extra}, proposal.caps)
+    monkeypatch.setattr(
+        recess_features,
+        "_body_scoped_proposals",
+        lambda _sources, _recognise_one: [proposal, competing],
+    )
+    with pytest.raises(_SlotAttributionError, match="ambiguously reused"):
+        _discover_slots(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
+def test_graph_identical_proposal_duplicate_collapses_before_issue(monkeypatch) -> None:
+    part = Box(80, 50, 16) - Box(28, 10, 16)
+    ledger = ClaimLedger(FaceGraph(part))
+    (proposal,) = recess_features._body_scoped_proposals(
+        [part], lambda solid: recess_features._slot_proposals_one(solid, graph=ledger.graph)
+    )
+    monkeypatch.setattr(
+        recess_features,
+        "_body_scoped_proposals",
+        lambda _sources, _recognise_one: [proposal, proposal],
+    )
+    (record,) = _discover_slots(part, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.SLOTS).candidates
+    assert candidate.record is record
+    assert ledger.defining_of(candidate) == frozenset(proposal.planar)
 
 
 @pytest.mark.parametrize(("length", "accepted"), [(89.99, True), (90.0, False), (90.01, False)])
