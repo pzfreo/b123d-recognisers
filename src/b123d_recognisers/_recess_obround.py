@@ -20,8 +20,9 @@ Imports :mod:`b123d_recognisers._recess_faces` for the face read and
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Literal, cast, overload
+from typing import cast
 
+from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_faces import (
     _AXES,
@@ -35,7 +36,7 @@ from b123d_recognisers._recess_faces import (
     _union_bb,
 )
 from b123d_recognisers._recess_records import Pocket, Slot
-from b123d_recognisers._recess_reduce import _R, _absorb, _Claims
+from b123d_recognisers._recess_reduce import _R, _absorb, _Claims, _RecessProposal
 from b123d_recognisers._typing import Part
 
 # A radiused-end (obround) slot has semicircular end caps whose radius is the slot's
@@ -44,6 +45,7 @@ from b123d_recognisers._typing import Part
 # not extended. The fraction is the 0.15 mm constant it replaces over the corpus's 4 mm
 # reference radius.
 _END_RADIUS_FRAC = 0.0375
+
 
 def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
     """True when a semicircular obround end cap sits at ``coord`` along the long axis: a
@@ -63,12 +65,11 @@ def _end_cap_at(caps: list[tuple], s: _R, coord: float) -> bool:
         and abs(loc[wi] - s.w_center) <= _MERGE_TOL
         and abs(getattr(bb.min, dc) - s.d_lo) <= _MERGE_TOL
         and abs(getattr(bb.max, dc) - s.d_hi) <= _MERGE_TOL
-        for rad, ax, loc, bb, concave in caps
+        for rad, ax, loc, bb, concave, _node in caps
     )
 
-def _extend_obround_ends(
-    records: list[_R], part: Part, claims: _Claims | None = None
-) -> list[_R]:
+
+def _extend_obround_ends(records: list[_R], part: Part, claims: _Claims | None = None) -> list[_R]:
     """Extend radiused-end (obround) slots/pockets to their **overall** length.
 
     The recogniser pairs the two flat side walls, so the raw ``lo``/``hi`` stop at the straight
@@ -98,6 +99,65 @@ def _extend_obround_ends(
             out.append(s)
     return out
 
+
+def _matching_end_groups(
+    ends: list[tuple], record: _R, coord: float
+) -> tuple[frozenset[FaceNode], ...]:
+    """Every distinct physical cap cluster matching one serialized endpoint."""
+
+    radius = record.width / 2
+    groups: list[frozenset[FaceNode]] = []
+    for end in ends:
+        _wa, _la, axis, rad, wc, flat, _direction, d_lo, d_hi, patches = end
+        if (
+            axis == record.depth_axis
+            and abs(rad - radius) <= length_tol(radius, rel=_END_RADIUS_FRAC)
+            and abs(flat - coord) <= _MERGE_TOL
+            and abs(wc - record.w_center) <= _MERGE_TOL
+            and abs(d_lo - record.d_lo) <= _MERGE_TOL
+            and abs(d_hi - record.d_hi) <= _MERGE_TOL
+            and patches
+            and patches not in groups
+        ):
+            groups.append(patches)
+    return tuple(groups)
+
+
+def _extend_obround_proposals(
+    proposals: list[_RecessProposal[_R]],
+    part: Part,
+    graph: FaceGraph,
+    *,
+    strict_ambiguity: bool = True,
+) -> list[_RecessProposal[_R]]:
+    """Extend records while retaining both exact cap clusters; ambiguity refuses."""
+
+    ends = _obround_ends(part, graph)
+    out: list[_RecessProposal[_R]] = []
+    for proposal in proposals:
+        record = proposal.record
+        low = _matching_end_groups(ends, record, record.lo)
+        high = _matching_end_groups(ends, record, record.hi)
+        if strict_ambiguity and (len(low) > 1 or len(high) > 1):
+            raise ValueError("multiple distinct obround cap clusters compete for one endpoint")
+        if low and high:
+            radius = record.width / 2
+            extended = replace(
+                record,
+                lo=round(record.lo - radius, 2),
+                hi=round(record.hi + radius, 2),
+                length=round(record.hi - record.lo + 2 * radius, 2),
+            )
+            cap_groups = list(proposal.caps)
+            for group in (low[0], high[0]):
+                if group not in cap_groups:
+                    cap_groups.append(group)
+            out.append(_RecessProposal(extended, proposal.planar, tuple(cap_groups)))
+        else:
+            out.append(proposal)
+    return out
+
+
 # An obround through-slot whose straight section is shorter than its width has flat side
 # walls too short to pair as an elongated slot: `_candidate` either rejects it (width > the short
 # straight length) or mistakes the full through-thickness for the length (a full-span cut). Its
@@ -113,7 +173,8 @@ _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) /
 # run, well outside. The fraction is the 0.3 mm constant it replaces over the 4 mm reference.
 _CAP_CLUSTER_FRAC = 0.075
 
-def _obround_end(cap: tuple) -> tuple | None:
+
+def _obround_end(cap: tuple, patches: frozenset[FaceNode] = frozenset()) -> tuple | None:
     """Classify a concave cylinder *cap* (from :func:`_cylinder_faces`) as a half-cylinder obround
     end, or None. A half-cylinder end's in-plane bounding box is ≈ 2r across (its width axis) by
     ≈ r along the bulge (its long axis) — a full cylinder (round hole) is 2r × 2r and is rejected.
@@ -125,7 +186,7 @@ def _obround_end(cap: tuple) -> tuple | None:
     through/blind split is left to the caller's :func:`_has_floor` (authoritative and local, so a
     through-slot in a thin step of stepped stock is not rejected by a global-thickness
     assumption)."""
-    rad, ax, loc, bb, concave = cap
+    rad, ax, loc, bb, concave, _node = cap
     if not concave or rad <= 0:
         return None
     others = [a for a in "xyz" if a != ax]
@@ -153,9 +214,11 @@ def _obround_end(cap: tuple) -> tuple | None:
         direction,
         d_lo,
         d_hi,
+        patches,
     )
 
-def _obround_ends(part: Part) -> list[tuple]:
+
+def _obround_ends(part: Part, graph: FaceGraph | None = None) -> list[tuple]:
     """The obround end caps of *part*, robust to the imported-STEP topology that splits a
     semicircular end into two quarter-cylinder faces.
 
@@ -171,7 +234,7 @@ def _obround_ends(part: Part) -> list[tuple]:
     fails the ratio test.)
     """
     clusters: list[dict] = []
-    for rad, ax, loc, bb, concave in _cylinder_faces(part):
+    for rad, ax, loc, bb, concave, node in _cylinder_faces(part, graph):
         if not concave or rad <= 0:
             continue
         o0, o1 = [a for a in "xyz" if a != ax]
@@ -187,29 +250,40 @@ def _obround_ends(part: Part) -> list[tuple]:
                 and abs(cl["ip"][1] - ip[1]) <= length_tol(rad, rel=_CAP_CLUSTER_FRAC)
             ):
                 cl["bb"] = _union_bb(cl["bb"], bb)
+                if node is not None:
+                    cl["nodes"].add(node)
                 break
         else:
-            clusters.append({"ax": ax, "rad": rad, "loc": loc, "ip": ip, "dz": dz, "bb": bb})
+            clusters.append(
+                {
+                    "ax": ax,
+                    "rad": rad,
+                    "loc": loc,
+                    "ip": ip,
+                    "dz": dz,
+                    "bb": bb,
+                    "nodes": set() if node is None else {node},
+                }
+            )
     ends = []
     for cl in clusters:
-        e = _obround_end((cl["rad"], cl["ax"], cl["loc"], cl["bb"], True))
+        e = _obround_end(
+            (cl["rad"], cl["ax"], cl["loc"], cl["bb"], True, None),
+            frozenset(cl["nodes"]),
+        )
         if e is not None:
             ends.append(e)
     return ends
 
-@overload
-def _recognise_obround_from_ends(
-    part: Part, faces: list[_Face], *, blind: Literal[False] = ...
-) -> list[Slot]: ...
-
-@overload
-def _recognise_obround_from_ends(
-    part: Part, faces: list[_Face], *, blind: Literal[True]
-) -> list[Pocket]: ...
 
 def _recognise_obround_from_ends(
-    part: Part, faces: list[_Face], *, blind: bool = False
-) -> list[Slot] | list[Pocket]:
+    part: Part,
+    faces: list[_Face],
+    *,
+    blind: bool = False,
+    graph: FaceGraph | None = None,
+    proposals: bool = False,
+) -> list[Slot] | list[Pocket] | list[_RecessProposal]:
     """Recognise obround recesses from their semicircular end caps — the path for recesses whose
     flat walls are too short for :func:`_candidate`/:func:`_pocket_candidate` to pair.
     Merged ends (:func:`_obround_ends`, quarter/half-cylinder agnostic) are grouped by centreline/
@@ -227,14 +301,15 @@ def _recognise_obround_from_ends(
     sub-millimetre obround (straight run < 0.5 mm) is not recovered; supporting that would need the
     module-wide absolute ``_MERGE_TOL`` to go relative, out of scope here."""
     groups: dict[tuple, list[tuple]] = {}
-    for e in _obround_ends(part):
-        wa, la, da, rad, wc, flat, direction, dlo, dhi = e
+    for e in _obround_ends(part, graph):
+        wa, la, da, rad, wc, flat, direction, dlo, dhi, _patches = e
         key = (wa, la, da, round(rad, 2), round(wc, 2), round(dlo, 2), round(dhi, 2))
         groups.setdefault(key, []).append(e)
     # The list is homogeneous per call -- `blind` decides which record kind is appended -- but
     # that is a fact about the flag, not about this local, so the overloads above carry it and
     # the local is typed as what it structurally is.
     out: list[Slot | Pocket] = []
+    proposed: list[_RecessProposal] = []
     for (wa, la, _da, rad, wc, dlo, dhi), grp in groups.items():
         run = sorted(grp, key=lambda e: e[5])  # by flat along the long axis
         i = 0
@@ -242,11 +317,7 @@ def _recognise_obround_from_ends(
             lo_end, hi_end = run[i], run[i + 1]
             # A recess's two ends bulge APART (low end toward -long, high end toward +long), so the
             # void is between their flats. The reverse pair is solid stock between recesses — skip.
-            if not (
-                lo_end[6] == -1
-                and hi_end[6] == 1
-                and hi_end[5] - lo_end[5] > _MERGE_TOL
-            ):
+            if not (lo_end[6] == -1 and hi_end[6] == 1 and hi_end[5] - lo_end[5] > _MERGE_TOL):
                 i += 1
                 continue
             lo_f, hi_f = round(lo_end[5], 2), round(hi_end[5], 2)
@@ -272,26 +343,29 @@ def _recognise_obround_from_ends(
             # emit it as a full-thickness-deep pocket.
             n_floor = _floor_ends(faces, s)
             if blind and n_floor == 1:
-                out.append(
-                    Pocket(
-                        width_axis=wa,
-                        long_axis=la,
-                        width=round(2 * rad, 2),
-                        length=round(hi_f - lo_f, 2),
-                        depth=round(dhi - dlo, 2),
-                        w_center=round(wc, 2),
-                        lo=lo_f,
-                        hi=hi_f,
-                        d_lo=round(dlo, 2),
-                        d_hi=round(dhi, 2),
-                        # which face this obround pocket opens through
-                        open_sign=_open_sign(faces, s),
-                    )
+                record = Pocket(
+                    width_axis=wa,
+                    long_axis=la,
+                    width=round(2 * rad, 2),
+                    length=round(hi_f - lo_f, 2),
+                    depth=round(dhi - dlo, 2),
+                    w_center=round(wc, 2),
+                    lo=lo_f,
+                    hi=hi_f,
+                    d_lo=round(dlo, 2),
+                    d_hi=round(dhi, 2),
+                    # which face this obround pocket opens through
+                    open_sign=_open_sign(faces, s),
                 )
+                out.append(record)
+                proposed.append(_RecessProposal(record, caps=(lo_end[9], hi_end[9])))
                 i += 2
             elif not blind and n_floor == 0:
                 out.append(s)
+                proposed.append(_RecessProposal(s, caps=(lo_end[9], hi_end[9])))
                 i += 2
             else:
                 i += 1  # not ours: a pocket in a slot scan, a slot in a pocket scan, or a void
+    if proposals:
+        return proposed
     return cast(list[Slot] | list[Pocket], out)
