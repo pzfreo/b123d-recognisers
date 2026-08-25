@@ -39,6 +39,8 @@ from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_core import (
     _bounds_one_void,
     _pocket_proposals_one,
+    _recognise_corner_notches,
+    _shared_concave_boundaries,
     _uninterrupted_long_span,
 )
 from b123d_recognisers._recess_faces import (
@@ -478,6 +480,24 @@ def test_unexpected_geometry_value_error_is_not_relabelled(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+def test_writer_graph_authority_and_unwrapped_stale_identity_fail_closed(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    foreign = ClaimLedger(FaceGraph(deepcopy(part)))
+    with pytest.raises(_PocketAttributionError, match="share one authority"):
+        _discover_pockets(part, graph=graph, writer=foreign.writer)
+
+    record = _discover_pockets(part)[0]
+    stale = _RecessProposal(record, frozenset({FaceNode(999_999)}))
+    monkeypatch.setattr(module, "_body_scoped_proposals", lambda *_a, **_kw: [stale])
+    ledger = ClaimLedger(graph)
+    with pytest.raises(ValueError, match="not issued by this graph"):
+        _discover_pockets(part, writer=ledger.writer, _wrap_errors=False)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
 @pytest.mark.parametrize(
     "part",
     [
@@ -697,6 +717,7 @@ def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> No
     face_box = Box(1, 1, 1).bounding_box()
     fa = _Face((1, 0, 0), "x", face_box, True, cast(FaceNode, left))
     fb = _Face((-1, 0, 0), "x", face_box, True, cast(FaceNode, right))
+    missing = _Face((1, 0, 0), "x", face_box, True)
 
     class Graph:
         def __init__(self, common=(), arcs=None, regions=None, bounds=None):
@@ -725,6 +746,10 @@ def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> No
         arcs={(left, a): "concave", (right, b): "concave"}, regions={a: shared, b: shared}
     )
     assert _bounds_one_void(fa, fb, cast(FaceGraph, fragmented))
+    with pytest.raises(ValueError, match="require graph nodes"):
+        _shared_concave_boundaries(missing, fb, cast(FaceGraph, fragmented))
+    with pytest.raises(ValueError, match="require graph nodes"):
+        _uninterrupted_long_span("z", (0, 10), missing, fb, cast(FaceGraph, fragmented))
     trimming = Graph(
         common={curved},
         arcs={(left, curved): "convex", (right, curved): "concave"},
@@ -1285,6 +1310,16 @@ def test_step_split_corner_floor_preserves_legacy_negative_parity(tmp_path: Path
     assert _discover_pockets(imported) == []
     assert _discover_pockets(imported, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_legacy_corner_claim_projection_uses_proposal_nodes() -> None:
+    part = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+    graph = FaceGraph(part)
+    faces = _planar_faces(part, None, graph)
+    claims = {}
+    (record,) = _recognise_corner_notches(faces, part.bounding_box(), claims)
+    assert record.edge_anchored
+    assert len(claims[record]) == 3
 
 
 def test_step_split_opposed_floor_remains_consulted_not_defining(tmp_path: Path) -> None:
