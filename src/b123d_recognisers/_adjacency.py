@@ -46,7 +46,9 @@ from b123d_recognisers._analytic_surfaces import (
 from b123d_recognisers._body_geometry import (
     BodyGeometryDescriptor,
     FaceGeometry,
+    MatchingBoundaryGraph,
     describe_solid,
+    matching_boundary_for_solid,
 )
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
@@ -186,12 +188,19 @@ class BodyGeometryFact:
     _solid: SolidRef
     descriptor: BodyGeometryDescriptor
     _faces: tuple[tuple[FaceNode, FaceGeometry], ...]
+    _matching_faces: tuple[tuple[FaceNode, object], ...]
 
     def _defining_face(self, node: FaceNode) -> FaceGeometry:
         for issued, geometry in self._faces:
             if issued is node:
                 return geometry
         raise BodyGeometryAuthorityError("face node is not part of this graph-authorized body fact")
+
+    def _matching_face(self, node: FaceNode) -> object:
+        for issued, geometry in self._matching_faces:
+            if issued is node:
+                return geometry
+        raise BodyGeometryAuthorityError("face node is not part of this matching body fact")
 
 
 @dataclass(frozen=True, eq=False, slots=True)
@@ -250,6 +259,8 @@ class FaceGraphQuery(Protocol):
     def common_valid_solid(self, nodes: Iterable[FaceNode]) -> SolidRef | None: ...
 
     def body_geometry(self, solid: SolidRef) -> BodyGeometryFact: ...
+
+    def matching_boundary(self, solid: SolidRef) -> MatchingBoundaryGraph: ...
 
 
 class FaceGraph:
@@ -693,14 +704,54 @@ class FaceGraph:
             return cached
         described = describe_solid(self._solids[issued])
         face_facts: list[tuple[FaceNode, FaceGeometry]] = []
-        for face, geometry in zip(described.faces, described.face_geometry, strict=True):
+        matching_face_facts: list[tuple[FaceNode, object]] = []
+        for face, geometry, face_build in zip(
+            described.faces, described.face_geometry, described.face_builds, strict=True
+        ):
             node = self.node_of(face)
             if node is None:
                 raise BodyGeometryAuthorityError("described solid face is not owned by this graph")
             face_facts.append((node, geometry))
-        fact = BodyGeometryFact(solid, described.descriptor, tuple(face_facts))
+            matching_face_facts.append((node, face_build))
+        fact = BodyGeometryFact(
+            solid, described.descriptor, tuple(face_facts), tuple(matching_face_facts)
+        )
         self._body_geometry[solid] = fact
         return fact
+
+    def matching_boundary(self, solid: SolidRef) -> MatchingBoundaryGraph:
+        """Return the lazy schema-three graph for one exact graph-issued solid."""
+
+        self._build_solid_ownership()
+        issued = self._issued_solid_refs.get(solid)
+        assert self._solid_refs is not None
+        assert self._solids is not None
+        assert self._closed_solids is not None
+        if (
+            issued is None
+            or issued != solid.ordinal
+            or not 0 <= issued < len(self._solid_refs)
+            or self._solid_refs[issued] is not solid
+            or issued not in self._closed_solids
+        ):
+            raise BodyGeometryAuthorityError(
+                "matching boundary solid reference is no longer graph-authorized"
+            )
+        fact = self._body_geometry.get(solid)
+        if fact is None:
+            fact = self.body_geometry(solid)
+        if fact._solid is not solid:
+            raise BodyGeometryAuthorityError("matching boundary lost its graph-issued solid")
+        solid_shape = self._solids[issued]
+        matching_builds = []
+        for face in solid_shape.faces():
+            node = self.node_of(face)
+            if node is None:
+                raise BodyGeometryAuthorityError("matching solid face is not graph-owned")
+            matching_builds.append(fact._matching_face(node))
+        return matching_boundary_for_solid(
+            solid_shape, fact.descriptor, tuple(matching_builds)
+        )
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:

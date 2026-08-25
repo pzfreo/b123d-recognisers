@@ -9,8 +9,8 @@ edit classification and exports nothing from the package public surface.
 from __future__ import annotations
 
 import math
+import pickle
 from collections.abc import Mapping
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeAlias
 
@@ -24,7 +24,14 @@ from b123d_recognisers._body_geometry import (
     FaceGeometry,
     UnsupportedBodyGeometry,
     validate_descriptor_quantization,
+    validate_matching_boundary_graph,
 )
+from b123d_recognisers._body_geometry import MatchingBoundaryGraph as MatchingBoundaryGraph
+from b123d_recognisers._body_geometry import MatchingCurve as MatchingCurve
+from b123d_recognisers._body_geometry import MatchingFace as MatchingFace
+from b123d_recognisers._body_geometry import MatchingHalfEdge as MatchingHalfEdge
+from b123d_recognisers._body_geometry import MatchingWire as MatchingWire
+from b123d_recognisers._body_geometry import MatchingWireVertex as MatchingWireVertex
 from b123d_recognisers._candidates import Candidate, CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._dispositions import ReconciliationResult
 from b123d_recognisers._run import RecognitionContext
@@ -82,6 +89,7 @@ class AcceptedOccurrenceSnapshot:
     record_type: str
     record_value: FrozenValue
     body: BodyGeometryDescriptor
+    matching_boundary: MatchingBoundaryGraph
     summary: RepeatingProfileGeometrySummary
 
 
@@ -108,6 +116,15 @@ def _freeze(value: object) -> FrozenValue:
     raise CorrespondenceSnapshotError(
         f"record value contains unsupported {type(value).__name__} state"
     )
+
+
+def _authority_value(value: object) -> bytes:
+    """Retain the complete issued value as collision-free, run-local bytes."""
+
+    try:
+        return pickle.dumps(value, protocol=5)
+    except (pickle.PickleError, TypeError, ValueError) as error:
+        raise CorrespondenceSnapshotError("authority value cannot be frozen") from error
 
 
 def _freeze_rrp(record: RepeatingRadialProfile) -> FrozenValue:
@@ -168,12 +185,17 @@ def _occurrence(
         validate_descriptor_quantization(body_fact.descriptor.quantization)
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("RRP descriptor quantization is unavailable") from error
+    try:
+        matching_boundary = graph.matching_boundary(solid)
+    except (BodyGeometryAuthorityError, UnsupportedBodyGeometry) as error:
+        raise CorrespondenceSnapshotError("RRP matching boundary is unavailable") from error
     return (
         AcceptedOccurrenceSnapshot(
             FamilyId.REPEATING_RADIAL_PROFILES.value,
             type(record).__qualname__,
             _freeze_rrp(record),
             body_fact.descriptor,
+            matching_boundary,
             summary,
         ),
         solid,
@@ -183,7 +205,7 @@ def _occurrence(
 def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
     if type(snapshot) is not CorrespondenceSnapshot or type(snapshot.schema_version) is not int:
         raise CorrespondenceSnapshotError("correspondence snapshot schema is malformed")
-    if snapshot.schema_version != 2:
+    if snapshot.schema_version != 3:
         raise CorrespondenceSnapshotError("correspondence snapshot schema is unsupported")
     if type(snapshot.occurrences) is not tuple or type(snapshot.body_groups) is not tuple:
         raise CorrespondenceSnapshotError("correspondence body groups are malformed")
@@ -194,6 +216,7 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
         or type(occurrence.body.boundary) is not BodyBoundaryGeometry
         or type(occurrence.body.placement) is not BodyPlacement
         or type(occurrence.body.quantization) is not DescriptorQuantization
+        or type(occurrence.matching_boundary) is not MatchingBoundaryGraph
         or type(occurrence.summary) is not RepeatingProfileGeometrySummary
         for occurrence in snapshot.occurrences
     ):
@@ -219,6 +242,14 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
             validate_descriptor_quantization(occurrence.body.quantization)
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("correspondence quantization is invalid") from error
+    try:
+        for occurrence in snapshot.occurrences:
+            validate_matching_boundary_graph(
+                occurrence.matching_boundary,
+                occurrence.body.quantization,
+            )
+    except UnsupportedBodyGeometry as error:
+        raise CorrespondenceSnapshotError("correspondence matching boundary is invalid") from error
 
 
 class _CorrespondenceSnapshotAuthority:
@@ -247,7 +278,7 @@ class _CorrespondenceSnapshotAuthority:
         self._physical: object | None = None
         self._reconciliation: object | None = None
         self._bound_records: tuple[tuple[Candidate[object], FrozenValue], ...] = ()
-        self._bound_occurrences: tuple[AcceptedOccurrenceSnapshot, ...] | None = None
+        self._bound_occurrences: object | None = None
         self._bound_body_groups: tuple[tuple[int, ...], ...] | None = None
         self._snapshot: CorrespondenceSnapshot | None = None
 
@@ -322,13 +353,24 @@ class _CorrespondenceSnapshotAuthority:
                 "accepted RRP record identity or value changed after inventory completion"
             )
         if self._snapshot is not None:
-            if self._snapshot.occurrences != self._bound_occurrences:
+            if self._snapshot.body_groups != self._bound_body_groups:
+                raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
+            try:
+                _validate_snapshot(self._snapshot)
+            except CorrespondenceSnapshotError as error:
+                raise CorrespondenceSnapshotError(
+                    "correspondence occurrence values changed after issue"
+                ) from error
+            try:
+                current_occurrences = _authority_value(self._snapshot.occurrences)
+            except CorrespondenceSnapshotError as error:
+                raise CorrespondenceSnapshotError(
+                    "correspondence occurrence values changed after issue"
+                ) from error
+            if current_occurrences != self._bound_occurrences:
                 raise CorrespondenceSnapshotError(
                     "correspondence occurrence values changed after issue"
                 )
-            if self._snapshot.body_groups != self._bound_body_groups:
-                raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
-            _validate_snapshot(self._snapshot)
             return self._snapshot
         staged = tuple(_occurrence(graph, product.evidence, item) for item in accepted.candidates)
         occurrences = tuple(item[0] for item in staged)
@@ -343,12 +385,12 @@ class _CorrespondenceSnapshotAuthority:
                 owners.append(solid)
                 groups.append([position])
         body_groups = tuple(sorted(tuple(group) for group in groups))
-        snapshot = CorrespondenceSnapshot(2, occurrences, body_groups)
+        snapshot = CorrespondenceSnapshot(3, occurrences, body_groups)
         _validate_snapshot(snapshot)
         # The authority retains an independent immutable value, not aliases to the issued
         # dataclass graph. This detects object.__setattr__ mutation of any nested occurrence,
         # descriptor, summary, record value, or quantization field on every cached read.
-        self._bound_occurrences = deepcopy(occurrences)
+        self._bound_occurrences = _authority_value(occurrences)
         self._bound_body_groups = body_groups
         self._snapshot = snapshot
         return snapshot
