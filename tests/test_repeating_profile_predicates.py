@@ -23,6 +23,7 @@ from types import SimpleNamespace
 import pytest
 from build123d import GeomType
 
+import b123d_recognisers.repeating_profiles as module
 from b123d_recognisers.repeating_profiles import (
     _BoundaryEvidence,
     _common_circle_centre,
@@ -64,6 +65,17 @@ def test_common_circle_centre_requires_two_and_has_inclusive_tolerance():
         wire(edge(0.0), edge(2 * TOL)), ("x", "y"), tol=TOL
     ) == pytest.approx((TOL, 0.0))
     assert _common_circle_centre(wire(edge(0.0), edge(2.01 * TOL)), ("x", "y"), tol=TOL) is None
+    malformed = SimpleNamespace(geom_type=GeomType.CIRCLE)
+    assert _common_circle_centre(wire(edge(0.0), malformed), ("x", "y"), tol=TOL) is None
+
+
+def test_wire_sampling_kernel_failure_returns_no_evidence():
+    broken = SimpleNamespace(
+        position_at=lambda _fraction: (_ for _ in ()).throw(RuntimeError("sampling failed")),
+        geom_type=GeomType.LINE,
+        length=1.0,
+    )
+    assert module._sample_wire(SimpleNamespace(edges=lambda: [broken]), ("x", "y")) is None
 
 
 class TestOneClosedCycle:
@@ -125,6 +137,13 @@ class TestOneClosedCycle:
         edges[-1] = _segment(edges[-1].points[0], (end[0] + 1.01 * TOL, end[1]))
         assert not _one_closed_cycle(tuple(edges), tol=TOL)
 
+    def test_one_endpoint_cannot_match_two_existing_nodes(self):
+        edges = (
+            _segment((0.0, 0.0), (2 * TOL, 0.0)),
+            _segment((TOL, 0.0), (10.0, 0.0)),
+        )
+        assert not _one_closed_cycle(edges, tol=TOL)
+
 
 class TestPolarSignature:
     def test_a_curve_and_its_reverse_share_a_signature(self):
@@ -177,6 +196,24 @@ class TestOrbitBoundaries:
         edges = list(_closed_polygon(10))
         edges[1] = edges[0]
         assert _cyclic_edge_orbits(tuple(edges), centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
+
+    def test_nonbijective_mapping_and_short_orbits_are_refused(self, monkeypatch):
+        edges = _closed_polygon(10)
+        indexes = {id(edge): index for index, edge in enumerate(edges)}
+
+        def duplicate_target(source, target, **_kwargs):
+            source_index = indexes[id(source)]
+            target_index = indexes[id(target)]
+            wanted = 0 if source_index in (0, 1) else source_index
+            return target_index == wanted
+
+        monkeypatch.setattr(module, "_curves_match", duplicate_target)
+        assert _cyclic_edge_orbits(edges, centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
+
+        monkeypatch.setattr(
+            module, "_curves_match", lambda source, target, **_kwargs: source is target
+        )
+        assert _cyclic_edge_orbits(edges, centre=(0.0, 0.0), repeat_count=5, tol=TOL) is None
 
     def test_curve_kind_length_and_metric_equality_are_exact(self):
         source = _segment((10.0, 0.0), (8.0, 2.0))

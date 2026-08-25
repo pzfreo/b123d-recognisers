@@ -518,7 +518,7 @@ def test_public_path_is_writer_free_and_value_stable(monkeypatch) -> None:
     assert seen == [None]
 
 
-@pytest.mark.parametrize("failure", ["same", "stale", "body", "late"])
+@pytest.mark.parametrize("failure", ["same", "stale", "body", "late", "reuse"])
 def test_identity_and_body_failures_are_named_and_atomic(monkeypatch, failure: str) -> None:
     part = toothed_prism()
     ledger = ClaimLedger(FaceGraph(part))
@@ -533,6 +533,12 @@ def test_identity_and_body_failures_are_named_and_atomic(monkeypatch, failure: s
         if failure == "late":
             broken = replace(proposal, upper_face=Pos(0, 0, 100) * proposal.upper_face)
             return [proposal, broken]
+        if failure == "reuse":
+            other_record = replace(
+                proposal.record,
+                centre=(proposal.record.centre[0] + 1, *proposal.record.centre[1:]),
+            )
+            return [proposal, replace(proposal, record=other_record)]
         return [proposal]
 
     monkeypatch.setattr(module, "_recognise_solid", corrupted)
