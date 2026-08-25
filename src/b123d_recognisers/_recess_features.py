@@ -27,6 +27,10 @@ from b123d_recognisers._recess_reduce import (
 from b123d_recognisers._typing import Part
 
 
+class _SlotAttributionError(ValueError):
+    """A public Slot occurrence whose complete original ownership cannot be issued."""
+
+
 def recognise_slots(
     part: Part,
     *,
@@ -69,20 +73,61 @@ def recognise_slots(
         )
         pairs.sort(key=lambda pair: (pair[0].width, _region_center(pair[0])))
         return [record for record, _nodes in pairs]
+    writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
+    return _discover_slots(part, face_edges=face_edges, writer=writer)
+
+
+def _discover_slots(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    graph: FaceGraph | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[Slot]:
+    """Discover Slots and optionally issue every selected wall and cap source patch."""
+
+    if graph is not None and writer is not None and graph is not writer.graph:
+        raise _SlotAttributionError("Slot graph and writer must share one authority")
+    owner = writer.graph if writer is not None else graph
+    solids = list(part.solids())
+    sources = solids if len(solids) > 1 else [part]
     proposals = _body_scoped_proposals(
         sources,
         partial(
             _slot_proposals_one,
             face_edges=face_edges,
-            graph=ledger.graph,
+            graph=owner,
         ),
     )
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
-    if ledger is not None:
+    records = [proposal.record for proposal in proposals]
+    if writer is None:
+        return records
+
+    pending = []
+    used: set = set()
+    try:
         for proposal in proposals:
-            if proposal.planar:
-                ledger.add_defining(proposal.record, proposal.planar, family=FamilyId.SLOTS)
-    return [proposal.record for proposal in proposals]
+            nodes = frozenset(
+                (*proposal.planar, *(node for group in proposal.caps for node in group))
+            )
+            if not nodes:
+                raise _SlotAttributionError("Slot occurrence has no defining source faces")
+            if used & nodes:
+                raise _SlotAttributionError("Slot source face is reused by another occurrence")
+            for node in nodes:
+                writer.graph.face(node)
+            if writer.graph.common_valid_solid(nodes) is None:
+                raise _SlotAttributionError("Slot source faces do not prove one valid solid")
+            used.update(nodes)
+            pending.append((proposal.record, nodes))
+    except _SlotAttributionError:
+        raise
+    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+        raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
+    for record, nodes in pending:
+        writer.add_defining(record, nodes, family=FamilyId.SLOTS)
+    return records
 
 
 def recognise_pockets(

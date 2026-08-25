@@ -45,7 +45,7 @@ from b123d_recognisers._recess_reduce import (
     _RecessProposal,
     _same_channel_line,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, IncompleteAttribution
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, IncompleteAttribution
 
 ROOT = Path(__file__).parents[1]
 
@@ -624,7 +624,7 @@ def test_competing_endpoint_cap_clusters_fail_closed(monkeypatch) -> None:
     assert [record.to_dict() for record in recognise_slots(part)] == public_before
 
 
-def test_prerequisite_does_not_promote_or_publish_slot_pocket_evidence() -> None:
+def test_slot_child_promotes_only_slots_and_keeps_pockets_incomplete() -> None:
     by_family = {definition.family: definition for definition in PHYSICAL_DEFINITIONS}
-    assert isinstance(by_family[FamilyId.SLOTS].attribution, IncompleteAttribution)
+    assert isinstance(by_family[FamilyId.SLOTS].attribution, FullyAttributed)
     assert isinstance(by_family[FamilyId.POCKETS].attribution, IncompleteAttribution)
