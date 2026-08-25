@@ -8,12 +8,16 @@ from build123d import Box, Compound, Pos
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
     IDENTITY_ROTATION,
+    PROPER_ROTATIONS,
     ChangeKind,
     CorrespondenceMatchError,
     CorrespondenceRelation,
     CorrespondenceResult,
     RigidScaleWitness,
+    _affine_point,
     _compare_snapshots,
+    _determinant,
+    _inverse_witness,
     _maximum_matchings,
     _validate_result,
     correspondence_changes,
@@ -153,6 +157,29 @@ def test_hypothesis_budget_is_inclusive_and_never_truncates(monkeypatch) -> None
     monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 6)
     with pytest.raises(CorrespondenceMatchError, match="budget"):
         _maximum_matchings(2, 2, edges)
+
+
+def test_proper_rotation_roster_and_affine_inverse_are_exact() -> None:
+    assert len(PROPER_ROTATIONS) == 24
+    assert len(set(PROPER_ROTATIONS)) == 24
+    assert tuple(sorted(PROPER_ROTATIONS)) == PROPER_ROTATIONS
+    point = (2.5, -3.0, 7.25)
+    for rotation in PROPER_ROTATIONS:
+        assert _determinant(rotation) == 1
+        witness = RigidScaleWitness(rotation, (11.0, -7.0, 3.0), 2.0)
+        transformed = _affine_point(
+            witness.rotation,
+            witness.translation,
+            witness.scale,
+            point,
+        )
+        inverse = _inverse_witness(witness)
+        assert _affine_point(
+            inverse.rotation,
+            inverse.translation,
+            inverse.scale,
+            transformed,
+        ) == pytest.approx(point, abs=1e-12)
 
 
 @pytest.mark.parametrize(

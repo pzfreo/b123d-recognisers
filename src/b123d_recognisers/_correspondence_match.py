@@ -113,6 +113,50 @@ PROPER_ROTATIONS = _proper_rotations()
 IDENTITY_ROTATION: Rotation = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
 
+def _rotate(rotation: Rotation, value: Vector3) -> Vector3:
+    return cast(
+        Vector3,
+        tuple(
+            sum(row[column] * value[column] for column in range(3)) for row in rotation
+        ),
+    )
+
+
+def _transpose(rotation: Rotation) -> Rotation:
+    return cast(
+        Rotation,
+        tuple(tuple(rotation[column][row] for column in range(3)) for row in range(3)),
+    )
+
+
+def _affine_point(
+    rotation: Rotation,
+    translation: Vector3,
+    scale: float,
+    value: Vector3,
+) -> Vector3:
+    rotated = _rotate(rotation, value)
+    return cast(
+        Vector3,
+        tuple(
+            scale * component + offset
+            for component, offset in zip(rotated, translation, strict=True)
+        ),
+    )
+
+
+def _inverse_witness(witness: RigidScaleWitness) -> RigidScaleWitness:
+    _validate_witness(witness)
+    inverse_rotation = _transpose(witness.rotation)
+    inverse_scale = 1.0 / witness.scale
+    inverse_translation = _rotate(inverse_rotation, witness.translation)
+    inverse_translation = cast(
+        Vector3,
+        tuple(-inverse_scale * component for component in inverse_translation),
+    )
+    return RigidScaleWitness(inverse_rotation, inverse_translation, inverse_scale)
+
+
 def _ref(side: str, position: int, snapshot: CorrespondenceSnapshot) -> SnapshotOccurrenceRef:
     if side not in ("before", "after") or type(position) is not int:
         raise CorrespondenceMatchError("correspondence occurrence reference is malformed")
