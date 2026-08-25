@@ -1469,7 +1469,8 @@ def test_every_descriptor_numeric_field_routes_through_closed_validators(monkeyp
     monkeypatch.setattr(_body_geometry, "_snap_checked", scalar)
     monkeypatch.setattr(_body_geometry, "_relative_point", vector)
     monkeypatch.setattr(_body_geometry, "_qaxis", axis)
-    _body_descriptor(part)
+    graph, solid, _fact = _body_descriptor(part)
+    graph.matching_boundary(solid)
 
     expected_scalar_quantum = {
         "plane offset": metric,

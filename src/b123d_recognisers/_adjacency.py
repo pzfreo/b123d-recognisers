@@ -710,13 +710,28 @@ class FaceGraph:
     def matching_boundary(self, solid: SolidRef) -> MatchingBoundaryGraph:
         """Return the lazy schema-three graph for one exact graph-issued solid."""
 
-        fact = self.body_geometry(solid)
+        self._build_solid_ownership()
+        issued = self._issued_solid_refs.get(solid)
+        assert self._solid_refs is not None
+        assert self._solids is not None
+        assert self._closed_solids is not None
+        if (
+            issued is None
+            or issued != solid.ordinal
+            or not 0 <= issued < len(self._solid_refs)
+            or self._solid_refs[issued] is not solid
+            or issued not in self._closed_solids
+        ):
+            raise BodyGeometryAuthorityError(
+                "matching boundary solid reference is no longer graph-authorized"
+            )
+        fact = self._body_geometry.get(solid)
+        if fact is None:
+            fact = self.body_geometry(solid)
         cached = self._matching_boundaries.get(solid)
         if cached is not None:
             return cached
-        issued = self._issued_solid_refs.get(solid)
-        assert self._solids is not None
-        if issued is None or fact._solid is not solid:
+        if fact._solid is not solid:
             raise BodyGeometryAuthorityError("matching boundary lost its graph-issued solid")
         matching = matching_boundary_for_solid(self._solids[issued], fact.descriptor)
         self._matching_boundaries[solid] = matching
