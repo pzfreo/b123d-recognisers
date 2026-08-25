@@ -14,8 +14,8 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import recognise_slots
 from b123d_recognisers import _recess_features as recess_features
+from b123d_recognisers import recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
