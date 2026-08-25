@@ -8,6 +8,7 @@ from copy import deepcopy
 from dataclasses import replace
 from functools import partial
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
@@ -20,16 +21,22 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
+    _recognise_corner_notches,
+    _recognise_pockets_one,
+    _recognise_slots_one,
     _slot_proposals_one,
 )
 from b123d_recognisers._recess_faces import _cylinder_faces, _planar_faces
 from b123d_recognisers._recess_obround import (
+    _extend_obround_ends,
     _extend_obround_proposals,
     _obround_end,
     _obround_ends,
+    _recognise_obround_from_ends,
 )
 from b123d_recognisers._recess_reduce import (
     _body_scoped_proposals,
+    _Claims,
     _collapse_collinear_proposals,
     _merge_proposals,
     _RecessProposal,
@@ -337,6 +344,83 @@ def test_corner_notch_provenance_has_no_value_keyed_intermediate() -> None:
     source = inspect.getsource(_pocket_proposals_one)
     assert "_Claims" not in source
     assert "_corner_notch_proposals" in source
+
+
+def test_legacy_claim_projections_are_derived_from_occurrence_proposals() -> None:
+    """Compatibility maps remain projections, never an alternate provenance authority."""
+    slot_part = Box(80, 50, 16) - Box(28, 10, 16)
+    pocket_part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    corner_part = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+
+    for part, recognise_one in (
+        (slot_part, _recognise_slots_one),
+        (pocket_part, _recognise_pockets_one),
+    ):
+        graph = FaceGraph(part)
+        claims: _Claims = {}
+        records = recognise_one(part, graph=graph, claims=claims)
+        assert records
+        assert list(claims) == records
+        assert all(claims[record] for record in records)
+        assert all(node in graph.nodes for nodes in claims.values() for node in nodes)
+
+    graph = FaceGraph(corner_part)
+    faces = _planar_faces(corner_part, None, graph)
+    claims = {}
+    records = _recognise_corner_notches(faces, corner_part.bounding_box(), claims)
+    assert len(records) == 1
+    expected = _corner_notch_proposals(faces, corner_part.bounding_box())[0]
+    assert claims[records[0]] == set(expected.planar)
+
+    # Empty compatibility projections must neither invent keys nor leak stale authority.
+    plain = Box(20, 20, 20)
+    plain_graph = FaceGraph(plain)
+    for recognise_one in (_recognise_slots_one, _recognise_pockets_one):
+        empty_claims: _Claims = {}
+        assert recognise_one(plain, graph=plain_graph, claims=empty_claims) == []
+        assert empty_claims == {}
+    empty_claims = {}
+    assert (
+        _recognise_corner_notches(
+            _planar_faces(plain, None, plain_graph), plain.bounding_box(), empty_claims
+        )
+        == []
+    )
+    assert empty_claims == {}
+
+
+def test_legacy_obround_projection_preserves_claims_and_record_only_route() -> None:
+    """The retained compatibility helpers still project their historical values and claims."""
+    part = Box(100, 60, 20) - _obround(30, 12, 20)
+    graph = FaceGraph(part)
+    proposal = _slot_proposals_one(part, graph=graph)[0]
+    radius = proposal.record.width / 2
+    raw = replace(
+        proposal.record,
+        lo=proposal.record.lo + radius,
+        hi=proposal.record.hi - radius,
+        length=proposal.record.length - 2 * radius,
+    )
+    claims: _Claims = {raw: {graph.nodes[0]}}
+    assert _extend_obround_ends([raw], part, claims) == [proposal.record]
+    assert claims[proposal.record] == claims[raw]
+
+    faces = _planar_faces(part, None, graph)
+    projected = cast(list[Any], _recognise_obround_from_ends(part, faces, graph=graph))
+    proposed = cast(
+        list[_RecessProposal],
+        _recognise_obround_from_ends(part, faces, graph=graph, proposals=True),
+    )
+    assert [record.to_dict() for record in projected] == [
+        item.record.to_dict() for item in proposed
+    ]
+
+
+def test_obround_end_rejects_nonconcave_surface_before_shape_classification() -> None:
+    part = Box(80, 60, 20) - Cylinder(6, 20)
+    graph = FaceGraph(part)
+    cap = next(item for item in _cylinder_faces(part, graph) if item[4])
+    assert _obround_end((*cap[:4], False, cap[5])) is None
 
 
 def test_occurrence_proposal_and_cap_helper_seams_are_closed() -> None:
