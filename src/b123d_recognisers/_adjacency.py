@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Literal, Protocol, TypeVar
+from typing import Literal, Protocol, TypeVar, cast
 
 from build123d import Edge, Solid
 from OCP.BRep import BRep_Tool
@@ -773,7 +773,7 @@ class FaceGraph:
             raise ValueError("solid reference identity changed after issuance")
         if issued not in self._closed_solids:
             raise ValueError("solid reference no longer maps to a valid closed solid")
-        return self._solids[issued]
+        return cast(Solid, self._solids[issued])
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:
