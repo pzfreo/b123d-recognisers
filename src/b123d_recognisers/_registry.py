@@ -39,7 +39,7 @@ from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.passages import Passage, recognise_passages
-from b123d_recognisers.plates import Plate, recognise_plates
+from b123d_recognisers.plates import Plate, _discover_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
     PolygonalStock,
@@ -216,7 +216,7 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
     steps = list(inputs.records(FamilyId.TURNED_STEPS, TurnedStep))
     if TurnedProfile.from_steps(steps) is not None:
         return []
-    return list(recognise_plates(services.context.part))
+    return list(_discover_plates(services.context.part, writer=services.writer))
 
 
 def _hole_patterns(inputs: AcceptedInputs) -> list[object]:
@@ -591,7 +591,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         prismatic,
         _plates,
         Counted("plate"),
-        IncompleteAttribution("no defining evidence is issued", "prove plate source-face mapping"),
+        FullyAttributed("every returned Plate claims its complete low/high planar face groups"),
     ),
 )
 
