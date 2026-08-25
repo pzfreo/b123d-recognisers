@@ -98,12 +98,22 @@ def _discover_slots(
     if writer is None:
         proposals = _body_scoped_proposals(sources, recognise_one)
     else:
+        # Close the graph/run authority boundary before geometry discovery. Once every source
+        # face resolves, unrelated kernel and predicate defects remain geometry failures and are
+        # deliberately not relabelled as attribution errors.
         try:
-            proposals = _body_scoped_proposals(sources, recognise_one)
-        except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+            for face in part.faces():
+                writer.graph.require_node(face)
+        except ValueError as exc:
             if not _wrap_identity_errors:
                 raise
             raise _SlotAttributionError("Slot source identity does not belong to this run") from exc
+        try:
+            proposals = _body_scoped_proposals(sources, recognise_one)
+        except ValueError as exc:
+            if "obround cap clusters compete" not in str(exc):
+                raise
+            raise _SlotAttributionError("Slot endpoint cap ownership is ambiguous") from exc
     proposals.sort(key=lambda proposal: (proposal.record.width, _region_center(proposal.record)))
     records = [proposal.record for proposal in proposals]
     if writer is None:
@@ -128,7 +138,7 @@ def _discover_slots(
             pending.append((proposal.record, nodes))
     except _SlotAttributionError:
         raise
-    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+    except (IndexError, KeyError, ValueError) as exc:
         if not _wrap_identity_errors:
             raise
         raise _SlotAttributionError("Slot source identity does not belong to this run") from exc

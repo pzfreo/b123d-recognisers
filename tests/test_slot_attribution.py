@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import ast
+import inspect
 from copy import deepcopy
-from functools import partial
 from pathlib import Path
 
 import pytest
@@ -17,9 +17,7 @@ from b123d_recognisers import recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._recess_core import _slot_proposals_one
 from b123d_recognisers._recess_features import _discover_slots, _SlotAttributionError
-from b123d_recognisers._recess_reduce import _body_scoped_proposals, _region_center
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all, _take_inventory
@@ -36,25 +34,63 @@ def _obround(length: float, width: float, depth: float):
 
 
 def _expected(part):
-    """Freeze exact route-selected occurrence roles on a fresh graph before Candidate reads."""
+    """Fresh graph traversal derives all wall/cap roles before Candidate inspection."""
     graph = FaceGraph(part)
-    solids = list(part.solids())
-    sources = solids if len(solids) > 1 else [part]
-    proposals = _body_scoped_proposals(
-        sources, partial(_slot_proposals_one, graph=graph)
-    )
-    proposals.sort(key=lambda item: (item.record.width, _region_center(item.record)))
-    return graph, [
-        (
-            proposal.record,
-            frozenset(
-                (*proposal.planar, *(node for group in proposal.caps for node in group))
-            ),
-            proposal.planar,
-            proposal.caps,
-        )
-        for proposal in proposals
-    ]
+    expected = []
+    for record in recognise_slots(part):
+        width_index = _AXIS[record.width_axis]
+        long_index = _AXIS[record.long_axis]
+        depth_index = _AXIS[record.depth_axis]
+        walls = set()
+        caps = [set(), set()]
+        for node in graph.nodes:
+            bounds = graph.bounds(node)
+            if graph.is_planar(node):
+                normal = graph.normal(node)
+                if normal is None:
+                    continue
+                normal_index = max(range(3), key=lambda index: abs(normal[index]))
+                if normal_index == width_index:
+                    at = sum(bounds[width_index]) / 2
+                    if (
+                        abs(abs(at - record.w_center) - record.width / 2) <= 1e-6
+                        and bounds[long_index][0] >= record.lo - 1e-6
+                        and bounds[long_index][1] <= record.hi + 1e-6
+                        and bounds[depth_index][0] == pytest.approx(record.d_lo)
+                        and bounds[depth_index][1] == pytest.approx(record.d_hi)
+                    ):
+                        walls.add(node)
+                elif normal_index == long_index and record.length == pytest.approx(record.width):
+                    at = sum(bounds[long_index]) / 2
+                    if abs(abs(at - (record.lo + record.hi) / 2) - record.length / 2) <= 1e-6:
+                        walls.add(node)
+                continue
+            surface = BRepAdaptor_Surface(graph.face(node).wrapped)
+            if surface.GetType() != GeomAbs_Cylinder:
+                continue
+            cylinder = surface.Cylinder()
+            direction = cylinder.Axis().Direction()
+            components = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+            location = cylinder.Location()
+            coords = (location.X(), location.Y(), location.Z())
+            if (
+                components[depth_index] != pytest.approx(1.0)
+                or cylinder.Radius() != pytest.approx(record.width / 2)
+                or coords[width_index] != pytest.approx(record.w_center)
+                or bounds[depth_index][0] != pytest.approx(record.d_lo)
+                or bounds[depth_index][1] != pytest.approx(record.d_hi)
+            ):
+                continue
+            flats = (record.lo + record.width / 2, record.hi - record.width / 2)
+            for index, flat in enumerate(flats):
+                if coords[long_index] == pytest.approx(flat, abs=0.1):
+                    caps[index].add(node)
+        groups = tuple(frozenset(group) for group in caps if group)
+        if groups and record.length < 2 * record.width:
+            walls.clear()  # stubby cap-recovered route has no admissible paired-wall occurrence
+        nodes = frozenset((*walls, *(node for group in groups for node in group)))
+        expected.append((record, nodes, frozenset(walls), groups))
+    return graph, expected
 
 
 @pytest.mark.parametrize(
@@ -127,11 +163,10 @@ def test_public_claim_ledger_and_writer_use_the_same_complete_product() -> None:
 
 def test_step_split_cap_publishes_every_original_patch(tmp_path: Path) -> None:
     part = Box(100, 60, 20) - _obround(30, 12, 20)
-    graph = FaceGraph(part)
-    proposal = _slot_proposals_one(part, graph=graph)[0]
+    graph, expected = _expected(part)
+    _record, _nodes, _walls, cap_groups = expected[0]
     cap_node = max(
-        (node for group in proposal.caps for node in group),
-        key=lambda node: graph.bounds(node)[0][1],
+        (node for group in cap_groups for node in group), key=lambda node: graph.bounds(node)[0][1]
     )
     face = graph.face(cap_node)
     bounds = face.bounding_box()
@@ -275,6 +310,46 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
     writer = {item.arg: item.value for item in registry_call.keywords}["writer"]
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
     assert isinstance(writer.value, ast.Name) and writer.value.id == "s"
+    assert tuple(inspect.signature(recognise_slots).parameters) == (
+        "part",
+        "face_edges",
+        "ledger",
+    )
+
+    watched = {"_slot_proposals_one", "_body_scoped_proposals", "_RecessProposal"}
+    sites = {name: [] for name in watched}
+    for path in package.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        class Roster(ast.NodeVisitor):
+            def __init__(self, source_name):
+                self.source_name = source_name
+                self.functions = []
+
+            def visit_FunctionDef(self, node):
+                self.functions.append(node.name)
+                self.generic_visit(node)
+                self.functions.pop()
+
+            def visit_Call(self, node):
+                leaf = node.func.id if isinstance(node.func, ast.Name) else ""
+                if leaf in sites:
+                    sites[leaf].append((self.source_name, self.functions[-1]))
+                self.generic_visit(node)
+
+        Roster(path.name).visit(tree)
+    assert sites["_slot_proposals_one"] == [
+        ("_recess_core.py", "_recognise_slots_one"),
+    ]
+    assert sites["_body_scoped_proposals"] == [
+        ("_recess_features.py", "_discover_slots"),
+        ("_recess_features.py", "_discover_slots"),
+        ("_recess_features.py", "recognise_pockets"),
+    ]
+    assert {path for path, _function in sites["_RecessProposal"]} == {
+        "_recess_core.py",
+        "_recess_obround.py",
+        "_recess_reduce.py",
+    }
     source = (package / "_recess_features.py").read_text(encoding="utf-8")
     assert not any(
         token in source
