@@ -30,17 +30,20 @@ _AXIS = {"x": 0, "y": 1, "z": 2}
 
 def _obround(length: float, width: float, depth: float):
     end = Cylinder(width / 2, depth)
-    return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(
-        length / 2, 0, 0
-    ) * end
+    return Box(length, width, depth) + Pos(-length / 2, 0, 0) * end + Pos(length / 2, 0, 0) * end
 
 
 def _body_key(solid) -> tuple[float, ...]:
     box = solid.bounding_box()
     return (
-        float(box.min.X), float(box.min.Y), float(box.min.Z),
-        float(box.max.X), float(box.max.Y), float(box.max.Z),
-        float(solid.volume), float(solid.area),
+        float(box.min.X),
+        float(box.min.Y),
+        float(box.min.Z),
+        float(box.max.X),
+        float(box.max.Y),
+        float(box.max.Z),
+        float(solid.volume),
+        float(solid.area),
     )
 
 
@@ -53,8 +56,10 @@ def _empty_prism(part, spans: dict[int, tuple[float, float]]) -> bool:
     intersection = part.intersect(probe)
     if intersection is None:
         return True
-    volume = intersection.volume if hasattr(intersection, "volume") else sum(
-        shape.volume for shape in intersection
+    volume = (
+        intersection.volume
+        if hasattr(intersection, "volume")
+        else sum(shape.volume for shape in intersection)
     )
     return volume == pytest.approx(0.0, abs=1e-10)
 
@@ -104,12 +109,18 @@ def _fresh_occurrences_one(solid, body_key):
             if (ra - la) * lsign <= 0:
                 continue
             others = [axis for axis in range(3) if axis != width_axis]
-            overlaps = [(axis, min(lb[axis][1], rb[axis][1]) - max(lb[axis][0], rb[axis][0])) for axis in others]
+            overlaps = [
+                (axis, min(lb[axis][1], rb[axis][1]) - max(lb[axis][0], rb[axis][0]))
+                for axis in others
+            ]
             if min(value for _axis, value in overlaps) <= 0:
                 continue
             overlaps.sort(key=lambda item: item[1], reverse=True)
             (long_axis, length), (depth_axis, _depth) = overlaps
-            if overlaps[0][1] - overlaps[1][1] <= 0.05 * overlaps[0][1] and extent[depth_axis] > extent[long_axis]:
+            if (
+                overlaps[0][1] - overlaps[1][1] <= 0.05 * overlaps[0][1]
+                and extent[depth_axis] > extent[long_axis]
+            ):
                 long_axis, depth_axis = depth_axis, long_axis
                 length = overlaps[1][1]
             width = abs(ra - la)
@@ -117,27 +128,44 @@ def _fresh_occurrences_one(solid, body_key):
                 continue
             spans = {
                 width_axis: tuple(sorted((la, ra))),
-                long_axis: (max(lb[long_axis][0], rb[long_axis][0]), min(lb[long_axis][1], rb[long_axis][1])),
-                depth_axis: (max(lb[depth_axis][0], rb[depth_axis][0]), min(lb[depth_axis][1], rb[depth_axis][1])),
+                long_axis: (
+                    max(lb[long_axis][0], rb[long_axis][0]),
+                    min(lb[long_axis][1], rb[long_axis][1]),
+                ),
+                depth_axis: (
+                    max(lb[depth_axis][0], rb[depth_axis][0]),
+                    min(lb[depth_axis][1], rb[depth_axis][1]),
+                ),
             }
             common = set(graph.neighbours(ln)) & set(graph.neighbours(rn))
-            if not common or not all(graph.arc(ln, node) == graph.arc(rn, node) for node in common if graph.is_planar(node)):
+            if not common or not all(
+                graph.arc(ln, node) == graph.arc(rn, node)
+                for node in common
+                if graph.is_planar(node)
+            ):
                 continue
             if not _empty_prism(solid, spans):
                 continue
             record = Slot(
-                "xyz"[width_axis], "xyz"[long_axis], round(width, 2),
+                "xyz"[width_axis],
+                "xyz"[long_axis],
+                round(width, 2),
                 round(spans[long_axis][1] - spans[long_axis][0], 2),
-                round((la + ra) / 2, 2), round(spans[long_axis][0], 2),
-                round(spans[long_axis][1], 2), round(spans[depth_axis][0], 2),
-                round(spans[depth_axis][1], 2), body_key,
+                round((la + ra) / 2, 2),
+                round(spans[long_axis][0], 2),
+                round(spans[long_axis][1], 2),
+                round(spans[depth_axis][0], 2),
+                round(spans[depth_axis][1], 2),
+                body_key,
             )
             raw.append([record, {ln, rn}, []])
 
     # Same void through an orthogonal wall pair: retain the narrower public record and union roles.
     merged = []
     for item in sorted(raw, key=lambda item: (item[0].width, item[0].location)):
-        keeper = next((old for old in merged if math.dist(old[0].location, item[0].location) <= 0.1), None)
+        keeper = next(
+            (old for old in merged if math.dist(old[0].location, item[0].location) <= 0.1), None
+        )
         if keeper is None:
             merged.append(item)
         else:
@@ -180,8 +208,16 @@ def _fresh_occurrences_one(solid, body_key):
                     continue
                 lo, hi = min(a.lo, b.lo), max(a.hi, b.hi)
                 left[0] = Slot(
-                    a.width_axis, a.long_axis, a.width, round(hi - lo, 2),
-                    a.w_center, round(lo, 2), round(hi, 2), a.d_lo, a.d_hi, body_key,
+                    a.width_axis,
+                    a.long_axis,
+                    a.width,
+                    round(hi - lo, 2),
+                    a.w_center,
+                    round(lo, 2),
+                    round(hi, 2),
+                    a.d_lo,
+                    a.d_hi,
+                    body_key,
                 )
                 left[1].update(right[1])
                 left[2].extend(group for group in right[2] if group not in left[2])
@@ -194,7 +230,12 @@ def _fresh_occurrences_one(solid, body_key):
     # Cylindrical endpoint regions independently establish obround records and cap patch groups.
     cap_regions = {}
     for node, depth_axis, radius, centre, bounds in cylinders:
-        key = (depth_axis, round(radius, 7), tuple(round(value, 7) for value in centre), tuple(round(v, 7) for v in bounds[depth_axis]))
+        key = (
+            depth_axis,
+            round(radius, 7),
+            tuple(round(value, 7) for value in centre),
+            tuple(round(v, 7) for v in bounds[depth_axis]),
+        )
         cap_regions.setdefault(key, set()).add(node)
     regions = [(key, nodes) for key, nodes in cap_regions.items()]
     for index, (left_key, left_nodes) in enumerate(regions):
@@ -213,9 +254,16 @@ def _fresh_occurrences_one(solid, body_key):
             lo = min(lc[long_axis], rc[long_axis]) - radius
             hi = max(lc[long_axis], rc[long_axis]) + radius
             record = Slot(
-                "xyz"[width_axis], "xyz"[long_axis], round(2 * radius, 2), round(hi - lo, 2),
-                round((lc[width_axis] + rc[width_axis]) / 2, 2), round(lo, 2), round(hi, 2),
-                round(depth[0], 2), round(depth[1], 2), body_key,
+                "xyz"[width_axis],
+                "xyz"[long_axis],
+                round(2 * radius, 2),
+                round(hi - lo, 2),
+                round((lc[width_axis] + rc[width_axis]) / 2, 2),
+                round(lo, 2),
+                round(hi, 2),
+                round(depth[0], 2),
+                round(depth[1], 2),
+                body_key,
             )
             keeper = next(
                 (
@@ -248,9 +296,7 @@ def _expected(part):
     keys = [_body_key(solid) for solid in sources]
     expected = []
     for solid, key in zip(sources, keys, strict=True):
-        local, occurrences = _fresh_occurrences_one(
-            solid, key if keys.count(key) == 1 else None
-        )
+        local, occurrences = _fresh_occurrences_one(solid, key if keys.count(key) == 1 else None)
         for record, walls, groups in occurrences:
             mapped_walls = frozenset(aggregate.require_node(local.face(node)) for node in walls)
             mapped_groups = tuple(
@@ -305,9 +351,7 @@ def test_route_matrix_matches_fresh_complete_role_inventory(part, planar: int, c
                 if axis == _AXIS[record.width_axis]:
                     assert abs(lo - record.w_center) == pytest.approx(record.width / 2)
                 else:
-                    assert abs(lo - (record.lo + record.hi) / 2) == pytest.approx(
-                        record.length / 2
-                    )
+                    assert abs(lo - (record.lo + record.hi) / 2) == pytest.approx(record.length / 2)
             else:
                 surface = BRepAdaptor_Surface(product.context.graph.face(node).wrapped)
                 assert surface.GetType() == GeomAbs_Cylinder
@@ -490,6 +534,7 @@ def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
     sites = {name: [] for name in watched}
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
         class Roster(ast.NodeVisitor):
             def __init__(self, source_name):
                 self.source_name = source_name
