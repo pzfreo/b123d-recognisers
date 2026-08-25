@@ -75,9 +75,9 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
     passage = r.Passage("z", 4, 10, (0, 0, 0), ((-2, -4), (2, -4), (2, 4), (-2, 4)))
     pattern_inputs: list[tuple[r.Pocket, ...]] = []
 
-    def fake_pockets(part, *, ledger, face_edges):
+    def fake_pockets(part, *, writer, face_edges):
         del part, face_edges
-        ledger.add_defining(pocket, [ledger.graph.nodes[0]], family=FamilyId.POCKETS)
+        writer.add_defining(pocket, [writer.graph.nodes[0]], family=FamilyId.POCKETS)
         return [pocket]
 
     def fake_passages(part, *, ledger, face_edges):
@@ -89,7 +89,7 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
         pattern_inputs.append(tuple(pockets))
         return []
 
-    monkeypatch.setattr(registry_module, "recognise_pockets", fake_pockets)
+    monkeypatch.setattr(registry_module, "_discover_pockets", fake_pockets)
     monkeypatch.setattr(registry_module, "recognise_passages", fake_passages)
     monkeypatch.setattr(registry_module, "recognise_pocket_patterns", fake_patterns)
 
