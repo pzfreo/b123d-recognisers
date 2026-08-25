@@ -345,6 +345,59 @@ def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch
     assert ledger.candidate_set(FamilyId.PASSAGES).candidates == ()
 
 
+@pytest.mark.parametrize(
+    ("fractions", "accepted"),
+    (
+        ((1e-9, 1e-9, 1e-9), True),
+        ((math.nextafter(1e-9, math.inf), 0.0, 0.0), False),
+        ((0.0, math.nextafter(1e-9, math.inf), 0.0), False),
+        ((0.0, 0.0, math.nextafter(1e-9, math.inf)), False),
+    ),
+)
+def test_full_prism_and_both_end_slabs_share_the_closed_material_boundary(
+    monkeypatch, fractions: tuple[float, float, float], accepted: bool
+) -> None:
+    import b123d_recognisers._section_passages as module
+
+    part = Rot(17, 23, 31) * _square()
+    (proposal,) = module.section_ring_proposals(part, FaceGraph(part))
+    pending = iter(fractions)
+    monkeypatch.setattr(module, "_material_fraction", lambda part, probe: next(pending))
+    assert (
+        module._void_and_open(part, proposal.frame, proposal.run_interval, proposal.section)
+        is accepted
+    )
+
+
+def test_full_prism_coordinate_floor_is_fail_closed_at_equality(monkeypatch) -> None:
+    import b123d_recognisers._section_passages as module
+
+    part = Rot(17, 23, 31) * _square()
+    (proposal,) = module.section_ring_proposals(part, FaceGraph(part))
+    with pytest.raises(ValueError, match="too short"):
+        module._probe_prism(
+            proposal.frame,
+            (0.0, 2 * module._COORD_FLOOR),
+            proposal.section,
+        )
+    sentinel = object()
+    captured = []
+    monkeypatch.setattr(
+        module.Solid,
+        "extrude",
+        lambda face, vector: captured.append(vector.length) or sentinel,
+    )
+    assert (
+        module._probe_prism(
+            proposal.frame,
+            (0.0, math.nextafter(2 * module._COORD_FLOOR, math.inf)),
+            proposal.section,
+        )
+        is sentinel
+    )
+    assert captured[0] > 0.0
+
+
 def test_candidate_compatibility_fact_is_issuer_revalidated() -> None:
     part = _square()
     ledger = ClaimLedger(FaceGraph(part))

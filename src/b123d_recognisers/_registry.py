@@ -181,7 +181,7 @@ class _ProjectionInputSnapshot:
 
 class _ProjectionInputIssuer:
     def __init__(self) -> None:
-        self._issued: dict[int, _ProjectionInputSnapshot] = {}
+        self._issued: _ProjectionInputSnapshot | None = None
 
     def issue(
         self,
@@ -189,12 +189,14 @@ class _ProjectionInputIssuer:
         candidate_set: CandidateSet[object],
         evidence: EvidenceIndex,
     ) -> None:
-        self._issued[id(inputs)] = _ProjectionInputSnapshot(
+        if self._issued is not None:
+            raise RuntimeError("projection input issuer is already bound")
+        self._issued = _ProjectionInputSnapshot(
             inputs, candidate_set, candidate_set.candidates, evidence
         )
 
     def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
-        snapshot = self._issued.get(id(inputs))
+        snapshot = self._issued
         if snapshot is None or snapshot.inputs is not inputs:
             raise ValueError("accepted projection inputs were not issued by orchestration")
         if (
@@ -213,9 +215,6 @@ class _ProjectionInputIssuer:
         return snapshot
 
 
-_PROJECTION_INPUT_ISSUER = _ProjectionInputIssuer()
-
-
 @dataclass(frozen=True, slots=True, init=False)
 class AcceptedProjectionInputs:
     """Exact accepted occurrence identities and their issuer-validated compatibility facts."""
@@ -224,7 +223,7 @@ class AcceptedProjectionInputs:
     _candidate_set: CandidateSet[object]
     _candidates: tuple[Candidate[object], ...]
     _evidence: EvidenceIndex
-    _issuer: object
+    _issuer: _ProjectionInputIssuer
 
     @classmethod
     def _restricted(
@@ -240,8 +239,9 @@ class AcceptedProjectionInputs:
         object.__setattr__(result, "_candidate_set", accepted)
         object.__setattr__(result, "_candidates", accepted.candidates)
         object.__setattr__(result, "_evidence", evidence)
-        object.__setattr__(result, "_issuer", _PROJECTION_INPUT_ISSUER)
-        _PROJECTION_INPUT_ISSUER.issue(result, accepted, evidence)
+        issuer = _ProjectionInputIssuer()
+        object.__setattr__(result, "_issuer", issuer)
+        issuer.issue(result, accepted, evidence)
         return result
 
     def passage_views(
@@ -250,7 +250,7 @@ class AcceptedProjectionInputs:
         family = FamilyId.PASSAGES
         if family not in self._allowed:
             raise ValueError("passages is not a declared accepted projection source")
-        snapshot = _PROJECTION_INPUT_ISSUER.validate(self)
+        snapshot = self._issuer.validate(self)
         if snapshot.candidate_set.family is not family:
             raise ValueError("accepted passages projection source family changed")
         result: list[tuple[SectionPassage, PassageCompatibilityView]] = []
