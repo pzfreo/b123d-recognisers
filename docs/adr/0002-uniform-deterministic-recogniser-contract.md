@@ -200,3 +200,7 @@ outer boundaries establish its neutral rotational correspondence record. Boundar
 points, side regions, rejected faces, tolerance facts and correspondence alternatives are consulted
 geometry, not additional defining face evidence. Attribution does not classify gears, splines or
 manufacturing intent, and the family's existing non-census disposition remains unchanged.
+All discoverable geometry, source-identity and one-body failures are exhausted across the complete
+proposal roster before the first issue. Publication then relies on the issuer's validated proposal
+operation; this recogniser does not claim a separate transaction or rollback for arbitrary injected
+issuer failures.

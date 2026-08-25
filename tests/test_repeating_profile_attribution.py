@@ -422,21 +422,38 @@ def test_identity_and_body_failures_are_named_and_atomic(monkeypatch, failure: s
     assert ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
 
 
-def test_foreign_writer_and_add_time_refusal_leave_no_prefix(monkeypatch) -> None:
+def test_foreign_writer_refusal_leaves_no_prefix() -> None:
     part = _notched_round(5)
     foreign = ClaimLedger(FaceGraph(Box(4, 4, 4)))
     with pytest.raises(module._RepeatingRadialAttributionError):
         module._discover_repeating_radial_profiles(part, writer=foreign.writer)
     assert foreign.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
 
+
+def test_second_occurrence_identity_failure_is_detected_before_any_issue(monkeypatch) -> None:
+    first = Pos(-60, 0, 0) * _notched_round(5)
+    second = Pos(60, 0, 0) * _notched_round(7)
+    part = Compound([first, second])
     ledger = ClaimLedger(FaceGraph(part))
-    monkeypatch.setattr(
-        type(ledger.writer),
-        "add_defining",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("sealed at add")),
-    )
-    with pytest.raises(module._RepeatingRadialAttributionError, match="publication was refused"):
+    original = module._recognise_solid
+    calls = 0
+
+    def corrupt_second(solid, *, tol):
+        nonlocal calls
+        proposals = original(solid, tol=tol)
+        calls += 1
+        if calls == 2:
+            proposal = proposals[0]
+            proposals[0] = replace(
+                proposal,
+                upper_face=Pos(0, 0, 100) * proposal.upper_face,
+            )
+        return proposals
+
+    monkeypatch.setattr(module, "_recognise_solid", corrupt_second)
+    with pytest.raises(module._RepeatingRadialAttributionError):
         module._discover_repeating_radial_profiles(part, writer=ledger.writer)
+    assert calls == 2
     assert ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
 
 
@@ -510,6 +527,21 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
         "tol",
     )
     source = (package / "repeating_profiles.py").read_text(encoding="utf-8")
+    assert "evidence publication was refused" not in source
+    tree = ast.parse(source)
+    publication_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "add_defining"
+    ]
+    assert len(publication_calls) == 1
+    assert not any(
+        publication_calls[0] in tuple(ast.walk(node))
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Try)
+    )
     for prohibited in (
         "CandidateSet",
         "EvidenceIndex",

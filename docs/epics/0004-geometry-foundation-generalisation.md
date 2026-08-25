@@ -926,6 +926,8 @@ preserving the public writer-free values, order and schema. Each retained occurr
 exact lower and upper extremal planar source faces through correspondence and sorting; the aggregate
 binds both to one valid solid and publishes the exact two defining nodes only after every occurrence
 has validated. Boundary curves, sampling, side regions and rejected alternatives remain consulted.
+This is exhaustive prevalidation atomicity: once staging succeeds, publication uses the issuer's
+validated no-fail proposal contract rather than inventing a family-local transaction or rollback.
 The family becomes `FullyAttributed` but retains
 `NotCounted("correspondence evidence is not a distinct feature")`; it remains neutral correspondence
 evidence rather than a manufacturing classifier. Bucket 33 remains sealed until the independent
