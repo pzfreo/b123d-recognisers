@@ -582,7 +582,7 @@ def test_sealed_rib_and_incomplete_cap_shapes_do_not_leak_evidence(part) -> None
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
-def test_real_d_cutouts_and_partial_or_displaced_floors_do_not_leak() -> None:
+def test_real_same_direction_d_caps_and_partial_or_displaced_floors_do_not_leak() -> None:
     base = Box(60, 40, 12)
     cylinder = Pos(0, 0, 4) * Cylinder(5, 8)
     half_space = Pos(2.5, 0, 4) * Box(5, 10, 8)
@@ -592,11 +592,48 @@ def test_real_d_cutouts_and_partial_or_displaced_floors_do_not_leak() -> None:
     through = base - Box(20, 12, 12)
     below_coverage = through + Pos(-5.5, 0, 0) * Box(9, 12, 1)
     wrong_location = through + Pos(-5.5, 0, 5) * Box(9, 12, 1)
+    d_ends = _obround_ends(d_cutouts, FaceGraph(d_cutouts))
+    assert len(d_ends) == 2 and {end[6] for end in d_ends} == {1}
+    assert _FLOOR_COVER_FRAC > 9 / 20
+    assert _FLOOR_TOL < 5
+    for part in (below_coverage, wrong_location):
+        graph = FaceGraph(part)
+        opposed = [
+            node
+            for node in graph.nodes
+            if graph.is_planar(node)
+            and (normal := graph.normal(node)) is not None
+            and abs(normal[0]) > 0.9
+            and any(abs(value) == pytest.approx(10) for value in graph.bounds(node)[0])
+        ]
+        assert {round(graph.normal(node)[0]) for node in opposed} == {-1, 1}
     for part in (d_cutouts, below_coverage, wrong_location):
         ledger = ClaimLedger(FaceGraph(part))
         assert _discover_pockets(part) == []
         assert _discover_pockets(part, writer=ledger.writer) == []
         assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_opposing_d_caps_reach_and_fail_the_side_wall_gate(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    base = Box(60, 40, 12)
+    cylinder = Pos(0, 0, 4) * Cylinder(5, 8)
+    half = cylinder.intersect(Pos(2.5, 0, 4) * Box(5, 10, 8))[0]
+    part = base - Pos(-10, 0, 0) * half - Pos(10, 0, 0) * half
+    graph = FaceGraph(part)
+    ends = sorted(_obround_ends(part, graph), key=lambda end: end[5])
+    assert len(ends) == 2
+    opposed = [(*ends[0][:6], -1, *ends[0][7:]), (*ends[1][:6], 1, *ends[1][7:])]
+    calls = []
+    monkeypatch.setattr(module, "_obround_ends", lambda _part, _graph: opposed)
+    monkeypatch.setattr(
+        module,
+        "_has_side_walls",
+        lambda faces, record: calls.append((faces, record)) or False,
+    )
+    assert _recognise_obround_from_ends(part, [], blind=True, graph=graph) == []
+    assert len(calls) == 1
 
 
 def test_open_shell_geometry_cannot_publish_pocket_evidence() -> None:
