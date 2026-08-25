@@ -26,7 +26,6 @@ from b123d_recognisers._typing import Part
 
 _DIRECTION_TOL = 2e-8
 _INTERVAL_TOL = 1e-6
-_VOID_TOL = 1e-6
 _END_PROBE = 2e-5
 _COORD_FLOOR = 1e-6
 _MATERIAL_VOL_FRAC = 1e-9
