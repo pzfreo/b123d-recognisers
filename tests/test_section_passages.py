@@ -14,6 +14,7 @@ from build123d import (
     BuildSketch,
     Compound,
     Cone,
+    Edge,
     Face,
     Plane,
     Polygon,
@@ -37,7 +38,7 @@ from b123d_recognisers import (
     recognise_passages,
     recognise_section_passages,
 )
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
@@ -95,6 +96,28 @@ class _ReversedFacesPart:
 
     def __getattr__(self, name):
         return getattr(self._part, name)
+
+
+class _SplitJunctionEdges(FaceEdges):
+    def __init__(self, target: Edge) -> None:
+        super().__init__()
+        self._target = target
+        start = target.position_at(0.0)
+        middle = target.position_at(0.5)
+        end = target.position_at(1.0)
+        self._replacement = (Edge.make_line(start, middle), Edge.make_line(middle, end))
+
+    def of(self, face):
+        edges = super().of(face)
+        if not any(edge.wrapped.IsSame(self._target.wrapped) for edge in edges):
+            return edges
+        return [
+            replacement
+            for edge in edges
+            for replacement in (
+                self._replacement if edge.wrapped.IsSame(self._target.wrapped) else (edge,)
+            )
+        ]
 
 
 @pytest.mark.parametrize(
@@ -344,21 +367,55 @@ def test_free_axis_passage_survives_translation_mirror_and_uniform_scale(part) -
 
 
 def test_face_and_solid_presentation_reversal_preserves_record_and_wall_shapes() -> None:
-    part = Rot(17, 23, 31) * _square()
+    part = Box(80, 40, 20)
+    part = part - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
+    part = Rot(17, 23, 31) * part
 
     def observed(supplied):
         graph = FaceGraph(supplied)
         ledger = ClaimLedger(graph)
         records = recognise_section_passages(supplied, ledger=ledger)
-        (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
-        walls = tuple(graph.face(node) for node in ledger.defining_of(candidate))
+        candidates = ledger.candidate_set(FamilyId.PASSAGES).candidates
+        assert len(records) == len(candidates) == 2
+        assert all(
+            candidate.record is record
+            for candidate, record in zip(candidates, records, strict=True)
+        )
+        walls = tuple(
+            tuple(graph.face(node) for node in ledger.defining_of(candidate))
+            for candidate in candidates
+        )
         return records, walls
 
     ordinary, ordinary_walls = observed(part)
     reversed_records, reversed_walls = observed(_ReversedFacesPart(part))
     assert reversed_records == ordinary
-    assert all(any(_same_shape(left, right) for right in reversed_walls) for left in ordinary_walls)
-    assert all(any(_same_shape(left, right) for right in ordinary_walls) for left in reversed_walls)
+    for ordinary_group, reversed_group in zip(ordinary_walls, reversed_walls, strict=True):
+        assert all(
+            any(_same_shape(left, right) for right in reversed_group) for left in ordinary_group
+        )
+        assert all(
+            any(_same_shape(left, right) for right in ordinary_group) for left in reversed_group
+        )
+
+
+def test_full_discovery_accepts_one_junction_split_into_collinear_occurrences() -> None:
+    part = Rot(17, 23, 31) * _square()
+    oracle = _raw_square_oracle(part)
+    target = next(
+        left
+        for left in oracle.walls[0].edges()
+        for right in oracle.walls[1].edges()
+        if _same_shape(left, right)
+    )
+    memo = _SplitJunctionEdges(target)
+    graph = FaceGraph(part, face_edges=memo)
+    ledger = ClaimLedger(graph)
+    (record,) = recognise_section_passages(part, face_edges=memo, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert candidate.record is record
+    assert len(ledger.defining_of(candidate)) == 4
+    assert record == recognise_section_passages(part)[0]
 
 
 def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch) -> None:
