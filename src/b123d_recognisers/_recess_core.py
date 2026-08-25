@@ -318,9 +318,7 @@ def _recognise_slots_one(
 ) -> list[Slot]:
     """Record-only compatibility projection; legacy claims are derived, never authoritative."""
 
-    proposals = _slot_proposals_one(
-        part, face_edges, graph, strict_cap_ambiguity=False
-    )
+    proposals = _slot_proposals_one(part, face_edges, graph, strict_cap_ambiguity=False)
     if claims is not None:
         for proposal in proposals:
             claims.setdefault(proposal.record, set()).update(proposal.planar)
@@ -519,11 +517,7 @@ def _pocket_proposals_one(
                         node for node in (walls[i].node, walls[j].node) if node is not None
                     )
                     candidates.append(_RecessProposal(p, nodes))
-    corner_claims: _Claims = {}
-    candidates.extend(
-        _RecessProposal(record, frozenset(corner_claims.get(record, ())))
-        for record in _recognise_corner_notches(faces, pbb, corner_claims)
-    )
+    candidates.extend(_corner_notch_proposals(faces, pbb))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path, and
     # claiming nothing for the same reason: its evidence is two cylindrical caps, which
@@ -546,9 +540,7 @@ def _recognise_pockets_one(
 ) -> list[Pocket]:
     """Record-only compatibility projection; legacy claims are derived from occurrences."""
 
-    proposals = _pocket_proposals_one(
-        part, face_edges, graph, strict_cap_ambiguity=False
-    )
+    proposals = _pocket_proposals_one(part, face_edges, graph, strict_cap_ambiguity=False)
     if claims is not None:
         for proposal in proposals:
             claims.setdefault(proposal.record, set()).update(proposal.planar)
@@ -607,9 +599,7 @@ def _channel_proposals_one(
     return proposals
 
 
-def _recognise_corner_notches(
-    faces: list[_Face], pbb, claims: _Claims | None = None
-) -> list[Pocket]:
+def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Pocket]]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -626,7 +616,7 @@ def _recognise_corner_notches(
         c = "XYZ"[_AXES[axis]]
         return getattr(bb.min, c), getattr(bb.max, c)
 
-    out: list[Pocket] = []
+    out: list[_RecessProposal[Pocket]] = []
     bx = (pbb.min.X, pbb.max.X)
     by = (pbb.min.Y, pbb.max.Y)
     bz = (pbb.min.Z, pbb.max.Z)
@@ -682,26 +672,38 @@ def _recognise_corner_notches(
         else:
             width_axis, long_axis = "y", "x"
             width, length, w_center, lo, hi = sy, sx, (y0 + y1) / 2, x0, x1
+        record = Pocket(
+            width_axis=width_axis,
+            long_axis=long_axis,
+            width=round(width, 2),
+            length=round(length, 2),
+            depth=round(d_hi - d_lo, 2),
+            w_center=round(w_center, 2),
+            lo=round(lo, 2),
+            hi=round(hi, 2),
+            d_lo=round(d_lo, 2),
+            d_hi=round(d_hi, 2),
+            open_sign=1 if floor.normal[2] > 0 else -1,
+            edge_anchored=True,
+        )
         out.append(
-            Pocket(
-                width_axis=width_axis,
-                long_axis=long_axis,
-                width=round(width, 2),
-                length=round(length, 2),
-                depth=round(d_hi - d_lo, 2),
-                w_center=round(w_center, 2),
-                lo=round(lo, 2),
-                hi=round(hi, 2),
-                d_lo=round(d_lo, 2),
-                d_hi=round(d_hi, 2),
-                open_sign=1 if floor.normal[2] > 0 else -1,
-                edge_anchored=True,
+            _RecessProposal(
+                record,
+                frozenset(
+                    node for node in (floor.node, xwall.node, ywall.node) if node is not None
+                ),
             )
         )
-        if claims is not None:
-            # The floor belongs here, unlike the opposed-wall path above: this loop is *over*
-            # floors, and the notch's footprint is read straight off this one's bounding box.
-            claims.setdefault(out[-1], set()).update(
-                node for node in (floor.node, xwall.node, ywall.node) if node is not None
-            )
     return out
+
+
+def _recognise_corner_notches(
+    faces: list[_Face], pbb, claims: _Claims | None = None
+) -> list[Pocket]:
+    """Compatibility projection of occurrence-safe corner-notch proposals."""
+
+    proposals = _corner_notch_proposals(faces, pbb)
+    if claims is not None:
+        for proposal in proposals:
+            claims.setdefault(proposal.record, set()).update(proposal.planar)
+    return [proposal.record for proposal in proposals]

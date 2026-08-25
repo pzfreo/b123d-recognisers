@@ -181,6 +181,8 @@ distinct bound role pairs competing for one key refuse atomically.
 Slot and Pocket reduction carries immutable occurrence objects rather than using serialized record
 values as provenance identity. Intentional merge and collinear-collapse operations union the exact
 source nodes of the occurrences they absorb; body scoping replaces only the public record field and
-retains the occurrence's topology. Obround endpoint clusters retain every original cylindrical
+retains the occurrence's topology. Corner-notch discovery likewise issues its floor-and-wall
+identity set directly, with no record-value claim map between discovery and reduction. Obround
+endpoint clusters retain every original cylindrical
 patch, separately from planar evidence. This substrate is private and neutral: public values/order,
 legacy claims, family attribution status and aggregate evidence publication do not change here.
