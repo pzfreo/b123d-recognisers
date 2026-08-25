@@ -17,7 +17,7 @@ from b123d_recognisers._dispositions import (
     ReconciliationResult,
 )
 from b123d_recognisers._reconcile import reconcile_recess_candidates
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import recognise_section_passages
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 
 
@@ -315,19 +315,19 @@ def test_rectangular_slot_passage_precedence_is_a_real_rejected_trace() -> None:
 
 
 def test_empty_pocket_evidence_proves_neither_passage_nor_ring_containment() -> None:
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    part = Box(60, 40, 20) - Box(10, 10, 60)
+    ledger = ClaimLedger(FaceGraph(part))
     pocket = Record(1)
-    passage = Passage("z", 3, 10.0, (0.0, 0.0, 0.0), ((0.0, 0.0),) * 3)
+    passages_found = recognise_section_passages(part, ledger=ledger)
     ring = PrismaticPocket(
         "z", 3, 5.0, 1, (0.0, 0.0, 0.0), ((0.0, 0.0),) * 3
     )
     ledger.propose(FamilyId.POCKETS, pocket)
-    ledger.propose(FamilyId.PASSAGES, passage, [ledger.graph.nodes[0]])
     ledger.propose(FamilyId.PRISMATIC_POCKETS, ring, [ledger.graph.nodes[1]])
     slots = ledger.candidate_set_for(FamilyId.SLOTS, ())
     pockets = ledger.candidate_set_for(FamilyId.POCKETS, (pocket,))
     rings = ledger.candidate_set_for(FamilyId.PRISMATIC_POCKETS, (ring,))
-    passages = ledger.candidate_set_for(FamilyId.PASSAGES, (passage,))
+    passages = ledger.candidate_set_for(FamilyId.PASSAGES, passages_found)
     evidence = ledger.snapshot_index()
 
     decisions = reconcile_recess_candidates(

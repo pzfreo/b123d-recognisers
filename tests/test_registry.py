@@ -224,16 +224,21 @@ def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> N
     orchestration_context = {"cylinders", "rotational"}
     validate_result_fields(frozenset(result_fields - orchestration_context))
     assert {
-        item.public_entrypoint for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+        item.public_entrypoint
+        for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+        if item.public_entrypoint is not None
     } == MIGRATED
     assert all(hasattr(public, item.public_entrypoint) for item in PHYSICAL_DEFINITIONS)
-    assert all(hasattr(public, item.public_entrypoint) for item in DERIVED_DEFINITIONS)
+    assert all(
+        item.public_entrypoint is None or hasattr(public, item.public_entrypoint)
+        for item in DERIVED_DEFINITIONS
+    )
     manifest_entrypoints = {
         recogniser["entry_point"].removeprefix("b123d_recognisers.")
         for family in public.capability_manifest()["families"]
         for recogniser in family["recognisers"]
     }
-    assert manifest_entrypoints == MIGRATED
+    assert manifest_entrypoints == MIGRATED | {"recognise_passages"}
 
 
 def _record_types(annotation: object) -> set[type[Record]]:
@@ -249,10 +254,11 @@ def test_registry_record_types_match_public_entrypoints_and_result_fields() -> N
     result_hints = typing.get_type_hints(RecognitionResult)
     for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS):
         declared = set(definition.record_types)
-        public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
-            "return"
-        ]
-        assert declared == _record_types(public_return), definition.public_entrypoint
+        if definition.public_entrypoint is not None:
+            public_return = typing.get_type_hints(
+                getattr(public, definition.public_entrypoint)
+            )["return"]
+            assert declared == _record_types(public_return), definition.public_entrypoint
         assert declared == _record_types(result_hints[definition.result_field]), (
             definition.result_field
         )
@@ -380,8 +386,16 @@ def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> N
         replace(first, public_entrypoint=""),
         *DERIVED_DEFINITIONS[1:],
     )
-    with pytest.raises(ValueError, match="record and public contracts"):
+    with pytest.raises(ValueError, match="discoverer definitions require a public entrypoint"):
         validate_definitions(PHYSICAL_DEFINITIONS, missing_record_contract)
+
+    projection = DERIVED_DEFINITIONS[-1]
+    invalid_projection_entrypoint = (
+        *DERIVED_DEFINITIONS[:-1],
+        replace(projection, public_entrypoint="recognise_passages"),
+    )
+    with pytest.raises(ValueError, match="projection definitions cannot declare"):
+        validate_definitions(PHYSICAL_DEFINITIONS, invalid_projection_entrypoint)
 
     missing_census = (
         replace(first, census=None),  # type: ignore[arg-type]

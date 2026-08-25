@@ -125,6 +125,11 @@ def test_rich_api_is_the_exact_passages_candidate_authority() -> None:
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert candidate.record is records[0]
     assert len(ledger.defining_of(candidate)) == len(records[0].section.boundary) == 4
+    compatibility = ledger.snapshot_index().passage_compatibility(candidate)
+    assert compatibility.eligible is True
+    assert compatibility.axis == "z"
+    assert compatibility.legacy_ordinal == 0
+    assert compatibility.at == (0.0, 0.0, 0.0)
 
 
 def test_legacy_ledger_refuses_before_any_geometry_work(monkeypatch) -> None:
@@ -159,6 +164,9 @@ def test_oblique_passage_is_rich_only_and_keeps_exact_wall_ownership() -> None:
     assert len(record.section.boundary) == 4
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert candidate.record is record
+    compatibility = ledger.snapshot_index().passage_compatibility(candidate)
+    assert compatibility.eligible is False
+    assert compatibility.axis is None
     defining = ledger.defining_of(candidate)
     assert len(defining) == 4
     assert all(
@@ -170,6 +178,19 @@ def test_oblique_passage_is_rich_only_and_keeps_exact_wall_ownership() -> None:
     result = build_recognition_result(part)
     assert result.section_passages == (record,)
     assert result.passages == ()
+
+
+def test_candidate_compatibility_fact_is_issuer_revalidated() -> None:
+    part = _square()
+    ledger = ClaimLedger(FaceGraph(part))
+    recognise_section_passages(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    index = ledger.snapshot_index()
+    original = candidate.compatibility
+    object.__setattr__(candidate, "compatibility", None)
+    with pytest.raises(ValueError, match="issued state"):
+        index.passage_compatibility(candidate)
+    object.__setattr__(candidate, "compatibility", original)
 
 
 def test_oblique_passage_step_round_trip_preserves_schema_and_wall_count(tmp_path) -> None:

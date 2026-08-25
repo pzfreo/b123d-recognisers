@@ -938,6 +938,9 @@
         {
           "entry_point": "b123d_recognisers.recognise_passages",
           "kind": "part",
+          "ledger_state": "unavailable",
+          "remove_in": "1.0.0",
+          "replacement": "b123d_recognisers.recognise_section_passages",
           "role": "compatibility"
         },
         {

@@ -368,11 +368,24 @@ def build_manifest() -> dict[str, object]:
             "id": family_id,
             "introduced_in": spec.get("introduced", "0.1.0"),
             "recognisers": [
-                {
-                    "entry_point": f"b123d_recognisers.{name}",
-                    "kind": kind,
-                    "role": role,
-                }
+                (
+                    {
+                        "entry_point": f"b123d_recognisers.{name}",
+                        "kind": kind,
+                        "role": role,
+                    }
+                    | (
+                        {
+                            "ledger_state": "unavailable",
+                            "remove_in": "1.0.0",
+                            "replacement": (
+                                "b123d_recognisers.recognise_section_passages"
+                            ),
+                        }
+                        if role == "compatibility"
+                        else {}
+                    )
+                )
                 for recogniser in spec["recognisers"]
                 for name, kind, role in (
                     recogniser

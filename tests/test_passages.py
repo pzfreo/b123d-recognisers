@@ -30,7 +30,6 @@ from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers import (
-    Passage,
     build_recognition_result,
     recognise_passages,
     recognise_section_passages,
@@ -70,13 +69,13 @@ def test_a_void_open_at_both_ends_is_a_passage():
 def test_a_four_wall_passage_survives_when_no_slot_candidate_claims_it() -> None:
     """Empty frozen evidence cannot manufacture the Slot precedence relation."""
 
-    passage = Passage("z", 4, 20.0, (0.0, 0.0, 0.0), ((-1.0, -1.0),))
-    ledger = ClaimLedger(FaceGraph(_block()))
-    ledger.propose(FamilyId.PASSAGES, passage)
+    part = _block() - Box(10, 10, 60)
+    ledger = ClaimLedger(FaceGraph(part))
+    passages_found = recognise_section_passages(part, ledger=ledger)
     empty_slots = ledger.candidate_set_for(FamilyId.SLOTS, ())
     empty_pockets = ledger.candidate_set_for(FamilyId.POCKETS, ())
     empty_rings = ledger.candidate_set_for(FamilyId.PRISMATIC_POCKETS, ())
-    passages = ledger.candidate_set_for(FamilyId.PASSAGES, (passage,))
+    passages = ledger.candidate_set_for(FamilyId.PASSAGES, passages_found)
 
     assert reconcile_recess_candidates(
         empty_slots,

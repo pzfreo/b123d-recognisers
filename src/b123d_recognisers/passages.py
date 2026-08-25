@@ -64,8 +64,9 @@ from b123d_recognisers._adjacency import (
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._passage_compat import PassageCompatibilityView
 from b123d_recognisers._record import Record
-from b123d_recognisers._rings import _canonical
+from b123d_recognisers._rings import _canonical, _centroid, rings
 from b123d_recognisers._section_passages import SectionRingProposal, section_ring_proposals
 from b123d_recognisers._typing import Part
 
@@ -319,7 +320,13 @@ def recognise_section_passages(
 def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
-    found: list[tuple[SectionPassage, tuple[FaceNode, ...], SolidRef]] = []
+    legacy_roster = _legacy_roster(part, graph)
+    legacy_by_nodes = {
+        frozenset(nodes): (legacy, ordinal) for ordinal, (legacy, nodes) in enumerate(legacy_roster)
+    }
+    found: list[
+        tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
+    ] = []
     for proposal in section_ring_proposals(part, graph):
         record = SectionPassage(
             PassageFrame(
@@ -345,10 +352,38 @@ def _discover_section_passages(
         if graph.common_valid_solid(proposal.nodes) is not proposal.solid:
             raise ValueError("section passage body authority changed before issuance")
         proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
-        found.append((record, proposal.nodes, proposal.solid))
+        projected = _legacy_projection(record)
+        historical = legacy_by_nodes.get(frozenset(proposal.nodes))
+        if historical is not None:
+            legacy, ordinal = historical
+            if projected != legacy:
+                raise ValueError("rich passage cannot reproduce its historical legacy value")
+            compatibility = PassageCompatibilityView(
+                legacy.axis,
+                legacy.section,
+                legacy.sides,
+                legacy.length,
+                legacy.at,
+                ordinal,
+                True,
+            )
+        else:
+            compatibility = PassageCompatibilityView(
+                projected.axis if projected is not None else None,
+                projected.section if projected is not None else None,
+                projected.sides if projected is not None else None,
+                None,
+                None,
+                None,
+                False,
+            )
+        found.append((record, proposal.nodes, proposal.solid, compatibility))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
-    for at, (record, nodes, solid) in enumerate(found):
-        for other_record, other_nodes, other_solid in found[at + 1 :]:
+    matched_legacy = {frozenset(nodes) for _, nodes, _, fact in found if fact.eligible}
+    if matched_legacy != set(legacy_by_nodes):
+        raise ValueError("rich passage discovery lost a historical legacy occurrence")
+    for at, (record, nodes, solid, _) in enumerate(found):
+        for other_record, other_nodes, other_solid, _ in found[at + 1 :]:
             if record == other_record and solid is other_solid:
                 same_nodes = len(nodes) == len(other_nodes) and all(
                     any(left is right for right in other_nodes) for left in nodes
@@ -356,9 +391,14 @@ def _discover_section_passages(
                 if not same_nodes:
                     raise ValueError("equal section passage proposals compete on one solid")
     if sink is not None:
-        for record, nodes, _ in found:
-            sink.propose(FamilyId.PASSAGES, record, defining=nodes)
-    return [record for record, _, _ in found]
+        for record, nodes, _, compatibility in found:
+            sink.propose(
+                FamilyId.PASSAGES,
+                record,
+                defining=nodes,
+                compatibility=compatibility,
+            )
+    return [record for record, _, _, _ in found]
 
 
 def _section_projection_displacement(
@@ -438,6 +478,38 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
     )
 
 
+def _legacy_roster(
+    part: Part, graph: FaceGraph
+) -> list[tuple[Passage, tuple[FaceNode, ...]]]:
+    """Replay the frozen pre-0.4 finder and its global discovery order exactly."""
+
+    found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
+    for ring in rings(part, graph):
+        if any(ring.caps):
+            continue
+        others = [axis for axis in (0, 1, 2) if axis != ring.axis]
+        middle = _centroid(ring.section)
+        at = [0.0, 0.0, 0.0]
+        at[ring.axis] = 0.5 * (ring.low + ring.high)
+        at[others[0]], at[others[1]] = middle
+        found.append(
+            (
+                Passage(
+                    axis="xyz"[ring.axis],
+                    sides=len(ring.nodes),
+                    length=round(ring.high - ring.low, 3),
+                    at=tuple(round(value, 3) for value in at),  # type: ignore[arg-type]
+                    section=tuple(
+                        (round(first, 3), round(second, 3))
+                        for first, second in ring.section
+                    ),
+                ),
+                tuple(ring.nodes),
+            )
+        )
+    return found
+
+
 def _discover_passages(
     part: Part,
     graph: FaceGraph,
@@ -445,10 +517,8 @@ def _discover_passages(
 ) -> list[Passage]:
     if sink is not None:
         raise PassageCompatibilityError(_LEDGER_ERROR)
-    found = [
-        legacy
-        for record in _discover_section_passages(part, graph, None)
-        if (legacy := _legacy_projection(record)) is not None
-    ]
+    if sink is not None:
+        raise PassageCompatibilityError(_LEDGER_ERROR)
+    found = [record for record, _ in _legacy_roster(part, graph)]
     found.sort(key=lambda record: (record.axis, record.at))
     return found

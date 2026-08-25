@@ -10,6 +10,7 @@ from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos
 import b123d_recognisers as r
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
+from b123d_recognisers._passage_compat import PassageCompatibilityView
 
 
 def _obround(length: float, width: float, height: float):
@@ -93,7 +94,20 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
 
     def fake_passages(part, *, ledger, face_edges):
         del part, face_edges
-        ledger.add_defining(passage, [ledger.graph.nodes[0]], family=FamilyId.PASSAGES)
+        ledger.sink.propose(
+            FamilyId.PASSAGES,
+            passage,
+            defining=[ledger.graph.nodes[0]],
+            compatibility=PassageCompatibilityView(
+                "z",
+                ((-2.0, -4.0), (2.0, -4.0), (2.0, 4.0), (-2.0, 4.0)),
+                4,
+                10.0,
+                (0.0, 0.0, 0.0),
+                0,
+                True,
+            ),
+        )
         return [passage]
 
     def fake_patterns(pockets):

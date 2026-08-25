@@ -314,16 +314,45 @@ def validate_capability_manifest(manifest: object) -> None:
                 raise CapabilityManifestError(f"family {family_id!r} recogniser must be an object")
             _keys(
                 recogniser,
-                {"entry_point", "kind", "role"},
+                {
+                    "entry_point",
+                    "kind",
+                    "ledger_state",
+                    "remove_in",
+                    "replacement",
+                    "role",
+                },
                 f"family {family_id!r} recogniser",
             )
-            if set(recogniser) != {"entry_point", "kind", "role"} or recogniser["kind"] not in {
+            base_keys = {"entry_point", "kind", "role"}
+            compatibility_keys = {"ledger_state", "remove_in", "replacement"}
+            expected_keys = (
+                base_keys | compatibility_keys
+                if recogniser.get("role") == "compatibility"
+                else base_keys
+            )
+            if set(recogniser) != expected_keys or recogniser["kind"] not in {
                 "derived",
                 "part",
             }:
                 raise CapabilityManifestError(f"family {family_id!r} recogniser is invalid")
             if recogniser["role"] not in {"compatibility", "derived", "physical"}:
                 raise CapabilityManifestError(f"family {family_id!r} recogniser role is invalid")
+            if recogniser["role"] == "compatibility":
+                if recogniser["ledger_state"] != "unavailable":
+                    raise CapabilityManifestError(
+                        f"family {family_id!r} compatibility ledger state is invalid"
+                    )
+                _version(recogniser["remove_in"], f"family {family_id!r} remove_in")
+                if not (
+                    isinstance(recogniser["replacement"], str)
+                    and recogniser["replacement"].startswith(
+                        "b123d_recognisers.recognise_"
+                    )
+                ):
+                    raise CapabilityManifestError(
+                        f"family {family_id!r} compatibility replacement is invalid"
+                    )
             entry = recogniser["entry_point"]
             if not isinstance(entry, str) or not entry.startswith("b123d_recognisers.recognise_"):
                 raise CapabilityManifestError(f"family {family_id!r} entry point is not public")

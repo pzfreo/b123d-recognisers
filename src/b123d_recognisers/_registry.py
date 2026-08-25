@@ -16,7 +16,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import TypeAlias, TypeVar, cast
 
-from b123d_recognisers._candidates import CompletedInputs, FamilyId
+from b123d_recognisers._candidates import Candidate, CompletedInputs, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import (
     BoltCircle,
@@ -27,6 +27,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
 )
 from b123d_recognisers._hole_features import _discover_bosses, _discover_holes
+from b123d_recognisers._passage_compat import PassageCompatibilityView
 from b123d_recognisers._recess_features import (
     _discover_channels,
     _discover_pockets,
@@ -45,7 +46,6 @@ from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.passages import (
     Passage,
     SectionPassage,
-    _legacy_projection,
     recognise_section_passages,
 )
 from b123d_recognisers.plates import Plate, _discover_plates
@@ -158,9 +158,54 @@ class AcceptedInputs:
         return cast(tuple[RecordT, ...], records)
 
 
+@dataclass(frozen=True, slots=True)
+class ProjectionInputs:
+    """The sole already-decided aggregate applicability fact available to projections."""
+
+    projected: bool
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptedProjectionInputs:
+    """Exact accepted occurrence identities and their issuer-validated compatibility facts."""
+
+    _allowed: frozenset[FamilyId]
+    _candidates: Mapping[FamilyId, tuple[Candidate[object], ...]]
+    _evidence: EvidenceIndex
+
+    @classmethod
+    def restricted(
+        cls,
+        allowed: tuple[FamilyId, ...],
+        accepted: Mapping[FamilyId, tuple[Candidate[object], ...]],
+        evidence: EvidenceIndex,
+    ) -> AcceptedProjectionInputs:
+        return cls(
+            frozenset(allowed),
+            MappingProxyType({family: accepted[family] for family in allowed}),
+            evidence,
+        )
+
+    def passage_views(
+        self,
+    ) -> tuple[tuple[SectionPassage, PassageCompatibilityView], ...]:
+        family = FamilyId.PASSAGES
+        if family not in self._allowed:
+            raise ValueError("passages is not a declared accepted projection source")
+        result: list[tuple[SectionPassage, PassageCompatibilityView]] = []
+        for candidate in self._candidates[family]:
+            if not isinstance(candidate.record, SectionPassage):
+                raise TypeError("passages projection source has the wrong record type")
+            result.append((candidate.record, self._evidence.passage_compatibility(candidate)))
+        return tuple(result)
+
+
 PhysicalDiscoverer: TypeAlias = Callable[[DiscoveryServices, CompletedInputs], list[object]]
 Applicability: TypeAlias = Callable[[RecognitionContext], bool]
 DerivedDiscoverer: TypeAlias = Callable[[AcceptedInputs], list[object]]
+ProjectionDiscoverer: TypeAlias = Callable[
+    [AcceptedProjectionInputs, ProjectionInputs], list[object]
+]
 
 
 def always(context: RecognitionContext) -> bool:
@@ -191,10 +236,11 @@ class DerivedDefinition:
     identifier: DerivedId
     record_types: tuple[type[object], ...]
     result_field: str
-    public_entrypoint: str
+    public_entrypoint: str | None
     sources: tuple[FamilyId, ...]
-    derive: DerivedDiscoverer
+    derive: DerivedDiscoverer | ProjectionDiscoverer
     census: CensusSpec
+    role: str = "discoverer"
 
 
 def _simple(call: Callable[[DiscoveryServices], list[object]]) -> PhysicalDiscoverer:
@@ -237,6 +283,33 @@ def _slot_patterns(inputs: AcceptedInputs) -> list[object]:
 
 def _pocket_patterns(inputs: AcceptedInputs) -> list[object]:
     return list(recognise_pocket_patterns(inputs.records(FamilyId.POCKETS, Pocket)))
+
+
+def _passages_compat(
+    inputs: AcceptedProjectionInputs, projection: ProjectionInputs
+) -> list[object]:
+    if not projection.projected:
+        return []
+    found: list[tuple[Passage, int]] = []
+    for _, fact in inputs.passage_views():
+        if not fact.eligible:
+            continue
+        assert (
+            fact.axis is not None
+            and fact.sides is not None
+            and fact.length is not None
+            and fact.at is not None
+            and fact.section is not None
+            and fact.legacy_ordinal is not None
+        )
+        found.append(
+            (
+                Passage(fact.axis, fact.sides, fact.length, fact.at, fact.section),
+                fact.legacy_ordinal,
+            )
+        )
+    found.sort(key=lambda item: (item[0].axis, item[0].at, item[1]))
+    return [record for record, _ in found]
 
 
 PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
@@ -647,14 +720,11 @@ DERIVED_DEFINITIONS: tuple[DerivedDefinition, ...] = (
         DerivedId.PASSAGES_COMPAT,
         (Passage,),
         "passages",
-        "recognise_passages",
+        None,
         (FamilyId.PASSAGES,),
-        lambda inputs: [
-            legacy
-            for record in inputs.records(FamilyId.PASSAGES, SectionPassage)
-            if (legacy := _legacy_projection(record)) is not None
-        ],
+        _passages_compat,
         NotCounted("compatibility projection of accepted section passages"),
+        "projection",
     ),
 )
 
@@ -713,8 +783,16 @@ def validate_definitions(
     if len(set(derived_fields)) != len(derived_fields) or set(fields) & set(derived_fields):
         raise ValueError("registry result fields must be unique")
     for derived_definition in derived:
-        if not derived_definition.record_types or not derived_definition.public_entrypoint:
-            raise ValueError("derived definitions require record and public contracts")
+        if not derived_definition.record_types:
+            raise ValueError("derived definitions require record contracts")
+        if derived_definition.role == "projection":
+            if derived_definition.public_entrypoint is not None:
+                raise ValueError("projection definitions cannot declare a public entrypoint")
+        elif derived_definition.role == "discoverer":
+            if not derived_definition.public_entrypoint:
+                raise ValueError("discoverer definitions require a public entrypoint")
+        else:
+            raise ValueError("derived definition role is not recognized")
         if not isinstance(derived_definition.census, Counted | NotCounted):
             raise ValueError("derived definitions require an explicit census disposition")
         if (

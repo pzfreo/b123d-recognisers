@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
@@ -44,9 +44,12 @@ from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
+    AcceptedProjectionInputs,
     DerivedId,
     DiscoveryServices,
     FullyAttributed,
+    ProjectionDiscoverer,
+    ProjectionInputs,
     validate_output,
     validate_result_fields,
 )
@@ -87,7 +90,11 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
     definition.public_entrypoint for definition in PHYSICAL_DEFINITIONS
-) | frozenset(definition.public_entrypoint for definition in DERIVED_DEFINITIONS)
+) | frozenset(
+    definition.public_entrypoint
+    for definition in DERIVED_DEFINITIONS
+    if definition.public_entrypoint is not None
+)
 
 
 class Deferral(Enum):
@@ -420,7 +427,7 @@ def _take_inventory(
     accepted = CandidateInventory.complete(
         reconciliation.accepted_set(physical.candidate_set(family)) for family in PHYSICAL_FAMILIES
     )
-    derived = _derive_patterns(accepted)
+    derived = _derive_patterns(context, accepted, evidence)
     result = _project_result(context, accepted, derived)
     correspondence = _CorrespondenceSnapshotAuthority()
     product = InventoryProduct(
@@ -517,14 +524,39 @@ def _reconcile_existing(
     )
 
 
-def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
+def _derive_patterns(
+    context: RecognitionContext, accepted: CandidateInventory, evidence: EvidenceIndex
+) -> DerivedInventory:
     """Derive pattern projections only from accepted member records."""
 
     accepted_records = {family: tuple(accepted.records(family)) for family in PHYSICAL_FAMILIES}
+    accepted_candidates = {
+        family: accepted.candidate_set(family).candidates for family in PHYSICAL_FAMILIES
+    }
     derived: dict[DerivedId, tuple[object, ...]] = {}
     for definition in DERIVED_DEFINITIONS:
-        inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
-        records = definition.derive(inputs)
+        if definition.role == "projection":
+            projection_inputs = AcceptedProjectionInputs.restricted(
+                definition.sources, accepted_candidates, evidence
+            )
+            projection_derive = cast(ProjectionDiscoverer, definition.derive)
+            records = projection_derive(
+                projection_inputs,
+                ProjectionInputs(
+                    all(
+                        next(
+                            item
+                            for item in PHYSICAL_DEFINITIONS
+                            if item.family is source
+                        ).projected(context)
+                        for source in definition.sources
+                    )
+                ),
+            )
+        else:
+            inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
+            standard_derive = cast(Callable[[AcceptedInputs], list[object]], definition.derive)
+            records = standard_derive(inputs)
         validate_output(definition, records)
         derived[definition.identifier] = tuple(records)
     return DerivedInventory(

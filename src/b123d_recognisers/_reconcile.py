@@ -45,7 +45,7 @@ from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.grooves import Groove
-from b123d_recognisers.passages import Passage, SectionPassage, _legacy_projection
+from b123d_recognisers.passages import Passage
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.turned import TurnedStep
 
@@ -117,15 +117,9 @@ def reconcile_recess_candidates(
     grouped_passages: dict[tuple, list[Candidate[object]]] = defaultdict(list)
     grouped_evidence: dict[tuple, set] = defaultdict(set)
     for passage in passage_candidates:
-        legacy = (
-            _legacy_projection(passage.record)
-            if isinstance(passage.record, SectionPassage)
-            else passage.record
-            if isinstance(passage.record, Passage)
-            else None
-        )
-        if legacy is not None and legacy.sides != 4:
-            key = (legacy.axis, legacy.section)
+        compatibility = evidence.passage_compatibility(passage)
+        if compatibility.axis is not None and compatibility.sides != 4:
+            key = (compatibility.axis, compatibility.section)
             grouped_passages[key].append(passage)
             grouped_evidence[key].update(evidence.defining_of(passage))
 
@@ -154,14 +148,8 @@ def reconcile_recess_candidates(
             accepted_slots.append(slot)
 
     for passage in passage_candidates:
-        legacy = (
-            _legacy_projection(passage.record)
-            if isinstance(passage.record, SectionPassage)
-            else passage.record
-            if isinstance(passage.record, Passage)
-            else None
-        )
-        if legacy is None or legacy.sides != 4:
+        compatibility = evidence.passage_compatibility(passage)
+        if compatibility.axis is None or compatibility.sides != 4:
             continue
         winners = tuple(
             slot
