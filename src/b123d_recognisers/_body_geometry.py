@@ -48,6 +48,17 @@ class BodyIntrinsic:
     principal_moments: tuple[QScalar, QScalar, QScalar]
 
 
+@dataclass(frozen=True, slots=True)
+class DescriptorQuantization:
+    """Raw-mass-derived quantization authority retained for correspondence."""
+
+    characteristic_scale: float
+    metric_quantum: float
+    area_quantum: float
+    volume_quantum: float
+    moment_quantum: float
+
+
 @dataclass(frozen=True, order=True, slots=True)
 class EdgeGeometry:
     kind: str
@@ -105,6 +116,41 @@ class BodyGeometryDescriptor:
     intrinsic: BodyIntrinsic
     boundary: BodyBoundaryGeometry
     placement: BodyPlacement
+    quantization: DescriptorQuantization
+
+
+def validate_descriptor_quantization(value: DescriptorQuantization) -> None:
+    """Revalidate one stored quantization contract without kernel state."""
+
+    if type(value) is not DescriptorQuantization or any(
+        type(item) is not float
+        for item in (
+            value.characteristic_scale,
+            value.metric_quantum,
+            value.area_quantum,
+            value.volume_quantum,
+            value.moment_quantum,
+        )
+    ):
+        raise UnsupportedBodyGeometry("descriptor quantization has invalid runtime types")
+    scale = value.characteristic_scale
+    if not math.isfinite(scale) or scale <= 0.0:
+        raise UnsupportedBodyGeometry("descriptor characteristic scale is invalid")
+    metric = _metric_tolerance(scale)
+    expected = (
+        metric,
+        (scale + metric) ** 2 - scale**2,
+        (scale + metric) ** 3 - scale**3,
+        (scale + metric) ** 5 - scale**5,
+    )
+    actual = (
+        value.metric_quantum,
+        value.area_quantum,
+        value.volume_quantum,
+        value.moment_quantum,
+    )
+    if any(not math.isfinite(item) or item <= 0.0 for item in actual) or actual != expected:
+        raise UnsupportedBodyGeometry("descriptor quantization authority changed")
 
 
 @dataclass(frozen=True, slots=True)
@@ -610,6 +656,13 @@ def describe_solid(solid) -> _DescribedBody:
         ),
         BodyBoundaryGeometry(faces, incidence, len(faces), wire_count, edge_count, symmetric),
         BodyPlacement(centre),
+        DescriptorQuantization(
+            scale,
+            quantum,
+            area_quantum,
+            volume_quantum,
+            moment_quantum,
+        ),
     )
     return _DescribedBody(
         descriptor,
