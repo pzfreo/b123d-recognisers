@@ -2370,7 +2370,7 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
         "VolumeProperties_s": ("BRepGProp.VolumeProperties_s",),
         "SurfaceProperties_s": ("BRepGProp.SurfaceProperties_s",),
         "Plane": ("adaptor.Plane",),
-        "Cylinder": ("adaptor.Cylinder", "adaptor.Cylinder"),
+        "Cylinder": ("adaptor.Cylinder", "surface.Cylinder"),
         "Circle": ("curve.Circle",),
     }
     upper_names = {node.id for node in ast.walk(upper) if isinstance(node, ast.Name)}
