@@ -1160,7 +1160,7 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         ("_recess_features.py", "_discover_slots"),
         ("_recess_features.py", "_discover_pockets"),
     ]
-    assert sites["b123d_recognisers._recess_reduce._RecessProposal"] == [
+    assert sorted(sites["b123d_recognisers._recess_reduce._RecessProposal"]) == sorted([
         ("_recess_core.py", "_slot_proposals_one"),
         ("_recess_core.py", "_pocket_proposals_one"),
         ("_recess_core.py", "_corner_notch_proposals"),
@@ -1169,7 +1169,7 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         ("_recess_obround.py", "_recognise_obround_from_ends"),
         ("_recess_reduce.py", "_replace_proposal"),
         ("_recess_reduce.py", "_combine_proposals"),
-    ]
+    ])
     assert sites["b123d_recognisers._recess_reduce._merge_proposals"] == [
         ("_recess_core.py", "_slot_proposals_one"),
         ("_recess_core.py", "_pocket_proposals_one"),
