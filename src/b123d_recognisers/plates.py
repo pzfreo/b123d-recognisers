@@ -198,19 +198,13 @@ def _discover_plates(
         # crosses an air gap (two stacked plates on a common post) and must not be read
         # as one plate. Same-coord ties order −a first so a degenerate pair is t≈0.
         events = [
-            (c, -1, group)
-            for c, group in neg.items()
-            if clears_threshold(group.area, thresh)
+            (c, -1, group) for c, group in neg.items() if clears_threshold(group.area, thresh)
         ]
         events += [
-            (c, 1, group)
-            for c, group in pos.items()
-            if clears_threshold(group.area, thresh)
+            (c, 1, group) for c, group in pos.items() if clears_threshold(group.area, thresh)
         ]
         events.sort(key=lambda e: (e[0], e[1]))
-        for (c0, s0, group0), (c1, s1, group1) in zip(
-            events, events[1:], strict=False
-        ):
+        for (c0, s0, group0), (c1, s1, group1) in zip(events, events[1:], strict=False):
             if s0 != -1 or s1 != 1:
                 continue
             t = c1 - c0
