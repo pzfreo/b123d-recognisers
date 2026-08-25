@@ -111,6 +111,7 @@ def _pair_line(
     """Return one collinear junction as ``(u, v, t_low, t_high)``."""
 
     samples: list[tuple[float, float, float]] = []
+    segments: list[tuple[float, float]] = []
     for edge in graph.shared_edges(left, right):
         run = _canonical_run(edge)
         if run is None or not _parallel(run, frame.run):
@@ -119,17 +120,24 @@ def _pair_line(
             endpoints = (_point(edge.position_at(0.0)), _point(edge.position_at(1.0)))
         except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
-        samples.extend(
+        projected = tuple(
             (_dot(point, frame.u), _dot(point, frame.v), _dot(point, frame.run))
             for point in endpoints
         )
+        samples.extend(projected)
+        segments.append(tuple(sorted((projected[0][2], projected[1][2]))))  # type: ignore[arg-type]
     if not samples:
         return None
     u = sum(item[0] for item in samples) / len(samples)
     v = sum(item[1] for item in samples) / len(samples)
     if any(math.hypot(item[0] - u, item[1] - v) > _INTERVAL_TOL for item in samples):
         return None
-    return u, v, min(item[2] for item in samples), max(item[2] for item in samples)
+    ordered = sorted(segments)
+    for previous, following in zip(ordered, ordered[1:], strict=False):
+        delta = following[0] - previous[1]
+        if delta > _INTERVAL_TOL or delta < -_INTERVAL_TOL:
+            return None
+    return u, v, ordered[0][0], ordered[-1][1]
 
 
 def _face_interval(graph: FaceGraph, node: FaceNode, run: Vector3) -> tuple[float, float] | None:
@@ -257,15 +265,30 @@ def _triangle_probes(
 
 
 def _ordered_cycle(
-    graph: FaceGraph, members: tuple[FaceNode, ...], adjacency: dict[FaceNode, set[FaceNode]]
+    members: tuple[FaceNode, ...],
+    adjacency: dict[FaceNode, set[FaceNode]],
+    pair_lines: dict[frozenset[FaceNode], tuple[float, float, float, float]],
 ) -> tuple[FaceNode, ...]:
-    start = min(members, key=lambda node: node.index)
-    first = min(adjacency[start], key=lambda node: node.index)
-    order = [start, first]
-    while len(order) < len(members):
-        choices = adjacency[order[-1]] - {order[-2]}
-        order.append(next(iter(choices)))
-    return tuple(order)
+    """Choose the cycle by its geometric corner sequence, never node/traversal order."""
+
+    candidates: list[
+        tuple[tuple[tuple[float, float], ...], tuple[FaceNode, ...]]
+    ] = []
+    for start in members:
+        for first in adjacency[start]:
+            order = [start, first]
+            while len(order) < len(members):
+                choices = adjacency[order[-1]] - {order[-2]}
+                if len(choices) != 1:
+                    raise ValueError("section wall component is not one simple cycle")
+                order.append(next(iter(choices)))
+            closed = tuple(order)
+            corners = tuple(
+                pair_lines[frozenset((node, closed[(at + 1) % len(closed)]))][:2]
+                for at, node in enumerate(closed)
+            )
+            candidates.append((corners, closed))
+    return min(candidates, key=lambda item: item[0])[1]
 
 
 def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingProposal, ...]:
@@ -275,20 +298,24 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
     for face in part.faces():
         graph.require_node(face)
     planar = tuple(node for node in graph.nodes if graph.is_planar(node))
-    directions: dict[tuple[float, float, float], Vector3] = {}
+    directions: dict[tuple[float, float, float], list[Vector3]] = defaultdict(list)
+    inspected_pairs: set[frozenset[FaceNode]] = set()
     for left in planar:
         for right in graph.neighbours(left):
-            if right not in planar or right.index <= left.index:
+            pair = frozenset((left, right))
+            if right not in planar or pair in inspected_pairs:
                 continue
+            inspected_pairs.add(pair)
             for edge in graph.shared_edges(left, right):
                 run = _canonical_run(edge)
                 if run is not None:
                     key = cast(Vector3, tuple(round(value, 9) for value in run))
-                    directions[key] = run
+                    directions[key].append(run)
 
     proposals: list[SectionRingProposal] = []
-    seen: set[tuple[int, ...]] = set()
-    for run in directions.values():
+    seen: set[frozenset[FaceNode]] = set()
+    for key in sorted(directions):
+        run = min(directions[key])
         base = LocalFrame.canonical(run, (0.0, 0.0, 0.0))
         walls = tuple(
             node
@@ -298,10 +325,13 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
         )
         pair_lines: dict[frozenset[FaceNode], tuple[float, float, float, float]] = {}
         adjacency: dict[FaceNode, set[FaceNode]] = defaultdict(set)
+        inspected_pairs = set()
         for left in walls:
             for right in graph.neighbours(left):
-                if right not in walls or right.index <= left.index:
+                pair = frozenset((left, right))
+                if right not in walls or pair in inspected_pairs:
                     continue
+                inspected_pairs.add(pair)
                 line = _pair_line(graph, left, right, base)
                 if line is None:
                     continue
@@ -331,11 +361,11 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
             members = set(component)
             if len(component) < 3 or any(len(adjacency[node] & members) != 2 for node in component):
                 continue
-            identity = tuple(sorted(node.index for node in component))
+            identity = frozenset(component)
             solid = graph.common_valid_solid(component)
             if identity in seen or solid is None:
                 continue
-            order = _ordered_cycle(graph, component, adjacency)
+            order = _ordered_cycle(component, adjacency, pair_lines)
             lines = tuple(
                 pair_lines[frozenset((node, order[(at + 1) % len(order)]))]
                 for at, node in enumerate(order)
