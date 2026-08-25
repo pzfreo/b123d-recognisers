@@ -1502,3 +1502,161 @@ def test_snapshot_values_contain_no_run_or_kernel_handles() -> None:
 
     leaves = tuple(visit(snapshot))
     assert all(value is None or isinstance(value, (bool, int, float, str)) for value in leaves)
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        (float("nan"), "non-finite"),
+        ({1: "value"}, "non-string key"),
+        (object(), "unsupported object state"),
+    ],
+)
+def test_snapshot_value_freezer_refuses_unstable_state(value, message: str) -> None:
+    with pytest.raises(CorrespondenceSnapshotError, match=message):
+        correspondence_module._freeze(value)
+
+
+def test_snapshot_value_freezer_normalizes_nested_and_negative_zero() -> None:
+    assert correspondence_module._freeze({"b": [-0.0], "a": None}) == (
+        ("a", None),
+        ("b", (0.0,)),
+    )
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda: _body_geometry._finite(float("inf")),
+        lambda: _body_geometry._snap(1.0, 0.0),
+        lambda: _body_geometry._vector(Vector(2.0, 0.0, 0.0).wrapped),
+        lambda: _body_geometry._canonical_cycle(()),
+        lambda: _body_geometry._canonical_cycle_with_tokens((), 1),
+    ],
+)
+def test_low_level_descriptor_refusals_are_named(call) -> None:
+    with pytest.raises(UnsupportedBodyGeometry):
+        call()
+
+
+def test_positive_fact_refuses_quantization_collapse(monkeypatch) -> None:
+    monkeypatch.setattr(_body_geometry, "_snap_checked", lambda *_args, **_kwargs: 0.0)
+    with pytest.raises(UnsupportedBodyGeometry, match="collapses"):
+        _body_geometry._positive_fact(1.0, 0.1, name="controlled fact")
+
+
+def test_quantized_axis_refuses_nonunit_serialization(monkeypatch) -> None:
+    monkeypatch.setattr(_body_geometry, "_snap", lambda _value, _quantum: 0.0)
+    with pytest.raises(UnsupportedBodyGeometry, match="unit length"):
+        _body_geometry._qaxis((1.0, 0.0, 0.0))
+
+
+def test_ambiguous_wire_semantic_winding_refuses() -> None:
+    edge = _body_geometry.EdgeGeometry("LINE", (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 1.0)
+    items = ((edge, 1, "a"), (edge, -1, "b"))
+    with pytest.raises(UnsupportedBodyGeometry, match="semantic winding is ambiguous"):
+        _body_geometry._canonical_cycle_with_tokens(items, 1)
+
+
+def test_degenerate_circle_radius_refuses(monkeypatch) -> None:
+    edge = Edge.make_circle(1.0)
+    monkeypatch.setattr(type(edge), "radius", property(lambda _self: 0.0))
+    with pytest.raises(UnsupportedBodyGeometry, match="circle radius"):
+        _body_geometry._arc_sweep(edge, (0.0, 0.0, 1.0))
+
+
+def test_degenerate_circle_sweep_refuses(monkeypatch) -> None:
+    edge = Edge.make_circle(1.0)
+    monkeypatch.setattr(type(edge), "length", property(lambda _self: 1e-12))
+    with pytest.raises(UnsupportedBodyGeometry, match="circle sweep"):
+        _body_geometry._arc_sweep(edge, (0.0, 0.0, 1.0))
+
+
+def test_degenerate_face_area_refuses(monkeypatch) -> None:
+    face = Box(1, 1, 1).faces()[0]
+    monkeypatch.setattr(type(face), "area", property(lambda _self: 0.0))
+    with pytest.raises(UnsupportedBodyGeometry, match="face area"):
+        _body_geometry._face_geometry(face, (0.0, 0.0, 0.0), 1.0)
+
+
+def test_snapshot_authority_cannot_bind_twice() -> None:
+    product = _take_inventory(_rrp())
+    authority = correspondence_module._CorrespondenceSnapshotAuthority()
+    authority.bind(product)
+    with pytest.raises(CorrespondenceSnapshotError, match="already bound"):
+        authority.bind(product)
+
+
+def test_body_fact_solid_identity_is_revalidated(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    original = FaceGraph.body_geometry
+
+    def wrong_solid(self, solid):
+        fact = original(self, solid)
+        return dataclasses.replace(fact, _solid=copy.copy(solid))
+
+    monkeypatch.setattr(FaceGraph, "body_geometry", wrong_solid)
+    with pytest.raises(CorrespondenceSnapshotError, match="lost its graph-issued solid"):
+        correspondence_snapshot(product)
+
+
+def test_defining_face_authority_failure_is_wrapped(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+
+    def refuse(_self, _node):
+        raise BodyGeometryAuthorityError("controlled missing face")
+
+    monkeypatch.setattr(
+        "b123d_recognisers._adjacency.BodyGeometryFact._defining_face",
+        refuse,
+    )
+    with pytest.raises(CorrespondenceSnapshotError, match="defining face geometry"):
+        correspondence_snapshot(product)
+
+
+def test_body_fact_rejects_a_nonmember_face_node() -> None:
+    graph, solid, fact = _body_descriptor(_rrp())
+    foreign = FaceGraph(Pos(3, 4, 5) * _rrp()).nodes[0]
+    assert graph.owns(fact._faces[0][0])
+    with pytest.raises(BodyGeometryAuthorityError, match="not part"):
+        fact._defining_face(foreign)
+
+
+def test_body_geometry_revalidates_reference_identity_and_closed_membership() -> None:
+    graph, solid, _fact = _body_descriptor(_rrp())
+    copied = copy.copy(solid)
+    graph._issued_solid_refs[copied] = copied.ordinal
+    with pytest.raises(BodyGeometryAuthorityError, match="identity changed"):
+        graph.body_geometry(copied)
+
+    graph._body_geometry.clear()
+    assert graph._closed_solids is not None
+    graph._closed_solids = frozenset()
+    with pytest.raises(BodyGeometryAuthorityError, match="valid closed solid"):
+        graph.body_geometry(solid)
+
+
+def test_body_geometry_refuses_unowned_described_face(monkeypatch) -> None:
+    graph = FaceGraph(_rrp())
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    monkeypatch.setattr(FaceGraph, "node_of", lambda _self, _face: None)
+    with pytest.raises(BodyGeometryAuthorityError, match="face is not owned"):
+        graph.body_geometry(solid)
+
+
+def test_evidence_index_rejects_a_different_graph_run() -> None:
+    product = _take_inventory(_rrp())
+    foreign = FaceGraph(_rrp())
+    with pytest.raises(ValueError, match="another graph run"):
+        product.evidence._validate_graph(foreign)
+
+
+def test_plain_cycle_canonicalization_normalizes_reversal() -> None:
+    first = _body_geometry.EdgeGeometry("LINE", (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 1.0)
+    second = _body_geometry.EdgeGeometry("LINE", (1.0, 0.0, 0.0), (1.0, 1.0, 0.0), 1.0)
+    direct = ((first, 1), (second, 1))
+    reversed_items = tuple((edge, -direction) for edge, direction in reversed(direct))
+    assert _body_geometry._canonical_cycle(direct) == _body_geometry._canonical_cycle(
+        reversed_items
+    )
