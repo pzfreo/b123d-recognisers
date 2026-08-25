@@ -3,6 +3,11 @@
 - **Status:** Accepted
 - **Date:** 2026-08-19
 - **Decider:** Paul Fremantle
+
+F4b keeps section-ring discovery neutral. Passage policy alone requires two open ends and maps the
+neutral occurrence to the public record. Legacy principal-axis projection happens only after rich
+Passage reconciliation; it is not a shared reduction and cannot filter or create physical
+Candidates.
 - **Evidence:** [epic 0002](../epics/0002-one-substrate-before-more-recognisers.md), item 0
 
 ## Context

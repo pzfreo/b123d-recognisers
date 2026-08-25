@@ -87,6 +87,10 @@ its cache semantics part of this package's aggregate value.
 Consumers receive one explainable physical feature universe. Migration can be feature-family by
 feature-family, but temporary partial results must say which families were not evaluated.
 
+For F4b Passage migration, `RecognitionResult.section_passages` is the physical Candidate field.
+Reconciliation decisions attach to those rich identities. The legacy `passages` tuple is derived
+only from accepted rich occurrences and never feeds reconciliation, census, or evidence backward.
+
 ## Amendment (0.2.6, epic 0002)
 
 **A reconciler corrects double-counting. It does not correct recall, and the failure it leaves

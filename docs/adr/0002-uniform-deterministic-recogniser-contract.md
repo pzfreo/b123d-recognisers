@@ -48,6 +48,13 @@ verbs such as `analyse_cylinders` because they return evidence rather than accep
 - Permuting kernel traversal order does not alter deterministic record ordering.
 - A mutation test proves each injected dependency is used rather than recomputed.
 
+## F4b Passage compatibility transition (0.4)
+
+`recognise_section_passages` is the attributed Passage entry point and returns the sole physical
+`SectionPassage` record. `recognise_passages` remains a writer-free legacy projection; any
+non-`None` ledger raises `PassageCompatibilityError` before discovery. This intentional pre-1.0
+break removes the otherwise unavoidable second Passage evidence authority.
+
 ## Consequences
 
 The contract favours predictable composition over one-off convenience. An aggregate that appears

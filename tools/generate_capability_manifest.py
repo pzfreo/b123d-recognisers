@@ -59,7 +59,7 @@ FAMILIES = {
         "census": "passage",
         "goldens": ["hexagonal_passage"],
         "introduced": "0.2.6",
-        "tests": ["tests/test_passages.py"],
+        "tests": ["tests/test_passages.py", "tests/test_section_passages.py"],
     },
     "bosses": {
         "recognisers": [("recognise_bosses", "part")],
