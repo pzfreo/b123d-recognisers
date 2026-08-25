@@ -43,7 +43,12 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 from b123d_recognisers._run import start
-from b123d_recognisers._section_passages import _INTERVAL_TOL, _pair_line
+from b123d_recognisers._section_passages import (
+    _DIRECTION_TOL,
+    _INTERVAL_TOL,
+    _pair_line,
+    _parallel_pair_candidates,
+)
 from b123d_recognisers._sections import LocalFrame
 from b123d_recognisers.result import _discover_all
 
@@ -139,6 +144,26 @@ def test_segmented_junction_union_has_closed_gap_and_overlap_boundaries(
     assert (result is not None) is accepted
     if result is not None:
         assert result[2:] == (-10.0, 10.0)
+
+
+def test_direction_buckets_do_not_narrow_the_parallel_tolerance() -> None:
+    seed = (1.0, 0.49e-9, 0.0)
+    adjacent_bucket = (1.0, 0.51e-9, 0.0)
+    boundary_x = 1.0 - _DIRECTION_TOL
+    boundary = (boundary_x, math.sqrt(1.0 - boundary_x * boundary_x), 0.0)
+    outside_x = math.nextafter(boundary_x, -math.inf)
+    outside = (outside_x, math.sqrt(1.0 - outside_x * outside_x), 0.0)
+    assert tuple(round(value, 9) for value in seed) != tuple(
+        round(value, 9) for value in adjacent_bucket
+    )
+    candidates = (
+        (object(), object(), seed),
+        (object(), object(), adjacent_bucket),
+        (object(), object(), boundary),
+        (object(), object(), outside),
+    )
+    selected = _parallel_pair_candidates(candidates, (1.0, 0.0, 0.0))  # type: ignore[arg-type]
+    assert selected == candidates[:3]
 
 
 def _polygonal_tool(sides_or_points):

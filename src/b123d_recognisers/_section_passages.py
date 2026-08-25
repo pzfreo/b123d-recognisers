@@ -105,6 +105,14 @@ def _parallel(left: Vector3, right: Vector3) -> bool:
     return abs(abs(_dot(left, right)) - 1.0) <= _DIRECTION_TOL
 
 
+def _parallel_pair_candidates(
+    candidates: tuple[tuple[FaceNode, FaceNode, Vector3], ...], run: Vector3
+) -> tuple[tuple[FaceNode, FaceNode, Vector3], ...]:
+    """Retain the semantic tolerance across presentation-only direction buckets."""
+
+    return tuple(candidate for candidate in candidates if _parallel(candidate[2], run))
+
+
 def _pair_line(
     graph: FaceGraph, left: FaceNode, right: FaceNode, frame: LocalFrame
 ) -> tuple[float, float, float, float] | None:
@@ -328,10 +336,13 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
 
     proposals: list[SectionRingProposal] = []
     seen: set[frozenset[FaceNode]] = set()
+    discovered_pairs = tuple(
+        candidate for candidates in direction_pairs.values() for candidate in candidates
+    )
     for key in sorted(direction_pairs):
-        candidates = direction_pairs[key]
-        run = min(item[2] for item in candidates)
+        run = min(item[2] for item in direction_pairs[key])
         base = LocalFrame.canonical(run, (0.0, 0.0, 0.0))
+        candidates = _parallel_pair_candidates(discovered_pairs, base.run)
         candidate_nodes = {node for left, right, _run in candidates for node in (left, right)}
         walls = frozenset(
             node
