@@ -120,6 +120,66 @@ def test_line_plane_matching_graph_erases_face_and_edge_traversal_order(monkeypa
     assert source.edge_occurrence_count == 24
 
 
+def test_planar_full_circle_cycle_has_no_serialized_seam() -> None:
+    face = FaceGeometry(
+        "PLANE",
+        (0.0, 0.0, 1.0, 0.0),
+        math.pi,
+        (0.0, 0.0, 0.0),
+        1,
+        (),
+    )
+    curve = MatchingCurve(
+        "CIRCLE",
+        None,
+        2.0 * math.pi,
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        1.0,
+        2.0 * math.pi,
+        True,
+    )
+
+    wire = _body_geometry._planar_cycle(
+        (0,), (curve,), "outer", face, 1e-9, ()
+    )
+
+    assert wire == MatchingWire(
+        "outer", 0, (MatchingHalfEdge(0, 1, None, None),)
+    )
+
+
+def test_planar_trimmed_circle_integral_reconstructs_the_arc() -> None:
+    face = FaceGeometry(
+        "PLANE",
+        (0.0, 0.0, 1.0, 0.0),
+        1.0,
+        (0.0, 0.0, 0.0),
+        1,
+        (),
+    )
+    curve = MatchingCurve(
+        "CIRCLE",
+        (0, 1),
+        0.5 * math.pi,
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        1.0,
+        0.5 * math.pi,
+        False,
+    )
+    half_edge = MatchingHalfEdge(
+        0,
+        1,
+        MatchingWireVertex(0, (1.0, 0.0)),
+        MatchingWireVertex(1, (0.0, 1.0)),
+    )
+
+    assert _body_geometry._half_edge_integral(
+        half_edge, (curve,), face, 1e-9
+    ) == pytest.approx(0.25 * math.pi)
+
+
 def _rrp(repeats: int = 5):
     part = Cylinder(20, 10)
     for index in range(repeats):

@@ -789,14 +789,54 @@ def _plane_parameter(point: QPoint, face: FaceGeometry, quantum: float) -> tuple
     )
 
 
-def _cycle_area(parameters: tuple[tuple[float, float], ...]) -> float:
-    return 0.5 * sum(
-        left[0] * right[1] - right[0] * left[1]
-        for left, right in zip(parameters, parameters[1:] + parameters[:1], strict=True)
+def _half_edge_integral(
+    half_edge: MatchingHalfEdge,
+    curves: tuple[MatchingCurve, ...],
+    face: FaceGeometry,
+    quantum: float,
+) -> float:
+    curve = curves[half_edge.curve]
+    normal = face.parameters[:3]
+    if curve.kind == "LINE":
+        if half_edge.start is None or half_edge.end is None:
+            raise UnsupportedBodyGeometry("matching line half-edge has no endpoints")
+        left, right = half_edge.start.parameter, half_edge.end.parameter
+        return 0.5 * (left[0] * right[1] - right[0] * left[1])
+    if (
+        curve.kind != "CIRCLE"
+        or curve.centre is None
+        or curve.axis is None
+        or curve.radius is None
+        or curve.sweep is None
+    ):
+        raise UnsupportedBodyGeometry("matching circle half-edge is malformed")
+    axis_factor = sum(a * b for a, b in zip(curve.axis, normal, strict=True))
+    if abs(abs(axis_factor) - 1.0) > DIRECTION_TOL:
+        raise UnsupportedBodyGeometry("matching planar circle axis is not face-normal")
+    sweep = half_edge.direction * curve.sweep * (1.0 if axis_factor > 0.0 else -1.0)
+    centre = _plane_parameter(curve.centre, face, quantum)
+    if curve.full:
+        return 0.5 * curve.radius**2 * sweep
+    if half_edge.start is None or half_edge.end is None:
+        raise UnsupportedBodyGeometry("matching trimmed circle has no endpoints")
+    start = half_edge.start.parameter
+    end = half_edge.end.parameter
+    start_angle = math.atan2(start[1] - centre[1], start[0] - centre[0])
+    end_angle = start_angle + sweep
+    reconstructed_end = (
+        centre[0] + curve.radius * math.cos(end_angle),
+        centre[1] + curve.radius * math.sin(end_angle),
+    )
+    if math.dist(reconstructed_end, end) > 2.0 * quantum:
+        raise UnsupportedBodyGeometry("matching circle sweep does not reconstruct its endpoint")
+    return 0.5 * (
+        curve.radius * centre[0] * (math.sin(end_angle) - math.sin(start_angle))
+        + curve.radius * centre[1] * (-math.cos(end_angle) + math.cos(start_angle))
+        + curve.radius**2 * sweep
     )
 
 
-def _line_cycle(
+def _planar_cycle(
     curve_indices: tuple[int, ...],
     curves: tuple[MatchingCurve, ...],
     role: str,
@@ -807,11 +847,29 @@ def _line_cycle(
     adjacency: dict[int, list[tuple[int, int]]] = {}
     for curve_index in curve_indices:
         curve = curves[curve_index]
-        if curve.kind != "LINE" or curve.vertices is None:
-            raise UnsupportedBodyGeometry("initial matching cycle grammar is line-only")
+        if curve.full:
+            if len(curve_indices) != 1 or curve.kind != "CIRCLE":
+                raise UnsupportedBodyGeometry("full matching circle is not one complete wire")
+            continue
+        if curve.kind not in {"LINE", "CIRCLE"} or curve.vertices is None:
+            raise UnsupportedBodyGeometry("matching planar curve is malformed")
         left, right = curve.vertices
         adjacency.setdefault(left, []).append((curve_index, right))
         adjacency.setdefault(right, []).append((curve_index, left))
+    if len(curve_indices) == 1 and curves[curve_indices[0]].full:
+        curve_index = curve_indices[0]
+        alternatives = tuple(
+            MatchingHalfEdge(curve_index, direction, None, None) for direction in (-1, 1)
+        )
+        full_oriented = tuple(
+            item
+            for item in alternatives
+            if (_half_edge_integral(item, curves, face, quantum) > 0.0)
+            == (role == "outer")
+        )
+        if len(full_oriented) != 1:
+            raise UnsupportedBodyGeometry("full matching circle orientation is ambiguous")
+        return MatchingWire(role, 0, (full_oriented[0],))
     if not adjacency or any(len(entries) != 2 for entries in adjacency.values()):
         raise UnsupportedBodyGeometry("matching wire is not one degree-two cycle")
 
@@ -856,10 +914,9 @@ def _line_cycle(
     oriented: list[tuple[MatchingHalfEdge, ...]] = []
     expected_positive = role == "outer"
     for candidate in candidates:
-        parameters = tuple(
-            item.start.parameter for item in candidate if item.start is not None
+        area = sum(
+            _half_edge_integral(item, curves, face, quantum) for item in candidate
         )
-        area = _cycle_area(parameters)
         if abs(area) <= quantum**2:
             raise UnsupportedBodyGeometry("matching wire signed area is degenerate")
         if (area > 0.0) == expected_positive:
@@ -998,24 +1055,38 @@ def matching_boundary_for_solid(
     matching_curves: list[MatchingCurve] = []
     for edge in curve_examples:
         edge_geometry = _edge_geometry(edge, centre, quantum)
-        if edge_geometry.kind != "LINE":
-            raise UnsupportedBodyGeometry("initial matching boundary grammar is line-only")
-        endpoints = tuple(_identity_index(raw_vertices, vertex) for vertex in edge.vertices())
-        if len(endpoints) != 2:
-            raise UnsupportedBodyGeometry("matching line does not have two vertices")
-        ordered = (
-            endpoints
-            if vertex_labels[endpoints[0]] == edge_geometry.start
-            else (endpoints[1], endpoints[0])
-        )
-        if (
-            vertex_labels[ordered[0]] != edge_geometry.start
-            or vertex_labels[ordered[1]] != edge_geometry.end
-        ):
-            raise UnsupportedBodyGeometry("matching line endpoints disagree with its geometry")
+        if edge_geometry.kind not in {"LINE", "CIRCLE"}:
+            raise UnsupportedBodyGeometry("matching curve grammar is unsupported")
+        if edge_geometry.full:
+            ordered = None
+        else:
+            endpoints = tuple(
+                _identity_index(raw_vertices, vertex) for vertex in edge.vertices()
+            )
+            if len(endpoints) != 2:
+                raise UnsupportedBodyGeometry("matching curve does not have two vertices")
+            ordered = (
+                endpoints
+                if vertex_labels[endpoints[0]] == edge_geometry.start
+                else (endpoints[1], endpoints[0])
+            )
+            if (
+                vertex_labels[ordered[0]] != edge_geometry.start
+                or vertex_labels[ordered[1]] != edge_geometry.end
+            ):
+                raise UnsupportedBodyGeometry(
+                    "matching curve endpoints disagree with its geometry"
+                )
         matching_curves.append(
             MatchingCurve(
-                "LINE", ordered, edge_geometry.length, None, None, None, None, False
+                edge_geometry.kind,
+                ordered,
+                edge_geometry.length,
+                edge_geometry.centre,
+                edge_geometry.axis,
+                edge_geometry.radius,
+                2.0 * math.pi if edge_geometry.full else edge_geometry.sweep,
+                edge_geometry.full,
             )
         )
     curves = tuple(matching_curves)
@@ -1028,7 +1099,7 @@ def matching_boundary_for_solid(
             raise UnsupportedBodyGeometry("initial matching boundary grammar is planar")
         matching_wires = []
         for wire_index, (role, curve_indices) in enumerate(wire_roster):
-            matching = _line_cycle(
+            matching = _planar_cycle(
                 curve_indices,
                 curves,
                 role,
