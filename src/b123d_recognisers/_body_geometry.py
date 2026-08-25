@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from itertools import permutations, product
 from typing import Any, TypeAlias, cast
 
-from build123d import GeomType
+from build123d import Edge, GeomType
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Curve2d, BRepAdaptor_Surface
 from OCP.BRepCheck import BRepCheck_Analyzer
@@ -21,8 +21,14 @@ from OCP.BRepGProp import BRepGProp
 from OCP.gp import gp_Pnt, gp_Pnt2d, gp_Vec, gp_Vec2d
 from OCP.GProp import GProp_GProps
 from OCP.Standard import Standard_Failure
-from OCP.TopAbs import TopAbs_Orientation, TopAbs_SOLID
+from OCP.TopAbs import (
+    TopAbs_FORWARD,
+    TopAbs_Orientation,
+    TopAbs_REVERSED,
+    TopAbs_SOLID,
+)
 from OCP.TopExp import TopExp
+from OCP.TopoDS import TopoDS
 
 DESCRIPTOR_REL = 1e-9
 DESCRIPTOR_FLOOR = 1e-7
@@ -1468,14 +1474,82 @@ def _validate_matching_pcurve(
             raise UnsupportedBodyGeometry("matching pcurve tangent exceeds its angular bound")
 
 
-def _cylinder_cycle(
+def _cylinder_pcurve_variants(
+    edge: Any,
+    face: Any,
+    face_adaptor: BRepAdaptor_Surface,
+    centre: QPoint,
+    quantum: float,
+    gauge: tuple[QPoint, QPoint, float, float],
+    kind: str,
+    full: bool,
+    budget: _MatchingConstructionBudget,
+) -> tuple[tuple[tuple[float, float], tuple[float, float]], ...]:
+    """Return the complete unordered bounded pcurve roster for one edge/face token."""
+
+    variants: set[tuple[tuple[float, float], tuple[float, float]]] = set()
+    for orientation in (TopAbs_FORWARD, TopAbs_REVERSED):
+        budget.charge()
+        oriented = Edge(TopoDS.Edge_s(edge.wrapped.Oriented(orientation)))
+        curve = BRepAdaptor_Curve(oriented.wrapped)
+        _validate_matching_pcurve(
+            oriented,
+            face,
+            curve,
+            face_adaptor,
+            quantum,
+            kind,
+            full,
+        )
+        try:
+            pcurve = BRepAdaptor_Curve2d(oriented.wrapped, face.wrapped)
+            first = pcurve.FirstParameter()
+            last = pcurve.LastParameter()
+            raw_start = pcurve.Value(first)
+            raw_end = pcurve.Value(last)
+        except Standard_Failure as error:
+            raise UnsupportedBodyGeometry(
+                "matching cylinder pcurve roster is unavailable"
+            ) from error
+        budget.charge()
+        variants.add(
+            (
+                _cylinder_parameter(
+                    face_adaptor,
+                    raw_start.X(),
+                    raw_start.Y(),
+                    centre,
+                    quantum,
+                    gauge,
+                ),
+                _cylinder_parameter(
+                    face_adaptor,
+                    raw_end.X(),
+                    raw_end.Y(),
+                    centre,
+                    quantum,
+                    gauge,
+                ),
+            )
+        )
+    if not variants:
+        raise UnsupportedBodyGeometry("matching cylinder pcurve roster is empty")
+    expected = 2 if BRep_Tool.IsClosed_s(edge.wrapped, face.wrapped) else 1
+    if len(variants) != expected:
+        raise UnsupportedBodyGeometry(
+            "matching cylinder pcurve closure roster is incomplete"
+        )
+    return tuple(sorted(variants))
+
+
+def _cylinder_cycle_assignment(
     pcurves: tuple[_CylinderPcurveOccurrence, ...],
     curves: tuple[MatchingCurve, ...],
     role: str,
     face: FaceGeometry,
     quantum: float,
     budget: _MatchingConstructionBudget,
-) -> MatchingWire:
+) -> set[MatchingWire]:
     if not pcurves:
         raise UnsupportedBodyGeometry("matching cylinder wire is empty")
 
@@ -1631,11 +1705,75 @@ def _cylinder_cycle(
             budget.charge()
             extend([oriented(occurrence, reverse)], remaining)
     if not joined_items:
-        raise UnsupportedBodyGeometry("matching cylinder pcurve cycle does not join")
+        return set()
     accepted: set[MatchingWire] = set()
     expected_positive = (role == "outer") == (face.material_side > 0)
     for occurrence_cycle in joined_items:
         budget.charge()
+        radius = face.parameters[6]
+        parameter_points = tuple(
+            (start[0], start[1] / radius) for _edge, start, _end in occurrence_cycle
+        )
+        tolerance = max(ANGLE_TOL, quantum / radius)
+
+        def orientation(
+            left: tuple[float, float],
+            middle: tuple[float, float],
+            right: tuple[float, float],
+        ) -> float:
+            return (middle[0] - left[0]) * (right[1] - left[1]) - (
+                middle[1] - left[1]
+            ) * (right[0] - left[0])
+
+        def intersects(
+            left_start: tuple[float, float],
+            left_end: tuple[float, float],
+            right_start: tuple[float, float],
+            right_end: tuple[float, float],
+            _tolerance: float = tolerance,
+        ) -> bool:
+            values = (
+                orientation(left_start, left_end, right_start),
+                orientation(left_start, left_end, right_end),
+                orientation(right_start, right_end, left_start),
+                orientation(right_start, right_end, left_end),
+            )
+            if all(abs(value) > _tolerance for value in values):
+                return (values[0] > 0.0) != (values[1] > 0.0) and (
+                    (values[2] > 0.0) != (values[3] > 0.0)
+                )
+            return not (
+                max(left_start[0], left_end[0])
+                < min(right_start[0], right_end[0]) - _tolerance
+                or max(right_start[0], right_end[0])
+                < min(left_start[0], left_end[0]) - _tolerance
+                or max(left_start[1], left_end[1])
+                < min(right_start[1], right_end[1]) - _tolerance
+                or max(right_start[1], right_end[1])
+                < min(left_start[1], left_end[1]) - _tolerance
+            )
+
+        simple = True
+        for left_index, left_start in enumerate(parameter_points):
+            left_end = parameter_points[(left_index + 1) % len(parameter_points)]
+            if math.dist(left_start, left_end) <= tolerance:
+                simple = False
+                break
+            for right_index in range(left_index + 1, len(parameter_points)):
+                if right_index in {
+                    left_index,
+                    (left_index + 1) % len(parameter_points),
+                } or left_index == (right_index + 1) % len(parameter_points):
+                    continue
+                right_start = parameter_points[right_index]
+                right_end = parameter_points[(right_index + 1) % len(parameter_points)]
+                if intersects(left_start, left_end, right_start, right_end):
+                    simple = False
+                    break
+            if not simple:
+                break
+        if not simple:
+            continue
         area = 0.5 * sum(
             left[0] * right[1] - right[0] * left[1]
             for _, left, right in occurrence_cycle
@@ -1650,12 +1788,33 @@ def _cylinder_cycle(
         theta_winding = int(round(theta_delta / (2.0 * math.pi)))
         if abs(theta_delta - theta_winding * 2.0 * math.pi) > 4.0 * ANGLE_TOL:
             continue
+        # A simple closed curve on a cylindrical annulus represents only the zero
+        # class or one primitive generator.  Larger winding repeats the same physical
+        # cylinder and is not a distinct lawful boundary cycle.
+        if abs(theta_winding) > 1:
+            continue
         accepted.add(MatchingWire(role, theta_winding, min(rotations)))
-    if accepted:
-        minimum_homology = min(abs(item.theta_winding) for item in accepted)
-        accepted = {
-            item for item in accepted if abs(item.theta_winding) == minimum_homology
-        }
+    return accepted
+
+
+def _cylinder_cycle(
+    assignments: tuple[tuple[_CylinderPcurveOccurrence, ...], ...],
+    curves: tuple[MatchingCurve, ...],
+    role: str,
+    face: FaceGeometry,
+    quantum: float,
+    budget: _MatchingConstructionBudget,
+) -> MatchingWire:
+    if not assignments:
+        raise UnsupportedBodyGeometry("matching cylinder pcurve assignment roster is empty")
+    accepted: set[MatchingWire] = set()
+    for assignment in assignments:
+        budget.charge()
+        accepted.update(
+            _cylinder_cycle_assignment(
+                assignment, curves, role, face, quantum, budget
+            )
+        )
     if len(accepted) != 1:
         raise UnsupportedBodyGeometry(
             "matching cylinder wire has no unique material-oriented cycle"
@@ -1882,7 +2041,11 @@ def matching_boundary_for_solid(
             return found
 
         def register(
-            edge: Any, owner: Any = face, surface: BRepAdaptor_Surface = face_adaptor
+            edge: Any,
+            owner: Any = face,
+            surface: BRepAdaptor_Surface = face_adaptor,
+            *,
+            validate_pcurve: bool = True,
         ) -> int:
             cached_label = cached_edge_labels.get(edge)
             if cached_label is None:
@@ -1893,16 +2056,17 @@ def matching_boundary_for_solid(
             if curve_adaptor is None:
                 curve_adaptor = BRepAdaptor_Curve(edge.wrapped)
                 curve_adaptors[edge] = curve_adaptor
-            budget.charge()
-            _validate_matching_pcurve(
-                edge,
-                owner,
-                curve_adaptor,
-                surface,
-                quantum,
-                cached_label.kind,
-                cached_label.full,
-            )
+            if validate_pcurve:
+                budget.charge()
+                _validate_matching_pcurve(
+                    edge,
+                    owner,
+                    curve_adaptor,
+                    surface,
+                    quantum,
+                    cached_label.kind,
+                    cached_label.full,
+                )
             index = raw_curve_indices.get(edge)
             if index is not None:
                 return index
@@ -1963,41 +2127,45 @@ def matching_boundary_for_solid(
         gauge = _cylinder_gauge(face_adaptor, face_build.geometry, centre)
         raw_wire_rosters: list[tuple[str, tuple[object, ...]]] = []
         for wire in face.wires():
-            pcurve_occurrences = []
+            occurrence_groups: list[tuple[Any, list[Any]]] = []
             for edge in wire.edges():
-                curve_index = register(edge)
+                group = next(
+                    (
+                        occurrences
+                        for token, occurrences in occurrence_groups
+                        if _same_shape(token, edge)
+                    ),
+                    None,
+                )
+                if group is None:
+                    group = []
+                    occurrence_groups.append((edge, group))
+                group.append(edge)
+            if not occurrence_groups:
+                raise UnsupportedBodyGeometry("matching cylinder wire is empty")
+            group_assignments = []
+            for edge, edge_occurrences in occurrence_groups:
+                curve_index = register(edge, validate_pcurve=False)
                 curve_label = cached_edge_labels.get(edge)
                 if curve_label is None:
                     raise UnsupportedBodyGeometry(
                         "matching cylinder curve authority is incomplete"
                     )
-                try:
-                    pcurve = BRepAdaptor_Curve2d(edge.wrapped, face.wrapped)
-                    first = pcurve.FirstParameter()
-                    last = pcurve.LastParameter()
-                    raw_start = pcurve.Value(first)
-                    raw_end = pcurve.Value(last)
-                except Standard_Failure as error:
+                variants = _cylinder_pcurve_variants(
+                    edge,
+                    face,
+                    face_adaptor,
+                    centre,
+                    quantum,
+                    gauge,
+                    curve_label.kind,
+                    curve_label.full,
+                    budget,
+                )
+                if len(variants) != len(edge_occurrences):
                     raise UnsupportedBodyGeometry(
-                        "matching cylinder pcurve roster is unavailable"
-                    ) from error
-                budget.charge()
-                start_parameter = _cylinder_parameter(
-                    face_adaptor,
-                    raw_start.X(),
-                    raw_start.Y(),
-                    centre,
-                    quantum,
-                    gauge,
-                )
-                end_parameter = _cylinder_parameter(
-                    face_adaptor,
-                    raw_end.X(),
-                    raw_end.Y(),
-                    centre,
-                    quantum,
-                    gauge,
-                )
+                        "matching cylinder pcurve roster cardinality changed"
+                    )
                 if curve_label.full:
                     start_vertex = end_vertex = None
                 else:
@@ -2005,17 +2173,39 @@ def matching_boundary_for_solid(
                         TopExp.FirstVertex_s(edge.wrapped, False)
                     )
                     end_vertex = vertex_index(TopExp.LastVertex_s(edge.wrapped, False))
-                pcurve_occurrences.append(
-                    _CylinderPcurveOccurrence(
-                        curve_index,
-                        start_vertex,
-                        end_vertex,
-                        start_parameter,
-                        end_parameter,
+                choices = []
+                for assignment in permutations(variants):
+                    budget.charge()
+                    choices.append(
+                        tuple(
+                            sorted(
+                                (
+                                    _CylinderPcurveOccurrence(
+                                        curve_index,
+                                        start_vertex,
+                                        end_vertex,
+                                        start_parameter,
+                                        end_parameter,
+                                    )
+                                    for start_parameter, end_parameter in assignment
+                                ),
+                                key=repr,
+                            )
+                        )
+                    )
+                group_assignments.append(tuple(sorted(set(choices), key=repr)))
+            assignments = []
+            for assignment_groups in product(*group_assignments):
+                budget.charge()
+                assignments.append(
+                    tuple(
+                        occurrence
+                        for assignment_group in assignment_groups
+                        for occurrence in assignment_group
                     )
                 )
             role = "outer" if wire == outer else "inner"
-            raw_wire_rosters.append((role, tuple(pcurve_occurrences)))
+            raw_wire_rosters.append((role, tuple(sorted(set(assignments), key=repr))))
         # Wire enumeration is only a complete occurrence roster.  Its order is erased
         # immediately; material orientation and cyclic order are reconstructed below.
         wires.extend(sorted(raw_wire_rosters, key=repr))
@@ -2090,7 +2280,10 @@ def matching_boundary_for_solid(
                 )
             elif build.geometry.kind == "CYLINDER":
                 matching = _cylinder_cycle(
-                    cast(tuple[_CylinderPcurveOccurrence, ...], wire_authority),
+                    cast(
+                        tuple[tuple[_CylinderPcurveOccurrence, ...], ...],
+                        wire_authority,
+                    ),
                     curves,
                     role,
                     build.geometry,
