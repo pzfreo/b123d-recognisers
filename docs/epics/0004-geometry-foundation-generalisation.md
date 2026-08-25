@@ -1021,6 +1021,11 @@ are not introduced by this attribution-only child.
 Graph-bound source sharing is valid only between unequal records whose complete role sets resolve
 to the same SolidRef. Equal-record identical sets collapse; competing assignments, cross-solid or
 stale provenance still refuse atomically. Sources are never subtracted or merged to force uniqueness.
+The executable invalid-topology boundary uses an open Shell. A bounded OCCT construction search did
+not produce a valid closed non-manifold Solid with one unambiguous Pocket occurrence: added
+incidence either remains open/invalid or makes the wall/floor assignment ambiguous, which the same
+common-SolidRef and complete-role checks already refuse. This is not claimed as an extra supported
+geometry route.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same

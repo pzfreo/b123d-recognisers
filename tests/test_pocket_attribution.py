@@ -27,6 +27,7 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
@@ -822,34 +823,38 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
     importers = []
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        aliases = {
-            node.name
+        bindings = {
+            node.name: f"b123d_recognisers.{path.stem}.{node.name}"
             for node in tree.body
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == "_discover_pockets"
         }
-        modules = set()
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module:
+                prefix = (
+                    f"b123d_recognisers.{statement.module}"
+                    if statement.level
+                    else statement.module
+                )
                 for alias in statement.names:
-                    if alias.name == "_discover_pockets":
-                        aliases.add(alias.asname or alias.name)
+                    target = f"{prefix}.{alias.name}"
+                    bindings[alias.asname or alias.name] = target
+                    if target == "b123d_recognisers._recess_features._discover_pockets":
                         importers.append(path.name)
             elif isinstance(statement, ast.Import):
                 for alias in statement.names:
-                    if alias.name == "b123d_recognisers._recess_features":
-                        modules.add(alias.asname or alias.name)
+                    bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+
+        def canonical(node, names=bindings):
+            if isinstance(node, ast.Name):
+                return names.get(node.id, node.id)
+            if isinstance(node, ast.Attribute):
+                return f"{canonical(node.value)}.{node.attr}"
+            return ""
+
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            direct = isinstance(node.func, ast.Name) and node.func.id in aliases
-            qualified = (
-                isinstance(node.func, ast.Attribute)
-                and node.func.attr == "_discover_pockets"
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id in modules
-            )
-            if direct or qualified:
+            if canonical(node.func) == "b123d_recognisers._recess_features._discover_pockets":
                 calls.append((path.name, node))
     assert importers == ["_registry.py"]
     assert {path for path, _call in calls} == {"_registry.py", "_recess_features.py"}
@@ -879,43 +884,50 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
 def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
     package = ROOT / "src/b123d_recognisers"
 
-    def bindings(tree):
-        names = {}
-        modules = {}
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
+    def bindings(tree, source):
+        names = {
+            node.name: f"b123d_recognisers.{source[:-3]}.{node.name}"
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        }
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module:
+                prefix = (
+                    f"b123d_recognisers.{node.module}"
+                    if node.level
+                    else node.module
+                )
                 for alias in node.names:
-                    names[alias.asname or alias.name] = alias.name
+                    names[alias.asname or alias.name] = f"{prefix}.{alias.name}"
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    modules[alias.asname or alias.name.split(".")[0]] = alias.name
-        return names, modules
+                    names[alias.asname or alias.name.split(".")[0]] = alias.name
+        return names
 
-    def leaf(node, names, modules):
+    def canonical(node, names):
         if isinstance(node, ast.Name):
             return names.get(node.id, node.id)
         if isinstance(node, ast.Attribute):
-            return node.attr
+            return f"{canonical(node.value, names)}.{node.attr}"
         return ""
 
     watched = {
-        "_pocket_proposals_one",
-        "_body_scoped_proposals",
-        "_RecessProposal",
-        "_merge_proposals",
-        "_extend_obround_proposals",
+        "b123d_recognisers._recess_core._pocket_proposals_one",
+        "b123d_recognisers._recess_reduce._body_scoped_proposals",
+        "b123d_recognisers._recess_reduce._RecessProposal",
+        "b123d_recognisers._recess_reduce._merge_proposals",
+        "b123d_recognisers._recess_obround._extend_obround_proposals",
     }
     sites = {name: [] for name in watched}
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        names, modules = bindings(tree)
+        names = bindings(tree, path.name)
 
         class Visitor(ast.NodeVisitor):
-            def __init__(self, source, imported_names, imported_modules):
+            def __init__(self, source, imported_names):
                 self.functions = []
                 self.source = source
                 self.names = imported_names
-                self.modules = imported_modules
 
             def visit_FunctionDef(self, node):
                 self.functions.append(node.name)
@@ -923,21 +935,38 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
                 self.functions.pop()
 
             def visit_Call(self, node):
-                name = leaf(node.func, self.names, self.modules)
+                name = canonical(node.func, self.names)
                 if name in sites:
                     sites[name].append((self.source, self.functions[-1]))
                 self.generic_visit(node)
 
-        Visitor(path.name, names, modules).visit(tree)
-    assert sites["_pocket_proposals_one"] == [("_recess_core.py", "_recognise_pockets_one")]
-    assert ("_recess_features.py", "_discover_pockets") in sites["_body_scoped_proposals"]
-    assert {path for path, _function in sites["_RecessProposal"]} == {
-        "_recess_core.py",
-        "_recess_obround.py",
-        "_recess_reduce.py",
-    }
-    assert ("_recess_core.py", "_pocket_proposals_one") in sites["_merge_proposals"]
-    assert ("_recess_core.py", "_pocket_proposals_one") in sites["_extend_obround_proposals"]
+        Visitor(path.name, names).visit(tree)
+    assert sites["b123d_recognisers._recess_core._pocket_proposals_one"] == [
+        ("_recess_core.py", "_recognise_pockets_one")
+    ]
+    assert sites["b123d_recognisers._recess_reduce._body_scoped_proposals"] == [
+        ("_recess_features.py", "_discover_slots"),
+        ("_recess_features.py", "_discover_slots"),
+        ("_recess_features.py", "_discover_pockets"),
+    ]
+    assert sites["b123d_recognisers._recess_reduce._RecessProposal"] == [
+        ("_recess_core.py", "_slot_proposals_one"),
+        ("_recess_core.py", "_pocket_proposals_one"),
+        ("_recess_core.py", "_corner_notch_proposals"),
+        ("_recess_obround.py", "_extend_obround_proposals"),
+        ("_recess_obround.py", "_recognise_obround_from_ends"),
+        ("_recess_obround.py", "_recognise_obround_from_ends"),
+        ("_recess_reduce.py", "_replace_proposal"),
+        ("_recess_reduce.py", "_combine_proposals"),
+    ]
+    assert sites["b123d_recognisers._recess_reduce._merge_proposals"] == [
+        ("_recess_core.py", "_slot_proposals_one"),
+        ("_recess_core.py", "_pocket_proposals_one"),
+    ]
+    assert sites["b123d_recognisers._recess_obround._extend_obround_proposals"] == [
+        ("_recess_core.py", "_slot_proposals_one"),
+        ("_recess_core.py", "_pocket_proposals_one"),
+    ]
     prohibited = {
         "CandidateSet",
         "EvidenceIndex",
@@ -950,11 +979,18 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
     }
     for name in ("_recess_core.py", "_recess_faces.py", "_recess_obround.py", "_recess_reduce.py"):
         tree = ast.parse((package / name).read_text(encoding="utf-8"))
-        names, _modules = bindings(tree)
+        names = bindings(tree, name)
         references = {
-            names.get(node.id, node.id) for node in ast.walk(tree) if isinstance(node, ast.Name)
-        } | {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
-        assert prohibited.isdisjoint(references), (name, prohibited & references)
+            canonical(node, names) for node in ast.walk(tree) if isinstance(node, ast.Name)
+        } | {
+            canonical(node, names) for node in ast.walk(tree) if isinstance(node, ast.Attribute)
+        }
+        offenders = {
+            reference
+            for reference in references
+            if reference.rsplit(".", 1)[-1] in prohibited
+        }
+        assert not offenders, (name, offenders)
     definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.POCKETS)
     assert isinstance(definition.attribution, FullyAttributed)
     source = (package / "_recess_features.py").read_text(encoding="utf-8")
@@ -1042,6 +1078,64 @@ def test_step_split_corner_floor_publishes_every_original_patch(tmp_path: Path) 
     assert candidate.record is record
     assert split_floors.issubset(defining)
     assert len(defining) == 4
+
+
+def test_step_split_opposed_floor_remains_consulted_not_defining(tmp_path: Path) -> None:
+    """A paired Pocket's split floor controls routing but never becomes evidence."""
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    floors = [
+        node
+        for node in graph.nodes
+        if graph.is_planar(node)
+        and (normal := graph.normal(node)) is not None
+        and normal[2] > 0.9
+        and abs(graph.bounds(node)[2][0]) < 1e-8
+    ]
+    assert len(floors) == 1
+    seam = Edge.make_line((0, -6, 0), (0, 6, 0))
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, graph.face(floors[0]).wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    path = tmp_path / "pocket-split-opposed-floor.step"
+    assert export_step(type(part).cast(splitter.Shape()), path)
+    imported = import_step(path)
+    fresh = FaceGraph(imported)
+    split_floors = frozenset(
+        node
+        for node in fresh.nodes
+        if fresh.is_planar(node)
+        and (normal := fresh.normal(node)) is not None
+        and normal[2] > 0.9
+        and abs(fresh.bounds(node)[2][0]) < 1e-6
+    )
+    assert len(split_floors) == 2
+    ledger = ClaimLedger(fresh)
+    (record,) = _discover_pockets(imported, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
+    assert candidate.record is record
+    defining = ledger.defining_of(candidate)
+    assert len(defining) == 2
+    assert defining.isdisjoint(split_floors)
+
+
+def test_freeform_conversion_and_edge_corner_collision_do_not_leak() -> None:
+    source = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    converted = type(source).cast(BRepBuilderAPI_NurbsConvert(source.wrapped, True).Shape())
+    ledger = ClaimLedger(FaceGraph(converted))
+    assert _discover_pockets(converted, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+    corner = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+    fresh_graph, expected = _fresh_occurrences(corner)
+    assert len(expected) == 1 and expected[0][0].edge_anchored
+    corner_ledger = ClaimLedger(FaceGraph(corner))
+    (record,) = _discover_pockets(corner, writer=corner_ledger.writer)
+    assert record == expected[0][0]
+    assert len(corner_ledger.candidate_set(FamilyId.POCKETS).candidates) == 1
+    assert len(expected[0][1]) == 3
 
 
 def test_reversed_face_traversal_preserves_records_and_roles(monkeypatch) -> None:
