@@ -64,7 +64,7 @@ from b123d_recognisers._adjacency import (
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._record import Record
-from b123d_recognisers._rings import _centroid, rings
+from b123d_recognisers._rings import _canonical
 from b123d_recognisers._section_passages import section_ring_proposals
 from b123d_recognisers._typing import Part
 
@@ -306,33 +306,6 @@ def _discover_section_passages(
             PassageEnds(False, False),
         )
         found.append((record, proposal.nodes))
-    owned = {frozenset(nodes) for _, nodes in found}
-    for ring in rings(part, graph):
-        if any(ring.caps) or frozenset(ring.nodes) in owned:
-            continue
-        axis, section = ring.axis, ring.section
-        others = [value for value in (0, 1, 2) if value != axis]
-        middle = _centroid(section)
-        origin = [0.0, 0.0, 0.0]
-        origin[others[0]], origin[others[1]] = middle
-        bases = (
-            ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
-            ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)),
-            ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
-        )
-        run, u, v = bases[axis]
-        frame = PassageFrame(tuple(origin), run, u, v)  # type: ignore[arg-type]
-        local = tuple((point[0] - middle[0], point[1] - middle[1]) for point in section)
-        # Principal LocalFrame bases already express the section in their u/v order.
-        if axis == 1:
-            local = tuple((point[1] - middle[1], point[0] - middle[0]) for point in section)
-        record = SectionPassage(
-            frame,
-            (ring.low, ring.high),
-            PassageSection(tuple(PassageSectionVertex(point, 0.0) for point in local)),
-            PassageEnds(False, False),
-        )
-        found.append((record, tuple(ring.nodes)))
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
     if sink is not None:
         for record, nodes in found:
@@ -347,7 +320,7 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
         return None
     axes = {
         (1.0, 0.0, 0.0): ("x", 1, 2),
-        (0.0, 1.0, 0.0): ("y", 2, 0),
+        (0.0, 1.0, 0.0): ("y", 0, 2),
         (0.0, 0.0, 1.0): ("z", 0, 1),
     }
     try:
@@ -367,12 +340,15 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
             for index in range(3)
         )
         section.append((round(world[first], 3), round(world[second], 3)))
+    canonical = _canonical(section)
+    if canonical is None:
+        return None
     return Passage(
         axis=axis,
-        sides=len(section),
+        sides=len(canonical),
         length=round(hi - lo, 3),
         at=tuple(round(value, 3) for value in centre),  # type: ignore[arg-type]
-        section=tuple(section),
+        section=canonical,
     )
 
 
@@ -381,33 +357,12 @@ def _discover_passages(
     graph: FaceGraph,
     sink: EvidenceSink | None,
 ) -> list[Passage]:
-    """Discover passages from neutral graph facts and an optional write-only evidence sink."""
-
-    found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
-    for ring in rings(part, graph):
-        if any(ring.caps):
-            continue  # a floor fills the ring: that is a pocket, and `_rings` reports which end
-        axis, section = ring.axis, ring.section
-        others = [a for a in (0, 1, 2) if a != axis]
-        middle = _centroid(section)
-        at = [0.0, 0.0, 0.0]
-        at[axis] = 0.5 * (ring.low + ring.high)
-        at[others[0]], at[others[1]] = middle
-        found.append(
-            (
-                Passage(
-                    axis="xyz"[axis],
-                    sides=len(ring.nodes),
-                    length=round(ring.high - ring.low, 3),
-                    at=(round(at[0], 3), round(at[1], 3), round(at[2], 3)),
-                    section=tuple((round(u, 3), round(v, 3)) for u, v in section),
-                ),
-                tuple(ring.nodes),
-            )
-        )
-
-    found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if sink is not None:
-        for passage, nodes in found:
-            sink.propose(FamilyId.PASSAGES, passage, defining=nodes)
-    return [passage for passage, _ in found]
+        raise PassageCompatibilityError(_LEDGER_ERROR)
+    found = [
+        legacy
+        for record in _discover_section_passages(part, graph, None)
+        if (legacy := _legacy_projection(record)) is not None
+    ]
+    found.sort(key=lambda record: (record.axis, record.at))
+    return found

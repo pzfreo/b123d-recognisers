@@ -601,7 +601,7 @@ def test_what_the_claiming_families_actually_claim_has_not_moved(corpus):
     steps = claimed["AngledStep"]
     assert set(steps) == {TRIANGULAR_BLIND_STEP} and sum(steps.values()) == 11
 
-    ring = claimed["Passage"]
+    ring = claimed["SectionPassage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
     assert sum(ring.values()) == 115
 
@@ -638,7 +638,7 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
         slots = recognition.recognise_slots(part, ledger=ledger)
         pockets = recognition.recognise_pockets(part, ledger=ledger)
         prismatic = recognition.recognise_prismatic_pockets(part, ledger=ledger)
-        passages = recognition.recognise_passages(part, ledger=ledger)
+        passages = recognition.recognise_section_passages(part, ledger=ledger)
         for family, records in (
             (FamilyId.SLOTS, slots),
             (FamilyId.POCKETS, pockets),

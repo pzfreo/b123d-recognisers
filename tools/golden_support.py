@@ -32,6 +32,9 @@ def canonicalize(value: Any) -> Any:
         fields = {
             field.name: canonicalize(getattr(value, field.name))
             for field in dataclasses.fields(value)
+            if not (
+                type(value).__name__ == "RecognitionResult" and field.name == "section_passages"
+            )
         }
         return {"_type": type(value).__name__, **fields}
     if isinstance(value, Enum):

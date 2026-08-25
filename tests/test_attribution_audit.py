@@ -9,7 +9,7 @@ ROOT = Path(__file__).parents[1]
 
 CONSTRUCTOR_COUNTS = {
     "prismatic_pockets.py": ("PrismaticPocket", 1),
-    "passages.py": ("Passage", 1),
+    "passages.py": ("Passage", 2),
     "grooves.py": ("Groove", 1),
     "turned.py": ("TurnedStep", 1),
     "chamfers.py": ("Chamfer", 2),

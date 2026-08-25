@@ -55,7 +55,14 @@ def recognition_snapshot(recognition, feature_census, part):
         if recognise is not None:
             individual[name] = recognise(part)
 
-    public_recognisers = {name for name in recognition.__all__ if name.startswith("recognise_")}
+    # Added in the 0.4 rich-schema transition and pinned by its own schema/oracle goldens.
+    # This legacy snapshot deliberately stays byte-identical to the Draftwright-era surface.
+    post_baseline = {"recognise_section_passages"}
+    public_recognisers = {
+        name
+        for name in recognition.__all__
+        if name.startswith("recognise_") and name not in post_baseline
+    }
     if set(individual) != public_recognisers:
         missing = sorted(public_recognisers - set(individual))
         extra = sorted(set(individual) - public_recognisers)

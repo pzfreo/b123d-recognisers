@@ -225,6 +225,17 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
                 line = _pair_line(graph, left, right, base)
                 if line is None:
                     continue
+                left_span = _face_interval(graph, left, base.run)
+                right_span = _face_interval(graph, right, base.run)
+                if left_span is None or right_span is None or any(
+                    abs(actual - expected) > _INTERVAL_TOL
+                    for actual, expected in zip(
+                        (*left_span, *right_span),
+                        (line[2], line[3], line[2], line[3]),
+                        strict=True,
+                    )
+                ):
+                    continue
                 pair_lines[frozenset((left, right))] = line
                 adjacency[left].add(right)
                 adjacency[right].add(left)
