@@ -505,18 +505,7 @@ def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> 
 
 @pytest.mark.parametrize(
     "named",
-    [
-        "f5_flats_h1",
-        "f5_fillets_h1",
-        "f5_countersinks_h1",
-        "f5_bosses_h1",
-        "f5_double_d_bores_h1",
-        "f5_polygonal_bosses_h1",
-        "f5_pads_h1",
-        "f5_holes_h1",
-        "f5_channels_h1",
-        "f5_plates_h1",
-    ],
+    tuple(spec.selection_token for spec in audit_module.ALLOCATION_SPECS),
 )
 def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
     sealed = next(
