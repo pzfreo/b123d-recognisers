@@ -39,11 +39,18 @@ from OCP.BRepAdaptor import (
     BRepAdaptor_Surface,
 )
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.BRepGProp import BRepGProp
 from OCP.gp import gp_Pnt, gp_Pnt2d, gp_Trsf
 from OCP.GProp import GProp_GProps
 from OCP.Standard import Standard_Failure
-from OCP.TopAbs import TopAbs_FORWARD, TopAbs_Orientation, TopAbs_REVERSED
+from OCP.TopAbs import (
+    TopAbs_FORWARD,
+    TopAbs_IN,
+    TopAbs_Orientation,
+    TopAbs_OUT,
+    TopAbs_REVERSED,
+)
 from OCP.TopExp import TopExp
 from OCP.TopoDS import TopoDS
 
@@ -136,6 +143,7 @@ def _raw_cylinder_cycle_oracle(part):
         return found
 
     result = {}
+    classifier = BRepClass3d_SolidClassifier(part.wrapped)
     for face_index, face in enumerate(faces):
         surface = BRepAdaptor_Surface(face.wrapped)
         if surface.GetType().name != "GeomAbs_Cylinder":
@@ -189,11 +197,37 @@ def _raw_cylinder_cycle_oracle(part):
             sum(value * basis for value, basis in zip(radial, v_axis, strict=True)),
             sum(value * basis for value, basis in zip(radial, u_axis, strict=True)),
         )
-        normal = face.normal_at(face.center())
-        material_side = 1 if sum(
-            value * candidate
-            for value, candidate in zip(axis, tuple(normal), strict=True)
-        ) >= 0.0 else -1
+        sample = tuple(float(value) for value in face.center())
+        sample_delta = tuple(
+            value - origin for value, origin in zip(sample, location, strict=True)
+        )
+        sample_along = sum(
+            value * direction
+            for value, direction in zip(sample_delta, axis, strict=True)
+        )
+        radial = tuple(
+            value - sample_along * direction
+            for value, direction in zip(sample_delta, axis, strict=True)
+        )
+        radial_norm = math.sqrt(sum(value * value for value in radial))
+        radial_unit = tuple(value / radial_norm for value in radial)
+        probe_step = max(float(cylinder.Radius()) * 1e-6, 1e-6)
+        states = []
+        for sign in (1.0, -1.0):
+            classifier.Perform(
+                gp_Pnt(
+                    *(value + sign * probe_step * direction
+                      for value, direction in zip(sample, radial_unit, strict=True))
+                ),
+                probe_step * 0.01,
+            )
+            states.append(classifier.State())
+        if tuple(states) == (TopAbs_OUT, TopAbs_IN):
+            material_side = 1
+        elif tuple(states) == (TopAbs_IN, TopAbs_OUT):
+            material_side = -1
+        else:
+            raise AssertionError("raw cylinder oracle could not prove material side")
         outer = face.outer_wire()
         for wire in face.wires():
             groups: list[tuple[Edge, list[Edge]]] = []
@@ -511,6 +545,135 @@ def _raw_schema_three_incidence_oracle(
     }
     assert actual == expected
 
+    classifier = BRepClass3d_SolidClassifier(part.wrapped)
+
+    def planar_cycle(
+        raw_face_index: int,
+        role: str,
+        raw_curve_indices: tuple[int, ...],
+    ) -> tuple[tuple[int, int], ...]:
+        face = faces[raw_face_index]
+        surface = BRepAdaptor_Surface(face.wrapped).Plane()
+        raw_normal = tuple(float(value) for value in surface.Axis().Direction().Coord())
+        first = next(value for value in raw_normal if abs(value) > 1e-12)
+        normal = tuple((1.0 if first > 0.0 else -1.0) * value for value in raw_normal)
+        axes = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+        reference = min(
+            axes,
+            key=lambda candidate: abs(
+                sum(left * right for left, right in zip(candidate, normal, strict=True))
+            ),
+        )
+        u_axis = tuple(
+            value
+            - sum(left * right for left, right in zip(reference, normal, strict=True))
+            * direction
+            for value, direction in zip(reference, normal, strict=True)
+        )
+        u_norm = math.sqrt(sum(value * value for value in u_axis))
+        u_axis = tuple(value / u_norm for value in u_axis)
+        v_axis = (
+            normal[1] * u_axis[2] - normal[2] * u_axis[1],
+            normal[2] * u_axis[0] - normal[0] * u_axis[2],
+            normal[0] * u_axis[1] - normal[1] * u_axis[0],
+        )
+        sample = tuple(float(value) for value in face.position_at(0.2, 0.5))
+        probe_step = max(math.sqrt(float(face.area)) * 1e-6, 1e-6)
+        states = []
+        for sign in (1.0, -1.0):
+            classifier.Perform(
+                gp_Pnt(
+                    *(value + sign * probe_step * direction
+                      for value, direction in zip(sample, normal, strict=True))
+                ),
+                probe_step * 0.01,
+            )
+            states.append(classifier.State())
+        if tuple(states) == (TopAbs_OUT, TopAbs_IN):
+            material_side = 1
+        elif tuple(states) == (TopAbs_IN, TopAbs_OUT):
+            material_side = -1
+        else:
+            raise AssertionError("raw plane oracle could not prove material side")
+
+        def integral(raw_edge_index: int, direction: int) -> float:
+            adaptor = BRepAdaptor_Curve(raw_edges[raw_edge_index].wrapped)
+            divisions = 64 if adaptor.GetType().name == "GeomAbs_Circle" else 1
+            parameters = tuple(
+                adaptor.FirstParameter()
+                + (adaptor.LastParameter() - adaptor.FirstParameter()) * index / divisions
+                for index in range(divisions + 1)
+            )
+            if direction < 0:
+                parameters = tuple(reversed(parameters))
+            points = []
+            for parameter in parameters:
+                point = adaptor.Value(parameter).Coord()
+                relative = tuple(
+                    float(value) - origin
+                    for value, origin in zip(point, centre, strict=True)
+                )
+                points.append(
+                    (
+                        sum(a * b for a, b in zip(relative, u_axis, strict=True)),
+                        sum(a * b for a, b in zip(relative, v_axis, strict=True)),
+                    )
+                )
+            return 0.5 * sum(
+                left[0] * right[1] - right[0] * left[1]
+                for left, right in zip(points, points[1:], strict=False)
+            )
+
+        if len(raw_curve_indices) == 1:
+            raw_index = raw_curve_indices[0]
+            adaptor = BRepAdaptor_Curve(raw_edges[raw_index].wrapped)
+            if adaptor.GetType().name == "GeomAbs_Circle" and abs(
+                abs(adaptor.LastParameter() - adaptor.FirstParameter()) - 2.0 * math.pi
+            ) <= 1e-8:
+                expected_positive = (role == "outer") == (material_side > 0)
+                direction = 1 if (integral(raw_index, 1) > 0.0) == expected_positive else -1
+                return ((curve_map[raw_index], direction),)
+
+        endpoints = {}
+        for raw_index in raw_curve_indices:
+            edge = raw_edges[raw_index]
+            endpoints[raw_index] = (
+                TopExp.FirstVertex_s(edge.wrapped, False),
+                TopExp.LastVertex_s(edge.wrapped, False),
+            )
+        accepted = set()
+
+        def extend(sequence, remaining):
+            if not remaining:
+                if not sequence or not sequence[-1][2].IsSame(sequence[0][1]):
+                    return
+                signed_area = sum(
+                    integral(index, direction)
+                    for index, _a, _b, direction in sequence
+                )
+                expected_positive = (role == "outer") == (material_side > 0)
+                if (signed_area > 0.0) != expected_positive:
+                    return
+                mapped = tuple(
+                    (curve_map[index], direction * curve_direction[index])
+                    for index, _a, _b, direction in sequence
+                )
+                accepted.add(
+                    min(mapped[offset:] + mapped[:offset] for offset in range(len(mapped)))
+                )
+                return
+            for offset, raw_index in enumerate(remaining):
+                rest = remaining[:offset] + remaining[offset + 1 :]
+                left, right = endpoints[raw_index]
+                for direction, start, end in ((1, left, right), (-1, right, left)):
+                    if sequence and not sequence[-1][2].IsSame(start):
+                        continue
+                    extend((*sequence, (raw_index, start, end, direction)), rest)
+
+        extend((), raw_curve_indices)
+        assert len(accepted) == 1
+        return accepted.pop()
+
     for raw_face_index, wire_roster in raw_wires.items():
         matching_face = matching.faces[face_map[raw_face_index]]
         for role, raw_curve_indices, wire_edges in wire_roster:
@@ -525,6 +688,11 @@ def _raw_schema_three_incidence_oracle(
             matching_wire = choices[0]
             assert len(matching_wire.cycle) == len(wire_edges)
             if matching_face.kind != "CYLINDER":
+                expected_cycle = planar_cycle(raw_face_index, role, raw_curve_indices)
+                assert matching_wire.theta_winding == 0
+                assert tuple(
+                    (item.curve, item.direction) for item in matching_wire.cycle
+                ) == expected_cycle
                 continue
             expected_winding, expected_cycle = cylinder_cycles[(raw_face_index, role)]
             mapped_cycle = tuple(
@@ -2282,7 +2450,13 @@ def _two_rrp_one_solid():
 
 @pytest.mark.parametrize(
     "part",
-    [Box(10, 20, 30), Cylinder(10, 20), _rrp(5), _line_rrp(8)],
+    [
+        Box(10, 20, 30),
+        Cylinder(10, 20),
+        Cylinder(10, 5) - Cylinder(3, 5),
+        _rrp(5),
+        _line_rrp(8),
+    ],
 )
 def test_raw_ocp_schema_three_oracle_proves_complete_labelled_incidence(part) -> None:
     cylinder_cycles, cylinder_edge_roster = _raw_cylinder_cycle_oracle(part)
@@ -2296,6 +2470,124 @@ def test_raw_ocp_schema_three_oracle_proves_complete_labelled_incidence(part) ->
     _body_geometry.validate_matching_boundary_graph(
         matching, graph.body_geometry(solid).descriptor.quantization
     )
+
+
+def test_raw_ocp_oracle_proves_tube_step_and_reversed_presentation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    native = Cylinder(10, 5) - Cylinder(3, 5)
+    path = tmp_path / "tube.step"
+    export_step(native, path)
+    presentations = (native, import_step(path))
+    solid_faces = Solid.faces
+    wire_edges = Wire.edges
+
+    for part in presentations:
+        cycles, roster = _raw_cylinder_cycle_oracle(part)
+        graph = FaceGraph(part)
+        solid = graph.common_valid_solid(graph.nodes)
+        assert solid is not None
+        matching = graph.matching_boundary(solid)
+        _raw_schema_three_incidence_oracle(part, matching, cycles, roster)
+
+    monkeypatch.setattr(Solid, "faces", lambda self: list(reversed(solid_faces(self))))
+    monkeypatch.setattr(Wire, "edges", lambda self: list(reversed(wire_edges(self))))
+    cycles, roster = _raw_cylinder_cycle_oracle(native)
+    graph = FaceGraph(native)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    _raw_schema_three_incidence_oracle(
+        native, graph.matching_boundary(solid), cycles, roster
+    )
+
+
+def test_schema_three_changed_incidence_with_identical_labels_refuses() -> None:
+    graph, solid, fact = _body_descriptor(Box(10, 20, 30))
+    matching = graph.matching_boundary(solid)
+    incidence = list(matching.incidence)
+    left_curve, left_occurrences = incidence[0]
+    right_curve, right_occurrences = incidence[1]
+    changed = list(incidence)
+    changed[0] = (left_curve, (right_occurrences[0], *left_occurrences[1:]))
+    changed[1] = (right_curve, (left_occurrences[0], *right_occurrences[1:]))
+    malformed = dataclasses.replace(matching, incidence=tuple(changed))
+
+    assert malformed.faces == matching.faces
+    assert malformed.curves == matching.curves
+    with pytest.raises(UnsupportedBodyGeometry):
+        _body_geometry.validate_matching_boundary_graph(
+            malformed, fact.descriptor.quantization
+        )
+
+
+def test_schema_three_seam_multiplicity_change_refuses() -> None:
+    graph, solid, fact = _body_descriptor(Cylinder(10, 20))
+    matching = graph.matching_boundary(solid)
+    incidence = list(matching.incidence)
+    at = next(
+        index
+        for index, (_curve, occurrences) in enumerate(incidence)
+        if len(occurrences) == 2 and occurrences[0][0] == occurrences[1][0]
+    )
+    curve, occurrences = incidence[at]
+    incidence[at] = (curve, occurrences[:1])
+    malformed = dataclasses.replace(matching, incidence=tuple(incidence))
+
+    with pytest.raises(UnsupportedBodyGeometry):
+        _body_geometry.validate_matching_boundary_graph(
+            malformed, fact.descriptor.quantization
+        )
+
+
+def test_schema_three_outer_inner_swap_refuses() -> None:
+    graph, solid, fact = _body_descriptor(Cylinder(10, 5) - Cylinder(3, 5))
+    matching = graph.matching_boundary(solid)
+    changed_faces = []
+    for face in matching.faces:
+        if face.kind == "CYLINDER":
+            changed_faces.append(
+                dataclasses.replace(
+                    face,
+                    wires=tuple(
+                        dataclasses.replace(
+                            wire, role="inner" if wire.role == "outer" else "outer"
+                        )
+                        for wire in face.wires
+                    ),
+                )
+            )
+        else:
+            changed_faces.append(face)
+    malformed = dataclasses.replace(matching, faces=tuple(changed_faces))
+
+    with pytest.raises(UnsupportedBodyGeometry):
+        _body_geometry.validate_matching_boundary_graph(
+            malformed, fact.descriptor.quantization
+        )
+
+
+def _chiral_planar_body():
+    return (
+        Box(4, 4, 4)
+        + Pos(4, 0, 0) * Box(8, 2, 2)
+        + Pos(0, 3, 0) * Box(2, 6, 1.5)
+        + Pos(0, 0, 2.5) * Box(1, 1, 5)
+    )
+
+
+def test_schema_three_chiral_mirror_has_no_proper_rotation_witness() -> None:
+    source_part = _chiral_planar_body()
+    source_graph, source_solid, _source_fact = _body_descriptor(source_part)
+    source = source_graph.matching_boundary(source_solid)
+    mirrored = source_part.mirror(Plane.YZ)
+
+    candidates = []
+    for rotation in _proper_signed_permutations():
+        candidate_part = _proper_transform(mirrored, rotation)
+        graph, solid, _fact = _body_descriptor(candidate_part)
+        candidates.append(graph.matching_boundary(solid))
+
+    assert all(candidate != source for candidate in candidates)
 
 
 def _body_descriptor(part):
