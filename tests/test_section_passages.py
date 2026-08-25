@@ -81,6 +81,22 @@ class _SharedEdges:
         return self._edges
 
 
+class _ReversedFacesPart:
+    """A shallow part view that changes only face/solid presentation order."""
+
+    def __init__(self, part) -> None:
+        self._part = part
+
+    def faces(self):
+        return list(reversed(self._part.faces()))
+
+    def solids(self):
+        return list(reversed(self._part.solids()))
+
+    def __getattr__(self, name):
+        return getattr(self._part, name)
+
+
 @pytest.mark.parametrize(
     ("intervals", "accepted"),
     (
@@ -325,6 +341,24 @@ def test_free_axis_passage_survives_translation_mirror_and_uniform_scale(part) -
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert candidate.record is records[0]
     assert len(ledger.defining_of(candidate)) == 4
+
+
+def test_face_and_solid_presentation_reversal_preserves_record_and_wall_shapes() -> None:
+    part = Rot(17, 23, 31) * _square()
+
+    def observed(supplied):
+        graph = FaceGraph(supplied)
+        ledger = ClaimLedger(graph)
+        records = recognise_section_passages(supplied, ledger=ledger)
+        (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+        walls = tuple(graph.face(node) for node in ledger.defining_of(candidate))
+        return records, walls
+
+    ordinary, ordinary_walls = observed(part)
+    reversed_records, reversed_walls = observed(_ReversedFacesPart(part))
+    assert reversed_records == ordinary
+    assert all(any(_same_shape(left, right) for right in reversed_walls) for left in ordinary_walls)
+    assert all(any(_same_shape(left, right) for right in ordinary_walls) for left in reversed_walls)
 
 
 def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch) -> None:
