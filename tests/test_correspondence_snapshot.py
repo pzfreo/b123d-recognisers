@@ -1182,6 +1182,42 @@ def test_snapshot_revalidates_raw_derived_quantization_authority() -> None:
         correspondence_snapshot(product)
 
 
+def test_snapshot_refuses_consistently_reforged_quantization_and_occurrence() -> None:
+    product = _take_inventory(_rrp())
+    snapshot = correspondence_snapshot(product)
+    occurrence = snapshot.occurrences[0]
+    quantization = occurrence.body.quantization
+    scale = quantization.characteristic_scale * 2.0
+    metric = _body_geometry.DESCRIPTOR_REL * scale + _body_geometry.DESCRIPTOR_FLOOR
+    object.__setattr__(quantization, "characteristic_scale", scale)
+    object.__setattr__(quantization, "metric_quantum", metric)
+    object.__setattr__(quantization, "area_quantum", (scale + metric) ** 2 - scale**2)
+    object.__setattr__(quantization, "volume_quantum", (scale + metric) ** 3 - scale**3)
+    object.__setattr__(quantization, "moment_quantum", (scale + metric) ** 5 - scale**5)
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence values changed"):
+        correspondence_snapshot(product)
+
+    other = _take_inventory(_rrp())
+    other_snapshot = correspondence_snapshot(other)
+    object.__setattr__(other_snapshot.occurrences[0], "family", "forged")
+    with pytest.raises(CorrespondenceSnapshotError, match="occurrence values changed"):
+        correspondence_snapshot(other)
+
+
+def test_first_read_invalid_quantization_maps_to_snapshot_error(monkeypatch) -> None:
+    product = _take_inventory(_rrp())
+    original = FaceGraph.body_geometry
+
+    def invalid(self, solid):
+        fact = original(self, solid)
+        object.__setattr__(fact.descriptor.quantization, "metric_quantum", 0.0)
+        return fact
+
+    monkeypatch.setattr(FaceGraph, "body_geometry", invalid)
+    with pytest.raises(CorrespondenceSnapshotError, match="quantization is unavailable"):
+        correspondence_snapshot(product)
+
+
 def test_snapshot_revalidates_body_group_partition() -> None:
     product = _take_inventory(_two_rrp_one_solid())
     snapshot = correspondence_snapshot(product)
@@ -1202,10 +1238,28 @@ def test_descriptor_quantization_refuses_invalid_characteristic_scale(scale: flo
         _body_geometry.validate_descriptor_quantization(changed)
 
 
+@pytest.mark.parametrize("value", [None, True, (1.0,), "invalid"])
+def test_descriptor_quantization_refuses_wrong_runtime_types(value: object) -> None:
+    if value is None or type(value) is not _body_geometry.DescriptorQuantization:
+        with pytest.raises(UnsupportedBodyGeometry, match="runtime types"):
+            _body_geometry.validate_descriptor_quantization(value)  # type: ignore[arg-type]
+
+    product = _take_inventory(_rrp())
+    snapshot = correspondence_snapshot(product)
+    object.__setattr__(snapshot.occurrences[0].body, "quantization", value)
+    with pytest.raises(CorrespondenceSnapshotError, match="quantization is invalid"):
+        correspondence_snapshot(product)
+
+
 def test_schema2_snapshot_validator_closes_schema_partition_and_group_geometry() -> None:
     one = correspondence_snapshot(_take_inventory(_rrp()))
     with pytest.raises(CorrespondenceSnapshotError, match="schema is unsupported"):
         correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=1))
+    with pytest.raises(CorrespondenceSnapshotError, match="schema is malformed"):
+        correspondence_module._validate_snapshot(dataclasses.replace(one, schema_version=True))
+    for groups in (((False,),), ((0.0,),), ([0],)):
+        with pytest.raises(CorrespondenceSnapshotError, match="body groups are malformed"):
+            correspondence_module._validate_snapshot(dataclasses.replace(one, body_groups=groups))
     for groups in (((0,), ()), ((1,),), ((0, 0),)):
         with pytest.raises(CorrespondenceSnapshotError, match="complete partition"):
             correspondence_module._validate_snapshot(dataclasses.replace(one, body_groups=groups))

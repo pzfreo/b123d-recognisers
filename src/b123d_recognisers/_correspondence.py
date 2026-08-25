@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeAlias
 
@@ -159,7 +160,10 @@ def _occurrence(
         record.centre,
         record.span,
     )
-    validate_descriptor_quantization(body_fact.descriptor.quantization)
+    try:
+        validate_descriptor_quantization(body_fact.descriptor.quantization)
+    except UnsupportedBodyGeometry as error:
+        raise CorrespondenceSnapshotError("RRP descriptor quantization is unavailable") from error
     return (
         AcceptedOccurrenceSnapshot(
             FamilyId.REPEATING_RADIAL_PROFILES.value,
@@ -173,8 +177,17 @@ def _occurrence(
 
 
 def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
+    if type(snapshot) is not CorrespondenceSnapshot or type(snapshot.schema_version) is not int:
+        raise CorrespondenceSnapshotError("correspondence snapshot schema is malformed")
     if snapshot.schema_version != 2:
         raise CorrespondenceSnapshotError("correspondence snapshot schema is unsupported")
+    if type(snapshot.occurrences) is not tuple or type(snapshot.body_groups) is not tuple:
+        raise CorrespondenceSnapshotError("correspondence body groups are malformed")
+    if any(
+        type(group) is not tuple or any(type(position) is not int for position in group)
+        for group in snapshot.body_groups
+    ):
+        raise CorrespondenceSnapshotError("correspondence body groups are malformed")
     positions = tuple(position for group in snapshot.body_groups for position in group)
     if (
         any(not group or tuple(sorted(group)) != group for group in snapshot.body_groups)
@@ -206,6 +219,7 @@ class _CorrespondenceSnapshotAuthority:
         "_physical",
         "_reconciliation",
         "_bound_records",
+        "_bound_occurrences",
         "_bound_body_groups",
         "_snapshot",
     )
@@ -219,6 +233,7 @@ class _CorrespondenceSnapshotAuthority:
         self._physical: object | None = None
         self._reconciliation: object | None = None
         self._bound_records: tuple[tuple[Candidate[object], FrozenValue], ...] = ()
+        self._bound_occurrences: tuple[AcceptedOccurrenceSnapshot, ...] | None = None
         self._bound_body_groups: tuple[tuple[int, ...], ...] | None = None
         self._snapshot: CorrespondenceSnapshot | None = None
 
@@ -294,6 +309,10 @@ class _CorrespondenceSnapshotAuthority:
             )
         if self._snapshot is not None:
             _validate_snapshot(self._snapshot)
+            if self._snapshot.occurrences != self._bound_occurrences:
+                raise CorrespondenceSnapshotError(
+                    "correspondence occurrence values changed after issue"
+                )
             if self._snapshot.body_groups != self._bound_body_groups:
                 raise CorrespondenceSnapshotError("correspondence body groups changed after issue")
             return self._snapshot
@@ -312,6 +331,10 @@ class _CorrespondenceSnapshotAuthority:
         body_groups = tuple(sorted(tuple(group) for group in groups))
         snapshot = CorrespondenceSnapshot(2, occurrences, body_groups)
         _validate_snapshot(snapshot)
+        # The authority retains an independent immutable value, not aliases to the issued
+        # dataclass graph. This detects object.__setattr__ mutation of any nested occurrence,
+        # descriptor, summary, record value, or quantization field on every cached read.
+        self._bound_occurrences = deepcopy(occurrences)
         self._bound_body_groups = body_groups
         self._snapshot = snapshot
         return snapshot

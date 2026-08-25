@@ -122,6 +122,17 @@ class BodyGeometryDescriptor:
 def validate_descriptor_quantization(value: DescriptorQuantization) -> None:
     """Revalidate one stored quantization contract without kernel state."""
 
+    if type(value) is not DescriptorQuantization or any(
+        type(item) is not float
+        for item in (
+            value.characteristic_scale,
+            value.metric_quantum,
+            value.area_quantum,
+            value.volume_quantum,
+            value.moment_quantum,
+        )
+    ):
+        raise UnsupportedBodyGeometry("descriptor quantization has invalid runtime types")
     scale = value.characteristic_scale
     if not math.isfinite(scale) or scale <= 0.0:
         raise UnsupportedBodyGeometry("descriptor characteristic scale is invalid")
