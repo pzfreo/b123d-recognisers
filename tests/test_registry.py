@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import ast
 import inspect
 import types
 import typing
@@ -11,6 +12,7 @@ import pytest
 from build123d import Box, BuildPart, BuildSketch, Mode, Pos, RegularPolygon, extrude
 
 import b123d_recognisers as public
+import b123d_recognisers._registry as registry_module
 import b123d_recognisers.result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -216,6 +218,22 @@ def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> Non
         AcceptedProjectionInputs(  # type: ignore[call-arg]
             frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence
         )
+
+    with pytest.raises((TypeError, ValueError), match="authority|argument"):
+        registry_module._ProjectionInputIssuer(object())
+
+
+def test_projection_input_issuer_has_one_closed_production_mint_site() -> None:
+    tree = ast.parse(inspect.getsource(registry_module))
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "_ProjectionInputIssuer"
+    ]
+    assert len(calls) == 1
+    assert ast.unparse(calls[0].args[0]) == "_PROJECTION_AUTHORITY_TOKEN"
 
 
 def test_registry_rejects_wrong_typed_dependency_values() -> None:

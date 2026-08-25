@@ -179,8 +179,14 @@ class _ProjectionInputSnapshot:
     evidence: EvidenceIndex
 
 
+_PROJECTION_AUTHORITY_TOKEN = object()
+
+
 class _ProjectionInputIssuer:
-    def __init__(self) -> None:
+    def __init__(self, authority: object) -> None:
+        if authority is not _PROJECTION_AUTHORITY_TOKEN:
+            raise ValueError("projection input issuer lacks orchestration authority")
+        self._authority = authority
         self._issued: _ProjectionInputSnapshot | None = None
 
     def issue(
@@ -197,7 +203,11 @@ class _ProjectionInputIssuer:
 
     def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
         snapshot = self._issued
-        if snapshot is None or snapshot.inputs is not inputs:
+        if (
+            self._authority is not _PROJECTION_AUTHORITY_TOKEN
+            or snapshot is None
+            or snapshot.inputs is not inputs
+        ):
             raise ValueError("accepted projection inputs were not issued by orchestration")
         if (
             inputs._issuer is not self
@@ -239,7 +249,7 @@ class AcceptedProjectionInputs:
         object.__setattr__(result, "_candidate_set", accepted)
         object.__setattr__(result, "_candidates", accepted.candidates)
         object.__setattr__(result, "_evidence", evidence)
-        issuer = _ProjectionInputIssuer()
+        issuer = _ProjectionInputIssuer(_PROJECTION_AUTHORITY_TOKEN)
         object.__setattr__(result, "_issuer", issuer)
         issuer.issue(result, accepted, evidence)
         return result
