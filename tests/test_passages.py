@@ -11,7 +11,6 @@ pass for reasons unrelated to the gate it names.
 
 from __future__ import annotations
 
-from attribution_audit import attributed_run, unattributed_run
 from build123d import (
     Box,
     BuildPart,
@@ -34,6 +33,7 @@ from b123d_recognisers import (
     Passage,
     build_recognition_result,
     recognise_passages,
+    recognise_section_passages,
     recognise_slots,
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
@@ -110,10 +110,10 @@ def test_a_through_slot_is_reported_here_too_and_the_aggregate_resolves_it():
     assert recognise_slots(square) == []
     assert [p.sides for p in build_recognition_result(square).passages] == [4]
 
-    ledger, passages = attributed_run(square, FamilyId.PASSAGES, recognise_passages)
+    ledger, passages = _attributed_sections(square)
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert candidate.record is passages[0]
-    assert len(ledger.defining_of(candidate)) == passages[0].sides == 4
+    assert len(ledger.defining_of(candidate)) == len(passages[0].section.boundary) == 4
 
 
 def test_a_passage_crossing_a_slot_only_in_projection_survives():
@@ -132,8 +132,8 @@ def test_a_passage_crossing_a_slot_only_in_projection_survives():
     result = build_recognition_result(part)
     assert result.slots, "the Z slot"
     assert [p.axis for p in result.passages] == ["x"], "the X passage, at the same XY, survives"
-    ledger, passages = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
-    assert "x" in {passage.axis for passage in passages}
+    ledger, passages = _attributed_sections(part)
+    assert (1.0, 0.0, 0.0) in {passage.frame.run for passage in passages}
     assert len(ledger.candidate_set(FamilyId.PASSAGES).candidates) == len(passages)
 
 
@@ -184,10 +184,10 @@ def test_the_side_count_is_the_polygon_and_not_a_class():
         extrude(amount=60, both=True)
     triangular = _block() - tri.part
 
-    _ledger, found = attributed_run(triangular, FamilyId.PASSAGES, recognise_passages)
+    _ledger, found = _attributed_sections(triangular)
     assert len(found) == 1
-    assert found[0].sides == 3
-    assert found[0].axis == "y"
+    assert len(found[0].section.boundary) == 3
+    assert found[0].frame.run == (0.0, 1.0, 0.0)
 
 
 def test_two_passages_on_one_part_are_reported_separately_and_in_order():
@@ -198,12 +198,11 @@ def test_two_passages_on_one_part_are_reported_separately_and_in_order():
                 RegularPolygon(6, 6)
         extrude(amount=40, both=True)
     part = _block() - bores.part
-    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    ledger, found = _attributed_sections(part)
 
     assert len(found) == 2
-    assert found == sorted(found, key=lambda p: (p.axis, p.at))
-    assert all(isinstance(p, Passage) for p in found)
-    assert recognise_passages(part) == found
+    assert found == sorted(found)
+    assert len(recognise_passages(part)) == len(found)
     assert len(ledger.candidate_set(FamilyId.PASSAGES).candidates) == 2
 
 
@@ -223,7 +222,7 @@ def test_a_passage_is_a_passage_at_any_scale():
 
 
 def test_a_part_with_no_void_has_no_passages():
-    unattributed_run(_block(), FamilyId.PASSAGES, recognise_passages)
+    assert recognise_section_passages(_block()) == []
 
 
 def test_a_shared_face_edge_memo_does_not_change_the_result():
@@ -313,15 +312,16 @@ def test_a_concave_cross_section_is_probed_from_a_point_inside_it():
         extrude(amount=40, both=True)
     part = Box(60, 60, 20) - slot_u.part
 
-    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    ledger, found = _attributed_sections(part)
     (passage,) = found
-    assert passage.sides == 8
+    assert len(passage.section.boundary) == 8
     (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
     assert len(ledger.defining_of(candidate)) == 8
-    assert _is_material(part, _centroid(passage.section), passage.at[2]), (
+    legacy = recognise_passages(part)[0]
+    assert _is_material(part, _centroid(legacy.section), legacy.at[2]), (
         "the fixture must be one the centroid gets wrong"
     )
-    assert not _is_material(part, _interior_point(passage.section), passage.at[2])
+    assert not _is_material(part, _interior_point(legacy.section), legacy.at[2])
 
 
 def test_a_passage_records_the_ring_it_was_built_from():
@@ -332,7 +332,7 @@ def test_a_passage_records_the_ring_it_was_built_from():
     """
 
     part = _hexagonal_passage()
-    ledger, found = attributed_run(part, FamilyId.PASSAGES, recognise_passages)
+    ledger, found = _attributed_sections(part)
     (passage,) = found
 
     (claim,) = ledger.claims
@@ -340,7 +340,7 @@ def test_a_passage_records_the_ring_it_was_built_from():
     assert candidate.record is passage
     assert candidate.evidence.defining == claim.defining
     assert claim.claimant is passage
-    assert len(claim.defining) == passage.sides
+    assert len(claim.defining) == len(passage.section.boundary)
     for node in claim.defining:
         assert ledger.graph.is_planar(node)
         normal = ledger.graph.normal(node)
@@ -350,7 +350,7 @@ def test_a_passage_records_the_ring_it_was_built_from():
 def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) -> None:
     import b123d_recognisers._registry as registry_module
 
-    original = registry_module.recognise_passages
+    original = registry_module.recognise_section_passages
     calls = 0
 
     def counted(*args, **kwargs):
@@ -358,7 +358,7 @@ def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) ->
         calls += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(registry_module, "recognise_passages", counted)
+    monkeypatch.setattr(registry_module, "recognise_section_passages", counted)
 
     build_recognition_result(_hexagonal_passage())
 
@@ -450,8 +450,20 @@ def test_a_ledger_built_from_another_part_is_refused_rather_than_answered():
 
     foreign = ClaimLedger(FaceGraph(twin))
     try:
-        recognise_passages(part, ledger=foreign)
+        recognise_section_passages(part, ledger=foreign)
     except ValueError as refusal:
         assert "built from a different part" in str(refusal)
     else:
-        raise AssertionError("recognise_passages answered about another part's graph")
+        raise AssertionError("recognise_section_passages answered about another part's graph")
+def _attributed_sections(part):
+    plain = recognise_section_passages(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    measured = recognise_section_passages(part, ledger=ledger)
+    assert measured == plain
+    candidates = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    assert len(candidates) == len(measured)
+    assert all(
+        candidate.record is record
+        for candidate, record in zip(candidates, measured, strict=True)
+    )
+    return ledger, measured
