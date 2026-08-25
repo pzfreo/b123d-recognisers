@@ -205,6 +205,33 @@ def _sample_wire(wire, plane_axes: tuple[str, str]) -> tuple[_CurveEvidence, ...
     return tuple(sampled)
 
 
+def _common_circle_centre(
+    wire, plane_axes: tuple[str, str], *, tol: float
+) -> tuple[float, float] | None:
+    """Return the unanimous centre of at least two circular outer-wire curves."""
+
+    centres: list[tuple[float, float]] = []
+    for edge in wire.edges():
+        if edge.geom_type != GeomType.CIRCLE:
+            continue
+        try:
+            centres.append(
+                (
+                    float(getattr(edge.arc_center, plane_axes[0].upper())),
+                    float(getattr(edge.arc_center, plane_axes[1].upper())),
+                )
+            )
+        except (AttributeError, ValueError):
+            return None
+    if len(centres) < 2:
+        return None
+    mean = (
+        sum(point[0] for point in centres) / len(centres),
+        sum(point[1] for point in centres) / len(centres),
+    )
+    return mean if all(_distance(point, mean) <= tol for point in centres) else None
+
+
 def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
     boundary = principal_boundary_plane(face, bbox)
     if boundary is None:
@@ -221,28 +248,7 @@ def _prove_boundary(face, bbox, *, tol: float) -> _BoundaryEvidence | None:
     # spline extrema make its wire-bbox centre drift by 0.03 mm, while all 13 tip arcs carry
     # the exact source centre.  Fall back to the bbox only when there is no unique common
     # circle centre; the complete-wire bijection below remains the acceptance guard.
-    circle_centres: list[tuple[float, float]] = []
-    for edge in wire.edges():
-        if edge.geom_type != GeomType.CIRCLE:
-            continue
-        try:
-            circle_centres.append(
-                (
-                    float(getattr(edge.arc_center, plane_axes[0].upper())),
-                    float(getattr(edge.arc_center, plane_axes[1].upper())),
-                )
-            )
-        except (AttributeError, ValueError):
-            circle_centres = []
-            break
-    common_circle_centre: tuple[float, float] | None = None
-    if len(circle_centres) >= 2:
-        mean = (
-            sum(point[0] for point in circle_centres) / len(circle_centres),
-            sum(point[1] for point in circle_centres) / len(circle_centres),
-        )
-        if all(_distance(point, mean) <= tol for point in circle_centres):
-            common_circle_centre = mean
+    common_circle_centre = _common_circle_centre(wire, plane_axes, tol=tol)
     if common_circle_centre is None:
         wbb = wire.bounding_box()
         raw = tuple(float(getattr(wbb.center(), candidate.upper())) for candidate in plane_axes)

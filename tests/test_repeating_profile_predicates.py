@@ -18,9 +18,14 @@ bijective sector rotation". These are the checks that make the claim safe to pub
 from __future__ import annotations
 
 from math import cos, pi, sin
+from types import SimpleNamespace
+
+import pytest
+from build123d import GeomType
 
 from b123d_recognisers.repeating_profiles import (
     _BoundaryEvidence,
+    _common_circle_centre,
     _CurveEvidence,
     _curves_match,
     _cyclic_edge_orbits,
@@ -42,6 +47,23 @@ def _closed_polygon(count: int, radius: float = 10.0):
         (radius * cos(2 * pi * i / count), radius * sin(2 * pi * i / count)) for i in range(count)
     ]
     return tuple(_segment(corners[i], corners[(i + 1) % count]) for i in range(count))
+
+
+def test_common_circle_centre_requires_two_and_has_inclusive_tolerance():
+    def edge(x):
+        return SimpleNamespace(
+            geom_type=GeomType.CIRCLE,
+            arc_center=SimpleNamespace(X=x, Y=0.0),
+        )
+
+    def wire(*edges):
+        return SimpleNamespace(edges=lambda: list(edges))
+
+    assert _common_circle_centre(wire(edge(0.0)), ("x", "y"), tol=TOL) is None
+    assert _common_circle_centre(
+        wire(edge(0.0), edge(2 * TOL)), ("x", "y"), tol=TOL
+    ) == pytest.approx((TOL, 0.0))
+    assert _common_circle_centre(wire(edge(0.0), edge(2.01 * TOL)), ("x", "y"), tol=TOL) is None
 
 
 class TestOneClosedCycle:
@@ -92,6 +114,16 @@ class TestOneClosedCycle:
         spur = _segment(edges[0].points[0], (0.0, 50.0))
 
         assert not _one_closed_cycle((*edges, spur), tol=TOL)
+
+    def test_endpoint_node_tolerance_is_inclusive_then_refuses(self):
+        edges = list(_closed_polygon(5))
+        start = edges[0].points[0]
+        end = edges[-1].points[-1]
+        assert start == pytest.approx(end)
+        edges[-1] = _segment(edges[-1].points[0], (end[0] + TOL, end[1]))
+        assert _one_closed_cycle(tuple(edges), tol=TOL)
+        edges[-1] = _segment(edges[-1].points[0], (end[0] + 1.01 * TOL, end[1]))
+        assert not _one_closed_cycle(tuple(edges), tol=TOL)
 
 
 class TestPolarSignature:
@@ -165,6 +197,23 @@ class TestOrbitBoundaries:
             centre=(0.0, 0.0),
             tol=TOL,
         )
+        point_tol = 0.5
+        shifted_points = tuple((x + point_tol, y) for x, y in target.points)
+        assert _curves_match(
+            source,
+            _CurveEvidence("LINE", 1.0, shifted_points),
+            angle=angle,
+            centre=(0.0, 0.0),
+            tol=point_tol,
+        )
+        beyond = tuple((x + 1.01 * point_tol, y) for x, y in target.points)
+        assert not _curves_match(
+            source,
+            _CurveEvidence("LINE", 1.0, beyond),
+            angle=angle,
+            centre=(0.0, 0.0),
+            tol=point_tol,
+        )
         assert not _curves_match(
             source,
             _CurveEvidence("CIRCLE", 1.0, target.points),
@@ -221,3 +270,10 @@ class TestBilateralCorrespondence:
         changed = _CurveEvidence("LINE", 2.0, lower.edges[0].points)
         assert _sector_signature(lower) != _sector_signature(_boundary(edge=changed))
         assert not _profiles_correspond(lower, _boundary(edge=changed), tol=TOL)
+
+    def test_signature_rounding_is_exact_at_six_decimals(self):
+        lower = _boundary()
+        within = _CurveEvidence("LINE", 1.0 + 0.4e-6, lower.edges[0].points)
+        beyond = _CurveEvidence("LINE", 1.0 + 0.6e-6, lower.edges[0].points)
+        assert _sector_signature(lower) == _sector_signature(_boundary(edge=within))
+        assert _sector_signature(lower) != _sector_signature(_boundary(edge=beyond))

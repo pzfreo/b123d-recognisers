@@ -11,7 +11,19 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Cylinder, GeomType, Plane, Pos, Rot, export_step, import_step
+from build123d import (
+    Box,
+    Compound,
+    Cylinder,
+    GeomType,
+    Plane,
+    Pos,
+    RegularPolygon,
+    Rot,
+    export_step,
+    extrude,
+    import_step,
+)
 
 import b123d_recognisers.repeating_profiles as module
 from b123d_recognisers import recognise_repeating_radial_profiles
@@ -21,7 +33,8 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
 from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
-from b123d_recognisers.result import _take_inventory
+from b123d_recognisers._run import start
+from b123d_recognisers.result import _discover_all, _take_inventory
 from tests.golden._common import toothed_prism
 
 ROOT = Path(__file__).parents[1]
@@ -258,13 +271,28 @@ def _oracle(part, graph: FaceGraph, *, tol: float = 1e-5):
     return sorted(expected, key=lambda item: item[0])
 
 
+def _oracle_inventory(part, *, tol: float = 1e-5):
+    """Independent per-solid occurrence roster, source faces, owner and global order."""
+
+    solids = list(part.solids()) or [part]
+    expected = []
+    for solid in solids:
+        graph = FaceGraph(solid)
+        for facts, nodes in _oracle(solid, graph, tol=tol):
+            faces = tuple(graph.face(node) for node in nodes)
+            owner = graph.common_valid_solid(nodes)
+            assert owner is not None
+            expected.append((facts, faces, owner))
+    return sorted(expected, key=lambda item: item[0])
+
+
 def _assert_attributed(part, *, repeats: int):
     # Freeze the complete expected topology before aggregate orchestration creates any Candidate
     # or exposes any run evidence. Only the final comparison crosses into the run graph.
-    oracle_graph = FaceGraph(part)
-    (((axis, centre, span, oracle_repeats, edge_count, signature), oracle_nodes),) = _oracle(
-        part, oracle_graph
+    (((axis, centre, span, oracle_repeats, edge_count, signature), expected_faces, owner),) = (
+        _oracle_inventory(part)
     )
+    assert owner is not None
     public = recognise_repeating_radial_profiles(part)
     product = _take_inventory(part)
     records = product.result.repeating_radial_profiles
@@ -284,7 +312,6 @@ def _assert_attributed(part, *, repeats: int):
         record.sector_signature,
     ) == (axis, centre, span, oracle_repeats, edge_count, signature)
     actual = product.evidence.defining_of(candidate)
-    expected_faces = [oracle_graph.face(node) for node in oracle_nodes]
     actual_faces = [product.context.graph.face(node) for node in actual]
     assert all(
         sum(candidate_face.is_same(expected_face) for candidate_face in actual_faces) == 1
@@ -311,6 +338,49 @@ def test_supported_minimum_and_prime_line_arc_profiles(repeats: int) -> None:
 def test_straight_edge_odd_fixture_behavior_is_unchanged() -> None:
     # Its odd-tip wire bbox is not the rotation centre and it has no circular centre evidence.
     assert recognise_repeating_radial_profiles(toothed_prism(repeats=5)) == []
+
+
+def test_empty_all_circle_polygon_and_inner_wire_controls() -> None:
+    assert recognise_repeating_radial_profiles(Box(10, 10, 10)) == []
+    assert recognise_repeating_radial_profiles(Cylinder(20, 10)) == []
+    assert recognise_repeating_radial_profiles(extrude(RegularPolygon(20, 8), 10)) == []
+    inner_only = Cylinder(30, 10) - _notched_round(5)
+    assert recognise_repeating_radial_profiles(inner_only) == []
+
+
+def test_extremal_tolerance_and_one_to_one_opposed_matching(monkeypatch) -> None:
+    part = toothed_prism()
+    bbox = part.bounding_box()
+    metric = part_scale(bbox) * 1e-5
+    faces = list(part.faces())
+    real = [module._prove_boundary(face, bbox, tol=metric) for face in faces]
+    boundaries = [item for item in real if item is not None]
+    assert len(boundaries) == 2
+    lower = min(boundaries, key=lambda item: item.at)
+    upper = max(boundaries, key=lambda item: item.at)
+    spare_faces = [face for face, item in zip(faces, real, strict=True) if item is None]
+
+    def run(evidence):
+        monkeypatch.setattr(
+            module,
+            "_prove_boundary",
+            lambda face, _bbox, *, tol: next(
+                (item for expected_face, item in evidence if face.is_same(expected_face)), None
+            ),
+        )
+        return module._recognise_solid(part, tol=1e-5)
+
+    assert (
+        len(run([(lower.face, replace(lower, at=bbox.min.Z + metric)), (upper.face, upper)])) == 1
+    )
+    assert (
+        run([(lower.face, replace(lower, at=bbox.min.Z + 1.01 * metric)), (upper.face, upper)])
+        == []
+    )
+    duplicate_lower = replace(lower, face=spare_faces[0])
+    assert run([(lower.face, lower), (spare_faces[0], duplicate_lower), (upper.face, upper)]) == []
+    duplicate_upper = replace(upper, face=spare_faces[1])
+    assert run([(lower.face, lower), (upper.face, upper), (spare_faces[1], duplicate_upper)]) == []
 
 
 @pytest.mark.parametrize(
@@ -388,10 +458,12 @@ def test_common_circle_and_bbox_centre_routes_are_independently_reconstructed(fa
 def test_equal_coincident_solids_remain_distinct_occurrences() -> None:
     first = toothed_prism()
     part = Compound([first, deepcopy(first)])
+    expected = _oracle_inventory(part)
     ledger = ClaimLedger(FaceGraph(part))
     records = module._discover_repeating_radial_profiles(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates
     assert len(records) == len(candidates) == 2
+    assert len(expected) == 2 and expected[0][0] == expected[1][0]
     assert records[0] == records[1] and records[0] is not records[1]
     assert candidates[0].record is records[0] and candidates[1].record is records[1]
     defining = [ledger.defining_of(candidate) for candidate in candidates]
@@ -400,16 +472,21 @@ def test_equal_coincident_solids_remain_distinct_occurrences() -> None:
     assert ledger.graph.common_valid_solid(defining[0]) != ledger.graph.common_valid_solid(
         defining[1]
     )
+    for candidate, (_facts, expected_faces, _owner) in zip(candidates, expected, strict=True):
+        actual_faces = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
+        assert all(any(face.is_same(want) for face in actual_faces) for want in expected_faces)
 
 
 def test_multiple_unequal_solids_follow_record_order() -> None:
     part = Compound([Pos(-60, 0, 0) * _notched_round(5), Pos(60, 0, 0) * _notched_round(7)])
+    expected = _oracle_inventory(part)
     ledger = ClaimLedger(FaceGraph(part))
     records = module._discover_repeating_radial_profiles(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates
     assert records == sorted(records)
     assert [candidate.record for candidate in candidates] == records
     assert [record.repeat_count for record in records] == [5, 7]
+    assert [item[0][3] for item in expected] == [5, 7]
     assert all(len(ledger.defining_of(candidate)) == 2 for candidate in candidates)
 
 
@@ -540,6 +617,32 @@ def test_second_occurrence_identity_failure_is_detected_before_any_issue(monkeyp
     assert ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
 
 
+def test_aggregate_late_refusal_has_no_empty_candidate_or_completed_capability(monkeypatch) -> None:
+    part = Compound([Pos(-60, 0, 0) * _notched_round(5), Pos(60, 0, 0) * _notched_round(7)])
+    original = module._recognise_solid
+    calls = 0
+
+    def corrupt_second(solid, *, tol):
+        nonlocal calls
+        proposals = original(solid, tol=tol)
+        calls += 1
+        if calls == 2:
+            proposals[0] = replace(
+                proposals[0],
+                upper_face=Pos(0, 0, 100) * proposals[0].upper_face,
+            )
+        return proposals
+
+    monkeypatch.setattr(module, "_recognise_solid", corrupt_second)
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    with pytest.raises(module._RepeatingRadialAttributionError):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.REPEATING_RADIAL_PROFILES).candidates == ()
+    assert FamilyId.REPEATING_RADIAL_PROFILES not in ledger._issuer._completed
+    assert FamilyId.REPEATING_RADIAL_PROFILES not in ledger._issuer._completed_occurrences
+
+
 def test_empty_and_below_minimum_emit_no_candidate() -> None:
     for part in (Box(10, 10, 10), _notched_round(4)):
         ledger = ClaimLedger(FaceGraph(part))
@@ -626,7 +729,7 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
     assert {key for key in SURFACE_READER_SITES if key.startswith("repeating_profiles:")} == {
         "repeating_profiles:_sample_wire:geom_type:1",
         "repeating_profiles:_sample_wire:geom_type:2",
-        "repeating_profiles:_prove_boundary:geom_type:1",
+        "repeating_profiles:_common_circle_centre:geom_type:1",
     }
     imported_modules = {
         node.module

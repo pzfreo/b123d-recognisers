@@ -323,7 +323,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge curve kind fallback",
     ),
-    "repeating_profiles:_prove_boundary:geom_type:1": (
+    "repeating_profiles:_common_circle_centre:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "circular boundary edge proof",
     ),
