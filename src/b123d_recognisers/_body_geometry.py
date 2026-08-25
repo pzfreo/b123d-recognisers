@@ -861,11 +861,12 @@ def _planar_cycle(
         alternatives = tuple(
             MatchingHalfEdge(curve_index, direction, None, None) for direction in (-1, 1)
         )
+        expected_positive = (role == "outer") == (face.material_side > 0)
         full_oriented = tuple(
             item
             for item in alternatives
             if (_half_edge_integral(item, curves, face, quantum) > 0.0)
-            == (role == "outer")
+            == expected_positive
         )
         if len(full_oriented) != 1:
             raise UnsupportedBodyGeometry("full matching circle orientation is ambiguous")
@@ -912,7 +913,7 @@ def _planar_cycle(
     if not candidates:
         raise UnsupportedBodyGeometry("matching wire does not close")
     oriented: list[tuple[MatchingHalfEdge, ...]] = []
-    expected_positive = role == "outer"
+    expected_positive = (role == "outer") == (face.material_side > 0)
     for candidate in candidates:
         area = sum(
             _half_edge_integral(item, curves, face, quantum) for item in candidate

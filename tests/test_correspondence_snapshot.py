@@ -148,6 +148,12 @@ def test_planar_full_circle_cycle_has_no_serialized_seam() -> None:
         "outer", 0, (MatchingHalfEdge(0, 1, None, None),)
     )
 
+    reversed_material = dataclasses.replace(face, material_side=-1)
+    reversed_wire = _body_geometry._planar_cycle(
+        (0,), (curve,), "outer", reversed_material, 1e-9, ()
+    )
+    assert reversed_wire.cycle[0].direction == -1
+
 
 def test_planar_trimmed_circle_integral_reconstructs_the_arc() -> None:
     face = FaceGeometry(
