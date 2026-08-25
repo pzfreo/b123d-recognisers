@@ -261,8 +261,10 @@ def validate_matching_boundary_graph(value: MatchingBoundaryGraph) -> None:
             or not math.isfinite(face.area)
             or face.area <= 0.0
             or not valid_point(face.centroid)
+            or type(face.material_side) is not int
             or face.material_side not in {-1, 1}
             or type(face.wires) is not tuple
+            or sum(wire.role == "outer" for wire in face.wires) != 1
         ):
             raise UnsupportedBodyGeometry("matching boundary face schema is malformed")
         for wire_index, wire in enumerate(face.wires):

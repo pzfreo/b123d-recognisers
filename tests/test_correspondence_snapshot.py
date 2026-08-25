@@ -35,7 +35,7 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.BRepGProp import BRepGProp
-from OCP.gp import gp_Pnt2d, gp_Trsf
+from OCP.gp import gp_Pnt, gp_Pnt2d, gp_Trsf
 from OCP.GProp import GProp_GProps
 from OCP.TopAbs import TopAbs_Orientation
 
@@ -102,6 +102,96 @@ def _apply_rotation(matrix, value):
         sum(matrix[row][column] * value[column] for column in range(3))
         for row in range(3)
     )
+
+
+def _raw_schema_three_incidence_oracle(part, matching: MatchingBoundaryGraph) -> None:
+    """Map raw-OCP edge/face identity to matching values without production helpers."""
+
+    volume = GProp_GProps()
+    BRepGProp.VolumeProperties_s(part.wrapped, volume)
+    centre = tuple(float(value) for value in volume.CentreOfMass().Coord())
+    faces = tuple(part.faces())
+    face_map = {}
+    for raw_index, face in enumerate(faces):
+        adaptor = BRepAdaptor_Surface(face.wrapped)
+        kind = adaptor.GetType().name.removeprefix("GeomAbs_").upper()
+        relative = tuple(
+            float(value) - origin
+            for value, origin in zip(tuple(face.center()), centre, strict=True)
+        )
+        choices = tuple(
+            index
+            for index, candidate in enumerate(matching.faces)
+            if candidate.kind == kind
+            and candidate.area == pytest.approx(face.area, abs=1e-4)
+            and candidate.centroid == pytest.approx(relative, abs=1e-5)
+        )
+        assert len(choices) == 1
+        face_map[raw_index] = choices[0]
+
+    raw_edges = []
+    raw_incidence: dict[int, list[int]] = {}
+    for raw_face_index, face in enumerate(faces):
+        for wire in face.wires():
+            for edge in wire.edges():
+                edge_index = next(
+                    (
+                        index
+                        for index, existing in enumerate(raw_edges)
+                        if existing.wrapped.IsSame(edge.wrapped)
+                    ),
+                    None,
+                )
+                if edge_index is None:
+                    edge_index = len(raw_edges)
+                    raw_edges.append(edge)
+                raw_incidence.setdefault(edge_index, []).append(face_map[raw_face_index])
+    assert all(len(owners) == 2 for owners in raw_incidence.values())
+    assert len(raw_edges) == len(matching.curves)
+
+    curve_map = {}
+    for raw_index, edge in enumerate(raw_edges):
+        adaptor = BRepAdaptor_Curve(edge.wrapped)
+        kind = adaptor.GetType().name.removeprefix("GeomAbs_").upper()
+        endpoints = tuple(
+            tuple(
+                float(value) - origin
+                for value, origin in zip(tuple(edge.position_at(at)), centre, strict=True)
+            )
+            for at in (0.0, 1.0)
+        )
+        choices = []
+        for index, candidate in enumerate(matching.curves):
+            if candidate.kind != kind or candidate.length != pytest.approx(edge.length, abs=1e-5):
+                continue
+            if candidate.vertices is not None:
+                candidate_points = tuple(
+                    matching.vertices[vertex] for vertex in candidate.vertices
+                )
+                if all(
+                    any(point == pytest.approx(raw, abs=1e-5) for point in candidate_points)
+                    for raw in endpoints
+                ):
+                    choices.append(index)
+            elif kind == "CIRCLE" and candidate.centre is not None:
+                raw_centre = tuple(
+                    float(value) - origin
+                    for value, origin in zip(
+                        adaptor.Circle().Location().Coord(), centre, strict=True
+                    )
+                )
+                if candidate.centre == pytest.approx(raw_centre, abs=1e-5):
+                    choices.append(index)
+        assert len(choices) == 1
+        curve_map[raw_index] = choices[0]
+    expected = {
+        curve_map[edge]: tuple(sorted(owners)) for edge, owners in raw_incidence.items()
+    }
+    actual = {
+        curve: tuple(sorted(face for face, _wire, _occurrence in occurrences))
+        for curve, occurrences in matching.incidence
+    }
+    assert actual == expected
 
 
 def test_schema_three_matching_values_freeze_global_reference_shape() -> None:
@@ -335,7 +425,7 @@ def test_schema_three_matching_incidence_mutation_refuses() -> None:
         correspondence_module._validate_snapshot(changed)
 
 
-@pytest.mark.parametrize("mutation", ["curve", "parameter", "material"])
+@pytest.mark.parametrize("mutation", ["curve", "parameter", "material", "role"])
 def test_schema_three_nested_value_mutation_refuses(mutation: str) -> None:
     occurrence = correspondence_snapshot(_take_inventory(_rrp())).occurrences[0]
     graph = occurrence.matching_boundary
@@ -374,8 +464,18 @@ def test_schema_three_nested_value_mutation_refuses(mutation: str) -> None:
                     for index, item in enumerate(face.wires)
                 ),
             )
-        else:
+        elif mutation == "material":
             changed_face = dataclasses.replace(face, material_side=0)
+        else:
+            changed_face = dataclasses.replace(
+                face,
+                wires=tuple(
+                    dataclasses.replace(wire, role="inner")
+                    if wire.role == "outer"
+                    else wire
+                    for wire in face.wires
+                ),
+            )
         changed = dataclasses.replace(
             graph,
             faces=tuple(
@@ -420,6 +520,54 @@ def test_schema_three_pcurve_reconstruction_refuses_displaced_surface_values(
             1e-7,
             "LINE",
             False,
+        )
+
+
+@pytest.mark.parametrize("outside", [False, True])
+def test_schema_three_pcurve_reconstruction_bound_is_inclusive(
+    monkeypatch, outside: bool
+) -> None:
+    quantum = 1e-7
+    displacement = 2.0 * quantum
+    if outside:
+        displacement = math.nextafter(displacement, math.inf)
+
+    class Curve:
+        @staticmethod
+        def FirstParameter():
+            return 0.0
+
+        @staticmethod
+        def LastParameter():
+            return 1.0
+
+        @staticmethod
+        def Value(_parameter):
+            return gp_Pnt(0.0, 0.0, 0.0)
+
+    class Pcurve(Curve):
+        @staticmethod
+        def Value(_parameter):
+            return gp_Pnt2d(0.0, 0.0)
+
+    class Surface:
+        @staticmethod
+        def Value(_u, _v):
+            return gp_Pnt(displacement, 0.0, 0.0)
+
+    monkeypatch.setattr(
+        _body_geometry, "BRepAdaptor_Curve2d", lambda _edge, _face: Pcurve()
+    )
+    edge = Box(1, 1, 1).edges()[0]
+    face = Box(1, 1, 1).faces()[0]
+    if outside:
+        with pytest.raises(UnsupportedBodyGeometry, match="does not reconstruct"):
+            _body_geometry._validate_matching_pcurve(
+                edge, face, Curve(), Surface(), quantum, "LINE", False
+            )
+    else:
+        _body_geometry._validate_matching_pcurve(
+            edge, face, Curve(), Surface(), quantum, "LINE", False
         )
 
 
@@ -608,6 +756,17 @@ def _two_rrp_one_solid():
     part = left + right + bridge
     assert len(part.solids()) == 1
     return part
+
+
+@pytest.mark.parametrize(
+    "part",
+    [Box(10, 20, 30), Cylinder(10, 20), _rrp(5), _line_rrp(8)],
+)
+def test_raw_ocp_schema_three_oracle_proves_complete_labelled_incidence(part) -> None:
+    graph = FaceGraph(part)
+    solid = graph.common_valid_solid(graph.nodes)
+    assert solid is not None
+    _raw_schema_three_incidence_oracle(part, graph.matching_boundary(solid))
 
 
 def _body_descriptor(part):
