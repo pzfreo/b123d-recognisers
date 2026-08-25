@@ -46,7 +46,9 @@ from b123d_recognisers._analytic_surfaces import (
 from b123d_recognisers._body_geometry import (
     BodyGeometryDescriptor,
     FaceGeometry,
+    MatchingBoundaryGraph,
     describe_solid,
+    matching_boundary_for_solid,
 )
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
 from b123d_recognisers._typing import EdgeLike, FaceLike
@@ -251,6 +253,8 @@ class FaceGraphQuery(Protocol):
 
     def body_geometry(self, solid: SolidRef) -> BodyGeometryFact: ...
 
+    def matching_boundary(self, solid: SolidRef) -> MatchingBoundaryGraph: ...
+
 
 class FaceGraph:
     """One node per face of one part, for the length of one recognition run.
@@ -308,6 +312,7 @@ class FaceGraph:
         self._issued_solid_refs: dict[SolidRef, int] = {}
         self._solids: tuple | None = None
         self._body_geometry: dict[SolidRef, BodyGeometryFact] = {}
+        self._matching_boundaries: dict[SolidRef, MatchingBoundaryGraph] = {}
         self._edge_occurrences: dict[FaceNode, tuple[EdgeOccurrenceRef, ...]] = {}
         self._issued_edge_occurrences: dict[EdgeOccurrenceRef, tuple] = {}
         self._shared_occurrences: dict[tuple[int, int], tuple[SharedEdgeOccurrenceRef, ...]] = {}
@@ -701,6 +706,21 @@ class FaceGraph:
         fact = BodyGeometryFact(solid, described.descriptor, tuple(face_facts))
         self._body_geometry[solid] = fact
         return fact
+
+    def matching_boundary(self, solid: SolidRef) -> MatchingBoundaryGraph:
+        """Return the lazy schema-three graph for one exact graph-issued solid."""
+
+        fact = self.body_geometry(solid)
+        cached = self._matching_boundaries.get(solid)
+        if cached is not None:
+            return cached
+        issued = self._issued_solid_refs.get(solid)
+        assert self._solids is not None
+        if issued is None or fact._solid is not solid:
+            raise BodyGeometryAuthorityError("matching boundary lost its graph-issued solid")
+        matching = matching_boundary_for_solid(self._solids[issued], fact.descriptor)
+        self._matching_boundaries[solid] = matching
+        return matching
 
     def _native_continuation(self, a: FaceNode, b: FaceNode, *, local: float) -> bool:
         try:

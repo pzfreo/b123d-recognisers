@@ -9,7 +9,7 @@ no graph handles or kernel objects and deliberately preserve equal multiplicity.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from itertools import permutations, product
 from typing import Any, TypeAlias, cast
 
@@ -258,7 +258,6 @@ class BodyGeometryDescriptor:
     boundary: BodyBoundaryGeometry
     placement: BodyPlacement
     quantization: DescriptorQuantization
-    matching: MatchingBoundaryGraph | None = None
 
 
 def validate_descriptor_quantization(value: DescriptorQuantization) -> None:
@@ -806,7 +805,6 @@ def describe_solid(solid) -> _DescribedBody:
             moment_quantum,
         ),
     )
-    descriptor = replace(descriptor, matching=matching_boundary_for_solid(solid, descriptor))
     return _DescribedBody(
         descriptor,
         raw_faces,

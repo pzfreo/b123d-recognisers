@@ -166,16 +166,14 @@ def test_schema_three_box_half_edges_covary_under_all_24_proper_rotations() -> N
     source_graph = FaceGraph(source_part)
     source_solid = source_graph.common_valid_solid(source_graph.nodes)
     assert source_solid is not None
-    source = source_graph.body_geometry(source_solid).descriptor.matching
-    assert source is not None
+    source = source_graph.matching_boundary(source_solid)
 
     for rotation in _proper_signed_permutations():
         target_part = _proper_transform(source_part, rotation)
         target_graph = FaceGraph(target_part)
         target_solid = target_graph.common_valid_solid(target_graph.nodes)
         assert target_solid is not None
-        target = target_graph.body_geometry(target_solid).descriptor.matching
-        assert target is not None
+        target = target_graph.matching_boundary(target_solid)
         vertex_map = {
             index: min(
                 range(len(target.vertices)),
@@ -328,11 +326,9 @@ def test_cylindrical_seam_matching_graph_erases_wire_presentation(monkeypatch) -
 def test_schema_three_matching_incidence_mutation_refuses() -> None:
     snapshot = correspondence_snapshot(_take_inventory(_rrp()))
     occurrence = snapshot.occurrences[0]
-    matching = occurrence.body.matching
-    assert matching is not None
+    matching = occurrence.matching_boundary
     malformed = dataclasses.replace(matching, incidence=())
-    changed_body = dataclasses.replace(occurrence.body, matching=malformed)
-    changed_occurrence = dataclasses.replace(occurrence, body=changed_body)
+    changed_occurrence = dataclasses.replace(occurrence, matching_boundary=malformed)
     changed = dataclasses.replace(snapshot, occurrences=(changed_occurrence,))
 
     with pytest.raises(CorrespondenceSnapshotError, match="matching boundary"):
@@ -364,15 +360,13 @@ def test_schema_three_rrp_half_edges_covary_under_all_24_proper_rotations(
     source_graph = FaceGraph(source_part)
     source_solid = source_graph.common_valid_solid(source_graph.nodes)
     assert source_solid is not None
-    source = source_graph.body_geometry(source_solid).descriptor.matching
-    assert source is not None
+    source = source_graph.matching_boundary(source_solid)
     for rotation in _proper_signed_permutations():
         target_part = _proper_transform(source_part, rotation)
         target_graph = FaceGraph(target_part)
         target_solid = target_graph.common_valid_solid(target_graph.nodes)
         assert target_solid is not None
-        target = target_graph.body_geometry(target_solid).descriptor.matching
-        assert target is not None
+        target = target_graph.matching_boundary(target_solid)
         vertex_map = {
             index: min(
                 range(len(target.vertices)),
@@ -842,12 +836,12 @@ def _alias_aware_calls(tree: ast.AST, target: str) -> tuple[ast.Call, ...]:
 
 def test_body_geometry_is_translation_normalized_and_cached() -> None:
     graph, solid, source = _body_descriptor(_rrp())
-    translated_graph, _translated_solid, translated = _body_descriptor(Pos(7, 8, 9) * _rrp())
+    translated_graph, translated_solid, translated = _body_descriptor(Pos(7, 8, 9) * _rrp())
 
     assert graph.body_geometry(solid) is source
     assert source.descriptor.intrinsic == translated.descriptor.intrinsic
     assert source.descriptor.boundary == translated.descriptor.boundary
-    assert source.descriptor.matching == translated.descriptor.matching
+    assert graph.matching_boundary(solid) == translated_graph.matching_boundary(translated_solid)
     assert translated.descriptor.placement.centre_of_mass == pytest.approx((7.0, 8.0, 9.0))
     assert source.descriptor.placement != translated.descriptor.placement
     assert translated_graph is not graph

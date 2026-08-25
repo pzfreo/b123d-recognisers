@@ -12,7 +12,7 @@ import math
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeAlias, cast
+from typing import Any, Protocol, TypeAlias
 
 from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
 from b123d_recognisers._body_geometry import (
@@ -89,6 +89,7 @@ class AcceptedOccurrenceSnapshot:
     record_type: str
     record_value: FrozenValue
     body: BodyGeometryDescriptor
+    matching_boundary: MatchingBoundaryGraph
     summary: RepeatingProfileGeometrySummary
 
 
@@ -175,12 +176,17 @@ def _occurrence(
         validate_descriptor_quantization(body_fact.descriptor.quantization)
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("RRP descriptor quantization is unavailable") from error
+    try:
+        matching_boundary = graph.matching_boundary(solid)
+    except (BodyGeometryAuthorityError, UnsupportedBodyGeometry) as error:
+        raise CorrespondenceSnapshotError("RRP matching boundary is unavailable") from error
     return (
         AcceptedOccurrenceSnapshot(
             FamilyId.REPEATING_RADIAL_PROFILES.value,
             type(record).__qualname__,
             _freeze_rrp(record),
             body_fact.descriptor,
+            matching_boundary,
             summary,
         ),
         solid,
@@ -201,7 +207,7 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
         or type(occurrence.body.boundary) is not BodyBoundaryGeometry
         or type(occurrence.body.placement) is not BodyPlacement
         or type(occurrence.body.quantization) is not DescriptorQuantization
-        or type(occurrence.body.matching) is not MatchingBoundaryGraph
+        or type(occurrence.matching_boundary) is not MatchingBoundaryGraph
         or type(occurrence.summary) is not RepeatingProfileGeometrySummary
         for occurrence in snapshot.occurrences
     ):
@@ -230,7 +236,7 @@ def _validate_snapshot(snapshot: CorrespondenceSnapshot) -> None:
     try:
         for occurrence in snapshot.occurrences:
             validate_matching_boundary_graph(
-                cast(MatchingBoundaryGraph, occurrence.body.matching)
+                occurrence.matching_boundary
             )
     except UnsupportedBodyGeometry as error:
         raise CorrespondenceSnapshotError("correspondence matching boundary is invalid") from error
