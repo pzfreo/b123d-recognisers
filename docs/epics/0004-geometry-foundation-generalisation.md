@@ -1014,8 +1014,8 @@ immutable occurrences. Exact planar source nodes and complete cylindrical endpoi
 survive merge, collinear collapse, obround extension/recovery and body scoping, while record-only
 compatibility remains value/order identical. The compatibility ledger is projected from those
 occurrences and publishes no new cap evidence. At #234 landing, SLOT and POCKET remained
-`IncompleteAttribution`; Slot was later promoted by #235, while Pocket remains pending this #236
-child. No allocation, schema, census, reconciliation or public-output change belonged to #234.
+`IncompleteAttribution`; Slot was later promoted by #235 and Pocket by #236. No allocation,
+schema, census, reconciliation or public-output change belonged to #234.
 
 F5 Pocket attribution/#236 promotes only `POCKETS`. Opposed-wall routes define the intentionally
 merged wall union while their floor remains consulted; corner notches define their two walls and
@@ -1039,6 +1039,25 @@ not produce a valid closed non-manifold Solid with one unambiguous Pocket occurr
 incidence either remains open/invalid or makes the wall/floor assignment ambiguous, which the same
 common-SolidRef and complete-role checks already refuse. This is not claimed as an extra supported
 geometry route.
+
+F5 cumulative exit ledger on merged main:
+
+- the closed registry contains exactly 22 non-legacy physical definitions: 20 are
+  `FullyAttributed`; only Step Levels and Risers remain `IncompleteAttribution`, each with the
+  reviewed occurrence/multi-body representation prerequisite from #240/#241 and merged #247;
+- all 22 definitions have one explicit census disposition (15 `Counted`, seven `NotCounted`). The
+  only physical predecessor dependencies are Holes on Countersinks and Plates on Turned Steps;
+  derived Hole, Slot and Pocket patterns consume only their accepted declared source family;
+- terminal validation and per-face tooling consume the one issuer-owned frozen inventory. Public
+  compatibility ledgers project the same family cores; they are not a parallel aggregate claim
+  authority and no recogniser is rerun to reconstruct attribution;
+- named MFTRCAD buckets 20 through 33 are permanently consumed. Buckets 34 and 35 remain
+  independently `sealed_unrevealed` as part of the accepted Step Level/Riser structural
+  disposition, and the ordinary complement remains exactly 36 through 999. A consumed allocation
+  supplies regression evidence only when its reveal completed validly; zero, aborted and invalid
+  attempts remain inconclusive and are never retried or fitted;
+- capability manifest format 1 remains unchanged. The private registry plus the reviewed human
+  capability table carry attribution completeness, so no public schema or Draftwright pin moved.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
