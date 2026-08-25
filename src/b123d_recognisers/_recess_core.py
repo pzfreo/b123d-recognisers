@@ -517,7 +517,7 @@ def _pocket_proposals_one(
                         node for node in (walls[i].node, walls[j].node) if node is not None
                     )
                     candidates.append(_RecessProposal(p, nodes))
-    candidates.extend(_corner_notch_proposals(faces, pbb))
+    candidates.extend(_corner_notch_proposals(faces, pbb, owner))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path, and
     # claiming nothing for the same reason: its evidence is two cylindrical caps, which
@@ -599,7 +599,9 @@ def _channel_proposals_one(
     return proposals
 
 
-def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Pocket]]:
+def _corner_notch_proposals(
+    faces: list[_Face], pbb, graph: FaceGraph | None = None
+) -> list[_RecessProposal[Pocket]]:
     """Recognise an axis-aligned rectangular blind interruption open at two
     adjacent envelope edges.
 
@@ -620,7 +622,26 @@ def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Poc
     bx = (pbb.min.X, pbb.max.X)
     by = (pbb.min.Y, pbb.max.Y)
     bz = (pbb.min.Z, pbb.max.Z)
-    for floor in (f for f in faces if f.axis == "z" and f.wall):
+    floor_regions: list[tuple[_Face, frozenset[FaceNode]]] = []
+    seen_floor_nodes: set[FaceNode] = set()
+    for original in (f for f in faces if f.axis == "z" and f.wall):
+        if original.node is None or graph is None:
+            nodes = frozenset(() if original.node is None else {original.node})
+            floor_regions.append((original, nodes))
+            continue
+        if original.node in seen_floor_nodes:
+            continue
+        region = graph.smooth_region(original.node)
+        members = [face for face in faces if face.node in region and face.axis == "z" and face.wall]
+        nodes = frozenset(face.node for face in members if face.node is not None)
+        seen_floor_nodes.update(nodes)
+        bounds = original.bb
+        for member in members:
+            bounds = bounds.add(member.bb)
+        merged = _Face(original.normal, original.axis, bounds, True, original.node)
+        floor_regions.append((merged, nodes))
+
+    for floor, floor_nodes in floor_regions:
         x0, x1 = limits(floor.bb, "x")
         y0, y1 = limits(floor.bb, "y")
         z0, z1 = limits(floor.bb, "z")
@@ -690,7 +711,9 @@ def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Poc
             _RecessProposal(
                 record,
                 frozenset(
-                    node for node in (floor.node, xwall.node, ywall.node) if node is not None
+                    node
+                    for node in (*floor_nodes, xwall.node, ywall.node)
+                    if node is not None
                 ),
             )
         )

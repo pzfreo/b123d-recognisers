@@ -8,6 +8,7 @@ import math
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -21,6 +22,7 @@ from build123d import (
     Pos,
     Rot,
     Shell,
+    Vector,
     export_step,
     import_step,
 )
@@ -28,6 +30,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
+from b123d_recognisers import recognise_pockets
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -49,7 +52,10 @@ from b123d_recognisers._recess_faces import (
 )
 from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
 from b123d_recognisers._recess_obround import (
+    _CAP_CLUSTER_FRAC,
+    _OBROUND_RATIO_TOL,
     _extend_obround_proposals,
+    _obround_end,
     _obround_ends,
     _recognise_obround_from_ends,
 )
@@ -770,13 +776,58 @@ def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
     assert _recognise_obround_from_ends(part, [], blind=True, graph=graph, proposals=True) == []
 
 
+@pytest.mark.parametrize(
+    ("bulge_ratio", "accepted"),
+    [
+        (1 - _OBROUND_RATIO_TOL + 1e-10, True),
+        (1 + _OBROUND_RATIO_TOL - 1e-10, True),
+        (1 - _OBROUND_RATIO_TOL - 1e-10, False),
+        (1 + _OBROUND_RATIO_TOL + 1e-10, False),
+    ],
+)
+def test_obround_ratio_tolerance_is_inclusive_only_at_boundary(bulge_ratio, accepted) -> None:
+    radius = 10.0
+    bbox = SimpleNamespace(
+        min=Vector(-radius, 0, -5),
+        max=Vector(radius, radius * bulge_ratio, 5),
+    )
+    cap = (radius, "z", (0.0, 0.0, 0.0), bbox, True, FaceNode(0))
+    assert (_obround_end(cap) is not None) is accepted
+
+
+@pytest.mark.parametrize("outside", [False, True])
+def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, outside) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    radius = 10.0
+    threshold = module.length_tol(radius, rel=_CAP_CLUSTER_FRAC)
+    delta = math.nextafter(threshold, math.inf) if outside else threshold
+    first = SimpleNamespace(min=Vector(-10, 0, -5), max=Vector(0, 10, 5))
+    second = SimpleNamespace(min=Vector(0, 0, -5), max=Vector(10, 10, 5))
+    first_node, second_node = FaceNode(0), FaceNode(1)
+    cylinders = [
+        (radius, "z", (0.0, 0.0, 0.0), first, True, first_node),
+        (radius, "z", (delta, 0.0, 0.0), second, True, second_node),
+    ]
+    monkeypatch.setattr(module, "_cylinder_faces", lambda _part, _graph: cylinders)
+    ends = _obround_ends(Box(1, 1, 1), cast(FaceGraph, object()))
+    assert bool(ends) is (not outside)
+    if ends:
+        assert ends[0][9] == frozenset({first_node, second_node})
+
+
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
     package = ROOT / "src/b123d_recognisers"
     calls = []
     importers = []
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        aliases = {"_discover_pockets"}
+        aliases = {
+            node.name
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "_discover_pockets"
+        }
         modules = set()
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module:
@@ -814,6 +865,15 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         "writer",
         "_wrap_errors",
     )
+    assert tuple(inspect.signature(recognise_pockets).parameters) == (
+        "part",
+        "face_edges",
+        "ledger",
+    )
+    public_call = next(call for path, call in calls if path == "_recess_features.py")
+    public_keywords = {keyword.arg: keyword.value for keyword in public_call.keywords}
+    assert isinstance(public_keywords["writer"], ast.Name)
+    assert public_keywords["writer"].id == "writer"
 
 
 def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
@@ -937,6 +997,51 @@ def test_step_split_obround_cap_publishes_every_original_patch(tmp_path: Path) -
     assert candidate.record is record
     assert expected_curved.issubset(defining)
     assert sum(fresh.is_planar(node) for node in defining) == 2
+
+
+def test_step_split_corner_floor_publishes_every_original_patch(tmp_path: Path) -> None:
+    """A smooth split of the defining corner floor must not lose either patch."""
+
+    part = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+    graph = FaceGraph(part)
+    floors = [
+        node
+        for node in graph.nodes
+        if graph.is_planar(node)
+        and (normal := graph.normal(node)) is not None
+        and normal[2] > 0.9
+        and abs(graph.bounds(node)[2][0]) < 1e-8
+    ]
+    assert len(floors) == 1
+    floor = graph.face(floors[0])
+    seam = Edge.make_line((22.5, 5, 0), (22.5, 20, 0))
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, floor.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+    path = tmp_path / "pocket-split-corner-floor.step"
+    assert export_step(split, path)
+    imported = import_step(path)
+
+    fresh = FaceGraph(imported)
+    split_floors = frozenset(
+        node
+        for node in fresh.nodes
+        if fresh.is_planar(node)
+        and (normal := fresh.normal(node)) is not None
+        and normal[2] > 0.9
+        and abs(fresh.bounds(node)[2][0]) < 1e-6
+    )
+    assert len(split_floors) == 2
+    ledger = ClaimLedger(fresh)
+    (record,) = _discover_pockets(imported, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
+    defining = ledger.defining_of(candidate)
+    assert record.edge_anchored
+    assert candidate.record is record
+    assert split_floors.issubset(defining)
+    assert len(defining) == 4
 
 
 def test_reversed_face_traversal_preserves_records_and_roles(monkeypatch) -> None:
@@ -1083,6 +1188,37 @@ def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeyp
     assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
 
 
+def test_aggregate_stale_second_occurrence_has_no_completed_state(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+
+    first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
+    context = start(part)
+    ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
+    proposals = module._body_scoped_proposals(
+        list(part.solids()),
+        lambda solid: module._pocket_proposals_one(solid, graph=context.graph),
+    )
+    assert len(proposals) == 2
+    stale = replace(proposals[1], planar=frozenset({FaceNode(999_999)}))
+    real = module._body_scoped_proposals
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        lambda sources, recognise_one: (
+            [proposals[0], stale]
+            if recognise_one.func is module._pocket_proposals_one
+            else real(sources, recognise_one)
+        ),
+    )
+    with pytest.raises(_PocketAttributionError, match="identity"):
+        _discover_all(context, ledger)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+    assert FamilyId.POCKETS not in ledger._issuer._completed
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+
+
 def test_public_ledger_raw_writer_and_plain_projection_are_identical() -> None:
     part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
     plain = _discover_pockets(part)
@@ -1134,6 +1270,7 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
     assert FamilyId.POCKETS not in ledger._issuer._completed
     assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
 
 
 def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -> None:
@@ -1169,6 +1306,7 @@ def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -
         _discover_all(context, ledger)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
     assert FamilyId.POCKETS not in ledger._issuer._completed
+    assert FamilyId.POCKETS not in ledger._issuer._completed_occurrences
 
 
 def test_empty_roles_and_cap_ambiguity_are_atomic_without_completion(monkeypatch) -> None:
