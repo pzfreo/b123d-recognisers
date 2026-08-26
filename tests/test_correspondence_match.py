@@ -45,6 +45,7 @@ from b123d_recognisers._correspondence_match import (
     _maximum_matchings,
     _normalize_partition_translation,
     _order_bound,
+    _partition_witnesses,
     _scale_is_identity,
     _validate_result,
     _wire_alignments,
@@ -118,6 +119,9 @@ class _RawPrismOracleFact:
     axis: tuple[float, float, float]
     low_cycle: tuple[tuple, ...]
     high_cycle: tuple[tuple, ...]
+    low_material_side: int
+    high_material_side: int
+    section_points: tuple[tuple[float, float, float], ...]
     side_kinds: tuple[str, ...]
     axial_pairs: tuple[tuple[int, int], ...]
     volume: float
@@ -261,19 +265,105 @@ def _raw_prism_partition_oracle(part):
                     continue
                 properties = GProp_GProps()
                 BRepGProp.VolumeProperties_s(solid.wrapped, properties)
-                candidates.append(
-                    _RawPrismOracleFact(
-                        left_position,
-                        right_position,
-                        tuple(round(value, 12) for value in axis),
-                        low_labels,
-                        high_labels,
-                        side_kinds,
-                        tuple(sorted(axial_pairs)),
-                        float(properties.Mass()),
-                        tuple(float(value) for value in properties.CentreOfMass().Coord()),
+                centre_of_mass = tuple(float(value) for value in properties.CentreOfMass().Coord())
+
+                def section_points(
+                    cycle,
+                    raw_edges=raw_edges,
+                    centre_of_mass=centre_of_mass,
+                    axis=axis,
+                ):
+                    values = []
+                    for edge_at, direction in cycle:
+                        adaptor = BRepAdaptor_Curve(raw_edges[edge_at].wrapped)
+                        parameter = (
+                            adaptor.FirstParameter() if direction == 1 else adaptor.LastParameter()
+                        )
+                        point = adaptor.Value(parameter)
+                        relative = tuple(
+                            float(value) - origin
+                            for value, origin in zip(point.Coord(), centre_of_mass, strict=True)
+                        )
+                        axial = sum(
+                            value * direction
+                            for value, direction in zip(relative, axis, strict=True)
+                        )
+                        values.append(
+                            tuple(
+                                value - axial * direction
+                                for value, direction in zip(relative, axis, strict=True)
+                            )
+                        )
+                    return tuple(values)
+
+                low_material = (
+                    1
+                    if sum(
+                        value * direction
+                        for value, direction in zip(left_normal, axis, strict=True)
                     )
+                    > 0.0
+                    else -1
                 )
+                high_material = (
+                    1
+                    if sum(
+                        value * direction
+                        for value, direction in zip(right_normal, axis, strict=True)
+                    )
+                    > 0.0
+                    else -1
+                )
+                assert low_material == -high_material
+
+                for edge_at in set(owners) - set(low_edges) - set(high_edges):
+                    adaptor = BRepAdaptor_Curve(raw_edges[edge_at].wrapped)
+                    if adaptor.GetType().name != "GeomAbs_Line":
+                        break
+                    first = tuple(
+                        float(value) for value in adaptor.Value(adaptor.FirstParameter()).Coord()
+                    )
+                    last = tuple(
+                        float(value) for value in adaptor.Value(adaptor.LastParameter()).Coord()
+                    )
+                    delta = tuple(right - left for left, right in zip(first, last, strict=True))
+                    length = math.sqrt(sum(value * value for value in delta))
+                    if (
+                        length <= 0.0
+                        or 1.0
+                        - abs(
+                            sum(
+                                value * direction
+                                for value, direction in zip(delta, axis, strict=True)
+                            )
+                            / length
+                        )
+                        > 4.0 * DIRECTION_TOL
+                    ):
+                        break
+                    endpoints = sorted(
+                        sum(value * direction for value, direction in zip(point, axis, strict=True))
+                        for point in (first, last)
+                    )
+                    if endpoints != pytest.approx((left_position, right_position), abs=1e-7):
+                        break
+                else:
+                    candidates.append(
+                        _RawPrismOracleFact(
+                            left_position,
+                            right_position,
+                            tuple(round(value, 12) for value in axis),
+                            low_labels,
+                            high_labels,
+                            low_material,
+                            high_material,
+                            section_points(low_cycle),
+                            side_kinds,
+                            tuple(sorted(axial_pairs)),
+                            float(properties.Mass()),
+                            centre_of_mass,
+                        )
+                    )
         assert len(candidates) == 1
         facts.append(candidates[0])
     return tuple(facts)
@@ -290,17 +380,46 @@ def _raw_partition_relation_oracle(parent, children):
         left.hi == pytest.approx(right.lo)
         for left, right in zip(ordered, ordered[1:], strict=False)
     )
-    assert ordered[0].lo == pytest.approx(source.lo)
-    assert ordered[-1].hi == pytest.approx(source.hi)
     scale = (ordered[-1].hi - ordered[0].lo) / (source.hi - source.lo)
+
+    def rotate(rotation, point):
+        return tuple(
+            sum(rotation[row][column] * point[column] for column in range(3)) for row in range(3)
+        )
+
+    def point_cycle_matches(rotation, child):
+        transformed = tuple(
+            tuple(scale * value for value in rotate(rotation, point))
+            for point in source.section_points
+        )
+        target = child.section_points
+        if len(transformed) != len(target):
+            return False
+        reversed_target = tuple(reversed(target))
+        presentations = tuple(
+            target[offset:] + target[:offset] for offset in range(len(target))
+        ) + tuple(
+            reversed_target[offset:] + reversed_target[:offset] for offset in range(len(target))
+        )
+        return any(
+            all(
+                left == pytest.approx(right, abs=1e-7)
+                for left, right in zip(transformed, candidate, strict=True)
+            )
+            for candidate in presentations
+        )
+
     rotations = tuple(
         rotation
         for rotation in PROPER_ROTATIONS
-        if tuple(
-            sum(rotation[row][column] * source.axis[column] for column in range(3))
-            for row in range(3)
+        if abs(
+            sum(
+                left * right
+                for left, right in zip(rotate(rotation, source.axis), ordered[0].axis, strict=True)
+            )
         )
-        == ordered[0].axis
+        == pytest.approx(1.0, abs=1e-12)
+        and all(point_cycle_matches(rotation, child) for child in ordered)
     )
     assert rotations
     for child in ordered:
@@ -314,22 +433,31 @@ def _raw_partition_relation_oracle(parent, children):
         assert len(child.axial_pairs) == len(source.axial_pairs)
     for left, right in zip(ordered, ordered[1:], strict=False):
         assert _raw_cycle_presentations(left.high_cycle) & _raw_cycle_presentations(right.low_cycle)
-        # Independent material cycles on the two coincident interface caps oppose.
-        assert left.high_cycle != right.low_cycle
+        assert left.high_material_side == -right.low_material_side
     assert sum(child.volume for child in ordered) == pytest.approx(scale**3 * source.volume)
+    child_volume = sum(child.volume for child in ordered)
     target_com = tuple(
-        sum(child.volume * child.centre_of_mass[at] for child in ordered)
-        / sum(child.volume for child in ordered)
+        sum(child.volume * child.centre_of_mass[at] for child in ordered) / child_volume
         for at in range(3)
     )
-    assert target_com == pytest.approx(
-        tuple(
-            sum(child.volume * child.centre_of_mass[at] for child in ordered)
-            / sum(child.volume for child in ordered)
+    witnesses = []
+    for rotation in rotations:
+        rotated_com = rotate(rotation, source.centre_of_mass)
+        translation = tuple(
+            target - scale * value for target, value in zip(target_com, rotated_com, strict=True)
+        )
+        transformed_com = tuple(
+            scale * value + shift for value, shift in zip(rotated_com, translation, strict=True)
+        )
+        first_moment = tuple(
+            sum(
+                child.volume * (child.centre_of_mass[at] - transformed_com[at]) for child in ordered
+            )
             for at in range(3)
         )
-    )
-    return scale, rotations, target_com
+        assert math.sqrt(sum(value * value for value in first_moment)) <= 1e-7
+        witnesses.append((rotation, translation, scale))
+    return tuple(witnesses), target_com
 
 
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
@@ -419,9 +547,9 @@ def test_reviewed_line_mixed_and_higher_prism_roster(
     whole_oracle = _raw_prism_partition_oracle(whole_part)
     pieces_oracle = _raw_prism_partition_oracle(pieces_part)
     assert len(whole_oracle) == 1 and len(pieces_oracle) == 2
-    scale, rotations, target_com = _raw_partition_relation_oracle(whole_oracle, pieces_oracle)
-    assert scale == pytest.approx(1.0)
-    assert IDENTITY_ROTATION in rotations
+    witnesses, target_com = _raw_partition_relation_oracle(whole_oracle, pieces_oracle)
+    assert any(rotation == IDENTITY_ROTATION for rotation, _translation, _scale in witnesses)
+    assert all(scale == pytest.approx(1.0) for _rotation, _translation, scale in witnesses)
     assert target_com == pytest.approx(whole_oracle[0].centre_of_mass)
 
     whole = _take_inventory(whole_part)
@@ -455,6 +583,76 @@ def test_gap_does_not_become_a_partial_geometric_partition() -> None:
         relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
         for relation in correspondence_changes(whole, pieces).relations
     )
+
+
+def test_overlap_does_not_become_a_geometric_partition() -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    child_facts = tuple(child for child in children if child is not None)
+    overlapping = (child_facts[0], replace(child_facts[1], interval=(3.0, 9.0)))
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        overlapping,
+        _MatchBudget(),
+    )
+
+
+def test_partition_leaf_rejects_interface_pcurve_volume_and_first_moment_drift() -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    child_facts = tuple(child for child in children if child is not None)
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        child_facts,
+        _MatchBudget(),
+    )
+
+    first = child_facts[0]
+    curve = first.low_cap.section_curves[0]
+    assert curve.start_parameter is not None
+    changed_curve = replace(
+        curve,
+        start_parameter=(curve.start_parameter[0] + 1.0, curve.start_parameter[1]),
+    )
+    changed_low = replace(
+        first.low_cap,
+        section_curves=(changed_curve, *first.low_cap.section_curves[1:]),
+    )
+    mutations = (
+        (replace(first, low_cap=changed_low), *child_facts[1:]),
+        (replace(first, volume=first.volume + 1.0), *child_facts[1:]),
+        (
+            replace(
+                first,
+                centre_of_mass=(first.centre_of_mass[0] + 1.0, *first.centre_of_mass[1:]),
+            ),
+            *child_facts[1:],
+        ),
+    )
+    for changed_children in mutations:
+        assert not _partition_witnesses(
+            parent_occurrence,
+            parent,
+            child_snapshot.occurrences,
+            changed_children,
+            _MatchBudget(),
+        )
 
 
 def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
@@ -639,7 +837,9 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
 
 
 def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> None:
-    before = _take_inventory(_partition_rrp(10.0))
+    whole = _partition_rrp(10.0)
+    raw_parent = _raw_prism_partition_oracle(whole)
+    before = _take_inventory(whole)
     low = _partition_rrp(4.0)
     high = _partition_rrp(6.0, 4.0)
     for rotation in _proper_signed_permutations():
@@ -648,6 +848,8 @@ def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> Non
         )
         raw = _raw_prism_partition_oracle(transformed)
         assert len(raw) == 2
+        raw_witnesses, _target_com = _raw_partition_relation_oracle(raw_parent, raw)
+        assert {witness[0] for witness in raw_witnesses} == {rotation}
         (relation,) = correspondence_changes(before, _take_inventory(transformed)).relations
         assert relation.kind is ChangeKind.SPLIT
         assert relation.witness is not None
