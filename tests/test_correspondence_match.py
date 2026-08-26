@@ -53,6 +53,7 @@ from b123d_recognisers._correspondence_match import (
     _normalize_partition_translation,
     _order_bound,
     _partition_witnesses,
+    _prism_cap_similarity,
     _scale_is_identity,
     _validate_result,
     _wire_alignments,
@@ -1393,6 +1394,303 @@ def test_partition_translation_zero_bound_is_euclidean_and_inclusive() -> None:
         0.0,
     )
 
+
+def test_partition_interval_join_is_inclusive_and_nextafter_closed() -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    left, right = (child for child in children if child is not None)
+    join_bound = 2.0 * (
+        left.quantization.metric_quantum + right.quantization.metric_quantum
+    )
+
+    equality_gap_at = left.interval[1] + join_bound
+    while abs(equality_gap_at - left.interval[1]) > join_bound:
+        equality_gap_at = math.nextafter(equality_gap_at, left.interval[1])
+    equality_gap = (left, replace(right, interval=(equality_gap_at, right.interval[1])))
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        equality_gap,
+        _MatchBudget(),
+    )
+    outside_gap = math.nextafter(equality_gap_at, math.inf)
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        (left, replace(right, interval=(outside_gap, right.interval[1]))),
+        _MatchBudget(),
+    )
+
+    equality_overlap_at = right.interval[0] + join_bound
+    while abs(equality_overlap_at - right.interval[0]) > join_bound:
+        equality_overlap_at = math.nextafter(equality_overlap_at, right.interval[0])
+    equality_overlap = (
+        replace(left, interval=(left.interval[0], equality_overlap_at)),
+        right,
+    )
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        equality_overlap,
+        _MatchBudget(),
+    )
+    outside_overlap = math.nextafter(equality_overlap_at, math.inf)
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        (replace(left, interval=(left.interval[0], outside_overlap)), right),
+        _MatchBudget(),
+    )
+
+
+def test_partition_cap_metric_area_pcurve_and_angle_bounds_are_closed() -> None:
+    snapshot = correspondence_snapshot(_take_inventory(_mixed_partition_rrp(10.0)))
+    occurrence = snapshot.occurrences[0]
+    fact = _prism_fact_for(occurrence)
+    assert fact is not None
+    before = fact.low_cap
+    metric = 4.0 * fact.quantization.metric_quantum
+    area = 4.0 * fact.quantization.area_quantum
+
+    def similar(after):
+        return _prism_cap_similarity(
+            before,
+            after,
+            IDENTITY_ROTATION,
+            1.0,
+            2,
+            metric,
+            area,
+            _MatchBudget(),
+        )
+
+    assert similar(before)
+    area_equality = replace(before, face=replace(before.face, area=before.face.area + area))
+    assert similar(area_equality)
+    area_outside = math.nextafter(before.face.area + area, math.inf)
+    while abs(area_outside - before.face.area) <= area:
+        area_outside = math.nextafter(area_outside, math.inf)
+    assert not similar(replace(before, face=replace(before.face, area=area_outside)))
+
+    line_at = next(at for at, curve in enumerate(before.section_curves) if curve.kind == "LINE")
+    line = before.section_curves[line_at]
+    length_equality_value = line.length + metric
+    while abs(length_equality_value - line.length) > metric:
+        length_equality_value = math.nextafter(length_equality_value, line.length)
+    length_equality = replace(line, length=length_equality_value)
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                length_equality,
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+    length_outside = math.nextafter(length_equality_value, math.inf)
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                replace(line, length=length_outside),
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+
+    direction_bound = 4.0 * DIRECTION_TOL
+    equality_angle = 2.0 * math.asin(direction_bound / 2.0)
+    equality_normal = (math.sin(equality_angle), 0.0, math.cos(equality_angle))
+    while not _direction_close((0.0, 0.0, 1.0), equality_normal):
+        equality_angle = math.nextafter(equality_angle, 0.0)
+        equality_normal = (math.sin(equality_angle), 0.0, math.cos(equality_angle))
+    direction_curve = replace(
+        next(curve for curve in before.section_curves if curve.kind == "CIRCLE"),
+        full=True,
+        start=None,
+        end=None,
+        start_parameter=None,
+        end_parameter=None,
+        sweep=2.0 * math.pi,
+    )
+    direction_source = replace(before, section_curves=(direction_curve,), side_faces=())
+    direction_equality = replace(
+        direction_source,
+        face=replace(
+            direction_source.face,
+            parameters=(*equality_normal, *direction_source.face.parameters[3:]),
+        ),
+    )
+    assert _prism_cap_similarity(
+        direction_source,
+        direction_equality,
+        IDENTITY_ROTATION,
+        1.0,
+        2,
+        metric,
+        area,
+        _MatchBudget(),
+    )
+    outside_angle = math.nextafter(equality_angle, math.inf)
+    outside_normal = (math.sin(outside_angle), 0.0, math.cos(outside_angle))
+    while _direction_close((0.0, 0.0, 1.0), outside_normal):
+        outside_angle = math.nextafter(outside_angle, math.inf)
+        outside_normal = (math.sin(outside_angle), 0.0, math.cos(outside_angle))
+    assert not _prism_cap_similarity(
+        direction_source,
+        replace(
+            direction_source,
+            face=replace(
+                direction_source.face,
+                parameters=(*outside_normal, *direction_source.face.parameters[3:]),
+            ),
+        ),
+        IDENTITY_ROTATION,
+        1.0,
+        2,
+        metric,
+        area,
+        _MatchBudget(),
+    )
+
+
+    assert line.start_parameter is not None
+    parameter_bound = 4.0 * metric
+    parameter_equality_value = line.start_parameter[0] + parameter_bound
+    while abs(parameter_equality_value - line.start_parameter[0]) > parameter_bound:
+        parameter_equality_value = math.nextafter(
+            parameter_equality_value, line.start_parameter[0]
+        )
+    parameter_equality = replace(
+        line,
+        start_parameter=(parameter_equality_value, line.start_parameter[1]),
+    )
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                parameter_equality,
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+    parameter_outside = math.nextafter(parameter_equality_value, math.inf)
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                replace(
+                    line,
+                    start_parameter=(parameter_outside, line.start_parameter[1]),
+                ),
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+
+    circle_at = next(at for at, curve in enumerate(before.section_curves) if curve.kind == "CIRCLE")
+    circle = before.section_curves[circle_at]
+    assert circle.sweep is not None
+    angle_bound = 4.0 * ANGLE_TOL
+    angle_equality_value = circle.sweep + angle_bound
+    while abs(angle_equality_value - circle.sweep) > angle_bound:
+        angle_equality_value = math.nextafter(angle_equality_value, circle.sweep)
+    angle_equality = replace(circle, sweep=angle_equality_value)
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                angle_equality,
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+    angle_outside = math.nextafter(angle_equality_value, math.inf)
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                replace(circle, sweep=angle_outside),
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+
+
+def test_partition_section_point_euclidean_bound_is_inclusive_and_closed() -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    typed = tuple(child for child in children if child is not None)
+    first = typed[0]
+    bound = 2.0 * (
+        parent.quantization.metric_quantum + first.quantization.metric_quantum
+    )
+    point = first.section_points[0]
+    source_point = min(
+        parent.section_points,
+        key=lambda candidate: (candidate[0] - point[0]) ** 2
+        + (candidate[1] - point[1]) ** 2,
+    )
+    diagonal = bound / math.sqrt(2.0)
+    equality_point = (
+        source_point[0] + diagonal,
+        source_point[1] + diagonal,
+        point[2],
+    )
+    equality_first = replace(
+        first,
+        section_points=(equality_point, *first.section_points[1:]),
+    )
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        (equality_first, *typed[1:]),
+        _MatchBudget(),
+    )
+    outside = math.nextafter(diagonal, math.inf)
+    while (
+        (source_point[0] + outside - source_point[0]) ** 2
+        + (source_point[1] + outside - source_point[1]) ** 2
+        <= bound**2
+    ):
+        outside = math.nextafter(outside, math.inf)
+    outside_first = replace(
+        first,
+        section_points=(
+            (source_point[0] + outside, source_point[1] + outside, point[2]),
+            *first.section_points[1:],
+        ),
+    )
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent,
+        child_snapshot.occurrences,
+        (outside_first, *typed[1:]),
+        _MatchBudget(),
+    )
 
 def test_raw_partition_volume_enclosure_is_inclusive_and_nextafter_closed() -> None:
     parent = _raw_prism_partition_oracle(_partition_rrp(10.0))[0]
