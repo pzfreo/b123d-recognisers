@@ -897,6 +897,22 @@ def test_raw_prism_oracle_refuses_inner_wire_taper_and_twist() -> None:
             _raw_prism_partition_oracle(unsupported)
 
 
+def test_product_pair_refuses_real_inner_wire_taper_twist_and_anisotropy() -> None:
+    profile = Polygon((-10, -7), (11, -5), (8, 9), (-9, 8))
+    tapered = loft([profile, Pos(0, 0, 10) * profile.scale(0.8)])
+    twisted = loft([profile, Pos(0, 0, 10) * Rot(0, 0, 9) * profile])
+    inner_wire = Cylinder(20, 10) - Cylinder(5, 10)
+    anisotropic_profile = Polygon((-13, -7), (14.3, -5), (10.4, 9), (-11.7, 8))
+    anisotropic = extrude(anisotropic_profile, 10)
+    parent = _take_inventory(_partition_rrp(10.0))
+    for unsupported in (tapered, twisted, inner_wire, anisotropic):
+        result = correspondence_changes(parent, _take_inventory(unsupported))
+        assert all(
+            relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
+            for relation in result.relations
+        )
+
+
 def test_gap_does_not_become_a_partial_geometric_partition() -> None:
     whole = _take_inventory(_partition_rrp(10.0))
     pieces = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(5.0, 5.0)]))
