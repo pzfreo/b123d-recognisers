@@ -234,6 +234,15 @@ surface index, re-walk solids, or issue evidence. Both inputs bind atomically to
 or global context substitute. No production recogniser receives it in neutral F3a. ADR 0002 and
 ADR 0009 are amended only when issue #192 authorises one named direct/aggregate family consumer.
 
+Issue #192 authorises exactly `polygonal_bosses` to import `_blend_view` and construct
+`EffectiveSurfaceIndex`, `BlendCollapseIndex` and one explicitly selected view inside its shared
+direct/aggregate discovery core. The view supplies bridge incidence only; the base graph retains
+all geometry, ownership and evidence authority. The consumer must expand and revalidate the exact
+original provenance multiset before staging, may issue only the six planar support nodes, and may
+not read Fillet Candidates, claims, evidence, dispositions or reconciliation. No orchestration
+injection, public signature, whole-stock path or second family consumer is authorised. Architecture
+guards derive the sole importing module and sole production constructor/view call sites.
+
 F5 keeps attribution declarations in `_registry`; aggregate orchestration in `result` compares them
 with the completed `CandidateInventory` and terminal `EvidenceIndex`. Family discovery receives only
 the existing graph-bound write capability and cannot read frozen evidence, dispositions, inventory

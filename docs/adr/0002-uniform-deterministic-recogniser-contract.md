@@ -142,6 +142,19 @@ values.  A Polygonal Boss owns exactly the six original vertical side faces in i
 Terminal, support and transition caps remain consulted geometry and are never defining evidence.
 `PolygonalStock` remains a separate public record and attribution family.
 
+## Amendment (Polygonal Boss blend-view consumer, issue #192)
+
+`recognise_polygonal_bosses` is the sole F3b consumer of the private blend-collapsed view. Direct
+and aggregate calls continue through the same private discovery core and preserve the public
+signature, record type, value, order and serialization. Only an explicitly selected, complete,
+issuer-owned six-chain convex singleton cycle may add adjacency between the six original planar
+supports; all profile, cap and height geometry continues to query the base `FaceGraph`. Every
+synthetic arc is expanded and its complete original node and occurrence multiset revalidated before
+the proposal can be staged. The six planar supports remain the complete defining evidence; hidden
+blend nodes, spring/internal/terminal occurrences and cap faces are consulted only. Logical values
+never enter records or evidence. `recognise_polygonal_stock` and every other recogniser remain
+base-graph-only, and no public type or reconciliation rule changes.
+
 ## Amendment (Polygonal Stock attribution, issue #232)
 
 `recognise_polygonal_stock` remains the writer-free facade over a private optional-writer core.

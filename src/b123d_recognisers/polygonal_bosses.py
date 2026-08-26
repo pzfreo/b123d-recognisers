@@ -252,6 +252,37 @@ def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
     return vertical
 
 
+def _six_support_cycle_indices(
+    pairs: tuple[frozenset[FaceNode], ...],
+) -> tuple[int, ...]:
+    """Indices belonging to disjoint exact six-edge/six-node degree-two components."""
+
+    remaining = set(range(len(pairs)))
+    selected: list[int] = []
+    while remaining:
+        seed = min(remaining)
+        remaining.remove(seed)
+        component = {seed}
+        supports = set(pairs[seed])
+        changed = True
+        while changed:
+            changed = False
+            for at in tuple(remaining):
+                if supports.intersection(pairs[at]):
+                    remaining.remove(at)
+                    component.add(at)
+                    supports.update(pairs[at])
+                    changed = True
+        ordered = sorted(component)
+        component_pairs = [pairs[at] for at in ordered]
+        if len(ordered) != 6 or len(supports) != 6 or len(set(component_pairs)) != 6:
+            continue
+        if any(sum(node in pair for pair in component_pairs) != 2 for node in supports):
+            continue
+        selected.extend(ordered)
+    return tuple(selected)
+
+
 def _polygonal_boss_blend_bridges(
     graph: FaceGraph, vertical: list[FaceNode], tol: float
 ) -> frozenset[frozenset[FaceNode]]:
@@ -321,31 +352,10 @@ def _polygonal_boss_blend_bridges(
             continue
         eligible.append((chain, left, right))
 
-    remaining = set(range(len(eligible)))
-    selected: list[BlendChain] = []
-    selected_pairs: list[frozenset[FaceNode]] = []
-    while remaining:
-        seed = min(remaining)
-        remaining.remove(seed)
-        component = {seed}
-        supports = {eligible[seed][1], eligible[seed][2]}
-        changed = True
-        while changed:
-            changed = False
-            for at in tuple(remaining):
-                if supports.intersection((eligible[at][1], eligible[at][2])):
-                    remaining.remove(at)
-                    component.add(at)
-                    supports.update((eligible[at][1], eligible[at][2]))
-                    changed = True
-        ordered_component = sorted(component)
-        pairs = [frozenset((eligible[at][1], eligible[at][2])) for at in ordered_component]
-        if len(component) != 6 or len(supports) != 6 or len(set(pairs)) != 6:
-            continue
-        if any(sum(node in pair for pair in pairs) != 2 for node in supports):
-            continue
-        selected.extend(eligible[at][0] for at in ordered_component)
-        selected_pairs.extend(pairs)
+    eligible_pairs = tuple(frozenset((left, right)) for _chain, left, right in eligible)
+    selected_indices = _six_support_cycle_indices(eligible_pairs)
+    selected = [eligible[at][0] for at in selected_indices]
+    selected_pairs = [eligible_pairs[at] for at in selected_indices]
 
     if not selected:
         return frozenset()

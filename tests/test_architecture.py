@@ -788,6 +788,23 @@ def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     } == {"polygonal_bosses"}
 
 
+def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
+    calls: set[tuple[str, str]] = set()
+    for path in PACKAGE.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Name) and node.func.id == "BlendCollapseIndex":
+                calls.add((path.name, "BlendCollapseIndex"))
+            elif isinstance(node.func, ast.Attribute) and node.func.attr == "view":
+                calls.add((path.name, "view"))
+    assert calls == {
+        ("polygonal_bosses.py", "BlendCollapseIndex"),
+        ("polygonal_bosses.py", "view"),
+    }
+
+
 def test_no_accidental_public_modules() -> None:
     modules = {path.stem for path in PACKAGE.glob("*.py") if path.stem != "__init__"}
     public = {module for module in modules if not module.startswith("_")}
