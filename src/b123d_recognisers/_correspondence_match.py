@@ -29,7 +29,12 @@ from b123d_recognisers._correspondence import (
     _validate_snapshot,
     correspondence_snapshot,
 )
-from b123d_recognisers._correspondence_partition import _PrismFact, prism_fact
+from b123d_recognisers._correspondence_partition import (
+    _PrismCap,
+    _PrismCurve,
+    _PrismFact,
+    prism_fact,
+)
 
 MATCH_HYPOTHESIS_BUDGET = 100_000
 SCALE_TOL = 4.0 * DESCRIPTOR_REL
@@ -1302,18 +1307,22 @@ def _group_components(
     return tuple(components)
 
 
-def _similarity_relations(
+_GroupHypothesis = tuple[tuple[tuple[int, int], ...], RigidScaleWitness]
+
+
+def _group_similarity_hypotheses(
     before: CorrespondenceSnapshot,
     after: CorrespondenceSnapshot,
     budget: _MatchBudget,
-) -> tuple[CorrespondenceRelation, ...] | None:
-    """Stage group-first proper-similarity relations under one shared witness per body."""
+) -> tuple[
+    dict[int, tuple[int, ...]],
+    dict[tuple[int, int], tuple[_GroupHypothesis, ...]],
+    dict[tuple[int, int], int],
+]:
+    """Build the complete reusable F6b1 body-group hypothesis authority."""
 
     group_edges: dict[int, tuple[int, ...]] = {}
-    group_hypotheses: dict[
-        tuple[int, int],
-        tuple[tuple[tuple[tuple[int, int], ...], RigidScaleWitness], ...],
-    ] = {}
+    group_hypotheses: dict[tuple[int, int], tuple[_GroupHypothesis, ...]] = {}
     weights: dict[tuple[int, int], int] = {}
     witness_cache: list[
         tuple[
@@ -1352,7 +1361,7 @@ def _similarity_relations(
             matchings = _maximum_matchings(
                 len(before_group), len(after_group), occurrence_edges, budget
             )
-            semantic_hypotheses: list[tuple[tuple[tuple[int, int], ...], RigidScaleWitness]] = []
+            semantic_hypotheses: list[_GroupHypothesis] = []
             maximum = max((len(matching) for matching in matchings), default=0)
             for matching in matchings:
                 if not matching:
@@ -1366,6 +1375,17 @@ def _similarity_relations(
                 group_hypotheses[(before_group_at, after_group_at)] = tuple(semantic_hypotheses)
                 weights[(before_group_at, after_group_at)] = maximum
         group_edges[before_group_at] = tuple(compatible_groups)
+    return group_edges, group_hypotheses, weights
+
+
+def _similarity_relations(
+    before: CorrespondenceSnapshot,
+    after: CorrespondenceSnapshot,
+    budget: _MatchBudget,
+) -> tuple[CorrespondenceRelation, ...] | None:
+    """Stage group-first proper-similarity relations under one shared witness per body."""
+
+    group_edges, group_hypotheses, weights = _group_similarity_hypotheses(before, after, budget)
     relations: list[CorrespondenceRelation] = []
 
     def ambiguity(lefts: tuple[int, ...], rights: tuple[int, ...]) -> CorrespondenceRelation:
@@ -1505,6 +1525,114 @@ def _axis_vector(axis: str) -> Vector3:
     return cast(Vector3, tuple(1.0 if index == at else 0.0 for index in range(3)))
 
 
+def _prism_curve_similarity(
+    before: _PrismCurve,
+    after: _PrismCurve,
+    rotation: Rotation,
+    scale: float,
+    target_axis_at: int,
+    metric: float,
+    presentation: int,
+    material_factor: int,
+) -> bool:
+    if (
+        before.kind != after.kind
+        or before.full != after.full
+        or not _close(scale * before.length, after.length, metric)
+        or (before.radius is None) != (after.radius is None)
+        or (
+            before.radius is not None
+            and after.radius is not None
+            and not _close(scale * before.radius, after.radius, metric)
+        )
+    ):
+        return False
+    transverse = tuple(at for at in range(3) if at != target_axis_at)
+
+    def point_matches(left: Vector3 | None, right: Vector3 | None) -> bool:
+        if left is None or right is None:
+            return left is right
+        transformed = _rotate(rotation, left)
+        return sum((scale * transformed[at] - right[at]) ** 2 for at in transverse) <= metric**2
+
+    expected_start, expected_end = (
+        (before.start, before.end) if presentation == 1 else (before.end, before.start)
+    )
+    if not point_matches(expected_start, after.start) or not point_matches(expected_end, after.end):
+        return False
+    if not point_matches(before.centre, after.centre):
+        return False
+    if before.axis is None or after.axis is None:
+        if (before.axis is None) != (after.axis is None):
+            return False
+        axis_sign = 1
+    else:
+        transformed_axis, axis_sign = _canonical_axis(_rotate(rotation, before.axis))
+        if not _direction_close(transformed_axis, after.axis):
+            return False
+    if before.sweep is None or after.sweep is None:
+        if before.sweep is not after.sweep:
+            return False
+    elif before.full:
+        if not _close(after.sweep, 2.0 * math.pi, 4.0 * ANGLE_TOL):
+            return False
+    elif not _close(
+        before.sweep * axis_sign,
+        after.sweep,
+        4.0 * ANGLE_TOL,
+    ):
+        return False
+    return after.direction == before.direction * presentation * axis_sign
+
+
+def _prism_cap_similarity(
+    before: _PrismCap,
+    after: _PrismCap,
+    rotation: Rotation,
+    scale: float,
+    target_axis_at: int,
+    metric: float,
+    area_bound: float,
+    budget: _MatchBudget,
+    *,
+    material_factor: int = 1,
+) -> bool:
+    transformed_normal, gauge = _canonical_axis(
+        _rotate(rotation, cast(Vector3, before.face.parameters[:3]))
+    )
+    if (
+        after.face.kind != "PLANE"
+        or not _direction_close(transformed_normal, cast(Vector3, after.face.parameters[:3]))
+        or after.face.material_side != material_factor * gauge * before.face.material_side
+        or not _close(scale**2 * before.face.area, after.face.area, area_bound)
+        or len(before.section_curves) != len(after.section_curves)
+    ):
+        return False
+    size = len(before.section_curves)
+    for presentation in (1, -1):
+        source = (
+            before.section_curves if presentation == 1 else tuple(reversed(before.section_curves))
+        )
+        for shift in range(size):
+            budget.charge()
+            rotated = source[shift:] + source[:shift]
+            if all(
+                _prism_curve_similarity(
+                    left,
+                    right,
+                    rotation,
+                    scale,
+                    target_axis_at,
+                    metric,
+                    presentation,
+                    material_factor,
+                )
+                for left, right in zip(rotated, after.section_curves, strict=True)
+            ):
+                return True
+    return False
+
+
 def _partition_witnesses(
     parent_occurrence: AcceptedOccurrenceSnapshot,
     parent: _PrismFact,
@@ -1532,43 +1660,81 @@ def _partition_witnesses(
         scale = math.sqrt(children[0].low_cap.face.area / parent.low_cap.face.area)
         if not math.isfinite(scale) or scale <= 0.0:
             continue
-        target_quantum = max(child.quantization.metric_quantum for child in children)
-        metric = 2.0 * (scale * parent.quantization.metric_quantum + target_quantum)
+        source_low, source_high = (
+            (parent.low_cap, parent.high_cap)
+            if transformed_axis[axis_at] > 0.0
+            else (parent.high_cap, parent.low_cap)
+        )
         transverse_axes = tuple(at for at in range(3) if at != axis_at)
         transformed_section = tuple(_rotate(rotation, point) for point in parent.section_points)
         section_ok = True
         for child in children:
+            child_metric = 2.0 * (
+                scale * parent.quantization.metric_quantum + child.quantization.metric_quantum
+            )
+            child_area = _order_bound(parent.quantization, child.quantization, scale, 2)
+            if not _prism_cap_similarity(
+                source_low,
+                child.low_cap,
+                rotation,
+                scale,
+                axis_at,
+                child_metric,
+                child_area,
+                budget,
+            ) or not _prism_cap_similarity(
+                source_high,
+                child.high_cap,
+                rotation,
+                scale,
+                axis_at,
+                child_metric,
+                child_area,
+                budget,
+            ):
+                section_ok = False
+                break
             rows = tuple(
                 tuple(
                     right_at
                     for right_at, right in enumerate(child.section_points)
                     if sum((scale * left[at] - right[at]) ** 2 for at in transverse_axes)
-                    <= metric**2
+                    <= child_metric**2
                 )
                 for left in transformed_section
             )
-            if len(rows) != len(child.section_points) or not _has_bijection(rows):
+            if len(rows) != len(child.section_points) or not _enumerate_bijections(rows, budget):
                 section_ok = False
                 break
         if not section_ok:
             continue
-        intervals = sorted(child.interval for child in children)
+        ordered = sorted(
+            zip(child_occurrences, children, strict=True), key=lambda item: item[1].interval
+        )
+        intervals = [child.interval for _occurrence, child in ordered]
         if any(hi <= lo for lo, hi in intervals):
             continue
         if any(
             abs(left[1] - right[0])
             > 2.0
             * (
-                children[index].quantization.metric_quantum
-                + children[index + 1].quantization.metric_quantum
+                ordered[index][1].quantization.metric_quantum
+                + ordered[index + 1][1].quantization.metric_quantum
             )
             for index, (left, right) in enumerate(zip(intervals, intervals[1:], strict=False))
         ):
             continue
         target_lo, target_hi = intervals[0][0], intervals[-1][1]
+        extrema_metric = 2.0 * (
+            scale * parent.quantization.metric_quantum
+            + max(
+                ordered[0][1].quantization.metric_quantum,
+                ordered[-1][1].quantization.metric_quantum,
+            )
+        )
         if (
             abs((target_hi - target_lo) - scale * (parent.interval[1] - parent.interval[0]))
-            > metric
+            > extrema_metric
         ):
             continue
         target_centre = list(child_occurrences[0].summary.centre)
@@ -1590,20 +1756,26 @@ def _partition_witnesses(
                 for at in range(3)
                 if at != axis_at
             )
-            > metric**2
-            for occurrence in child_occurrences
+            > (
+                2.0
+                * (scale * parent.quantization.metric_quantum + child.quantization.metric_quantum)
+            )
+            ** 2
+            for occurrence, child in zip(child_occurrences, children, strict=True)
         ):
             continue
         # Every internal cap cancels once with opposed material side.
-        ordered = sorted(
-            zip(child_occurrences, children, strict=True), key=lambda item: item[1].interval
-        )
         if any(
-            left.high_cap.face.material_side == right.low_cap.face.material_side
-            or not _close(
-                left.high_cap.face.area,
-                right.low_cap.face.area,
+            not _prism_cap_similarity(
+                left.high_cap,
+                right.low_cap,
+                IDENTITY_ROTATION,
+                1.0,
+                axis_at,
+                2.0 * (left.quantization.metric_quantum + right.quantization.metric_quantum),
                 2.0 * (left.quantization.area_quantum + right.quantization.area_quantum),
+                budget,
+                material_factor=-1,
             )
             for (_left_occurrence, left), (_right_occurrence, right) in zip(
                 ordered, ordered[1:], strict=False
@@ -1653,6 +1825,7 @@ class _PartitionHyperedge:
     after_groups: tuple[int, ...]
     witness: RigidScaleWitness
     kind: ChangeKind
+    occurrence_pairs: tuple[tuple[int, int], ...] = ()
 
 
 def _partition_hypergraph_relations(
@@ -1673,6 +1846,7 @@ def _partition_hypergraph_relations(
             volume=occurrence.body.intrinsic.volume,
             centre_of_mass=occurrence.body.placement.centre_of_mass,
             quantization=occurrence.body.quantization,
+            charge=budget.charge,
         )
 
     before_facts = {
@@ -1730,25 +1904,24 @@ def _partition_hypergraph_relations(
     if not edges:
         return None
 
-    # Single-occurrence body groups participate in the same graph; they are never
-    # matched first and removed from partition consideration.
-    witness_cache: dict[tuple[int, int], tuple[RigidScaleWitness, ...]] = {}
-    for before_group, before_positions in enumerate(before.body_groups):
-        if len(before_positions) != 1:
-            continue
-        for after_group, after_positions in enumerate(after.body_groups):
-            if len(after_positions) != 1:
-                continue
-            witnesses = _similarity_witnesses(
-                before.occurrences[before_positions[0]],
-                after.occurrences[after_positions[0]],
-                budget,
+    # Reuse the complete F6b1 body-group hypothesis authority before classification.
+    _group_edges, group_hypotheses, _weights = _group_similarity_hypotheses(before, after, budget)
+    for (before_group, after_group), hypotheses in group_hypotheses.items():
+        before_positions = before.body_groups[before_group]
+        after_positions = after.body_groups[after_group]
+        edges.extend(
+            _PartitionHyperedge(
+                (before_group,),
+                (after_group,),
+                witness,
+                ChangeKind.MOVED,
+                tuple(
+                    (before_positions[left_at], after_positions[right_at])
+                    for left_at, right_at in matching
+                ),
             )
-            witness_cache[(before_group, after_group)] = witnesses
-            edges.extend(
-                _PartitionHyperedge((before_group,), (after_group,), witness, ChangeKind.MOVED)
-                for witness in witnesses
-            )
+            for matching, witness in hypotheses
+        )
 
     edges = list(dict.fromkeys(edges))
     all_vertices = {
@@ -1809,8 +1982,15 @@ def _partition_hypergraph_relations(
         cover(frozenset(component), ())
         semantic_covers = tuple(sorted(set(tuple(sorted(item)) for item in covers)))
         if len(semantic_covers) != 1:
+            witnessed_edges = (
+                ordered_edges
+                if not semantic_covers
+                else tuple(
+                    sorted({edge_at for cover_edges in semantic_covers for edge_at in cover_edges})
+                )
+            )
             witnesses = tuple(
-                sorted({edges[edge_at].witness for edge_at in ordered_edges}, key=repr)
+                sorted({edges[edge_at].witness for edge_at in witnessed_edges}, key=repr)
             )
             relations.append(
                 CorrespondenceRelation(
@@ -1834,8 +2014,12 @@ def _partition_hypergraph_relations(
             continue
         for edge_at in semantic_covers[0]:
             edge = edges[edge_at]
-            before_positions = tuple(before.body_groups[group][0] for group in edge.before_groups)
-            after_positions = tuple(after.body_groups[group][0] for group in edge.after_groups)
+            before_positions = tuple(
+                position for group in edge.before_groups for position in before.body_groups[group]
+            )
+            after_positions = tuple(
+                position for group in edge.after_groups for position in after.body_groups[group]
+            )
             kind = edge.kind
             witness: RigidScaleWitness | None = edge.witness
             if kind is ChangeKind.MOVED:
@@ -1858,14 +2042,47 @@ def _partition_hypergraph_relations(
                 )
                 if kind is ChangeKind.UNCHANGED:
                     witness = None
-            relations.append(
-                CorrespondenceRelation(
-                    kind,
-                    tuple(_ref("before", position, before) for position in before_positions),
-                    tuple(_ref("after", position, after) for position in after_positions),
-                    witness,
+            if edge.kind is ChangeKind.MOVED:
+                matched_before = {left for left, _right in edge.occurrence_pairs}
+                matched_after = {right for _left, right in edge.occurrence_pairs}
+                relations.extend(
+                    CorrespondenceRelation(
+                        kind,
+                        (_ref("before", left, before),),
+                        (_ref("after", right, after),),
+                        witness,
+                    )
+                    for left, right in edge.occurrence_pairs
                 )
-            )
+                relations.extend(
+                    CorrespondenceRelation(
+                        ChangeKind.REMOVED,
+                        (_ref("before", position, before),),
+                        (),
+                        None,
+                    )
+                    for position in before_positions
+                    if position not in matched_before
+                )
+                relations.extend(
+                    CorrespondenceRelation(
+                        ChangeKind.ADDED,
+                        (),
+                        (_ref("after", position, after),),
+                        None,
+                    )
+                    for position in after_positions
+                    if position not in matched_after
+                )
+            else:
+                relations.append(
+                    CorrespondenceRelation(
+                        kind,
+                        tuple(_ref("before", position, before) for position in before_positions),
+                        tuple(_ref("after", position, after) for position in after_positions),
+                        witness,
+                    )
+                )
 
     for side, group in sorted(all_vertices - active):
         snapshot = before if side == "before" else after

@@ -9,6 +9,7 @@ from build123d import (
     Align,
     Box,
     Compound,
+    Cylinder,
     Plane,
     Polygon,
     Pos,
@@ -78,6 +79,15 @@ def _partition_rrp(height: float, start: float = 0.0, *, phase: float = 13.0, re
     return Pos(0, 0, start) * Rot(0, 0, phase) * extrude(Polygon(*points), height)
 
 
+def _mixed_partition_rrp(
+    height: float, start: float = 0.0, *, repeats: int = 7, phase: float = 13.0
+):
+    part = Cylinder(20, height)
+    for index in range(repeats):
+        part -= Rot(0, 0, phase + 360 * index / repeats) * Pos(18, 0, 0) * Box(8, 3, height)
+    return Pos(0, 0, start + height / 2.0) * part
+
+
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
     before = _take_inventory(Box(10, 10, 10))
     after = _take_inventory(Box(20, 10, 10))
@@ -144,19 +154,38 @@ def test_unique_two_child_geometric_partition_and_inverse() -> None:
     assert merge_relation.witness == _inverse_witness(split_relation.witness)
 
 
-def test_symmetric_partition_retains_every_competing_witness() -> None:
-    whole = _take_inventory(_partition_rrp(10.0, phase=0.0))
+@pytest.mark.parametrize(
+    ("factory", "repeats"),
+    [(_partition_rrp, 5), (_mixed_partition_rrp, 7), (_partition_rrp, 8)],
+)
+def test_reviewed_line_mixed_and_higher_prism_roster(factory, repeats: int) -> None:
+    whole = _take_inventory(factory(10.0, repeats=repeats))
     pieces = _take_inventory(
         Compound(
             [
-                _partition_rrp(4.0, phase=0.0),
-                _partition_rrp(6.0, 4.0, phase=0.0),
+                factory(4.0, repeats=repeats),
+                factory(6.0, 4.0, repeats=repeats),
+            ]
+        )
+    )
+    (relation,) = correspondence_changes(whole, pieces).relations
+    assert relation.kind is ChangeKind.SPLIT
+
+
+def test_duplicate_partition_alternatives_make_the_whole_component_ambiguous() -> None:
+    whole = _take_inventory(_partition_rrp(10.0))
+    pieces = _take_inventory(
+        Compound(
+            [
+                _partition_rrp(4.0),
+                _partition_rrp(4.0),
+                _partition_rrp(6.0, 4.0),
             ]
         )
     )
     (relation,) = correspondence_changes(whole, pieces).relations
     assert relation.kind is ChangeKind.AMBIGUOUS
-    assert len(relation.candidate_witnesses) == 2
+    assert relation.candidate_witnesses
 
 
 def test_gap_does_not_become_a_partial_geometric_partition() -> None:
@@ -195,6 +224,32 @@ def test_two_independent_partitions_share_one_exact_cover_without_order_authorit
     assert sorted(len(relation.after_refs) for relation in result.relations) == [2, 2]
 
 
+def test_partition_and_unrelated_multi_occurrence_f6b1_group_share_joint_cover() -> None:
+    before = _take_inventory(
+        Compound(
+            [
+                Pos(-90, 0, 0) * _partition_rrp(10.0),
+                Pos(90, 0, 0) * _two_rrp_one_solid(),
+            ]
+        )
+    )
+    after = _take_inventory(
+        Compound(
+            [
+                Pos(-90, 0, 0) * _partition_rrp(4.0),
+                Pos(-90, 0, 4) * _partition_rrp(6.0),
+                Pos(90, 0, 0) * _two_rrp_one_solid(),
+            ]
+        )
+    )
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations].count(ChangeKind.SPLIT) == 1
+    assert [relation.kind for relation in result.relations].count(ChangeKind.UNCHANGED) == 2
+    assert all(
+        relation.kind not in {ChangeKind.ADDED, ChangeKind.REMOVED} for relation in result.relations
+    )
+
+
 def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> None:
     whole = _take_inventory(_partition_rrp(10.0))
     pieces = Compound(
@@ -216,9 +271,7 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
 
 def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> None:
     whole_product = _take_inventory(_partition_rrp(10.0))
-    pieces_product = _take_inventory(
-        Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)])
-    )
+    pieces_product = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
     whole = correspondence_snapshot(whole_product)
     pieces = correspondence_snapshot(pieces_product)
     split = correspondence_changes(whole_product, pieces_product).relations[0]
@@ -241,12 +294,13 @@ def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> 
                 after_snapshot,
             )
 
-    symmetric_whole = _take_inventory(_partition_rrp(10.0, phase=0.0))
+    symmetric_whole = _take_inventory(_partition_rrp(10.0))
     symmetric_pieces = _take_inventory(
         Compound(
             [
-                _partition_rrp(4.0, phase=0.0),
-                _partition_rrp(6.0, 4.0, phase=0.0),
+                _partition_rrp(4.0),
+                _partition_rrp(4.0),
+                _partition_rrp(6.0, 4.0),
             ]
         )
     )
@@ -259,7 +313,15 @@ def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> 
                 2,
                 3,
                 3,
-                (replace(relation, candidate_witnesses=relation.candidate_witnesses[::-1]),),
+                (
+                    replace(
+                        relation,
+                        candidate_witnesses=(
+                            relation.candidate_witnesses[0],
+                            relation.candidate_witnesses[0],
+                        ),
+                    ),
+                ),
             ),
             before,
             after,

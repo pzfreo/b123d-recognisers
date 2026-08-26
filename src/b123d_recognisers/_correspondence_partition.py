@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
@@ -12,7 +13,6 @@ from b123d_recognisers._body_geometry import (
     DIRECTION_TOL,
     DescriptorQuantization,
     MatchingBoundaryGraph,
-    MatchingCurve,
     MatchingFace,
 )
 
@@ -20,11 +20,25 @@ Vector3 = tuple[float, float, float]
 
 
 @dataclass(frozen=True, slots=True)
+class _PrismCurve:
+    kind: str
+    length: float
+    full: bool
+    start: Vector3 | None
+    end: Vector3 | None
+    centre: Vector3 | None
+    axis: Vector3 | None
+    radius: float | None
+    sweep: float | None
+    direction: int
+
+
+@dataclass(frozen=True, slots=True)
 class _PrismCap:
     face: MatchingFace
     face_position: int
     axial_position: float
-    section_curves: tuple[MatchingCurve, ...]
+    section_curves: tuple[_PrismCurve, ...]
     side_faces: tuple[int, ...]
 
 
@@ -58,10 +72,31 @@ def _axis_vector(axis: str) -> Vector3:
 
 def _curve_roster(
     graph: MatchingBoundaryGraph, face: MatchingFace
-) -> tuple[MatchingCurve, ...] | None:
+) -> tuple[_PrismCurve, ...] | None:
     if len(face.wires) != 1 or face.wires[0].role != "outer" or not face.wires[0].cycle:
         return None
-    return tuple(graph.curves[item.curve] for item in face.wires[0].cycle)
+    values = []
+    for half_edge in face.wires[0].cycle:
+        curve = graph.curves[half_edge.curve]
+        values.append(
+            _PrismCurve(
+                curve.kind,
+                curve.length,
+                curve.full,
+                None
+                if half_edge.start is None or half_edge.start.vertex is None
+                else graph.vertices[half_edge.start.vertex],
+                None
+                if half_edge.end is None or half_edge.end.vertex is None
+                else graph.vertices[half_edge.end.vertex],
+                curve.centre,
+                curve.axis,
+                curve.radius,
+                curve.sweep,
+                half_edge.direction,
+            )
+        )
+    return tuple(values)
 
 
 def prism_fact(
@@ -75,17 +110,25 @@ def prism_fact(
     volume: float,
     centre_of_mass: Vector3,
     quantization: DescriptorQuantization,
+    charge: Callable[[], None] | None = None,
 ) -> _PrismFact | None:
     """Return one exact bounded extrusion fact, or ``None`` when ineligible."""
 
+    def charged() -> None:
+        if charge is not None:
+            charge()
+
     axis = _axis_vector(axis_name)
-    cap_positions = tuple(
-        position
-        for position, face in enumerate(graph.faces)
-        if face.kind == "PLANE"
-        and len(face.parameters) == 4
-        and _parallel(face.parameters[:3], axis)
-    )
+    cap_candidates = []
+    for position, face in enumerate(graph.faces):
+        charged()
+        if (
+            face.kind == "PLANE"
+            and len(face.parameters) == 4
+            and _parallel(face.parameters[:3], axis)
+        ):
+            cap_candidates.append(position)
+    cap_positions = tuple(cap_candidates)
     if len(cap_positions) != 2:
         return None
     ordered_caps = tuple(
@@ -107,6 +150,7 @@ def prism_fact(
     incidence = dict(graph.incidence)
 
     def side_for(cap_position: int, curve_position: int) -> int | None:
+        charged()
         owners = {
             face_position
             for face_position, _wire_position, _edge_position in incidence.get(curve_position, ())
@@ -138,6 +182,7 @@ def prism_fact(
     lo = _dot(low_face.centroid, axis)
     hi = _dot(high_face.centroid, axis)
     for side_position in side_faces:
+        charged()
         low_curve = low_by_side[side_position]
         high_curve = high_by_side[side_position]
         side = graph.faces[side_position]
@@ -163,6 +208,18 @@ def prism_fact(
             return None
         if low_curve.kind == "CIRCLE" and side.kind != "CYLINDER":
             return None
+        if (
+            side.kind == "PLANE"
+            and abs(_dot(cast(Vector3, side.parameters[:3]), axis)) > 4.0 * DIRECTION_TOL
+        ):
+            return None
+        if side.kind == "CYLINDER" and (
+            not _parallel(cast(Vector3, side.parameters[:3]), axis)
+            or low_curve.radius is None
+            or len(side.parameters) != 7
+            or abs(side.parameters[6] - low_curve.radius) > metric
+        ):
+            return None
         if len(side.wires) != 1 or side.wires[0].role != "outer":
             return None
         side_curve_positions = tuple(item.curve for item in side.wires[0].cycle)
@@ -179,9 +236,27 @@ def prism_fact(
                 high_curve_positions[high_sides.index(side_position)],
             }
         )
-        if any(curve.kind != "LINE" or curve.vertices is None for curve in joining):
+        expected_joining = 0 if low_curve.full else 2
+        if len(joining) != expected_joining or any(
+            curve.kind != "LINE" or curve.vertices is None for curve in joining
+        ):
             return None
-        for curve in joining:
+        joining_positions = tuple(
+            position
+            for position in side_curve_positions
+            if position
+            not in {
+                low_curve_positions[low_sides.index(side_position)],
+                high_curve_positions[high_sides.index(side_position)],
+            }
+        )
+        for curve_position, curve in zip(joining_positions, joining, strict=True):
+            charged()
+            owners = incidence.get(curve_position, ())
+            if len(owners) != 2 or side_position not in {
+                face_position for face_position, _wire, _edge in owners
+            }:
+                return None
             assert curve.vertices is not None
             start, end = (graph.vertices[position] for position in curve.vertices)
             delta = cast(
@@ -202,7 +277,8 @@ def prism_fact(
         return None
     record_lo, record_hi = span
     bound = 2.0 * quantization.metric_quantum
-    if abs((hi - lo) - (record_hi - record_lo)) > bound:
+    placement = _dot(centre_of_mass, axis)
+    if abs((placement + lo) - record_lo) > bound or abs((placement + hi) - record_hi) > bound:
         return None
 
     return _PrismFact(
