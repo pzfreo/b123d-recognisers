@@ -19,9 +19,11 @@ from b123d_recognisers._body_geometry import (
     DESCRIPTOR_REL,
     DIRECTION_TOL,
     DescriptorQuantization,
-    EdgeGeometry,
     FaceGeometry,
-    WireGeometry,
+    MatchingBoundaryGraph,
+    MatchingCurve,
+    MatchingFace,
+    MatchingWire,
 )
 from b123d_recognisers._correspondence import (
     AcceptedOccurrenceSnapshot,
@@ -113,12 +115,20 @@ PROPER_ROTATIONS = _proper_rotations()
 IDENTITY_ROTATION: Rotation = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
 
+@dataclass(slots=True)
+class _MatchBudget:
+    attempts: int = 0
+
+    def charge(self) -> None:
+        self.attempts += 1
+        if self.attempts > MATCH_HYPOTHESIS_BUDGET:
+            raise CorrespondenceMatchError("correspondence hypothesis budget is exhausted")
+
+
 def _rotate(rotation: Rotation, value: Vector3) -> Vector3:
     return cast(
         Vector3,
-        tuple(
-            sum(row[column] * value[column] for column in range(3)) for row in rotation
-        ),
+        tuple(sum(row[column] * value[column] for column in range(3)) for row in rotation),
     )
 
 
@@ -202,8 +212,7 @@ def _validate_witness(witness: RigidScaleWitness) -> None:
         or type(witness.translation) is not tuple
         or len(witness.translation) != 3
         or any(
-            type(value) is not float or not math.isfinite(value)
-            for value in witness.translation
+            type(value) is not float or not math.isfinite(value) for value in witness.translation
         )
         or type(witness.scale) is not float
         or not math.isfinite(witness.scale)
@@ -220,8 +229,8 @@ def _validate_result(
     if (
         type(result) is not CorrespondenceResult
         or result.schema_version != 1
-        or result.before_schema != 2
-        or result.after_schema != 2
+        or result.before_schema != 3
+        or result.after_schema != 3
         or type(result.relations) is not tuple
     ):
         raise CorrespondenceMatchError("correspondence result schema is malformed")
@@ -314,11 +323,8 @@ def _close(left: float, right: float, bound: float) -> bool:
     return math.isfinite(left) and math.isfinite(right) and abs(left - right) <= bound
 
 
-def _translated_point(left: Vector3, translation: Vector3, right: Vector3, bound: float) -> bool:
-    return all(
-        _close(source + delta, target, bound)
-        for source, delta, target in zip(left, translation, right, strict=True)
-    )
+def _scale_is_identity(scale: float) -> bool:
+    return math.isfinite(scale) and scale > 0.0 and max(scale, 1.0 / scale) <= 1.0 + SCALE_TOL
 
 
 def _scaled_point(left: Vector3, scale: float, right: Vector3, bound: float) -> bool:
@@ -348,131 +354,499 @@ def _order_bound(
     return 2.0 * (scale**order * quantum_before + quantum_after)
 
 
-def _edge_scaled(
-    before: EdgeGeometry,
-    after: EdgeGeometry,
-    scale: float,
-    quant_before: DescriptorQuantization,
-    quant_after: DescriptorQuantization,
-) -> bool:
-    metric = _order_bound(quant_before, quant_after, scale, 1)
-    return (
-        before.kind == after.kind
-        and _scaled_point(before.start, scale, after.start, metric)
-        and _scaled_point(before.end, scale, after.end, metric)
-        and _close(scale * before.length, after.length, metric)
-        and ((before.centre is None) == (after.centre is None))
-        and (
-            before.centre is None
-            or _scaled_point(before.centre, scale, cast(Vector3, after.centre), metric)
-        )
-        and ((before.axis is None) == (after.axis is None))
-        and (
-            before.axis is None
-            or all(
-                _close(source, target, 4.0 * DIRECTION_TOL)
-                for source, target in zip(before.axis, cast(Vector3, after.axis), strict=True)
-            )
-        )
-        and ((before.radius is None) == (after.radius is None))
-        and (
-            before.radius is None
-            or _close(scale * before.radius, cast(float, after.radius), metric)
-        )
-        and ((before.sweep is None) == (after.sweep is None))
-        and (
-            before.sweep is None or _close(before.sweep, cast(float, after.sweep), 4.0 * ANGLE_TOL)
-        )
-        and before.full is after.full
+def _direction_close(left: Vector3, right: Vector3) -> bool:
+    return all(
+        _close(source, target, 4.0 * DIRECTION_TOL)
+        for source, target in zip(left, right, strict=True)
     )
 
 
-def _wire_scaled(
-    before: WireGeometry,
-    after: WireGeometry,
-    scale: float,
-    quant_before: DescriptorQuantization,
-    quant_after: DescriptorQuantization,
-) -> bool:
-    return (
-        before.role == after.role
-        and before.semantic_winding == after.semantic_winding
-        and len(before.edges) == len(after.edges)
-        and all(
-            left_direction == right_direction
-            and _edge_scaled(left, right, scale, quant_before, quant_after)
-            for (left, left_direction), (right, right_direction) in zip(
-                before.edges, after.edges, strict=True
-            )
-        )
+def _canonical_axis(value: Vector3) -> tuple[Vector3, int]:
+    for component in value:
+        if abs(component) > DIRECTION_TOL:
+            sign = 1 if component > 0.0 else -1
+            return cast(Vector3, tuple(sign * item for item in value)), sign
+    raise CorrespondenceMatchError("transformed analytic axis is degenerate")
+
+
+def _plane_basis(normal: Vector3) -> tuple[Vector3, Vector3]:
+    axes: tuple[Vector3, ...] = (
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
     )
+    reference = min(
+        axes,
+        key=lambda axis: abs(sum(a * n for a, n in zip(axis, normal, strict=True))),
+    )
+    projection = tuple(
+        axis - sum(a * n for a, n in zip(reference, normal, strict=True)) * component
+        for axis, component in zip(reference, normal, strict=True)
+    )
+    length = math.sqrt(sum(component * component for component in projection))
+    if length <= DIRECTION_TOL:
+        raise CorrespondenceMatchError("transformed analytic basis is degenerate")
+    u = cast(Vector3, tuple(component / length for component in projection))
+    v = (
+        normal[1] * u[2] - normal[2] * u[1],
+        normal[2] * u[0] - normal[0] * u[2],
+        normal[0] * u[1] - normal[1] * u[0],
+    )
+    return u, v
 
 
-def _face_scaled(
-    before: FaceGeometry,
-    after: FaceGeometry,
+def _enumerate_bijections(
+    candidates: tuple[tuple[int, ...], ...], budget: _MatchBudget
+) -> tuple[tuple[int, ...], ...]:
+    if any(not values for values in candidates):
+        return ()
+    found: list[tuple[int, ...]] = []
+
+    def visit(at: int, used: frozenset[int], chosen: tuple[int, ...]) -> None:
+        if at == len(candidates):
+            found.append(chosen)
+            return
+        for target in candidates[at]:
+            budget.charge()
+            if target not in used:
+                visit(at + 1, used | {target}, (*chosen, target))
+
+    visit(0, frozenset(), ())
+    return tuple(found)
+
+
+def _point_similarity(
+    before: Vector3,
+    after: Vector3,
+    rotation: Rotation,
     scale: float,
-    quant_before: DescriptorQuantization,
-    quant_after: DescriptorQuantization,
+    bound: float,
 ) -> bool:
-    metric = _order_bound(quant_before, quant_after, scale, 1)
-    area = _order_bound(quant_before, quant_after, scale, 2)
-    if before.kind != after.kind or len(before.parameters) != len(after.parameters):
-        return False
-    if before.kind == "PLANE":
-        parameters = all(
-            _close(source, target, 4.0 * DIRECTION_TOL)
-            for source, target in zip(before.parameters[:3], after.parameters[:3], strict=True)
-        ) and _close(scale * before.parameters[3], after.parameters[3], metric)
-    elif before.kind == "CYLINDER":
-        parameters = (
-            all(
-                _close(source, target, 4.0 * DIRECTION_TOL)
-                for source, target in zip(before.parameters[:3], after.parameters[:3], strict=True)
-            )
-            and all(
-                _close(scale * source, target, metric)
-                for source, target in zip(
-                    before.parameters[3:6], after.parameters[3:6], strict=True
-                )
-            )
-            and _close(scale * before.parameters[6], after.parameters[6], metric)
-        )
+    return _scaled_point(_rotate(rotation, before), scale, after, bound)
+
+
+def _curve_similarity(
+    before: MatchingCurve,
+    after: MatchingCurve,
+    vertex_map: tuple[int, ...],
+    rotation: Rotation,
+    scale: float,
+    bound: float,
+) -> int | None:
+    if before.kind != after.kind or before.full is not after.full:
+        return None
+    if not _close(scale * before.length, after.length, bound):
+        return None
+    presentation = 1
+    if before.vertices is None:
+        if after.vertices is not None:
+            return None
     else:
-        return False
-    return (
-        parameters
-        and _close(scale**2 * before.area, after.area, area)
-        and _scaled_point(before.centroid, scale, after.centroid, metric)
-        and before.material_side == after.material_side
-        and len(before.wires) == len(after.wires)
-        and all(
-            _wire_scaled(left, right, scale, quant_before, quant_after)
-            for left, right in zip(before.wires, after.wires, strict=True)
+        if after.vertices is None:
+            return None
+        mapped = (vertex_map[before.vertices[0]], vertex_map[before.vertices[1]])
+        if mapped == after.vertices:
+            presentation = 1
+        elif tuple(reversed(mapped)) == after.vertices:
+            presentation = -1
+        else:
+            return None
+    if before.kind == "LINE":
+        return presentation if after.kind == "LINE" else None
+    if (
+        before.centre is None
+        or after.centre is None
+        or before.axis is None
+        or after.axis is None
+        or before.radius is None
+        or after.radius is None
+        or before.sweep is None
+        or after.sweep is None
+        or not _point_similarity(before.centre, after.centre, rotation, scale, bound)
+        or not _close(scale * before.radius, after.radius, bound)
+    ):
+        return None
+    transformed_axis, axis_sign = _canonical_axis(_rotate(rotation, before.axis))
+    if not _direction_close(transformed_axis, after.axis):
+        return None
+    if before.full:
+        if not _close(after.sweep, 2.0 * math.pi, 4.0 * ANGLE_TOL):
+            return None
+        return axis_sign
+    expected_sweep = before.sweep * axis_sign * presentation
+    if not _close(expected_sweep, after.sweep, 4.0 * ANGLE_TOL):
+        return None
+    return presentation
+
+
+def _face_similarity(
+    before: MatchingFace,
+    after: MatchingFace,
+    rotation: Rotation,
+    scale: float,
+    metric: float,
+    area_bound: float,
+) -> tuple[int, Vector3] | None:
+    if (
+        before.kind != after.kind
+        or len(before.parameters) != len(after.parameters)
+        or not _close(scale**2 * before.area, after.area, area_bound)
+        or not _point_similarity(before.centroid, after.centroid, rotation, scale, metric)
+        or len(before.wires) != len(after.wires)
+    ):
+        return None
+    transformed_axis, gauge = _canonical_axis(
+        _rotate(rotation, cast(Vector3, before.parameters[:3]))
+    )
+    if not _direction_close(transformed_axis, cast(Vector3, after.parameters[:3])):
+        return None
+    if before.kind == "PLANE":
+        if (
+            not _close(gauge * scale * before.parameters[3], after.parameters[3], metric)
+            or after.material_side != gauge * before.material_side
+        ):
+            return None
+    elif before.kind == "CYLINDER":
+        if (
+            not _point_similarity(
+                cast(Vector3, before.parameters[3:6]),
+                cast(Vector3, after.parameters[3:6]),
+                rotation,
+                scale,
+                metric,
+            )
+            or not _close(scale * before.parameters[6], after.parameters[6], metric)
+            or after.material_side != before.material_side
+        ):
+            return None
+    else:
+        return None
+    return gauge, transformed_axis
+
+
+def _parameter_matches(
+    vertex: Vector3,
+    parameter: tuple[float, float],
+    face: MatchingFace,
+    metric: float,
+) -> bool:
+    axis = cast(Vector3, face.parameters[:3])
+    u, v = _plane_basis(axis)
+    if face.kind == "PLANE":
+        origin = cast(Vector3, tuple(face.parameters[3] * item for item in axis))
+        delta = cast(
+            Vector3,
+            tuple(item - offset for item, offset in zip(vertex, origin, strict=True)),
         )
+        expected = (
+            sum(a * b for a, b in zip(delta, u, strict=True)),
+            sum(a * b for a, b in zip(delta, v, strict=True)),
+        )
+        return all(
+            _close(left, right, 4.0 * metric)
+            for left, right in zip(expected, parameter, strict=True)
+        )
+    axis_point = cast(Vector3, face.parameters[3:6])
+    relative = cast(
+        Vector3,
+        tuple(item - offset for item, offset in zip(vertex, axis_point, strict=True)),
+    )
+    z = sum(a * b for a, b in zip(relative, axis, strict=True))
+    radial = cast(
+        Vector3,
+        tuple(item - z * normal for item, normal in zip(relative, axis, strict=True)),
+    )
+    theta = math.atan2(
+        sum(a * b for a, b in zip(radial, v, strict=True)),
+        sum(a * b for a, b in zip(radial, u, strict=True)),
+    )
+    theta_residual = parameter[0] - theta
+    turns = round(theta_residual / (2.0 * math.pi))
+    return abs(theta_residual - turns * 2.0 * math.pi) <= 4.0 * ANGLE_TOL and _close(
+        z, parameter[1], 4.0 * metric
     )
 
 
-def _body_scaled(
+def _wire_alignments(
+    before: MatchingWire,
+    after: MatchingWire,
+    before_face: MatchingFace,
+    after_face: MatchingFace,
+    vertex_map: tuple[int, ...],
+    curve_map: tuple[int, ...],
+    curve_signs: tuple[int, ...],
+    after_vertices: tuple[Vector3, ...],
+    face_gauge: int,
+    metric: float,
+    budget: _MatchBudget,
+) -> tuple[tuple[int, ...], ...]:
+    if before.role != after.role or len(before.cycle) != len(after.cycle):
+        return ()
+    expected_winding = face_gauge * before.theta_winding if before_face.kind == "CYLINDER" else 0
+    if after.theta_winding != expected_winding:
+        return ()
+    size = len(before.cycle)
+    results: list[tuple[int, ...]] = []
+    for shift in range(size):
+        budget.charge()
+        occurrence_map: list[int] = []
+        valid = True
+        for before_at, left in enumerate(before.cycle):
+            after_at = (before_at + shift) % size
+            right = after.cycle[after_at]
+            sign = curve_signs[left.curve]
+            if right.curve != curve_map[left.curve] or right.direction != left.direction * sign:
+                valid = False
+                break
+            if left.start is None:
+                if right.start is not None or right.end is not None:
+                    valid = False
+                    break
+            else:
+                if right.start is None or right.end is None or left.end is None:
+                    valid = False
+                    break
+                if (
+                    left.start.vertex is None
+                    or left.end.vertex is None
+                    or right.start.vertex is None
+                    or right.end.vertex is None
+                ):
+                    valid = False
+                    break
+                if (
+                    right.start.vertex != vertex_map[left.start.vertex]
+                    or right.end.vertex != vertex_map[left.end.vertex]
+                ):
+                    valid = False
+                    break
+                if not _parameter_matches(
+                    after_vertices[right.start.vertex],
+                    right.start.parameter,
+                    after_face,
+                    metric,
+                ) or not _parameter_matches(
+                    after_vertices[right.end.vertex],
+                    right.end.parameter,
+                    after_face,
+                    metric,
+                ):
+                    valid = False
+                    break
+            occurrence_map.append(after_at)
+        if valid:
+            results.append(tuple(occurrence_map))
+    return tuple(results)
+
+
+def _wire_map_candidates(
+    before_face: MatchingFace,
+    after_face: MatchingFace,
+    vertex_map: tuple[int, ...],
+    curve_map: tuple[int, ...],
+    curve_signs: tuple[int, ...],
+    after_vertices: tuple[Vector3, ...],
+    face_gauge: int,
+    metric: float,
+    budget: _MatchBudget,
+) -> tuple[tuple[tuple[int, tuple[int, ...]], ...], ...]:
+    """Enumerate every target-wire/alignment bijection for one face."""
+
+    choices: list[tuple[tuple[int, tuple[int, ...]], ...]] = []
+    for source_wire in before_face.wires:
+        row: list[tuple[int, tuple[int, ...]]] = []
+        for target_wire_at, target_wire in enumerate(after_face.wires):
+            for alignment in _wire_alignments(
+                source_wire,
+                target_wire,
+                before_face,
+                after_face,
+                vertex_map,
+                curve_map,
+                curve_signs,
+                after_vertices,
+                face_gauge,
+                metric,
+                budget,
+            ):
+                row.append((target_wire_at, alignment))
+        choices.append(tuple(row))
+
+    results: list[tuple[tuple[int, tuple[int, ...]], ...]] = []
+
+    def visit(
+        source_wire_at: int, used: frozenset[int], selected: list[tuple[int, tuple[int, ...]]]
+    ) -> None:
+        budget.charge()
+        if source_wire_at == len(choices):
+            results.append(tuple(selected))
+            return
+        for target_wire_at, alignment in choices[source_wire_at]:
+            if target_wire_at in used:
+                continue
+            selected.append((target_wire_at, alignment))
+            visit(source_wire_at + 1, used | {target_wire_at}, selected)
+            selected.pop()
+
+    visit(0, frozenset(), [])
+    return tuple(results)
+
+
+def _matching_graph_similarity(
+    before: MatchingBoundaryGraph,
+    after: MatchingBoundaryGraph,
+    rotation: Rotation,
+    scale: float,
+    quant_before: DescriptorQuantization,
+    quant_after: DescriptorQuantization,
+    budget: _MatchBudget,
+) -> bool:
+    if (
+        before.face_count != after.face_count
+        or before.wire_count != after.wire_count
+        or before.edge_occurrence_count != after.edge_occurrence_count
+        or len(before.vertices) != len(after.vertices)
+        or len(before.curves) != len(after.curves)
+        or len(before.faces) != len(after.faces)
+    ):
+        return False
+    metric = _order_bound(quant_before, quant_after, scale, 1)
+    area_bound = _order_bound(quant_before, quant_after, scale, 2)
+    transformed_vertices = tuple(_rotate(rotation, source) for source in before.vertices)
+    cells: dict[tuple[int, int, int], list[int]] = {}
+    for target, value in enumerate(after.vertices):
+        key = cast(
+            tuple[int, int, int],
+            tuple(math.floor(component / metric) for component in value),
+        )
+        cells.setdefault(key, []).append(target)
+    vertex_candidates = tuple(
+        tuple(
+            target
+            for dx, dy, dz in product((-1, 0, 1), repeat=3)
+            for target in cells.get(
+                (
+                    math.floor(scale * source[0] / metric) + dx,
+                    math.floor(scale * source[1] / metric) + dy,
+                    math.floor(scale * source[2] / metric) + dz,
+                ),
+                (),
+            )
+            for value in (after.vertices[target],)
+            if _scaled_point(source, scale, value, metric)
+        )
+        for source in transformed_vertices
+    )
+    for vertex_map in _enumerate_bijections(vertex_candidates, budget):
+        curve_options: list[tuple[tuple[int, int], ...]] = []
+        for source in before.curves:
+            choices = []
+            for target, target_curve_value in enumerate(after.curves):
+                sign = _curve_similarity(
+                    source,
+                    target_curve_value,
+                    vertex_map,
+                    rotation,
+                    scale,
+                    metric,
+                )
+                if sign is not None:
+                    choices.append((target, sign))
+            curve_options.append(tuple(choices))
+        curve_candidates = tuple(tuple(target for target, _sign in row) for row in curve_options)
+        for curve_map in _enumerate_bijections(curve_candidates, budget):
+            curve_signs = tuple(
+                next(sign for target, sign in curve_options[index] if target == curve_map[index])
+                for index in range(len(curve_map))
+            )
+            face_options: list[tuple[tuple[int, int], ...]] = []
+            for source_face_value in before.faces:
+                choices = []
+                for target, target_face_value in enumerate(after.faces):
+                    transformed = _face_similarity(
+                        source_face_value,
+                        target_face_value,
+                        rotation,
+                        scale,
+                        metric,
+                        area_bound,
+                    )
+                    if transformed is not None:
+                        choices.append((target, transformed[0]))
+                face_options.append(tuple(choices))
+            face_candidates = tuple(tuple(target for target, _gauge in row) for row in face_options)
+            for face_map in _enumerate_bijections(face_candidates, budget):
+                face_gauges = tuple(
+                    next(
+                        gauge for target, gauge in face_options[index] if target == face_map[index]
+                    )
+                    for index in range(len(face_map))
+                )
+                face_wire_maps: list[tuple[tuple[tuple[int, tuple[int, ...]], ...], ...]] = []
+                for source_face_at, source_face in enumerate(before.faces):
+                    target_face_at = face_map[source_face_at]
+                    target_face = after.faces[target_face_at]
+                    candidates = _wire_map_candidates(
+                        source_face,
+                        target_face,
+                        vertex_map,
+                        curve_map,
+                        curve_signs,
+                        after.vertices,
+                        face_gauges[source_face_at],
+                        metric,
+                        budget,
+                    )
+                    if not candidates:
+                        break
+                    face_wire_maps.append(candidates)
+                if len(face_wire_maps) != len(before.faces):
+                    continue
+                for selected_by_face in product(*face_wire_maps):
+                    budget.charge()
+                    target_incidence = dict(after.incidence)
+                    valid = True
+                    for source_curve, source_occurrences in before.incidence:
+                        mapped_occurrences = []
+                        for (
+                            source_face_index,
+                            source_wire_index,
+                            source_occurrence,
+                        ) in source_occurrences:
+                            target_face_index = face_map[source_face_index]
+                            target_wire_index, occurrence_map = selected_by_face[source_face_index][
+                                source_wire_index
+                            ]
+                            mapped_occurrences.append(
+                                (
+                                    target_face_index,
+                                    target_wire_index,
+                                    occurrence_map[source_occurrence],
+                                )
+                            )
+                        if tuple(sorted(mapped_occurrences)) != target_incidence.get(
+                            curve_map[source_curve]
+                        ):
+                            valid = False
+                            break
+                    if valid:
+                        return True
+    return False
+
+
+def _body_similarity(
     before: AcceptedOccurrenceSnapshot,
     after: AcceptedOccurrenceSnapshot,
+    rotation: Rotation,
     scale: float,
+    budget: _MatchBudget,
 ) -> bool:
     left = before.body
     right = after.body
     qleft, qright = left.quantization, right.quantization
-    if (
-        left.placement.frame_status != right.placement.frame_status
-        or left.boundary.face_count != right.boundary.face_count
-        or left.boundary.wire_count != right.boundary.wire_count
-        or left.boundary.edge_occurrence_count != right.boundary.edge_occurrence_count
-        or left.boundary.symmetric is not right.boundary.symmetric
-        or len(left.boundary.faces) != len(right.boundary.faces)
-        or len(left.boundary.incidence) != len(right.boundary.incidence)
-    ):
-        return False
-    if not (
-        _close(
+    return (
+        left.placement.frame_status == right.placement.frame_status
+        and _close(
             scale**3 * left.intrinsic.volume,
             right.intrinsic.volume,
             _order_bound(qleft, qright, scale, 3),
@@ -490,18 +864,56 @@ def _body_scaled(
                 strict=True,
             )
         )
-        and all(
-            _face_scaled(source, target, scale, qleft, qright)
-            for source, target in zip(left.boundary.faces, right.boundary.faces, strict=True)
+        and _matching_graph_similarity(
+            before.matching_boundary,
+            after.matching_boundary,
+            rotation,
+            scale,
+            qleft,
+            qright,
+            budget,
         )
-    ):
+    )
+
+
+def _defining_face_similarity(
+    before: FaceGeometry,
+    after: FaceGeometry,
+    rotation: Rotation,
+    scale: float,
+    quant_before: DescriptorQuantization,
+    quant_after: DescriptorQuantization,
+) -> bool:
+    metric = _order_bound(quant_before, quant_after, scale, 1)
+    area = _order_bound(quant_before, quant_after, scale, 2)
+    if before.kind != after.kind or len(before.parameters) != len(after.parameters):
         return False
-    return all(
-        source_occurrences == target_occurrences
-        and _edge_scaled(source_edge, target_edge, scale, qleft, qright)
-        for (source_edge, source_occurrences), (target_edge, target_occurrences) in zip(
-            left.boundary.incidence, right.boundary.incidence, strict=True
+    axis, gauge = _canonical_axis(_rotate(rotation, cast(Vector3, before.parameters[:3])))
+    if not _direction_close(axis, cast(Vector3, after.parameters[:3])):
+        return False
+    if before.kind == "PLANE":
+        parameters = (
+            _close(gauge * scale * before.parameters[3], after.parameters[3], metric)
+            and after.material_side == gauge * before.material_side
         )
+    elif before.kind == "CYLINDER":
+        parameters = (
+            _point_similarity(
+                cast(Vector3, before.parameters[3:6]),
+                cast(Vector3, after.parameters[3:6]),
+                rotation,
+                scale,
+                metric,
+            )
+            and _close(scale * before.parameters[6], after.parameters[6], metric)
+            and after.material_side == before.material_side
+        )
+    else:
+        return False
+    return (
+        parameters
+        and _close(scale**2 * before.area, after.area, area)
+        and _point_similarity(before.centroid, after.centroid, rotation, scale, metric)
     )
 
 
@@ -530,17 +942,19 @@ def _signature_scaled(before: object, after: object, scale: float, bound: float)
     return True
 
 
-def _translation_witness(
-    before: AcceptedOccurrenceSnapshot, after: AcceptedOccurrenceSnapshot
+def _similarity_witness(
+    before: AcceptedOccurrenceSnapshot,
+    after: AcceptedOccurrenceSnapshot,
+    rotation: Rotation,
+    budget: _MatchBudget,
 ) -> RigidScaleWitness | None:
-    """Prove the bounded scale-one/identity-rotation relation without rematching by placement."""
+    """Prove one complete proper similarity without using canonical tuple position."""
 
     if (
         before.family != after.family
         or before.record_type != after.record_type
         or before.summary.repeat_count != after.summary.repeat_count
         or before.summary.edge_count != after.summary.edge_count
-        or before.summary.axis != after.summary.axis
     ):
         return None
     if before.body.intrinsic.volume <= 0.0 or after.body.intrinsic.volume <= 0.0:
@@ -552,43 +966,106 @@ def _translation_witness(
     scale = (
         after.body.quantization.characteristic_scale / before.body.quantization.characteristic_scale
     )
-    if not math.isfinite(scale) or scale <= 0.0 or not _body_scaled(before, after, scale):
+    if (
+        not math.isfinite(scale)
+        or scale <= 0.0
+        or not _body_similarity(before, after, rotation, scale, budget)
+    ):
         return None
     metric = _order_bound(before.body.quantization, after.body.quantization, scale, 1)
     if not _signature_scaled(
         before.summary.sector_signature, after.summary.sector_signature, scale, metric
-    ) or not all(
-        _face_scaled(left, right, scale, before.body.quantization, after.body.quantization)
-        for left, right in zip(before.summary.defining, after.summary.defining, strict=True)
     ):
+        return None
+    defining_candidates = tuple(
+        tuple(
+            target
+            for target, right in enumerate(after.summary.defining)
+            if _defining_face_similarity(
+                left,
+                right,
+                rotation,
+                scale,
+                before.body.quantization,
+                after.body.quantization,
+            )
+        )
+        for left in before.summary.defining
+    )
+    if not _enumerate_bijections(defining_candidates, budget):
         return None
     before_centre = before.body.placement.centre_of_mass
     after_centre = after.body.placement.centre_of_mass
+    rotated_centre = _rotate(rotation, before_centre)
     translation = tuple(
-        target - scale * source for source, target in zip(before_centre, after_centre, strict=True)
+        target - scale * source for source, target in zip(rotated_centre, after_centre, strict=True)
     )
     translation = cast(Vector3, translation)
     bound = metric
     if not all(
-        _close(scale * source + delta, target, bound)
-        for source, delta, target in zip(
-            before.summary.centre, translation, after.summary.centre, strict=True
+        _close(source, target, bound)
+        for source, target in zip(
+            _affine_point(rotation, translation, scale, before.summary.centre),
+            after.summary.centre,
+            strict=True,
         )
     ):
         return None
-    axis = "xyz".index(before.summary.axis)
+    source_axis = "xyz".index(before.summary.axis)
+    transformed_axis = _rotate(
+        rotation,
+        cast(Vector3, tuple(1.0 if index == source_axis else 0.0 for index in range(3))),
+    )
+    target_axis = next(
+        (index for index, value in enumerate(transformed_axis) if abs(value) > 0.5), None
+    )
+    if target_axis is None or after.summary.axis != "xyz"[target_axis]:
+        return None
+    source_endpoints = []
+    for at in before.summary.span:
+        point = list(before.summary.centre)
+        point[source_axis] = at
+        source_endpoints.append(
+            _affine_point(rotation, translation, scale, cast(Vector3, tuple(point)))
+        )
+    transformed_span = tuple(sorted(point[target_axis] for point in source_endpoints))
     if any(
-        not _close(scale * source + translation[axis], target, bound)
-        for source, target in zip(before.summary.span, after.summary.span, strict=True)
+        not _close(source, target, bound)
+        for source, target in zip(transformed_span, after.summary.span, strict=True)
     ):
         return None
-    return RigidScaleWitness(IDENTITY_ROTATION, translation, scale)
+    return RigidScaleWitness(rotation, translation, scale)
+
+
+def _similarity_witnesses(
+    before: AcceptedOccurrenceSnapshot,
+    after: AcceptedOccurrenceSnapshot,
+    budget: _MatchBudget,
+) -> tuple[RigidScaleWitness, ...]:
+    identity = _similarity_witness(before, after, IDENTITY_ROTATION, budget)
+    if identity is not None:
+        metric = _order_bound(before.body.quantization, after.body.quantization, identity.scale, 1)
+        if max(identity.scale, 1.0 / identity.scale) - 1.0 <= SCALE_TOL and all(
+            abs(item) <= metric for item in identity.translation
+        ):
+            return (identity,)
+    found = []
+    if identity is not None:
+        found.append(identity)
+    for rotation in PROPER_ROTATIONS:
+        if rotation == IDENTITY_ROTATION:
+            continue
+        witness = _similarity_witness(before, after, rotation, budget)
+        if witness is not None and witness not in found:
+            found.append(witness)
+    return tuple(found)
 
 
 def _maximum_matchings(
     left_count: int,
     right_count: int,
     edges: dict[int, tuple[int, ...]],
+    budget: _MatchBudget | None = None,
 ) -> tuple[tuple[tuple[int, int], ...], ...]:
     """Enumerate every maximum-cardinality assignment without a first-win tie break."""
 
@@ -599,7 +1076,9 @@ def _maximum_matchings(
         nonlocal generated
         if left == left_count:
             generated += 1
-            if generated > MATCH_HYPOTHESIS_BUDGET:
+            if budget is not None:
+                budget.charge()
+            elif generated > MATCH_HYPOTHESIS_BUDGET:
                 raise CorrespondenceMatchError("correspondence hypothesis budget is exhausted")
             complete.append(chosen)
             return
@@ -613,111 +1092,271 @@ def _maximum_matchings(
     return tuple(item for item in complete if len(item) == maximum)
 
 
-def _translation_relations(
-    before: CorrespondenceSnapshot, after: CorrespondenceSnapshot
+def _maximum_weight_matchings(
+    lefts: tuple[int, ...],
+    rights: tuple[int, ...],
+    edges: dict[int, tuple[int, ...]],
+    weights: dict[tuple[int, int], int],
+    budget: _MatchBudget,
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    complete: list[tuple[tuple[int, int], ...]] = []
+
+    def visit(at: int, used: frozenset[int], chosen: tuple[tuple[int, int], ...]) -> None:
+        budget.charge()
+        if at == len(lefts):
+            complete.append(chosen)
+            return
+        left = lefts[at]
+        visit(at + 1, used, chosen)
+        for right in edges.get(left, ()):
+            if right in rights and right not in used:
+                visit(at + 1, used | {right}, (*chosen, (left, right)))
+
+    visit(0, frozenset(), ())
+    maximum = max((sum(weights[edge] for edge in matching) for matching in complete), default=0)
+    return tuple(
+        matching for matching in complete if sum(weights[edge] for edge in matching) == maximum
+    )
+
+
+def _group_components(
+    before_count: int,
+    after_count: int,
+    edges: dict[int, tuple[int, ...]],
+) -> tuple[tuple[tuple[int, ...], tuple[int, ...]], ...]:
+    left_neighbours = {left: set(values) for left, values in edges.items()}
+    right_neighbours: dict[int, set[int]] = {right: set() for right in range(after_count)}
+    for left, neighbour_rights in left_neighbours.items():
+        for right in neighbour_rights:
+            right_neighbours[right].add(left)
+    pending_left = set(range(before_count))
+    pending_right = set(range(after_count))
+    components = []
+    while pending_left or pending_right:
+        if pending_left:
+            seed_side, seed = "left", min(pending_left)
+        else:
+            seed_side, seed = "right", min(pending_right)
+        lefts: set[int] = set()
+        rights: set[int] = set()
+        frontier = [(seed_side, seed)]
+        while frontier:
+            side, value = frontier.pop()
+            if side == "left":
+                if value in lefts:
+                    continue
+                lefts.add(value)
+                frontier.extend(("right", item) for item in left_neighbours[value])
+            else:
+                if value in rights:
+                    continue
+                rights.add(value)
+                frontier.extend(("left", item) for item in right_neighbours[value])
+        pending_left.difference_update(lefts)
+        pending_right.difference_update(rights)
+        components.append((tuple(sorted(lefts)), tuple(sorted(rights))))
+    return tuple(components)
+
+
+def _similarity_relations(
+    before: CorrespondenceSnapshot,
+    after: CorrespondenceSnapshot,
+    budget: _MatchBudget,
 ) -> tuple[CorrespondenceRelation, ...] | None:
-    """Stage group-first scale-one relations; other similarity hypotheses follow separately."""
+    """Stage group-first proper-similarity relations under one shared witness per body."""
 
     group_edges: dict[int, tuple[int, ...]] = {}
-    internal: dict[tuple[int, int], tuple[tuple[tuple[int, int], ...], RigidScaleWitness]] = {}
+    group_hypotheses: dict[
+        tuple[int, int],
+        tuple[tuple[tuple[tuple[int, int], ...], RigidScaleWitness], ...],
+    ] = {}
+    weights: dict[tuple[int, int], int] = {}
+    witness_cache: list[
+        tuple[
+            AcceptedOccurrenceSnapshot,
+            AcceptedOccurrenceSnapshot,
+            tuple[RigidScaleWitness, ...],
+        ]
+    ] = []
     for before_group_at, before_group in enumerate(before.body_groups):
         compatible_groups: list[int] = []
         for after_group_at, after_group in enumerate(after.body_groups):
             occurrence_edges: dict[int, tuple[int, ...]] = {}
-            witnesses: dict[tuple[int, int], RigidScaleWitness] = {}
+            witnesses: dict[tuple[int, int], tuple[RigidScaleWitness, ...]] = {}
             for left_at, left_position in enumerate(before_group):
-                rights: list[int] = []
+                right_choices: list[int] = []
                 for right_at, right_position in enumerate(after_group):
-                    witness = _translation_witness(
-                        before.occurrences[left_position], after.occurrences[right_position]
+                    pair = (
+                        before.occurrences[left_position],
+                        after.occurrences[right_position],
                     )
-                    if witness is not None:
-                        rights.append(right_at)
-                        witnesses[(left_at, right_at)] = witness
-                occurrence_edges[left_at] = tuple(rights)
-            matchings = _maximum_matchings(len(before_group), len(after_group), occurrence_edges)
-            if (
-                len(before_group) == len(after_group)
-                and len(matchings) == 1
-                and len(matchings[0]) == len(before_group)
-            ):
-                matching = matchings[0]
-                used_witnesses = tuple(witnesses[edge] for edge in matching)
-                if used_witnesses and all(item == used_witnesses[0] for item in used_witnesses):
-                    compatible_groups.append(after_group_at)
-                    internal[(before_group_at, after_group_at)] = (matching, used_witnesses[0])
-            elif any(matching for matching in matchings):
-                # A nonunique internal assignment is a real connected alternative, never a
-                # reason to distribute a body's occurrences among independent groups.
+                    pair_witnesses = next(
+                        (
+                            cached
+                            for cached_before, cached_after, cached in witness_cache
+                            if cached_before == pair[0] and cached_after == pair[1]
+                        ),
+                        None,
+                    )
+                    if pair_witnesses is None:
+                        pair_witnesses = _similarity_witnesses(*pair, budget)
+                        witness_cache.append((*pair, pair_witnesses))
+                    if pair_witnesses:
+                        right_choices.append(right_at)
+                        witnesses[(left_at, right_at)] = pair_witnesses
+                occurrence_edges[left_at] = tuple(right_choices)
+            matchings = _maximum_matchings(
+                len(before_group), len(after_group), occurrence_edges, budget
+            )
+            semantic_hypotheses: list[tuple[tuple[tuple[int, int], ...], RigidScaleWitness]] = []
+            maximum = max((len(matching) for matching in matchings), default=0)
+            for matching in matchings:
+                if not matching:
+                    continue
+                shared = set(witnesses[matching[0]])
+                for edge in matching[1:]:
+                    shared.intersection_update(witnesses[edge])
+                semantic_hypotheses.extend((matching, witness) for witness in shared)
+            if semantic_hypotheses:
                 compatible_groups.append(after_group_at)
+                group_hypotheses[(before_group_at, after_group_at)] = tuple(semantic_hypotheses)
+                weights[(before_group_at, after_group_at)] = maximum
         group_edges[before_group_at] = tuple(compatible_groups)
-
-    matchings = _maximum_matchings(len(before.body_groups), len(after.body_groups), group_edges)
-    if len(matchings) != 1:
-        before_refs = tuple(_ref("before", at, before) for at in range(len(before.occurrences)))
-        after_refs = tuple(_ref("after", at, after) for at in range(len(after.occurrences)))
-        return (CorrespondenceRelation(ChangeKind.AMBIGUOUS, before_refs, after_refs, None, ()),)
-    group_matching = matchings[0]
-    if any(edge not in internal for edge in group_matching):
-        return None
-
     relations: list[CorrespondenceRelation] = []
-    matched_before: set[int] = set()
-    matched_after: set[int] = set()
-    for before_group_at, after_group_at in group_matching:
-        occurrence_matching, witness = internal[(before_group_at, after_group_at)]
-        before_group = before.body_groups[before_group_at]
-        after_group = after.body_groups[after_group_at]
-        metric = _order_bound(
-            before.occurrences[before_group[0]].body.quantization,
-            after.occurrences[after_group[0]].body.quantization,
-            witness.scale,
-            1,
-        )
-        scale_identity = max(witness.scale, 1.0 / witness.scale) - 1.0 <= SCALE_TOL
-        placement_identity = all(abs(item) <= metric for item in witness.translation)
-        for left_at, right_at in occurrence_matching:
-            left = before_group[left_at]
-            right = after_group[right_at]
-            matched_before.add(left)
-            matched_after.add(right)
-            relations.append(
+    for lefts, component_rights in _group_components(
+        len(before.body_groups), len(after.body_groups), group_edges
+    ):
+        if not component_rights:
+            relations.extend(
                 CorrespondenceRelation(
-                    (
-                        ChangeKind.UNCHANGED
-                        if scale_identity and placement_identity
-                        else ChangeKind.MOVED
-                        if scale_identity
-                        else ChangeKind.RESIZED
-                    ),
-                    (_ref("before", left, before),),
-                    (_ref("after", right, after),),
-                    None if scale_identity and placement_identity else witness,
+                    ChangeKind.REMOVED,
+                    (_ref("before", position, before),),
+                    (),
+                    None,
+                )
+                for group in lefts
+                for position in before.body_groups[group]
+            )
+            continue
+        if not lefts:
+            relations.extend(
+                CorrespondenceRelation(
+                    ChangeKind.ADDED,
+                    (),
+                    (_ref("after", position, after),),
+                    None,
+                )
+                for group in component_rights
+                for position in after.body_groups[group]
+            )
+            continue
+        group_matchings = _maximum_weight_matchings(
+            lefts, component_rights, group_edges, weights, budget
+        )
+        semantic_solutions = []
+        for group_matching in group_matchings:
+            choices = tuple(group_hypotheses[edge] for edge in group_matching)
+            for selected in product(*choices):
+                budget.charge()
+                semantic_solutions.append((group_matching, selected))
+        if len(semantic_solutions) != 1:
+            candidate_witnesses = tuple(
+                sorted(
+                    {
+                        witness
+                        for edge in weights
+                        if edge[0] in lefts and edge[1] in component_rights
+                        for _matching, witness in group_hypotheses[edge]
+                    },
+                    key=repr,
                 )
             )
-    relations.extend(
-        CorrespondenceRelation(ChangeKind.REMOVED, (_ref("before", at, before),), (), None)
-        for at in range(len(before.occurrences))
-        if at not in matched_before
-    )
-    relations.extend(
-        CorrespondenceRelation(ChangeKind.ADDED, (), (_ref("after", at, after),), None)
-        for at in range(len(after.occurrences))
-        if at not in matched_after
-    )
+            relations.append(
+                CorrespondenceRelation(
+                    ChangeKind.AMBIGUOUS,
+                    tuple(
+                        _ref("before", position, before)
+                        for group in lefts
+                        for position in before.body_groups[group]
+                    ),
+                    tuple(
+                        _ref("after", position, after)
+                        for group in component_rights
+                        for position in after.body_groups[group]
+                    ),
+                    None,
+                    candidate_witnesses,
+                )
+            )
+            continue
+        group_matching, selected = semantic_solutions[0]
+        selected_by_edge = dict(zip(group_matching, selected, strict=True))
+        matched_before: set[int] = set()
+        matched_after: set[int] = set()
+        for before_group_at, after_group_at in group_matching:
+            occurrence_matching, witness = selected_by_edge[(before_group_at, after_group_at)]
+            before_group = before.body_groups[before_group_at]
+            after_group = after.body_groups[after_group_at]
+            metric = _order_bound(
+                before.occurrences[before_group[0]].body.quantization,
+                after.occurrences[after_group[0]].body.quantization,
+                witness.scale,
+                1,
+            )
+            scale_identity = _scale_is_identity(witness.scale)
+            placement_identity = witness.rotation == IDENTITY_ROTATION and all(
+                abs(item) <= metric for item in witness.translation
+            )
+            for left_at, right_at in occurrence_matching:
+                left = before_group[left_at]
+                right = after_group[right_at]
+                matched_before.add(left)
+                matched_after.add(right)
+                relations.append(
+                    CorrespondenceRelation(
+                        (
+                            ChangeKind.UNCHANGED
+                            if scale_identity and placement_identity
+                            else ChangeKind.MOVED
+                            if scale_identity
+                            else ChangeKind.RESIZED
+                        ),
+                        (_ref("before", left, before),),
+                        (_ref("after", right, after),),
+                        None if scale_identity and placement_identity else witness,
+                    )
+                )
+        component_before = {position for group in lefts for position in before.body_groups[group]}
+        component_after = {
+            position for group in component_rights for position in after.body_groups[group]
+        }
+        relations.extend(
+            CorrespondenceRelation(
+                ChangeKind.REMOVED, (_ref("before", position, before),), (), None
+            )
+            for position in sorted(component_before - matched_before)
+        )
+        relations.extend(
+            CorrespondenceRelation(ChangeKind.ADDED, (), (_ref("after", position, after),), None)
+            for position in sorted(component_after - matched_after)
+        )
     return tuple(sorted(relations, key=_relation_key))
 
 
 def _compare_snapshots(
-    before: CorrespondenceSnapshot, after: CorrespondenceSnapshot
+    before: CorrespondenceSnapshot,
+    after: CorrespondenceSnapshot,
+    *,
+    _issuer_validated: bool = False,
 ) -> CorrespondenceResult:
-    try:
-        _validate_snapshot(before)
-        _validate_snapshot(after)
-    except CorrespondenceSnapshotError as error:
-        raise CorrespondenceMatchError("correspondence input snapshot is invalid") from error
-    if before.schema_version != 2 or after.schema_version != 2:
-        raise CorrespondenceMatchError("correspondence requires snapshot schema 2")
+    if not _issuer_validated:
+        try:
+            _validate_snapshot(before)
+            _validate_snapshot(after)
+        except CorrespondenceSnapshotError as error:
+            raise CorrespondenceMatchError("correspondence input snapshot is invalid") from error
+    if before.schema_version != 3 or after.schema_version != 3:
+        raise CorrespondenceMatchError("correspondence requires snapshot schema 3")
 
     exact = _exact_relations(before, after)
     if exact is not None:
@@ -735,10 +1374,10 @@ def _compare_snapshots(
             for position in range(len(before.occurrences))
         )
     else:
-        translated = _translation_relations(before, after)
-        if translated is None:
+        matched = _similarity_relations(before, after, _MatchBudget())
+        if matched is None:
             raise CorrespondenceMatchError("non-rigid correspondence matching is not staged")
-        relations = translated
+        relations = matched
 
     result = CorrespondenceResult(1, before.schema_version, after.schema_version, relations)
     _validate_result(result, before, after)
@@ -755,4 +1394,4 @@ def correspondence_changes(
         after_snapshot = correspondence_snapshot(after)
     except CorrespondenceSnapshotError as error:
         raise CorrespondenceMatchError("correspondence product authority is invalid") from error
-    return _compare_snapshots(before_snapshot, after_snapshot)
+    return _compare_snapshots(before_snapshot, after_snapshot, _issuer_validated=True)

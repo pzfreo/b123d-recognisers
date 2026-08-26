@@ -170,3 +170,10 @@ Profile evidence. It revalidates exactly two original defining faces and their o
 issued valid solid before projecting immutable geometry summaries. It cannot issue a Candidate,
 mutate evidence, invoke discovery/reconciliation, or expose FaceNode/SolidRef/kernel handles. Equal
 descriptor values preserve multiplicity and are compatibility evidence, never identity.
+
+Schema three adds a private material-oriented boundary graph for correspondence only. Graph-global
+vertices and analytic curves, face-local parameterized half-edge cycles, and complete two-sided
+incidence are derived from exact graph topology and bounded pcurve authority before run handles are
+erased. F6b maps that complete labelled graph under one proper signed-permutation/uniform-scale
+witness; it does not reinterpret the older wrapper-presentation direction fields, reduce the graph
+to a multiset, or treat a descriptor collision as body identity.
