@@ -368,3 +368,11 @@ F4b adds `_section_passages` as a neutral topology producer below Passage record
 may read `FaceGraph`, analytic section primitives, and solid classification, but not Candidates,
 evidence, reconciliation, results, census, or sibling recognisers. `passages` is its sole policy
 caller and the sole constructor/issuer of public `SectionPassage` records.
+
+F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
+below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
+only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,
+evidence, reconciliation, registry or result module. `_correspondence_match` remains the sole
+issuer-validating and policy-bearing entry, combining its singleton hypotheses with partition
+hyperedges in one exact-cover proof. Split and merge remain private geometric-partition labels,
+never causal CAD lineage.

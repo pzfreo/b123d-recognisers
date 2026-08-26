@@ -42,6 +42,7 @@ def test_correspondence_matcher_remains_private_and_result_neutral() -> None:
     result_source = (PACKAGE / "result.py").read_text()
     assert "_correspondence_match" not in result_source
 
+
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
     "_analytic_surfaces": {"_geometry"},
@@ -64,7 +65,12 @@ MODULE_SEAM_EDGES = {
     # F6b is a private, optional consumer of issuer-validated F6a snapshots. It may use the
     # immutable descriptor grammar/tolerances, but must never reach recognition orchestration,
     # candidates, evidence, reconciliation, or public results.
-    "_correspondence_match": {"_body_geometry", "_correspondence"},
+    "_correspondence_partition": {"_body_geometry"},
+    "_correspondence_match": {
+        "_body_geometry",
+        "_correspondence",
+        "_correspondence_partition",
+    },
     "_dispositions": {"_candidates"},
     "_diagnostics": {"_candidates", "_dispositions", "chamfers"},
     "_claims": {"_adjacency", "_candidates"},
