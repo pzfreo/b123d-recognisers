@@ -567,6 +567,13 @@ Only exact acknowledgement `F3B-POLYGONAL-BOSSES-H1` after frozen gates and two 
 exact-head accepts may authorize one attempt; it permanently consumes bucket 37 even on zero,
 invalid input or abort, with no retry, alternate allocation, replacement or post-reveal fitting.
 
+The sole authorized F3b attempt at merged-main head
+`d7efa41c92ff57d873e618eb8318df1a36a3d76b` used exact acknowledgement
+`F3B-POLYGONAL-BOSSES-H1`. Its available sealed root contained no models matching bucket 37, so
+discovery stopped before annotation, STEP import or recognition and no report was created. No
+alternate root/allocation, retry, replacement or fitting followed. Bucket 37 is permanently
+consumed and inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
