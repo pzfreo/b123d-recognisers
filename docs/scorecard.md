@@ -395,7 +395,7 @@ walls. The single most corner-avoiding move available is migrating the recess fa
 section-based records before 1.0 freezes the axis-aligned worldview into the compatibility
 contract.
 
-## Projected scores if epic 0004 completes
+## Epic 0004 projections and current correction
 
 [Epic 0004 — Geometry foundation generalisation](epics/0004-geometry-foundation-generalisation.md)
 (carried on this branch with review amendments applied; the review record is
@@ -405,16 +405,16 @@ separately gated torus fit:
 
 | Dimension | Now | Post-epic | Driver |
 | --- | :---: | :---: | --- |
-| Geometric generality | D+ | **B** | F1 canonical recovery removes the B-spline wall; F4 frames/sections remove the principal-axis wall; F3 recovers blend-obscured features. Free-form surfaces and assemblies stay out (non-goals) |
-| Architecture | B+ | **A** | F1–F3 close every substrate deficit named against Analysis Situs, and F7 publishes the substrate — the actual A-blocker — while adjudication stays deliberately closed |
-| Feature coverage | C+ | **B−** | Vocabulary frozen (no new families, by non-goal), but the excluded oblique and blend-obscured variants of recognised classes come in |
+| Geometric generality | D+ | **D+** | F1 recovery has 0 of 64 recogniser reader sites migrated; F4b fixes whole-part presentation, not internally oblique features; F3b adds one bounded blend consumer with no matching external holdout population |
+| Architecture | B+ | **B+** | The private substrate is stronger, but F7 is not published and F6 has no external consumer; a consumer-proven narrow facade remains the exit gate |
+| Feature coverage | C+ | **C+** | Existing families gained stronger evidence and selected bounded variants, but the large B-spline and internal-obliquity recall gaps remain |
 | Feature-interaction handling | B− | **B** | F5 completes defining evidence everywhere — the prerequisite for interaction rules — but the rules themselves need observed overlaps and separate review |
 | Validation honesty | A | **A** | Already at ceiling; F0's MFTRCAD scanning and sealed draws extend the lead |
 | Determinism & explainability | A | **A** | Maintained by construction — byte-identical goldens gate every neutral change |
 | Parametric record quality | A | **A** | Section records are richer; F6 correspondence stays a private diagnostic, so the persistent-ID gap only half-closes |
 | Engineering quality | A− | **A−** | Still alpha, still bus factor one; the two-independent-reviews process tightens dependence on scarce reviewer attention |
 | Performance | C+ | **C+** | Held by budgets, not improved: canonicalisation, views and oblique candidate spaces all add per-part work; parallelism is out of scope |
-| Ecosystem reach | C | **B** | B-spline tolerance removes the biggest barrier to arbitrary third-party STEP, and F7's published substrate API makes the package a framework others build on; alpha status and single-app maturity remain |
+| Ecosystem reach | C | **C** | No recogniser consumes recovered surfaces and F7 is not public; Draftwright must first prove the smallest useful installed-wheel facade |
 
 Overall: from a B+ special-purpose utility to roughly an **A− utility with A-grade engineering
 and B-grade generality**, leaving performance as the one remaining C and coverage breadth at

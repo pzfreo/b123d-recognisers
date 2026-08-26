@@ -1162,17 +1162,17 @@ F7 publishes that bounded facade, not an inventory of private implementation. F6
 descriptors, rigid matching and partition matching remain an optional private upper layer unless a
 separately reviewed consumer use case justifies publication.
 
-Promote the neutral geometry substrate to a public, versioned framework contract so that
-third-party recognisers can build alongside this package without forking it. Adjudication
-remains closed: an external recogniser consumes the substrate and returns its own records; it
+Promote a consumer-proven facade over the neutral geometry substrate to a public, versioned
+contract so that out-of-tree geometry consumers do not fork this repository. Adjudication remains
+closed: an external consumer uses geometry queries and returns its own values; it
 does not enter `build_recognition_result`, reconciliation, the census, or the capability
 manifest.
 
 Required contract:
 
-- the published surface covers, at minimum: graph construction and queries (`FaceGraph`, the F2
-  smooth-sided arc kinds, `smooth_region`), the F1 effective-surface query with residual and
-  provenance, the F3 collapsed-view queries, and the F4a frame/section primitives;
+- the published surface is one `GeometryGraph` facade, never the concrete private `FaceGraph`; its
+  exact graph, F2 arc/region, F1 surface, F3 view and F4a section roster is limited to operations
+  exercised by the installed-wheel Draftwright fitness spike;
 - the registry, disposition table, `FamilyId`, evidence sink/index and reconciliation remain
   private; no dynamic registration, filesystem discovery or plugin import path is introduced;
 - the substrate API is versioned and manifest-declared under ADR 0005 discipline, with a
@@ -1190,10 +1190,10 @@ nothing. This package converts the governance ceiling — one maintainer's evide
 into an ecosystem: external families become a nursery, proving themselves out-of-tree and
 graduating with evidence in hand.
 
-Exit gate: a demonstration out-of-tree recogniser (separate package, not vendored) builds a
-working family against only the published API and documented contracts; the substrate API is
-covered by the capability manifest and a versioned compatibility test; no internal adjudication
-symbol is reachable from the public surface.
+Exit gate: a demonstration out-of-tree geometry consumer (separate package, not vendored) performs
+the named Draftwright operations against only the published facade and documented contracts. A
+separate geometry API manifest and versioned compatibility test cover that facade; the recogniser
+capability manifest remains family-only and no internal adjudication symbol is reachable.
 
 ## Review and delivery process
 

@@ -1,6 +1,9 @@
-# ADR 0010: Publish a narrow geometry facade; keep correspondence optional
+# ADR 0010 — Publish a narrow geometry facade; keep correspondence optional
 
-Status: Proposed
+- **Status:** Proposed
+- **Date:** 2026-08-26
+- **Decider:** Paul Fremantle
+- **Evidence:** [epic 0004 retrospective](../epics/0004-architecture-retrospective.md)
 
 ## Context
 
@@ -21,9 +24,9 @@ partition matching, Candidate/evidence, registry, reconciliation, issuers, run t
 cache classes. Correspondence remains an optional private upper layer until a separately reviewed
 consumer demonstrates a need.
 
-Internal refactoring may split extraction/canonicalisation/validation, centralise authority and
-budget mechanics, remove unused private schema implementations and generate caller guards from a
-checked roster. Those changes must preserve existing semantic and mutation evidence.
+Remove superseded private schema construction paths only after a closed caller/artifact audit.
+Other internal refactoring is deferred until a concrete consumer change is blocked by the current
+structure. Infrastructure tidiness alone is not an F7 deliverable.
 
 ## Consequences
 
@@ -36,4 +39,3 @@ checked roster. Those changes must preserve existing semantic and mutation evide
 
 The detailed evidence and simplification programme are recorded in
 `docs/epics/0004-architecture-retrospective.md`.
-

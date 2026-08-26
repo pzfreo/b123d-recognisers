@@ -29,6 +29,17 @@ the same breadth belongs in a supported API.
 These properties address observed defects. They are not candidates for removal merely to reduce
 line count.
 
+They are also not all delivered user capability. F1 completed analytic fitting and neutral query
+authority, but not recogniser migration: the current reader roster has 0 of 64 sites migrated (29
+raw-topology, 16 pending-migration, 13 orientation-deferred and 6 torus-deferred). A NURBS-only
+round-trip of the simple through-hole fixture recovers all 9 faces as analytic facts while
+`feature_census` still returns zero throughout. F1 stages 1 and 2 work; stage 3, the consumer
+migration that creates recognition value, has not started.
+
+F4b has a similarly bounded win. A whole part rotated away from the principal axes can retain its
+Section Passage, but an oblique feature inside an otherwise upright part remains unrecognised. It
+removes part-presentation bias, not the measured internal feature-obliquity gap.
+
 ## What cost more than expected
 
 Four individually reasonable objectives compounded: kernel-presentation independence,
@@ -42,6 +53,15 @@ count is not a quality measure, but here it reflects real cognitive, review, run
 cost. Small changes can cross geometry, identity, cache, tolerance, provenance and lifecycle
 contracts simultaneously.
 
+The private correspondence implementation proves bounded edit hypotheses and closes ambiguity
+defects in that diagnostic. It has one package orchestration caller and no public or Draftwright
+consumer, so its product value is unproven. That is a reason to stop extending or publishing it,
+not a claim that its existing tests should be discarded.
+
+Performance also remains a constraint rather than a delivered benefit. The epic baseline already
+recorded a 134-second census workload against a 109.651-second ceiling. New facade or consumer work
+must measure the complete workload instead of assuming neutral infrastructure is free.
+
 The F3b holdout adds no external-population confidence: its sole authorised bucket-37 attempt found
 no matching models and stopped before annotations, STEP import or recognition. This is
 inconclusive, not negative evidence. F3b has strong constructed, transformed and STEP evidence, but
@@ -54,19 +74,12 @@ its frequency and value in the external corpus remain unknown.
    modules remain private and lazily imported unless a concrete consumer requires them.
 2. **Publish one narrow facade.** Public opaque references and facts project from private
    authority. Concrete `FaceGraph`, issuer, cache and matcher classes do not become supported API.
-3. **Split oversized private orchestration.** Separate boundary extraction, canonicalisation and
-   validation; separate primitive comparisons, body-group hypotheses and global reduction. This is
-   a behaviour-neutral internal refactor, not a new abstraction family.
-4. **Remove superseded private schema implementations.** After an exact caller/artifact audit,
+3. **Remove superseded private schema implementations.** After an exact caller/artifact audit,
    reject obsolete run-local snapshot schemas without retaining their old construction paths.
-5. **State the real matcher grammar.** F6 is a LINE/CIRCLE, PLANE/CYLINDER, proper-rotation,
-   uniform-scale, RRP/pure-prism matcher. It must not present itself as generic CAD graph matching.
-6. **Centralise mechanics.** Use shared private utilities for same-run validation, exact type
-   closure, squared bounds, budget charging, exhaustive bijections and witness deduplication.
-7. **Generate architecture guards from one checked roster.** One alias/re-export-aware resolver and
-   declarative caller manifest should replace repeated per-feature AST policy.
-8. **Consolidate test scaffolding, not cases.** Shared mutation builders and parameterised
-   transform/boundary matrices may reduce repetition while retaining every semantic adversary.
+4. **Create value before tidying internals.** Migrate recovered surfaces into one or two concrete
+   recogniser families and measure the result. Split orchestration, centralise mechanics, regenerate
+   guards or consolidate tests only when that consumer work is demonstrably blocked. F6 remains
+   explicitly bounded to its existing LINE/CIRCLE, PLANE/CYLINDER, RRP/pure-prism grammar.
 
 ## Non-negotiable invariants
 
@@ -90,4 +103,3 @@ F7 then publishes only that bounded facade with a separate geometry API manifest
 Draftwright need for correspondence requires its own use case, compatibility declaration and
 review. Success is measured by a smaller supported surface and shorter reasoning paths while all
 existing recognition, provenance, authority and deterministic-output tests remain unchanged.
-
