@@ -1779,89 +1779,105 @@ def _partition_witnesses(
             > extrema_metric
         ):
             continue
-        target_centre = [
-            math.fsum(occurrence.summary.centre[at] for occurrence in child_occurrences)
-            / len(child_occurrences)
-            for at in range(3)
-        ]
-        target_centre[axis_at] = (target_lo + target_hi) / 2.0
         rotated_parent_centre = _rotate(rotation, parent_occurrence.summary.centre)
-        translation = cast(
-            Vector3,
-            tuple(
-                target - scale * source
-                for source, target in zip(rotated_parent_centre, target_centre, strict=True)
-            ),
-        )
-        transformed_parent_centre = _affine_point(
-            rotation, translation, scale, parent_occurrence.summary.centre
-        )
-        if any(
-            sum(
-                (occurrence.summary.centre[at] - transformed_parent_centre[at]) ** 2
-                for at in range(3)
-                if at != axis_at
+        target_centres: list[Vector3] = []
+        for occurrence in child_occurrences:
+            budget.charge()
+            target = list(occurrence.summary.centre)
+            target[axis_at] = (target_lo + target_hi) / 2.0
+            candidate = cast(Vector3, tuple(target))
+            if candidate not in target_centres:
+                target_centres.append(candidate)
+        for target_centre in target_centres:
+            translation = cast(
+                Vector3,
+                tuple(
+                    target - scale * source
+                    for source, target in zip(
+                        rotated_parent_centre, target_centre, strict=True
+                    )
+                ),
             )
-            > (
-                2.0
-                * (scale * parent.quantization.metric_quantum + child.quantization.metric_quantum)
+            transformed_parent_centre = _affine_point(
+                rotation, translation, scale, parent_occurrence.summary.centre
             )
-            ** 2
-            for occurrence, child in zip(child_occurrences, children, strict=True)
-        ):
-            continue
-        # Every internal cap cancels once with opposed material side.
-        if any(
-            not _prism_cap_similarity(
-                left.high_cap,
-                right.low_cap,
-                IDENTITY_ROTATION,
-                1.0,
-                axis_at,
-                2.0 * (left.quantization.metric_quantum + right.quantization.metric_quantum),
-                2.0 * (left.quantization.area_quantum + right.quantization.area_quantum),
-                budget,
-                material_factor=-1,
+            if any(
+                sum(
+                    (occurrence.summary.centre[at] - transformed_parent_centre[at]) ** 2
+                    for at in range(3)
+                    if at != axis_at
+                )
+                > (
+                    2.0
+                    * (
+                        scale * parent.quantization.metric_quantum
+                        + child.quantization.metric_quantum
+                    )
+                )
+                ** 2
+                for occurrence, child in zip(child_occurrences, children, strict=True)
+            ):
+                continue
+            # Every internal cap cancels once with opposed material side.
+            if any(
+                not _prism_cap_similarity(
+                    left.high_cap,
+                    right.low_cap,
+                    IDENTITY_ROTATION,
+                    1.0,
+                    axis_at,
+                    2.0
+                    * (left.quantization.metric_quantum + right.quantization.metric_quantum),
+                    2.0
+                    * (left.quantization.area_quantum + right.quantization.area_quantum),
+                    budget,
+                    material_factor=-1,
+                )
+                for (_left_occurrence, left), (_right_occurrence, right) in zip(
+                    ordered, ordered[1:], strict=False
+                )
+            ):
+                continue
+            volume_bound = 2.0 * (
+                scale**3 * parent.quantization.volume_quantum
+                + sum(child.quantization.volume_quantum for child in children)
             )
-            for (_left_occurrence, left), (_right_occurrence, right) in zip(
-                ordered, ordered[1:], strict=False
-            )
-        ):
-            continue
-        volume_bound = 2.0 * (
-            scale**3 * parent.quantization.volume_quantum
-            + sum(child.quantization.volume_quantum for child in children)
-        )
-        child_volume = sum(child.volume for child in children)
-        if abs(scale**3 * parent.volume - child_volume) > volume_bound:
-            continue
-        errors = tuple(2.0 * child.quantization.volume_quantum for child in children)
-        if sum(child.volume - error for child, error in zip(children, errors, strict=True)) <= 0.0:
-            continue
-        parent_com = _affine_point(rotation, translation, scale, parent.centre_of_mass)
-        residual = [0.0, 0.0, 0.0]
-        first_moment_bound = 0.0
-        parent_centre_error = 2.0 * scale * parent.quantization.metric_quantum
-        child_volume_upper = 0.0
-        for child, volume_error in zip(children, errors, strict=True):
-            displacement = tuple(
-                value - anchor
-                for value, anchor in zip(child.centre_of_mass, parent_com, strict=True)
-            )
-            for at in range(3):
-                residual[at] += child.volume * displacement[at]
-            metric_error = 2.0 * child.quantization.metric_quantum
-            volume_upper = abs(child.volume) + volume_error
-            child_volume_upper += volume_upper
-            first_moment_bound += volume_upper * metric_error + volume_error * math.dist(
-                child.centre_of_mass, parent_com
-            )
-        first_moment_bound += child_volume_upper * parent_centre_error
-        if sum(value * value for value in residual) > first_moment_bound**2:
-            continue
-        witness = RigidScaleWitness(rotation, translation, scale)
-        if witness not in found:
-            found.append(witness)
+            child_volume = sum(child.volume for child in children)
+            if abs(scale**3 * parent.volume - child_volume) > volume_bound:
+                continue
+            errors = tuple(2.0 * child.quantization.volume_quantum for child in children)
+            if (
+                sum(
+                    child.volume - error
+                    for child, error in zip(children, errors, strict=True)
+                )
+                <= 0.0
+            ):
+                continue
+            parent_com = _affine_point(rotation, translation, scale, parent.centre_of_mass)
+            residual = [0.0, 0.0, 0.0]
+            first_moment_bound = 0.0
+            parent_centre_error = 2.0 * scale * parent.quantization.metric_quantum
+            child_volume_upper = 0.0
+            for child, volume_error in zip(children, errors, strict=True):
+                displacement = tuple(
+                    value - anchor
+                    for value, anchor in zip(child.centre_of_mass, parent_com, strict=True)
+                )
+                for at in range(3):
+                    residual[at] += child.volume * displacement[at]
+                metric_error = 2.0 * child.quantization.metric_quantum
+                volume_upper = abs(child.volume) + volume_error
+                child_volume_upper += volume_upper
+                first_moment_bound += volume_upper * metric_error + volume_error * math.dist(
+                    child.centre_of_mass, parent_com
+                )
+            first_moment_bound += child_volume_upper * parent_centre_error
+            if sum(value * value for value in residual) > first_moment_bound**2:
+                continue
+            witness = RigidScaleWitness(rotation, translation, scale)
+            if witness not in found:
+                found.append(witness)
     return tuple(found)
 
 
