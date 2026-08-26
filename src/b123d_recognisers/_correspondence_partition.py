@@ -105,11 +105,162 @@ def _curve_roster(
     return tuple(values)
 
 
+def _translated_cap_curves_match(
+    low: tuple[_PrismCurve, ...],
+    high: tuple[_PrismCurve, ...],
+    axis: Vector3,
+    metric: float,
+    charged: Callable[[], None],
+) -> bool:
+    """Prove two material-oriented cap cycles differ only along the extrusion axis."""
+
+    def transverse_point(left: Vector3 | None, right: Vector3 | None) -> bool:
+        if left is None or right is None:
+            return left is right
+        delta = tuple(b - a for a, b in zip(left, right, strict=True))
+        along = _dot(cast(Vector3, delta), axis)
+        return (
+            sum(
+                (value - along * direction) ** 2
+                for value, direction in zip(delta, axis, strict=True)
+            )
+            <= metric**2
+        )
+
+    def curve_matches(left: _PrismCurve, right: _PrismCurve, presentation: int) -> bool:
+        expected_start, expected_end = (
+            (left.start, left.end) if presentation == 1 else (left.end, left.start)
+        )
+        expected_start_parameter, expected_end_parameter = (
+            (left.start_parameter, left.end_parameter)
+            if presentation == 1
+            else (left.end_parameter, left.start_parameter)
+        )
+        return (
+            left.kind == right.kind
+            and left.full == right.full
+            and abs(left.length - right.length) <= metric
+            and transverse_point(expected_start, right.start)
+            and transverse_point(expected_end, right.end)
+            and transverse_point(left.centre, right.centre)
+            and left.axis == right.axis
+            and (left.radius is None) == (right.radius is None)
+            and (
+                left.radius is None
+                or right.radius is not None
+                and abs(left.radius - right.radius) <= metric
+            )
+            and (left.sweep is None) == (right.sweep is None)
+            and (
+                left.sweep is None
+                or right.sweep is not None
+                and abs(left.sweep - right.sweep) <= 4.0 * DIRECTION_TOL
+            )
+            and right.direction == left.direction * presentation
+            and expected_start_parameter == right.start_parameter
+            and expected_end_parameter == right.end_parameter
+        )
+
+    for presentation in (1, -1):
+        source = low if presentation == 1 else tuple(reversed(low))
+        for shift in range(len(source)):
+            charged()
+            aligned = source[shift:] + source[:shift]
+            if all(
+                curve_matches(left, right, presentation)
+                for left, right in zip(aligned, high, strict=True)
+            ):
+                return True
+    return False
+
+
+def _polar_signature(
+    points: tuple[Vector3, ...], centre: Vector3, axis: Vector3
+) -> tuple[tuple[float, float], ...]:
+    transverse = tuple(at for at, value in enumerate(axis) if value == 0.0)
+    if len(transverse) != 2:
+        raise ValueError("prism axis is not principal")
+
+    def one_direction(candidate: tuple[Vector3, ...]) -> tuple[tuple[float, float], ...]:
+        polar = []
+        for point in candidate:
+            left = point[transverse[0]] - centre[transverse[0]]
+            right = point[transverse[1]] - centre[transverse[1]]
+            polar.append((math.hypot(left, right), math.atan2(right, left)))
+        unwrapped = [polar[0][1]]
+        for _radius, angle in polar[1:]:
+            previous = unwrapped[-1]
+            while angle - previous > math.pi:
+                angle -= 2.0 * math.pi
+            while angle - previous < -math.pi:
+                angle += 2.0 * math.pi
+            unwrapped.append(angle)
+        phase = unwrapped[0]
+        relative = tuple(
+            (round(radius, 6) or 0.0, round(angle - phase, 6) or 0.0)
+            for (radius, _raw), angle in zip(polar, unwrapped, strict=True)
+        )
+        reflected = tuple((radius, -angle) for radius, angle in relative)
+        return min(relative, reflected)
+
+    return min(one_direction(points), one_direction(tuple(reversed(points))))
+
+
+def _sample_curve(curve: _PrismCurve) -> tuple[Vector3, ...] | None:
+    if curve.start is None or curve.end is None:
+        return None
+    if curve.kind == "LINE":
+        return tuple(
+            cast(
+                Vector3,
+                tuple(
+                    left + fraction * (right - left)
+                    for left, right in zip(curve.start, curve.end, strict=True)
+                ),
+            )
+            for fraction in (index / 8.0 for index in range(9))
+        )
+    if (
+        curve.kind != "CIRCLE"
+        or curve.centre is None
+        or curve.axis is None
+        or curve.sweep is None
+        or curve.full
+    ):
+        return None
+    radial = tuple(
+        value - origin for value, origin in zip(curve.start, curve.centre, strict=True)
+    )
+    samples = []
+    for index in range(9):
+        angle = curve.sweep * index / 8.0
+        cosine = math.cos(angle)
+        sine = math.sin(angle)
+        cross = (
+            curve.axis[1] * radial[2] - curve.axis[2] * radial[1],
+            curve.axis[2] * radial[0] - curve.axis[0] * radial[2],
+            curve.axis[0] * radial[1] - curve.axis[1] * radial[0],
+        )
+        samples.append(
+            cast(
+                Vector3,
+                tuple(
+                    origin + cosine * value + sine * cross_value
+                    for origin, value, cross_value in zip(
+                        curve.centre, radial, cross, strict=True
+                    )
+                ),
+            )
+        )
+    return tuple(samples)
+
+
 def prism_fact(
     graph: MatchingBoundaryGraph,
     *,
     axis_name: str,
     span: tuple[float, float],
+    profile_centre: Vector3,
     section_signature: object,
     defining: tuple[FaceGeometry, FaceGeometry],
     repeat_count: int,
@@ -174,7 +325,15 @@ def prism_fact(
         or repeat_count * len(section_signature) != edge_count
     ):
         return None
-    signature_roster: list[tuple[object, object]] = []
+    signature_roster: list[
+        tuple[str, float, tuple[tuple[float, float], ...]]
+    ] = []
+    relative_profile_centre = cast(
+        Vector3,
+        tuple(
+            value - origin for value, origin in zip(profile_centre, centre_of_mass, strict=True)
+        ),
+    )
     for value in section_signature:
         charged()
         if (
@@ -186,9 +345,56 @@ def prism_fact(
             or type(value[2]) is not tuple
         ):
             return None
-        signature_roster.extend((value[0], value[1]) for _ in range(repeat_count))
-    cap_roster = sorted((curve.kind, round(curve.length, 6)) for curve in low_curves)
-    if sorted(signature_roster) != cap_roster:
+        signature_roster.extend(
+            cast(tuple[str, float, tuple[tuple[float, float], ...]], value)
+            for _ in range(repeat_count)
+        )
+    cap_roster: list[tuple[str, float, tuple[tuple[float, float], ...]]] = []
+    for cap_curve in low_curves:
+        charged()
+        samples = _sample_curve(cap_curve)
+        if samples is None:
+            return None
+        cap_roster.append(
+            (
+                cap_curve.kind,
+                round(cap_curve.length, 6),
+                _polar_signature(samples, relative_profile_centre, axis),
+            )
+        )
+    expected_signature = sorted(signature_roster)
+    derived_signature = sorted(cap_roster)
+    # The accepted signature and schema-three graph are independently snapped
+    # to six decimals, so their closed comparison carries both half-quanta.
+    signature_metric = max(2.0 * quantization.metric_quantum, 2.0e-6)
+    signature_angle = max(4.0 * DIRECTION_TOL, 2.0e-6)
+    if len(expected_signature) != len(derived_signature):
+        return None
+    for expected, derived in zip(expected_signature, derived_signature, strict=True):
+        charged()
+        if (
+            type(expected) is not tuple
+            or len(expected) != 3
+            or expected[0] != derived[0]
+            or abs(expected[1] - derived[1]) > signature_metric
+            or type(expected[2]) is not tuple
+            or len(expected[2]) != len(derived[2])
+            or any(
+                abs(expected_point[0] - derived_point[0]) > signature_metric
+                or abs(expected_point[1] - derived_point[1]) > signature_angle
+                for expected_point, derived_point in zip(
+                    expected[2], derived[2], strict=True
+                )
+            )
+        ):
+            return None
+    if not _translated_cap_curves_match(
+        low_curves,
+        high_curves,
+        axis,
+        2.0 * quantization.metric_quantum,
+        charged,
+    ):
         return None
     if any(face.kind not in {"PLANE", "CYLINDER"} for face in graph.faces):
         return None
@@ -351,6 +557,16 @@ def prism_fact(
     bound = 2.0 * quantization.metric_quantum
     placement = _dot(centre_of_mass, axis)
     if abs((placement + lo) - record_lo) > bound or abs((placement + hi) - record_hi) > bound:
+        return None
+    if (
+        abs(_dot(profile_centre, axis) - (record_lo + record_hi) / 2.0) > bound
+        or sum(
+            (relative_profile_centre[at] - low_face.centroid[at]) ** 2
+            for at, value in enumerate(axis)
+            if value == 0.0
+        )
+        > bound**2
+    ):
         return None
 
     return _PrismFact(

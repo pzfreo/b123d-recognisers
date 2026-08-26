@@ -1659,8 +1659,23 @@ def _partition_witnesses(
             item.summary.axis != "xyz"[axis_at] for item in child_occurrences
         ):
             continue
-        scale = math.sqrt(children[0].low_cap.face.area / parent.low_cap.face.area)
-        if not math.isfinite(scale) or scale <= 0.0:
+        scale_facts = tuple(
+            math.sqrt(child.low_cap.face.area / parent.low_cap.face.area)
+            for child in children
+        )
+        if any(not math.isfinite(value) or value <= 0.0 for value in scale_facts):
+            continue
+        # Derive one presentation-neutral common section scale from every
+        # cap-correspondence fact; no child position is witness authority.
+        scale = math.fsum(scale_facts) / len(scale_facts)
+        if any(
+            not _close(
+                scale**2 * parent.low_cap.face.area,
+                child.low_cap.face.area,
+                _order_bound(parent.quantization, child.quantization, scale, 2),
+            )
+            for child in children
+        ):
             continue
         source_low, source_high = (
             (parent.low_cap, parent.high_cap)
@@ -1750,7 +1765,11 @@ def _partition_witnesses(
             > extrema_metric
         ):
             continue
-        target_centre = list(child_occurrences[0].summary.centre)
+        target_centre = [
+            math.fsum(occurrence.summary.centre[at] for occurrence in child_occurrences)
+            / len(child_occurrences)
+            for at in range(3)
+        ]
         target_centre[axis_at] = (target_lo + target_hi) / 2.0
         rotated_parent_centre = _rotate(rotation, parent_occurrence.summary.centre)
         translation = cast(
@@ -1853,6 +1872,7 @@ def _partition_hypergraph_relations(
             occurrence.matching_boundary,
             axis_name=occurrence.summary.axis,
             span=occurrence.summary.span,
+            profile_centre=occurrence.summary.centre,
             section_signature=occurrence.summary.sector_signature,
             defining=occurrence.summary.defining,
             repeat_count=occurrence.summary.repeat_count,

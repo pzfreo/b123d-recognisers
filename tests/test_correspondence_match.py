@@ -95,6 +95,7 @@ def _prism_fact_for(occurrence, *, graph=None, summary=None):
         occurrence.matching_boundary if graph is None else graph,
         axis_name=summary.axis,
         span=summary.span,
+        profile_centre=summary.centre,
         section_signature=summary.sector_signature,
         defining=summary.defining,
         repeat_count=summary.repeat_count,
@@ -285,6 +286,26 @@ def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
             sector_signature=(changed_signature, *summary.sector_signature[1:]),
         ),
     ) is None
+    sampled = summary.sector_signature[0][2]
+    changed_sample = (sampled[0][0] + 1.0, sampled[0][1])
+    changed_samples = (changed_sample, *sampled[1:])
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(
+            summary,
+            sector_signature=(
+                (*summary.sector_signature[0][:2], changed_samples),
+                *summary.sector_signature[1:],
+            ),
+        ),
+    ) is None
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(
+            summary,
+            centre=(summary.centre[0] + 1.0, *summary.centre[1:]),
+        ),
+    ) is None
     changed_defining = replace(
         summary.defining[0], area=summary.defining[0].area + 1.0
     )
@@ -302,6 +323,24 @@ def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
     )
     cap = graph.faces[cap_at]
     changed_wire = replace(cap.wires[0], theta_winding=1)
+    changed_faces = (
+        *graph.faces[:cap_at],
+        replace(cap, wires=(changed_wire,)),
+        *graph.faces[cap_at + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    half_edge = cap.wires[0].cycle[0]
+    assert half_edge.start is not None
+    changed_half_edge = replace(
+        half_edge,
+        start=replace(
+            half_edge.start,
+            parameter=(half_edge.start.parameter[0] + 1.0, half_edge.start.parameter[1]),
+        ),
+    )
+    changed_cycle = (changed_half_edge, *cap.wires[0].cycle[1:])
+    changed_wire = replace(cap.wires[0], cycle=changed_cycle)
     changed_faces = (
         *graph.faces[:cap_at],
         replace(cap, wires=(changed_wire,)),
@@ -388,6 +427,24 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
     assert relation.witness.rotation == ((1, 0, 0), (0, 0, -1), (0, 1, 0))
     assert relation.witness.scale == pytest.approx(1.25, abs=1e-7)
     assert relation.witness.translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-6)
+
+
+def test_partition_witness_is_independent_of_unequal_child_presentation_order() -> None:
+    before = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    after = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    assert after.occurrences[0].body.quantization != after.occurrences[1].body.quantization
+    direct = _compare_snapshots(before, after)
+    reversed_after = replace(
+        after,
+        occurrences=tuple(reversed(after.occurrences)),
+        body_groups=((0,), (1,)),
+    )
+    reversed_result = _compare_snapshots(before, reversed_after)
+    assert [relation.kind for relation in direct.relations] == [ChangeKind.SPLIT]
+    assert [relation.kind for relation in reversed_result.relations] == [ChangeKind.SPLIT]
+    assert direct.relations[0].witness == reversed_result.relations[0].witness
 
 
 def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> None:
