@@ -106,8 +106,8 @@
   },
   "policy": {
     "development": "Buckets 0 through 499 are open development and validation evidence. Malformed selected models are recorded and skipped. Counts are diagnostic, not a definition, and corpus labels never change predicates or reconciliation.",
-    "holdout": "Buckets 500 through 999 remain sealed for one epic or release-candidate final evaluation. Generic development access cannot inspect them.",
-    "named_allocations": "Per-family allocations are retired. Earlier selections remain historical chronology only and cannot be scanned or reused. Buckets 34 and 35 retired unrevealed into the open development half; this is not a per-family reveal. No new named allocation may be created under schema version 2.",
+    "holdout": "Buckets 500 through 999 remain sealed for one epic or release-candidate final evaluation. Repository chronology records no earlier unselected scan of this half; this is an attestation about recorded runs, not a claim that external access was impossible. Generic development access cannot inspect them.",
+    "named_allocations": "Per-family selectors and reveal tokens are retired. Earlier selections remain historical chronology only. Their models now follow the broad 0 through 499 development policy and may be rerun as development evidence, never as a reused named draw. Old holdout buckets 10 through 19 and unrevealed named buckets 34 and 35 are now part of open development; previously accessed buckets are not newly independent evidence. No named allocation may be created under schema version 2.",
     "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
   }
 }

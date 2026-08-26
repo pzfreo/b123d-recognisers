@@ -579,7 +579,11 @@ hash split: MFTRCAD buckets 0..499 are open development/validation data and buck
 sealed final holdout. Feature-specific selectors, acknowledgements and one-shot reveals are retired;
 their status remains only as provenance. Malformed development inputs are recorded and skipped.
 The complete MFCAD++ corpus is open validation data. This simpler policy measures aggregate utility
-throughout development while retaining one substantial untouched MFTRCAD half for final evaluation.
+throughout development while retaining one substantial MFTRCAD half for final evaluation.
+Old holdout buckets 10..19 and unrevealed allocations 34/35 move into development; previously
+accessed buckets are not newly independent evidence. Repository chronology records no earlier
+`unselected` scan of buckets 500..999, an attestation about recorded runs rather than proof that
+external access was impossible.
 
 ### F5 — Complete defining-evidence migration
 

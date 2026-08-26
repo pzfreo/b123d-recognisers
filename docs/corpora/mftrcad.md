@@ -85,17 +85,27 @@ whole scan. The scanner exposes only `development` and `holdout`; there is no ac
 `unselected` or named-allocation selection path. The records below preserve the earlier allocation
 history, but those tokens are retired and grant no access.
 
+This transition opens the old schema-1 holdout buckets 10..19 and retires the unrevealed named
+buckets 34/35 into development. Previously accessed buckets are ordinary development evidence, not
+new independent evidence. Repository chronology records no earlier `unselected` scan of the new
+500..999 holdout; that is an attestation about recorded runs, not a claim that external access was
+impossible.
+
 ### Historical schema-1 allocation chronology
 
 Named semantic-family allocations were formerly carved out before implementation.
-`F5-FLATS-H1` is bucket 20 and is now `consumed`; it remained excluded from
-ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
-`all` closed whenever named allocations exist, including consumed allocations; exact named
-selection remains mandatory and generic holdout authority cannot reveal one.
+In this chronology, “cannot rerun/reuse/fit” means that the named draw could not be repeated or
+presented again as independent sealed evidence. It does not prohibit those models from participating
+in current broad development scans, where they have no special allocation status.
+`F5-FLATS-H1` is bucket 20 and became `consumed`; it was excluded from ordinary `unselected`
+scans and required the exact allocation acknowledgement. The scanner kept `all` closed whenever
+named allocations existed, including consumed allocations; exact named selection was mandatory
+and generic holdout authority could not reveal one.
 `F5-FILLETS-H1` is bucket 21 and is now `consumed`; it was designated without opening the external
 archive or inspecting bucket-21 membership or outcomes, then revealed once only after #201's frozen
-exact-head implementation had two independent accepts and all mechanical gates. It remains excluded
-from `unselected`, requires its exact acknowledgement, and cannot be reused as sealed evidence.
+exact-head implementation had two independent accepts and all mechanical gates. It remained
+excluded from `unselected`, required its exact acknowledgement, and could not be reused as sealed
+evidence under that policy.
 `F5-COUNTERSINKS-H1` is bucket 22 and is now `consumed`. It was designated for #205 without opening
 the archive, then revealed exactly once after the frozen implementation passed two independent
 accepts and all mechanical gates. The selection contained 36 model triples (108 files), but the
@@ -282,7 +292,9 @@ of the annotation, relationship,
 physical-proposal, disposition, accepted-Candidate, defining-evidence and contested-ownership
 totals. Its digest binds the 901 selected files actually audited to relative paths and bytes. The
 holdout membership count and contents were not inspected during F0. A new schema-2 development
-baseline is generated only after the 0..499 policy is merged and frozen.
+baseline is generated only after the 0..499 policy is merged and frozen. The low-level
+`discover_models()` helper deliberately remains strict because it cannot return invalid records;
+the development `audit()` and CLI record malformed selected models and continue by default.
 
 ## Reproducing the audit
 
@@ -291,14 +303,12 @@ Download MFTRCAD version 1 separately and point the scanner at a root containing
 
 ```bash
 uv run python tools/mftrcad_audit.py /external/mftrcad \
-  --selection development --record-invalid \
-  --check-baseline docs/corpora/mftrcad-development-baseline.json \
-  --json mftrcad-development-baseline.json
+  --selection development \
+  --json mftrcad-development.json
 ```
 
-The command fails if the regenerated compact report differs from the committed baseline. Omit
-`--check-baseline` and add `--json mftrcad-development.json` to retain the deterministic full
-per-model report. That report separates annotation populations, relationship groups, all
+The schema-1 compact-baseline check is retired until a schema-2 development baseline is reviewed.
+The deterministic full per-model report separates annotation populations, relationship groups, all
 physical proposals, dispositions, accepted Candidates, non-empty defining evidence, claimed
 labels, touched instances, and contested proposal versus accepted ownership. Recognition joins use
 original same-run `FaceNode` identity from the terminal frozen evidence index; rounded record

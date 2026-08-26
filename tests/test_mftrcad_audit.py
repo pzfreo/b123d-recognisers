@@ -27,8 +27,6 @@ from mftrcad_audit import (  # noqa: E402
     SELECTIONS,
     Selection,
     audit,
-    check_compact_baseline,
-    compact_baseline,
     discover_models,
     selection_bucket,
     selection_of,
@@ -75,6 +73,8 @@ def _dataset(tmp_path: Path, *, model_id: str = DEFAULT_MODEL_ID) -> Path:
 def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
     assert set(get_args(Selection)) == SELECTIONS
     assert {"development", "holdout"} == SELECTIONS
+    assert frozenset(range(0, 500)) == DEVELOPMENT_BUCKETS
+    assert frozenset(range(500, 1000)) == HOLDOUT_BUCKETS
     assert DEVELOPMENT_BUCKETS.isdisjoint(HOLDOUT_BUCKETS)
     assert set(range(1000)) == DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS
     assert selection_bucket("20240116_231044_0") == 113
@@ -197,6 +197,14 @@ def test_unknown_selection_fails_before_touching_the_root(tmp_path: Path, entry:
             lambda policy: policy["selection"].update(development_bucket_ranges=[[0, 498]]),
             "development buckets differ",
         ),
+        (
+            lambda policy: policy["selection"].update(named_allocations={}),
+            "keys differ",
+        ),
+        (
+            lambda policy: policy["selection"].update(unselected_bucket_ranges=[[0, 999]]),
+            "keys differ",
+        ),
     ],
 )
 def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
@@ -212,29 +220,29 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
     [
         (
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "retired_unrevealed"
             ),
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_other_h1", frozenset({21}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_other_h1", frozenset({21}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec("F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "consumed"),
             audit_module.AllocationSpec(
-                "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "sealed_unrevealed"
+                "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "retired_unrevealed"
             ),
             audit_module.AllocationSpec(
-                "F5-OTHER-H1", "f5_flats_h1", frozenset({21}), "sealed_unrevealed"
+                "F5-OTHER-H1", "f5_flats_h1", frozenset({21}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "F5-FLATS-H1", frozenset({20}), "sealed_unrevealed"
+                "F5-FLATS-H1", "F5-FLATS-H1", frozenset({20}), "retired_unrevealed"
             ),
         ),
     ],
@@ -288,7 +296,7 @@ def test_selected_incomplete_model_is_recorded_but_holdout_one_cannot_block(
     root = _dataset(tmp_path)
     selected_relation = root / "labels" / f"{DEFAULT_MODEL_ID}_result_rel.json"
     selected_relation.unlink()
-    result = audit(root, annotations_only=True, record_invalid=True)
+    result = audit(root, annotations_only=True)
     assert result["summary"]["models"] == 0
     assert result["summary"]["invalid_models"] == 1
     assert result["invalid"][0]["model_id"] == DEFAULT_MODEL_ID
@@ -310,7 +318,7 @@ def test_selected_incomplete_model_is_recorded_but_holdout_one_cannot_block(
 def test_selected_orphan_annotation_is_recorded(tmp_path: Path) -> None:
     root = _dataset(tmp_path)
     (root / "steps" / f"{DEFAULT_MODEL_ID}_result.step").unlink()
-    result = audit(root, annotations_only=True, record_invalid=True)
+    result = audit(root, annotations_only=True)
     assert result["summary"]["models"] == 0
     assert result["invalid"][0]["model_id"] == DEFAULT_MODEL_ID
     assert "missing steps/" in result["invalid"][0]["error"]
@@ -323,7 +331,7 @@ def test_noncontiguous_face_ids_are_refused(tmp_path: Path) -> None:
     label["cls"]["7"] = label["cls"].pop("5")
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match="contiguous and zero-based"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 @pytest.mark.parametrize(
@@ -343,7 +351,7 @@ def test_noncanonical_annotation_scalars_fail_closed(tmp_path: Path, mutate, mes
     mutate(label)
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match=message):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_unknown_relation_and_foreign_instance_are_refused(tmp_path: Path) -> None:
@@ -351,7 +359,7 @@ def test_unknown_relation_and_foreign_instance_are_refused(tmp_path: Path) -> No
     relation_path = next((root / "labels").glob("*_result_rel.json"))
     relation_path.write_text(json.dumps({"relation": [["touches", [0, 9]]]}), encoding="utf-8")
     with pytest.raises(ValueError, match="unknown kind 'touches'"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_invalid_model_can_be_recorded_without_becoming_evidence(tmp_path: Path) -> None:
@@ -449,7 +457,7 @@ def test_duplicate_relationship_group_is_refused(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="duplicates an earlier relationship"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_step_annotation_face_count_mismatch_is_refused(tmp_path: Path) -> None:
@@ -460,7 +468,7 @@ def test_step_annotation_face_count_mismatch_is_refused(tmp_path: Path) -> None:
     label["bottom"]["6"] = 0
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match="STEP has 6 faces but annotation has 7"):
-        audit(root, annotations_only=False)
+        audit(root, annotations_only=False, record_invalid=False)
 
 
 def test_generator_face_order_mismatch_refuses_attribution(
@@ -474,7 +482,7 @@ def test_generator_face_order_mismatch_refuses_attribution(
         lambda part: tuple(reversed(original(part))),
     )
     with pytest.raises(ValueError, match="traversal differs from the audited generator order"):
-        audit(root, annotations_only=False)
+        audit(root, annotations_only=False, record_invalid=False)
 
 
 def test_selected_artifact_digest_is_deterministic_and_content_bound(tmp_path: Path) -> None:
@@ -495,22 +503,3 @@ def test_report_errors_use_portable_paths() -> None:
     assert audit_module._portable_error(error, root) == (
         "<root>/labels/model_result.json: malformed"
     )
-
-
-def test_compact_baseline_is_an_exact_checked_projection(tmp_path: Path) -> None:
-    root = _dataset(tmp_path)
-    report = audit(root, annotations_only=False)
-    compact = compact_baseline(report)
-    baseline = tmp_path / "baseline.json"
-    baseline.write_text(json.dumps(compact), encoding="utf-8")
-
-    assert check_compact_baseline(report, baseline) == compact
-
-    changed = json.loads(json.dumps(compact))
-    changed["scanner_summary"]["valid_models"] += 1
-    baseline.write_text(json.dumps(changed), encoding="utf-8")
-    with pytest.raises(ValueError, match="differs"):
-        check_compact_baseline(report, baseline)
-
-    with pytest.raises(ValueError, match="full development recognition report"):
-        compact_baseline(audit(root, annotations_only=True))

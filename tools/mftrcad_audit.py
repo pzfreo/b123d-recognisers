@@ -135,10 +135,7 @@ def _validate_allocation_specs(
         for spec in specs
     ):
         raise ValueError("allocation policy ids or selection tokens are not canonical")
-    if any(
-        spec.status not in {"sealed_unrevealed", "consumed", "retired_unrevealed"}
-        for spec in specs
-    ):
+    if any(spec.status not in {"consumed", "retired_unrevealed"} for spec in specs):
         raise ValueError("allocation status is not closed")
     if any(
         not spec.buckets
@@ -269,6 +266,15 @@ def _validate_selection_policy(value: object) -> JsonObject:
     selection = value.get("selection")
     if not isinstance(selection, dict):
         raise ValueError("selection policy must contain a selection object")
+    if set(selection) != {
+        "algorithm",
+        "namespace",
+        "development_bucket_ranges",
+        "holdout_bucket_ranges",
+        "historical_named_allocations",
+        "chosen_without",
+    }:
+        raise ValueError("selection policy keys differ from the schema-2 mirror")
     expected_allocations = {
         allocation: {
             "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
@@ -282,20 +288,30 @@ def _validate_selection_policy(value: object) -> JsonObject:
         raise ValueError("selection policy algorithm differs from the scanner mirror")
     if selection.get("namespace") != SELECTION_NAMESPACE:
         raise ValueError("selection policy namespace differs from the scanner mirror")
-    if selection.get("development_bucket_ranges") != [[0, 499]]:
+    development_ranges = selection.get("development_bucket_ranges")
+    if development_ranges != [[0, 499]]:
         raise ValueError("selection policy development buckets differ from the scanner mirror")
-    if selection.get("holdout_bucket_ranges") != [[500, 999]]:
+    holdout_ranges = selection.get("holdout_bucket_ranges")
+    if holdout_ranges != [[500, 999]]:
         raise ValueError("selection policy holdout buckets differ from the scanner mirror")
+    manifest_development = frozenset(
+        bucket
+        for lo, hi in cast(list[list[int]], development_ranges)
+        for bucket in range(lo, hi + 1)
+    )
+    manifest_holdout = frozenset(
+        bucket
+        for lo, hi in cast(list[list[int]], holdout_ranges)
+        for bucket in range(lo, hi + 1)
+    )
+    if manifest_development != DEVELOPMENT_BUCKETS or manifest_holdout != HOLDOUT_BUCKETS:
+        raise ValueError("selection policy ranges differ from the scanner bucket sets")
     if selection.get("historical_named_allocations") != expected_allocations:
         raise ValueError("selection policy historical allocations differ from the scanner mirror")
     for allocation, expected_spec in expected_allocations.items():
         if not allocation.replace("-", "").isalnum() or allocation.upper() != allocation:
             raise ValueError(f"invalid allocation id {allocation!r}")
-        if expected_spec["status"] not in {
-            "sealed_unrevealed",
-            "consumed",
-            "retired_unrevealed",
-        }:
+        if expected_spec["status"] not in {"consumed", "retired_unrevealed"}:
             raise ValueError(f"invalid allocation status for {allocation!r}")
         buckets = expected_spec["buckets"]
         if not buckets or any(
@@ -385,8 +401,7 @@ def _discover(
 
     roles = _role_model_ids(steps, labels)
     model_ids = sorted(set().union(*roles.values()))
-    if selection != "all":
-        model_ids = [model_id for model_id in model_ids if selection_of(model_id) == selection]
+    model_ids = [model_id for model_id in model_ids if selection_of(model_id) == selection]
 
     models: list[ModelFiles] = []
     invalid: list[JsonObject] = []
@@ -422,7 +437,7 @@ def discover_models(
     allow_holdout: bool = False,
     reveal_allocations: frozenset[str] = frozenset(),
 ) -> tuple[ModelFiles, ...]:
-    """Return selected complete triples without exposing sealed holdout inventory by default."""
+    """Return complete triples, strictly refusing malformed selected inventory."""
 
     _preflight(
         selection,
@@ -797,10 +812,11 @@ def audit(
     *,
     selection: Selection = "development",
     annotations_only: bool = False,
-    record_invalid: bool = False,
+    record_invalid: bool | None = None,
     allow_holdout: bool = False,
     reveal_allocations: frozenset[str] = frozenset(),
 ) -> JsonObject:
+    record_invalid = selection == "development" if record_invalid is None else record_invalid
     _preflight(
         selection,
         allow_holdout=allow_holdout,
@@ -961,57 +977,6 @@ def audit(
     return report
 
 
-def compact_baseline(report: JsonObject) -> JsonObject:
-    """Project a development report to the checked, reviewable F0 baseline contract."""
-
-    if report.get("selection") != "development" or report.get("annotations_only") is not False:
-        raise ValueError("compact baseline requires a full development recognition report")
-    summary = cast(JsonObject, report["summary"])
-    recognition = cast(JsonObject, summary["recognition"])
-    invalid = cast(list[JsonObject], report["invalid"])
-    return {
-        "schema_version": 1,
-        "dataset_ref": DATASET_REF,
-        "dataset_version": DATASET_VERSION,
-        "selection_namespace": SELECTION_NAMESPACE,
-        "archive_inventory": report["archive_inventory"],
-        "selected_artifacts": report["selected_artifacts"],
-        "scanner_summary": {
-            "valid_models": summary["models"],
-            "invalid_models": summary["invalid_models"],
-            "faces": summary["faces"],
-            "present_instances": summary["present_instances"],
-            "empty_instances": summary["empty_instances"],
-            "mixed_label_instances": summary["mixed_label_instances"],
-            "invalid_model_ids": sorted(item["model_id"] for item in invalid),
-            "relationship_groups_by_type": summary["relationship_groups_by_type"],
-            "physical_proposals_by_family": recognition["physical_proposals_by_family"],
-            "attributed_proposals_by_family": recognition["attributed_proposals_by_family"],
-            "accepted_candidates_by_family": recognition["accepted_candidates_by_family"],
-            "attributed_candidates_by_family": recognition["attributed_candidates_by_family"],
-            "dispositions_by_outcome_and_reason": recognition["dispositions_by_outcome_and_reason"],
-            "contested_proposal_defining_faces": recognition["contested_proposal_defining_faces"],
-            "contested_accepted_defining_faces": recognition["contested_accepted_defining_faces"],
-            "taxonomy_alignment_diagnostic": recognition["taxonomy_alignment_diagnostic"],
-        },
-        "holdout": {
-            "membership_count_inspected": False,
-            "models_opened": 0,
-            "outcomes_inspected": False,
-        },
-    }
-
-
-def check_compact_baseline(report: JsonObject, path: Path) -> JsonObject:
-    """Return the compact report only when it exactly matches the checked baseline."""
-
-    compact = compact_baseline(report)
-    expected = _read_object(path)
-    if compact != expected:
-        raise ValueError(f"generated MFTRCAD compact baseline differs from {path}")
-    return compact
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1040,16 +1005,6 @@ def main() -> None:
         action="store_true",
         help="explicitly authorise scanning the sealed holdout after its review gate",
     )
-    parser.add_argument(
-        "--compact",
-        action="store_true",
-        help="emit the checked compact development-baseline projection",
-    )
-    parser.add_argument(
-        "--check-baseline",
-        type=Path,
-        help="fail unless the compact development report exactly matches this JSON file",
-    )
     parser.add_argument("--json", type=Path, help="write deterministic JSON report here")
     args = parser.parse_args()
 
@@ -1057,14 +1012,10 @@ def main() -> None:
         args.root,
         selection=cast(Selection, args.selection),
         annotations_only=args.annotations_only,
-        record_invalid=args.record_invalid or args.selection == "development",
+        record_invalid=True if args.record_invalid else None,
         allow_holdout=args.reveal_holdout,
         reveal_allocations=frozenset(),
     )
-    if args.check_baseline is not None:
-        result = check_compact_baseline(result, args.check_baseline)
-    elif args.compact:
-        result = compact_baseline(result)
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.json is not None:
         args.json.write_text(rendered, encoding="utf-8")
