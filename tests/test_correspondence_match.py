@@ -682,6 +682,35 @@ def _raw_joint_exact_covers(before, after):
     return tuple(edges), tuple(covers), degree_zero_before, degree_zero_after
 
 
+def _snapshot_partition_witness(before_product, after_product, rotation):
+    """Derive the affine witness directly from frozen partition snapshot facts."""
+
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    parent = before.occurrences[0]
+    children = after.occurrences
+    axis_at = "xyz".index(children[0].summary.axis)
+    target_lo = min(item.summary.span[0] for item in children)
+    target_hi = max(item.summary.span[1] for item in children)
+    scale = (target_hi - target_lo) / (parent.summary.span[1] - parent.summary.span[0])
+    target_centre = list(children[0].summary.centre)
+    target_centre[axis_at] = (target_lo + target_hi) / 2.0
+    rotated_centre = _rotate(rotation, parent.summary.centre)
+    translation = tuple(
+        target - scale * source
+        for source, target in zip(rotated_centre, target_centre, strict=True)
+    )
+    zero_bound = 2.0 * (
+        scale * parent.body.quantization.metric_quantum
+        + min(item.body.quantization.metric_quantum for item in children)
+    )
+    return RigidScaleWitness(
+        rotation,
+        _normalize_partition_translation(translation, zero_bound),
+        scale,
+    )
+
+
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
     before = _take_inventory(Box(10, 10, 10))
     after = _take_inventory(Box(20, 10, 10))
@@ -1336,9 +1365,9 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
         _raw_prism_partition_oracle(pieces),
     )
     assert len(raw_witnesses) == 1
-    (relation,) = correspondence_changes(
-        _take_inventory(whole_part), _take_inventory(pieces)
-    ).relations
+    before_product = _take_inventory(whole_part)
+    after_product = _take_inventory(pieces)
+    (relation,) = correspondence_changes(before_product, after_product).relations
     assert relation.kind is ChangeKind.SPLIT
     assert len(relation.after_refs) == 3
     assert relation.witness is not None
@@ -1349,6 +1378,11 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
     assert raw_rotation == relation.witness.rotation
     assert raw_scale == pytest.approx(relation.witness.scale, abs=1e-7)
     assert raw_translation == pytest.approx(relation.witness.translation, abs=1e-7)
+    assert relation.witness == _snapshot_partition_witness(
+        before_product,
+        after_product,
+        ((1, 0, 0), (0, 0, -1), (0, 1, 0)),
+    )
 
 
 def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> None:
@@ -1414,15 +1448,18 @@ def test_partition_is_stable_through_step_roundtrip(tmp_path) -> None:
     assert len(raw_pieces) == 2
     raw_witnesses, _raw_com = _raw_partition_relation_oracle(raw_whole, raw_pieces)
     assert len(raw_witnesses) == 1
-    (relation,) = correspondence_changes(
-        _take_inventory(imported_whole), _take_inventory(imported_pieces)
-    ).relations
+    before_product = _take_inventory(imported_whole)
+    after_product = _take_inventory(imported_pieces)
+    (relation,) = correspondence_changes(before_product, after_product).relations
     assert relation.kind is ChangeKind.SPLIT
     assert relation.witness is not None
     raw_rotation, raw_translation, raw_scale = raw_witnesses[0]
     assert raw_rotation == relation.witness.rotation
     assert raw_scale == pytest.approx(relation.witness.scale, abs=1e-7)
     assert raw_translation == pytest.approx(relation.witness.translation, abs=1e-7)
+    assert relation.witness == _snapshot_partition_witness(
+        before_product, after_product, IDENTITY_ROTATION
+    )
 
 
 def test_partition_witness_is_independent_of_unequal_child_presentation_order() -> None:
