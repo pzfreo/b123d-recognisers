@@ -659,52 +659,61 @@ def test_consumer_refuses_ineligible_chain_without_candidate_prefix(monkeypatch,
 
 def test_non_cylinder_blend_fact_refuses_full_consumer_path(monkeypatch) -> None:
     part = _blend_interrupted_attached()
-    oracle_graph = FaceGraph(part)
-    oracle = BlendCollapseIndex(oracle_graph, EffectiveSurfaceIndex(oracle_graph))
-    target = next(iter(oracle.chains()[0].blend_nodes)).index
+    graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))
+    target = next(iter(oracle.chains()[0].blend_nodes))
     original = EffectiveSurfaceIndex.fact
+    hit_queries: list[EffectiveSurfaceIndex] = []
 
     def changed(self, node):
         fact = original(self, node)
-        if node.index == target and isinstance(fact, polygonal_module.AnalyticSurfaceFact):
+        if node is target and isinstance(fact, polygonal_module.AnalyticSurfaceFact):
+            if all(self is not query for query in hit_queries):
+                hit_queries.append(self)
             return replace(fact, kind=polygonal_module.SurfaceKind.PLANE)
         return fact
 
     monkeypatch.setattr(EffectiveSurfaceIndex, "fact", changed)
-    assert recognise_polygonal_bosses(part) == []
-    ledger = ClaimLedger(FaceGraph(part))
-    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert recognise_polygonal_bosses(part, graph=graph) == []
+    ledger = ClaimLedger(graph)
+    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert len(hit_queries) == 2
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
 def test_unequal_support_span_refuses_after_chain_issuance(monkeypatch) -> None:
     part = _blend_interrupted_attached()
-    oracle_graph = FaceGraph(part)
-    oracle = BlendCollapseIndex(oracle_graph, EffectiveSurfaceIndex(oracle_graph))
-    target = next(iter(oracle.chains()[0].supports[0])).index
+    graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))
+    target = next(iter(oracle.chains()[0].supports[0]))
     original_chains = BlendCollapseIndex.chains
     original_bounds = FaceGraph.bounds
     active = False
+    generation = 0
+    hit_generations: set[int] = set()
 
     def chains(self):
-        nonlocal active
+        nonlocal active, generation
         result = original_chains(self)
+        generation += 1
         active = True
         return result
 
     def bounds(self, node):
         result = original_bounds(self, node)
-        if active and node.index == target:
+        if active and node is target:
+            hit_generations.add(generation)
             x, y, (lo, hi) = result
             return x, y, (lo, hi + 1.0)
         return result
 
     monkeypatch.setattr(BlendCollapseIndex, "chains", chains)
     monkeypatch.setattr(FaceGraph, "bounds", bounds)
-    assert recognise_polygonal_bosses(part) == []
+    assert recognise_polygonal_bosses(part, graph=graph) == []
     active = False
-    ledger = ClaimLedger(FaceGraph(part))
-    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    ledger = ClaimLedger(graph)
+    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert hit_generations == {1, 2}
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
