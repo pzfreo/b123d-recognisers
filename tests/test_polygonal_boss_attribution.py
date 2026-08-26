@@ -35,7 +35,7 @@ from b123d_recognisers._blend_view import (
 )
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
+from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers.polygonal_bosses import _discover_polygonal_bosses
 from b123d_recognisers.result import _take_inventory
@@ -667,7 +667,7 @@ def test_non_cylinder_blend_fact_refuses_full_consumer_path(monkeypatch) -> None
 
     def changed(self, node):
         fact = original(self, node)
-        if node is target and isinstance(fact, polygonal_module.AnalyticSurfaceFact):
+        if node is target and isinstance(fact, AnalyticSurfaceFact):
             if all(self is not query for query in hit_queries):
                 hit_queries.append(self)
             return replace(fact, kind=polygonal_module.SurfaceKind.PLANE)

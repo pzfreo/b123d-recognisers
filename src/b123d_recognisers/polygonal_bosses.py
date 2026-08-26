@@ -16,14 +16,17 @@ from dataclasses import dataclass
 from typing import TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
-from b123d_recognisers._analytic_surfaces import SurfaceKind
-from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
-from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers.experimental_geometry import (
+    AnalyticSurface,
+    BlendFact,
+    GeometryGraph,
+    SurfaceKind,
+)
 
 #: Whatever a caller keys its ring by: this module passes face nodes, the unit tests pass ints.
 #: The two polygon helpers below never look inside it, which is the point -- they are geometry
@@ -288,6 +291,9 @@ def _polygonal_boss_blend_bridges(
 ) -> frozenset[frozenset[FaceNode]]:
     """Return only provenance-complete bridges for unambiguous six-support blend cycles."""
 
+    geometry = GeometryGraph._from_graph(graph)
+    face_refs = {node: geometry.ref(graph.face(node)) for node in graph.nodes}
+    nodes_by_ref = {ref: node for node, ref in face_refs.items()}
     vertical_set = set(vertical)
     possible: list[tuple[FaceNode, frozenset[FaceNode]]] = []
     for node in graph.nodes:
@@ -319,27 +325,27 @@ def _polygonal_boss_blend_bridges(
     if not contains_six_cycle(possible_pairs):
         return frozenset()
 
-    surfaces = EffectiveSurfaceIndex(graph)
     cylindrical_pairs = [
         pair
         for node, pair in possible
-        if isinstance(fact := surfaces.fact(node), AnalyticSurfaceFact)
+        if isinstance(fact := geometry.surface_fact(face_refs[node]), AnalyticSurface)
         and fact.kind is SurfaceKind.CYLINDER
     ]
     if not contains_six_cycle(cylindrical_pairs):
         return frozenset()
-    index = BlendCollapseIndex(graph, surfaces)
-    eligible: list[tuple[BlendChain, FaceNode, FaceNode]] = []
-    for chain in index.chains():
-        if chain.side != "convex" or len(chain.blend_nodes) != 1:
+    eligible: list[tuple[BlendFact, FaceNode, FaceNode]] = []
+    for chain in geometry.blend_facts():
+        if chain.side != "convex" or len(chain.blend_faces) != 1:
             continue
         if any(len(support) != 1 for support in chain.supports):
             continue
-        left = next(iter(chain.supports[0]))
-        right = next(iter(chain.supports[1]))
-        support_facts = (surfaces.fact(left), surfaces.fact(right))
+        left_ref = next(iter(chain.supports[0]))
+        right_ref = next(iter(chain.supports[1]))
+        left = nodes_by_ref[left_ref]
+        right = nodes_by_ref[right_ref]
+        support_facts = (geometry.surface_fact(left_ref), geometry.surface_fact(right_ref))
         if left is right or any(
-            not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE
+            not isinstance(fact, AnalyticSurface) or fact.kind is not SurfaceKind.PLANE
             for fact in support_facts
         ):
             continue
@@ -359,30 +365,20 @@ def _polygonal_boss_blend_bridges(
 
     if not selected:
         return frozenset()
-    view = index.view(selected)
-    logical_by_source = {
-        next(iter(sources)): logical
-        for logical in view.logical_nodes()
-        if len(sources := view.expand_node(logical)) == 1
-    }
+    bridges = geometry.collapsed_bridges(tuple(chain.ref for chain in selected))
     for chain, pair in zip(selected, selected_pairs, strict=True):
         left, right = tuple(pair)
+        support_refs = frozenset((face_refs[left], face_refs[right]))
         arcs = tuple(
-            arc
-            for arc in view.arcs_between(logical_by_source[left], logical_by_source[right])
-            if arc.synthetic
+            bridge for bridge in bridges if frozenset(bridge.supports) == support_refs
         )
         if len(arcs) != 1:
             raise ValueError("selected Polygonal Boss blend chain has no unique logical bridge")
-        provenance = view.expand_arc(arcs[0])
-        expected_nodes = frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1]))
-        expected_arcs = Counter(
-            arc.occurrence
-            for arc in (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
-        )
-        if provenance.nodes != expected_nodes or Counter(
-            arc.occurrence for arc in provenance.arcs
-        ) != expected_arcs:
+        provenance = arcs[0].provenance
+        expected_nodes = frozenset((*chain.blend_faces, *chain.supports[0], *chain.supports[1]))
+        if provenance.faces != expected_nodes or Counter(provenance.boundary) != Counter(
+            chain.boundary
+        ):
             raise ValueError("selected Polygonal Boss bridge lost original provenance")
     return frozenset(selected_pairs)
 
