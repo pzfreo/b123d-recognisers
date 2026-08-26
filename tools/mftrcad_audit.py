@@ -49,6 +49,7 @@ F5_REPEATING_RADIAL_PROFILES_H1: Final = "F5-REPEATING-RADIAL-PROFILES-H1"
 F5_STEP_LEVELS_H1: Final = "F5-STEP-LEVELS-H1"
 F5_RISERS_H1: Final = "F5-RISERS-H1"
 F4B_SECTION_PASSAGES_H1: Final = "F4B-SECTION-PASSAGES-H1"
+F3B_POLYGONAL_BOSSES_H1: Final = "F3B-POLYGONAL-BOSSES-H1"
 SELECTION_POLICY_PATH: Final = (
     Path(__file__).parents[1] / "docs" / "corpora" / "mftrcad-selection.json"
 )
@@ -109,6 +110,12 @@ ALLOCATION_SPECS: Final = (
         "f4b_section_passages_h1",
         frozenset({36}),
         "consumed",
+    ),
+    AllocationSpec(
+        F3B_POLYGONAL_BOSSES_H1,
+        "f3b_polygonal_bosses_h1",
+        frozenset({37}),
+        "sealed_unrevealed",
     ),
 )
 
@@ -253,6 +260,7 @@ Selection = Literal[
     "f5_step_levels_h1",
     "f5_risers_h1",
     "f4b_section_passages_h1",
+    "f3b_polygonal_bosses_h1",
 ]
 SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
     ALLOCATION_SELECTIONS

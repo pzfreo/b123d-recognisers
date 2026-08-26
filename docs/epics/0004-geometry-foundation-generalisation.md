@@ -394,6 +394,17 @@ original nodes as defining or consulted evidence under the existing evidence sem
 Candidate issuance. Complete provenance does not itself imply ownership. Logical handles themselves
 are never sink-compatible, and `_blend_view` cannot issue evidence.
 
+F3b selects Polygonal Bosses as that sole consumer. Only a complete six-chain convex singleton
+cycle between six retained planar vertical supports is selected, and every synthetic arc is
+expanded and revalidated before use. The six original planar supports remain the complete defining
+Candidate evidence. Hidden cylindrical blend nodes, spring/internal/terminal occurrences and cap
+context are consulted only. Direct and aggregate discovery share the existing Polygonal Boss core;
+other families and Polygonal Stock remain base-graph-only. The development fixture is a regular
+hexagonal attached prism with its six vertical corners filleted at constant radius, and its output
+is required to equal the sharp control exactly. Partial or competing cycles refuse rather than
+selecting a subset. Fillet Candidates, when independently present, define the cylindrical faces and
+therefore do not overlap the Polygonal Boss planar defining set; no new reconciliation rule exists.
+
 Refused discovery attempts are closed values with named reasons; selecting one is impossible.
 `view(())` is the exact base projection, and a refused component cannot alter retained node identity,
 neighbours, base arc occurrences or caches. Cache surface/radius reads, per-edge roles, component
@@ -546,6 +557,15 @@ The sole authorized F4b attempt at rebased PR #252 head
 discovery stopped before annotation, STEP or recognition and no report was created. No alternate
 root/allocation, retry, replacement or fitting followed. Bucket 36 is permanently consumed and
 inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
+
+F3b Polygonal Boss holdout chronology: before semantic implementation or holdout inspection,
+`F3B-POLYGONAL-BOSSES-H1` neutrally designates only bucket 37 with token
+`f3b_polygonal_bosses_h1`. The policy/tests/docs designation accesses no archive membership,
+annotation, STEP geometry, recognition or outcome. Bucket 37 begins `sealed_unrevealed`, buckets
+34/35 remain independently sealed and unauthorized, and the ordinary complement becomes 38..999.
+Only exact acknowledgement `F3B-POLYGONAL-BOSSES-H1` after frozen gates and two independent
+exact-head accepts may authorize one attempt; it permanently consumes bucket 37 even on zero,
+invalid input or abort, with no retry, alternate allocation, replacement or post-reveal fitting.
 
 ### F5 — Complete defining-evidence migration
 

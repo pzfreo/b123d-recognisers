@@ -91,9 +91,13 @@
       "F4B-SECTION-PASSAGES-H1": {
         "buckets": [36],
         "status": "consumed"
+      },
+      "F3B-POLYGONAL-BOSSES-H1": {
+        "buckets": [37],
+        "status": "sealed_unrevealed"
       }
     },
-    "unselected_bucket_ranges": [[37, 999]],
+    "unselected_bucket_ranges": [[38, 999]],
     "chosen_without": [
       "opening a selected STEP model",
       "reading selected annotations",
@@ -104,7 +108,7 @@
   "policy": {
     "development": "May be scanned to find and describe gaps. Counts are diagnostic, not a definition.",
     "holdout": "Keep outcomes sealed until a semantic child has two independent pre-reveal ACCEPT verdicts. Both holdout and all-selection scans require an explicit reveal flag. Every authorized attempt permanently consumes its allocation and must not be fitted; only a completed valid reveal becomes regression evidence, while zero, aborted or invalid attempts remain inconclusive.",
-    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed positive regression allocations. F5-POLYGONAL-BOSSES-H1 is consumed completed negative regression evidence for zero output only. F5-PADS-H1 is consumed completed positive regression evidence for occurrence/aggregate-cardinality only: four attributed Pads carried 20 total defining face occurrences (average five), but the generic scanner did not record a per-Candidate cardinality vector or independently reconstruct top-versus-wall roles. F5-COUNTERSINKS-H1, F5-BOSSES-H1, F5-HOLES-H1, F5-CHANNELS-H1, F5-PLATES-H1 and F5-POLYGONAL-STOCK-H1 are consumed and inconclusive after input-validation aborts; F5-DOUBLE-D-BORES-H1, F5-SLOTS-H1 and F5-REPEATING-RADIAL-PROFILES-H1 are consumed and inconclusive after zero-population selections. F5-POCKETS-H1 is consumed and inconclusive after its authorized root was empty because archive extraction could not start. F4B-SECTION-PASSAGES-H1 is consumed and inconclusive because its authorized sealed root contained no matching allocation models, so discovery stopped before annotation, STEP or recognition and produced no report. Those eleven inconclusive allocations are not regression evidence. F5-STEP-LEVELS-H1 and F5-RISERS-H1 remain independently sealed and unrevealed. Consumed allocations may not be reused or treated as sealed evidence.",
+    "named_allocations": "Each allocation requires its exact acknowledgement and remains excluded from unselected after consumption. F5-FLATS-H1 and F5-FILLETS-H1 are consumed positive regression allocations. F5-POLYGONAL-BOSSES-H1 is consumed completed negative regression evidence for zero output only. F5-PADS-H1 is consumed completed positive regression evidence for occurrence/aggregate-cardinality only: four attributed Pads carried 20 total defining face occurrences (average five), but the generic scanner did not record a per-Candidate cardinality vector or independently reconstruct top-versus-wall roles. F5-COUNTERSINKS-H1, F5-BOSSES-H1, F5-HOLES-H1, F5-CHANNELS-H1, F5-PLATES-H1 and F5-POLYGONAL-STOCK-H1 are consumed and inconclusive after input-validation aborts; F5-DOUBLE-D-BORES-H1, F5-SLOTS-H1 and F5-REPEATING-RADIAL-PROFILES-H1 are consumed and inconclusive after zero-population selections. F5-POCKETS-H1 is consumed and inconclusive after its authorized root was empty because archive extraction could not start. F4B-SECTION-PASSAGES-H1 is consumed and inconclusive because its authorized sealed root contained no matching allocation models, so discovery stopped before annotation, STEP or recognition and produced no report. Those eleven inconclusive allocations are not regression evidence. F5-STEP-LEVELS-H1, F5-RISERS-H1 and F3B-POLYGONAL-BOSSES-H1 remain independently sealed and unrevealed. Consumed allocations may not be reused or treated as sealed evidence.",
     "redistribution": "The Kaggle dataset and generator repository report MIT, but the full dataset remains external. No MFTRCAD model is vendored by this manifest."
   }
 }

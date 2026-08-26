@@ -115,3 +115,13 @@ other family outputs nor adds an acceptance or reconciliation filter.
 Issue #236 adds no Pocket admission predicate. Writer-enabled discovery publishes the exact
 sources retained by the same proposal and reduction path after identity and one-solid validation;
 writer-free discovery retains the historical record-only ambiguity behavior.
+
+## Amendment (Polygonal Boss blend-cycle gate, issue #192)
+
+F3b adds no filter to `_blend_view`, `_effective_surfaces` or `FaceGraph`. Those neutral layers
+continue to expose every supported fact or a closed refusal. Polygonal Boss alone applies the
+visible consumer gate: six retained planar vertical supports, exactly six eligible convex singleton
+chains, one degree-two cycle, no touching competing eligible chain, and the existing regular-hex,
+cap and height predicates. A missing, partial, concave, multi-node, ambiguous or competing cycle is
+declined by this recogniser without changing the neutral result or any sibling family. Polygonal
+Stock and all other consumers remain base-graph-only.

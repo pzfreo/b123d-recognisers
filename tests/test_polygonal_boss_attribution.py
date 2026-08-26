@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import copy
 import math
+from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -20,14 +21,21 @@ from build123d import (
     Rot,
     export_step,
     extrude,
+    fillet,
     import_step,
 )
 
 import b123d_recognisers.polygonal_bosses as polygonal_module
-from b123d_recognisers import PolygonalBoss, recognise_polygonal_bosses
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers import PolygonalBoss, recognise_fillets, recognise_polygonal_bosses
+from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._blend_view import (
+    BlendCollapseIndex,
+    CollapsedGraphView,
+    FrozenProvenance,
+)
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers.polygonal_bosses import _discover_polygonal_bosses
 from b123d_recognisers.result import _take_inventory
@@ -67,6 +75,38 @@ def _attached(*, x: float = 0.0, radius: float = 20.0, scale: float = 1.0):
     plate = Box(100 * scale, 80 * scale, 10 * scale)
     prism = Pos(x, 0, 5 * scale) * extrude(RegularPolygon(radius * scale, 6), 30 * scale)
     return plate + prism
+
+
+def _blend_interrupted_attached():
+    prism = extrude(RegularPolygon(20, 6), 30)
+    vertical = [edge for edge in prism.edges() if abs(float(edge.tangent_at().Z)) > 0.99]
+    return Box(100, 80, 10) + Pos(0, 0, 5) * fillet(vertical, 2)
+
+
+def _partially_blend_interrupted_attached():
+    prism = extrude(RegularPolygon(20, 6), 30)
+    vertical = [edge for edge in prism.edges() if abs(float(edge.tangent_at().Z)) > 0.99]
+    return Box(100, 80, 10) + Pos(0, 0, 5) * fillet(vertical[:5], 2)
+
+
+def _independent_prismatic_fillet():
+    box = Box(40, 30, 20)
+    vertical = [edge for edge in box.edges() if abs(float(edge.tangent_at().Z)) > 0.99]
+    return fillet(vertical, 2)
+
+
+class _ReversedFacesPart:
+    def __init__(self, part) -> None:
+        self._part = part
+
+    def faces(self):
+        return list(reversed(self._part.faces()))
+
+    def solids(self):
+        return list(reversed(self._part.solids()))
+
+    def __getattr__(self, name):
+        return getattr(self._part, name)
 
 
 def _irregular_hexagon(radius=20.0, height=30.0):
@@ -461,6 +501,271 @@ def test_registry_terminal_lifecycle_retains_nonempty_polygonal_boss() -> None:
     assert len(candidates) == len(product.result.polygonal_bosses) == 1
     assert candidates[0].record is product.result.polygonal_bosses[0]
     assert len(product.evidence.defining_of(candidates[0])) == 6
+
+
+def test_six_explicit_blend_bridges_recover_the_sharp_polygonal_boss() -> None:
+    sharp = _attached()
+    rounded = _blend_interrupted_attached()
+    expected = recognise_polygonal_bosses(sharp)
+    records, candidates, ledger = _claim(rounded)
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in expected]
+    assert len(records) == len(candidates) == 1
+    defining = ledger.defining_of(candidates[0])
+    assert len(defining) == 6
+    assert all(ledger.graph.is_planar(node) for node in defining)
+    assert all(abs(ledger.graph.normal(node)[2]) <= 0.02 for node in defining)
+
+
+def test_blend_interrupted_boss_aggregate_keeps_fillets_and_evidence_disjoint() -> None:
+    part = _blend_interrupted_attached()
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates
+    assert product.result.polygonal_bosses == tuple(recognise_polygonal_bosses(part))
+    assert len(product.result.polygonal_bosses) == len(candidates) == 1
+    assert product.result.fillets == tuple(recognise_fillets(part)) == ()
+    assert len(product.evidence.defining_of(candidates[0])) == 6
+
+
+def test_partial_blend_cycle_does_not_select_a_subset() -> None:
+    assert recognise_polygonal_bosses(_partially_blend_interrupted_attached()) == []
+
+
+def test_blend_interrupted_boss_survives_step_roundtrip(tmp_path) -> None:
+    path = tmp_path / "blend-interrupted-polygonal-boss.step"
+    export_step(_blend_interrupted_attached(), path)
+    imported = import_step(path)
+    assert [record.to_dict() for record in recognise_polygonal_bosses(imported)] == [
+        record.to_dict() for record in recognise_polygonal_bosses(_attached())
+    ]
+
+
+def test_independent_blend_oracle_proves_exact_cycle_and_expansion() -> None:
+    graph = FaceGraph(_blend_interrupted_attached())
+    index = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))
+    chains = index.chains()
+    assert len(chains) == 6
+    assert all(chain.side == "convex" and len(chain.blend_nodes) == 1 for chain in chains)
+    assert all(tuple(map(len, chain.supports)) == (1, 1) for chain in chains)
+    supports = frozenset(node for chain in chains for region in chain.supports for node in region)
+    assert len(supports) == 6
+    assert all(
+        sum(node in region for chain in chains for region in chain.supports) == 2
+        for node in supports
+    )
+
+    view = index.view(chains)
+    logical = {
+        next(iter(source)): node
+        for node in view.logical_nodes()
+        if len(source := view.expand_node(node)) == 1
+    }
+    for chain in chains:
+        left = next(iter(chain.supports[0]))
+        right = next(iter(chain.supports[1]))
+        (bridge,) = tuple(
+            arc for arc in view.arcs_between(logical[left], logical[right]) if arc.synthetic
+        )
+        expanded = view.expand_arc(bridge)
+        assert expanded.nodes == frozenset(
+            (*chain.blend_nodes, *chain.supports[0], *chain.supports[1])
+        )
+        assert Counter(arc.occurrence for arc in expanded.arcs) == Counter(
+            arc.occurrence
+            for arc in (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
+        )
+
+
+def test_six_cycle_reducer_refuses_partial_chord_and_duplicate_components() -> None:
+    nodes = tuple(FaceNode(at) for at in range(12))
+
+    def cycle(offset: int) -> tuple[frozenset, ...]:
+        return tuple(
+            frozenset((nodes[offset + at], nodes[offset + ((at + 1) % 6)]))
+            for at in range(6)
+        )
+
+    first = cycle(0)
+    second = cycle(6)
+    assert polygonal_module._six_support_cycle_indices(first[:5]) == ()
+    assert polygonal_module._six_support_cycle_indices((*first, first[0])) == ()
+    assert polygonal_module._six_support_cycle_indices(
+        (*first, frozenset((nodes[0], nodes[3])))
+    ) == ()
+    assert polygonal_module._six_support_cycle_indices((*first, *second)) == tuple(range(12))
+
+
+def test_corrupted_expansion_refuses_before_candidate_publication(monkeypatch) -> None:
+    part = _blend_interrupted_attached()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = CollapsedGraphView.expand_arc
+
+    def corrupted(self, arc):
+        expanded = original(self, arc)
+        return FrozenProvenance(frozenset(), expanded.arcs)
+
+    monkeypatch.setattr(CollapsedGraphView, "expand_arc", corrupted)
+    with pytest.raises(ValueError, match="lost original provenance"):
+        _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "replace"])
+def test_corrupted_expansion_occurrence_multiset_refuses_atomically(monkeypatch, mutation) -> None:
+    part = _blend_interrupted_attached()
+    original = CollapsedGraphView.expand_arc
+
+    def corrupted(self, arc):
+        expanded = original(self, arc)
+        arcs = expanded.arcs
+        changed = (*arcs, arcs[0]) if mutation == "duplicate" else (arcs[0], arcs[0], *arcs[2:])
+        return FrozenProvenance(expanded.nodes, changed)
+
+    monkeypatch.setattr(CollapsedGraphView, "expand_arc", corrupted)
+    with pytest.raises(ValueError, match="lost original provenance"):
+        recognise_polygonal_bosses(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    with pytest.raises(ValueError, match="lost original provenance"):
+        _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+@pytest.mark.parametrize("mutation", ["concave", "multi_node", "multi_support"])
+def test_consumer_refuses_ineligible_chain_without_candidate_prefix(monkeypatch, mutation) -> None:
+    part = _blend_interrupted_attached()
+    original = BlendCollapseIndex.chains
+
+    def changed(self):
+        chains = original(self)
+        first = chains[0]
+        if mutation == "concave":
+            replacement = replace(first, side="concave")
+        elif mutation == "multi_node":
+            extra = next(node for node in self._graph.nodes if node not in first.blend_nodes)
+            replacement = replace(first, blend_nodes=frozenset((*first.blend_nodes, extra)))
+        else:
+            extra = next(node for node in self._graph.nodes if node not in first.supports[0])
+            replacement = replace(
+                first,
+                supports=(frozenset((*first.supports[0], extra)), first.supports[1]),
+            )
+        return (replacement, *chains[1:])
+
+    monkeypatch.setattr(BlendCollapseIndex, "chains", changed)
+    assert recognise_polygonal_bosses(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+def test_non_cylinder_blend_fact_refuses_full_consumer_path(monkeypatch) -> None:
+    part = _blend_interrupted_attached()
+    graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))
+    target = next(iter(oracle.chains()[0].blend_nodes))
+    original = EffectiveSurfaceIndex.fact
+    hit_queries: list[EffectiveSurfaceIndex] = []
+
+    def changed(self, node):
+        fact = original(self, node)
+        if node is target and isinstance(fact, polygonal_module.AnalyticSurfaceFact):
+            if all(self is not query for query in hit_queries):
+                hit_queries.append(self)
+            return replace(fact, kind=polygonal_module.SurfaceKind.PLANE)
+        return fact
+
+    monkeypatch.setattr(EffectiveSurfaceIndex, "fact", changed)
+    assert recognise_polygonal_bosses(part, graph=graph) == []
+    ledger = ClaimLedger(graph)
+    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert len(hit_queries) == 2
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+def test_unequal_support_span_refuses_after_chain_issuance(monkeypatch) -> None:
+    part = _blend_interrupted_attached()
+    graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))
+    target = next(iter(oracle.chains()[0].supports[0]))
+    original_chains = BlendCollapseIndex.chains
+    original_bounds = FaceGraph.bounds
+    active = False
+    generation = 0
+    hit_generations: set[int] = set()
+
+    def chains(self):
+        nonlocal active, generation
+        result = original_chains(self)
+        generation += 1
+        active = True
+        return result
+
+    def bounds(self, node):
+        result = original_bounds(self, node)
+        if active and node is target:
+            hit_generations.add(generation)
+            x, y, (lo, hi) = result
+            return x, y, (lo, hi + 1.0)
+        return result
+
+    monkeypatch.setattr(BlendCollapseIndex, "chains", chains)
+    monkeypatch.setattr(FaceGraph, "bounds", bounds)
+    assert recognise_polygonal_bosses(part, graph=graph) == []
+    active = False
+    ledger = ClaimLedger(graph)
+    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert hit_generations == {1, 2}
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+def test_two_disjoint_blend_cycles_and_reversed_presentation_are_order_neutral() -> None:
+    left = Pos(-120, 0, 0) * _blend_interrupted_attached()
+    right = Pos(120, 0, 0) * _blend_interrupted_attached()
+    part = Compound([left, right])
+    expected = recognise_polygonal_bosses(part)
+    assert len(expected) == 2
+    reversed_records = recognise_polygonal_bosses(_ReversedFacesPart(part))
+    assert [record.to_dict() for record in reversed_records] == [
+        record.to_dict() for record in expected
+    ]
+
+
+@pytest.mark.parametrize("transform", [Pos(17, -11, 0), Rot(0, 0, 37)])
+def test_blend_cycle_rigid_transforms_match_their_sharp_controls(transform) -> None:
+    rounded = transform * _blend_interrupted_attached()
+    sharp = transform * _attached()
+    assert [record.to_dict() for record in recognise_polygonal_bosses(rounded)] == [
+        record.to_dict() for record in recognise_polygonal_bosses(sharp)
+    ]
+
+
+def test_uniformly_scaled_blend_cycle_matches_its_sharp_control() -> None:
+    rounded = _blend_interrupted_attached().scale(3)
+    sharp = _attached(scale=3)
+    assert [record.to_dict() for record in recognise_polygonal_bosses(rounded, tol=0.6)] == [
+        record.to_dict() for record in recognise_polygonal_bosses(sharp, tol=0.6)
+    ]
+
+
+def test_real_fillet_and_recovered_boss_coexist_with_disjoint_evidence() -> None:
+    part = Compound(
+        [
+            Pos(-120, 0, 0) * _blend_interrupted_attached(),
+            Pos(120, 0, 0) * _independent_prismatic_fillet(),
+        ]
+    )
+    product = _take_inventory(part)
+    bosses = product.physical.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates
+    fillets = product.physical.candidate_set(FamilyId.FILLETS).candidates
+    assert len(bosses) == 1
+    assert fillets
+    boss_nodes = product.evidence.defining_of(bosses[0])
+    fillet_nodes = frozenset(
+        node for candidate in fillets for node in product.evidence.defining_of(candidate)
+    )
+    assert len(boss_nodes) == 6
+    assert boss_nodes.isdisjoint(fillet_nodes)
+    assert product.result.polygonal_bosses == tuple(recognise_polygonal_bosses(part))
+    assert product.result.fillets == tuple(recognise_fillets(part))
 
 
 @pytest.mark.parametrize(

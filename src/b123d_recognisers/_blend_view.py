@@ -9,6 +9,7 @@ from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
+from typing import cast
 
 from OCP.BRep import BRep_Tool
 
@@ -753,7 +754,7 @@ class CollapsedGraphView:
 
     def expand_node(self, node: LogicalNode) -> frozenset[FaceNode]:
         self._validate_node(node)
-        return self._issued_nodes[node][0]
+        return cast(frozenset[FaceNode], self._issued_nodes[node][0])
 
     def node_provenance(self, node: LogicalNode) -> FrozenProvenance:
         self._validate_node(node)

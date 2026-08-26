@@ -10,13 +10,17 @@ closed until independent corpus evidence establishes their geometry contract.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
+from b123d_recognisers._analytic_surfaces import SurfaceKind
+from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
+from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -248,6 +252,141 @@ def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
     return vertical
 
 
+def _six_support_cycle_indices(
+    pairs: tuple[frozenset[FaceNode], ...],
+) -> tuple[int, ...]:
+    """Indices belonging to disjoint exact six-edge/six-node degree-two components."""
+
+    remaining = set(range(len(pairs)))
+    selected: list[int] = []
+    while remaining:
+        seed = min(remaining)
+        remaining.remove(seed)
+        component = {seed}
+        supports = set(pairs[seed])
+        changed = True
+        while changed:
+            changed = False
+            for at in tuple(remaining):
+                if supports.intersection(pairs[at]):
+                    remaining.remove(at)
+                    component.add(at)
+                    supports.update(pairs[at])
+                    changed = True
+        ordered = sorted(component)
+        component_pairs = [pairs[at] for at in ordered]
+        if len(ordered) != 6 or len(supports) != 6 or len(set(component_pairs)) != 6:
+            continue
+        if any(sum(node in pair for pair in component_pairs) != 2 for node in supports):
+            continue
+        selected.extend(ordered)
+    return tuple(selected)
+
+
+def _polygonal_boss_blend_bridges(
+    graph: FaceGraph, vertical: list[FaceNode], tol: float
+) -> frozenset[frozenset[FaceNode]]:
+    """Return only provenance-complete bridges for unambiguous six-support blend cycles."""
+
+    vertical_set = set(vertical)
+    possible: list[tuple[FaceNode, frozenset[FaceNode]]] = []
+    for node in graph.nodes:
+        if node in vertical_set:
+            continue
+        supports = vertical_set.intersection(graph.neighbours(node))
+        if len(supports) != 2:
+            continue
+        left, right = tuple(supports)
+        if any(
+            abs(a - b) > tol
+            for a, b in zip(graph.bounds(left)[2], graph.bounds(right)[2], strict=True)
+        ):
+            continue
+        possible.append((node, frozenset(supports)))
+
+    def contains_six_cycle(pairs: list[frozenset[FaceNode]]) -> bool:
+        possible_supports = set().union(*pairs) if pairs else set()
+        return len(pairs) >= 6 and any(
+            len(component) == 6
+            and sum(pair <= set(component) for pair in pairs) >= 6
+            for component in connected_components(
+                possible_supports,
+                lambda left, right: frozenset((left, right)) in pairs,
+            )
+        )
+
+    possible_pairs = [pair for _node, pair in possible]
+    if not contains_six_cycle(possible_pairs):
+        return frozenset()
+
+    surfaces = EffectiveSurfaceIndex(graph)
+    cylindrical_pairs = [
+        pair
+        for node, pair in possible
+        if isinstance(fact := surfaces.fact(node), AnalyticSurfaceFact)
+        and fact.kind is SurfaceKind.CYLINDER
+    ]
+    if not contains_six_cycle(cylindrical_pairs):
+        return frozenset()
+    index = BlendCollapseIndex(graph, surfaces)
+    eligible: list[tuple[BlendChain, FaceNode, FaceNode]] = []
+    for chain in index.chains():
+        if chain.side != "convex" or len(chain.blend_nodes) != 1:
+            continue
+        if any(len(support) != 1 for support in chain.supports):
+            continue
+        left = next(iter(chain.supports[0]))
+        right = next(iter(chain.supports[1]))
+        support_facts = (surfaces.fact(left), surfaces.fact(right))
+        if left is right or any(
+            not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE
+            for fact in support_facts
+        ):
+            continue
+        normals = (graph.normal(left), graph.normal(right))
+        if any(normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS for normal in normals):
+            continue
+        left_span = graph.bounds(left)[2]
+        right_span = graph.bounds(right)[2]
+        if any(abs(a - b) > tol for a, b in zip(left_span, right_span, strict=True)):
+            continue
+        eligible.append((chain, left, right))
+
+    eligible_pairs = tuple(frozenset((left, right)) for _chain, left, right in eligible)
+    selected_indices = _six_support_cycle_indices(eligible_pairs)
+    selected = [eligible[at][0] for at in selected_indices]
+    selected_pairs = [eligible_pairs[at] for at in selected_indices]
+
+    if not selected:
+        return frozenset()
+    view = index.view(selected)
+    logical_by_source = {
+        next(iter(sources)): logical
+        for logical in view.logical_nodes()
+        if len(sources := view.expand_node(logical)) == 1
+    }
+    for chain, pair in zip(selected, selected_pairs, strict=True):
+        left, right = tuple(pair)
+        arcs = tuple(
+            arc
+            for arc in view.arcs_between(logical_by_source[left], logical_by_source[right])
+            if arc.synthetic
+        )
+        if len(arcs) != 1:
+            raise ValueError("selected Polygonal Boss blend chain has no unique logical bridge")
+        provenance = view.expand_arc(arcs[0])
+        expected_nodes = frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1]))
+        expected_arcs = Counter(
+            arc.occurrence
+            for arc in (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
+        )
+        if provenance.nodes != expected_nodes or Counter(
+            arc.occurrence for arc in provenance.arcs
+        ) != expected_arcs:
+            raise ValueError("selected Polygonal Boss bridge lost original provenance")
+    return frozenset(selected_pairs)
+
+
 def _regular_ring_order(
     component: tuple[_K, ...],
     headings: Mapping[_K, tuple[float, float, float]],
@@ -367,10 +506,18 @@ def _recognise_one(
         if len(resolved) != len(faces) or len(resolved) != len(graph):
             raise ValueError("supplied Polygonal Boss graph does not exactly match the part")
 
-    def shares_edge(i: FaceNode, j: FaceNode) -> bool:
-        return j in graph.neighbours(i)
-
     vertical = _vertical_side_faces(graph, tol)
+    if len(vertical) < 6:
+        return []
+    blend_bridges = (
+        frozenset()
+        if whole_stock
+        else _polygonal_boss_blend_bridges(graph, vertical, tol)
+    )
+
+    def shares_edge(i: FaceNode, j: FaceNode) -> bool:
+        return j in graph.neighbours(i) or frozenset((i, j)) in blend_bridges
+
     components = _side_rings(vertical, graph, tol, shares_edge)
 
     def adjacent_to(node: FaceNode) -> set[FaceNode]:

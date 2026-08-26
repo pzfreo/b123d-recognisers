@@ -185,6 +185,17 @@ MODULE_SEAM_EDGES = {
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
     # Neutral opt-in support bridges consume only original graph and effective-surface facts.
     "_blend_view": {"_adjacency", "_analytic_surfaces", "_effective_surfaces"},
+    "polygonal_bosses": {
+        "_adjacency",
+        "_analytic_surfaces",
+        "_blend_view",
+        "_candidates",
+        "_claims",
+        "_effective_surfaces",
+        "_geometry",
+        "_record",
+        "_typing",
+    },
 }
 
 ARC_READER_SITES = {
@@ -781,11 +792,241 @@ def test_internal_module_seams_match_adr_0007() -> None:
     assert crossings == {}
 
 
-def test_neutral_blend_view_has_no_production_consumer() -> None:
+def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     graph = _package_import_graph()
     assert {
         module for module, dependencies in graph.items() if "_blend_view" in dependencies
-    } == set()
+    } == {"polygonal_bosses"}
+
+
+def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
+    def resolver(aliases: dict[str, str]):
+        def qualified(node: ast.expr) -> str:
+            if isinstance(node, ast.Name):
+                return aliases.get(node.id, node.id)
+            if isinstance(node, ast.Attribute):
+                return f"{qualified(node.value)}.{node.attr}"
+            return ""
+
+        return qualified
+
+    def scan_calls(path_name: str, source: str) -> set[tuple[str, str]]:
+        tree = ast.parse(source, filename=path_name)
+        aliases: dict[str, str] = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                for alias in node.names:
+                    aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+
+        qualified = resolver(aliases)
+        guarded_qualified = {
+            "b123d_recognisers._blend_view.BlendCollapseIndex",
+            "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+        }
+        changed = True
+        while changed:
+            changed = False
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                resolved = qualified(node.value)
+                if resolved not in guarded_qualified:
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and aliases.get(target.id) != resolved:
+                        aliases[target.id] = resolved
+                        changed = True
+
+        index_names = {
+            target.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and qualified(node.value.func)
+            == "b123d_recognisers._blend_view.BlendCollapseIndex"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        view_names = {
+            target.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id in index_names
+            and node.value.func.attr == "view"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        method_aliases = {
+            target.id: node.value.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Attribute)
+            and (
+                (
+                    isinstance(node.value.value, ast.Name)
+                    and node.value.value.id in index_names
+                    and node.value.attr == "view"
+                )
+                or (
+                    isinstance(node.value.value, ast.Name)
+                    and node.value.value.id in view_names
+                    and node.value.attr == "expand_arc"
+                )
+                or qualified(node.value)
+                in {
+                    "b123d_recognisers._blend_view.BlendCollapseIndex.view",
+                    "b123d_recognisers._blend_view.CollapsedGraphView.expand_arc",
+                }
+            )
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        changed = True
+        while changed:
+            changed = False
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Name):
+                    continue
+                method = method_aliases.get(node.value.id)
+                if method is None:
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and method_aliases.get(target.id) != method:
+                        method_aliases[target.id] = method
+                        changed = True
+        view_names.update(
+            target.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and method_aliases.get(node.value.func.id) == "view"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        )
+        method_aliases.update(
+            {
+                target.id: "expand_arc"
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Assign)
+                and isinstance(node.value, ast.Attribute)
+                and isinstance(node.value.value, ast.Name)
+                and node.value.value.id in view_names
+                and node.value.attr == "expand_arc"
+                for target in node.targets
+                if isinstance(target, ast.Name)
+            }
+        )
+        changed = True
+        while changed:
+            changed = False
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Name):
+                    continue
+                method = method_aliases.get(node.value.id)
+                if method is None:
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and method_aliases.get(target.id) != method:
+                        method_aliases[target.id] = method
+                        changed = True
+        found: set[tuple[str, str]] = set()
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = qualified(node.func)
+            if name in {
+                "b123d_recognisers._blend_view.BlendCollapseIndex",
+                "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+            }:
+                found.add((path_name, name.rsplit(".", 1)[-1]))
+            elif name in {
+                "b123d_recognisers._blend_view.BlendCollapseIndex.view",
+                "b123d_recognisers._blend_view.CollapsedGraphView.expand_arc",
+            }:
+                owner, method = name.rsplit(".", 2)[-2:]
+                found.add((path_name, f"{owner}.{method}"))
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in index_names
+                and node.func.attr == "view"
+            ):
+                found.add((path_name, "BlendCollapseIndex.view"))
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in view_names
+                and node.func.attr == "expand_arc"
+            ):
+                found.add((path_name, "CollapsedGraphView.expand_arc"))
+            elif isinstance(node.func, ast.Name) and node.func.id in method_aliases:
+                owner = (
+                    "BlendCollapseIndex"
+                    if method_aliases[node.func.id] == "view"
+                    else "CollapsedGraphView"
+                )
+                found.add((path_name, f"{owner}.{method_aliases[node.func.id]}"))
+        return found
+
+    calls: set[tuple[str, str]] = set()
+    for path in PACKAGE.glob("*.py"):
+        calls.update(scan_calls(path.name, path.read_text(encoding="utf-8")))
+
+    guarded_names = {
+        "BlendCollapseIndex",
+        "CollapsedGraphView",
+        "EffectiveSurfaceIndex",
+        "FrozenProvenance",
+    }
+    forbidden_reexports: set[tuple[str, str]] = set()
+    exempt = {"polygonal_bosses.py", "_run.py", "_blend_view.py", "_effective_surfaces.py"}
+    for path in PACKAGE.glob("*.py"):
+        if path.name in exempt:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                forbidden_reexports.update(
+                    (path.name, alias.name) for alias in node.names if alias.name in guarded_names
+                )
+            elif isinstance(node, ast.Attribute) and node.attr in guarded_names:
+                forbidden_reexports.add((path.name, node.attr))
+    assert forbidden_reexports == set()
+    assert calls == {
+        ("polygonal_bosses.py", "BlendCollapseIndex"),
+        ("polygonal_bosses.py", "BlendCollapseIndex.view"),
+        ("polygonal_bosses.py", "CollapsedGraphView.expand_arc"),
+        ("polygonal_bosses.py", "EffectiveSurfaceIndex"),
+        ("_run.py", "EffectiveSurfaceIndex"),
+    }
+    mutation_imports = """
+from b123d_recognisers._blend_view import BlendCollapseIndex, CollapsedGraphView
+from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
+"""
+    mutations = (
+        "index = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))\n"
+        "view = index.view(selected)\nview.expand_arc(arc)\n",
+        "index = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))\n"
+        "view = BlendCollapseIndex.view(index, selected)\n"
+        "CollapsedGraphView.expand_arc(view, arc)\n",
+        "Alias = BlendCollapseIndex\nindex = Alias(graph, EffectiveSurfaceIndex(graph))\n"
+        "v = index.view\nw = v\nview = w(selected)\ne = view.expand_arc\nf = e\nf(arc)\n",
+    )
+    for source in mutations:
+        found = {name for _path, name in scan_calls("mutation.py", mutation_imports + source)}
+        assert {
+            "BlendCollapseIndex",
+            "BlendCollapseIndex.view",
+            "CollapsedGraphView.expand_arc",
+            "EffectiveSurfaceIndex",
+        } <= found
 
 
 def test_no_accidental_public_modules() -> None:
