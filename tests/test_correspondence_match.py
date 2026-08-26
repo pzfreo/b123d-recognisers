@@ -1590,6 +1590,41 @@ def test_partition_budget_refusal_is_atomic_after_both_snapshots(monkeypatch) ->
     assert correspondence_snapshot(after_product) == after
 
 
+def test_partition_production_search_hits_inclusive_100000_boundary(monkeypatch) -> None:
+    import b123d_recognisers._correspondence_match as module
+
+    before = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    after = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    original_budget = _MatchBudget
+    observed = []
+    original_charge = original_budget.charge
+
+    def tracked_charge(self):
+        original_charge(self)
+        observed.append(self.attempts)
+
+    monkeypatch.setattr(original_budget, "charge", tracked_charge)
+    assert _compare_snapshots(before, after).relations[0].kind is ChangeKind.SPLIT
+    attempts = max(observed)
+    monkeypatch.setattr(original_budget, "charge", original_charge)
+
+    monkeypatch.setattr(
+        module,
+        "_MatchBudget",
+        lambda: original_budget(100_000 - attempts),
+    )
+    assert _compare_snapshots(before, after).relations[0].kind is ChangeKind.SPLIT
+    monkeypatch.setattr(
+        module,
+        "_MatchBudget",
+        lambda: original_budget(100_001 - attempts),
+    )
+    with pytest.raises(CorrespondenceMatchError, match="budget"):
+        _compare_snapshots(before, after)
+
+
 def test_reciprocal_scale_identity_boundary_is_inclusive_and_swap_stable() -> None:
     from b123d_recognisers._correspondence_match import SCALE_TOL
 
