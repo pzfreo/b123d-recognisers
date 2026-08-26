@@ -823,6 +823,23 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
                     aliases[alias.asname or alias.name.split(".")[0]] = alias.name
 
         qualified = resolver(aliases)
+        guarded_qualified = {
+            "b123d_recognisers._blend_view.BlendCollapseIndex",
+            "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+        }
+        changed = True
+        while changed:
+            changed = False
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                resolved = qualified(node.value)
+                if resolved not in guarded_qualified:
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and aliases.get(target.id) != resolved:
+                        aliases[target.id] = resolved
+                        changed = True
 
         index_names = {
             target.id
@@ -843,6 +860,19 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
             and isinstance(node.value.func.value, ast.Name)
             and node.value.func.value.id in index_names
             and node.value.func.attr == "view"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        method_aliases = {
+            target.id: node.value.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Attribute)
+            and isinstance(node.value.value, ast.Name)
+            and (
+                (node.value.value.id in index_names and node.value.attr == "view")
+                or (node.value.value.id in view_names and node.value.attr == "expand_arc")
+            )
             for target in node.targets
             if isinstance(target, ast.Name)
         }
@@ -869,6 +899,34 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
                 and node.func.attr == "expand_arc"
             ):
                 calls.add((path.name, "CollapsedGraphView.expand_arc"))
+            elif isinstance(node.func, ast.Name) and node.func.id in method_aliases:
+                owner = (
+                    "BlendCollapseIndex"
+                    if method_aliases[node.func.id] == "view"
+                    else "CollapsedGraphView"
+                )
+                calls.add((path.name, f"{owner}.{method_aliases[node.func.id]}"))
+
+    guarded_names = {
+        "BlendCollapseIndex",
+        "CollapsedGraphView",
+        "EffectiveSurfaceIndex",
+        "FrozenProvenance",
+    }
+    forbidden_reexports: set[tuple[str, str]] = set()
+    exempt = {"polygonal_bosses.py", "_run.py", "_blend_view.py", "_effective_surfaces.py"}
+    for path in PACKAGE.glob("*.py"):
+        if path.name in exempt:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                forbidden_reexports.update(
+                    (path.name, alias.name) for alias in node.names if alias.name in guarded_names
+                )
+            elif isinstance(node, ast.Attribute) and node.attr in guarded_names:
+                forbidden_reexports.add((path.name, node.attr))
+    assert forbidden_reexports == set()
     assert calls == {
         ("polygonal_bosses.py", "BlendCollapseIndex"),
         ("polygonal_bosses.py", "BlendCollapseIndex.view"),

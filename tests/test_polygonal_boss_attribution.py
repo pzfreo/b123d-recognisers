@@ -657,6 +657,57 @@ def test_consumer_refuses_ineligible_chain_without_candidate_prefix(monkeypatch,
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
+def test_non_cylinder_blend_fact_refuses_full_consumer_path(monkeypatch) -> None:
+    part = _blend_interrupted_attached()
+    oracle_graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(oracle_graph, EffectiveSurfaceIndex(oracle_graph))
+    target = next(iter(oracle.chains()[0].blend_nodes)).index
+    original = EffectiveSurfaceIndex.fact
+
+    def changed(self, node):
+        fact = original(self, node)
+        if node.index == target and isinstance(fact, polygonal_module.AnalyticSurfaceFact):
+            return replace(fact, kind=polygonal_module.SurfaceKind.PLANE)
+        return fact
+
+    monkeypatch.setattr(EffectiveSurfaceIndex, "fact", changed)
+    assert recognise_polygonal_bosses(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+def test_unequal_support_span_refuses_after_chain_issuance(monkeypatch) -> None:
+    part = _blend_interrupted_attached()
+    oracle_graph = FaceGraph(part)
+    oracle = BlendCollapseIndex(oracle_graph, EffectiveSurfaceIndex(oracle_graph))
+    target = next(iter(oracle.chains()[0].supports[0])).index
+    original_chains = BlendCollapseIndex.chains
+    original_bounds = FaceGraph.bounds
+    active = False
+
+    def chains(self):
+        nonlocal active
+        result = original_chains(self)
+        active = True
+        return result
+
+    def bounds(self, node):
+        result = original_bounds(self, node)
+        if active and node.index == target:
+            x, y, (lo, hi) = result
+            return x, y, (lo, hi + 1.0)
+        return result
+
+    monkeypatch.setattr(BlendCollapseIndex, "chains", chains)
+    monkeypatch.setattr(FaceGraph, "bounds", bounds)
+    assert recognise_polygonal_bosses(part) == []
+    active = False
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
 def test_two_disjoint_blend_cycles_and_reversed_presentation_are_order_neutral() -> None:
     left = Pos(-120, 0, 0) * _blend_interrupted_attached()
     right = Pos(120, 0, 0) * _blend_interrupted_attached()
