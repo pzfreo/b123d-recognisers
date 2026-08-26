@@ -1905,7 +1905,42 @@ def _partition_witnesses(
             witness = RigidScaleWitness(rotation, translation, scale)
             if witness not in found:
                 found.append(witness)
-    return tuple(found)
+    # Independently rebuilt kernels can place the same section centre a few ulps
+    # apart.  Those candidates prove one observational witness, not competing
+    # placement semantics.  Collapse only a complete pairwise-equivalent roster;
+    # a bridge/non-clique roster remains distinct and therefore ambiguous.
+    equivalence_bound = 4.0 * (
+        scale * parent.quantization.metric_quantum
+        + min(child.quantization.metric_quantum for child in children)
+    )
+    canonical: list[RigidScaleWitness] = []
+    for rotation in PROPER_ROTATIONS:
+        roster = [witness for witness in found if witness.rotation == rotation]
+        if not roster:
+            continue
+        if all(
+            math.dist(left.translation, right.translation) <= equivalence_bound
+            for left, right in combinations(roster, 2)
+        ):
+            translation = cast(
+                Vector3,
+                tuple(
+                    (min(witness.translation[at] for witness in roster)
+                    + max(witness.translation[at] for witness in roster))
+                    / 2.0
+                    for at in range(3)
+                ),
+            )
+            canonical.append(
+                RigidScaleWitness(
+                    rotation,
+                    _normalize_partition_translation(translation, equivalence_bound / 2.0),
+                    scale,
+                )
+            )
+        else:
+            canonical.extend(roster)
+    return tuple(canonical)
 
 
 @dataclass(frozen=True, slots=True)

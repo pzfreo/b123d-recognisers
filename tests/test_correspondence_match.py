@@ -1007,6 +1007,46 @@ def test_overlap_does_not_become_a_geometric_partition() -> None:
     )
 
 
+def test_ulps_of_section_centre_rebuild_drift_are_one_partition_witness() -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    pieces = Compound(
+        [_partition_rrp(2.0), _partition_rrp(3.0, 2.0), _partition_rrp(5.0, 5.0)]
+    ).scale(1.25)
+    pieces = Pos(3, -4, 7) * Rot(90, 0, 0) * pieces
+    child_snapshot = correspondence_snapshot(_take_inventory(pieces))
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    child_facts = tuple(child for child in children if child is not None)
+    drifted = tuple(
+        replace(
+            occurrence,
+            summary=replace(
+                occurrence.summary,
+                centre=(
+                    occurrence.summary.centre[0],
+                    occurrence.summary.centre[1] + (index - 1) * 8e-15,
+                    occurrence.summary.centre[2],
+                ),
+            ),
+        )
+        for index, occurrence in enumerate(child_snapshot.occurrences)
+    )
+
+    witnesses = _partition_witnesses(
+        parent_occurrence,
+        parent,
+        drifted,
+        child_facts,
+        _MatchBudget(),
+    )
+
+    assert len(witnesses) == 1
+    assert witnesses[0].rotation == ((1, 0, 0), (0, 0, -1), (0, 1, 0))
+    assert witnesses[0].translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-12)
+
+
 def test_partition_leaf_rejects_interface_pcurve_volume_and_first_moment_drift() -> None:
     parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
     child_snapshot = correspondence_snapshot(
