@@ -1713,7 +1713,7 @@ def _canonicalize_partition_witnesses(
             canonical.append(
                 RigidScaleWitness(
                     rotation,
-                    _normalize_partition_translation(translation, equivalence_bound / 2.0),
+                    translation,
                     roster[0].scale,
                 )
             )

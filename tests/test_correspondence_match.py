@@ -1075,6 +1075,15 @@ def test_partition_witness_canonicalization_is_clique_closed_and_swap_covariant(
     )
     assert _canonicalize_partition_witnesses(bridge, 1.0, _MatchBudget()) == bridge
 
+    near_zero = (
+        RigidScaleWitness(IDENTITY_ROTATION, (0.8, 0.0, 0.0), 1.0),
+        RigidScaleWitness(IDENTITY_ROTATION, (1.2, 0.0, 0.0), 1.0),
+    )
+    (near_zero_canonical,) = _canonicalize_partition_witnesses(
+        near_zero, 2.0, _MatchBudget()
+    )
+    assert near_zero_canonical.translation == (1.0, 0.0, 0.0)
+
 
 def test_partition_leaf_rejects_interface_pcurve_volume_and_first_moment_drift() -> None:
     parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
