@@ -310,3 +310,13 @@ The snapshot selects exact accepted Candidate identities from reconciliation and
 run's accepted RRP facts only: it performs no matching, changes no disposition and publishes no
 result/schema/census surface. F6b may compare two such snapshots only after this substrate is
 independently accepted.
+
+F6b1 remains a private optional consumer. Its sole authority-bearing entry accepts two exact
+`InventoryProduct` objects and materializes their issuer-validated schema-three snapshots; a
+snapshot-only leaf has no public or production caller. Matching starts with snapshot-local body
+groups, requires one shared proper-similarity witness for every occurrence assigned between a
+group pair, and enumerates the complete maximum-weight group/occurrence solution. Equal or
+coincident descriptors retain multiplicity. A nonunique body assignment, occurrence assignment,
+or witness becomes one `AMBIGUOUS` component; no tuple position, object identity, hash, or nearest
+distance establishes correspondence. F6b1 emits no split/merge claim and changes no recognition,
+disposition, result, registry, census, capability, or manifest state.

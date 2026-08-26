@@ -393,3 +393,12 @@ to-even and normalize negative zero. Unit/direction and angular values use `1e-1
 analytic points/parameters must remain within `2d` inclusive. These values are collision-prone
 compatibility evidence, never identity or recognition thresholds. World-axis bounds are placement
 facts only and cannot influence intrinsic/boundary quantization.
+
+F6b1 consumes the stored raw-derived quantization authority without recomputing it from snapped
+mass facts. A proper similarity witness uses `x_after = s Q x_before + t`. For a dimensional fact
+of order `k`, the inclusive comparison bound is
+`2 * (s**k * q_before + q_after)` using the stored metric/area/volume/moment quantum of each side;
+directions and angles use `4 * DIRECTION_TOL` and `4 * ANGLE_TOL`. Scale identity is the
+swap-stable inclusive predicate `max(s, 1/s) <= 1 + 4*DESCRIPTOR_REL`; the next representable value
+outside refuses. These are correspondence uncertainty bounds only and never alter recognition or
+public-record tolerances.

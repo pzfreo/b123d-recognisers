@@ -4692,7 +4692,7 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
             )
             matching_callers.add((path.name, owner))
     assert matching_callers == {("_correspondence.py", "_occurrence")}
-    assert correspondence_importers == ["result.py"]
+    assert set(correspondence_importers) == {"_correspondence_match.py", "result.py"}
 
     lower_calls = {
         target: tuple(ast.unparse(node.func) for node in _alias_aware_calls(lower, target))

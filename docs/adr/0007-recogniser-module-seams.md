@@ -356,3 +356,10 @@ inventory. The lower leaf may read bounded analytic kernel facts but imports no 
 Candidate, evidence, registry, reconciliation or result module. The upper module may read only its
 issuer-bound product authority, accepted RRP Candidates and terminal evidence. No discovery entry
 point imports it, and neither module is publicly exported.
+
+F6b1 adds `_correspondence_match` above those two private leaves. It imports only immutable
+descriptor/matching-graph values and tolerance authority from `_body_geometry`, plus snapshot
+values and the issuer-validating factory from `_correspondence`. It cannot import kernel geometry,
+FaceGraph/SolidRef, recognisers, Candidates/evidence, reconciliation implementation, registry,
+census or result. `correspondence_changes` is optional and private; no production module calls it,
+and the snapshot-only comparison leaf is closed to that entry and direct tests.
