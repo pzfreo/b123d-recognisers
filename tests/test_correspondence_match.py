@@ -1216,12 +1216,65 @@ def test_partition_and_unrelated_multi_occurrence_f6b1_group_share_joint_cover()
             ]
         )
     )
+    before_snapshot = correspondence_snapshot(before)
+    after_snapshot = correspondence_snapshot(after)
+    before_multi = next(group for group in before_snapshot.body_groups if len(group) == 2)
+    after_multi = next(group for group in after_snapshot.body_groups if len(group) == 2)
+    rows = tuple(
+        tuple(
+            after_at
+            for after_at in after_multi
+            if before_snapshot.occurrences[before_at] == after_snapshot.occurrences[after_at]
+        )
+        for before_at in before_multi
+    )
+    assert all(len(row) == 1 for row in rows)
+    exact_group_bijection = tuple(row[0] for row in rows)
+    assert len(set(exact_group_bijection)) == len(exact_group_bijection)
+
+    raw_split_witnesses, _raw_com = _raw_partition_relation_oracle(
+        _raw_prism_partition_oracle(_partition_rrp(10.0)),
+        _raw_prism_partition_oracle(
+            Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)])
+        ),
+    )
+    assert len(raw_split_witnesses) == 1
     result = correspondence_changes(before, after)
     assert [relation.kind for relation in result.relations].count(ChangeKind.SPLIT) == 1
     assert [relation.kind for relation in result.relations].count(ChangeKind.UNCHANGED) == 2
     assert all(
         relation.kind not in {ChangeKind.ADDED, ChangeKind.REMOVED} for relation in result.relations
     )
+
+
+def test_raw_joint_graph_exposes_connected_many_to_many_cover_ambiguity() -> None:
+    before_part = Compound(
+        [_partition_rrp(10.0), Pos(50, 0, 0) * _partition_rrp(10.0)]
+    )
+    after_part = Compound(
+        [
+            _partition_rrp(4.0),
+            _partition_rrp(6.0, 4.0),
+            Pos(50, 0, 0) * _partition_rrp(4.0),
+            Pos(50, 0, 4) * _partition_rrp(6.0),
+        ]
+    )
+    before = _raw_prism_partition_oracle(before_part)
+    after = _raw_prism_partition_oracle(after_part)
+    edges, covers, degree_zero_before, degree_zero_after = _raw_joint_exact_covers(before, after)
+    assert degree_zero_before == degree_zero_after == frozenset()
+    assert len(edges) >= 4
+    assert len(covers) > 1
+    (relation,) = correspondence_changes(
+        _take_inventory(before_part), _take_inventory(after_part)
+    ).relations
+    assert relation.kind is ChangeKind.AMBIGUOUS
+    assert (len(relation.before_refs), len(relation.after_refs)) == (2, 4)
+    assert set(relation.candidate_witnesses) == {
+        RigidScaleWitness(rotation=edge[2][0], translation=edge[2][1], scale=edge[2][2])
+        for cover in covers
+        for edge in cover
+    }
 
 
 def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> None:
