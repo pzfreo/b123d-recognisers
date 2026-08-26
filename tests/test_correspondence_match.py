@@ -30,6 +30,7 @@ from b123d_recognisers._correspondence_match import (
     _order_bound,
     _scale_is_identity,
     _validate_result,
+    _wire_alignments,
     correspondence_changes,
 )
 from b123d_recognisers.result import _take_inventory
@@ -75,6 +76,21 @@ def test_exact_occurrences_are_unchanged_without_symmetry_witnesses() -> None:
     assert relation.candidate_witnesses == ()
     assert relation.before_refs[0].occurrence == correspondence_snapshot(before).occurrences[0]
     assert relation.after_refs[0].occurrence == correspondence_snapshot(after).occurrences[0]
+
+
+def test_exact_equal_distinct_body_groups_remain_one_ambiguous_component() -> None:
+    before = _take_inventory(Compound([_rrp(5), _rrp(5)]))
+    after = _take_inventory(Compound([_rrp(5), _rrp(5)]))
+    before_snapshot = correspondence_snapshot(before)
+    after_snapshot = correspondence_snapshot(after)
+    assert before_snapshot.body_groups == after_snapshot.body_groups == ((0,), (1,))
+    assert before_snapshot.occurrences[0] == before_snapshot.occurrences[1]
+
+    (relation,) = correspondence_changes(before, after).relations
+    assert relation.kind is ChangeKind.AMBIGUOUS
+    assert tuple(ref.position for ref in relation.before_refs) == (0, 1)
+    assert tuple(ref.position for ref in relation.after_refs) == (0, 1)
+    assert relation.witness is None
 
 
 def test_empty_to_nonempty_and_inverse_preserve_every_occurrence() -> None:
@@ -322,6 +338,24 @@ def test_one_body_group_cannot_split_across_two_target_groups() -> None:
     assert len(forward.relations[0].after_refs) == 2
 
 
+def test_unequal_weight_body_group_alternative_is_wholly_ambiguous() -> None:
+    before_product = _take_inventory(_two_rrp_one_solid())
+    after_product = _take_inventory(Pos(11, -7, 3) * _two_rrp_one_solid())
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    expanded_after = replace(
+        after,
+        occurrences=(*after.occurrences, after.occurrences[0]),
+        body_groups=((0, 1), (2,)),
+    )
+    forward = _compare_snapshots(before, expanded_after)
+    inverse = _compare_snapshots(expanded_after, before)
+    assert [relation.kind for relation in forward.relations] == [ChangeKind.AMBIGUOUS]
+    assert [relation.kind for relation in inverse.relations] == [ChangeKind.AMBIGUOUS]
+    assert len(forward.relations[0].before_refs) == 2
+    assert len(forward.relations[0].after_refs) == 3
+
+
 @pytest.mark.parametrize("scale", (1.0, 2.0))
 def test_swapping_products_inverts_the_identity_rotation_witness(scale: float) -> None:
     before = _take_inventory(_asymmetric_rrp())
@@ -410,6 +444,13 @@ def test_complete_similarity_numeric_bounds_are_inclusive_and_nextafter_closed()
     assert not _direction_close(
         (0.0, 0.0, 0.0),
         (math.nextafter(4.0 * DIRECTION_TOL, math.inf), 0.0, 0.0),
+    )
+    diagonal = 4.0 * DIRECTION_TOL / math.sqrt(2.0)
+    assert _direction_close((0.0, 0.0, 0.0), (diagonal, diagonal, 0.0))
+    outside_diagonal = math.nextafter(math.nextafter(diagonal, math.inf), math.inf)
+    assert not _direction_close(
+        (0.0, 0.0, 0.0),
+        (outside_diagonal, outside_diagonal, 0.0),
     )
 
     line_index = next(
@@ -554,6 +595,40 @@ def test_complete_similarity_numeric_bounds_are_inclusive_and_nextafter_closed()
         1.0,
         _MatchBudget(),
     )
+
+
+def test_wire_alignment_enumerates_reversed_whole_wire_presentation() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_asymmetric_rrp())).occurrences[0]
+    graph = occurrence.matching_boundary
+    face = next(face for face in graph.faces if face.kind == "PLANE" and face.wires)
+    wire = face.wires[0]
+    reversed_wire = replace(
+        wire,
+        cycle=tuple(
+            replace(edge, start=edge.end, end=edge.start, direction=-edge.direction)
+            for edge in reversed(wire.cycle)
+        ),
+        theta_winding=-wire.theta_winding,
+    )
+    alignments = _wire_alignments(
+        wire,
+        reversed_wire,
+        face,
+        replace(face, wires=(reversed_wire,)),
+        tuple(range(len(graph.vertices))),
+        tuple(range(len(graph.curves))),
+        tuple(1 for _curve in graph.curves),
+        graph.vertices,
+        1,
+        _order_bound(
+            occurrence.body.quantization,
+            occurrence.body.quantization,
+            1.0,
+            1,
+        ),
+        _MatchBudget(),
+    )
+    assert alignments
 
 
 def test_proper_rotation_roster_and_affine_inverse_are_exact() -> None:
