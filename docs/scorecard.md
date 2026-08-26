@@ -403,17 +403,17 @@ contract.
 work packages F0–F7. The table is the current post-work assessment, not the projection made when
 the epic was drafted:
 
-| Dimension | Now | Post-epic | Driver |
+| Dimension | Pre-epic | Current | Driver |
 | --- | :---: | :---: | --- |
 | Geometric generality | D+ | **D+** | F1 recovery has 0 of 64 recogniser reader sites migrated; F4b fixes whole-part presentation, not internally oblique features; F3b adds one bounded blend consumer with no matching external holdout population |
 | Architecture | B+ | **B+** | The private substrate is stronger, but F7 is not published and F6 has no external consumer; a consumer-proven narrow facade remains the exit gate |
 | Feature coverage | C+ | **C+** | Existing families gained stronger evidence and selected bounded variants, but the large B-spline and internal-obliquity recall gaps remain |
-| Feature-interaction handling | B− | **B** | F5 completes defining evidence everywhere — the prerequisite for interaction rules — but the rules themselves need observed overlaps and separate review |
+| Feature-interaction handling | B− | **B** | F5 closes 20 families as `FullyAttributed`; Step Levels and Risers remain structurally `IncompleteAttribution`, and interaction rules still need observed overlaps and separate review |
 | Validation honesty | A | **A** | Already at ceiling; F0's MFTRCAD scanning and sealed draws extend the lead |
 | Determinism & explainability | A | **A** | Maintained by construction — byte-identical goldens gate every neutral change |
 | Parametric record quality | A | **A** | Section records are richer; F6 correspondence stays a private diagnostic, so the persistent-ID gap only half-closes |
 | Engineering quality | A− | **A−** | Still alpha, still bus factor one; the two-independent-reviews process tightens dependence on scarce reviewer attention |
-| Performance | C+ | **C+** | Held by budgets, not improved: canonicalisation, views and oblique candidate spaces all add per-part work; parallelism is out of scope |
+| Performance | C+ | **C+** | The composite is gated, but the canonical census is an unresolved recorded overrun at 134.165s against 109.651s; parallelism is out of scope |
 | Ecosystem reach | C | **C** | No recogniser consumes recovered surfaces and F7 is not public; Draftwright must first prove the smallest useful installed-wheel facade |
 
 Overall: this remains a carefully engineered special-purpose utility. The epic improved internal
