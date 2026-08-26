@@ -1610,6 +1610,8 @@ def _prism_cap_similarity(
         return False
     size = len(before.section_curves)
     for presentation in (1, -1):
+        if after.theta_winding != before.theta_winding * presentation * gauge:
+            continue
         source = (
             before.section_curves if presentation == 1 else tuple(reversed(before.section_curves))
         )
@@ -1708,21 +1710,32 @@ def _partition_witnesses(
                 break
         if not section_ok:
             continue
-        ordered = sorted(
-            zip(child_occurrences, children, strict=True), key=lambda item: item[1].interval
-        )
+        order_candidates = []
+        items = tuple(zip(child_occurrences, children, strict=True))
+        for candidate in permutations(items):
+            budget.charge()
+            valid = True
+            for (_left_occurrence, left), (_right_occurrence, right) in zip(
+                candidate, candidate[1:], strict=False
+            ):
+                join_bound = 2.0 * (
+                    left.quantization.metric_quantum + right.quantization.metric_quantum
+                )
+                # A join may meet at the inclusive reconstruction boundary, but
+                # interiors may not overlap and gaps may not be hidden by chaining.
+                if (
+                    abs(left.interval[1] - right.interval[0]) > join_bound
+                    or left.interval[1] > right.interval[0] + join_bound
+                ):
+                    valid = False
+                    break
+            if valid:
+                order_candidates.append(candidate)
+        if len(order_candidates) != 1:
+            continue
+        ordered = order_candidates[0]
         intervals = [child.interval for _occurrence, child in ordered]
         if any(hi <= lo for lo, hi in intervals):
-            continue
-        if any(
-            abs(left[1] - right[0])
-            > 2.0
-            * (
-                ordered[index][1].quantization.metric_quantum
-                + ordered[index + 1][1].quantization.metric_quantum
-            )
-            for index, (left, right) in enumerate(zip(intervals, intervals[1:], strict=False))
-        ):
             continue
         target_lo, target_hi = intervals[0][0], intervals[-1][1]
         extrema_metric = 2.0 * (
@@ -1841,6 +1854,7 @@ def _partition_hypergraph_relations(
             axis_name=occurrence.summary.axis,
             span=occurrence.summary.span,
             section_signature=occurrence.summary.sector_signature,
+            defining=occurrence.summary.defining,
             repeat_count=occurrence.summary.repeat_count,
             edge_count=occurrence.summary.edge_count,
             volume=occurrence.body.intrinsic.volume,

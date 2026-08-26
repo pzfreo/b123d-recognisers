@@ -12,6 +12,7 @@ from typing import cast
 from b123d_recognisers._body_geometry import (
     DIRECTION_TOL,
     DescriptorQuantization,
+    FaceGeometry,
     MatchingBoundaryGraph,
     MatchingFace,
 )
@@ -31,6 +32,8 @@ class _PrismCurve:
     radius: float | None
     sweep: float | None
     direction: int
+    start_parameter: tuple[float, float] | None
+    end_parameter: tuple[float, float] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +43,7 @@ class _PrismCap:
     axial_position: float
     section_curves: tuple[_PrismCurve, ...]
     side_faces: tuple[int, ...]
+    theta_winding: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +98,8 @@ def _curve_roster(
                 curve.radius,
                 curve.sweep,
                 half_edge.direction,
+                None if half_edge.start is None else half_edge.start.parameter,
+                None if half_edge.end is None else half_edge.end.parameter,
             )
         )
     return tuple(values)
@@ -105,6 +111,7 @@ def prism_fact(
     axis_name: str,
     span: tuple[float, float],
     section_signature: object,
+    defining: tuple[FaceGeometry, FaceGeometry],
     repeat_count: int,
     edge_count: int,
     volume: float,
@@ -136,11 +143,52 @@ def prism_fact(
     )
     low_position, high_position = ordered_caps
     low_face, high_face = graph.faces[low_position], graph.faces[high_position]
-    if low_face.material_side == high_face.material_side:
+    if (
+        low_face.material_side == high_face.material_side
+        or low_face.wires[0].theta_winding != 0
+        or high_face.wires[0].theta_winding != 0
+    ):
+        return None
+    defining_rows = tuple(
+        tuple(
+            at
+            for at, candidate in enumerate(defining)
+            if candidate.kind == face.kind
+            and candidate.parameters == face.parameters
+            and candidate.area == face.area
+            and candidate.centroid == face.centroid
+            and candidate.material_side == face.material_side
+        )
+        for face in (low_face, high_face)
+    )
+    if any(len(row) != 1 for row in defining_rows) or defining_rows[0] == defining_rows[1]:
         return None
     low_curves = _curve_roster(graph, low_face)
     high_curves = _curve_roster(graph, high_face)
     if low_curves is None or high_curves is None or len(low_curves) != len(high_curves):
+        return None
+    if (
+        type(section_signature) is not tuple
+        or repeat_count <= 0
+        or edge_count != len(low_curves)
+        or repeat_count * len(section_signature) != edge_count
+    ):
+        return None
+    signature_roster: list[tuple[object, object]] = []
+    for value in section_signature:
+        charged()
+        if (
+            type(value) is not tuple
+            or len(value) != 3
+            or value[0] not in {"LINE", "CIRCLE"}
+            or type(value[1]) is not float
+            or not math.isfinite(value[1])
+            or type(value[2]) is not tuple
+        ):
+            return None
+        signature_roster.extend((value[0], value[1]) for _ in range(repeat_count))
+    cap_roster = sorted((curve.kind, round(curve.length, 6)) for curve in low_curves)
+    if sorted(signature_roster) != cap_roster:
         return None
     if any(face.kind not in {"PLANE", "CYLINDER"} for face in graph.faces):
         return None
@@ -151,9 +199,12 @@ def prism_fact(
 
     def side_for(cap_position: int, curve_position: int) -> int | None:
         charged()
+        occurrences = incidence.get(curve_position, ())
+        if len(occurrences) != 2 or len(set(occurrences)) != 2:
+            return None
         owners = {
             face_position
-            for face_position, _wire_position, _edge_position in incidence.get(curve_position, ())
+            for face_position, _wire_position, _edge_position in occurrences
         }
         if cap_position not in owners or len(owners) != 2:
             return None
@@ -181,6 +232,7 @@ def prism_fact(
     metric = 2.0 * quantization.metric_quantum
     lo = _dot(low_face.centroid, axis)
     hi = _dot(high_face.centroid, axis)
+    joining_neighbours: dict[int, set[int]] = {side: set() for side in side_faces}
     for side_position in side_faces:
         charged()
         low_curve = low_by_side[side_position]
@@ -253,10 +305,17 @@ def prism_fact(
         for curve_position, curve in zip(joining_positions, joining, strict=True):
             charged()
             owners = incidence.get(curve_position, ())
-            if len(owners) != 2 or side_position not in {
-                face_position for face_position, _wire, _edge in owners
-            }:
+            owner_faces = {face_position for face_position, _wire, _edge in owners}
+            if (
+                len(owners) != 2
+                or len(set(owners)) != 2
+                or len(owner_faces) != 2
+                or side_position not in owner_faces
+                or owner_faces & {low_position, high_position}
+            ):
                 return None
+            (other_side,) = owner_faces - {side_position}
+            joining_neighbours[side_position].add(other_side)
             assert curve.vertices is not None
             start, end = (graph.vertices[position] for position in curve.vertices)
             delta = cast(
@@ -273,6 +332,19 @@ def prism_fact(
             ):
                 return None
 
+    side_cycle = closed_low_sides
+    for index, side_position in enumerate(side_cycle):
+        charged()
+        if len(side_cycle) == 1:
+            expected_neighbours: set[int] = set()
+        else:
+            expected_neighbours = {
+                side_cycle[(index - 1) % len(side_cycle)],
+                side_cycle[(index + 1) % len(side_cycle)],
+            }
+        if joining_neighbours[side_position] != expected_neighbours:
+            return None
+
     if not math.isfinite(lo) or not math.isfinite(hi) or hi <= lo:
         return None
     record_lo, record_hi = span
@@ -284,8 +356,22 @@ def prism_fact(
     return _PrismFact(
         axis,
         (record_lo, record_hi),
-        _PrismCap(low_face, low_position, lo, low_curves, closed_low_sides),
-        _PrismCap(high_face, high_position, hi, high_curves, closed_high_sides),
+        _PrismCap(
+            low_face,
+            low_position,
+            lo,
+            low_curves,
+            closed_low_sides,
+            low_face.wires[0].theta_winding,
+        ),
+        _PrismCap(
+            high_face,
+            high_position,
+            hi,
+            high_curves,
+            closed_high_sides,
+            high_face.wires[0].theta_winding,
+        ),
         section_signature,
         repeat_count,
         edge_count,

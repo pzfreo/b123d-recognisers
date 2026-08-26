@@ -46,6 +46,7 @@ from b123d_recognisers._correspondence_match import (
     _wire_alignments,
     correspondence_changes,
 )
+from b123d_recognisers._correspondence_partition import prism_fact
 from b123d_recognisers.result import _take_inventory
 from tests.test_correspondence_snapshot import (
     _line_rrp,
@@ -86,6 +87,22 @@ def _mixed_partition_rrp(
     for index in range(repeats):
         part -= Rot(0, 0, phase + 360 * index / repeats) * Pos(18, 0, 0) * Box(8, 3, height)
     return Pos(0, 0, start + height / 2.0) * part
+
+
+def _prism_fact_for(occurrence, *, graph=None, summary=None):
+    summary = occurrence.summary if summary is None else summary
+    return prism_fact(
+        occurrence.matching_boundary if graph is None else graph,
+        axis_name=summary.axis,
+        span=summary.span,
+        section_signature=summary.sector_signature,
+        defining=summary.defining,
+        repeat_count=summary.repeat_count,
+        edge_count=summary.edge_count,
+        volume=occurrence.body.intrinsic.volume,
+        centre_of_mass=occurrence.body.placement.centre_of_mass,
+        quantization=occurrence.body.quantization,
+    )
 
 
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
@@ -195,6 +212,64 @@ def test_gap_does_not_become_a_partial_geometric_partition() -> None:
         relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
         for relation in correspondence_changes(whole, pieces).relations
     )
+
+
+def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_partition_rrp(10.0))).occurrences[0]
+    graph = occurrence.matching_boundary
+    summary = occurrence.summary
+    assert _prism_fact_for(occurrence) is not None
+
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(summary, repeat_count=summary.repeat_count + 1),
+    ) is None
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(summary, edge_count=summary.edge_count + 1),
+    ) is None
+    changed_signature = (
+        ("CIRCLE" if summary.sector_signature[0][0] == "LINE" else "LINE",)
+        + summary.sector_signature[0][1:]
+    )
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(
+            summary,
+            sector_signature=(changed_signature, *summary.sector_signature[1:]),
+        ),
+    ) is None
+    changed_defining = replace(
+        summary.defining[0], area=summary.defining[0].area + 1.0
+    )
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(summary, defining=(changed_defining, summary.defining[1])),
+    ) is None
+
+    cap_at = next(
+        at
+        for at, face in enumerate(graph.faces)
+        if face.kind == "PLANE"
+        and len(face.parameters) == 4
+        and abs(abs(face.parameters[2]) - 1.0) <= 4.0 * DIRECTION_TOL
+    )
+    cap = graph.faces[cap_at]
+    changed_wire = replace(cap.wires[0], theta_winding=1)
+    changed_faces = (
+        *graph.faces[:cap_at],
+        replace(cap, wires=(changed_wire,)),
+        *graph.faces[cap_at + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    cap_curve = cap.wires[0].cycle[0].curve
+    incidence = dict(graph.incidence)
+    incidence[cap_curve] = (*incidence[cap_curve], incidence[cap_curve][0])
+    changed_incidence = tuple(sorted(incidence.items()))
+    assert _prism_fact_for(
+        occurrence, graph=replace(graph, incidence=changed_incidence)
+    ) is None
 
 
 def test_two_independent_partitions_share_one_exact_cover_without_order_authority() -> None:
