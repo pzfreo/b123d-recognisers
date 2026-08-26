@@ -115,7 +115,7 @@ ALLOCATION_SPECS: Final = (
         F3B_POLYGONAL_BOSSES_H1,
         "f3b_polygonal_bosses_h1",
         frozenset({37}),
-        "sealed_unrevealed",
+        "consumed",
     ),
 )
 

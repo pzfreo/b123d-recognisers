@@ -206,7 +206,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F3B_POLYGONAL_BOSSES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F3B_POLYGONAL_BOSSES_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())

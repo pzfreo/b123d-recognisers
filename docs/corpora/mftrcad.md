@@ -217,6 +217,13 @@ membership, annotation, STEP geometry, recognition result or outcome. Bucket 37 
 `F3B-POLYGONAL-BOSSES-H1`, after frozen gates and two independent accepts, may authorize one
 attempt. That attempt permanently consumes bucket 37 even if empty, invalid or aborted, with no
 retry, alternate root/allocation, replacement or fitting.
+
+At merged-main head `d7efa41c92ff57d873e618eb8318df1a36a3d76b`, the sole authorized
+`f3b_polygonal_bosses_h1` attempt used acknowledgement `F3B-POLYGONAL-BOSSES-H1`. The available
+sealed root contained no models matching the allocation, so discovery stopped before annotation
+reading, STEP import or recognition and produced no report. No alternate root, allocation,
+replacement, retry or fitting followed. Bucket 37 is permanently consumed and inconclusive, not
+regression evidence. Buckets 34 and 35 remain independently `sealed_unrevealed`.
 At accepted PR #245 head `6ccbedc`, after two independent exact-head accepts and every local,
 package, performance, CI and coverage gate, the one authorized
 `f5_repeating_radial_profiles_h1` selection with acknowledgement
