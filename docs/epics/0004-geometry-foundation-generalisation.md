@@ -1184,11 +1184,11 @@ Required contract:
   closed registry: fixtures, semantic goldens, capability row, corpus evidence — the same bar
   `adding-a-recogniser.md` sets internally.
 
-Sequencing: strictly after F1–F4a settle the APIs being published; freezing the substrate
-mid-epic would tax every subsequent package, while publishing at epic exit costs almost
-nothing. This package converts the governance ceiling — one maintainer's evidence throughput —
-into an ecosystem: external families become a nursery, proving themselves out-of-tree and
-graduating with evidence in hand.
+Sequencing: only after a real external consumer proves the smallest useful facade. Publishing even
+at epic exit carries compatibility, documentation and assurance cost, so the broad private
+substrate is not exported speculatively. A successful consumer spike may justify a narrow package
+and graduation path; it does not by itself establish an ecosystem or remove the maintainer's
+evidence-throughput ceiling.
 
 Exit gate: a demonstration out-of-tree geometry consumer (separate package, not vendored) performs
 the named Draftwright operations against only the published facade and documented contracts. A
