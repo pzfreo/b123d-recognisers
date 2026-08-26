@@ -7,6 +7,7 @@ from dataclasses import replace
 import pytest
 from build123d import Align, Box, Compound, Plane, Pos, export_step, import_step
 
+import b123d_recognisers._correspondence_match as correspondence_match_module
 from b123d_recognisers._body_geometry import ANGLE_TOL, DIRECTION_TOL
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
@@ -697,6 +698,536 @@ def test_closed_result_validation_refuses_kind_shape_drift() -> None:
     )
     with pytest.raises(CorrespondenceMatchError, match="added"):
         _validate_result(malformed, before, after)
+
+
+def test_closed_reference_and_result_schema_validation_matrix() -> None:
+    product = _take_inventory(_asymmetric_rrp())
+    snapshot = correspondence_snapshot(product)
+    unchanged = correspondence_changes(product, _take_inventory(_asymmetric_rrp())).relations[0]
+
+    for side, position, message in (
+        ("wrong", 0, "malformed"),
+        ("before", True, "malformed"),
+        ("before", -1, "out of range"),
+        ("before", len(snapshot.occurrences), "out of range"),
+    ):
+        with pytest.raises(CorrespondenceMatchError, match=message):
+            correspondence_match_module._ref(side, position, snapshot)
+
+    valid_ref = unchanged.before_refs[0]
+    stale_ref = replace(valid_ref, occurrence=replace(valid_ref.occurrence, family="changed"))
+    with pytest.raises(CorrespondenceMatchError, match="reference changed"):
+        correspondence_match_module._validate_ref(stale_ref, snapshot)
+
+    malformed_results = (
+        (object(), "schema"),
+        (replace(CorrespondenceResult(1, 3, 3, ()), schema_version=2), "schema"),
+        (CorrespondenceResult(1, 3, 3, (object(),)), "relation"),
+        (
+            CorrespondenceResult(
+                1,
+                3,
+                3,
+                (replace(unchanged, before_refs=(replace(valid_ref, side="after"),)),),
+            ),
+            "wrong-side",
+        ),
+        (
+            CorrespondenceResult(
+                1,
+                3,
+                3,
+                (
+                    replace(
+                        unchanged,
+                        after_refs=(replace(unchanged.after_refs[0], side="before"),),
+                    ),
+                ),
+            ),
+            "wrong-side",
+        ),
+        (CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.ADDED),)), "added"),
+        (CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.REMOVED),)), "removed"),
+        (
+            CorrespondenceResult(
+                1,
+                3,
+                3,
+                (replace(unchanged, before_refs=(), kind=ChangeKind.UNCHANGED),),
+            ),
+            "unchanged",
+        ),
+        (
+            CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.MOVED),)),
+            "transformed",
+        ),
+        (
+            CorrespondenceResult(
+                1,
+                3,
+                3,
+                (
+                    replace(
+                        unchanged,
+                        kind=ChangeKind.AMBIGUOUS,
+                        witness=RigidScaleWitness(
+                            IDENTITY_ROTATION, (0.0, 0.0, 0.0), 1.0
+                        ),
+                    ),
+                ),
+            ),
+            "ambiguous",
+        ),
+        (CorrespondenceResult(1, 3, 3, ()), "cover"),
+    )
+    for result, message in malformed_results:
+        with pytest.raises(CorrespondenceMatchError, match=message):
+            _validate_result(result, snapshot, snapshot)
+
+
+def test_closed_bijection_search_covers_empty_unique_and_competing_assignments() -> None:
+    assert correspondence_match_module._unique_bijection(((),)) is None
+    assert correspondence_match_module._unique_bijection(((0,), (1,))) == (0, 1)
+    assert correspondence_match_module._unique_bijection(((0, 1), (0, 1))) is None
+    assert not correspondence_match_module._has_bijection(((),))
+    assert correspondence_match_module._has_bijection(((0,), (1,)))
+    assert not correspondence_match_module._has_bijection(((0,), (0,)))
+
+
+def test_defining_face_and_rrp_signature_refusal_matrix() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_asymmetric_rrp())).occurrences[0]
+    quantization = occurrence.body.quantization
+    plane = occurrence.summary.defining[0]
+    assert correspondence_match_module._defining_face_similarity(
+        plane, plane, IDENTITY_ROTATION, 1.0, quantization, quantization
+    )
+    assert not correspondence_match_module._defining_face_similarity(
+        plane,
+        replace(plane, parameters=plane.parameters[:-1]),
+        IDENTITY_ROTATION,
+        1.0,
+        quantization,
+        quantization,
+    )
+    assert not correspondence_match_module._defining_face_similarity(
+        plane,
+        replace(plane, parameters=(0.0, 1.0, 0.0, *plane.parameters[3:])),
+        IDENTITY_ROTATION,
+        1.0,
+        quantization,
+        quantization,
+    )
+    assert not correspondence_match_module._defining_face_similarity(
+        plane,
+        replace(plane, parameters=(*plane.parameters[:3], plane.parameters[3] + 1.0)),
+        IDENTITY_ROTATION,
+        1.0,
+        quantization,
+        quantization,
+    )
+
+    cylinder = replace(
+        plane,
+        kind="CYLINDER",
+        parameters=(*plane.parameters[:3], 0.0, 0.0, 0.0, 2.0),
+    )
+    assert correspondence_match_module._defining_face_similarity(
+        cylinder, cylinder, IDENTITY_ROTATION, 1.0, quantization, quantization
+    )
+    for changed in (
+        replace(cylinder, parameters=(*cylinder.parameters[:3], 1.0, 0.0, 0.0, 2.0)),
+        replace(cylinder, parameters=(*cylinder.parameters[:6], 3.0)),
+        replace(cylinder, material_side=-cylinder.material_side),
+        replace(cylinder, kind="SPHERE"),
+    ):
+        assert not correspondence_match_module._defining_face_similarity(
+            cylinder, changed, IDENTITY_ROTATION, 1.0, quantization, quantization
+        )
+
+    signature = occurrence.summary.sector_signature
+    metric = correspondence_match_module._order_bound(
+        quantization, quantization, 1.0, 1
+    )
+    assert correspondence_match_module._signature_scaled(signature, signature, 1.0, metric)
+    for malformed in (
+        object(),
+        signature[:-1],
+        (("LINE",),),
+        ((signature[0][0], signature[0][1], object()),),
+        ((signature[0][0], signature[0][1], (*signature[0][2], (1.0, 2.0))),),
+    ):
+        assert not correspondence_match_module._signature_scaled(
+            signature, malformed, 1.0, metric
+        )
+
+
+def test_occurrence_similarity_refuses_each_closed_rrp_authority_mismatch() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_asymmetric_rrp())).occurrences[0]
+
+    def witness(target):
+        return correspondence_match_module._similarity_witness(
+            occurrence, target, IDENTITY_ROTATION, _MatchBudget()
+        )
+
+    assert witness(occurrence) is not None
+    intrinsic = occurrence.body.intrinsic
+    quantization = occurrence.body.quantization
+    summary = occurrence.summary
+    mismatches = (
+        replace(occurrence, family="OTHER"),
+        replace(occurrence, record_type="Other"),
+        replace(occurrence, summary=replace(summary, repeat_count=summary.repeat_count + 1)),
+        replace(occurrence, summary=replace(summary, edge_count=summary.edge_count + 1)),
+        replace(
+            occurrence,
+            body=replace(occurrence.body, intrinsic=replace(intrinsic, volume=0.0)),
+        ),
+        replace(
+            occurrence,
+            body=replace(
+                occurrence.body,
+                quantization=replace(quantization, characteristic_scale=float("nan")),
+            ),
+        ),
+        replace(occurrence, summary=replace(summary, sector_signature=())),
+        replace(occurrence, summary=replace(summary, centre=(999.0, 999.0, 999.0))),
+        replace(occurrence, summary=replace(summary, axis="y" if summary.axis != "y" else "x")),
+        replace(occurrence, summary=replace(summary, span=(999.0, 1000.0))),
+        replace(
+            occurrence,
+            summary=replace(
+                summary,
+                defining=(
+                    replace(summary.defining[0], kind="SPHERE"),
+                    summary.defining[1],
+                ),
+            ),
+        ),
+    )
+    assert all(witness(target) is None for target in mismatches)
+
+
+def test_body_graph_similarity_refuses_each_complete_label_and_topology_mutation() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_asymmetric_rrp())).occurrences[0]
+    graph = occurrence.matching_boundary
+
+    def refuses(changed_graph) -> bool:
+        target = replace(occurrence, matching_boundary=changed_graph)
+        return not _body_similarity(
+            occurrence, target, IDENTITY_ROTATION, 1.0, _MatchBudget()
+        )
+
+    assert _body_similarity(
+        occurrence, occurrence, IDENTITY_ROTATION, 1.0, _MatchBudget()
+    )
+    assert refuses(replace(graph, face_count=graph.face_count + 1))
+    assert refuses(replace(graph, wire_count=graph.wire_count + 1))
+    assert refuses(
+        replace(
+            graph,
+            vertices=(
+                (graph.vertices[0][0] + 1000.0, *graph.vertices[0][1:]),
+                *graph.vertices[1:],
+            ),
+        )
+    )
+
+    line_at = next(index for index, curve in enumerate(graph.curves) if curve.kind == "LINE")
+    line = graph.curves[line_at]
+    curve_mutations = (
+        (line_at, replace(line, kind="CIRCLE")),
+        (line_at, replace(line, length=line.length + 1000.0)),
+        (line_at, replace(line, vertices=None)),
+    )
+    for curve_at, changed in curve_mutations:
+        curves = list(graph.curves)
+        curves[curve_at] = changed
+        assert refuses(replace(graph, curves=tuple(curves)))
+
+    face_at = next(index for index, face in enumerate(graph.faces) if face.wires)
+    face = graph.faces[face_at]
+    wire = face.wires[0]
+    face_mutations = (
+        replace(face, kind="CYLINDER" if face.kind == "PLANE" else "PLANE"),
+        replace(face, area=face.area + 1000.0),
+        replace(face, centroid=(999.0, 999.0, 999.0)),
+        replace(face, material_side=-face.material_side),
+        replace(face, wires=()),
+        replace(face, wires=(replace(wire, role="changed"), *face.wires[1:])),
+        replace(
+            face,
+            wires=(replace(wire, theta_winding=wire.theta_winding + 7), *face.wires[1:]),
+        ),
+        replace(
+            face,
+            wires=(
+                replace(
+                    wire,
+                    cycle=(replace(wire.cycle[0], curve=len(graph.curves)), *wire.cycle[1:]),
+                ),
+                *face.wires[1:],
+            ),
+        ),
+    )
+    for changed in face_mutations:
+        faces = list(graph.faces)
+        faces[face_at] = changed
+        assert refuses(replace(graph, faces=tuple(faces)))
+
+    assert refuses(replace(graph, incidence=graph.incidence[:-1]))
+
+
+def test_curve_similarity_refuses_every_analytic_circle_field_mismatch() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_rrp(5))).occurrences[0]
+    graph = occurrence.matching_boundary
+    circle = next(curve for curve in graph.curves if curve.kind == "CIRCLE" and not curve.full)
+    metric = _order_bound(
+        occurrence.body.quantization, occurrence.body.quantization, 1.0, 1
+    )
+    vertex_map = tuple(range(len(graph.vertices)))
+
+    def similarity(target):
+        return _curve_similarity(
+            circle, target, vertex_map, IDENTITY_ROTATION, 1.0, metric
+        )
+
+    assert similarity(circle) is not None
+    mutations = (
+        replace(circle, kind="LINE"),
+        replace(circle, centre=None),
+        replace(circle, centre=(999.0, 999.0, 999.0)),
+        replace(circle, axis=None),
+        replace(circle, axis=(1.0, 0.0, 0.0)),
+        replace(circle, radius=None),
+        replace(circle, radius=(circle.radius or 0.0) + 1000.0),
+        replace(circle, sweep=None),
+        replace(circle, sweep=(circle.sweep or 0.0) + 1.0),
+        replace(circle, full=True),
+    )
+    assert all(similarity(target) is None for target in mutations)
+
+    line = next(curve for curve in graph.curves if curve.kind == "LINE")
+    assert (
+        _curve_similarity(
+            line,
+            replace(line, kind="CIRCLE"),
+            vertex_map,
+            IDENTITY_ROTATION,
+            1.0,
+            metric,
+        )
+        is None
+    )
+
+    full = replace(circle, vertices=None, sweep=2.0 * math.pi, full=True)
+    assert (
+        _curve_similarity(
+            full, full, vertex_map, IDENTITY_ROTATION, 1.0, metric
+        )
+        is not None
+    )
+    assert (
+        _curve_similarity(
+            full,
+            replace(full, sweep=0.0),
+            vertex_map,
+            IDENTITY_ROTATION,
+            1.0,
+            metric,
+        )
+        is None
+    )
+    assert (
+        _curve_similarity(
+            full,
+            replace(full, vertices=(0, 1)),
+            vertex_map,
+            IDENTITY_ROTATION,
+            1.0,
+            metric,
+        )
+        is None
+    )
+    assert (
+        _curve_similarity(
+            line,
+            replace(line, vertices=None),
+            vertex_map,
+            IDENTITY_ROTATION,
+            1.0,
+            metric,
+        )
+        is None
+    )
+
+
+def test_matching_face_parameter_and_wire_alignment_refusal_matrix() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_rrp(5))).occurrences[0]
+    graph = occurrence.matching_boundary
+    metric = _order_bound(
+        occurrence.body.quantization, occurrence.body.quantization, 1.0, 1
+    )
+    area = _order_bound(
+        occurrence.body.quantization, occurrence.body.quantization, 1.0, 2
+    )
+    plane = next(face for face in graph.faces if face.kind == "PLANE" and face.wires)
+    cylinder = next(face for face in graph.faces if face.kind == "CYLINDER" and face.wires)
+    assert _face_similarity(plane, plane, IDENTITY_ROTATION, 1.0, metric, area)
+    assert _face_similarity(cylinder, cylinder, IDENTITY_ROTATION, 1.0, metric, area)
+    for source, changed in (
+        (plane, replace(plane, parameters=(0.0, 1.0, 0.0, *plane.parameters[3:]))),
+        (plane, replace(plane, parameters=(*plane.parameters[:3], plane.parameters[3] + 1.0))),
+        (plane, replace(plane, material_side=-plane.material_side)),
+        (
+            cylinder,
+            replace(
+                cylinder,
+                parameters=(*cylinder.parameters[:3], 999.0, 999.0, 999.0, cylinder.parameters[6]),
+            ),
+        ),
+        (
+            cylinder,
+            replace(
+                cylinder,
+                parameters=(*cylinder.parameters[:6], cylinder.parameters[6] + 1000.0),
+            ),
+        ),
+        (cylinder, replace(cylinder, material_side=-cylinder.material_side)),
+        (plane, replace(plane, kind="SPHERE")),
+    ):
+        assert _face_similarity(source, changed, IDENTITY_ROTATION, 1.0, metric, area) is None
+
+    def first_vertex(face):
+        edge = next(item for wire in face.wires for item in wire.cycle if item.start is not None)
+        assert edge.start is not None and edge.start.vertex is not None
+        return graph.vertices[edge.start.vertex], edge.start.parameter
+
+    vertex, parameter = first_vertex(plane)
+    assert correspondence_match_module._parameter_matches(vertex, parameter, plane, metric)
+    assert not correspondence_match_module._parameter_matches(
+        vertex, (parameter[0] + 1.0, parameter[1] + 1.0), plane, metric
+    )
+    theta, z = first_vertex(cylinder)[1]
+    axis = cylinder.parameters[:3]
+    axis_point = cylinder.parameters[3:6]
+    radius = cylinder.parameters[6]
+    u, v = correspondence_match_module._plane_basis(axis)
+    radial = tuple(
+        radius * (math.cos(theta) * left + math.sin(theta) * right)
+        for left, right in zip(u, v, strict=True)
+    )
+    cylinder_vertex = tuple(
+        origin + radial_component + z * axis_component
+        for origin, radial_component, axis_component in zip(
+            axis_point, radial, axis, strict=True
+        )
+    )
+    assert correspondence_match_module._parameter_matches(
+        cylinder_vertex, (theta, z), cylinder, metric
+    )
+    assert not correspondence_match_module._parameter_matches(
+        cylinder_vertex, (theta + 1.0, z + 1.0), cylinder, metric
+    )
+
+    vertex_map = tuple(range(len(graph.vertices)))
+    curve_map = tuple(range(len(graph.curves)))
+    curve_signs = tuple(1 for _curve in graph.curves)
+
+    def align(source, target, source_face=plane, target_face=plane):
+        return _wire_alignments(
+            source,
+            target,
+            source_face,
+            target_face,
+            vertex_map,
+            curve_map,
+            curve_signs,
+            graph.vertices,
+            1,
+            metric,
+            _MatchBudget(),
+        )
+
+    wire = plane.wires[0]
+    assert not align(wire, replace(wire, role="inner" if wire.role == "outer" else "outer"))
+    assert not align(wire, replace(wire, cycle=wire.cycle[:-1]))
+    first = wire.cycle[0]
+    assert first.start is not None and first.end is not None
+    assert not align(
+        wire,
+        replace(wire, cycle=(replace(first, start=None, end=None), *wire.cycle[1:])),
+    )
+    assert not align(
+        wire,
+        replace(
+            wire,
+            cycle=(
+                replace(first, start=replace(first.start, vertex=None)),
+                *wire.cycle[1:],
+            ),
+        ),
+    )
+    assert not align(
+        wire,
+        replace(
+            wire,
+            cycle=(
+                replace(
+                    first,
+                    start=replace(first.start, vertex=(first.start.vertex or 0) + 1),
+                ),
+                *wire.cycle[1:],
+            ),
+        ),
+    )
+    assert not align(
+        wire,
+        replace(
+            wire,
+            cycle=(
+                replace(
+                    first,
+                    start=replace(first.start, parameter=(999.0, 999.0)),
+                ),
+                *wire.cycle[1:],
+            ),
+        ),
+    )
+
+    endpoint_free_wire = replace(
+        wire,
+        cycle=(replace(first, start=None, end=None), *wire.cycle[1:]),
+    )
+    assert not align(
+        endpoint_free_wire,
+        replace(
+            endpoint_free_wire,
+            cycle=(first, *endpoint_free_wire.cycle[1:]),
+        ),
+    )
+
+
+def test_degenerate_gauges_search_budget_and_schema_gate_refuse_closed_inputs(
+    monkeypatch,
+) -> None:
+    with pytest.raises(CorrespondenceMatchError, match="axis is degenerate"):
+        correspondence_match_module._canonical_axis((0.0, 0.0, 0.0))
+    monkeypatch.setattr(correspondence_match_module, "DIRECTION_TOL", 2.0)
+    with pytest.raises(CorrespondenceMatchError, match="basis is degenerate"):
+        correspondence_match_module._plane_basis((1.0, 0.0, 0.0))
+
+    budget = _MatchBudget()
+    assert correspondence_match_module._enumerate_bijections(((0,), (0,)), budget) == ()
+    assert budget.attempts
+    assert correspondence_match_module._maximum_weight_matchings(
+        (0, 1), (0,), {0: (0, 1), 1: (0,)}, {(0, 0): 1, (1, 0): 1}, _MatchBudget()
+    )
+
+    snapshot = correspondence_snapshot(_take_inventory(Box(10, 10, 10)))
+    with pytest.raises(CorrespondenceMatchError, match="schema 3"):
+        _compare_snapshots(
+            replace(snapshot, schema_version=1), snapshot, _issuer_validated=True
+        )
 
 
 def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
