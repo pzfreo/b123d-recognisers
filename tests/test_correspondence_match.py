@@ -42,6 +42,7 @@ from b123d_recognisers._correspondence_match import (
     RigidScaleWitness,
     _affine_point,
     _body_similarity,
+    _canonicalize_partition_witnesses,
     _compare_snapshots,
     _curve_similarity,
     _determinant,
@@ -1045,6 +1046,34 @@ def test_ulps_of_section_centre_rebuild_drift_are_one_partition_witness() -> Non
     assert len(witnesses) == 1
     assert witnesses[0].rotation == ((1, 0, 0), (0, 0, -1), (0, 1, 0))
     assert witnesses[0].translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-12)
+
+
+def test_partition_witness_canonicalization_is_clique_closed_and_swap_covariant() -> None:
+    close = (
+        RigidScaleWitness(IDENTITY_ROTATION, (3.0, -4.0 - 8e-15, 7.0), 1.25),
+        RigidScaleWitness(IDENTITY_ROTATION, (3.0, -4.0, 7.0), 1.25),
+        RigidScaleWitness(IDENTITY_ROTATION, (3.0, -4.0 + 8e-15, 7.0), 1.25),
+    )
+    budget = _MatchBudget()
+    (canonical,) = _canonicalize_partition_witnesses(close, 2e-14, budget)
+    assert budget.attempts == 3
+    assert canonical.translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-15)
+    inverse = _canonicalize_partition_witnesses(
+        tuple(_inverse_witness(witness) for witness in close),
+        2e-14 / 1.25,
+        _MatchBudget(),
+    )
+    expected_inverse = _inverse_witness(canonical)
+    assert inverse[0].rotation == expected_inverse.rotation
+    assert inverse[0].scale == pytest.approx(expected_inverse.scale, abs=1e-15)
+    assert inverse[0].translation == pytest.approx(expected_inverse.translation, abs=1e-15)
+
+    bridge = (
+        RigidScaleWitness(IDENTITY_ROTATION, (0.0, 0.0, 0.0), 1.0),
+        RigidScaleWitness(IDENTITY_ROTATION, (0.75, 0.0, 0.0), 1.0),
+        RigidScaleWitness(IDENTITY_ROTATION, (1.5, 0.0, 0.0), 1.0),
+    )
+    assert _canonicalize_partition_witnesses(bridge, 1.0, _MatchBudget()) == bridge
 
 
 def test_partition_leaf_rejects_interface_pcurve_volume_and_first_moment_drift() -> None:

@@ -1685,6 +1685,43 @@ def _prism_cap_similarity(
     return False
 
 
+def _canonicalize_partition_witnesses(
+    witnesses: tuple[RigidScaleWitness, ...],
+    equivalence_bound: float,
+    budget: _MatchBudget,
+) -> tuple[RigidScaleWitness, ...]:
+    """Collapse only complete observational cliques to their convex barycentre."""
+
+    canonical: list[RigidScaleWitness] = []
+    for rotation in PROPER_ROTATIONS:
+        roster = [witness for witness in witnesses if witness.rotation == rotation]
+        if not roster:
+            continue
+        pairwise_equivalent = True
+        for left, right in combinations(roster, 2):
+            budget.charge()
+            if math.dist(left.translation, right.translation) > equivalence_bound:
+                pairwise_equivalent = False
+        if pairwise_equivalent:
+            translation = cast(
+                Vector3,
+                tuple(
+                    math.fsum(witness.translation[at] for witness in roster) / len(roster)
+                    for at in range(3)
+                ),
+            )
+            canonical.append(
+                RigidScaleWitness(
+                    rotation,
+                    _normalize_partition_translation(translation, equivalence_bound / 2.0),
+                    roster[0].scale,
+                )
+            )
+        else:
+            canonical.extend(roster)
+    return tuple(canonical)
+
+
 def _partition_witnesses(
     parent_occurrence: AcceptedOccurrenceSnapshot,
     parent: _PrismFact,
@@ -1913,34 +1950,7 @@ def _partition_witnesses(
         scale * parent.quantization.metric_quantum
         + min(child.quantization.metric_quantum for child in children)
     )
-    canonical: list[RigidScaleWitness] = []
-    for rotation in PROPER_ROTATIONS:
-        roster = [witness for witness in found if witness.rotation == rotation]
-        if not roster:
-            continue
-        if all(
-            math.dist(left.translation, right.translation) <= equivalence_bound
-            for left, right in combinations(roster, 2)
-        ):
-            translation = cast(
-                Vector3,
-                tuple(
-                    (min(witness.translation[at] for witness in roster)
-                    + max(witness.translation[at] for witness in roster))
-                    / 2.0
-                    for at in range(3)
-                ),
-            )
-            canonical.append(
-                RigidScaleWitness(
-                    rotation,
-                    _normalize_partition_translation(translation, equivalence_bound / 2.0),
-                    scale,
-                )
-            )
-        else:
-            canonical.extend(roster)
-    return tuple(canonical)
+    return _canonicalize_partition_witnesses(tuple(found), equivalence_bound, budget)
 
 
 @dataclass(frozen=True, slots=True)
