@@ -5,7 +5,18 @@ import math
 from dataclasses import replace
 
 import pytest
-from build123d import Align, Box, Compound, Plane, Pos, export_step, import_step
+from build123d import (
+    Align,
+    Box,
+    Compound,
+    Plane,
+    Polygon,
+    Pos,
+    Rot,
+    export_step,
+    extrude,
+    import_step,
+)
 
 import b123d_recognisers._correspondence_match as correspondence_match_module
 from b123d_recognisers._body_geometry import ANGLE_TOL, DIRECTION_TOL
@@ -58,11 +69,20 @@ def _chiral_rrp():
     )
 
 
+def _partition_rrp(height: float, start: float = 0.0, *, phase: float = 13.0, repeats: int = 5):
+    points = []
+    for sector in range(repeats):
+        for offset, radius in enumerate((20.0, 16.0, 20.0, 18.0)):
+            angle = 2.0 * math.pi * (sector / repeats + offset / (4 * repeats))
+            points.append((radius * math.cos(angle), radius * math.sin(angle)))
+    return Pos(0, 0, start) * Rot(0, 0, phase) * extrude(Polygon(*points), height)
+
+
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
     before = _take_inventory(Box(10, 10, 10))
     after = _take_inventory(Box(20, 10, 10))
     result = correspondence_changes(before, after)
-    assert result.schema_version == 1
+    assert result.schema_version == 2
     assert result.before_schema == result.after_schema == 3
     assert result.relations == ()
 
@@ -105,6 +125,145 @@ def test_empty_to_nonempty_and_inverse_preserve_every_occurrence() -> None:
         added.relations[0].after_refs[0].occurrence
         == removed.relations[0].before_refs[0].occurrence
     )
+
+
+def test_unique_two_child_geometric_partition_and_inverse() -> None:
+    whole = _take_inventory(_partition_rrp(10.0))
+    pieces = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    split = correspondence_changes(whole, pieces)
+    merge = correspondence_changes(pieces, whole)
+
+    assert split.schema_version == merge.schema_version == 2
+    (split_relation,) = split.relations
+    (merge_relation,) = merge.relations
+    assert split_relation.kind is ChangeKind.SPLIT
+    assert merge_relation.kind is ChangeKind.MERGED
+    assert len(split_relation.before_refs) == len(merge_relation.after_refs) == 1
+    assert len(split_relation.after_refs) == len(merge_relation.before_refs) == 2
+    assert split_relation.witness is not None
+    assert merge_relation.witness == _inverse_witness(split_relation.witness)
+
+
+def test_symmetric_partition_retains_every_competing_witness() -> None:
+    whole = _take_inventory(_partition_rrp(10.0, phase=0.0))
+    pieces = _take_inventory(
+        Compound(
+            [
+                _partition_rrp(4.0, phase=0.0),
+                _partition_rrp(6.0, 4.0, phase=0.0),
+            ]
+        )
+    )
+    (relation,) = correspondence_changes(whole, pieces).relations
+    assert relation.kind is ChangeKind.AMBIGUOUS
+    assert len(relation.candidate_witnesses) == 2
+
+
+def test_gap_does_not_become_a_partial_geometric_partition() -> None:
+    whole = _take_inventory(_partition_rrp(10.0))
+    pieces = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(5.0, 5.0)]))
+    assert all(
+        relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
+        for relation in correspondence_changes(whole, pieces).relations
+    )
+
+
+def test_two_independent_partitions_share_one_exact_cover_without_order_authority() -> None:
+    before = _take_inventory(
+        Compound(
+            [
+                Pos(-40, 0, 0) * _partition_rrp(10.0),
+                Pos(40, 0, 0) * _partition_rrp(10.0, repeats=7),
+            ]
+        )
+    )
+    after = _take_inventory(
+        Compound(
+            [
+                Pos(40, 0, 0) * _partition_rrp(3.0, repeats=7),
+                Pos(-40, 0, 0) * _partition_rrp(4.0),
+                Pos(40, 0, 3) * _partition_rrp(7.0, repeats=7),
+                Pos(-40, 0, 4) * _partition_rrp(6.0),
+            ]
+        )
+    )
+    result = correspondence_changes(before, after)
+    assert [relation.kind for relation in result.relations] == [
+        ChangeKind.SPLIT,
+        ChangeKind.SPLIT,
+    ]
+    assert sorted(len(relation.after_refs) for relation in result.relations) == [2, 2]
+
+
+def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> None:
+    whole = _take_inventory(_partition_rrp(10.0))
+    pieces = Compound(
+        [
+            _partition_rrp(2.0),
+            _partition_rrp(3.0, 2.0),
+            _partition_rrp(5.0, 5.0),
+        ]
+    ).scale(1.25)
+    pieces = Pos(3, -4, 7) * Rot(90, 0, 0) * pieces
+    (relation,) = correspondence_changes(whole, _take_inventory(pieces)).relations
+    assert relation.kind is ChangeKind.SPLIT
+    assert len(relation.after_refs) == 3
+    assert relation.witness is not None
+    assert relation.witness.rotation == ((1, 0, 0), (0, 0, -1), (0, 1, 0))
+    assert relation.witness.scale == pytest.approx(1.25, abs=1e-7)
+    assert relation.witness.translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-6)
+
+
+def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> None:
+    whole_product = _take_inventory(_partition_rrp(10.0))
+    pieces_product = _take_inventory(
+        Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)])
+    )
+    whole = correspondence_snapshot(whole_product)
+    pieces = correspondence_snapshot(pieces_product)
+    split = correspondence_changes(whole_product, pieces_product).relations[0]
+    merge = correspondence_changes(pieces_product, whole_product).relations[0]
+    assert split.witness is not None and merge.witness is not None
+
+    malformed = (
+        (replace(split, before_refs=()), whole, pieces),
+        (replace(split, after_refs=split.after_refs[:1]), whole, pieces),
+        (replace(split, candidate_witnesses=(split.witness,)), whole, pieces),
+        (replace(merge, before_refs=merge.before_refs[:1]), pieces, whole),
+        (replace(merge, after_refs=()), pieces, whole),
+        (replace(merge, candidate_witnesses=(merge.witness,)), pieces, whole),
+    )
+    for relation, before_snapshot, after_snapshot in malformed:
+        with pytest.raises(CorrespondenceMatchError, match="split|merge"):
+            _validate_result(
+                CorrespondenceResult(2, 3, 3, (relation,)),
+                before_snapshot,
+                after_snapshot,
+            )
+
+    symmetric_whole = _take_inventory(_partition_rrp(10.0, phase=0.0))
+    symmetric_pieces = _take_inventory(
+        Compound(
+            [
+                _partition_rrp(4.0, phase=0.0),
+                _partition_rrp(6.0, 4.0, phase=0.0),
+            ]
+        )
+    )
+    relation = correspondence_changes(symmetric_whole, symmetric_pieces).relations[0]
+    before = correspondence_snapshot(symmetric_whole)
+    after = correspondence_snapshot(symmetric_pieces)
+    with pytest.raises(CorrespondenceMatchError, match="canonical"):
+        _validate_result(
+            CorrespondenceResult(
+                2,
+                3,
+                3,
+                (replace(relation, candidate_witnesses=relation.candidate_witnesses[::-1]),),
+            ),
+            before,
+            after,
+        )
 
 
 def test_snapshot_only_leaf_rejects_unsupported_schema() -> None:
@@ -620,7 +779,7 @@ def test_wire_alignment_enumerates_reversed_whole_wire_presentation() -> None:
         tuple(range(len(graph.curves))),
         tuple(1 for _curve in graph.curves),
         graph.vertices,
-        1,
+        2,
         _order_bound(
             occurrence.body.quantization,
             occurrence.body.quantization,
@@ -671,7 +830,7 @@ def test_closed_result_validation_refuses_malformed_witnesses(
     before = correspondence_snapshot(before_product)
     after = correspondence_snapshot(after_product)
     relation = correspondence_changes(before_product, after_product).relations[0]
-    malformed = CorrespondenceResult(1, 3, 3, (replace(relation, witness=witness),))
+    malformed = CorrespondenceResult(2, 3, 3, (replace(relation, witness=witness),))
     with pytest.raises(CorrespondenceMatchError, match="witness"):
         _validate_result(malformed, before, after)
 
@@ -683,7 +842,7 @@ def test_closed_result_validation_refuses_kind_shape_drift() -> None:
     after = correspondence_snapshot(after_product)
     moved = correspondence_changes(before_product, after_product).relations[0]
     malformed = CorrespondenceResult(
-        1,
+        2,
         3,
         3,
         (
@@ -721,11 +880,11 @@ def test_closed_reference_and_result_schema_validation_matrix() -> None:
 
     malformed_results = (
         (object(), "schema"),
-        (replace(CorrespondenceResult(1, 3, 3, ()), schema_version=2), "schema"),
-        (CorrespondenceResult(1, 3, 3, (object(),)), "relation"),
+        (replace(CorrespondenceResult(2, 3, 3, ()), schema_version=1), "schema"),
+        (CorrespondenceResult(2, 3, 3, (object(),)), "relation"),
         (
             CorrespondenceResult(
-                1,
+                2,
                 3,
                 3,
                 (replace(unchanged, before_refs=(replace(valid_ref, side="after"),)),),
@@ -734,7 +893,7 @@ def test_closed_reference_and_result_schema_validation_matrix() -> None:
         ),
         (
             CorrespondenceResult(
-                1,
+                2,
                 3,
                 3,
                 (
@@ -746,11 +905,11 @@ def test_closed_reference_and_result_schema_validation_matrix() -> None:
             ),
             "wrong-side",
         ),
-        (CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.ADDED),)), "added"),
-        (CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.REMOVED),)), "removed"),
+        (CorrespondenceResult(2, 3, 3, (replace(unchanged, kind=ChangeKind.ADDED),)), "added"),
+        (CorrespondenceResult(2, 3, 3, (replace(unchanged, kind=ChangeKind.REMOVED),)), "removed"),
         (
             CorrespondenceResult(
-                1,
+                2,
                 3,
                 3,
                 (replace(unchanged, before_refs=(), kind=ChangeKind.UNCHANGED),),
@@ -758,27 +917,25 @@ def test_closed_reference_and_result_schema_validation_matrix() -> None:
             "unchanged",
         ),
         (
-            CorrespondenceResult(1, 3, 3, (replace(unchanged, kind=ChangeKind.MOVED),)),
+            CorrespondenceResult(2, 3, 3, (replace(unchanged, kind=ChangeKind.MOVED),)),
             "transformed",
         ),
         (
             CorrespondenceResult(
-                1,
+                2,
                 3,
                 3,
                 (
                     replace(
                         unchanged,
                         kind=ChangeKind.AMBIGUOUS,
-                        witness=RigidScaleWitness(
-                            IDENTITY_ROTATION, (0.0, 0.0, 0.0), 1.0
-                        ),
+                        witness=RigidScaleWitness(IDENTITY_ROTATION, (0.0, 0.0, 0.0), 1.0),
                     ),
                 ),
             ),
             "ambiguous",
         ),
-        (CorrespondenceResult(1, 3, 3, ()), "cover"),
+        (CorrespondenceResult(2, 3, 3, ()), "cover"),
     )
     for result, message in malformed_results:
         with pytest.raises(CorrespondenceMatchError, match=message):
@@ -845,9 +1002,7 @@ def test_defining_face_and_rrp_signature_refusal_matrix() -> None:
         )
 
     signature = occurrence.summary.sector_signature
-    metric = correspondence_match_module._order_bound(
-        quantization, quantization, 1.0, 1
-    )
+    metric = correspondence_match_module._order_bound(quantization, quantization, 1.0, 1)
     assert correspondence_match_module._signature_scaled(signature, signature, 1.0, metric)
     for malformed in (
         object(),
@@ -856,9 +1011,7 @@ def test_defining_face_and_rrp_signature_refusal_matrix() -> None:
         ((signature[0][0], signature[0][1], object()),),
         ((signature[0][0], signature[0][1], (*signature[0][2], (1.0, 2.0))),),
     ):
-        assert not correspondence_match_module._signature_scaled(
-            signature, malformed, 1.0, metric
-        )
+        assert not correspondence_match_module._signature_scaled(signature, malformed, 1.0, metric)
 
 
 def test_occurrence_similarity_refuses_each_closed_rrp_authority_mismatch() -> None:
@@ -913,13 +1066,9 @@ def test_body_graph_similarity_refuses_each_complete_label_and_topology_mutation
 
     def refuses(changed_graph) -> bool:
         target = replace(occurrence, matching_boundary=changed_graph)
-        return not _body_similarity(
-            occurrence, target, IDENTITY_ROTATION, 1.0, _MatchBudget()
-        )
+        return not _body_similarity(occurrence, target, IDENTITY_ROTATION, 1.0, _MatchBudget())
 
-    assert _body_similarity(
-        occurrence, occurrence, IDENTITY_ROTATION, 1.0, _MatchBudget()
-    )
+    assert _body_similarity(occurrence, occurrence, IDENTITY_ROTATION, 1.0, _MatchBudget())
     assert refuses(replace(graph, face_count=graph.face_count + 1))
     assert refuses(replace(graph, wire_count=graph.wire_count + 1))
     assert refuses(
@@ -981,15 +1130,11 @@ def test_curve_similarity_refuses_every_analytic_circle_field_mismatch() -> None
     occurrence = correspondence_snapshot(_take_inventory(_rrp(5))).occurrences[0]
     graph = occurrence.matching_boundary
     circle = next(curve for curve in graph.curves if curve.kind == "CIRCLE" and not curve.full)
-    metric = _order_bound(
-        occurrence.body.quantization, occurrence.body.quantization, 1.0, 1
-    )
+    metric = _order_bound(occurrence.body.quantization, occurrence.body.quantization, 1.0, 1)
     vertex_map = tuple(range(len(graph.vertices)))
 
     def similarity(target):
-        return _curve_similarity(
-            circle, target, vertex_map, IDENTITY_ROTATION, 1.0, metric
-        )
+        return _curve_similarity(circle, target, vertex_map, IDENTITY_ROTATION, 1.0, metric)
 
     assert similarity(circle) is not None
     mutations = (
@@ -1020,12 +1165,7 @@ def test_curve_similarity_refuses_every_analytic_circle_field_mismatch() -> None
     )
 
     full = replace(circle, vertices=None, sweep=2.0 * math.pi, full=True)
-    assert (
-        _curve_similarity(
-            full, full, vertex_map, IDENTITY_ROTATION, 1.0, metric
-        )
-        is not None
-    )
+    assert _curve_similarity(full, full, vertex_map, IDENTITY_ROTATION, 1.0, metric) is not None
     assert (
         _curve_similarity(
             full,
@@ -1064,12 +1204,8 @@ def test_curve_similarity_refuses_every_analytic_circle_field_mismatch() -> None
 def test_matching_face_parameter_and_wire_alignment_refusal_matrix() -> None:
     occurrence = correspondence_snapshot(_take_inventory(_rrp(5))).occurrences[0]
     graph = occurrence.matching_boundary
-    metric = _order_bound(
-        occurrence.body.quantization, occurrence.body.quantization, 1.0, 1
-    )
-    area = _order_bound(
-        occurrence.body.quantization, occurrence.body.quantization, 1.0, 2
-    )
+    metric = _order_bound(occurrence.body.quantization, occurrence.body.quantization, 1.0, 1)
+    area = _order_bound(occurrence.body.quantization, occurrence.body.quantization, 1.0, 2)
     plane = next(face for face in graph.faces if face.kind == "PLANE" and face.wires)
     cylinder = next(face for face in graph.faces if face.kind == "CYLINDER" and face.wires)
     assert _face_similarity(plane, plane, IDENTITY_ROTATION, 1.0, metric, area)
@@ -1118,9 +1254,7 @@ def test_matching_face_parameter_and_wire_alignment_refusal_matrix() -> None:
     )
     cylinder_vertex = tuple(
         origin + radial_component + z * axis_component
-        for origin, radial_component, axis_component in zip(
-            axis_point, radial, axis, strict=True
-        )
+        for origin, radial_component, axis_component in zip(axis_point, radial, axis, strict=True)
     )
     assert correspondence_match_module._parameter_matches(
         cylinder_vertex, (theta, z), cylinder, metric
@@ -1225,9 +1359,7 @@ def test_degenerate_gauges_search_budget_and_schema_gate_refuse_closed_inputs(
 
     snapshot = correspondence_snapshot(_take_inventory(Box(10, 10, 10)))
     with pytest.raises(CorrespondenceMatchError, match="schema 3"):
-        _compare_snapshots(
-            replace(snapshot, schema_version=1), snapshot, _issuer_validated=True
-        )
+        _compare_snapshots(replace(snapshot, schema_version=1), snapshot, _issuer_validated=True)
 
 
 def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
@@ -1277,8 +1409,6 @@ def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
             "SolidRef",
             "RecognitionResult",
             "ClaimLedger",
-            "SPLIT",
-            "MERGED",
             "hash",
             "digest",
         }

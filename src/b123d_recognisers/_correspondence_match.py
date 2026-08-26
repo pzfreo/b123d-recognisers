@@ -1,17 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Private, issuer-bound correspondence between two accepted RRP inventories.
-
-F6b1 proves only one-to-one relations.  Split and merge remain deliberately unreachable until
-the separately reviewed geometric-partition grammar exists.
-"""
+"""Private, issuer-bound correspondence between two accepted RRP inventories."""
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
 from enum import Enum
-from itertools import permutations, product
+from itertools import combinations, permutations, product
 from typing import cast
 
 from b123d_recognisers._body_geometry import (
@@ -33,6 +29,7 @@ from b123d_recognisers._correspondence import (
     _validate_snapshot,
     correspondence_snapshot,
 )
+from b123d_recognisers._correspondence_partition import _PrismFact, prism_fact
 
 MATCH_HYPOTHESIS_BUDGET = 100_000
 SCALE_TOL = 4.0 * DESCRIPTOR_REL
@@ -53,6 +50,8 @@ class ChangeKind(str, Enum):
     UNCHANGED = "unchanged"
     MOVED = "moved"
     RESIZED = "resized"
+    SPLIT = "split"
+    MERGED = "merged"
     ADDED = "added"
     REMOVED = "removed"
     AMBIGUOUS = "ambiguous"
@@ -228,7 +227,7 @@ def _validate_result(
 ) -> None:
     if (
         type(result) is not CorrespondenceResult
-        or result.schema_version != 1
+        or result.schema_version != 2
         or result.before_schema != 3
         or result.after_schema != 3
         or type(result.relations) is not tuple
@@ -259,6 +258,12 @@ def _validate_result(
             _validate_witness(relation.witness)
         for candidate_witness in relation.candidate_witnesses:
             _validate_witness(candidate_witness)
+        if relation.candidate_witnesses != tuple(
+            sorted(set(relation.candidate_witnesses), key=repr)
+        ):
+            raise CorrespondenceMatchError(
+                "correspondence candidate witness roster is not canonical"
+            )
         if relation.kind is ChangeKind.ADDED and (
             relation.before_refs
             or not relation.after_refs
@@ -287,6 +292,20 @@ def _validate_result(
             or relation.candidate_witnesses
         ):
             raise CorrespondenceMatchError("transformed correspondence relation is malformed")
+        if relation.kind is ChangeKind.SPLIT and (
+            len(relation.before_refs) != 1
+            or len(relation.after_refs) < 2
+            or relation.witness is None
+            or relation.candidate_witnesses
+        ):
+            raise CorrespondenceMatchError("split correspondence relation is malformed")
+        if relation.kind is ChangeKind.MERGED and (
+            len(relation.before_refs) < 2
+            or len(relation.after_refs) != 1
+            or relation.witness is None
+            or relation.candidate_witnesses
+        ):
+            raise CorrespondenceMatchError("merged correspondence relation is malformed")
         if relation.kind is ChangeKind.AMBIGUOUS and (
             not relation.before_refs or not relation.after_refs or relation.witness is not None
         ):
@@ -1481,6 +1500,387 @@ def _similarity_relations(
     return tuple(sorted(relations, key=_relation_key))
 
 
+def _axis_vector(axis: str) -> Vector3:
+    at = "xyz".index(axis)
+    return cast(Vector3, tuple(1.0 if index == at else 0.0 for index in range(3)))
+
+
+def _partition_witnesses(
+    parent_occurrence: AcceptedOccurrenceSnapshot,
+    parent: _PrismFact,
+    child_occurrences: tuple[AcceptedOccurrenceSnapshot, ...],
+    children: tuple[_PrismFact, ...],
+    budget: _MatchBudget,
+) -> tuple[RigidScaleWitness, ...]:
+    """Enumerate common proper-similarity witnesses for one complete axial partition."""
+
+    if len(children) < 2 or any(
+        child.repeat_count != parent.repeat_count or child.edge_count != parent.edge_count
+        for child in children
+    ):
+        return ()
+    found: list[RigidScaleWitness] = []
+    parent_axis = _axis_vector(parent_occurrence.summary.axis)
+    for rotation in PROPER_ROTATIONS:
+        budget.charge()
+        transformed_axis = _rotate(rotation, parent_axis)
+        axis_at = next((at for at, value in enumerate(transformed_axis) if abs(value) > 0.5), None)
+        if axis_at is None or any(
+            item.summary.axis != "xyz"[axis_at] for item in child_occurrences
+        ):
+            continue
+        scale = math.sqrt(children[0].low_cap.face.area / parent.low_cap.face.area)
+        if not math.isfinite(scale) or scale <= 0.0:
+            continue
+        target_quantum = max(child.quantization.metric_quantum for child in children)
+        metric = 2.0 * (scale * parent.quantization.metric_quantum + target_quantum)
+        transverse_axes = tuple(at for at in range(3) if at != axis_at)
+        transformed_section = tuple(_rotate(rotation, point) for point in parent.section_points)
+        section_ok = True
+        for child in children:
+            rows = tuple(
+                tuple(
+                    right_at
+                    for right_at, right in enumerate(child.section_points)
+                    if sum((scale * left[at] - right[at]) ** 2 for at in transverse_axes)
+                    <= metric**2
+                )
+                for left in transformed_section
+            )
+            if len(rows) != len(child.section_points) or not _has_bijection(rows):
+                section_ok = False
+                break
+        if not section_ok:
+            continue
+        intervals = sorted(child.interval for child in children)
+        if any(hi <= lo for lo, hi in intervals):
+            continue
+        if any(
+            abs(left[1] - right[0])
+            > 2.0
+            * (
+                children[index].quantization.metric_quantum
+                + children[index + 1].quantization.metric_quantum
+            )
+            for index, (left, right) in enumerate(zip(intervals, intervals[1:], strict=False))
+        ):
+            continue
+        target_lo, target_hi = intervals[0][0], intervals[-1][1]
+        if (
+            abs((target_hi - target_lo) - scale * (parent.interval[1] - parent.interval[0]))
+            > metric
+        ):
+            continue
+        target_centre = list(child_occurrences[0].summary.centre)
+        target_centre[axis_at] = (target_lo + target_hi) / 2.0
+        rotated_parent_centre = _rotate(rotation, parent_occurrence.summary.centre)
+        translation = cast(
+            Vector3,
+            tuple(
+                target - scale * source
+                for source, target in zip(rotated_parent_centre, target_centre, strict=True)
+            ),
+        )
+        transformed_parent_centre = _affine_point(
+            rotation, translation, scale, parent_occurrence.summary.centre
+        )
+        if any(
+            sum(
+                (occurrence.summary.centre[at] - transformed_parent_centre[at]) ** 2
+                for at in range(3)
+                if at != axis_at
+            )
+            > metric**2
+            for occurrence in child_occurrences
+        ):
+            continue
+        # Every internal cap cancels once with opposed material side.
+        ordered = sorted(
+            zip(child_occurrences, children, strict=True), key=lambda item: item[1].interval
+        )
+        if any(
+            left.high_cap.face.material_side == right.low_cap.face.material_side
+            or not _close(
+                left.high_cap.face.area,
+                right.low_cap.face.area,
+                2.0 * (left.quantization.area_quantum + right.quantization.area_quantum),
+            )
+            for (_left_occurrence, left), (_right_occurrence, right) in zip(
+                ordered, ordered[1:], strict=False
+            )
+        ):
+            continue
+        volume_bound = 2.0 * (
+            scale**3 * parent.quantization.volume_quantum
+            + sum(child.quantization.volume_quantum for child in children)
+        )
+        child_volume = sum(child.volume for child in children)
+        if abs(scale**3 * parent.volume - child_volume) > volume_bound:
+            continue
+        errors = tuple(2.0 * child.quantization.volume_quantum for child in children)
+        if sum(child.volume - error for child, error in zip(children, errors, strict=True)) <= 0.0:
+            continue
+        parent_com = _affine_point(rotation, translation, scale, parent.centre_of_mass)
+        residual = [0.0, 0.0, 0.0]
+        first_moment_bound = 0.0
+        parent_centre_error = 2.0 * scale * parent.quantization.metric_quantum
+        child_volume_upper = 0.0
+        for child, volume_error in zip(children, errors, strict=True):
+            displacement = tuple(
+                value - anchor
+                for value, anchor in zip(child.centre_of_mass, parent_com, strict=True)
+            )
+            for at in range(3):
+                residual[at] += child.volume * displacement[at]
+            metric_error = 2.0 * child.quantization.metric_quantum
+            volume_upper = abs(child.volume) + volume_error
+            child_volume_upper += volume_upper
+            first_moment_bound += volume_upper * metric_error + volume_error * math.dist(
+                child.centre_of_mass, parent_com
+            )
+        first_moment_bound += child_volume_upper * parent_centre_error
+        if sum(value * value for value in residual) > first_moment_bound**2:
+            continue
+        witness = RigidScaleWitness(rotation, translation, scale)
+        if witness not in found:
+            found.append(witness)
+    return tuple(found)
+
+
+@dataclass(frozen=True, slots=True)
+class _PartitionHyperedge:
+    before_groups: tuple[int, ...]
+    after_groups: tuple[int, ...]
+    witness: RigidScaleWitness
+    kind: ChangeKind
+
+
+def _partition_hypergraph_relations(
+    before: CorrespondenceSnapshot,
+    after: CorrespondenceSnapshot,
+    budget: _MatchBudget,
+) -> tuple[CorrespondenceRelation, ...] | None:
+    """Jointly cover singleton and geometric-partition hypotheses."""
+
+    def occurrence_prism(occurrence: AcceptedOccurrenceSnapshot) -> _PrismFact | None:
+        return prism_fact(
+            occurrence.matching_boundary,
+            axis_name=occurrence.summary.axis,
+            span=occurrence.summary.span,
+            section_signature=occurrence.summary.sector_signature,
+            repeat_count=occurrence.summary.repeat_count,
+            edge_count=occurrence.summary.edge_count,
+            volume=occurrence.body.intrinsic.volume,
+            centre_of_mass=occurrence.body.placement.centre_of_mass,
+            quantization=occurrence.body.quantization,
+        )
+
+    before_facts = {
+        group_at: fact
+        for group_at, group in enumerate(before.body_groups)
+        if len(group) == 1
+        if (fact := occurrence_prism(before.occurrences[group[0]])) is not None
+    }
+    after_facts = {
+        group_at: fact
+        for group_at, group in enumerate(after.body_groups)
+        if len(group) == 1
+        if (fact := occurrence_prism(after.occurrences[group[0]])) is not None
+    }
+    edges: list[_PartitionHyperedge] = []
+    for parent_group, parent_fact in before_facts.items():
+        parent_position = before.body_groups[parent_group][0]
+        for size in range(2, len(after_facts) + 1):
+            for child_groups in combinations(tuple(after_facts), size):
+                budget.charge()
+                child_positions = tuple(after.body_groups[group][0] for group in child_groups)
+                witnesses = _partition_witnesses(
+                    before.occurrences[parent_position],
+                    parent_fact,
+                    tuple(after.occurrences[position] for position in child_positions),
+                    tuple(after_facts[group] for group in child_groups),
+                    budget,
+                )
+                edges.extend(
+                    _PartitionHyperedge((parent_group,), child_groups, witness, ChangeKind.SPLIT)
+                    for witness in witnesses
+                )
+    for parent_group, parent_fact in after_facts.items():
+        parent_position = after.body_groups[parent_group][0]
+        for size in range(2, len(before_facts) + 1):
+            for child_groups in combinations(tuple(before_facts), size):
+                budget.charge()
+                child_positions = tuple(before.body_groups[group][0] for group in child_groups)
+                witnesses = _partition_witnesses(
+                    after.occurrences[parent_position],
+                    parent_fact,
+                    tuple(before.occurrences[position] for position in child_positions),
+                    tuple(before_facts[group] for group in child_groups),
+                    budget,
+                )
+                edges.extend(
+                    _PartitionHyperedge(
+                        child_groups,
+                        (parent_group,),
+                        _inverse_witness(witness),
+                        ChangeKind.MERGED,
+                    )
+                    for witness in witnesses
+                )
+    if not edges:
+        return None
+
+    # Single-occurrence body groups participate in the same graph; they are never
+    # matched first and removed from partition consideration.
+    witness_cache: dict[tuple[int, int], tuple[RigidScaleWitness, ...]] = {}
+    for before_group, before_positions in enumerate(before.body_groups):
+        if len(before_positions) != 1:
+            continue
+        for after_group, after_positions in enumerate(after.body_groups):
+            if len(after_positions) != 1:
+                continue
+            witnesses = _similarity_witnesses(
+                before.occurrences[before_positions[0]],
+                after.occurrences[after_positions[0]],
+                budget,
+            )
+            witness_cache[(before_group, after_group)] = witnesses
+            edges.extend(
+                _PartitionHyperedge((before_group,), (after_group,), witness, ChangeKind.MOVED)
+                for witness in witnesses
+            )
+
+    edges = list(dict.fromkeys(edges))
+    all_vertices = {
+        *(("before", at) for at in range(len(before.body_groups))),
+        *(("after", at) for at in range(len(after.body_groups))),
+    }
+    edge_vertices = tuple(
+        frozenset(
+            (
+                *(("before", item) for item in edge.before_groups),
+                *(("after", item) for item in edge.after_groups),
+            )
+        )
+        for edge in edges
+    )
+    incident = {
+        vertex: tuple(at for at, values in enumerate(edge_vertices) if vertex in values)
+        for vertex in all_vertices
+    }
+    active = {vertex for vertex, roster in incident.items() if roster}
+    relations: list[CorrespondenceRelation] = []
+    pending = set(active)
+    while pending:
+        seed = min(pending)
+        component = {seed}
+        frontier = [seed]
+        component_edges: set[int] = set()
+        while frontier:
+            vertex = frontier.pop()
+            for edge_at in incident[vertex]:
+                if edge_at in component_edges:
+                    continue
+                component_edges.add(edge_at)
+                for neighbour in edge_vertices[edge_at]:
+                    if neighbour not in component:
+                        component.add(neighbour)
+                        frontier.append(neighbour)
+        pending.difference_update(component)
+        ordered_edges = tuple(sorted(component_edges))
+        covers: list[tuple[int, ...]] = []
+
+        def cover(
+            uncovered: frozenset[tuple[str, int]],
+            selected: tuple[int, ...],
+            result: list[tuple[int, ...]] = covers,
+        ) -> None:
+            budget.charge()
+            if not uncovered:
+                result.append(selected)
+                return
+            vertex = min(uncovered)
+            for edge_at in incident[vertex]:
+                values = edge_vertices[edge_at]
+                budget.charge()
+                if values <= uncovered:
+                    cover(uncovered - values, (*selected, edge_at))
+
+        cover(frozenset(component), ())
+        semantic_covers = tuple(sorted(set(tuple(sorted(item)) for item in covers)))
+        if len(semantic_covers) != 1:
+            witnesses = tuple(
+                sorted({edges[edge_at].witness for edge_at in ordered_edges}, key=repr)
+            )
+            relations.append(
+                CorrespondenceRelation(
+                    ChangeKind.AMBIGUOUS,
+                    tuple(
+                        _ref("before", position, before)
+                        for side, group in sorted(component)
+                        if side == "before"
+                        for position in before.body_groups[group]
+                    ),
+                    tuple(
+                        _ref("after", position, after)
+                        for side, group in sorted(component)
+                        if side == "after"
+                        for position in after.body_groups[group]
+                    ),
+                    None,
+                    witnesses,
+                )
+            )
+            continue
+        for edge_at in semantic_covers[0]:
+            edge = edges[edge_at]
+            before_positions = tuple(before.body_groups[group][0] for group in edge.before_groups)
+            after_positions = tuple(after.body_groups[group][0] for group in edge.after_groups)
+            kind = edge.kind
+            witness: RigidScaleWitness | None = edge.witness
+            if kind is ChangeKind.MOVED:
+                metric = _order_bound(
+                    before.occurrences[before_positions[0]].body.quantization,
+                    after.occurrences[after_positions[0]].body.quantization,
+                    edge.witness.scale,
+                    1,
+                )
+                scale_identity = _scale_is_identity(edge.witness.scale)
+                placement_identity = edge.witness.rotation == IDENTITY_ROTATION and _scaled_point(
+                    edge.witness.translation, 1.0, (0.0, 0.0, 0.0), metric
+                )
+                kind = (
+                    ChangeKind.UNCHANGED
+                    if scale_identity and placement_identity
+                    else ChangeKind.MOVED
+                    if scale_identity
+                    else ChangeKind.RESIZED
+                )
+                if kind is ChangeKind.UNCHANGED:
+                    witness = None
+            relations.append(
+                CorrespondenceRelation(
+                    kind,
+                    tuple(_ref("before", position, before) for position in before_positions),
+                    tuple(_ref("after", position, after) for position in after_positions),
+                    witness,
+                )
+            )
+
+    for side, group in sorted(all_vertices - active):
+        snapshot = before if side == "before" else after
+        for position in snapshot.body_groups[group]:
+            relations.append(
+                CorrespondenceRelation(
+                    ChangeKind.REMOVED if side == "before" else ChangeKind.ADDED,
+                    (_ref("before", position, before),) if side == "before" else (),
+                    (_ref("after", position, after),) if side == "after" else (),
+                    None,
+                )
+            )
+    return tuple(sorted(relations, key=_relation_key))
+
+
 def _compare_snapshots(
     before: CorrespondenceSnapshot,
     after: CorrespondenceSnapshot,
@@ -1496,8 +1896,12 @@ def _compare_snapshots(
     if before.schema_version != 3 or after.schema_version != 3:
         raise CorrespondenceMatchError("correspondence requires snapshot schema 3")
 
-    exact = _unique_exact_relations(before, after)
-    if exact is not None:
+    budget = _MatchBudget()
+    partition = _partition_hypergraph_relations(before, after, budget)
+    exact = _unique_exact_relations(before, after) if partition is None else None
+    if partition is not None:
+        relations = partition
+    elif exact is not None:
         relations = exact
     elif not before.occurrences:
         relations = tuple(
@@ -1512,12 +1916,12 @@ def _compare_snapshots(
             for position in range(len(before.occurrences))
         )
     else:
-        matched = _similarity_relations(before, after, _MatchBudget())
+        matched = _similarity_relations(before, after, budget)
         if matched is None:
             raise CorrespondenceMatchError("non-rigid correspondence matching is not staged")
         relations = matched
 
-    result = CorrespondenceResult(1, before.schema_version, after.schema_version, relations)
+    result = CorrespondenceResult(2, before.schema_version, after.schema_version, relations)
     _validate_result(result, before, after)
     return result
 
