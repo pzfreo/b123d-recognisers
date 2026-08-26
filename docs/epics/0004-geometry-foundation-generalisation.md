@@ -540,6 +540,13 @@ complement becomes 37..999. A later exact authorization consumes bucket 36 perma
 zero, invalid input or abort, with no retry, alternate allocation, replacement or post-reveal
 fitting.
 
+The sole authorized F4b attempt at rebased PR #252 head
+`438088ae1b14b3c9b6883d84f343bb6abfa392a5` used exact acknowledgement
+`F4B-SECTION-PASSAGES-H1`. Its available sealed root contained no models matching bucket 36, so
+discovery stopped before annotation, STEP or recognition and no report was created. No alternate
+root/allocation, retry, replacement or fitting followed. Bucket 36 is permanently consumed and
+inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining

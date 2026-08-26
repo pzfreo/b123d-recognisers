@@ -108,7 +108,7 @@ ALLOCATION_SPECS: Final = (
         F4B_SECTION_PASSAGES_H1,
         "f4b_section_passages_h1",
         frozenset({36}),
-        "sealed_unrevealed",
+        "consumed",
     ),
 )
 

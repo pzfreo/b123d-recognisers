@@ -201,7 +201,7 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
         },
         F4B_SECTION_PASSAGES_H1: {
             "buckets": sorted(NAMED_ALLOCATIONS[F4B_SECTION_PASSAGES_H1]),
-            "status": "sealed_unrevealed",
+            "status": "consumed",
         },
     }
     partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
