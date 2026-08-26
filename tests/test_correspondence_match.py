@@ -18,6 +18,7 @@ from build123d import (
     extrude,
     import_step,
 )
+from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 
 import b123d_recognisers._correspondence_match as correspondence_match_module
 from b123d_recognisers._body_geometry import ANGLE_TOL, DIRECTION_TOL
@@ -52,6 +53,7 @@ from tests.test_correspondence_snapshot import (
     _line_rrp,
     _proper_signed_permutations,
     _proper_transform,
+    _raw_planar_cycle_oracle,
     _rrp,
     _two_rrp_one_solid,
 )
@@ -107,41 +109,145 @@ def _prism_fact_for(occurrence, *, graph=None, summary=None):
 
 
 def _raw_prism_partition_oracle(part):
-    """Collect one axial extrusion proof before any production snapshot is read."""
+    """Derive complete raw prism topology before any production snapshot is read."""
 
     solids = tuple(part.solids())
     facts = []
     for solid in solids:
+        planar_cycles, raw_edges = _raw_planar_cycle_oracle(solid)
         faces = tuple(solid.faces())
-        caps = []
-        sides = []
-        for face in faces:
-            centre = tuple(float(value) for value in face.center())
-            normal = tuple(float(value) for value in face.normal_at(face.center()))
-            if abs(abs(normal[2]) - 1.0) <= 4.0 * DIRECTION_TOL:
-                wire = face.outer_wire()
-                cycle = tuple(
-                    (
-                        edge.geom_type.name,
-                        round(float(edge.length), 6),
-                        tuple(round(float(value), 6) for value in edge.position_at(0)),
-                        tuple(round(float(value), 6) for value in edge.position_at(1)),
-                    )
-                    for edge in wire.edges()
-                )
-                caps.append((centre[2], math.copysign(1, normal[2]), cycle, float(face.area)))
-            else:
-                sides.append(face)
-        assert len(caps) == 2
-        caps.sort(key=lambda value: value[0])
-        low, high = caps
-        assert low[0] < high[0]
-        assert low[1] == -high[1]
-        assert len(low[2]) == len(high[2]) == len(sides)
-        assert sorted((kind, length) for kind, length, *_ in low[2]) == sorted(
-            (kind, length) for kind, length, *_ in high[2]
+
+        owners = {
+            edge_at: tuple(
+                face_at
+                for face_at, face in enumerate(faces)
+                if any(candidate.wrapped.IsSame(edge.wrapped) for candidate in face.edges())
+            )
+            for edge_at, edge in enumerate(raw_edges)
+        }
+        assert all(len(face_owners) == 2 for face_owners in owners.values())
+
+        candidates = []
+        planar_faces = tuple(
+            face_at
+            for face_at, face in enumerate(faces)
+            if BRepAdaptor_Surface(face.wrapped).GetType().name == "GeomAbs_Plane"
+            and (face_at, "outer") in planar_cycles
         )
-        facts.append((low[0], high[0], low[2], float(solid.volume), tuple(solid.center())))
+        for left_at in planar_faces:
+            for right_at in planar_faces:
+                if right_at <= left_at:
+                    continue
+                left_face, right_face = faces[left_at], faces[right_at]
+                left_normal = tuple(
+                    float(value) for value in left_face.normal_at(left_face.center())
+                )
+                right_normal = tuple(
+                    float(value) for value in right_face.normal_at(right_face.center())
+                )
+                if sum(a * b for a, b in zip(left_normal, right_normal, strict=True)) > -(
+                    1.0 - 4.0 * DIRECTION_TOL
+                ):
+                    continue
+                first_axis = next(value for value in left_normal if abs(value) > 1e-12)
+                axis = tuple((1.0 if first_axis > 0.0 else -1.0) * value for value in left_normal)
+                left_position = sum(
+                    value * direction
+                    for value, direction in zip(left_face.center(), axis, strict=True)
+                )
+                right_position = sum(
+                    value * direction
+                    for value, direction in zip(right_face.center(), axis, strict=True)
+                )
+                if right_position < left_position:
+                    left_at, right_at = right_at, left_at
+                    left_face, right_face = right_face, left_face
+                    left_position, right_position = right_position, left_position
+                low_cycle = planar_cycles[(left_at, "outer")]
+                high_cycle = planar_cycles[(right_at, "outer")]
+                low_edges = tuple(edge_at for edge_at, _direction in low_cycle)
+                high_edges = tuple(edge_at for edge_at, _direction in high_cycle)
+                low_sides = tuple(
+                    next(face for face in owners[edge] if face != left_at) for edge in low_edges
+                )
+                high_sides = tuple(
+                    next(face for face in owners[edge] if face != right_at) for edge in high_edges
+                )
+                if len(set(low_sides)) != len(low_sides) or set(low_sides) != set(high_sides):
+                    continue
+                side_set = set(low_sides)
+                if side_set != set(range(len(faces))) - {left_at, right_at}:
+                    continue
+                if any(
+                    sum(face in side_set for face in owners[edge]) != 2
+                    for edge in owners
+                    if edge not in set(low_edges) | set(high_edges)
+                ):
+                    continue
+                side_pairs = tuple(
+                    (
+                        low_sides[index],
+                        low_sides[(index + 1) % len(low_sides)],
+                    )
+                    for index in range(len(low_sides))
+                )
+                axial_pairs = {
+                    tuple(sorted(owners[edge]))
+                    for edge in owners
+                    if edge not in set(low_edges) | set(high_edges)
+                }
+                if axial_pairs != {tuple(sorted(pair)) for pair in side_pairs}:
+                    continue
+
+                def label(edge_at: int, direction: int, raw_edges=raw_edges):
+                    adaptor = BRepAdaptor_Curve(raw_edges[edge_at].wrapped)
+                    kind = adaptor.GetType().name.removeprefix("GeomAbs_").upper()
+                    base = (kind, round(float(raw_edges[edge_at].length), 9), direction)
+                    if kind != "CIRCLE":
+                        return base
+                    circle = adaptor.Circle()
+                    return (
+                        *base,
+                        round(float(circle.Radius()), 9),
+                        round(float(adaptor.LastParameter() - adaptor.FirstParameter()), 12),
+                    )
+
+                low_labels = tuple(label(*item) for item in low_cycle)
+                high_labels = tuple(label(*item) for item in high_cycle)
+
+                def congruence_label(value):
+                    if value[0] == "CIRCLE":
+                        return (value[0], value[1], value[3], abs(value[4]))
+                    return value[:2]
+
+                # Both cycles are independently material-oriented; opposite cap normals reverse
+                # the presentation while preserving the complete analytic curve roster.
+                low_congruence = tuple(congruence_label(value) for value in low_labels)
+                high_congruence = tuple(congruence_label(value) for value in high_labels)
+                high_presentations = {
+                    high_congruence[offset:] + high_congruence[:offset]
+                    for offset in range(len(high_congruence))
+                } | {
+                    tuple(reversed(high_congruence))[offset:]
+                    + tuple(reversed(high_congruence))[:offset]
+                    for offset in range(len(high_congruence))
+                }
+                if low_congruence not in high_presentations:
+                    continue
+                candidates.append(
+                    (
+                        left_position,
+                        right_position,
+                        tuple(round(value, 12) for value in axis),
+                        low_labels,
+                        tuple(sorted(side_set)),
+                        tuple(sorted(axial_pairs)),
+                        float(solid.volume),
+                        tuple(float(value) for value in solid.center()),
+                    )
+                )
+        assert len(candidates) == 1
+        facts.append(candidates[0])
     return tuple(facts)
 
 
@@ -228,7 +334,7 @@ def test_reviewed_line_mixed_and_higher_prism_roster(factory, repeats: int) -> N
     assert len(whole_oracle) == 1 and len(pieces_oracle) == 2
     assert pieces_oracle[0][0] == pytest.approx(whole_oracle[0][0])
     assert pieces_oracle[-1][1] == pytest.approx(whole_oracle[0][1])
-    assert sum(fact[3] for fact in pieces_oracle) == pytest.approx(whole_oracle[0][3])
+    assert sum(fact[6] for fact in pieces_oracle) == pytest.approx(whole_oracle[0][6])
 
     whole = _take_inventory(whole_part)
     pieces = _take_inventory(pieces_part)
@@ -267,52 +373,67 @@ def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
     summary = occurrence.summary
     assert _prism_fact_for(occurrence) is not None
 
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(summary, repeat_count=summary.repeat_count + 1),
-    ) is None
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(summary, edge_count=summary.edge_count + 1),
-    ) is None
-    changed_signature = (
-        ("CIRCLE" if summary.sector_signature[0][0] == "LINE" else "LINE",)
-        + summary.sector_signature[0][1:]
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(summary, repeat_count=summary.repeat_count + 1),
+        )
+        is None
     )
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(
-            summary,
-            sector_signature=(changed_signature, *summary.sector_signature[1:]),
-        ),
-    ) is None
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(summary, edge_count=summary.edge_count + 1),
+        )
+        is None
+    )
+    changed_signature = (
+        "CIRCLE" if summary.sector_signature[0][0] == "LINE" else "LINE",
+    ) + summary.sector_signature[0][1:]
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(
+                summary,
+                sector_signature=(changed_signature, *summary.sector_signature[1:]),
+            ),
+        )
+        is None
+    )
     sampled = summary.sector_signature[0][2]
     changed_sample = (sampled[0][0] + 1.0, sampled[0][1])
     changed_samples = (changed_sample, *sampled[1:])
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(
-            summary,
-            sector_signature=(
-                (*summary.sector_signature[0][:2], changed_samples),
-                *summary.sector_signature[1:],
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(
+                summary,
+                sector_signature=(
+                    (*summary.sector_signature[0][:2], changed_samples),
+                    *summary.sector_signature[1:],
+                ),
             ),
-        ),
-    ) is None
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(
-            summary,
-            centre=(summary.centre[0] + 1.0, *summary.centre[1:]),
-        ),
-    ) is None
-    changed_defining = replace(
-        summary.defining[0], area=summary.defining[0].area + 1.0
+        )
+        is None
     )
-    assert _prism_fact_for(
-        occurrence,
-        summary=replace(summary, defining=(changed_defining, summary.defining[1])),
-    ) is None
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(
+                summary,
+                centre=(summary.centre[0] + 1.0, *summary.centre[1:]),
+            ),
+        )
+        is None
+    )
+    changed_defining = replace(summary.defining[0], area=summary.defining[0].area + 1.0)
+    assert (
+        _prism_fact_for(
+            occurrence,
+            summary=replace(summary, defining=(changed_defining, summary.defining[1])),
+        )
+        is None
+    )
 
     cap_at = next(
         at
@@ -352,9 +473,7 @@ def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
     incidence = dict(graph.incidence)
     incidence[cap_curve] = (*incidence[cap_curve], incidence[cap_curve][0])
     changed_incidence = tuple(sorted(incidence.items()))
-    assert _prism_fact_for(
-        occurrence, graph=replace(graph, incidence=changed_incidence)
-    ) is None
+    assert _prism_fact_for(occurrence, graph=replace(graph, incidence=changed_incidence)) is None
 
 
 def test_two_independent_partitions_share_one_exact_cover_without_order_authority() -> None:
