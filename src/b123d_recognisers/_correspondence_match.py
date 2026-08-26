@@ -1579,6 +1579,26 @@ def _prism_curve_similarity(
     )
     if not point_matches(expected_start, after.start) or not point_matches(expected_end, after.end):
         return False
+    curve_presentation = 1
+    if before.start is not None and before.end is not None:
+        before_curve_start, before_curve_end = (
+            (before.start, before.end)
+            if before.direction == 1
+            else (before.end, before.start)
+        )
+        after_curve_start, after_curve_end = (
+            (after.start, after.end) if after.direction == 1 else (after.end, after.start)
+        )
+        if point_matches(before_curve_start, after_curve_start) and point_matches(
+            before_curve_end, after_curve_end
+        ):
+            curve_presentation = 1
+        elif point_matches(before_curve_start, after_curve_end) and point_matches(
+            before_curve_end, after_curve_start
+        ):
+            curve_presentation = -1
+        else:
+            return False
     if not point_matches(before.centre, after.centre):
         return False
     if before.axis is None or after.axis is None:
@@ -1596,12 +1616,15 @@ def _prism_curve_similarity(
         if not _close(after.sweep, 2.0 * math.pi, 4.0 * ANGLE_TOL):
             return False
     elif not _close(
-        before.sweep * axis_sign,
+        before.sweep * axis_sign * curve_presentation,
         after.sweep,
         4.0 * ANGLE_TOL,
     ):
         return False
-    return after.direction == before.direction * presentation * axis_sign
+    expected_direction = before.direction * presentation * curve_presentation
+    if before.full:
+        expected_direction *= axis_sign
+    return after.direction == expected_direction
 
 
 def _prism_cap_similarity(
@@ -1785,9 +1808,9 @@ def _partition_witnesses(
             budget.charge()
             target = list(occurrence.summary.centre)
             target[axis_at] = (target_lo + target_hi) / 2.0
-            candidate = cast(Vector3, tuple(target))
-            if candidate not in target_centres:
-                target_centres.append(candidate)
+            centre_candidate = cast(Vector3, tuple(target))
+            if centre_candidate not in target_centres:
+                target_centres.append(centre_candidate)
         for target_centre in target_centres:
             translation = cast(
                 Vector3,
@@ -1797,6 +1820,14 @@ def _partition_witnesses(
                         rotated_parent_centre, target_centre, strict=True
                     )
                 ),
+            )
+            zero_bound = 2.0 * (
+                scale * parent.quantization.metric_quantum
+                + min(child.quantization.metric_quantum for child in children)
+            )
+            translation = cast(
+                Vector3,
+                tuple(0.0 if abs(value) <= zero_bound else value for value in translation),
             )
             transformed_parent_centre = _affine_point(
                 rotation, translation, scale, parent_occurrence.summary.centre

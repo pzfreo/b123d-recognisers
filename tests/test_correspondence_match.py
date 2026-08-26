@@ -318,10 +318,16 @@ def test_unique_two_child_geometric_partition_and_inverse() -> None:
 
 
 @pytest.mark.parametrize(
-    ("factory", "repeats"),
-    [(_partition_rrp, 5), (_mixed_partition_rrp, 7), (_partition_rrp, 8)],
+    ("factory", "repeats", "expected"),
+    [
+        (_partition_rrp, 5, ChangeKind.SPLIT),
+        (_mixed_partition_rrp, 7, ChangeKind.SPLIT),
+        (_partition_rrp, 8, ChangeKind.AMBIGUOUS),
+    ],
 )
-def test_reviewed_line_mixed_and_higher_prism_roster(factory, repeats: int) -> None:
+def test_reviewed_line_mixed_and_higher_prism_roster(
+    factory, repeats: int, expected: ChangeKind
+) -> None:
     whole_part = factory(10.0, repeats=repeats)
     pieces_part = Compound(
         [
@@ -339,7 +345,9 @@ def test_reviewed_line_mixed_and_higher_prism_roster(factory, repeats: int) -> N
     whole = _take_inventory(whole_part)
     pieces = _take_inventory(pieces_part)
     (relation,) = correspondence_changes(whole, pieces).relations
-    assert relation.kind is ChangeKind.SPLIT
+    assert relation.kind is expected
+    if expected is ChangeKind.AMBIGUOUS:
+        assert len(relation.candidate_witnesses) == 4
 
 
 def test_duplicate_partition_alternatives_make_the_whole_component_ambiguous() -> None:
@@ -546,6 +554,39 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
     assert relation.witness.rotation == ((1, 0, 0), (0, 0, -1), (0, 1, 0))
     assert relation.witness.scale == pytest.approx(1.25, abs=1e-7)
     assert relation.witness.translation == pytest.approx((3.0, -4.0, 7.0), abs=1e-6)
+
+
+def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> None:
+    before = _take_inventory(_partition_rrp(10.0))
+    low = _partition_rrp(4.0)
+    high = _partition_rrp(6.0, 4.0)
+    for rotation in _proper_signed_permutations():
+        transformed = Compound(
+            [_proper_transform(low, rotation), _proper_transform(high, rotation)]
+        )
+        raw = _raw_prism_partition_oracle(transformed)
+        assert len(raw) == 2
+        (relation,) = correspondence_changes(before, _take_inventory(transformed)).relations
+        assert relation.kind is ChangeKind.SPLIT
+        assert relation.witness is not None
+        assert relation.witness.rotation == rotation
+
+
+def test_partition_is_stable_through_step_roundtrip(tmp_path) -> None:
+    whole_path = tmp_path / "partition-whole.step"
+    pieces_path = tmp_path / "partition-pieces.step"
+    whole_part = _partition_rrp(10.0)
+    pieces_part = Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)])
+    export_step(whole_part, whole_path)
+    export_step(pieces_part, pieces_path)
+    imported_whole = import_step(whole_path)
+    imported_pieces = import_step(pieces_path)
+    assert len(_raw_prism_partition_oracle(imported_whole)) == 1
+    assert len(_raw_prism_partition_oracle(imported_pieces)) == 2
+    (relation,) = correspondence_changes(
+        _take_inventory(imported_whole), _take_inventory(imported_pieces)
+    ).relations
+    assert relation.kind is ChangeKind.SPLIT
 
 
 def test_partition_witness_is_independent_of_unequal_child_presentation_order() -> None:
