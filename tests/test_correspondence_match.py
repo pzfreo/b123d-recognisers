@@ -694,20 +694,31 @@ def _snapshot_partition_witness(before_product, after_product, rotation):
     target_lo = min(item.summary.span[0] for item in children)
     target_hi = max(item.summary.span[1] for item in children)
     scale = (target_hi - target_lo) / (parent.summary.span[1] - parent.summary.span[0])
-    target_centre = list(children[0].summary.centre)
-    target_centre[axis_at] = (target_lo + target_hi) / 2.0
     rotated_centre = _rotate(rotation, parent.summary.centre)
-    translation = tuple(
-        target - scale * source
-        for source, target in zip(rotated_centre, target_centre, strict=True)
-    )
     zero_bound = 2.0 * (
         scale * parent.body.quantization.metric_quantum
         + min(item.body.quantization.metric_quantum for item in children)
     )
+    candidates = []
+    for child in children:
+        target_centre = list(child.summary.centre)
+        target_centre[axis_at] = (target_lo + target_hi) / 2.0
+        candidates.append(
+            _normalize_partition_translation(
+                tuple(
+                    target - scale * source
+                    for source, target in zip(rotated_centre, target_centre, strict=True)
+                ),
+                zero_bound,
+            )
+        )
+    translation = tuple(
+        math.fsum(candidate[at] for candidate in candidates) / len(candidates)
+        for at in range(3)
+    )
     return RigidScaleWitness(
         rotation,
-        _normalize_partition_translation(translation, zero_bound),
+        translation,
         scale,
     )
 
