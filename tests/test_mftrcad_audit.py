@@ -20,24 +20,6 @@ from mftrcad_audit import (  # noqa: E402
     DATASET_REF,
     DATASET_VERSION,
     DEVELOPMENT_BUCKETS,
-    F3B_POLYGONAL_BOSSES_H1,
-    F4B_SECTION_PASSAGES_H1,
-    F5_BOSSES_H1,
-    F5_CHANNELS_H1,
-    F5_COUNTERSINKS_H1,
-    F5_DOUBLE_D_BORES_H1,
-    F5_FILLETS_H1,
-    F5_FLATS_H1,
-    F5_HOLES_H1,
-    F5_PADS_H1,
-    F5_PLATES_H1,
-    F5_POCKETS_H1,
-    F5_POLYGONAL_BOSSES_H1,
-    F5_POLYGONAL_STOCK_H1,
-    F5_REPEATING_RADIAL_PROFILES_H1,
-    F5_RISERS_H1,
-    F5_SLOTS_H1,
-    F5_STEP_LEVELS_H1,
     FEATURE_LABELS,
     HOLDOUT_BUCKETS,
     NAMED_ALLOCATIONS,
@@ -45,8 +27,6 @@ from mftrcad_audit import (  # noqa: E402
     SELECTIONS,
     Selection,
     audit,
-    check_compact_baseline,
-    compact_baseline,
     discover_models,
     selection_bucket,
     selection_of,
@@ -92,22 +72,18 @@ def _dataset(tmp_path: Path, *, model_id: str = DEFAULT_MODEL_ID) -> Path:
 
 def test_selection_is_outcome_independent_disjoint_and_stable() -> None:
     assert set(get_args(Selection)) == SELECTIONS
+    assert {"development", "holdout"} == SELECTIONS
+    assert frozenset(range(0, 500)) == DEVELOPMENT_BUCKETS
+    assert frozenset(range(500, 1000)) == HOLDOUT_BUCKETS
     assert DEVELOPMENT_BUCKETS.isdisjoint(HOLDOUT_BUCKETS)
+    assert set(range(1000)) == DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS
     assert selection_bucket("20240116_231044_0") == 113
-    assert selection_of("20240116_231044_0") == "unselected"
+    assert selection_of("20240116_231044_0") == "development"
 
     # This exercises both selected arms without reading a label or STEP file. A selection
     # rule that accidentally hashed annotation content could not have this API.
-    selected = {
-        model_id: selection_of(model_id)
-        for at in range(10_000)
-        if selection_of(model_id := f"model-{at}") != "unselected"
-    }
-    assert {value for value in selected.values()} == {
-        "development",
-        "holdout",
-        *(spec.selection_token for spec in audit_module.ALLOCATION_SPECS),
-    }
+    selected = {f"model-{at}": selection_of(f"model-{at}") for at in range(10_000)}
+    assert set(selected.values()) == SELECTIONS
     assert not (
         {name for name, value in selected.items() if value == "development"}
         & {name for name, value in selected.items() if value == "holdout"}
@@ -133,87 +109,13 @@ def test_checked_in_selection_and_baseline_are_versioned_and_sealed() -> None:
 
     assert selection["dataset"]["ref"] == baseline["dataset_ref"] == DATASET_REF
     assert selection["dataset"]["version"] == baseline["dataset_version"] == DATASET_VERSION
-    assert selection["selection"]["development_buckets"] == sorted(DEVELOPMENT_BUCKETS)
-    assert selection["selection"]["holdout_buckets"] == sorted(HOLDOUT_BUCKETS)
-    assert selection["selection"]["named_allocations"] == {
-        F5_FILLETS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_FILLETS_H1]),
-            "status": "consumed",
-        },
-        F5_FLATS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_FLATS_H1]),
-            "status": "consumed",
-        },
-        F5_COUNTERSINKS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_COUNTERSINKS_H1]),
-            "status": "consumed",
-        },
-        F5_BOSSES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_BOSSES_H1]),
-            "status": "consumed",
-        },
-        F5_DOUBLE_D_BORES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_DOUBLE_D_BORES_H1]),
-            "status": "consumed",
-        },
-        F5_POLYGONAL_BOSSES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_BOSSES_H1]),
-            "status": "consumed",
-        },
-        F5_PADS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_PADS_H1]),
-            "status": "consumed",
-        },
-        F5_HOLES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_HOLES_H1]),
-            "status": "consumed",
-        },
-        F5_CHANNELS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_CHANNELS_H1]),
-            "status": "consumed",
-        },
-        F5_PLATES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_PLATES_H1]),
-            "status": "consumed",
-        },
-        F5_POLYGONAL_STOCK_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_POLYGONAL_STOCK_H1]),
-            "status": "consumed",
-        },
-        F5_SLOTS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_SLOTS_H1]),
-            "status": "consumed",
-        },
-        F5_POCKETS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_POCKETS_H1]),
-            "status": "consumed",
-        },
-        F5_REPEATING_RADIAL_PROFILES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_REPEATING_RADIAL_PROFILES_H1]),
-            "status": "consumed",
-        },
-        F5_STEP_LEVELS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_STEP_LEVELS_H1]),
-            "status": "sealed_unrevealed",
-        },
-        F5_RISERS_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F5_RISERS_H1]),
-            "status": "sealed_unrevealed",
-        },
-        F4B_SECTION_PASSAGES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F4B_SECTION_PASSAGES_H1]),
-            "status": "consumed",
-        },
-        F3B_POLYGONAL_BOSSES_H1: {
-            "buckets": sorted(NAMED_ALLOCATIONS[F3B_POLYGONAL_BOSSES_H1]),
-            "status": "consumed",
-        },
+    assert selection["schema_version"] == 2
+    assert selection["selection"]["development_bucket_ranges"] == [[0, 499]]
+    assert selection["selection"]["holdout_bucket_ranges"] == [[500, 999]]
+    assert selection["selection"]["historical_named_allocations"] == {
+        spec.policy_id: {"buckets": sorted(spec.buckets), "status": spec.status}
+        for spec in audit_module.ALLOCATION_SPECS
     }
-    partition = DEVELOPMENT_BUCKETS | HOLDOUT_BUCKETS | set().union(*NAMED_ALLOCATIONS.values())
-    assert len(partition) == 38
-    assert partition.isdisjoint(set(range(38, 1000)))
-    assert partition | set(range(38, 1000)) == set(range(1000))
-    assert selection["selection"]["unselected_bucket_ranges"] == [[38, 999]]
     assert baseline["archive_inventory"] == {
         "selected_step_entries": 301,
         "complete_annotation_triples": 300,
@@ -252,141 +154,11 @@ def test_holdout_requires_an_explicit_post_review_reveal(tmp_path: Path) -> None
     )
 
 
-def test_all_selection_cannot_bypass_the_holdout_gate(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    root = _dataset(tmp_path)
-    opened: list[str] = []
-    monkeypatch.setattr(
-        audit_module,
-        "audit_model",
-        lambda files, **kwargs: opened.append(files.model_id),
-    )
-
-    with pytest.raises(ValueError, match="selection 'all' is closed while named allocations exist"):
-        audit(root, selection="all", annotations_only=True)
-    assert opened == []
-
-
-@pytest.mark.parametrize(
-    ("token", "policy_id", "bucket", "status"),
-    [
-        (spec.selection_token, spec.policy_id, next(iter(spec.buckets)), spec.status)
-        for spec in audit_module.ALLOCATION_SPECS
-    ],
-)
-def test_named_allocation_requires_exact_nontransferable_authority(
-    tmp_path: Path, token: str, policy_id: str, bucket: int, status: str
-) -> None:
-    model_id = next(
-        f"{token}-{at}" for at in range(10_000) if selection_of(f"{token}-{at}") == token
-    )
-    root = _dataset(tmp_path, model_id=model_id)
-
-    with pytest.raises(ValueError, match=f"requires exact acknowledgement '{policy_id}'"):
-        audit(root, selection=token, annotations_only=True)
-    with pytest.raises(ValueError, match=f"requires exact acknowledgement '{policy_id}'"):
-        discover_models(root, selection=token, allow_holdout=True)
-    with pytest.raises(ValueError, match="does not accept reveal authority"):
-        audit(
-            root,
-            selection="development",
-            annotations_only=True,
-            reveal_allocations=frozenset({policy_id}),
-        )
-
-    report = audit(
-        root,
-        selection=token,
-        annotations_only=True,
-        reveal_allocations=frozenset({policy_id}),
-    )
-    allocation = report["sealed_allocation"]
-    assert allocation["id"] == policy_id
-    assert allocation["buckets"] == [bucket]
-    assert allocation["policy_status"] == status
-    assert allocation["selection_policy_schema_version"] == 1
-    assert allocation["selection_namespace"] == audit_module.SELECTION_NAMESPACE
-    assert allocation["selection_modulus"] == audit_module.SELECTION_MODULUS
-    assert len(allocation["selection_policy_sha256"]) == 64
-
-
-@pytest.mark.parametrize(
-    ("token", "policy_id", "wrong_policy_id"),
-    [
-        (
-            spec.selection_token,
-            spec.policy_id,
-            audit_module.ALLOCATION_SPECS[index - 1].policy_id,
-        )
-        for index, spec in enumerate(audit_module.ALLOCATION_SPECS)
-    ],
-)
-def test_named_allocation_requires_its_own_exact_authority(
-    tmp_path: Path, token: str, policy_id: str, wrong_policy_id: str
-) -> None:
-    model_id = next(
-        f"{token}-{at}" for at in range(10_000) if selection_of(f"{token}-{at}") == token
-    )
-    root = _dataset(tmp_path, model_id=model_id)
-    for authority in (
-        frozenset(),
-        frozenset({wrong_policy_id}),
-        frozenset({wrong_policy_id, policy_id}),
-    ):
-        with pytest.raises(ValueError, match=f"requires exact acknowledgement '{policy_id}'"):
-            audit(
-                root,
-                selection=token,
-                annotations_only=True,
-                reveal_allocations=authority,
-            )
-
-
-@pytest.mark.parametrize(
-    "token",
-    [spec.selection_token for spec in audit_module.ALLOCATION_SPECS],
-)
-def test_named_allocation_refuses_before_touching_the_root(tmp_path: Path, token: str) -> None:
-    missing = tmp_path / "must-not-be-read"
-    with pytest.raises(ValueError, match="requires exact acknowledgement"):
-        audit(missing, selection=token, annotations_only=True)
-    with pytest.raises(ValueError, match="requires exact acknowledgement"):
-        discover_models(missing, selection=token)
-    with pytest.raises(ValueError, match="requires exact acknowledgement"):
-        audit_module._discover(
-            missing,
-            selection=token,
-            record_invalid=False,
-        )
-
-
-@pytest.mark.parametrize(
-    "token",
-    [spec.selection_token for spec in audit_module.ALLOCATION_SPECS],
-)
-def test_cli_named_allocation_refuses_before_touching_the_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, token: str
-) -> None:
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "mftrcad_audit.py",
-            str(tmp_path / "must-not-be-read"),
-            "--selection",
-            token,
-        ],
-    )
-    with pytest.raises(ValueError, match="requires exact acknowledgement"):
-        audit_module.main()
-
-
-def test_unknown_allocation_acknowledgement_fails_closed(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="unknown sealed allocation acknowledgement"):
+def test_historical_allocation_authority_is_retired(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="historical allocations are retired"):
         audit(
             tmp_path / "must-not-be-read",
-            reveal_allocations=frozenset({"F5-UNKNOWN-H1"}),
+            reveal_allocations=frozenset({next(iter(NAMED_ALLOCATIONS))}),
         )
 
 
@@ -404,26 +176,34 @@ def test_unknown_selection_fails_before_touching_the_root(tmp_path: Path, entry:
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
-        (lambda policy: policy.update(schema_version=2), "schema version 1"),
+        (lambda policy: policy.update(schema_version=1), "schema version 2"),
         (
             lambda policy: policy["selection"].update(namespace="wrong"),
             "namespace differs",
         ),
         (
-            lambda policy: policy["selection"]["named_allocations"].update(
+            lambda policy: policy["selection"]["historical_named_allocations"].update(
                 {"F5-EXTRA-H1": {"buckets": [21], "status": "sealed_unrevealed"}}
             ),
-            "named allocations differ",
+            "historical allocations differ",
         ),
         (
-            lambda policy: policy["selection"]["named_allocations"][F5_FLATS_H1].update(
-                status="unknown"
-            ),
-            "named allocations differ",
+            lambda policy: policy["selection"]["historical_named_allocations"][
+                next(iter(NAMED_ALLOCATIONS))
+            ].update(status="unknown"),
+            "historical allocations differ",
         ),
         (
-            lambda policy: policy["selection"].update(unselected_bucket_ranges=[[21, 999]]),
-            "unselected complement differs",
+            lambda policy: policy["selection"].update(development_bucket_ranges=[[0, 498]]),
+            "development buckets differ",
+        ),
+        (
+            lambda policy: policy["selection"].update(named_allocations={}),
+            "keys differ",
+        ),
+        (
+            lambda policy: policy["selection"].update(unselected_bucket_ranges=[[0, 999]]),
+            "keys differ",
         ),
     ],
 )
@@ -440,34 +220,29 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
     [
         (
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "retired_unrevealed"
             ),
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_other_h1", frozenset({21}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_other_h1", frozenset({21}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec("F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "consumed"),
             audit_module.AllocationSpec(
-                "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "sealed_unrevealed"
+                "F5-OTHER-H1", "f5_other_h1", frozenset({20}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec(
-                "F5-OTHER-H1", "f5_other_h1", frozenset({10}), "sealed_unrevealed"
+                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "retired_unrevealed"
+            ),
+            audit_module.AllocationSpec(
+                "F5-OTHER-H1", "f5_flats_h1", frozenset({21}), "retired_unrevealed"
             ),
         ),
         (
             audit_module.AllocationSpec(
-                "F5-FLATS-H1", "f5_flats_h1", frozenset({20}), "sealed_unrevealed"
-            ),
-            audit_module.AllocationSpec(
-                "F5-OTHER-H1", "f5_flats_h1", frozenset({21}), "sealed_unrevealed"
-            ),
-        ),
-        (
-            audit_module.AllocationSpec(
-                "F5-FLATS-H1", "F5-FLATS-H1", frozenset({20}), "sealed_unrevealed"
+                "F5-FLATS-H1", "F5-FLATS-H1", frozenset({20}), "retired_unrevealed"
             ),
         ),
     ],
@@ -475,25 +250,6 @@ def test_selection_policy_mutations_fail_closed(mutate, message: str) -> None:
 def test_allocation_roster_refuses_duplicate_or_noncanonical_mappings(specs) -> None:
     with pytest.raises(ValueError, match="unique|canonical|disjoint"):
         audit_module._validate_allocation_specs(specs)
-
-
-@pytest.mark.parametrize(
-    "named",
-    tuple(spec.selection_token for spec in audit_module.ALLOCATION_SPECS),
-)
-def test_unselected_excludes_a_named_allocation(tmp_path: Path, named: str) -> None:
-    sealed = next(
-        f"sealed-{named}-{at}"
-        for at in range(10_000)
-        if selection_of(f"sealed-{named}-{at}") == named
-    )
-    ordinary = next(
-        f"ordinary-{at}" for at in range(10_000) if selection_of(f"ordinary-{at}") == "unselected"
-    )
-    root = _dataset(tmp_path, model_id=sealed)
-    _dataset(tmp_path, model_id=ordinary)
-    models = discover_models(root, selection="unselected")
-    assert [model.model_id for model in models] == [ordinary]
 
 
 def test_annotation_audit_is_deterministic_and_counts_instances_and_relations(
@@ -534,25 +290,25 @@ def test_incomplete_model_is_refused(tmp_path: Path) -> None:
         discover_models(root)
 
 
-def test_selected_incomplete_model_is_recorded_but_unselected_one_cannot_block(
+def test_selected_incomplete_model_is_recorded_but_holdout_one_cannot_block(
     tmp_path: Path,
 ) -> None:
     root = _dataset(tmp_path)
     selected_relation = root / "labels" / f"{DEFAULT_MODEL_ID}_result_rel.json"
     selected_relation.unlink()
-    result = audit(root, annotations_only=True, record_invalid=True)
+    result = audit(root, annotations_only=True)
     assert result["summary"]["models"] == 0
     assert result["summary"]["invalid_models"] == 1
     assert result["invalid"][0]["model_id"] == DEFAULT_MODEL_ID
     assert "missing labels/" in result["invalid"][0]["error"]
 
-    unselected_id = next(
-        f"unselected-{at}"
+    holdout_id = next(
+        f"holdout-{at}"
         for at in range(10_000)
-        if selection_of(f"unselected-{at}") == "unselected"
+        if selection_of(f"holdout-{at}") == "holdout"
     )
-    _dataset(tmp_path, model_id=unselected_id)
-    (root / "labels" / f"{unselected_id}_result_rel.json").unlink()
+    _dataset(tmp_path, model_id=holdout_id)
+    (root / "labels" / f"{holdout_id}_result_rel.json").unlink()
     _dataset(tmp_path, model_id=DEFAULT_MODEL_ID)
     result = audit(root, annotations_only=True)
     assert result["summary"]["models"] == 1
@@ -562,7 +318,7 @@ def test_selected_incomplete_model_is_recorded_but_unselected_one_cannot_block(
 def test_selected_orphan_annotation_is_recorded(tmp_path: Path) -> None:
     root = _dataset(tmp_path)
     (root / "steps" / f"{DEFAULT_MODEL_ID}_result.step").unlink()
-    result = audit(root, annotations_only=True, record_invalid=True)
+    result = audit(root, annotations_only=True)
     assert result["summary"]["models"] == 0
     assert result["invalid"][0]["model_id"] == DEFAULT_MODEL_ID
     assert "missing steps/" in result["invalid"][0]["error"]
@@ -575,7 +331,7 @@ def test_noncontiguous_face_ids_are_refused(tmp_path: Path) -> None:
     label["cls"]["7"] = label["cls"].pop("5")
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match="contiguous and zero-based"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 @pytest.mark.parametrize(
@@ -595,7 +351,7 @@ def test_noncanonical_annotation_scalars_fail_closed(tmp_path: Path, mutate, mes
     mutate(label)
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match=message):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_unknown_relation_and_foreign_instance_are_refused(tmp_path: Path) -> None:
@@ -603,7 +359,7 @@ def test_unknown_relation_and_foreign_instance_are_refused(tmp_path: Path) -> No
     relation_path = next((root / "labels").glob("*_result_rel.json"))
     relation_path.write_text(json.dumps({"relation": [["touches", [0, 9]]]}), encoding="utf-8")
     with pytest.raises(ValueError, match="unknown kind 'touches'"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_invalid_model_can_be_recorded_without_becoming_evidence(tmp_path: Path) -> None:
@@ -701,7 +457,7 @@ def test_duplicate_relationship_group_is_refused(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="duplicates an earlier relationship"):
-        audit(root, annotations_only=True)
+        audit(root, annotations_only=True, record_invalid=False)
 
 
 def test_step_annotation_face_count_mismatch_is_refused(tmp_path: Path) -> None:
@@ -712,7 +468,7 @@ def test_step_annotation_face_count_mismatch_is_refused(tmp_path: Path) -> None:
     label["bottom"]["6"] = 0
     label_path.write_text(json.dumps(label), encoding="utf-8")
     with pytest.raises(ValueError, match="STEP has 6 faces but annotation has 7"):
-        audit(root, annotations_only=False)
+        audit(root, annotations_only=False, record_invalid=False)
 
 
 def test_generator_face_order_mismatch_refuses_attribution(
@@ -726,7 +482,7 @@ def test_generator_face_order_mismatch_refuses_attribution(
         lambda part: tuple(reversed(original(part))),
     )
     with pytest.raises(ValueError, match="traversal differs from the audited generator order"):
-        audit(root, annotations_only=False)
+        audit(root, annotations_only=False, record_invalid=False)
 
 
 def test_selected_artifact_digest_is_deterministic_and_content_bound(tmp_path: Path) -> None:
@@ -747,22 +503,3 @@ def test_report_errors_use_portable_paths() -> None:
     assert audit_module._portable_error(error, root) == (
         "<root>/labels/model_result.json: malformed"
     )
-
-
-def test_compact_baseline_is_an_exact_checked_projection(tmp_path: Path) -> None:
-    root = _dataset(tmp_path)
-    report = audit(root, annotations_only=False)
-    compact = compact_baseline(report)
-    baseline = tmp_path / "baseline.json"
-    baseline.write_text(json.dumps(compact), encoding="utf-8")
-
-    assert check_compact_baseline(report, baseline) == compact
-
-    changed = json.loads(json.dumps(compact))
-    changed["scanner_summary"]["valid_models"] += 1
-    baseline.write_text(json.dumps(changed), encoding="utf-8")
-    with pytest.raises(ValueError, match="differs"):
-        check_compact_baseline(report, baseline)
-
-    with pytest.raises(ValueError, match="full development recognition report"):
-        compact_baseline(audit(root, annotations_only=True))

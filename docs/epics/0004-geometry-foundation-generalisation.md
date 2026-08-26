@@ -574,6 +574,17 @@ discovery stopped before annotation, STEP import or recognition and no report wa
 alternate root/allocation, retry, replacement or fitting followed. Bucket 37 is permanently
 consumed and inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
 
+That allocation chronology is now historical. The current schema-2 corpus policy uses one stable
+hash split: MFTRCAD buckets 0..499 are open development/validation data and buckets 500..999 are the
+sealed final holdout. Feature-specific selectors, acknowledgements and one-shot reveals are retired;
+their status remains only as provenance. Malformed development inputs are recorded and skipped.
+The complete MFCAD++ corpus is open validation data. This simpler policy measures aggregate utility
+throughout development while retaining one substantial MFTRCAD half for final evaluation.
+Old holdout buckets 10..19 and unrevealed allocations 34/35 move into development; previously
+accessed buckets are not newly independent evidence. Repository chronology records no earlier
+`unselected` scan of buckets 500..999, an attestation about recorded runs rather than proof that
+external access was impossible.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
