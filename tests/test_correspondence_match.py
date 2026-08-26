@@ -25,6 +25,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 
 import b123d_recognisers._correspondence_match as correspondence_match_module
+import b123d_recognisers._correspondence_partition as partition_module
 from b123d_recognisers._body_geometry import (
     ANGLE_TOL,
     DESCRIPTOR_FLOOR,
@@ -1299,6 +1300,182 @@ def test_prism_fact_binds_summary_winding_and_exact_incidence() -> None:
     incidence[cap_curve] = (*incidence[cap_curve], incidence[cap_curve][0])
     changed_incidence = tuple(sorted(incidence.items()))
     assert _prism_fact_for(occurrence, graph=replace(graph, incidence=changed_incidence)) is None
+
+
+def test_prism_fact_rejects_complete_lateral_and_connector_topology_drift() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_partition_rrp(10.0))).occurrences[0]
+    graph = occurrence.matching_boundary
+    fact = _prism_fact_for(occurrence)
+    assert fact is not None
+    cap_positions = {fact.low_cap.face_position, fact.high_cap.face_position}
+    side_position = next(at for at in range(len(graph.faces)) if at not in cap_positions)
+    side = graph.faces[side_position]
+
+    def changed_face(position, value):
+        return replace(
+            graph,
+            faces=(*graph.faces[:position], value, *graph.faces[position + 1 :]),
+        )
+
+    assert _prism_fact_for(
+        occurrence, graph=changed_face(side_position, replace(side, kind="SPHERE"))
+    ) is None
+    assert _prism_fact_for(
+        occurrence, graph=changed_face(side_position, replace(side, kind="CYLINDER"))
+    ) is None
+    assert _prism_fact_for(
+        occurrence,
+        graph=changed_face(
+            side_position,
+            replace(side, parameters=(0.0, 0.0, 1.0, *side.parameters[3:])),
+        ),
+    ) is None
+    assert _prism_fact_for(
+        occurrence, graph=changed_face(side_position, replace(side, wires=()))
+    ) is None
+
+    joining_position = next(
+        curve_at
+        for curve_at, owners in graph.incidence
+        if {
+            owner[0] for owner in owners
+        }.isdisjoint(cap_positions)
+    )
+    joining_curve = graph.curves[joining_position]
+    assert joining_curve.vertices is not None
+    changed_curves = (
+        *graph.curves[:joining_position],
+        replace(joining_curve, kind="CIRCLE"),
+        *graph.curves[joining_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, curves=changed_curves)) is None
+    start_at, end_at = joining_curve.vertices
+    changed_vertices = list(graph.vertices)
+    changed_vertices[end_at] = (
+        changed_vertices[end_at][0] + 1.0,
+        changed_vertices[end_at][1],
+        changed_vertices[end_at][2],
+    )
+    assert _prism_fact_for(
+        occurrence, graph=replace(graph, vertices=tuple(changed_vertices))
+    ) is None
+
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(
+            occurrence.summary,
+            span=(occurrence.summary.span[0] + 1.0, occurrence.summary.span[1] + 1.0),
+        ),
+    ) is None
+
+
+def test_prism_leaf_numeric_domains_fail_closed(monkeypatch) -> None:
+    monkeypatch.setattr(partition_module, "DIRECTION_TOL", 2.0)
+    with pytest.raises(ValueError, match="basis is degenerate"):
+        partition_module._plane_basis((0.0, 0.0, 1.0))
+    monkeypatch.setattr(partition_module, "DIRECTION_TOL", DIRECTION_TOL)
+    with pytest.raises(ValueError, match="axis is not principal"):
+        partition_module._polar_signature(
+            ((0.0, 0.0, 0.0),), (0.0, 0.0, 0.0), (1.0, 1.0, 0.0)
+        )
+
+
+def test_prism_curve_leafs_refuse_missing_or_incompatible_geometry() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_partition_rrp(10.0))).occurrences[0]
+    fact = _prism_fact_for(occurrence)
+    assert fact is not None
+    curve = fact.low_cap.section_curves[0]
+    metric = occurrence.body.quantization.metric_quantum
+
+    endpoint_free = replace(
+        curve,
+        start=None,
+        end=None,
+        start_parameter=None,
+        end_parameter=None,
+    )
+    assert partition_module._plane_curve_parameters_match(
+        endpoint_free, fact.low_cap.face, metric
+    )
+    assert not partition_module._plane_curve_parameters_match(
+        replace(curve, start_parameter=None), fact.low_cap.face, metric
+    )
+    assert partition_module._sample_curve(endpoint_free) is None
+    assert partition_module._sample_curve(
+        replace(curve, kind="CIRCLE", centre=None, axis=None, sweep=None)
+    ) is None
+
+    attempts = 0
+
+    def charged() -> None:
+        nonlocal attempts
+        attempts += 1
+
+    incompatible = replace(fact.high_cap.section_curves[0], kind="CIRCLE")
+    high = (incompatible, *fact.high_cap.section_curves[1:])
+    assert not partition_module._translated_cap_curves_match(
+        fact.low_cap.section_curves, high, fact.axis, metric, charged
+    )
+    assert attempts > 0
+
+
+def test_prism_fact_rejects_malformed_signature_and_complete_incidence_drift() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_mixed_partition_rrp(10.0))).occurrences[0]
+    graph = occurrence.matching_boundary
+    fact = _prism_fact_for(occurrence)
+    assert fact is not None
+
+    malformed_signature = (
+        (
+            occurrence.summary.sector_signature[0][0],
+            occurrence.summary.sector_signature[0][1],
+            [],
+        ),
+        *occurrence.summary.sector_signature[1:],
+    )
+    assert _prism_fact_for(
+        occurrence,
+        summary=replace(occurrence.summary, sector_signature=malformed_signature),
+    ) is None
+
+    cap_positions = {fact.low_cap.face_position, fact.high_cap.face_position}
+    side_positions = set(range(len(graph.faces))) - cap_positions
+    curved_side_position = next(
+        position for position in side_positions if graph.faces[position].kind == "CYLINDER"
+    )
+    curved_side = graph.faces[curved_side_position]
+    changed_faces = (
+        *graph.faces[:curved_side_position],
+        replace(curved_side, kind="PLANE", parameters=(1.0, 0.0, 0.0, 0.0)),
+        *graph.faces[curved_side_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    straight_side_position = next(
+        position for position in side_positions if graph.faces[position].kind == "PLANE"
+    )
+    straight_side = graph.faces[straight_side_position]
+    changed_wire = replace(straight_side.wires[0], role="inner")
+    changed_faces = (
+        *graph.faces[:straight_side_position],
+        replace(straight_side, wires=(changed_wire,)),
+        *graph.faces[straight_side_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    cap_curve_position = graph.faces[fact.low_cap.face_position].wires[0].cycle[0].curve
+    changed_incidence = tuple(
+        (position, owners[1:] if position == cap_curve_position else owners)
+        for position, owners in graph.incidence
+    )
+    assert _prism_fact_for(
+        occurrence, graph=replace(graph, incidence=changed_incidence)
+    ) is None
+
+    extra_face = replace(graph.faces[fact.low_cap.face_position], wires=())
+    assert _prism_fact_for(
+        occurrence, graph=replace(graph, faces=(*graph.faces, extra_face))
+    ) is None
 
 
 def test_two_independent_partitions_share_one_exact_cover_without_order_authority() -> None:
