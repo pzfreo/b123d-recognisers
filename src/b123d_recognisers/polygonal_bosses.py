@@ -10,6 +10,7 @@ closed until independent corpus evidence establishes their geometry contract.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TypeVar, cast
@@ -365,13 +366,13 @@ def _polygonal_boss_blend_bridges(
             raise ValueError("selected Polygonal Boss blend chain has no unique logical bridge")
         provenance = view.expand_arc(arcs[0])
         expected_nodes = frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1]))
-        expected_arcs = {
+        expected_arcs = Counter(
             arc.occurrence
             for arc in (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
-        }
-        if provenance.nodes != expected_nodes or {
+        )
+        if provenance.nodes != expected_nodes or Counter(
             arc.occurrence for arc in provenance.arcs
-        } != expected_arcs:
+        ) != expected_arcs:
             raise ValueError("selected Polygonal Boss bridge lost original provenance")
     return frozenset(selected_pairs)
 
