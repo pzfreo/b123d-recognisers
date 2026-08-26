@@ -4,6 +4,12 @@
 - **Date:** 2026-08-16
 - **Package review:** [epic 0001](../epics/0001-review-remediation.md), finding 2
 
+F4b uses separate recognition and serialization bounds. Shared-junction direction (`2e-8`) and
+projected interval (`1e-6 mm`) comparisons decide constant-section topology; solid-classifier
+queries use `1e-6 mm` and end probes start at `2e-5 mm`. Public rounding is not a recognition
+tolerance: the complete source occurrence is reconstructed from the exact serialized basis and
+refuses when any boundary point at either run end moves by more than `0.002 mm`.
+
 ## Context
 
 Recognition gates are written in fixed millimetres: `_MERGE_TOL = 0.5`, `_HOLE_DIA_TOL = 0.2`,

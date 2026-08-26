@@ -109,7 +109,14 @@ from b123d_recognisers.levels import (
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
 from b123d_recognisers.passages import (
     Passage,
+    PassageCompatibilityError,
+    PassageEnds,
+    PassageFrame,
+    PassageSection,
+    PassageSectionVertex,
+    SectionPassage,
     recognise_passages,
+    recognise_section_passages,
 )
 from b123d_recognisers.plates import Plate, has_multi_axis_plates, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
@@ -147,7 +154,7 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned
 try:
     __version__ = version("b123d-recognisers")
 except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
-    __version__ = "0.3.2.dev0"
+    __version__ = "0.4.0.dev0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402
@@ -168,6 +175,12 @@ __all__ = [
     "STEP_LADDER_BOUNDARY_MARGIN",
     "AngledStep",
     "Passage",
+    "PassageCompatibilityError",
+    "PassageEnds",
+    "PassageFrame",
+    "PassageSection",
+    "PassageSectionVertex",
+    "SectionPassage",
     "BoltCircle",
     "Chamfer",
     "Channel",
@@ -221,6 +234,7 @@ __all__ = [
     "recognise_angled_steps",
     "PrismaticPocket",
     "recognise_passages",
+    "recognise_section_passages",
     "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_chamfers",

@@ -52,17 +52,28 @@ to stop. Ring-finding is :func:`b123d_recognisers._adjacency.connected_component
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from typing import cast
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
     FaceNode,
+    SolidRef,
 )
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._passage_compat import (
+    PassageCompatibilityView,
+    PrincipalProjection,
+    compatibility_view,
+    passage_from_view,
+    principal_projection,
+)
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
+from b123d_recognisers._section_passages import SectionRingProposal, section_ring_proposals
 from b123d_recognisers._typing import Part
 
 #: Two walls belong to one ring when their spans along the run axis agree. A coordinate
@@ -70,6 +81,7 @@ from b123d_recognisers._typing import Part
 #: minimum-evidence threshold -- but it compares two derivations of the *same* extrusion, which
 #: differ only by kernel noise, so it is a float epsilon and not a length at all.
 _SPAN_EPS = 1e-6
+_SECTION_SERIALIZATION_LIMIT = 0.002
 
 
 @dataclass(frozen=True, order=True)
@@ -100,6 +112,177 @@ class Passage(Record):
     section: tuple[tuple[float, float], ...]
 
 
+def _numbers(value: object, size: int, *, name: str) -> tuple[float, ...]:
+    if not isinstance(value, tuple) or len(value) != size:
+        raise ValueError(f"{name} must be a {size}-tuple")
+    if any(isinstance(item, bool) or not isinstance(item, int | float) for item in value):
+        raise ValueError(f"{name} must contain finite numbers")
+    result = tuple(float(item) for item in value)
+    if not all(math.isfinite(item) for item in result):
+        raise ValueError(f"{name} must contain finite numbers")
+    return tuple(0.0 if item == 0.0 else item for item in result)
+
+
+def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+    return sum(a * b for a, b in zip(left, right, strict=True))
+
+
+def _cross(
+    left: tuple[float, float, float], right: tuple[float, float, float]
+) -> tuple[float, float, float]:
+    return (
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    )
+
+
+def _unit(value: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = math.sqrt(_dot(value, value))
+    if not math.isfinite(length) or length == 0.0:
+        raise ValueError("frame direction must be finite and nonzero")
+    return tuple(component / length for component in value)  # type: ignore[return-value]
+
+
+def _serialized(values: tuple[float, ...], digits: int, *, name: str) -> None:
+    if any(value != round(value, digits) for value in values):
+        raise ValueError(f"{name} must use at most {digits} decimal places")
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageFrame(Record):
+    """Canonical serialized placement frame for a section passage."""
+
+    origin: tuple[float, float, float]
+    run: tuple[float, float, float]
+    u: tuple[float, float, float]
+    v: tuple[float, float, float]
+
+    def __post_init__(self) -> None:
+        origin = cast(tuple[float, float, float], _numbers(self.origin, 3, name="origin"))
+        run = cast(tuple[float, float, float], _numbers(self.run, 3, name="run"))
+        u = cast(tuple[float, float, float], _numbers(self.u, 3, name="u"))
+        v = cast(tuple[float, float, float], _numbers(self.v, 3, name="v"))
+        _serialized(origin, 3, name="origin")
+        for name, direction in (("run", run), ("u", u), ("v", v)):
+            _serialized(direction, 6, name=name)
+        for direction in (run, u, v):
+            if abs(_dot(direction, direction) - 1.0) > 1e-6:
+                raise ValueError("frame directions must be unit length")
+        if any(abs(_dot(a, b)) > 2e-6 for a, b in ((run, u), (run, v), (u, v))):
+            raise ValueError("frame directions must be orthogonal")
+        if max(abs(a - b) for a, b in zip(_cross(run, u), v, strict=True)) > 3e-6:
+            raise ValueError("frame must be right handed")
+        rounded = tuple(round(abs(value), 6) for value in run)
+        peak = max(rounded)
+        dominant = next(index for index in (2, 1, 0) if rounded[index] == peak)
+        if run[dominant] < -3e-6:
+            raise ValueError("frame run direction is not in the canonical gauge")
+        normalized_run = _unit(run)
+        seeds = ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
+        seed = seeds[dominant]
+        expected_u = _unit(
+            tuple(
+                seed[index] - _dot(seed, normalized_run) * normalized_run[index]
+                for index in range(3)
+            )  # type: ignore[arg-type]
+        )
+        expected_v = _cross(normalized_run, expected_u)
+        if any(
+            math.dist(actual, expected) > 3e-6
+            for actual, expected in ((u, expected_u), (v, expected_v))
+        ):
+            raise ValueError("frame in-plane basis is not canonical")
+        if abs(_dot(origin, run)) > 8e-4:
+            raise ValueError("frame origin must be perpendicular to its run")
+        object.__setattr__(self, "origin", origin)
+        object.__setattr__(self, "run", run)
+        object.__setattr__(self, "u", u)
+        object.__setattr__(self, "v", v)
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageSectionVertex(Record):
+    point: tuple[float, float]
+    bulge: float
+
+    def __post_init__(self) -> None:
+        point = _numbers(self.point, 2, name="point")
+        _serialized(point, 3, name="point")
+        if isinstance(self.bulge, bool) or not isinstance(self.bulge, int | float):
+            raise ValueError("bulge must be a finite number")
+        bulge = float(self.bulge)
+        if not math.isfinite(bulge):
+            raise ValueError("bulge must be a finite number")
+        _serialized((bulge,), 12, name="bulge")
+        object.__setattr__(self, "point", point)
+        object.__setattr__(self, "bulge", 0.0 if bulge == 0.0 else bulge)
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageSection(Record):
+    boundary: tuple[PassageSectionVertex, ...]
+
+    def __post_init__(self) -> None:
+        from b123d_recognisers._sections import PlanarSection, SectionVertex
+
+        if not isinstance(self.boundary, tuple) or not all(
+            isinstance(vertex, PassageSectionVertex) for vertex in self.boundary
+        ):
+            raise ValueError("boundary must contain PassageSectionVertex values")
+        try:
+            canonical = PlanarSection(
+                tuple(SectionVertex(vertex.point, vertex.bulge) for vertex in self.boundary)
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("section boundary is invalid") from exc
+        expected = tuple((vertex.point, vertex.bulge) for vertex in canonical.boundary)
+        actual = tuple((vertex.point, vertex.bulge) for vertex in self.boundary)
+        if actual != expected or math.hypot(*canonical.centroid) > 8e-4:
+            raise ValueError("section boundary must be canonical and origin-centred")
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class PassageEnds(Record):
+    low_capped: bool
+    high_capped: bool
+
+    def __post_init__(self) -> None:
+        if type(self.low_capped) is not bool or type(self.high_capped) is not bool:
+            raise ValueError("passage end conditions must be booleans")
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class SectionPassage(Record):
+    frame: PassageFrame
+    run_interval: tuple[float, float]
+    section: PassageSection
+    ends: PassageEnds
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.frame, PassageFrame):
+            raise ValueError("frame must be a PassageFrame")
+        interval = _numbers(self.run_interval, 2, name="run_interval")
+        _serialized(interval, 3, name="run_interval")
+        if interval[1] - interval[0] <= 1e-9:
+            raise ValueError("run_interval must be increasing")
+        if not isinstance(self.section, PassageSection):
+            raise ValueError("section must be a PassageSection")
+        if not isinstance(self.ends, PassageEnds) or self.ends != PassageEnds(False, False):
+            raise ValueError("SectionPassage must be open at both ends")
+        object.__setattr__(self, "run_interval", interval)
+
+
+class PassageCompatibilityError(RuntimeError):
+    """The retired attributed legacy Passage API was requested."""
+
+
+_LEDGER_ERROR = (
+    "recognise_passages(..., ledger=...) is unavailable from 0.4.0; "
+    "use recognise_section_passages(..., ledger=...)"
+)
+
+
 def recognise_passages(
     part: Part,
     *,
@@ -122,8 +305,234 @@ def recognise_passages(
     memo that graph was built with rather than one taken here.
     """
 
+    if ledger is not None:
+        raise PassageCompatibilityError(_LEDGER_ERROR)
+    graph = FaceGraph(part, face_edges=face_edges)
+    return _discover_passages(part, graph, None)
+
+
+def recognise_section_passages(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
+) -> list[SectionPassage]:
+    """Recognise canonical section passages, with optional defining-wall evidence."""
+
     graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
-    return _discover_passages(part, graph, None if ledger is None else ledger.sink)
+    return _discover_section_passages(part, graph, None if ledger is None else ledger.sink)
+
+
+def _discover_section_passages(
+    part: Part, graph: FaceGraph, sink: EvidenceSink | None
+) -> list[SectionPassage]:
+    proposals = section_ring_proposals(part, graph)
+    if not proposals:
+        return []
+    legacy_roster = _legacy_roster(part, graph)
+    legacy_by_nodes: dict[frozenset[FaceNode], tuple[Passage, int]] = {}
+    for ordinal, (legacy, nodes) in enumerate(legacy_roster):
+        key = frozenset(nodes)
+        if key in legacy_by_nodes:
+            raise ValueError("legacy passage roster has competing defining-node matches")
+        legacy_by_nodes[key] = (legacy, ordinal)
+    found: list[
+        tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
+    ] = []
+    for proposal in proposals:
+        full_precision_projection = _proposal_legacy_projection(proposal)
+        full_precision_passage = (
+            passage_from_view(
+                compatibility_view(full_precision_projection, eligible=True, legacy_ordinal=0),
+                Passage,
+            )
+            if full_precision_projection is not None
+            else None
+        )
+        record = SectionPassage(
+            PassageFrame(
+                tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.run),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.u),  # type: ignore[arg-type]
+                tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
+            ),
+            tuple(round(value, 3) for value in proposal.run_interval),  # type: ignore[arg-type]
+            PassageSection(
+                tuple(
+                    PassageSectionVertex(
+                        (round(vertex.point[0], 3), round(vertex.point[1], 3)),
+                        round(vertex.bulge, 12),
+                    )
+                    for vertex in proposal.section.boundary
+                )
+            ),
+            PassageEnds(False, False),
+        )
+        if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
+            raise ValueError("section passage serialization exceeds the displacement bound")
+        if graph.common_valid_solid(proposal.nodes) is not proposal.solid:
+            raise ValueError("section passage body authority changed before issuance")
+        proposal.body_adapter.validate(proposal.solid, proposal.occurrence)
+        historical = legacy_by_nodes.get(frozenset(proposal.nodes))
+        if historical is not None:
+            legacy, ordinal = historical
+            # Compatibility is an issuance-time fact from the full-precision occurrence.  It
+            # cannot in general be re-derived byte-for-byte from the public three-decimal span:
+            # an odd number of millimetre quanta has a half-quantum midpoint (10060.step is the
+            # concrete case).  The source displacement is bounded above; the frozen old finder is
+            # the authority for its legacy value.
+            if full_precision_passage != legacy:
+                raise ValueError("rich passage cannot reproduce its historical legacy value")
+            compatibility = compatibility_view(
+                (
+                    legacy.axis,
+                    legacy.sides,
+                    legacy.length,
+                    legacy.at,
+                    legacy.section,
+                ),
+                eligible=True,
+                legacy_ordinal=ordinal,
+            )
+        else:
+            compatibility = compatibility_view(full_precision_projection, eligible=False)
+        duplicate = False
+        for other_record, other_nodes, other_solid, other_compatibility in found:
+            same_nodes = len(proposal.nodes) == len(other_nodes) and all(
+                any(left is right for right in other_nodes) for left in proposal.nodes
+            )
+            if proposal.solid is other_solid and same_nodes:
+                if record != other_record or (
+                    compatibility.issued_snapshot()
+                    != other_compatibility.issued_snapshot()
+                ):
+                    raise ValueError("one passage defining set produced competing records")
+                duplicate = True
+                break
+            if (
+                compatibility.eligible
+                and other_compatibility.eligible
+                and compatibility.legacy_ordinal == other_compatibility.legacy_ordinal
+            ):
+                raise ValueError("one legacy passage occurrence matched multiple rich proposals")
+        if not duplicate:
+            found.append((record, proposal.nodes, proposal.solid, compatibility))
+    found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
+    for at, (record, nodes, solid, _) in enumerate(found):
+        for other_record, other_nodes, other_solid, _ in found[at + 1 :]:
+            if record == other_record and solid is other_solid:
+                same_nodes = len(nodes) == len(other_nodes) and all(
+                    any(left is right for right in other_nodes) for left in nodes
+                )
+                if not same_nodes:
+                    raise ValueError("equal section passage proposals compete on one solid")
+    if sink is not None:
+        for record, nodes, _, compatibility in found:
+            sink.propose(
+                FamilyId.PASSAGES,
+                record,
+                defining=nodes,
+                compatibility=compatibility,
+            )
+    return [record for record, _, _, _ in found]
+
+
+def _section_projection_displacement(
+    proposal: SectionRingProposal, record: SectionPassage
+) -> float:
+    """Maximum source-to-serialized movement over every section vertex at both ends."""
+
+    maximum = 0.0
+    for source_vertex, serialized_vertex in zip(
+        proposal.section.boundary, record.section.boundary, strict=True
+    ):
+        for source_t, serialized_t in zip(proposal.run_interval, record.run_interval, strict=True):
+            source = tuple(
+                proposal.frame.origin[index]
+                + source_t * proposal.frame.run[index]
+                + source_vertex.point[0] * proposal.frame.u[index]
+                + source_vertex.point[1] * proposal.frame.v[index]
+                for index in range(3)
+            )
+            serialized = tuple(
+                record.frame.origin[index]
+                + serialized_t * record.frame.run[index]
+                + serialized_vertex.point[0] * record.frame.u[index]
+                + serialized_vertex.point[1] * record.frame.v[index]
+                for index in range(3)
+            )
+            maximum = max(
+                maximum,
+                math.sqrt(
+                    sum((left - right) ** 2 for left, right in zip(source, serialized, strict=True))
+                ),
+            )
+    return maximum
+
+
+def _legacy_projection(record: SectionPassage) -> Passage | None:
+    """Return the exact historical principal line-polygon view when representable."""
+
+    if any(vertex.bulge != 0.0 for vertex in record.section.boundary):
+        return None
+    projection = principal_projection(
+        record.frame.origin,
+        record.frame.run,
+        record.frame.u,
+        record.frame.v,
+        record.run_interval,
+        tuple(vertex.point for vertex in record.section.boundary),
+    )
+    if projection is None:
+        return None
+    return passage_from_view(
+        compatibility_view(projection, eligible=True, legacy_ordinal=0), Passage
+    )
+
+
+def _proposal_legacy_projection(proposal: SectionRingProposal) -> PrincipalProjection | None:
+    """Derive the principal compatibility fact from full-precision occurrence geometry."""
+
+    if any(vertex.bulge != 0.0 for vertex in proposal.section.boundary):
+        return None
+    return principal_projection(
+        proposal.frame.origin,
+        proposal.frame.run,
+        proposal.frame.u,
+        proposal.frame.v,
+        proposal.run_interval,
+        tuple(vertex.point for vertex in proposal.section.boundary),
+    )
+
+
+def _legacy_roster(part: Part, graph: FaceGraph) -> list[tuple[Passage, tuple[FaceNode, ...]]]:
+    """Replay the frozen pre-0.4 finder and its global discovery order exactly."""
+
+    found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
+    for ring in rings(part, graph):
+        if any(ring.caps):
+            continue
+        others = [axis for axis in (0, 1, 2) if axis != ring.axis]
+        middle = _centroid(ring.section)
+        at = [0.0, 0.0, 0.0]
+        at[ring.axis] = 0.5 * (ring.low + ring.high)
+        at[others[0]], at[others[1]] = middle
+        found.append(
+            (
+                Passage(
+                    axis="xyz"[ring.axis],
+                    sides=len(ring.nodes),
+                    length=round(ring.high - ring.low, 3),
+                    at=tuple(round(value, 3) for value in at),  # type: ignore[arg-type]
+                    section=tuple(
+                        (round(first, 3), round(second, 3)) for first, second in ring.section
+                    ),
+                ),
+                tuple(ring.nodes),
+            )
+        )
+    found.sort(key=lambda item: (item[0].axis, item[0].at))
+    return found
 
 
 def _discover_passages(
@@ -131,33 +540,6 @@ def _discover_passages(
     graph: FaceGraph,
     sink: EvidenceSink | None,
 ) -> list[Passage]:
-    """Discover passages from neutral graph facts and an optional write-only evidence sink."""
-
-    found: list[tuple[Passage, tuple[FaceNode, ...]]] = []
-    for ring in rings(part, graph):
-        if any(ring.caps):
-            continue  # a floor fills the ring: that is a pocket, and `_rings` reports which end
-        axis, section = ring.axis, ring.section
-        others = [a for a in (0, 1, 2) if a != axis]
-        middle = _centroid(section)
-        at = [0.0, 0.0, 0.0]
-        at[axis] = 0.5 * (ring.low + ring.high)
-        at[others[0]], at[others[1]] = middle
-        found.append(
-            (
-                Passage(
-                    axis="xyz"[axis],
-                    sides=len(ring.nodes),
-                    length=round(ring.high - ring.low, 3),
-                    at=(round(at[0], 3), round(at[1], 3), round(at[2], 3)),
-                    section=tuple((round(u, 3), round(v, 3)) for u, v in section),
-                ),
-                tuple(ring.nodes),
-            )
-        )
-
-    found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if sink is not None:
-        for passage, nodes in found:
-            sink.propose(FamilyId.PASSAGES, passage, defining=nodes)
-    return [passage for passage, _ in found]
+        raise PassageCompatibilityError(_LEDGER_ERROR)
+    return [record for record, _ in _legacy_roster(part, graph)]

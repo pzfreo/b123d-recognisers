@@ -14,9 +14,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import TypeAlias, TypeVar, cast
+from typing import Protocol, TypeAlias, TypeVar, cast
 
-from b123d_recognisers._candidates import CompletedInputs, FamilyId
+from b123d_recognisers._candidates import (
+    Candidate,
+    CandidateSet,
+    CompletedInputs,
+    EvidenceIndex,
+    FamilyId,
+)
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._features import (
     BoltCircle,
@@ -27,6 +33,7 @@ from b123d_recognisers._features import (
     recognise_hole_patterns,
 )
 from b123d_recognisers._hole_features import _discover_bosses, _discover_holes
+from b123d_recognisers._passage_compat import PassageCompatibilityView, passage_from_view
 from b123d_recognisers._recess_features import (
     _discover_channels,
     _discover_pockets,
@@ -42,7 +49,11 @@ from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
-from b123d_recognisers.passages import Passage, recognise_passages
+from b123d_recognisers.passages import (
+    Passage,
+    SectionPassage,
+    recognise_section_passages,
+)
 from b123d_recognisers.plates import Plate, _discover_plates
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -111,6 +122,7 @@ class DerivedId(Enum):
     HOLE_PATTERNS = "hole_patterns"
     SLOT_PATTERNS = "slot_patterns"
     POCKET_PATTERNS = "pocket_patterns"
+    PASSAGES_COMPAT = "passages_compat"
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,9 +164,116 @@ class AcceptedInputs:
         return cast(tuple[RecordT, ...], records)
 
 
+@dataclass(frozen=True, slots=True)
+class ProjectionInputs:
+    """The sole already-decided aggregate applicability fact available to projections."""
+
+    projected: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _ProjectionInputSnapshot:
+    inputs: AcceptedProjectionInputs
+    candidate_set: CandidateSet[object]
+    candidates: tuple[Candidate[object], ...]
+    evidence: EvidenceIndex
+
+
+class _ProjectionInputAuthority(Protocol):
+    def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot: ...
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class AcceptedProjectionInputs:
+    """Exact accepted occurrence identities and their issuer-validated compatibility facts."""
+
+    _allowed: frozenset[FamilyId]
+    _candidate_set: CandidateSet[object]
+    _candidates: tuple[Candidate[object], ...]
+    _evidence: EvidenceIndex
+    _issuer: _ProjectionInputAuthority
+
+    def passage_views(
+        self,
+    ) -> tuple[tuple[SectionPassage, PassageCompatibilityView], ...]:
+        family = FamilyId.PASSAGES
+        if family not in self._allowed:
+            raise ValueError("passages is not a declared accepted projection source")
+        snapshot = self._issuer.validate(self)
+        if snapshot.candidate_set.family is not family:
+            raise ValueError("accepted passages projection source family changed")
+        result: list[tuple[SectionPassage, PassageCompatibilityView]] = []
+        seen: set[int] = set()
+        for candidate in self._candidates:
+            if id(candidate) in seen:
+                raise ValueError("accepted passages projection roster contains a duplicate")
+            seen.add(id(candidate))
+            if not isinstance(candidate.record, SectionPassage):
+                raise TypeError("passages projection source has the wrong record type")
+            result.append((candidate.record, self._evidence.passage_compatibility(candidate)))
+        return tuple(result)
+
+
+def _projection_authority_factory():
+    """Close the mint token inside one function closure, never a module attribute."""
+
+    authority = object()
+
+    def mint(accepted: CandidateSet[object], evidence: EvidenceIndex) -> AcceptedProjectionInputs:
+        if accepted.family is not FamilyId.PASSAGES:
+            raise ValueError("projection inputs require the accepted passages candidate set")
+        evidence.validate_candidate_set(accepted)
+        original: _ProjectionInputSnapshot | None = None
+
+        class Issuer:
+            def __init__(self, supplied: object) -> None:
+                if supplied is not authority:
+                    raise ValueError("projection input issuer lacks orchestration authority")
+
+            def validate(self, inputs: AcceptedProjectionInputs) -> _ProjectionInputSnapshot:
+                snapshot = original
+                if snapshot is None or snapshot.inputs is not inputs:
+                    raise ValueError("accepted projection inputs were not issued by orchestration")
+                if (
+                    inputs._issuer is not self
+                    or inputs._candidate_set is not snapshot.candidate_set
+                    or inputs._evidence is not snapshot.evidence
+                    or snapshot.candidate_set.candidates is not snapshot.candidates
+                    or len(inputs._candidates) != len(snapshot.candidates)
+                    or any(
+                        current is not original_candidate
+                        for current, original_candidate in zip(
+                            inputs._candidates, snapshot.candidates, strict=True
+                        )
+                    )
+                ):
+                    raise ValueError("accepted passages projection roster changed after issuance")
+                snapshot.evidence.validate_candidate_set(snapshot.candidate_set)
+                return snapshot
+
+        result = object.__new__(AcceptedProjectionInputs)
+        object.__setattr__(result, "_allowed", frozenset((FamilyId.PASSAGES,)))
+        object.__setattr__(result, "_candidate_set", accepted)
+        object.__setattr__(result, "_candidates", accepted.candidates)
+        object.__setattr__(result, "_evidence", evidence)
+        issuer = Issuer(authority)
+        object.__setattr__(result, "_issuer", issuer)
+        original = _ProjectionInputSnapshot(result, accepted, accepted.candidates, evidence)
+        return result
+
+    return mint
+
+
+_issue_projection_inputs = _projection_authority_factory()
+del _projection_authority_factory
+
+
 PhysicalDiscoverer: TypeAlias = Callable[[DiscoveryServices, CompletedInputs], list[object]]
 Applicability: TypeAlias = Callable[[RecognitionContext], bool]
 DerivedDiscoverer: TypeAlias = Callable[[AcceptedInputs], list[object]]
+ProjectionDiscoverer: TypeAlias = Callable[
+    [AcceptedProjectionInputs, ProjectionInputs], list[object]
+]
 
 
 def always(context: RecognitionContext) -> bool:
@@ -185,10 +304,11 @@ class DerivedDefinition:
     identifier: DerivedId
     record_types: tuple[type[object], ...]
     result_field: str
-    public_entrypoint: str
+    public_entrypoint: str | None
     sources: tuple[FamilyId, ...]
-    derive: DerivedDiscoverer
+    derive: DerivedDiscoverer | ProjectionDiscoverer
     census: CensusSpec
+    role: str = "discoverer"
 
 
 def _simple(call: Callable[[DiscoveryServices], list[object]]) -> PhysicalDiscoverer:
@@ -231,6 +351,21 @@ def _slot_patterns(inputs: AcceptedInputs) -> list[object]:
 
 def _pocket_patterns(inputs: AcceptedInputs) -> list[object]:
     return list(recognise_pocket_patterns(inputs.records(FamilyId.POCKETS, Pocket)))
+
+
+def _passages_compat(
+    inputs: AcceptedProjectionInputs, projection: ProjectionInputs
+) -> list[object]:
+    if not projection.projected:
+        return []
+    found: list[tuple[Passage, int]] = []
+    for _, fact in inputs.passage_views():
+        if not fact.eligible:
+            continue
+        assert fact.legacy_ordinal is not None
+        found.append((passage_from_view(fact, Passage), fact.legacy_ordinal))
+    found.sort(key=lambda item: item[1])
+    return [record for record, _ in found]
 
 
 PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
@@ -365,9 +500,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                _discover_slots(
-                    s.context.part, writer=s.writer, face_edges=s.context.face_edges
-                )
+                _discover_slots(s.context.part, writer=s.writer, face_edges=s.context.face_edges)
             )
         ),
         Counted("slot"),
@@ -422,9 +555,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         always,
         _simple(
             lambda s: list(
-                _discover_pockets(
-                    s.context.part, writer=s.writer, face_edges=s.context.face_edges
-                )
+                _discover_pockets(s.context.part, writer=s.writer, face_edges=s.context.face_edges)
             )
         ),
         Counted("pocket"),
@@ -556,14 +687,16 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,
-        (Passage,),
-        "passages",
-        "recognise_passages",
+        (SectionPassage,),
+        "section_passages",
+        "recognise_section_passages",
         (),
         always,
         _simple(
             lambda s: list(
-                recognise_passages(s.context.part, ledger=s.writer, face_edges=s.context.face_edges)
+                recognise_section_passages(
+                    s.context.part, ledger=s.writer, face_edges=s.context.face_edges
+                )
             )
         ),
         Counted("passage"),
@@ -635,6 +768,16 @@ DERIVED_DEFINITIONS: tuple[DerivedDefinition, ...] = (
         _pocket_patterns,
         NotCounted("not a distinct census key"),
     ),
+    DerivedDefinition(
+        DerivedId.PASSAGES_COMPAT,
+        (Passage,),
+        "passages",
+        None,
+        (FamilyId.PASSAGES,),
+        _passages_compat,
+        NotCounted("compatibility projection of accepted section passages"),
+        "projection",
+    ),
 )
 
 
@@ -692,8 +835,16 @@ def validate_definitions(
     if len(set(derived_fields)) != len(derived_fields) or set(fields) & set(derived_fields):
         raise ValueError("registry result fields must be unique")
     for derived_definition in derived:
-        if not derived_definition.record_types or not derived_definition.public_entrypoint:
-            raise ValueError("derived definitions require record and public contracts")
+        if not derived_definition.record_types:
+            raise ValueError("derived definitions require record contracts")
+        if derived_definition.role == "projection":
+            if derived_definition.public_entrypoint is not None:
+                raise ValueError("projection definitions cannot declare a public entrypoint")
+        elif derived_definition.role == "discoverer":
+            if not derived_definition.public_entrypoint:
+                raise ValueError("discoverer definitions require a public entrypoint")
+        else:
+            raise ValueError("derived definition role is not recognized")
         if not isinstance(derived_definition.census, Counted | NotCounted):
             raise ValueError("derived definitions require an explicit census disposition")
         if (

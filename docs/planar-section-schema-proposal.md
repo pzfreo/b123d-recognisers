@@ -1,19 +1,20 @@
 # Planar section schema proposal (version 1)
 
-**Status:** private implementation proposal; not a public package capability
-**Owner:** epic #177, F4a / issue #179
-**Publication gate:** F7, after the first emitting F4b feature record and ADR 0005 review
+**Status:** accepted schema v1; published by F4b `SectionPassage`
+**Owner:** epic #177, F4a/F4b / issues #179 and #184
+**Publication gate:** satisfied by Draftwright issue #1337 and package issue #184
 
 ## Purpose and authority
 
 Axis-and-span records cannot truthfully express an oblique prismatic feature. This proposal
-defines the geometry values a future feature record can use without approximating curves as
-polygons. F4a implements the values privately and proves exact compatibility adapters for
-`Passage` and `PrismaticPocket`; it does not export these names, change `RecognitionResult`, add a
-manifest record, or make a recogniser emit a new value.
+defines geometry values without approximating curves as polygons. F4a implemented the neutral
+values privately and proved exact compatibility adapters. F4b publishes feature-prefixed immutable
+records owned by the existing `passages` family: `PassageFrame`, `PassageSectionVertex`,
+`PassageSection`, `PassageEnds`, and the enclosing `SectionPassage`. The neutral F7 substrate names
+remain private.
 
-Draftwright owns any future read adapter. Its review of this proposal is required before a
-production pin moves, but this repository does not write consumer code as part of F4a.
+Draftwright owns its read adapter. Its explicit issue #1337 approval preceded the F4b production
+change; consumer implementation and stable-pin choreography remain consumer-owned work.
 
 ## Proposed JSON values
 

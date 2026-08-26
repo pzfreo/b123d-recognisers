@@ -26,6 +26,7 @@ from b123d_recognisers._candidates import (
     SplitTriangularTerminalFact,
 )
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._passage_compat import PassageCompatibilityView
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 
 
@@ -41,6 +42,20 @@ def _definition(family: FamilyId):
 def _registry_ledger(part=None) -> ClaimLedger:
     part = Box(10, 10, 10) if part is None else part
     return ClaimLedger(FaceGraph(part), definitions=PHYSICAL_DEFINITIONS)
+
+
+def test_passage_compatibility_is_required_only_for_passage_candidates() -> None:
+    ledger = _registry_ledger()
+    with pytest.raises(ValueError, match="require a compatibility fact"):
+        ledger.sink.propose(FamilyId.PASSAGES, Record(1))
+
+    fact = PassageCompatibilityView(None, None, None, None, None, None, False)
+    with pytest.raises(ValueError, match="only passage candidates"):
+        ledger.sink.propose(FamilyId.SLOTS, Record(2), compatibility=fact)
+
+    slot = ledger.sink.propose(FamilyId.SLOTS, Record(3))
+    with pytest.raises(ValueError, match="no Passage compatibility"):
+        ledger.snapshot_index().passage_compatibility(slot)
 
 
 def test_equal_records_remain_distinct_sink_issued_candidates() -> None:

@@ -9,6 +9,8 @@ ROOT = Path(__file__).parents[1]
 
 CONSTRUCTOR_COUNTS = {
     "prismatic_pockets.py": ("PrismaticPocket", 1),
+    # The sole direct constructor is the frozen writer-free legacy finder. Accepted rich
+    # compatibility values are built through `_passage_compat.passage_from_view` instead.
     "passages.py": ("Passage", 1),
     "grooves.py": ("Groove", 1),
     "turned.py": ("TurnedStep", 1),

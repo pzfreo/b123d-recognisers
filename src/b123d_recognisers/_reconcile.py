@@ -41,6 +41,7 @@ from b123d_recognisers._dispositions import (
     ReasonCode,
     ReconciliationResult,
 )
+from b123d_recognisers._passage_compat import grouping_from_view
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
@@ -104,9 +105,7 @@ def reconcile_recess_candidates(
         reason = ReasonCode.POCKET_SUPERSEDED_BY_PASSAGE
         if not winners:
             winners = tuple(
-                ring
-                for ring in nonrect_prismatic
-                if pocket_evidence <= evidence.defining_of(ring)
+                ring for ring in nonrect_prismatic if pocket_evidence <= evidence.defining_of(ring)
             )
             reason = ReasonCode.POCKET_SUPERSEDED_BY_PRISMATIC
         if winners:
@@ -117,8 +116,10 @@ def reconcile_recess_candidates(
     grouped_passages: dict[tuple, list[Candidate[object]]] = defaultdict(list)
     grouped_evidence: dict[tuple, set] = defaultdict(set)
     for passage in passage_candidates:
-        if isinstance(passage.record, Passage) and passage.record.sides != 4:
-            key = (passage.record.axis, passage.record.section)
+        compatibility = evidence.passage_compatibility(passage)
+        grouping = grouping_from_view(compatibility)
+        if grouping is not None and grouping[2] != 4:
+            key = grouping[:2]
             grouped_passages[key].append(passage)
             grouped_evidence[key].update(evidence.defining_of(passage))
 
@@ -147,7 +148,9 @@ def reconcile_recess_candidates(
             accepted_slots.append(slot)
 
     for passage in passage_candidates:
-        if not isinstance(passage.record, Passage) or passage.record.sides != 4:
+        compatibility = evidence.passage_compatibility(passage)
+        grouping = grouping_from_view(compatibility)
+        if grouping is None or grouping[2] != 4:
             continue
         winners = tuple(
             slot

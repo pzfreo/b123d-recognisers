@@ -17,7 +17,7 @@ from b123d_recognisers._dispositions import (
     ReconciliationResult,
 )
 from b123d_recognisers._reconcile import reconcile_recess_candidates
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import SectionPassage, recognise_section_passages
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 
 
@@ -145,9 +145,7 @@ def test_completion_rejects_invalid_inventory_and_reason_shapes() -> None:
     slot = ledger.propose(FamilyId.SLOTS, slot_record)
     other_slot = ledger.propose(FamilyId.SLOTS, other_slot_record)
     pocket = ledger.propose(FamilyId.POCKETS, pocket_record)
-    slots = ledger.candidate_set_for(
-        FamilyId.SLOTS, [slot_record, other_slot_record]
-    )
+    slots = ledger.candidate_set_for(FamilyId.SLOTS, [slot_record, other_slot_record])
     pockets = ledger.candidate_set_for(FamilyId.POCKETS, [pocket_record])
     evidence = ledger.snapshot_index()
 
@@ -224,9 +222,7 @@ def test_policy_execution_order_cannot_change_final_disposition_order() -> None:
         for candidate in reversed(candidates)
     )
 
-    result = ReconciliationResult.complete(
-        (chamfers,), decisions, ledger.snapshot_index()
-    )
+    result = ReconciliationResult.complete((chamfers,), decisions, ledger.snapshot_index())
 
     assert tuple(item.candidate for item in result.dispositions) == tuple(candidates)
 
@@ -246,9 +242,7 @@ def test_copied_issuer_token_cannot_forge_a_disposition_candidate() -> None:
     object.__setattr__(forged_set, "_issuer", valid._issuer)
 
     with pytest.raises(ValueError, match="not present"):
-        ReconciliationResult.complete(
-            (forged_set,), (), ledger.snapshot_index()
-        )
+        ReconciliationResult.complete((forged_set,), (), ledger.snapshot_index())
 
 
 def test_projection_revalidates_candidate_state_and_set_family() -> None:
@@ -308,30 +302,31 @@ def test_rectangular_slot_passage_precedence_is_a_real_rejected_trace() -> None:
     ]
 
     assert len(rejected) == 1
+    (rich_candidate,) = product.physical.candidate_set(FamilyId.PASSAGES).candidates
+    assert rejected[0].candidate is rich_candidate
+    assert isinstance(rich_candidate.record, SectionPassage)
     assert rejected[0].outcome is Outcome.REJECTED
     assert len(rejected[0].related) == 1
     assert rejected[0].related[0].family is FamilyId.SLOTS
-    assert product.result.slots and product.result.passages == ()
+    assert product.result.slots
+    assert product.result.section_passages == ()
+    assert product.result.passages == ()
 
 
 def test_empty_pocket_evidence_proves_neither_passage_nor_ring_containment() -> None:
-    ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
+    part = Box(60, 40, 20) - Box(10, 10, 60)
+    ledger = ClaimLedger(FaceGraph(part))
     pocket = Record(1)
-    passage = Passage("z", 3, 10.0, (0.0, 0.0, 0.0), ((0.0, 0.0),) * 3)
-    ring = PrismaticPocket(
-        "z", 3, 5.0, 1, (0.0, 0.0, 0.0), ((0.0, 0.0),) * 3
-    )
+    passages_found = recognise_section_passages(part, ledger=ledger)
+    ring = PrismaticPocket("z", 3, 5.0, 1, (0.0, 0.0, 0.0), ((0.0, 0.0),) * 3)
     ledger.propose(FamilyId.POCKETS, pocket)
-    ledger.propose(FamilyId.PASSAGES, passage, [ledger.graph.nodes[0]])
     ledger.propose(FamilyId.PRISMATIC_POCKETS, ring, [ledger.graph.nodes[1]])
     slots = ledger.candidate_set_for(FamilyId.SLOTS, ())
     pockets = ledger.candidate_set_for(FamilyId.POCKETS, (pocket,))
     rings = ledger.candidate_set_for(FamilyId.PRISMATIC_POCKETS, (ring,))
-    passages = ledger.candidate_set_for(FamilyId.PASSAGES, (passage,))
+    passages = ledger.candidate_set_for(FamilyId.PASSAGES, passages_found)
     evidence = ledger.snapshot_index()
 
-    decisions = reconcile_recess_candidates(
-        slots, pockets, rings, passages, evidence
-    )
+    decisions = reconcile_recess_candidates(slots, pockets, rings, passages, evidence)
 
     assert all(item.candidate.record is not pocket for item in decisions)

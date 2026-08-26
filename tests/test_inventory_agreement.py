@@ -57,7 +57,7 @@ SHARED = {
     "channel": "channels",
     "pocket": "pockets",
     "prismatic_pocket": "prismatic_pockets",
-    "passage": "passages",
+    "passage": "section_passages",
     "chamfer": "chamfers",
     "angled_step": "angled_steps",
     "fillet": "fillets",
@@ -135,6 +135,7 @@ RESULT_ONLY = {
     # what a distinct machined feature is, and one worth revisiting rather than inheriting.
     "slot_patterns": "census counts hole patterns only",
     "pocket_patterns": "census counts hole patterns only",
+    "passages": "accepted-only compatibility projection; section_passages is counted",
     # Families with no census key at all. Each is a gap rather than a decision, and naming
     # them here is what makes that visible.
     "double_d_bores": "no census key",

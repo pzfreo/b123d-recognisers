@@ -540,6 +540,13 @@ complement becomes 37..999. A later exact authorization consumes bucket 36 perma
 zero, invalid input or abort, with no retry, alternate allocation, replacement or post-reveal
 fitting.
 
+The sole authorized F4b attempt at rebased PR #252 head
+`438088ae1b14b3c9b6883d84f343bb6abfa392a5` used exact acknowledgement
+`F4B-SECTION-PASSAGES-H1`. Its available sealed root contained no models matching bucket 36, so
+discovery stopped before annotation, STEP or recognition and no report was created. No alternate
+root/allocation, retry, replacement or fitting followed. Bucket 36 is permanently consumed and
+inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
@@ -1050,7 +1057,7 @@ incidence either remains open/invalid or makes the wall/floor assignment ambiguo
 common-SolidRef and complete-role checks already refuse. This is not claimed as an extra supported
 geometry route.
 
-F5 cumulative exit ledger on merged main:
+F5 cumulative exit ledger at the F5 closure point, before the later F4b allocation lifecycle:
 
 - the closed registry contains exactly 22 non-legacy physical definitions: 20 are
   `FullyAttributed`; only Step Levels and Risers remain `IncompleteAttribution`, each with the
@@ -1068,6 +1075,10 @@ F5 cumulative exit ledger on merged main:
   attempts remain inconclusive and are never retried or fitted;
 - capability manifest format 1 remains unchanged. The private registry plus the reviewed human
   capability table carry attribution completeness, so no public schema or Draftwright pin moved.
+
+The later F4b lifecycle recorded above consumes bucket 36 inconclusively, moves the current ordinary
+complement to 37..999, and advances the capability manifest to format 2 for the separately reviewed
+physical/projection/API role contract. That later state does not rewrite this historical F5 ledger.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same

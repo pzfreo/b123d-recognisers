@@ -10,15 +10,12 @@ from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos
 import b123d_recognisers as r
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
+from b123d_recognisers._passage_compat import PassageCompatibilityView
 
 
 def _obround(length: float, width: float, height: float):
     end = Cylinder(width / 2, height)
-    return (
-        Box(length, width, height)
-        + Pos(-length / 2, 0, 0) * end
-        + Pos(length / 2, 0, 0) * end
-    )
+    return Box(length, width, height) + Pos(-length / 2, 0, 0) * end + Pos(length / 2, 0, 0) * end
 
 
 def _u_void(*, blind: bool):
@@ -72,7 +69,22 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
     import b123d_recognisers.result as result_module
 
     pocket = r.Pocket("x", "y", 4, 8, 3, 0, -4, 4, -3, 0)
-    passage = r.Passage("z", 4, 10, (0, 0, 0), ((-2, -4), (2, -4), (2, 4), (-2, 4)))
+    passage = r.SectionPassage(
+        r.PassageFrame(
+            (0.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+        ),
+        (-5.0, 5.0),
+        r.PassageSection(
+            tuple(
+                r.PassageSectionVertex(point, 0.0)
+                for point in ((-2.0, -4.0), (2.0, -4.0), (2.0, 4.0), (-2.0, 4.0))
+            )
+        ),
+        r.PassageEnds(False, False),
+    )
     pattern_inputs: list[tuple[r.Pocket, ...]] = []
 
     def fake_pockets(part, *, writer, face_edges):
@@ -82,7 +94,20 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
 
     def fake_passages(part, *, ledger, face_edges):
         del part, face_edges
-        ledger.add_defining(passage, [ledger.graph.nodes[0]], family=FamilyId.PASSAGES)
+        ledger.sink.propose(
+            FamilyId.PASSAGES,
+            passage,
+            defining=[ledger.graph.nodes[0]],
+            compatibility=PassageCompatibilityView(
+                "z",
+                ((-2.0, -4.0), (2.0, -4.0), (2.0, 4.0), (-2.0, 4.0)),
+                4,
+                10.0,
+                (0.0, 0.0, 0.0),
+                0,
+                True,
+            ),
+        )
         return [passage]
 
     def fake_patterns(pockets):
@@ -90,7 +115,7 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
         return []
 
     monkeypatch.setattr(registry_module, "_discover_pockets", fake_pockets)
-    monkeypatch.setattr(registry_module, "recognise_passages", fake_passages)
+    monkeypatch.setattr(registry_module, "recognise_section_passages", fake_passages)
     monkeypatch.setattr(registry_module, "recognise_pocket_patterns", fake_patterns)
 
     product = result_module._take_inventory(Box(20, 20, 10), rotational=True)
@@ -105,11 +130,7 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
 
 def test_empty_evidence_obround_slot_does_not_suppress_an_unrelated_passage():
     stock = Box(120, 70, 20)
-    part = (
-        stock
-        - Pos(-30, 0, 0) * _obround(3, 12, 20)
-        - Pos(30, 0, -5) * Box(10, 10, 30)
-    )
+    part = stock - Pos(-30, 0, 0) * _obround(3, 12, 20) - Pos(30, 0, -5) * Box(10, 10, 30)
 
     result = r.build_recognition_result(part)
 
@@ -226,11 +247,7 @@ def test_a_blind_u_does_not_turn_one_end_and_a_floor_into_a_wide_pocket():
 def test_two_end_connectors_leave_a_separate_body_not_material_in_the_slot_body():
     """Compound bodies remain independent even when one spatially occupies another's void."""
 
-    part = (
-        _parallel_recesses()
-        - Pos(-14, 0, 0) * Box(2, 10, 20)
-        - Pos(14, 0, 0) * Box(2, 10, 20)
-    )
+    part = _parallel_recesses() - Pos(-14, 0, 0) * Box(2, 10, 20) - Pos(14, 0, 0) * Box(2, 10, 20)
 
     assert len(part.solids()) == 2
     (slot,) = r.recognise_slots(part)

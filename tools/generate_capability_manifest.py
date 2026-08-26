@@ -44,12 +44,22 @@ FAMILIES = {
         "tests": ["tests/test_prismatic_pockets.py"],
     },
     "passages": {
-        "recognisers": [("recognise_passages", "part")],
-        "records": [("Passage", "output", ["RecognitionResult.passages"])],
+        "recognisers": [
+            ("recognise_passages", "part", "compatibility"),
+            ("recognise_section_passages", "part", "physical"),
+        ],
+        "records": [
+            ("Passage", "projection", ["RecognitionResult.passages"]),
+            ("PassageEnds", "nested", []),
+            ("PassageFrame", "nested", []),
+            ("PassageSection", "nested", []),
+            ("PassageSectionVertex", "nested", []),
+            ("SectionPassage", "output", ["RecognitionResult.section_passages"]),
+        ],
         "census": "passage",
         "goldens": ["hexagonal_passage"],
         "introduced": "0.2.6",
-        "tests": ["tests/test_passages.py"],
+        "tests": ["tests/test_passages.py", "tests/test_section_passages.py"],
     },
     "bosses": {
         "recognisers": [("recognise_bosses", "part")],
@@ -235,6 +245,10 @@ NO_MEMBERSHIP_RATIONALE = {
     ),
     "StepShoulder": "Pure consumer projection from RiserEvidence plus a caller-supplied level set.",
     "TurnedProfile": "Consumer aggregate built on demand from RecognitionResult.turned_steps.",
+    "PassageEnds": "Nested only in SectionPassage; retained to preserve explicit end topology.",
+    "PassageFrame": "Nested only in SectionPassage.",
+    "PassageSection": "Nested only in SectionPassage.",
+    "PassageSectionVertex": "Nested only in PassageSection.",
 }
 
 
@@ -271,11 +285,19 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
     rendered = _type_name(annotation)
     if name in {"angle", "included_angle"}:
         return "deg"
-    if name in {"axis_direction", "direction", "flat_direction", "flat_directions"}:
+    if name in {
+        "axis_direction",
+        "direction",
+        "flat_direction",
+        "flat_directions",
+        "run",
+        "u",
+        "v",
+    }:
         return "unit-vector"
     if name == "axis" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"
-    if rendered in {"bool", "int", "str"} or rendered.startswith("record:"):
+    if name == "bulge" or rendered in {"bool", "int", "str"} or rendered.startswith("record:"):
         return "none"
     if rendered.startswith("list[record:") or name in {
         "body_key",
@@ -321,8 +343,24 @@ def build_manifest() -> dict[str, object]:
     families = []
     for family_id, spec in sorted(FAMILIES.items()):
         census = spec["census"]
+        records = [_record(*record) for record in spec["records"]]
+        census_output = None
+        if census is not None:
+            outputs = [record for record in records if record["role"] == "output"]
+            direct = sorted(
+                {
+                    path
+                    for output in outputs
+                    for path in output["aggregate_membership"]
+                    if path.count(".") == 1
+                }
+            )
+            if len(direct) != 1:
+                raise ValueError(f"{family_id} needs exactly one census output")
+            census_output = direct[0]
         family: dict[str, object] = {
             "census_name": census,
+            "census_output": census_output,
             "documentation": ["docs/capabilities.md#proven-recognition-capability"],
             "golden_evidence": sorted(
                 f"tests/golden/{name}/expected.json" for name in spec["goldens"]
@@ -330,13 +368,32 @@ def build_manifest() -> dict[str, object]:
             "id": family_id,
             "introduced_in": spec.get("introduced", "0.1.0"),
             "recognisers": [
-                {
-                    "entry_point": f"b123d_recognisers.{name}",
-                    "kind": kind,
-                }
-                for name, kind in spec["recognisers"]
+                (
+                    {
+                        "entry_point": f"b123d_recognisers.{name}",
+                        "kind": kind,
+                        "role": role,
+                    }
+                    | (
+                        {
+                            "ledger_state": "unavailable",
+                            "remove_in": "1.0.0",
+                            "replacement": (
+                                "b123d_recognisers.recognise_section_passages"
+                            ),
+                        }
+                        if role == "compatibility"
+                        else {}
+                    )
+                )
+                for recogniser in spec["recognisers"]
+                for name, kind, role in (
+                    recogniser
+                    if len(recogniser) == 3
+                    else (*recogniser, "derived" if recogniser[1] == "derived" else "physical"),
+                )
             ],
-            "records": [_record(*record) for record in spec["records"]],
+            "records": records,
             "status": "supported",
             "test_evidence": sorted(
                 [
@@ -356,7 +413,7 @@ def build_manifest() -> dict[str, object]:
         "aliases": [],
         "families": families,
         "format": "b123d-recognisers-capabilities",
-        "format_version": 1,
+        "format_version": 2,
         "package": {"name": "b123d-recognisers", "version": recognition.__version__},
     }
 

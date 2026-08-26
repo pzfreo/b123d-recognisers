@@ -363,3 +363,8 @@ values and the issuer-validating factory from `_correspondence`. It cannot impor
 FaceGraph/SolidRef, recognisers, Candidates/evidence, reconciliation implementation, registry,
 census or result. `correspondence_changes` is optional and private; no production module calls it,
 and the snapshot-only comparison leaf is closed to that entry and direct tests.
+
+F4b adds `_section_passages` as a neutral topology producer below Passage records and policy. It
+may read `FaceGraph`, analytic section primitives, and solid classification, but not Candidates,
+evidence, reconciliation, results, census, or sibling recognisers. `passages` is its sole policy
+caller and the sole constructor/issuer of public `SectionPassage` records.

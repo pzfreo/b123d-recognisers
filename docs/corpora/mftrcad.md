@@ -200,6 +200,13 @@ acknowledgement authorizes it. Bucket 36 starts `sealed_unrevealed`, buckets 34 
 independently sealed and unauthorized, and the ordinary `unselected` complement becomes buckets
 37..999. Any later authorized attempt permanently consumes only bucket 36 even if empty, invalid
 or aborted, with no retry, alternate selection, replacement or fitting.
+
+At rebased PR #252 head `438088ae1b14b3c9b6883d84f343bb6abfa392a5`, the sole authorized
+`f4b_section_passages_h1` attempt used acknowledgement `F4B-SECTION-PASSAGES-H1`. The available
+sealed root contained no models matching the allocation, so discovery stopped before annotation
+reading, STEP import or recognition and produced no report. No alternate root, allocation,
+replacement, retry or fitting followed. Bucket 36 is permanently consumed and inconclusive, not
+regression evidence. Buckets 34 and 35 remain independently `sealed_unrevealed`.
 At accepted PR #245 head `6ccbedc`, after two independent exact-head accepts and every local,
 package, performance, CI and coverage gate, the one authorized
 `f5_repeating_radial_profiles_h1` selection with acknowledgement

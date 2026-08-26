@@ -1,5 +1,17 @@
 # Release notes
 
+## 0.4.0
+
+- **Passage attribution now has one rich physical authority.** `SectionPassage` records canonical
+  constant-section geometry on principal and free axes, while writer-free `recognise_passages`
+  retains its historical schema-v1 values and order. Aggregate `.passages` is the accepted-rich
+  projectable subsequence rather than a second discovery authority. This intentionally omits a
+  historical partial-span false positive on checked-in `10060.step`: direct legacy output remains
+  `(X, Z)`, rich and aggregate output truthfully retain only Z, and the Passage census changes
+  from 2 to 1. Exact Slot, Pocket and Prismatic Pocket dispositions and every other census key on
+  that fixture remain unchanged. Passing `ledger=` to the legacy API now fails loudly; attributed
+  callers migrate to `recognise_section_passages`.
+
 ## 0.3.1
 
 - **Clarified empty-evidence reconciliation and restored rotational Passage evidence.** Empty

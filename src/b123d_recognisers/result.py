@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import math
 import warnings
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from types import MappingProxyType
 from typing import TypeVar, cast
@@ -44,9 +44,13 @@ from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
+    AcceptedProjectionInputs,
     DerivedId,
     DiscoveryServices,
     FullyAttributed,
+    ProjectionDiscoverer,
+    ProjectionInputs,
+    _issue_projection_inputs,
     validate_output,
     validate_result_fields,
 )
@@ -64,7 +68,7 @@ from b123d_recognisers.levels import (
     bounded_end_margin,
 )
 from b123d_recognisers.pads import RaisedPad
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import Passage, SectionPassage
 from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -87,7 +91,11 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
     definition.public_entrypoint for definition in PHYSICAL_DEFINITIONS
-) | frozenset(definition.public_entrypoint for definition in DERIVED_DEFINITIONS)
+) | frozenset(
+    definition.public_entrypoint
+    for definition in DERIVED_DEFINITIONS
+    if definition.public_entrypoint is not None
+)
 
 
 class Deferral(Enum):
@@ -197,6 +205,7 @@ class DerivedInventory:
     hole_patterns: tuple[BoltCircle | LinearArray | RectGrid, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
     pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+    passages: tuple[Passage, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,6 +303,7 @@ class RecognitionResult:
     #: Prismatic voids running through the material, one record per closed ring. Discovery still
     #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
     #: proposals, but this public tuple is then projected as ``()``.
+    section_passages: tuple[SectionPassage, ...]
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
@@ -419,6 +429,20 @@ def _take_inventory(
         reconciliation.accepted_set(physical.candidate_set(family)) for family in PHYSICAL_FAMILIES
     )
     derived = _derive_patterns(accepted)
+    passage_definition = next(
+        item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.PASSAGES
+    )
+    passage_projection = _issue_projection_inputs(
+        accepted.candidate_set(FamilyId.PASSAGES),
+        evidence,
+    )
+    derived = replace(
+        derived,
+        passages=_derive_passage_compat(
+            passage_projection,
+            ProjectionInputs(passage_definition.projected(context)),
+        ),
+    )
     result = _project_result(context, accepted, derived)
     correspondence = _CorrespondenceSnapshotAuthority()
     product = InventoryProduct(
@@ -521,8 +545,11 @@ def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
     accepted_records = {family: tuple(accepted.records(family)) for family in PHYSICAL_FAMILIES}
     derived: dict[DerivedId, tuple[object, ...]] = {}
     for definition in DERIVED_DEFINITIONS:
+        if definition.role == "projection":
+            continue
         inputs = AcceptedInputs.restricted(definition.sources, accepted_records)
-        records = definition.derive(inputs)
+        standard_derive = cast(Callable[[AcceptedInputs], list[object]], definition.derive)
+        records = standard_derive(inputs)
         validate_output(definition, records)
         derived[definition.identifier] = tuple(records)
     return DerivedInventory(
@@ -534,7 +561,20 @@ def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
         pocket_patterns=cast(
             tuple[PocketArray | PocketGrid, ...], derived[DerivedId.POCKET_PATTERNS]
         ),
+        passages=(),
     )
+
+
+def _derive_passage_compat(
+    inputs: AcceptedProjectionInputs, projection: ProjectionInputs
+) -> tuple[Passage, ...]:
+    definition = next(
+        item for item in DERIVED_DEFINITIONS if item.identifier is DerivedId.PASSAGES_COMPAT
+    )
+    derive = cast(ProjectionDiscoverer, definition.derive)
+    records = derive(inputs, projection)
+    validate_output(definition, records)
+    return cast(tuple[Passage, ...], tuple(records))
 
 
 def _project_result(
@@ -546,9 +586,7 @@ def _project_result(
 
     z_cyls, cross_cyls = context.cylinders
     passage_definition = next(
-        definition
-        for definition in PHYSICAL_DEFINITIONS
-        if definition.family is FamilyId.PASSAGES
+        definition for definition in PHYSICAL_DEFINITIONS if definition.family is FamilyId.PASSAGES
     )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -581,11 +619,12 @@ def _project_result(
         risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
         chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
-        passages=(
-            tuple(_records(accepted, FamilyId.PASSAGES, Passage))
+        section_passages=(
+            tuple(_records(accepted, FamilyId.PASSAGES, SectionPassage))
             if passage_definition.projected(context)
             else ()
         ),
+        passages=derived.passages if passage_definition.projected(context) else (),
         fillets=tuple(_records(accepted, FamilyId.FILLETS, Fillet)),
         plates=tuple(_records(accepted, FamilyId.PLATES, Plate)),
     )

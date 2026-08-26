@@ -3,6 +3,7 @@
   "families": [
     {
       "census_name": "angled_step",
+      "census_output": "RecognitionResult.angled_steps",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -14,7 +15,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_angled_steps",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -69,6 +71,7 @@
     },
     {
       "census_name": "boss",
+      "census_output": "RecognitionResult.bosses",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -81,7 +84,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_bosses",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -125,6 +129,7 @@
     },
     {
       "census_name": "chamfer",
+      "census_output": "RecognitionResult.chamfers",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -136,7 +141,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_chamfers",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -191,6 +197,7 @@
     },
     {
       "census_name": "channel",
+      "census_output": "RecognitionResult.channels",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -202,7 +209,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_channels",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -271,6 +279,7 @@
     },
     {
       "census_name": "countersink",
+      "census_output": "RecognitionResult.countersinks",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -282,7 +291,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_countersinks",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -337,6 +347,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -349,7 +360,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_double_d_bores",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -408,6 +420,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -421,7 +434,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_face_levels",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -460,6 +474,7 @@
     },
     {
       "census_name": "fillet",
+      "census_output": "RecognitionResult.fillets",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -471,7 +486,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_fillets",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -516,6 +532,7 @@
     },
     {
       "census_name": "flat",
+      "census_output": "RecognitionResult.flats",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -527,7 +544,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_flats",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -581,6 +599,7 @@
     },
     {
       "census_name": "groove",
+      "census_output": "RecognitionResult.grooves",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -592,7 +611,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_grooves",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -636,6 +656,7 @@
     },
     {
       "census_name": "hole_pattern",
+      "census_output": "RecognitionResult.hole_patterns",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -647,7 +668,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_hole_patterns",
-          "kind": "derived"
+          "kind": "derived",
+          "role": "derived"
         }
       ],
       "records": [
@@ -758,6 +780,7 @@
     },
     {
       "census_name": "hole",
+      "census_output": "RecognitionResult.holes",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -770,7 +793,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_holes",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -901,6 +925,7 @@
     },
     {
       "census_name": "passage",
+      "census_output": "RecognitionResult.section_passages",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -912,7 +937,16 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_passages",
-          "kind": "part"
+          "kind": "part",
+          "ledger_state": "unavailable",
+          "remove_in": "1.0.0",
+          "replacement": "b123d_recognisers.recognise_section_passages",
+          "role": "compatibility"
+        },
+        {
+          "entry_point": "b123d_recognisers.recognise_section_passages",
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -949,6 +983,122 @@
           },
           "name": "Passage",
           "qualified_name": "b123d_recognisers.Passage",
+          "role": "projection",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage; retained to preserve explicit end topology.",
+          "fields": {
+            "high_capped": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            },
+            "low_capped": {
+              "required": true,
+              "type": "bool",
+              "units": "none"
+            }
+          },
+          "name": "PassageEnds",
+          "qualified_name": "b123d_recognisers.PassageEnds",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage.",
+          "fields": {
+            "origin": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "run": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "u": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "v": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            }
+          },
+          "name": "PassageFrame",
+          "qualified_name": "b123d_recognisers.PassageFrame",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionPassage.",
+          "fields": {
+            "boundary": {
+              "required": true,
+              "type": "list[record:PassageSectionVertex]",
+              "units": "none"
+            }
+          },
+          "name": "PassageSection",
+          "qualified_name": "b123d_recognisers.PassageSection",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in PassageSection.",
+          "fields": {
+            "bulge": {
+              "required": true,
+              "type": "float",
+              "units": "none"
+            },
+            "point": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            }
+          },
+          "name": "PassageSectionVertex",
+          "qualified_name": "b123d_recognisers.PassageSectionVertex",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.section_passages"
+          ],
+          "fields": {
+            "ends": {
+              "required": true,
+              "type": "record:PassageEnds",
+              "units": "none"
+            },
+            "frame": {
+              "required": true,
+              "type": "record:PassageFrame",
+              "units": "none"
+            },
+            "run_interval": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "section": {
+              "required": true,
+              "type": "record:PassageSection",
+              "units": "none"
+            }
+          },
+          "name": "SectionPassage",
+          "qualified_name": "b123d_recognisers.SectionPassage",
           "role": "output",
           "schema_version": 1
         }
@@ -957,11 +1107,13 @@
       "test_evidence": [
         "tests/test_capability_claims.py",
         "tests/test_passages.py",
-        "tests/test_recogniser_contract.py"
+        "tests/test_recogniser_contract.py",
+        "tests/test_section_passages.py"
       ]
     },
     {
       "census_name": "plate",
+      "census_output": "RecognitionResult.plates",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -973,7 +1125,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_plates",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1000,12 +1153,12 @@
             "u": {
               "required": true,
               "type": "float",
-              "units": "mm"
+              "units": "unit-vector"
             },
             "v": {
               "required": true,
               "type": "float",
-              "units": "mm"
+              "units": "unit-vector"
             }
           },
           "name": "Plate",
@@ -1022,6 +1175,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1034,7 +1188,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_pocket_patterns",
-          "kind": "derived"
+          "kind": "derived",
+          "role": "derived"
         }
       ],
       "records": [
@@ -1119,6 +1274,7 @@
     },
     {
       "census_name": "pocket",
+      "census_output": "RecognitionResult.pockets",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -1130,7 +1286,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_pockets",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1219,6 +1376,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1231,7 +1389,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_polygonal_bosses",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1295,6 +1454,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1307,7 +1467,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_polygonal_stock",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1371,6 +1532,7 @@
     },
     {
       "census_name": "prismatic_pocket",
+      "census_output": "RecognitionResult.prismatic_pockets",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -1382,7 +1544,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_prismatic_pockets",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1437,6 +1600,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1449,7 +1613,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_rectangular_pads",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1503,6 +1668,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1516,7 +1682,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_repeating_radial_profiles",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1570,6 +1737,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1583,7 +1751,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_risers",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1677,6 +1846,7 @@
     },
     {
       "census_name": null,
+      "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
@@ -1689,7 +1859,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_slot_patterns",
-          "kind": "derived"
+          "kind": "derived",
+          "role": "derived"
         }
       ],
       "records": [
@@ -1774,6 +1945,7 @@
     },
     {
       "census_name": "slot",
+      "census_output": "RecognitionResult.slots",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -1785,7 +1957,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_slots",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1859,6 +2032,7 @@
     },
     {
       "census_name": "step",
+      "census_output": "RecognitionResult.turned_steps",
       "documentation": [
         "docs/capabilities.md#proven-recognition-capability"
       ],
@@ -1870,7 +2044,8 @@
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_turned_steps",
-          "kind": "part"
+          "kind": "part",
+          "role": "physical"
         }
       ],
       "records": [
@@ -1934,9 +2109,9 @@
     }
   ],
   "format": "b123d-recognisers-capabilities",
-  "format_version": 1,
+  "format_version": 2,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.3.2.dev0"
+    "version": "0.4.0.dev0"
   }
 }

@@ -1,16 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+import ast
 import inspect
 import types
 import typing
 from dataclasses import fields, replace
 from inspect import signature
+from pathlib import Path
 
 import pytest
-from build123d import Box, Pos
+from build123d import Box, BuildPart, BuildSketch, Mode, Pos, RegularPolygon, extrude
 
 import b123d_recognisers as public
+import b123d_recognisers._registry as registry_module
 import b123d_recognisers.result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -20,6 +23,7 @@ from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
+    AcceptedProjectionInputs,
     Counted,
     DerivedId,
     FullyAttributed,
@@ -38,7 +42,7 @@ from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionRes
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
     assert len(PHYSICAL_DEFINITIONS) == 22
-    assert len(DERIVED_DEFINITIONS) == 3
+    assert len(DERIVED_DEFINITIONS) == 4
     assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
     assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
     assert tuple(item.identifier for item in DERIVED_DEFINITIONS) == tuple(DerivedId)
@@ -168,6 +172,7 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
         DerivedId.HOLE_PATTERNS: (FamilyId.HOLES,),
         DerivedId.SLOT_PATTERNS: (FamilyId.SLOTS,),
         DerivedId.POCKET_PATTERNS: (FamilyId.POCKETS,),
+        DerivedId.PASSAGES_COMPAT: (FamilyId.PASSAGES,),
     }
     ledger = ClaimLedger(FaceGraph(Box(2, 2, 2)), definitions=PHYSICAL_DEFINITIONS)
     ledger.candidate_set_for(FamilyId.COUNTERSINKS, ())
@@ -178,6 +183,80 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
         completed.records(FamilyId.SLOTS, object)
     with pytest.raises(ValueError, match="not a declared"):
         accepted.records(FamilyId.HOLES, object)
+
+
+def test_passage_projection_inputs_revalidate_the_exact_accepted_roster() -> None:
+    with BuildPart() as built:
+        Box(30, 30, 10)
+        with BuildSketch():
+            RegularPolygon(5, 3)
+        extrude(amount=20, both=True, mode=Mode.SUBTRACT)
+    product = _take_inventory(built.part)
+    accepted = product.accepted.candidate_set(FamilyId.PASSAGES)
+    inputs = registry_module._issue_projection_inputs(accepted, product.evidence)
+    expected = inputs.passage_views()
+    assert len(expected) == len(accepted.candidates) == 1
+
+    object.__setattr__(inputs, "_candidates", ())
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_candidates", accepted.candidates + accepted.candidates)
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_candidates", accepted.candidates)
+    assert inputs.passage_views() == expected
+
+    original_candidates = accepted.candidates
+    object.__setattr__(accepted, "candidates", ())
+    object.__setattr__(inputs, "_candidates", accepted.candidates)
+    with pytest.raises(ValueError, match="roster changed"):
+        inputs.passage_views()
+    object.__setattr__(accepted, "candidates", original_candidates)
+    object.__setattr__(inputs, "_candidates", original_candidates)
+    assert inputs.passage_views() == expected
+
+    object.__setattr__(inputs, "_allowed", frozenset())
+    with pytest.raises(ValueError, match="not a declared"):
+        inputs.passage_views()
+    object.__setattr__(inputs, "_allowed", frozenset((FamilyId.PASSAGES,)))
+    assert inputs.passage_views() == expected
+
+    with pytest.raises(TypeError):
+        AcceptedProjectionInputs(  # type: ignore[call-arg]
+            frozenset((FamilyId.PASSAGES,)), accepted, accepted.candidates, product.evidence
+        )
+
+    assert not hasattr(registry_module, "_PROJECTION_AUTHORITY_TOKEN")
+    assert not hasattr(registry_module, "_ProjectionInputIssuer")
+    assert not hasattr(inputs._issuer, "_issued")
+
+
+def test_projection_input_authority_has_one_closed_production_caller() -> None:
+    callers = []
+    references = []
+    for path in sorted(Path(registry_module.__file__).parent.glob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        if "_issue_projection_inputs" in source:
+            references.append(path.name)
+        tree = ast.parse(source, filename=str(path))
+        if any(
+            isinstance(node, ast.Call)
+            and (
+                (isinstance(node.func, ast.Name) and node.func.id == "_issue_projection_inputs")
+                or (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "_issue_projection_inputs"
+                )
+            )
+            for node in ast.walk(tree)
+        ):
+            callers.append(path.name)
+    assert callers == ["result.py"]
+    assert references == ["_registry.py", "result.py"]
+
+    registry_source = inspect.getsource(registry_module)
+    assert "_PROJECTION_AUTHORITY_TOKEN" not in registry_source
+    assert "class _ProjectionInputIssuer" not in registry_source
 
 
 def test_registry_rejects_wrong_typed_dependency_values() -> None:
@@ -223,16 +302,21 @@ def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> N
     orchestration_context = {"cylinders", "rotational"}
     validate_result_fields(frozenset(result_fields - orchestration_context))
     assert {
-        item.public_entrypoint for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+        item.public_entrypoint
+        for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
+        if item.public_entrypoint is not None
     } == MIGRATED
     assert all(hasattr(public, item.public_entrypoint) for item in PHYSICAL_DEFINITIONS)
-    assert all(hasattr(public, item.public_entrypoint) for item in DERIVED_DEFINITIONS)
+    assert all(
+        item.public_entrypoint is None or hasattr(public, item.public_entrypoint)
+        for item in DERIVED_DEFINITIONS
+    )
     manifest_entrypoints = {
         recogniser["entry_point"].removeprefix("b123d_recognisers.")
         for family in public.capability_manifest()["families"]
         for recogniser in family["recognisers"]
     }
-    assert manifest_entrypoints == MIGRATED
+    assert manifest_entrypoints == MIGRATED | {"recognise_passages"}
 
 
 def _record_types(annotation: object) -> set[type[Record]]:
@@ -248,10 +332,11 @@ def test_registry_record_types_match_public_entrypoints_and_result_fields() -> N
     result_hints = typing.get_type_hints(RecognitionResult)
     for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS):
         declared = set(definition.record_types)
-        public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
-            "return"
-        ]
-        assert declared == _record_types(public_return), definition.public_entrypoint
+        if definition.public_entrypoint is not None:
+            public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
+                "return"
+            ]
+            assert declared == _record_types(public_return), definition.public_entrypoint
         assert declared == _record_types(result_hints[definition.result_field]), (
             definition.result_field
         )
@@ -361,6 +446,13 @@ def test_registry_validation_rejects_incomplete_physical_contract_metadata() -> 
     with pytest.raises(ValueError, match="reasons must be non-empty"):
         validate_definitions(empty_reason, DERIVED_DEFINITIONS)
 
+    missing_attribution = tuple(
+        replace(item, attribution=None) if item is first else item  # type: ignore[arg-type]
+        for item in PHYSICAL_DEFINITIONS
+    )
+    with pytest.raises(ValueError, match="attribution disposition"):
+        validate_definitions(missing_attribution, DERIVED_DEFINITIONS)
+
 
 def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> None:
     first = DERIVED_DEFINITIONS[0]
@@ -379,8 +471,16 @@ def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> N
         replace(first, public_entrypoint=""),
         *DERIVED_DEFINITIONS[1:],
     )
-    with pytest.raises(ValueError, match="record and public contracts"):
+    with pytest.raises(ValueError, match="discoverer definitions require a public entrypoint"):
         validate_definitions(PHYSICAL_DEFINITIONS, missing_record_contract)
+
+    projection = DERIVED_DEFINITIONS[-1]
+    invalid_projection_entrypoint = (
+        *DERIVED_DEFINITIONS[:-1],
+        replace(projection, public_entrypoint="recognise_passages"),
+    )
+    with pytest.raises(ValueError, match="projection definitions cannot declare"):
+        validate_definitions(PHYSICAL_DEFINITIONS, invalid_projection_entrypoint)
 
     missing_census = (
         replace(first, census=None),  # type: ignore[arg-type]
@@ -395,6 +495,20 @@ def test_registry_validation_rejects_incomplete_derived_contract_metadata() -> N
     )
     with pytest.raises(ValueError, match="reasons must be non-empty"):
         validate_definitions(PHYSICAL_DEFINITIONS, empty_reason)
+
+    missing_record_types = (
+        replace(first, record_types=()),
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="record contracts"):
+        validate_definitions(PHYSICAL_DEFINITIONS, missing_record_types)
+
+    unknown_role = (
+        replace(first, role="unknown"),  # type: ignore[arg-type]
+        *DERIVED_DEFINITIONS[1:],
+    )
+    with pytest.raises(ValueError, match="role is not recognized"):
+        validate_definitions(PHYSICAL_DEFINITIONS, unknown_role)
 
     invalid_source = (
         replace(first, sources=(FamilyId.LEGACY,)),

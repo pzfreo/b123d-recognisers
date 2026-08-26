@@ -39,6 +39,14 @@ Neither document is authoritative for the other repository's implementation. Eac
 derives its actual inventory independently and validates the declarations against it. The join
 is a compatibility contract, not a shared implementation or synchronized release.
 
+### Format version 2 (0.4)
+
+Format 2 adds a required recogniser `role` (`physical`, `compatibility`, or `derived`) and a
+family-level `census_output`. These fields make the singular physical authority and counted
+aggregate field executable when an old public API remains as a projection. Consumers supporting
+only format 1 must reject format 2. Existing family `introduced_in` values remain unchanged; new
+record publication is recorded by package release notes and each record's schema version.
+
 ### Stable family identifiers
 
 A family identifier is a lower-case segmented token matching
