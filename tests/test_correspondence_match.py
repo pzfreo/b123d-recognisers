@@ -885,6 +885,21 @@ def test_raw_oracle_refuses_children_without_one_common_transverse_axis_line() -
     )
     with pytest.raises(AssertionError):
         _raw_partition_relation_oracle(parent, shifted)
+    result = correspondence_changes(
+        _take_inventory(_partition_rrp(10.0)),
+        _take_inventory(
+            Compound(
+                [
+                    Pos(1, 0, 0) * _partition_rrp(4.0),
+                    Pos(2, 0, 4) * _partition_rrp(6.0),
+                ]
+            )
+        ),
+    )
+    assert all(
+        relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
+        for relation in result.relations
+    )
 
 
 def test_raw_prism_oracle_refuses_inner_wire_taper_and_twist() -> None:
@@ -972,6 +987,17 @@ def test_partition_leaf_rejects_interface_pcurve_volume_and_first_moment_drift()
         section_curves=(changed_curve, *first.low_cap.section_curves[1:]),
     )
     mutations = (
+        (
+            first,
+            replace(
+                child_facts[1],
+                low_cap=replace(child_facts[1].low_cap, section_curves=()),
+            ),
+        ),
+        (
+            first,
+            replace(child_facts[1], low_cap=first.high_cap),
+        ),
         (replace(first, low_cap=changed_low), *child_facts[1:]),
         (replace(first, volume=first.volume + 1.0), *child_facts[1:]),
         (
