@@ -1057,7 +1057,7 @@ incidence either remains open/invalid or makes the wall/floor assignment ambiguo
 common-SolidRef and complete-role checks already refuse. This is not claimed as an extra supported
 geometry route.
 
-F5 cumulative exit ledger on merged main:
+F5 cumulative exit ledger at the F5 closure point, before the later F4b allocation lifecycle:
 
 - the closed registry contains exactly 22 non-legacy physical definitions: 20 are
   `FullyAttributed`; only Step Levels and Risers remain `IncompleteAttribution`, each with the
@@ -1075,6 +1075,10 @@ F5 cumulative exit ledger on merged main:
   attempts remain inconclusive and are never retried or fitted;
 - capability manifest format 1 remains unchanged. The private registry plus the reviewed human
   capability table carry attribution completeness, so no public schema or Draftwright pin moved.
+
+The later F4b lifecycle recorded above consumes bucket 36 inconclusively, moves the current ordinary
+complement to 37..999, and advances the capability manifest to format 2 for the separately reviewed
+physical/projection/API role contract. That later state does not rewrite this historical F5 ledger.
 
 Exit gate: every physical definition has an explicit attribution disposition; capability evidence
 truthfully distinguishes attributed and unattributed families; per-face tools consume the same
