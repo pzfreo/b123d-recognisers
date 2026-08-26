@@ -1204,6 +1204,159 @@ def test_partition_translation_zero_bound_is_euclidean_and_inclusive() -> None:
     )
 
 
+def test_raw_partition_volume_enclosure_is_inclusive_and_nextafter_closed() -> None:
+    parent = _raw_prism_partition_oracle(_partition_rrp(10.0))[0]
+    children = list(
+        _raw_prism_partition_oracle(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    bound = 2.0 * (parent.volume_quantum + sum(child.volume_quantum for child in children))
+    common_com = parent.centre_of_mass
+    children = [replace(child, centre_of_mass=common_com) for child in children]
+    equality_volume = parent.volume + bound - children[1].volume
+    equality_children = (replace(children[0], volume=equality_volume), children[1])
+    assert _raw_partition_relation_oracle((parent,), equality_children)[0]
+    outside_children = (
+        replace(children[0], volume=math.nextafter(equality_volume, math.inf)),
+        children[1],
+    )
+    with pytest.raises(AssertionError):
+        _raw_partition_relation_oracle((parent,), outside_children)
+
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent_fact = _prism_fact_for(parent_occurrence)
+    child_facts = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent_fact is not None and all(child is not None for child in child_facts)
+    typed_children = tuple(child for child in child_facts if child is not None)
+    production_bound = 2.0 * (
+        parent_fact.quantization.volume_quantum
+        + sum(child.quantization.volume_quantum for child in typed_children)
+    )
+    production_equality = (
+        replace(
+            typed_children[0],
+            volume=parent_fact.volume + production_bound - typed_children[1].volume,
+            centre_of_mass=parent_fact.centre_of_mass,
+        ),
+        replace(typed_children[1], centre_of_mass=parent_fact.centre_of_mass),
+    )
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent_fact,
+        child_snapshot.occurrences,
+        production_equality,
+        _MatchBudget(),
+    )
+    outside_volume = math.nextafter(production_equality[0].volume, math.inf)
+    while (
+        abs(parent_fact.volume - (outside_volume + production_equality[1].volume))
+        <= production_bound
+    ):
+        outside_volume = math.nextafter(outside_volume, math.inf)
+    production_outside = (
+        replace(
+            production_equality[0],
+            volume=outside_volume,
+        ),
+        production_equality[1],
+    )
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent_fact,
+        child_snapshot.occurrences,
+        production_outside,
+        _MatchBudget(),
+    )
+
+    volume_errors = tuple(2.0 * child.quantization.volume_quantum for child in typed_children)
+    child_volume = sum(child.volume for child in typed_children)
+    error_sum = sum(volume_errors)
+    volume_uppers = tuple(
+        abs(child.volume) + error
+        for child, error in zip(typed_children, volume_errors, strict=True)
+    )
+    first_moment_base = (
+        sum(
+            upper * 2.0 * child.quantization.metric_quantum
+            for child, upper in zip(typed_children, volume_uppers, strict=True)
+        )
+        + sum(volume_uppers) * 2.0 * parent_fact.quantization.metric_quantum
+    )
+    equality_shift = first_moment_base / (child_volume - error_sum)
+    moment_equality = tuple(
+        replace(
+            child,
+            centre_of_mass=(
+                parent_fact.centre_of_mass[0] + equality_shift,
+                parent_fact.centre_of_mass[1],
+                parent_fact.centre_of_mass[2],
+            ),
+        )
+        for child in typed_children
+    )
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent_fact,
+        child_snapshot.occurrences,
+        moment_equality,
+        _MatchBudget(),
+    )
+    outside_shift = math.nextafter(equality_shift, math.inf)
+    moment_outside = tuple(
+        replace(
+            child,
+            centre_of_mass=(
+                parent_fact.centre_of_mass[0] + outside_shift,
+                parent_fact.centre_of_mass[1],
+                parent_fact.centre_of_mass[2],
+            ),
+        )
+        for child in typed_children
+    )
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent_fact,
+        child_snapshot.occurrences,
+        moment_outside,
+        _MatchBudget(),
+    )
+
+    lower_children = tuple(
+        replace(
+            child,
+            volume=error,
+            centre_of_mass=parent_fact.centre_of_mass,
+        )
+        for child, error in zip(typed_children, volume_errors, strict=True)
+    )
+    lower_parent = replace(parent_fact, volume=sum(child.volume for child in lower_children))
+    assert not _partition_witnesses(
+        parent_occurrence,
+        lower_parent,
+        child_snapshot.occurrences,
+        lower_children,
+        _MatchBudget(),
+    )
+    positive_children = (
+        replace(
+            lower_children[0],
+            volume=math.nextafter(lower_children[0].volume, math.inf),
+        ),
+        lower_children[1],
+    )
+    positive_parent = replace(parent_fact, volume=sum(child.volume for child in positive_children))
+    assert _partition_witnesses(
+        parent_occurrence,
+        positive_parent,
+        child_snapshot.occurrences,
+        positive_children,
+        _MatchBudget(),
+    )
+
+
 def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> None:
     whole_product = _take_inventory(_partition_rrp(10.0))
     pieces_product = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
