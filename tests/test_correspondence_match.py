@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import math
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 import pytest
 from build123d import (
@@ -19,6 +19,8 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
 
 import b123d_recognisers._correspondence_match as correspondence_match_module
 from b123d_recognisers._body_geometry import ANGLE_TOL, DIRECTION_TOL
@@ -41,6 +43,7 @@ from b123d_recognisers._correspondence_match import (
     _inverse_witness,
     _MatchBudget,
     _maximum_matchings,
+    _normalize_partition_translation,
     _order_bound,
     _scale_is_identity,
     _validate_result,
@@ -106,6 +109,30 @@ def _prism_fact_for(occurrence, *, graph=None, summary=None):
         centre_of_mass=occurrence.body.placement.centre_of_mass,
         quantization=occurrence.body.quantization,
     )
+
+
+@dataclass(frozen=True)
+class _RawPrismOracleFact:
+    lo: float
+    hi: float
+    axis: tuple[float, float, float]
+    low_cycle: tuple[tuple, ...]
+    high_cycle: tuple[tuple, ...]
+    side_kinds: tuple[str, ...]
+    axial_pairs: tuple[tuple[int, int], ...]
+    volume: float
+    centre_of_mass: tuple[float, float, float]
+
+
+def _raw_cycle_presentations(cycle):
+    congruence = tuple(
+        (value[0], value[1], value[3], abs(value[4])) if value[0] == "CIRCLE" else value[:2]
+        for value in cycle
+    )
+    reverse = tuple(reversed(congruence))
+    return {congruence[offset:] + congruence[:offset] for offset in range(len(congruence))} | {
+        reverse[offset:] + reverse[:offset] for offset in range(len(reverse))
+    }
 
 
 def _raw_prism_partition_oracle(part):
@@ -215,40 +242,94 @@ def _raw_prism_partition_oracle(part):
                 low_labels = tuple(label(*item) for item in low_cycle)
                 high_labels = tuple(label(*item) for item in high_cycle)
 
-                def congruence_label(value):
-                    if value[0] == "CIRCLE":
-                        return (value[0], value[1], value[3], abs(value[4]))
-                    return value[:2]
-
                 # Both cycles are independently material-oriented; opposite cap normals reverse
                 # the presentation while preserving the complete analytic curve roster.
-                low_congruence = tuple(congruence_label(value) for value in low_labels)
-                high_congruence = tuple(congruence_label(value) for value in high_labels)
-                high_presentations = {
-                    high_congruence[offset:] + high_congruence[:offset]
-                    for offset in range(len(high_congruence))
-                } | {
-                    tuple(reversed(high_congruence))[offset:]
-                    + tuple(reversed(high_congruence))[:offset]
-                    for offset in range(len(high_congruence))
-                }
-                if low_congruence not in high_presentations:
+                if not _raw_cycle_presentations(low_labels) & _raw_cycle_presentations(high_labels):
                     continue
+                side_kinds = tuple(
+                    BRepAdaptor_Surface(faces[face_at].wrapped)
+                    .GetType()
+                    .name.removeprefix("GeomAbs_")
+                    .upper()
+                    for face_at in low_sides
+                )
+                if any(
+                    (label_value[0] == "LINE" and side_kind != "PLANE")
+                    or (label_value[0] == "CIRCLE" and side_kind != "CYLINDER")
+                    for label_value, side_kind in zip(low_labels, side_kinds, strict=True)
+                ):
+                    continue
+                properties = GProp_GProps()
+                BRepGProp.VolumeProperties_s(solid.wrapped, properties)
                 candidates.append(
-                    (
+                    _RawPrismOracleFact(
                         left_position,
                         right_position,
                         tuple(round(value, 12) for value in axis),
                         low_labels,
-                        tuple(sorted(side_set)),
+                        high_labels,
+                        side_kinds,
                         tuple(sorted(axial_pairs)),
-                        float(solid.volume),
-                        tuple(float(value) for value in solid.center()),
+                        float(properties.Mass()),
+                        tuple(float(value) for value in properties.CentreOfMass().Coord()),
                     )
                 )
         assert len(candidates) == 1
         facts.append(candidates[0])
     return tuple(facts)
+
+
+def _raw_partition_relation_oracle(parent, children):
+    """Prove the raw geometric partition and common witness without matcher values."""
+
+    assert len(parent) == 1 and len(children) >= 2
+    source = parent[0]
+    ordered = tuple(sorted(children, key=lambda fact: (fact.lo, fact.hi)))
+    assert len({(fact.lo, fact.hi) for fact in ordered}) == len(ordered)
+    assert all(
+        left.hi == pytest.approx(right.lo)
+        for left, right in zip(ordered, ordered[1:], strict=False)
+    )
+    assert ordered[0].lo == pytest.approx(source.lo)
+    assert ordered[-1].hi == pytest.approx(source.hi)
+    scale = (ordered[-1].hi - ordered[0].lo) / (source.hi - source.lo)
+    rotations = tuple(
+        rotation
+        for rotation in PROPER_ROTATIONS
+        if tuple(
+            sum(rotation[row][column] * source.axis[column] for column in range(3))
+            for row in range(3)
+        )
+        == ordered[0].axis
+    )
+    assert rotations
+    for child in ordered:
+        assert _raw_cycle_presentations(source.low_cycle) & _raw_cycle_presentations(
+            child.low_cycle
+        )
+        assert _raw_cycle_presentations(source.high_cycle) & _raw_cycle_presentations(
+            child.high_cycle
+        )
+        assert child.side_kinds == source.side_kinds
+        assert len(child.axial_pairs) == len(source.axial_pairs)
+    for left, right in zip(ordered, ordered[1:], strict=False):
+        assert _raw_cycle_presentations(left.high_cycle) & _raw_cycle_presentations(right.low_cycle)
+        # Independent material cycles on the two coincident interface caps oppose.
+        assert left.high_cycle != right.low_cycle
+    assert sum(child.volume for child in ordered) == pytest.approx(scale**3 * source.volume)
+    target_com = tuple(
+        sum(child.volume * child.centre_of_mass[at] for child in ordered)
+        / sum(child.volume for child in ordered)
+        for at in range(3)
+    )
+    assert target_com == pytest.approx(
+        tuple(
+            sum(child.volume * child.centre_of_mass[at] for child in ordered)
+            / sum(child.volume for child in ordered)
+            for at in range(3)
+        )
+    )
+    return scale, rotations, target_com
 
 
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
@@ -338,9 +419,10 @@ def test_reviewed_line_mixed_and_higher_prism_roster(
     whole_oracle = _raw_prism_partition_oracle(whole_part)
     pieces_oracle = _raw_prism_partition_oracle(pieces_part)
     assert len(whole_oracle) == 1 and len(pieces_oracle) == 2
-    assert pieces_oracle[0][0] == pytest.approx(whole_oracle[0][0])
-    assert pieces_oracle[-1][1] == pytest.approx(whole_oracle[0][1])
-    assert sum(fact[6] for fact in pieces_oracle) == pytest.approx(whole_oracle[0][6])
+    scale, rotations, target_com = _raw_partition_relation_oracle(whole_oracle, pieces_oracle)
+    assert scale == pytest.approx(1.0)
+    assert IDENTITY_ROTATION in rotations
+    assert target_com == pytest.approx(whole_oracle[0].centre_of_mass)
 
     whole = _take_inventory(whole_part)
     pieces = _take_inventory(pieces_part)
@@ -605,6 +687,29 @@ def test_partition_witness_is_independent_of_unequal_child_presentation_order() 
     assert [relation.kind for relation in direct.relations] == [ChangeKind.SPLIT]
     assert [relation.kind for relation in reversed_result.relations] == [ChangeKind.SPLIT]
     assert direct.relations[0].witness == reversed_result.relations[0].witness
+
+
+def test_partition_translation_zero_bound_is_euclidean_and_inclusive() -> None:
+    bound = 1.0e-6
+    diagonal = bound / math.sqrt(2.0)
+    assert _normalize_partition_translation((diagonal, diagonal, 0.0), bound) == (
+        0.0,
+        0.0,
+        0.0,
+    )
+    outside = math.nextafter(diagonal, math.inf)
+    assert _normalize_partition_translation((outside, outside, 0.0), bound) == (
+        outside,
+        outside,
+        0.0,
+    )
+    assert _normalize_partition_translation((bound, 0.0, 0.0), bound) == (0.0, 0.0, 0.0)
+    axial_outside = math.nextafter(bound, math.inf)
+    assert _normalize_partition_translation((axial_outside, 0.0, 0.0), bound) == (
+        axial_outside,
+        0.0,
+        0.0,
+    )
 
 
 def test_split_merge_result_shapes_and_candidate_witness_roster_are_closed() -> None:

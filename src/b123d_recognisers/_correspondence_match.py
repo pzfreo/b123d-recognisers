@@ -1525,6 +1525,14 @@ def _axis_vector(axis: str) -> Vector3:
     return cast(Vector3, tuple(1.0 if index == at else 0.0 for index in range(3)))
 
 
+def _normalize_partition_translation(translation: Vector3, bound: float) -> Vector3:
+    """Canonicalize only a whole translation proven observationally zero."""
+
+    return (
+        (0.0, 0.0, 0.0) if sum(value * value for value in translation) <= bound**2 else translation
+    )
+
+
 def _prism_curve_similarity(
     before: _PrismCurve,
     after: _PrismCurve,
@@ -1582,9 +1590,7 @@ def _prism_curve_similarity(
     curve_presentation = 1
     if before.start is not None and before.end is not None:
         before_curve_start, before_curve_end = (
-            (before.start, before.end)
-            if before.direction == 1
-            else (before.end, before.start)
+            (before.start, before.end) if before.direction == 1 else (before.end, before.start)
         )
         after_curve_start, after_curve_end = (
             (after.start, after.end) if after.direction == 1 else (after.end, after.start)
@@ -1816,19 +1822,14 @@ def _partition_witnesses(
                 Vector3,
                 tuple(
                     target - scale * source
-                    for source, target in zip(
-                        rotated_parent_centre, target_centre, strict=True
-                    )
+                    for source, target in zip(rotated_parent_centre, target_centre, strict=True)
                 ),
             )
             zero_bound = 2.0 * (
                 scale * parent.quantization.metric_quantum
                 + min(child.quantization.metric_quantum for child in children)
             )
-            translation = cast(
-                Vector3,
-                tuple(0.0 if abs(value) <= zero_bound else value for value in translation),
-            )
+            translation = _normalize_partition_translation(translation, zero_bound)
             transformed_parent_centre = _affine_point(
                 rotation, translation, scale, parent_occurrence.summary.centre
             )
@@ -1857,10 +1858,8 @@ def _partition_witnesses(
                     IDENTITY_ROTATION,
                     1.0,
                     axis_at,
-                    2.0
-                    * (left.quantization.metric_quantum + right.quantization.metric_quantum),
-                    2.0
-                    * (left.quantization.area_quantum + right.quantization.area_quantum),
+                    2.0 * (left.quantization.metric_quantum + right.quantization.metric_quantum),
+                    2.0 * (left.quantization.area_quantum + right.quantization.area_quantum),
                     budget,
                     material_factor=-1,
                 )
@@ -1878,10 +1877,7 @@ def _partition_witnesses(
                 continue
             errors = tuple(2.0 * child.quantization.volume_quantum for child in children)
             if (
-                sum(
-                    child.volume - error
-                    for child, error in zip(children, errors, strict=True)
-                )
+                sum(child.volume - error for child, error in zip(children, errors, strict=True))
                 <= 0.0
             ):
                 continue
