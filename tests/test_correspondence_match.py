@@ -105,6 +105,45 @@ def _prism_fact_for(occurrence, *, graph=None, summary=None):
     )
 
 
+def _raw_prism_partition_oracle(part):
+    """Collect one axial extrusion proof before any production snapshot is read."""
+
+    solids = tuple(part.solids())
+    facts = []
+    for solid in solids:
+        faces = tuple(solid.faces())
+        caps = []
+        sides = []
+        for face in faces:
+            centre = tuple(float(value) for value in face.center())
+            normal = tuple(float(value) for value in face.normal_at(face.center()))
+            if abs(abs(normal[2]) - 1.0) <= 4.0 * DIRECTION_TOL:
+                wire = face.outer_wire()
+                cycle = tuple(
+                    (
+                        edge.geom_type.name,
+                        round(float(edge.length), 6),
+                        tuple(round(float(value), 6) for value in edge.position_at(0)),
+                        tuple(round(float(value), 6) for value in edge.position_at(1)),
+                    )
+                    for edge in wire.edges()
+                )
+                caps.append((centre[2], math.copysign(1, normal[2]), cycle, float(face.area)))
+            else:
+                sides.append(face)
+        assert len(caps) == 2
+        caps.sort(key=lambda value: value[0])
+        low, high = caps
+        assert low[0] < high[0]
+        assert low[1] == -high[1]
+        assert len(low[2]) == len(high[2]) == len(sides)
+        assert sorted((kind, length) for kind, length, *_ in low[2]) == sorted(
+            (kind, length) for kind, length, *_ in high[2]
+        )
+        facts.append((low[0], high[0], low[2], float(solid.volume), tuple(solid.center())))
+    return tuple(facts)
+
+
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
     before = _take_inventory(Box(10, 10, 10))
     after = _take_inventory(Box(20, 10, 10))
@@ -176,15 +215,22 @@ def test_unique_two_child_geometric_partition_and_inverse() -> None:
     [(_partition_rrp, 5), (_mixed_partition_rrp, 7), (_partition_rrp, 8)],
 )
 def test_reviewed_line_mixed_and_higher_prism_roster(factory, repeats: int) -> None:
-    whole = _take_inventory(factory(10.0, repeats=repeats))
-    pieces = _take_inventory(
-        Compound(
-            [
-                factory(4.0, repeats=repeats),
-                factory(6.0, 4.0, repeats=repeats),
-            ]
-        )
+    whole_part = factory(10.0, repeats=repeats)
+    pieces_part = Compound(
+        [
+            factory(4.0, repeats=repeats),
+            factory(6.0, 4.0, repeats=repeats),
+        ]
     )
+    whole_oracle = _raw_prism_partition_oracle(whole_part)
+    pieces_oracle = _raw_prism_partition_oracle(pieces_part)
+    assert len(whole_oracle) == 1 and len(pieces_oracle) == 2
+    assert pieces_oracle[0][0] == pytest.approx(whole_oracle[0][0])
+    assert pieces_oracle[-1][1] == pytest.approx(whole_oracle[0][1])
+    assert sum(fact[3] for fact in pieces_oracle) == pytest.approx(whole_oracle[0][3])
+
+    whole = _take_inventory(whole_part)
+    pieces = _take_inventory(pieces_part)
     (relation,) = correspondence_changes(whole, pieces).relations
     assert relation.kind is ChangeKind.SPLIT
 
