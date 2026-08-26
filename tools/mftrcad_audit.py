@@ -30,8 +30,8 @@ DATASET_LICENCE: Final = "MIT"
 GENERATOR_COMMIT: Final = "3ae17a43dde22e4f27c5d7df179838d92551c28c"
 SELECTION_NAMESPACE: Final = "b123d-recognisers:mftrcad:v1"
 SELECTION_MODULUS: Final = 1000
-DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 10))
-HOLDOUT_BUCKETS: Final = frozenset(range(10, 20))
+DEVELOPMENT_BUCKETS: Final = frozenset(range(0, 500))
+HOLDOUT_BUCKETS: Final = frozenset(range(500, 1000))
 F5_FLATS_H1: Final = "F5-FLATS-H1"
 F5_FILLETS_H1: Final = "F5-FILLETS-H1"
 F5_COUNTERSINKS_H1: Final = "F5-COUNTERSINKS-H1"
@@ -103,8 +103,8 @@ ALLOCATION_SPECS: Final = (
         frozenset({33}),
         "consumed",
     ),
-    AllocationSpec(F5_STEP_LEVELS_H1, "f5_step_levels_h1", frozenset({34}), "sealed_unrevealed"),
-    AllocationSpec(F5_RISERS_H1, "f5_risers_h1", frozenset({35}), "sealed_unrevealed"),
+    AllocationSpec(F5_STEP_LEVELS_H1, "f5_step_levels_h1", frozenset({34}), "retired_unrevealed"),
+    AllocationSpec(F5_RISERS_H1, "f5_risers_h1", frozenset({35}), "retired_unrevealed"),
     AllocationSpec(
         F4B_SECTION_PASSAGES_H1,
         "f4b_section_passages_h1",
@@ -135,7 +135,10 @@ def _validate_allocation_specs(
         for spec in specs
     ):
         raise ValueError("allocation policy ids or selection tokens are not canonical")
-    if any(spec.status not in {"sealed_unrevealed", "consumed"} for spec in specs):
+    if any(
+        spec.status not in {"sealed_unrevealed", "consumed", "retired_unrevealed"}
+        for spec in specs
+    ):
         raise ValueError("allocation status is not closed")
     if any(
         not spec.buckets
@@ -146,22 +149,17 @@ def _validate_allocation_specs(
         for spec in specs
     ):
         raise ValueError("allocation buckets must be nonempty exact integers in range")
-    reserved = set(DEVELOPMENT_BUCKETS) | set(HOLDOUT_BUCKETS)
     named: set[int] = set()
     for spec in specs:
-        if reserved & spec.buckets or named & spec.buckets:
-            raise ValueError("allocation bucket groups must be globally disjoint")
+        if named & spec.buckets:
+            raise ValueError("historical allocation bucket groups must be mutually disjoint")
         named.update(spec.buckets)
     return specs
 
 
 _validate_allocation_specs(ALLOCATION_SPECS)
 NAMED_ALLOCATIONS: Final = {spec.policy_id: spec.buckets for spec in ALLOCATION_SPECS}
-ALLOCATION_SELECTIONS: Final = {spec.selection_token: spec.policy_id for spec in ALLOCATION_SPECS}
 ALLOCATION_STATUSES: Final = {spec.policy_id: spec.status for spec in ALLOCATION_SPECS}
-BUCKET_SELECTIONS: Final = {
-    bucket: spec.selection_token for spec in ALLOCATION_SPECS for bucket in spec.buckets
-}
 
 FEATURE_LABELS: Final = {
     0: "chamfer",
@@ -238,33 +236,8 @@ PACKAGE_FAMILIES_BY_LABEL: Final = {
     26: (),
 }
 
-Selection = Literal[
-    "all",
-    "development",
-    "holdout",
-    "unselected",
-    "f5_flats_h1",
-    "f5_fillets_h1",
-    "f5_countersinks_h1",
-    "f5_bosses_h1",
-    "f5_double_d_bores_h1",
-    "f5_polygonal_bosses_h1",
-    "f5_pads_h1",
-    "f5_holes_h1",
-    "f5_channels_h1",
-    "f5_plates_h1",
-    "f5_polygonal_stock_h1",
-    "f5_slots_h1",
-    "f5_pockets_h1",
-    "f5_repeating_radial_profiles_h1",
-    "f5_step_levels_h1",
-    "f5_risers_h1",
-    "f4b_section_passages_h1",
-    "f3b_polygonal_bosses_h1",
-]
-SELECTIONS: Final = frozenset({"all", "development", "holdout", "unselected"}) | frozenset(
-    ALLOCATION_SELECTIONS
-)
+Selection = Literal["development", "holdout"]
+SELECTIONS: Final = frozenset({"development", "holdout"})
 JsonObject: TypeAlias = dict[str, Any]
 
 
@@ -291,8 +264,8 @@ class AuditInputError(ValueError):
 def _validate_selection_policy(value: object) -> JsonObject:
     """Validate the reviewed manifest against the scanner's complete closed mirror."""
 
-    if not isinstance(value, dict) or value.get("schema_version") != 1:
-        raise ValueError("selection policy must use schema version 1")
+    if not isinstance(value, dict) or value.get("schema_version") != 2:
+        raise ValueError("selection policy must use schema version 2")
     selection = value.get("selection")
     if not isinstance(selection, dict):
         raise ValueError("selection policy must contain a selection object")
@@ -309,16 +282,20 @@ def _validate_selection_policy(value: object) -> JsonObject:
         raise ValueError("selection policy algorithm differs from the scanner mirror")
     if selection.get("namespace") != SELECTION_NAMESPACE:
         raise ValueError("selection policy namespace differs from the scanner mirror")
-    if selection.get("development_buckets") != sorted(DEVELOPMENT_BUCKETS):
+    if selection.get("development_bucket_ranges") != [[0, 499]]:
         raise ValueError("selection policy development buckets differ from the scanner mirror")
-    if selection.get("holdout_buckets") != sorted(HOLDOUT_BUCKETS):
+    if selection.get("holdout_bucket_ranges") != [[500, 999]]:
         raise ValueError("selection policy holdout buckets differ from the scanner mirror")
-    if selection.get("named_allocations") != expected_allocations:
-        raise ValueError("selection policy named allocations differ from the scanner mirror")
+    if selection.get("historical_named_allocations") != expected_allocations:
+        raise ValueError("selection policy historical allocations differ from the scanner mirror")
     for allocation, expected_spec in expected_allocations.items():
         if not allocation.replace("-", "").isalnum() or allocation.upper() != allocation:
             raise ValueError(f"invalid allocation id {allocation!r}")
-        if expected_spec["status"] not in {"sealed_unrevealed", "consumed"}:
+        if expected_spec["status"] not in {
+            "sealed_unrevealed",
+            "consumed",
+            "retired_unrevealed",
+        }:
             raise ValueError(f"invalid allocation status for {allocation!r}")
         buckets = expected_spec["buckets"]
         if not buckets or any(
@@ -327,33 +304,7 @@ def _validate_selection_policy(value: object) -> JsonObject:
         ):
             raise ValueError(f"invalid allocation buckets for {allocation!r}")
     selected = set(DEVELOPMENT_BUCKETS) | set(HOLDOUT_BUCKETS)
-    for buckets in NAMED_ALLOCATIONS.values():
-        if selected & buckets:
-            raise ValueError("selection policy bucket groups overlap")
-        selected.update(buckets)
-    complement = set(range(SELECTION_MODULUS)) - selected
-    ranges = selection.get("unselected_bucket_ranges")
-    if not isinstance(ranges, list) or any(
-        not isinstance(item, list)
-        or len(item) != 2
-        or any(not isinstance(bound, int) or isinstance(bound, bool) for bound in item)
-        or item[0] < 0
-        or item[1] >= SELECTION_MODULUS
-        or item[0] > item[1]
-        for item in ranges
-    ):
-        raise ValueError("selection policy unselected ranges are malformed")
-    checked_ranges = cast(list[list[int]], ranges)
-    expanded = {bucket for lo, hi in checked_ranges for bucket in range(lo, hi + 1)}
-    normalized: list[list[int]] = []
-    for bucket in sorted(expanded):
-        if not normalized or bucket != normalized[-1][1] + 1:
-            normalized.append([bucket, bucket])
-        else:
-            normalized[-1][1] = bucket
-    if ranges != normalized or expanded != complement:
-        raise ValueError("selection policy unselected complement differs from the scanner mirror")
-    if selected | complement != set(range(SELECTION_MODULUS)):
+    if DEVELOPMENT_BUCKETS & HOLDOUT_BUCKETS or selected != set(range(SELECTION_MODULUS)):
         raise ValueError("selection policy does not partition the selection modulus")
     return cast(JsonObject, value)
 
@@ -374,9 +325,7 @@ def selection_of(model_id: str) -> Selection:
     bucket = selection_bucket(model_id)
     if bucket in DEVELOPMENT_BUCKETS:
         return "development"
-    if bucket in HOLDOUT_BUCKETS:
-        return "holdout"
-    return cast(Selection, BUCKET_SELECTIONS.get(bucket, "unselected"))
+    return "holdout"
 
 
 def _preflight(
@@ -390,21 +339,13 @@ def _preflight(
     if selection not in SELECTIONS:
         raise ValueError(f"unknown selection {selection!r}")
     _selection_policy()
-    unknown = reveal_allocations - NAMED_ALLOCATIONS.keys()
-    if unknown:
-        raise ValueError(f"unknown sealed allocation acknowledgement {sorted(unknown)!r}")
-    if selection == "all":
-        raise ValueError("selection 'all' is closed while named allocations exist")
+    if reveal_allocations:
+        raise ValueError("historical allocations are retired and cannot be revealed")
     if selection == "holdout":
         if not allow_holdout or reveal_allocations:
             raise ValueError("selection 'holdout' requires only its explicit holdout authority")
         return
-    allocation = ALLOCATION_SELECTIONS.get(selection)
-    if allocation is not None:
-        if not allow_holdout and reveal_allocations == frozenset({allocation}):
-            return
-        raise ValueError(f"selection {selection!r} requires exact acknowledgement {allocation!r}")
-    if allow_holdout or reveal_allocations:
+    if allow_holdout:
         raise ValueError(f"selection {selection!r} does not accept reveal authority")
 
 
@@ -1017,18 +958,6 @@ def audit(
         "models": list(reports),
         "invalid": invalid_models,
     }
-    allocation = ALLOCATION_SELECTIONS.get(selection)
-    if allocation is not None:
-        policy, policy_digest = _selection_policy()
-        report["sealed_allocation"] = {
-            "id": allocation,
-            "buckets": sorted(NAMED_ALLOCATIONS[allocation]),
-            "policy_status": ALLOCATION_STATUSES[allocation],
-            "selection_policy_schema_version": policy["schema_version"],
-            "selection_namespace": SELECTION_NAMESPACE,
-            "selection_modulus": SELECTION_MODULUS,
-            "selection_policy_sha256": policy_digest,
-        }
     return report
 
 
@@ -1102,13 +1031,6 @@ def main() -> None:
         help="validate/summarise annotations without importing STEP or running recognition",
     )
     parser.add_argument(
-        "--reveal-allocation",
-        choices=tuple(NAMED_ALLOCATIONS),
-        action="append",
-        default=[],
-        help="explicitly acknowledge one exact named sealed allocation",
-    )
-    parser.add_argument(
         "--record-invalid",
         action="store_true",
         help="record malformed selected models in the report instead of stopping",
@@ -1135,9 +1057,9 @@ def main() -> None:
         args.root,
         selection=cast(Selection, args.selection),
         annotations_only=args.annotations_only,
-        record_invalid=args.record_invalid,
+        record_invalid=args.record_invalid or args.selection == "development",
         allow_holdout=args.reveal_holdout,
-        reveal_allocations=frozenset(args.reveal_allocation),
+        reveal_allocations=frozenset(),
     )
     if args.check_baseline is not None:
         result = check_compact_baseline(result, args.check_baseline)

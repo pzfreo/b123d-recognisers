@@ -74,12 +74,21 @@ The checked-in [selection manifest](mftrcad-selection.json) fixes membership bef
 
 ```text
 bucket = uint64_be(sha256("b123d-recognisers:mftrcad:v1" + NUL + model_id)[0:8]) mod 1000
-development = buckets 0..9
-holdout     = buckets 10..19
+development = buckets 0..499
+holdout     = buckets 500..999
 ```
 
-Named semantic-family allocations are carved out of the remaining partition before their
-implementation begins. `F5-FLATS-H1` is bucket 20 and is now `consumed`; it remains excluded from
+This schema-2 policy replaces feature-by-feature reveals. All development models may be inspected,
+rerun and used for validation; the holdout half remains sealed until a separately reviewed final
+evaluation. Malformed development inputs are recorded and skipped rather than terminating the
+whole scan. The scanner exposes only `development` and `holdout`; there is no active `all`,
+`unselected` or named-allocation selection path. The records below preserve the earlier allocation
+history, but those tokens are retired and grant no access.
+
+### Historical schema-1 allocation chronology
+
+Named semantic-family allocations were formerly carved out before implementation.
+`F5-FLATS-H1` is bucket 20 and is now `consumed`; it remained excluded from
 ordinary `unselected` scans and requires the exact allocation acknowledgement. The scanner keeps
 `all` closed whenever named allocations exist, including consumed allocations; exact named
 selection remains mandatory and generic holdout authority cannot reveal one.
@@ -252,25 +261,28 @@ Fillet faces prove one defining face per Candidate by nonempty-evidence arithmet
 scanner did not reconstruct analytic owner/trim or turned-context geometry; exact role correctness
 remains development-matrix evidence rather than an H1 claim.
 
-The completed Flat and Fillet draws are disjoint. Development outcomes may be inspected. Holdout
-outcomes stay sealed until a semantic child has two independent pre-reveal accepts. A completed
+The completed Flat and Fillet draws were disjoint. Under the historical policy, development
+outcomes could be inspected and holdout outcomes stayed sealed until a semantic child had two
+independent pre-reveal accepts. A completed
 reveal becomes regression evidence; an aborted reveal remains consumed and inconclusive. Neither
-may be fitted. Buckets 37–999 remain unselected; buckets 20 through 36 are the named Flat, Fillet,
+could be fitted. At that historical point, buckets 37–999 were unselected; buckets 20 through 36
+were the named Flat, Fillet,
 Countersink, Boss, Double-D, Polygonal Boss, Pad, Hole, Channel, Plate, Polygonal Stock, Slot,
 Pocket, Repeating Radial Profile, Step Level, Riser and F4b Section Passage allocations. This keeps
 each draw near one percent without depending on class, topology, recognition result, or archive
-traversal order.
-The scanner requires explicit authority for `--selection holdout` and keeps `--selection all`
-closed; each named allocation accepts only its own exact acknowledgement.
+traversal order. Those named selectors are now retired. The current scanner requires explicit
+authority only for `--selection holdout`.
 
-The version-1 archive contains 301 STEP entries selected for development. Three hundred have both
+The historical schema-1 development draw contains 301 STEP entries. Three hundred have both
 annotation files; one (`20240125_003844_9903`) has neither and is recorded as an upstream archive
 defect. Of the complete triples, 294 pass the annotation, topology and STEP-identity audit; four
 are refused for repeated relationship members and two for invalid imported BReps. The compact checked-in
-[`development baseline`](mftrcad-development-baseline.json) records the annotation, relationship,
+[`development baseline`](mftrcad-development-baseline.json) remains the historical schema-1 record
+of the annotation, relationship,
 physical-proposal, disposition, accepted-Candidate, defining-evidence and contested-ownership
 totals. Its digest binds the 901 selected files actually audited to relative paths and bytes. The
-holdout membership count and contents were not inspected during F0.
+holdout membership count and contents were not inspected during F0. A new schema-2 development
+baseline is generated only after the 0..499 policy is merged and frozen.
 
 ## Reproducing the audit
 
