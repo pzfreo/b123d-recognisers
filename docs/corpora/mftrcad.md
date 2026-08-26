@@ -207,6 +207,16 @@ sealed root contained no models matching the allocation, so discovery stopped be
 reading, STEP import or recognition and produced no report. No alternate root, allocation,
 replacement, retry or fitting followed. Bucket 36 is permanently consumed and inconclusive, not
 regression evidence. Buckets 34 and 35 remain independently `sealed_unrevealed`.
+
+`F3B-POLYGONAL-BOSSES-H1` independently designates bucket 37 for #192 before any F3b semantic
+implementation or holdout inspection. Its exact token is `f3b_polygonal_bosses_h1`. This neutral
+designation changes only allocation policy, tests and documentation and accesses no archive
+membership, annotation, STEP geometry, recognition result or outcome. Bucket 37 begins
+`sealed_unrevealed`; buckets 34 and 35 remain independently sealed and unauthorized; the ordinary
+`unselected` complement becomes buckets 38..999. Only the later exact acknowledgement
+`F3B-POLYGONAL-BOSSES-H1`, after frozen gates and two independent accepts, may authorize one
+attempt. That attempt permanently consumes bucket 37 even if empty, invalid or aborted, with no
+retry, alternate root/allocation, replacement or fitting.
 At accepted PR #245 head `6ccbedc`, after two independent exact-head accepts and every local,
 package, performance, CI and coverage gate, the one authorized
 `f5_repeating_radial_profiles_h1` selection with acknowledgement

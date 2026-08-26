@@ -547,6 +547,15 @@ discovery stopped before annotation, STEP or recognition and no report was creat
 root/allocation, retry, replacement or fitting followed. Bucket 36 is permanently consumed and
 inconclusive, not regression evidence; buckets 34 and 35 remain independently sealed.
 
+F3b Polygonal Boss holdout chronology: before semantic implementation or holdout inspection,
+`F3B-POLYGONAL-BOSSES-H1` neutrally designates only bucket 37 with token
+`f3b_polygonal_bosses_h1`. The policy/tests/docs designation accesses no archive membership,
+annotation, STEP geometry, recognition or outcome. Bucket 37 begins `sealed_unrevealed`, buckets
+34/35 remain independently sealed and unauthorized, and the ordinary complement becomes 38..999.
+Only exact acknowledgement `F3B-POLYGONAL-BOSSES-H1` after frozen gates and two independent
+exact-head accepts may authorize one attempt; it permanently consumes bucket 37 even on zero,
+invalid input or abort, with no retry, alternate allocation, replacement or post-reveal fitting.
+
 ### F5 — Complete defining-evidence migration
 
 Move every physical registry definition from deliberate empty evidence to truthful defining
