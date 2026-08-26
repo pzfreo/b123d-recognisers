@@ -946,19 +946,7 @@ def _matching_graph_similarity(
     quant_after: DescriptorQuantization,
     budget: _MatchBudget,
 ) -> bool:
-    # Canonical schema-3 values normally align in their material-oriented forward
-    # presentation. Only pay the complete mixed forward/reverse search when that
-    # proof fails; internal presentation automorphisms do not form new hypotheses.
     return _matching_graph_similarity_search(
-        before,
-        after,
-        rotation,
-        scale,
-        quant_before,
-        quant_after,
-        budget,
-        (1,),
-    ) or _matching_graph_similarity_search(
         before,
         after,
         rotation,
