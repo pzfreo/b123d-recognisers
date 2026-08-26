@@ -105,6 +105,50 @@ def _curve_roster(
     return tuple(values)
 
 
+def _plane_basis(normal: Vector3) -> tuple[Vector3, Vector3]:
+    axes: tuple[Vector3, ...] = (
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    )
+    reference = min(axes, key=lambda value: abs(_dot(value, normal)))
+    projection = tuple(
+        value - _dot(reference, normal) * component
+        for value, component in zip(reference, normal, strict=True)
+    )
+    length = math.sqrt(sum(value * value for value in projection))
+    if length <= DIRECTION_TOL:
+        raise ValueError("prism plane basis is degenerate")
+    u = cast(Vector3, tuple(value / length for value in projection))
+    v = (
+        normal[1] * u[2] - normal[2] * u[1],
+        normal[2] * u[0] - normal[0] * u[2],
+        normal[0] * u[1] - normal[1] * u[0],
+    )
+    return u, v
+
+
+def _plane_curve_parameters_match(
+    curve: _PrismCurve, face: MatchingFace, metric: float
+) -> bool:
+    if curve.start is None or curve.end is None:
+        return curve.start_parameter is None and curve.end_parameter is None
+    if curve.start_parameter is None or curve.end_parameter is None:
+        return False
+    normal = cast(Vector3, face.parameters[:3])
+    u, v = _plane_basis(normal)
+    origin = cast(Vector3, tuple(face.parameters[3] * value for value in normal))
+    for point, parameter in (
+        (curve.start, curve.start_parameter),
+        (curve.end, curve.end_parameter),
+    ):
+        delta = tuple(value - offset for value, offset in zip(point, origin, strict=True))
+        expected = (_dot(cast(Vector3, delta), u), _dot(cast(Vector3, delta), v))
+        if math.dist(expected, parameter) > 4.0 * metric:
+            return False
+    return True
+
+
 def _translated_cap_curves_match(
     low: tuple[_PrismCurve, ...],
     high: tuple[_PrismCurve, ...],
@@ -317,6 +361,13 @@ def prism_fact(
     low_curves = _curve_roster(graph, low_face)
     high_curves = _curve_roster(graph, high_face)
     if low_curves is None or high_curves is None or len(low_curves) != len(high_curves):
+        return None
+    parameter_metric = 2.0 * quantization.metric_quantum
+    if any(
+        not _plane_curve_parameters_match(curve, face, parameter_metric)
+        for face, curves in ((low_face, low_curves), (high_face, high_curves))
+        for curve in curves
+    ):
         return None
     if (
         type(section_signature) is not tuple

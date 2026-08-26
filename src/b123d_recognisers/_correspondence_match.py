@@ -1528,6 +1528,8 @@ def _axis_vector(axis: str) -> Vector3:
 def _prism_curve_similarity(
     before: _PrismCurve,
     after: _PrismCurve,
+    before_face: MatchingFace,
+    after_face: MatchingFace,
     rotation: Rotation,
     scale: float,
     target_axis_at: int,
@@ -1548,6 +1550,23 @@ def _prism_curve_similarity(
     ):
         return False
     transverse = tuple(at for at in range(3) if at != target_axis_at)
+
+    def parameters_match(curve: _PrismCurve, face: MatchingFace) -> bool:
+        if curve.start is None or curve.end is None:
+            return curve.start_parameter is None and curve.end_parameter is None
+        if curve.start_parameter is None or curve.end_parameter is None:
+            return False
+        return _parameter_matches(
+            curve.start, curve.start_parameter, face, metric
+        ) and _parameter_matches(
+            curve.end,
+            curve.end_parameter,
+            face,
+            metric,
+        )
+
+    if not parameters_match(before, before_face) or not parameters_match(after, after_face):
+        return False
 
     def point_matches(left: Vector3 | None, right: Vector3 | None) -> bool:
         if left is None or right is None:
@@ -1622,6 +1641,8 @@ def _prism_cap_similarity(
                 _prism_curve_similarity(
                     left,
                     right,
+                    before.face,
+                    after.face,
                     rotation,
                     scale,
                     target_axis_at,
@@ -1649,6 +1670,36 @@ def _partition_witnesses(
         for child in children
     ):
         return ()
+    order_candidates = []
+    items = tuple(zip(child_occurrences, children, strict=True))
+    for candidate in permutations(items):
+        budget.charge()
+        valid = True
+        for (_left_occurrence, left), (_right_occurrence, right) in zip(
+            candidate, candidate[1:], strict=False
+        ):
+            join_bound = 2.0 * (
+                left.quantization.metric_quantum + right.quantization.metric_quantum
+            )
+            if (
+                abs(left.interval[1] - right.interval[0]) > join_bound
+                or left.interval[1] > right.interval[0] + join_bound
+            ):
+                valid = False
+                break
+        if valid:
+            order_candidates.append(candidate)
+    if len(order_candidates) != 1:
+        return ()
+    ordered = order_candidates[0]
+    intervals = [child.interval for _occurrence, child in ordered]
+    if any(hi <= lo for lo, hi in intervals):
+        return ()
+    target_lo, target_hi = intervals[0][0], intervals[-1][1]
+    parent_span = parent.interval[1] - parent.interval[0]
+    scale = (target_hi - target_lo) / parent_span
+    if not math.isfinite(scale) or scale <= 0.0:
+        return ()
     found: list[RigidScaleWitness] = []
     parent_axis = _axis_vector(parent_occurrence.summary.axis)
     for rotation in PROPER_ROTATIONS:
@@ -1659,15 +1710,6 @@ def _partition_witnesses(
             item.summary.axis != "xyz"[axis_at] for item in child_occurrences
         ):
             continue
-        scale_facts = tuple(
-            math.sqrt(child.low_cap.face.area / parent.low_cap.face.area)
-            for child in children
-        )
-        if any(not math.isfinite(value) or value <= 0.0 for value in scale_facts):
-            continue
-        # Derive one presentation-neutral common section scale from every
-        # cap-correspondence fact; no child position is witness authority.
-        scale = math.fsum(scale_facts) / len(scale_facts)
         if any(
             not _close(
                 scale**2 * parent.low_cap.face.area,
@@ -1725,34 +1767,6 @@ def _partition_witnesses(
                 break
         if not section_ok:
             continue
-        order_candidates = []
-        items = tuple(zip(child_occurrences, children, strict=True))
-        for candidate in permutations(items):
-            budget.charge()
-            valid = True
-            for (_left_occurrence, left), (_right_occurrence, right) in zip(
-                candidate, candidate[1:], strict=False
-            ):
-                join_bound = 2.0 * (
-                    left.quantization.metric_quantum + right.quantization.metric_quantum
-                )
-                # A join may meet at the inclusive reconstruction boundary, but
-                # interiors may not overlap and gaps may not be hidden by chaining.
-                if (
-                    abs(left.interval[1] - right.interval[0]) > join_bound
-                    or left.interval[1] > right.interval[0] + join_bound
-                ):
-                    valid = False
-                    break
-            if valid:
-                order_candidates.append(candidate)
-        if len(order_candidates) != 1:
-            continue
-        ordered = order_candidates[0]
-        intervals = [child.interval for _occurrence, child in ordered]
-        if any(hi <= lo for lo, hi in intervals):
-            continue
-        target_lo, target_hi = intervals[0][0], intervals[-1][1]
         extrema_metric = 2.0 * (
             scale * parent.quantization.metric_quantum
             + max(
