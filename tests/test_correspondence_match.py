@@ -18,13 +18,19 @@ from build123d import (
     export_step,
     extrude,
     import_step,
+    loft,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 
 import b123d_recognisers._correspondence_match as correspondence_match_module
-from b123d_recognisers._body_geometry import ANGLE_TOL, DIRECTION_TOL
+from b123d_recognisers._body_geometry import (
+    ANGLE_TOL,
+    DESCRIPTOR_FLOOR,
+    DESCRIPTOR_REL,
+    DIRECTION_TOL,
+)
 from b123d_recognisers._correspondence import correspondence_snapshot
 from b123d_recognisers._correspondence_match import (
     IDENTITY_ROTATION,
@@ -128,6 +134,8 @@ class _RawPrismOracleFact:
     axial_pairs: tuple[tuple[int, int], ...]
     volume: float
     centre_of_mass: tuple[float, float, float]
+    metric_quantum: float
+    volume_quantum: float
 
 
 def _raw_cycle_presentations(cycle):
@@ -268,7 +276,16 @@ def _raw_prism_partition_oracle(part):
                     continue
                 properties = GProp_GProps()
                 BRepGProp.VolumeProperties_s(solid.wrapped, properties)
+                surface_properties = GProp_GProps()
+                BRepGProp.SurfaceProperties_s(solid.wrapped, surface_properties)
                 centre_of_mass = tuple(float(value) for value in properties.CentreOfMass().Coord())
+                raw_volume = float(properties.Mass())
+                raw_area = float(surface_properties.Mass())
+                characteristic_scale = max(raw_volume ** (1.0 / 3.0), math.sqrt(raw_area))
+                metric_quantum = DESCRIPTOR_REL * characteristic_scale + DESCRIPTOR_FLOOR
+                volume_quantum = (
+                    characteristic_scale + metric_quantum
+                ) ** 3 - characteristic_scale**3
                 low_centre = tuple(float(value) for value in left_face.center())
                 high_centre = tuple(float(value) for value in right_face.center())
                 profile_centre = tuple(
@@ -377,8 +394,10 @@ def _raw_prism_partition_oracle(part):
                             section_samples(low_cycle),
                             side_kinds,
                             tuple(sorted(axial_pairs)),
-                            float(properties.Mass()),
+                            raw_volume,
                             centre_of_mass,
+                            metric_quantum,
+                            volume_quantum,
                         )
                     )
         assert len(candidates) == 1
@@ -394,7 +413,7 @@ def _raw_partition_relation_oracle(parent, children):
     ordered = tuple(sorted(children, key=lambda fact: (fact.lo, fact.hi)))
     assert len({(fact.lo, fact.hi) for fact in ordered}) == len(ordered)
     assert all(
-        left.hi == pytest.approx(right.lo)
+        abs(left.hi - right.lo) <= 2.0 * (left.metric_quantum + right.metric_quantum)
         for left, right in zip(ordered, ordered[1:], strict=False)
     )
     scale = (ordered[-1].hi - ordered[0].lo) / (source.hi - source.lo)
@@ -405,6 +424,7 @@ def _raw_partition_relation_oracle(parent, children):
         )
 
     def point_cycle_matches(rotation, child):
+        metric_bound = 2.0 * (scale * source.metric_quantum + child.metric_quantum)
         transformed = tuple(
             (
                 tuple(
@@ -429,7 +449,7 @@ def _raw_partition_relation_oracle(parent, children):
             all(
                 left_kind == right_kind
                 and all(
-                    left_point == pytest.approx(right_point, abs=1e-7)
+                    math.dist(left_point, right_point) <= metric_bound
                     for left_point, right_point in zip(left_samples, right_samples, strict=True)
                 )
                 for (left_samples, left_kind), (right_samples, right_kind) in zip(
@@ -457,7 +477,6 @@ def _raw_partition_relation_oracle(parent, children):
     for left, right in zip(ordered, ordered[1:], strict=False):
         assert _raw_cycle_presentations(left.high_cycle) & _raw_cycle_presentations(right.low_cycle)
         assert left.high_material_side == -right.low_material_side
-    assert sum(child.volume for child in ordered) == pytest.approx(scale**3 * source.volume)
     child_volume = sum(child.volume for child in ordered)
     weighted_child_com = tuple(
         sum(child.volume * child.centre_of_mass[at] for child in ordered) / child_volume
@@ -489,7 +508,9 @@ def _raw_partition_relation_oracle(parent, children):
                 - sum(a * b for a, b in zip(target_anchor, target_axis, strict=True)) * axis_value
                 for value, axis_value in zip(target_anchor, target_axis, strict=True)
             )
-            assert child_anchor == pytest.approx(target_line, abs=1e-7)
+            assert math.dist(child_anchor, target_line) <= 2.0 * (
+                ordered[0].metric_quantum + child.metric_quantum
+            )
         rotated_anchor = rotate(rotation, source.profile_centre)
         translation = tuple(
             target - scale * value
@@ -505,7 +526,26 @@ def _raw_partition_relation_oracle(parent, children):
             )
             for at in range(3)
         )
-        assert math.sqrt(sum(value * value for value in first_moment)) <= 1e-7
+        volume_bound = 2.0 * (
+            scale**3 * source.volume_quantum + sum(child.volume_quantum for child in ordered)
+        )
+        assert abs(scale**3 * source.volume - child_volume) <= volume_bound
+        volume_errors = tuple(2.0 * child.volume_quantum for child in ordered)
+        assert (
+            sum(child.volume - error for child, error in zip(ordered, volume_errors, strict=True))
+            > 0.0
+        )
+        first_moment_bound = 0.0
+        child_volume_upper = 0.0
+        for child, volume_error in zip(ordered, volume_errors, strict=True):
+            metric_error = 2.0 * child.metric_quantum
+            volume_upper = abs(child.volume) + volume_error
+            child_volume_upper += volume_upper
+            first_moment_bound += volume_upper * metric_error + volume_error * math.dist(
+                child.centre_of_mass, transformed_com
+            )
+        first_moment_bound += child_volume_upper * 2.0 * scale * source.metric_quantum
+        assert math.sqrt(sum(value * value for value in first_moment)) <= first_moment_bound
         witnesses.append((rotation, translation, scale))
     return tuple(witnesses), weighted_child_com
 
@@ -613,9 +653,15 @@ def test_unique_two_child_geometric_partition_and_inverse() -> None:
     )
     assert len(raw_witnesses) == 1
     raw_rotation, raw_translation, raw_scale = raw_witnesses[0]
+    raw_zero_bound = 2.0 * (
+        raw_scale * _raw_prism_partition_oracle(whole_part)[0].metric_quantum
+        + min(fact.metric_quantum for fact in _raw_prism_partition_oracle(pieces_part))
+    )
     raw_witness = RigidScaleWitness(
         raw_rotation,
-        tuple(0.0 if abs(value) <= 1e-7 else value for value in raw_translation),
+        (0.0, 0.0, 0.0)
+        if sum(value * value for value in raw_translation) <= raw_zero_bound**2
+        else raw_translation,
         raw_scale,
     )
     whole = _take_inventory(whole_part)
@@ -672,7 +718,17 @@ def test_reviewed_line_mixed_and_higher_prism_roster(
     raw_witnesses = {
         RigidScaleWitness(
             rotation,
-            tuple(0.0 if abs(value) <= 1e-7 else value for value in translation),
+            (0.0, 0.0, 0.0)
+            if sum(value * value for value in translation)
+            <= (
+                2.0
+                * (
+                    scale * whole_oracle[0].metric_quantum
+                    + min(fact.metric_quantum for fact in pieces_oracle)
+                )
+            )
+            ** 2
+            else translation,
             scale,
         )
         for rotation, translation, scale in witnesses
@@ -743,6 +799,16 @@ def test_raw_oracle_refuses_children_without_one_common_transverse_axis_line() -
     )
     with pytest.raises(AssertionError):
         _raw_partition_relation_oracle(parent, shifted)
+
+
+def test_raw_prism_oracle_refuses_inner_wire_taper_and_twist() -> None:
+    profile = Polygon((-10, -7), (11, -5), (8, 9), (-9, 8))
+    tapered = loft([profile, Pos(0, 0, 10) * profile.scale(0.8)])
+    twisted = loft([profile, Pos(0, 0, 10) * Rot(0, 0, 9) * profile])
+    inner_wire = Cylinder(20, 10) - Cylinder(5, 10)
+    for unsupported in (tapered, twisted, inner_wire):
+        with pytest.raises(AssertionError):
+            _raw_prism_partition_oracle(unsupported)
 
 
 def test_gap_does_not_become_a_partial_geometric_partition() -> None:
