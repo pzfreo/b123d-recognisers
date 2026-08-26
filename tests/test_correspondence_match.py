@@ -389,7 +389,7 @@ def _raw_prism_partition_oracle(part):
 def _raw_partition_relation_oracle(parent, children):
     """Prove the raw geometric partition and common witness without matcher values."""
 
-    assert len(parent) == 1 and len(children) >= 2
+    assert len(parent) == 1 and children
     source = parent[0]
     ordered = tuple(sorted(children, key=lambda fact: (fact.lo, fact.hi)))
     assert len({(fact.lo, fact.hi) for fact in ordered}) == len(ordered)
@@ -516,12 +516,13 @@ def _raw_partition_relation_oracle(parent, children):
     return tuple(witnesses), weighted_child_com
 
 
-def _raw_partition_exact_covers(parents, children):
-    """Enumerate partition-only semantic hyperedges and exact covers independently."""
+def _raw_partition_exact_covers(parents, children, *, include_singletons=False):
+    """Enumerate witnessed singleton/partition hyperedges and exact covers independently."""
 
     edges = []
     for parent_at, parent in enumerate(parents):
-        for size in range(2, len(children) + 1):
+        first_size = 1 if include_singletons else 2
+        for size in range(first_size, len(children) + 1):
             for child_positions in combinations(range(len(children)), size):
                 try:
                     witnesses, _com = _raw_partition_relation_oracle(
@@ -529,7 +530,15 @@ def _raw_partition_exact_covers(parents, children):
                     )
                 except AssertionError:
                     continue
-                edges.append((parent_at, child_positions, witnesses))
+                edges.extend(
+                    (
+                        parent_at,
+                        child_positions,
+                        witness,
+                        "singleton" if size == 1 else "partition",
+                    )
+                    for witness in witnesses
+                )
 
     covers = []
 
@@ -539,7 +548,7 @@ def _raw_partition_exact_covers(parents, children):
                 covers.append(tuple(selected))
             return
         for edge in edges:
-            edge_parent, edge_children, _witnesses = edge
+            edge_parent, edge_children, _witness, _kind = edge
             if edge_parent != parent_at or used_children & frozenset(edge_children):
                 continue
             extend(
@@ -641,7 +650,8 @@ def test_reviewed_line_mixed_and_higher_prism_roster(
     assert len(whole_oracle) == 1 and len(pieces_oracle) == 2
     witnesses, target_com = _raw_partition_relation_oracle(whole_oracle, pieces_oracle)
     raw_edges, raw_covers = _raw_partition_exact_covers(whole_oracle, pieces_oracle)
-    assert len(raw_edges) == len(raw_covers) == 1
+    expected_witness_count = 4 if repeats == 8 else 1
+    assert len(raw_edges) == len(raw_covers) == expected_witness_count
     assert any(rotation == IDENTITY_ROTATION for rotation, _translation, _scale in witnesses)
     assert all(scale == pytest.approx(1.0) for _rotation, _translation, scale in witnesses)
     assert target_com == pytest.approx(whole_oracle[0].centre_of_mass)
@@ -650,8 +660,19 @@ def test_reviewed_line_mixed_and_higher_prism_roster(
     pieces = _take_inventory(pieces_part)
     (relation,) = correspondence_changes(whole, pieces).relations
     assert relation.kind is expected
+    raw_witnesses = {
+        RigidScaleWitness(
+            rotation,
+            tuple(0.0 if abs(value) <= 1e-7 else value for value in translation),
+            scale,
+        )
+        for rotation, translation, scale in witnesses
+    }
     if expected is ChangeKind.AMBIGUOUS:
         assert len(relation.candidate_witnesses) == 4
+        assert set(relation.candidate_witnesses) == raw_witnesses
+    else:
+        assert {relation.witness} == raw_witnesses
 
 
 def test_duplicate_partition_alternatives_make_the_whole_component_ambiguous() -> None:
@@ -673,6 +694,31 @@ def test_duplicate_partition_alternatives_make_the_whole_component_ambiguous() -
     pieces = _take_inventory(pieces_part)
     (relation,) = correspondence_changes(whole, pieces).relations
     assert relation.kind is ChangeKind.AMBIGUOUS
+    assert relation.candidate_witnesses
+
+
+def test_singleton_and_partition_competition_is_one_whole_ambiguity() -> None:
+    before_part = _partition_rrp(10.0)
+    after_part = Compound(
+        [
+            _partition_rrp(10.0),
+            Pos(50, 0, 0) * _partition_rrp(4.0),
+            Pos(50, 0, 4) * _partition_rrp(6.0),
+        ]
+    )
+    raw_edges, raw_covers = _raw_partition_exact_covers(
+        _raw_prism_partition_oracle(before_part),
+        _raw_prism_partition_oracle(after_part),
+        include_singletons=True,
+    )
+    assert {edge[3] for edge in raw_edges} == {"singleton", "partition"}
+    assert raw_covers == ()
+    before = _take_inventory(before_part)
+    after = _take_inventory(after_part)
+    (relation,) = correspondence_changes(before, after).relations
+    assert relation.kind is ChangeKind.AMBIGUOUS
+    assert len(relation.before_refs) == 1
+    assert len(relation.after_refs) == 3
     assert relation.candidate_witnesses
 
 
@@ -1426,6 +1472,20 @@ def test_late_global_budget_refusal_returns_no_prefix_or_input_mutation(monkeypa
 
     before_product = _take_inventory(_asymmetric_rrp())
     after_product = _take_inventory(Pos(11, -7, 3) * _asymmetric_rrp())
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 1)
+    with pytest.raises(CorrespondenceMatchError, match="budget"):
+        correspondence_changes(before_product, after_product)
+    assert correspondence_snapshot(before_product) == before
+    assert correspondence_snapshot(after_product) == after
+
+
+def test_partition_budget_refusal_is_atomic_after_both_snapshots(monkeypatch) -> None:
+    import b123d_recognisers._correspondence_match as module
+
+    before_product = _take_inventory(_partition_rrp(10.0))
+    after_product = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
     before = correspondence_snapshot(before_product)
     after = correspondence_snapshot(after_product)
     monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 1)
