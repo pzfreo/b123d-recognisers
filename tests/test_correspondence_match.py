@@ -1478,6 +1478,66 @@ def test_prism_fact_rejects_malformed_signature_and_complete_incidence_drift() -
     ) is None
 
 
+def test_prism_fact_rejects_cap_sampling_and_side_cycle_authority_drift() -> None:
+    occurrence = correspondence_snapshot(_take_inventory(_partition_rrp(10.0))).occurrences[0]
+    graph = occurrence.matching_boundary
+    fact = _prism_fact_for(occurrence)
+    assert fact is not None
+
+    low_curve_position = graph.faces[fact.low_cap.face_position].wires[0].cycle[0].curve
+    low_face = graph.faces[fact.low_cap.face_position]
+    low_half_edge = low_face.wires[0].cycle[0]
+    changed_low_cycle = (
+        replace(low_half_edge, start=None, end=None),
+        *low_face.wires[0].cycle[1:],
+    )
+    changed_faces = (
+        *graph.faces[:fact.low_cap.face_position],
+        replace(low_face, wires=(replace(low_face.wires[0], cycle=changed_low_cycle),)),
+        *graph.faces[fact.low_cap.face_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    high_face = graph.faces[fact.high_cap.face_position]
+    high_half_edge = high_face.wires[0].cycle[0]
+    changed_high_cycle = (
+        replace(high_half_edge, direction=-high_half_edge.direction),
+        *high_face.wires[0].cycle[1:],
+    )
+    changed_faces = (
+        *graph.faces[:fact.high_cap.face_position],
+        replace(high_face, wires=(replace(high_face.wires[0], cycle=changed_high_cycle),)),
+        *graph.faces[fact.high_cap.face_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    cap_positions = {fact.low_cap.face_position, fact.high_cap.face_position}
+    side_position = fact.low_cap.side_faces[0]
+    side = graph.faces[side_position]
+    changed_cycle = tuple(
+        item for item in side.wires[0].cycle if item.curve != low_curve_position
+    )
+    changed_faces = (
+        *graph.faces[:side_position],
+        replace(side, wires=(replace(side.wires[0], cycle=changed_cycle),)),
+        *graph.faces[side_position + 1 :],
+    )
+    assert _prism_fact_for(occurrence, graph=replace(graph, faces=changed_faces)) is None
+
+    joining_position = next(
+        position
+        for position, owners in graph.incidence
+        if {owner[0] for owner in owners}.isdisjoint(cap_positions)
+    )
+    changed_incidence = tuple(
+        (position, owners[:1] if position == joining_position else owners)
+        for position, owners in graph.incidence
+    )
+    assert _prism_fact_for(
+        occurrence, graph=replace(graph, incidence=changed_incidence)
+    ) is None
+
+
 def test_two_independent_partitions_share_one_exact_cover_without_order_authority() -> None:
     before = _take_inventory(
         Compound(
