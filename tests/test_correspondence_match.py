@@ -54,6 +54,7 @@ from b123d_recognisers._correspondence_match import (
     _order_bound,
     _partition_witnesses,
     _prism_cap_similarity,
+    _rotate,
     _scale_is_identity,
     _validate_result,
     _wire_alignments,
@@ -1354,6 +1355,7 @@ def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> Non
     whole = _partition_rrp(10.0)
     raw_parent = _raw_prism_partition_oracle(whole)
     before = _take_inventory(whole)
+    before_snapshot = correspondence_snapshot(before)
     low = _partition_rrp(4.0)
     high = _partition_rrp(6.0, 4.0)
     for rotation in _proper_signed_permutations():
@@ -1363,11 +1365,38 @@ def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> Non
         raw = _raw_prism_partition_oracle(transformed)
         assert len(raw) == 2
         raw_witnesses, _target_com = _raw_partition_relation_oracle(raw_parent, raw)
-        assert {witness[0] for witness in raw_witnesses} == {rotation}
-        (relation,) = correspondence_changes(before, _take_inventory(transformed)).relations
+        assert len(raw_witnesses) == 1
+        raw_rotation, _raw_translation, _raw_scale = raw_witnesses[0]
+        after = _take_inventory(transformed)
+        after_snapshot = correspondence_snapshot(after)
+        parent_occurrence = before_snapshot.occurrences[0]
+        children = after_snapshot.occurrences
+        axis_at = "xyz".index(children[0].summary.axis)
+        target_lo = min(item.summary.span[0] for item in children)
+        target_hi = max(item.summary.span[1] for item in children)
+        expected_scale = (target_hi - target_lo) / (
+            parent_occurrence.summary.span[1] - parent_occurrence.summary.span[0]
+        )
+        target_centre = list(children[0].summary.centre)
+        target_centre[axis_at] = (target_lo + target_hi) / 2.0
+        rotated_centre = _rotate(rotation, parent_occurrence.summary.centre)
+        expected_translation = tuple(
+            target - expected_scale * source
+            for source, target in zip(rotated_centre, target_centre, strict=True)
+        )
+        zero_bound = 2.0 * (
+            expected_scale * parent_occurrence.body.quantization.metric_quantum
+            + min(item.body.quantization.metric_quantum for item in children)
+        )
+        expected = RigidScaleWitness(
+            rotation,
+            _normalize_partition_translation(expected_translation, zero_bound),
+            expected_scale,
+        )
+        (relation,) = correspondence_changes(before, after).relations
         assert relation.kind is ChangeKind.SPLIT
-        assert relation.witness is not None
-        assert relation.witness.rotation == rotation
+        assert relation.witness == expected
+        assert raw_rotation == rotation
 
 
 def test_partition_is_stable_through_step_roundtrip(tmp_path) -> None:
