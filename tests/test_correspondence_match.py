@@ -595,6 +595,91 @@ def _raw_partition_exact_covers(parents, children, *, include_singletons=False):
     return tuple(edges), tuple(covers)
 
 
+def _raw_joint_exact_covers(before, after):
+    """Build both singleton and split/merge raw hypotheses, then exact-cover them."""
+
+    edges = []
+
+    def add(before_positions, after_positions, witnesses, kind):
+        edges.extend(
+            (tuple(before_positions), tuple(after_positions), witness, kind)
+            for witness in witnesses
+        )
+
+    for before_at, before_fact in enumerate(before):
+        for size in range(1, len(after) + 1):
+            for after_positions in combinations(range(len(after)), size):
+                try:
+                    witnesses, _com = _raw_partition_relation_oracle(
+                        (before_fact,), tuple(after[at] for at in after_positions)
+                    )
+                except AssertionError:
+                    continue
+                add(
+                    (before_at,),
+                    after_positions,
+                    witnesses,
+                    "singleton" if size == 1 else "split",
+                )
+    for after_at, after_fact in enumerate(after):
+        for size in range(2, len(before) + 1):
+            for before_positions in combinations(range(len(before)), size):
+                try:
+                    witnesses, _com = _raw_partition_relation_oracle(
+                        (after_fact,), tuple(before[at] for at in before_positions)
+                    )
+                except AssertionError:
+                    continue
+                add(
+                    before_positions,
+                    (after_at,),
+                    tuple(
+                        (
+                            tuple(
+                                tuple(rotation[column][row] for column in range(3))
+                                for row in range(3)
+                            ),
+                            tuple(
+                                -sum(
+                                    rotation[column][row] * translation[column]
+                                    for column in range(3)
+                                )
+                                / scale
+                                for row in range(3)
+                            ),
+                            1.0 / scale,
+                        )
+                        for rotation, translation, scale in witnesses
+                    ),
+                    "merge",
+                )
+
+    degree_before = frozenset(at for edge in edges for at in edge[0])
+    degree_after = frozenset(at for edge in edges for at in edge[1])
+    covers = []
+
+    def extend(edge_at, used_before, used_after, selected):
+        if edge_at == len(edges):
+            if used_before == degree_before and used_after == degree_after:
+                covers.append(tuple(selected))
+            return
+        edge = edges[edge_at]
+        before_positions, after_positions = frozenset(edge[0]), frozenset(edge[1])
+        extend(edge_at + 1, used_before, used_after, selected)
+        if not used_before & before_positions and not used_after & after_positions:
+            extend(
+                edge_at + 1,
+                used_before | before_positions,
+                used_after | after_positions,
+                (*selected, edge),
+            )
+
+    extend(0, frozenset(), frozenset(), ())
+    degree_zero_before = frozenset(range(len(before))) - degree_before
+    degree_zero_after = frozenset(range(len(after))) - degree_after
+    return tuple(edges), tuple(covers), degree_zero_before, degree_zero_after
+
+
 def test_empty_products_have_one_successful_empty_correspondence() -> None:
     before = _take_inventory(Box(10, 10, 10))
     after = _take_inventory(Box(20, 10, 10))
@@ -1058,7 +1143,59 @@ def test_two_independent_partitions_share_one_exact_cover_without_order_authorit
         ChangeKind.SPLIT,
         ChangeKind.SPLIT,
     ]
-    assert sorted(len(relation.after_refs) for relation in result.relations) == [2, 2]
+
+
+def test_raw_joint_graph_covers_simultaneous_split_and_merge() -> None:
+    before_part = Compound(
+        [
+            Pos(-60, 0, 0) * _partition_rrp(10.0),
+            Pos(60, 0, 0) * _partition_rrp(4.0, repeats=7),
+            Pos(60, 0, 4) * _partition_rrp(6.0, repeats=7),
+        ]
+    )
+    after_part = Compound(
+        [
+            Pos(-60, 0, 0) * _partition_rrp(4.0),
+            Pos(-60, 0, 4) * _partition_rrp(6.0),
+            Pos(60, 0, 0) * _partition_rrp(10.0, repeats=7),
+        ]
+    )
+    raw_edges, raw_covers, degree_zero_before, degree_zero_after = _raw_joint_exact_covers(
+        _raw_prism_partition_oracle(before_part),
+        _raw_prism_partition_oracle(after_part),
+    )
+    assert degree_zero_before == degree_zero_after == frozenset()
+    assert len(raw_covers) == 1
+    assert {edge[3] for edge in raw_covers[0]} == {"split", "merge"}
+    assert {edge[3] for edge in raw_edges} >= {"split", "merge"}
+    result = correspondence_changes(_take_inventory(before_part), _take_inventory(after_part))
+    assert {relation.kind for relation in result.relations} == {
+        ChangeKind.SPLIT,
+        ChangeKind.MERGED,
+    }
+
+
+def test_raw_joint_graph_keeps_degree_zero_add_remove_outside_exact_cover() -> None:
+    before_part = _partition_rrp(10.0, repeats=5)
+    after_part = Pos(60, 0, 0) * _partition_rrp(10.0, repeats=7)
+    edges, covers, degree_zero_before, degree_zero_after = _raw_joint_exact_covers(
+        _raw_prism_partition_oracle(before_part),
+        _raw_prism_partition_oracle(after_part),
+    )
+    assert edges == ()
+    assert covers == ((),)
+    assert degree_zero_before == degree_zero_after == frozenset({0})
+    result = correspondence_changes(_take_inventory(before_part), _take_inventory(after_part))
+    assert {relation.kind for relation in result.relations} == {
+        ChangeKind.ADDED,
+        ChangeKind.REMOVED,
+    }
+    added = next(relation for relation in result.relations if relation.kind is ChangeKind.ADDED)
+    removed = next(
+        relation for relation in result.relations if relation.kind is ChangeKind.REMOVED
+    )
+    assert (len(added.before_refs), len(added.after_refs)) == (0, 1)
+    assert (len(removed.before_refs), len(removed.after_refs)) == (1, 0)
 
 
 def test_partition_and_unrelated_multi_occurrence_f6b1_group_share_joint_cover() -> None:
