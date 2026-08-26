@@ -1510,6 +1510,130 @@ def test_partition_cap_metric_area_pcurve_and_angle_bounds_are_closed() -> None:
         )
     )
 
+    circle_at = next(at for at, curve in enumerate(before.section_curves) if curve.kind == "CIRCLE")
+    circle = before.section_curves[circle_at]
+    assert circle.radius is not None and circle.centre is not None
+    radius_equality_value = circle.radius + metric
+    while abs(radius_equality_value - circle.radius) > metric:
+        radius_equality_value = math.nextafter(radius_equality_value, circle.radius)
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                replace(circle, radius=radius_equality_value),
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                replace(circle, radius=math.nextafter(radius_equality_value, math.inf)),
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+
+    point_diagonal = metric / math.sqrt(2.0)
+    centre_equality = (
+        circle.centre[0] + point_diagonal,
+        circle.centre[1] + point_diagonal,
+        circle.centre[2],
+    )
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                replace(circle, centre=centre_equality),
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+    point_outside = math.nextafter(point_diagonal, math.inf)
+    while 2.0 * point_outside**2 <= metric**2:
+        point_outside = math.nextafter(point_outside, math.inf)
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:circle_at],
+                replace(
+                    circle,
+                    centre=(
+                        circle.centre[0] + point_outside,
+                        circle.centre[1] + point_outside,
+                        circle.centre[2],
+                    ),
+                ),
+                *before.section_curves[circle_at + 1 :],
+            ),
+        )
+    )
+
+    assert line.start is not None and line.start_parameter is not None
+    start_diagonal = point_diagonal
+    while (
+        (line.start[0] + start_diagonal - line.start[0]) ** 2
+        + (line.start[1] + start_diagonal - line.start[1]) ** 2
+        > metric**2
+    ):
+        start_diagonal = math.nextafter(start_diagonal, 0.0)
+    start_equality = (
+        line.start[0] + start_diagonal,
+        line.start[1] + start_diagonal,
+        line.start[2],
+    )
+    start_parameter_equality = (
+        line.start_parameter[0] + start_diagonal,
+        line.start_parameter[1] + start_diagonal,
+    )
+    assert similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                replace(
+                    line,
+                    start=start_equality,
+                    start_parameter=start_parameter_equality,
+                ),
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+    start_outside = math.nextafter(start_diagonal, math.inf)
+    while (
+        (line.start[0] + start_outside - line.start[0]) ** 2
+        + (line.start[1] + start_outside - line.start[1]) ** 2
+        <= metric**2
+    ):
+        start_outside = math.nextafter(start_outside, math.inf)
+    assert not similar(
+        replace(
+            before,
+            section_curves=(
+                *before.section_curves[:line_at],
+                replace(
+                    line,
+                    start=(
+                        line.start[0] + start_outside,
+                        line.start[1] + start_outside,
+                        line.start[2],
+                    ),
+                    start_parameter=(
+                        line.start_parameter[0] + start_outside,
+                        line.start_parameter[1] + start_outside,
+                    ),
+                ),
+                *before.section_curves[line_at + 1 :],
+            ),
+        )
+    )
+
     direction_bound = 4.0 * DIRECTION_TOL
     equality_angle = 2.0 * math.asin(direction_bound / 2.0)
     equality_normal = (math.sin(equality_angle), 0.0, math.cos(equality_angle))
@@ -1689,6 +1813,53 @@ def test_partition_section_point_euclidean_bound_is_inclusive_and_closed() -> No
         parent,
         child_snapshot.occurrences,
         (outside_first, *typed[1:]),
+        _MatchBudget(),
+    )
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+def test_partition_common_transverse_centre_bound_is_inclusive(diagonal: bool) -> None:
+    parent_snapshot = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
+    child_snapshot = correspondence_snapshot(
+        _take_inventory(Compound([_partition_rrp(5.0), _partition_rrp(5.0, 5.0)]))
+    )
+    parent_occurrence = parent_snapshot.occurrences[0]
+    parent = _prism_fact_for(parent_occurrence)
+    children = tuple(_prism_fact_for(value) for value in child_snapshot.occurrences)
+    assert parent is not None and all(child is not None for child in children)
+    typed = tuple(child for child in children if child is not None)
+    bound = 2.0 * (
+        parent.quantization.metric_quantum + typed[0].quantization.metric_quantum
+    )
+    component = bound / math.sqrt(2.0) if diagonal else bound
+    base = child_snapshot.occurrences[0].summary.centre
+
+    def shifted(amount: float):
+        delta = (amount, amount if diagonal else 0.0, 0.0)
+        summary = replace(
+            child_snapshot.occurrences[0].summary,
+            centre=tuple(value + change for value, change in zip(base, delta, strict=True)),
+        )
+        return (
+            replace(child_snapshot.occurrences[0], summary=summary),
+            child_snapshot.occurrences[1],
+        )
+
+    assert _partition_witnesses(
+        parent_occurrence,
+        parent,
+        shifted(component),
+        typed,
+        _MatchBudget(),
+    )
+    outside = math.nextafter(component, math.inf)
+    while (2.0 if diagonal else 1.0) * outside**2 <= bound**2:
+        outside = math.nextafter(outside, math.inf)
+    assert not _partition_witnesses(
+        parent_occurrence,
+        parent,
+        shifted(outside),
+        typed,
         _MatchBudget(),
     )
 
