@@ -1155,6 +1155,13 @@ changes, while split/merge ambiguity fails closed; recognition results remain un
 
 ### F7 — Published substrate API
 
+The [architecture retrospective](0004-architecture-retrospective.md) and proposed ADR 0010 narrow
+this sequencing further: before production exports, an installed-wheel Draftwright fitness spike
+must identify two or three concrete consumer operations and the exact neutral symbols they need.
+F7 publishes that bounded facade, not an inventory of private implementation. F6 snapshots, body
+descriptors, rigid matching and partition matching remain an optional private upper layer unless a
+separately reviewed consumer use case justifies publication.
+
 Promote the neutral geometry substrate to a public, versioned framework contract so that
 third-party recognisers can build alongside this package without forking it. Adjudication
 remains closed: an external recogniser consumes the substrate and returns its own records; it

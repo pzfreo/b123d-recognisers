@@ -20,6 +20,7 @@ the record stays a decision rather than a status report.
 | [0007](0007-recogniser-module-seams.md) | Internal recogniser module seams | Accepted |
 | [0008](0008-length-tolerance-policy.md) | Length tolerance policy | Accepted |
 | [0009](0009-filtering-belongs-to-a-recogniser.md) | Filtering belongs to a recogniser, not a shared reduction | Accepted |
+| [0010](0010-narrow-public-geometry-facade.md) | Publish a narrow geometry facade; keep correspondence optional | Proposed |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
