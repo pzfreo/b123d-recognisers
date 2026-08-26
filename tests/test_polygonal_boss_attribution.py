@@ -609,6 +609,54 @@ def test_corrupted_expansion_refuses_before_candidate_publication(monkeypatch) -
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
+@pytest.mark.parametrize("mutation", ["duplicate", "replace"])
+def test_corrupted_expansion_occurrence_multiset_refuses_atomically(monkeypatch, mutation) -> None:
+    part = _blend_interrupted_attached()
+    original = CollapsedGraphView.expand_arc
+
+    def corrupted(self, arc):
+        expanded = original(self, arc)
+        arcs = expanded.arcs
+        changed = (*arcs, arcs[0]) if mutation == "duplicate" else (arcs[0], arcs[0], *arcs[2:])
+        return FrozenProvenance(expanded.nodes, changed)
+
+    monkeypatch.setattr(CollapsedGraphView, "expand_arc", corrupted)
+    with pytest.raises(ValueError, match="lost original provenance"):
+        recognise_polygonal_bosses(part)
+    ledger = ClaimLedger(FaceGraph(part))
+    with pytest.raises(ValueError, match="lost original provenance"):
+        _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
+@pytest.mark.parametrize("mutation", ["concave", "multi_node", "multi_support"])
+def test_consumer_refuses_ineligible_chain_without_candidate_prefix(monkeypatch, mutation) -> None:
+    part = _blend_interrupted_attached()
+    original = BlendCollapseIndex.chains
+
+    def changed(self):
+        chains = original(self)
+        first = chains[0]
+        if mutation == "concave":
+            replacement = replace(first, side="concave")
+        elif mutation == "multi_node":
+            extra = next(node for node in self._graph.nodes if node not in first.blend_nodes)
+            replacement = replace(first, blend_nodes=frozenset((*first.blend_nodes, extra)))
+        else:
+            extra = next(node for node in self._graph.nodes if node not in first.supports[0])
+            replacement = replace(
+                first,
+                supports=(frozenset((*first.supports[0], extra)), first.supports[1]),
+            )
+        return (replacement, *chains[1:])
+
+    monkeypatch.setattr(BlendCollapseIndex, "chains", changed)
+    assert recognise_polygonal_bosses(part) == []
+    ledger = ClaimLedger(FaceGraph(part))
+    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
 def test_two_disjoint_blend_cycles_and_reversed_presentation_are_order_neutral() -> None:
     left = Pos(-120, 0, 0) * _blend_interrupted_attached()
     right = Pos(120, 0, 0) * _blend_interrupted_attached()
@@ -627,6 +675,14 @@ def test_blend_cycle_rigid_transforms_match_their_sharp_controls(transform) -> N
     sharp = transform * _attached()
     assert [record.to_dict() for record in recognise_polygonal_bosses(rounded)] == [
         record.to_dict() for record in recognise_polygonal_bosses(sharp)
+    ]
+
+
+def test_uniformly_scaled_blend_cycle_matches_its_sharp_control() -> None:
+    rounded = _blend_interrupted_attached().scale(3)
+    sharp = _attached(scale=3)
+    assert [record.to_dict() for record in recognise_polygonal_bosses(rounded, tol=0.6)] == [
+        record.to_dict() for record in recognise_polygonal_bosses(sharp, tol=0.6)
     ]
 
 

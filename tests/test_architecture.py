@@ -185,6 +185,17 @@ MODULE_SEAM_EDGES = {
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
     # Neutral opt-in support bridges consume only original graph and effective-surface facts.
     "_blend_view": {"_adjacency", "_analytic_surfaces", "_effective_surfaces"},
+    "polygonal_bosses": {
+        "_adjacency",
+        "_analytic_surfaces",
+        "_blend_view",
+        "_candidates",
+        "_claims",
+        "_effective_surfaces",
+        "_geometry",
+        "_record",
+        "_typing",
+    },
 }
 
 ARC_READER_SITES = {
@@ -789,19 +800,81 @@ def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
 
 
 def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
+    def resolver(aliases: dict[str, str]):
+        def qualified(node: ast.expr) -> str:
+            if isinstance(node, ast.Name):
+                return aliases.get(node.id, node.id)
+            if isinstance(node, ast.Attribute):
+                return f"{qualified(node.value)}.{node.attr}"
+            return ""
+
+        return qualified
+
     calls: set[tuple[str, str]] = set()
     for path in PACKAGE.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        aliases: dict[str, str] = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                for alias in node.names:
+                    aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+
+        qualified = resolver(aliases)
+
+        index_names = {
+            target.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and qualified(node.value.func)
+            == "b123d_recognisers._blend_view.BlendCollapseIndex"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        view_names = {
+            target.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id in index_names
+            and node.value.func.attr == "view"
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            if isinstance(node.func, ast.Name) and node.func.id == "BlendCollapseIndex":
-                calls.add((path.name, "BlendCollapseIndex"))
-            elif isinstance(node.func, ast.Attribute) and node.func.attr == "view":
-                calls.add((path.name, "view"))
+            name = qualified(node.func)
+            if name in {
+                "b123d_recognisers._blend_view.BlendCollapseIndex",
+                "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+            }:
+                calls.add((path.name, name.rsplit(".", 1)[-1]))
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in index_names
+                and node.func.attr == "view"
+            ):
+                calls.add((path.name, "BlendCollapseIndex.view"))
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in view_names
+                and node.func.attr == "expand_arc"
+            ):
+                calls.add((path.name, "CollapsedGraphView.expand_arc"))
     assert calls == {
         ("polygonal_bosses.py", "BlendCollapseIndex"),
-        ("polygonal_bosses.py", "view"),
+        ("polygonal_bosses.py", "BlendCollapseIndex.view"),
+        ("polygonal_bosses.py", "CollapsedGraphView.expand_arc"),
+        ("polygonal_bosses.py", "EffectiveSurfaceIndex"),
+        ("_run.py", "EffectiveSurfaceIndex"),
     }
 
 
