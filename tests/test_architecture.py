@@ -781,11 +781,11 @@ def test_internal_module_seams_match_adr_0007() -> None:
     assert crossings == {}
 
 
-def test_neutral_blend_view_has_no_production_consumer() -> None:
+def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     graph = _package_import_graph()
     assert {
         module for module, dependencies in graph.items() if "_blend_view" in dependencies
-    } == set()
+    } == {"polygonal_bosses"}
 
 
 def test_no_accidental_public_modules() -> None:

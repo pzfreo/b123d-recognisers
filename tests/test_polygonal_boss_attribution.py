@@ -20,11 +20,12 @@ from build123d import (
     Rot,
     export_step,
     extrude,
+    fillet,
     import_step,
 )
 
 import b123d_recognisers.polygonal_bosses as polygonal_module
-from b123d_recognisers import PolygonalBoss, recognise_polygonal_bosses
+from b123d_recognisers import PolygonalBoss, recognise_fillets, recognise_polygonal_bosses
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -67,6 +68,18 @@ def _attached(*, x: float = 0.0, radius: float = 20.0, scale: float = 1.0):
     plate = Box(100 * scale, 80 * scale, 10 * scale)
     prism = Pos(x, 0, 5 * scale) * extrude(RegularPolygon(radius * scale, 6), 30 * scale)
     return plate + prism
+
+
+def _blend_interrupted_attached():
+    prism = extrude(RegularPolygon(20, 6), 30)
+    vertical = [edge for edge in prism.edges() if abs(float(edge.tangent_at().Z)) > 0.99]
+    return Box(100, 80, 10) + Pos(0, 0, 5) * fillet(vertical, 2)
+
+
+def _partially_blend_interrupted_attached():
+    prism = extrude(RegularPolygon(20, 6), 30)
+    vertical = [edge for edge in prism.edges() if abs(float(edge.tangent_at().Z)) > 0.99]
+    return Box(100, 80, 10) + Pos(0, 0, 5) * fillet(vertical[:5], 2)
 
 
 def _irregular_hexagon(radius=20.0, height=30.0):
@@ -461,6 +474,42 @@ def test_registry_terminal_lifecycle_retains_nonempty_polygonal_boss() -> None:
     assert len(candidates) == len(product.result.polygonal_bosses) == 1
     assert candidates[0].record is product.result.polygonal_bosses[0]
     assert len(product.evidence.defining_of(candidates[0])) == 6
+
+
+def test_six_explicit_blend_bridges_recover_the_sharp_polygonal_boss() -> None:
+    sharp = _attached()
+    rounded = _blend_interrupted_attached()
+    expected = recognise_polygonal_bosses(sharp)
+    records, candidates, ledger = _claim(rounded)
+    assert [record.to_dict() for record in records] == [record.to_dict() for record in expected]
+    assert len(records) == len(candidates) == 1
+    defining = ledger.defining_of(candidates[0])
+    assert len(defining) == 6
+    assert all(ledger.graph.is_planar(node) for node in defining)
+    assert all(abs(ledger.graph.normal(node)[2]) <= 0.02 for node in defining)
+
+
+def test_blend_interrupted_boss_aggregate_keeps_fillets_and_evidence_disjoint() -> None:
+    part = _blend_interrupted_attached()
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates
+    assert product.result.polygonal_bosses == tuple(recognise_polygonal_bosses(part))
+    assert len(product.result.polygonal_bosses) == len(candidates) == 1
+    assert product.result.fillets == tuple(recognise_fillets(part)) == ()
+    assert len(product.evidence.defining_of(candidates[0])) == 6
+
+
+def test_partial_blend_cycle_does_not_select_a_subset() -> None:
+    assert recognise_polygonal_bosses(_partially_blend_interrupted_attached()) == []
+
+
+def test_blend_interrupted_boss_survives_step_roundtrip(tmp_path) -> None:
+    path = tmp_path / "blend-interrupted-polygonal-boss.step"
+    export_step(_blend_interrupted_attached(), path)
+    imported = import_step(path)
+    assert [record.to_dict() for record in recognise_polygonal_bosses(imported)] == [
+        record.to_dict() for record in recognise_polygonal_bosses(_attached())
+    ]
 
 
 @pytest.mark.parametrize(

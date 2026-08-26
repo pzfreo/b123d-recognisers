@@ -394,6 +394,17 @@ original nodes as defining or consulted evidence under the existing evidence sem
 Candidate issuance. Complete provenance does not itself imply ownership. Logical handles themselves
 are never sink-compatible, and `_blend_view` cannot issue evidence.
 
+F3b selects Polygonal Bosses as that sole consumer. Only a complete six-chain convex singleton
+cycle between six retained planar vertical supports is selected, and every synthetic arc is
+expanded and revalidated before use. The six original planar supports remain the complete defining
+Candidate evidence. Hidden cylindrical blend nodes, spring/internal/terminal occurrences and cap
+context are consulted only. Direct and aggregate discovery share the existing Polygonal Boss core;
+other families and Polygonal Stock remain base-graph-only. The development fixture is a regular
+hexagonal attached prism with its six vertical corners filleted at constant radius, and its output
+is required to equal the sharp control exactly. Partial or competing cycles refuse rather than
+selecting a subset. Fillet Candidates, when independently present, define the cylindrical faces and
+therefore do not overlap the Polygonal Boss planar defining set; no new reconciliation rule exists.
+
 Refused discovery attempts are closed values with named reasons; selecting one is impossible.
 `view(())` is the exact base projection, and a refused component cannot alter retained node identity,
 neighbours, base arc occurrences or caches. Cache surface/radius reads, per-edge roles, component
