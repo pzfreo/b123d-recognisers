@@ -395,35 +395,36 @@ walls. The single most corner-avoiding move available is migrating the recess fa
 section-based records before 1.0 freezes the axis-aligned worldview into the compatibility
 contract.
 
-## Projected scores if epic 0004 completes
+## Epic 0004 projections and current correction
 
 [Epic 0004 — Geometry foundation generalisation](epics/0004-geometry-foundation-generalisation.md)
 (carried on this branch with review amendments applied; the review record is
 [`epic-0004-feedback.md`](epic-0004-feedback.md)) operationalises gaps 1–3 and 5–7 above into
-work packages F0–F7. Estimated re-grades **assuming every exit gate is met**, including F1's
-separately gated torus fit:
+work packages F0–F7. The table is the current post-work assessment, not the projection made when
+the epic was drafted:
 
-| Dimension | Now | Post-epic | Driver |
+| Dimension | Pre-epic | Current | Driver |
 | --- | :---: | :---: | --- |
-| Geometric generality | D+ | **B** | F1 canonical recovery removes the B-spline wall; F4 frames/sections remove the principal-axis wall; F3 recovers blend-obscured features. Free-form surfaces and assemblies stay out (non-goals) |
-| Architecture | B+ | **A** | F1–F3 close every substrate deficit named against Analysis Situs, and F7 publishes the substrate — the actual A-blocker — while adjudication stays deliberately closed |
-| Feature coverage | C+ | **B−** | Vocabulary frozen (no new families, by non-goal), but the excluded oblique and blend-obscured variants of recognised classes come in |
-| Feature-interaction handling | B− | **B** | F5 completes defining evidence everywhere — the prerequisite for interaction rules — but the rules themselves need observed overlaps and separate review |
+| Geometric generality | D+ | **D+** | F1 recovery has 0 of 64 recogniser reader sites migrated; F4b fixes whole-part presentation, not internally oblique features; F3b adds one bounded blend consumer with no matching external holdout population |
+| Architecture | B+ | **B+** | The private substrate is stronger, but F7 is not published and F6 has no external consumer; a consumer-proven narrow facade remains the exit gate |
+| Feature coverage | C+ | **C+** | Existing families gained stronger evidence and selected bounded variants, but the large B-spline and internal-obliquity recall gaps remain |
+| Feature-interaction handling | B− | **B** | F5 closes 20 families as `FullyAttributed`; Step Levels and Risers remain structurally `IncompleteAttribution`, and interaction rules still need observed overlaps and separate review |
 | Validation honesty | A | **A** | Already at ceiling; F0's MFTRCAD scanning and sealed draws extend the lead |
 | Determinism & explainability | A | **A** | Maintained by construction — byte-identical goldens gate every neutral change |
 | Parametric record quality | A | **A** | Section records are richer; F6 correspondence stays a private diagnostic, so the persistent-ID gap only half-closes |
 | Engineering quality | A− | **A−** | Still alpha, still bus factor one; the two-independent-reviews process tightens dependence on scarce reviewer attention |
-| Performance | C+ | **C+** | Held by budgets, not improved: canonicalisation, views and oblique candidate spaces all add per-part work; parallelism is out of scope |
-| Ecosystem reach | C | **B** | B-spline tolerance removes the biggest barrier to arbitrary third-party STEP, and F7's published substrate API makes the package a framework others build on; alpha status and single-app maturity remain |
+| Performance | C+ | **C+** | The composite is gated, but the canonical census is an unresolved recorded overrun at 134.165s against 109.651s; parallelism is out of scope |
+| Ecosystem reach | C | **C** | No recogniser consumes recovered surfaces and F7 is not public; Draftwright must first prove the smallest useful installed-wheel facade |
 
-Overall: from a B+ special-purpose utility to roughly an **A− utility with A-grade engineering
-and B-grade generality**, leaving performance as the one remaining C and coverage breadth at
-B− pending new families. The head-to-head with Analysis Situs becomes near-parity on recognition substrate,
-with Analysis Situs ahead only on product surface (workbench, defeaturing, sheet metal, DFM,
-maturity) and this project ahead on measurement discipline and the typed Python contract.
+Overall: this remains a carefully engineered special-purpose utility. The epic improved internal
+authority, evidence and bounded interaction handling, but it did not improve the measured D+
+geometric generality, C+ feature coverage, C ecosystem reach or C+ performance grades. It is not
+near parity with Analysis Situs as a recognition platform; this project remains strongest in
+measurement discipline and typed, fail-closed contracts, while Analysis Situs has much broader
+recognition and product capability.
 
-Two review amendments, now applied to the epic, raise the *expected* value of these
-projections (the reasoning is recorded in [`epic-0004-feedback.md`](epic-0004-feedback.md)):
+Two review amendments shaped the original plan (the reasoning is recorded in
+[`epic-0004-feedback.md`](epic-0004-feedback.md)), but their projected gains were not established:
 
 1. **F4 is split, with its schema half landing early.** F4 carries the oblique half of the
    generality jump plus the whole coverage move, and it was the one package with a clock on
@@ -432,20 +433,17 @@ projections (the reasoning is recorded in [`epic-0004-feedback.md`](epic-0004-fe
    lands right after F0, defusing the 1.0 corner even if the epic stalls and letting F1/F5
    write their fixtures against the final schema once instead of twice; F4b delivers the
    oblique predicates family-by-family.
-2. **A published framework API is the epic's terminal package (F7).** Once F1–F4a stop
-   churning the neutral APIs, the substrate (graph, canonical view, collapsed views,
-   frames/sections) is promoted to a public versioned contract with adjudication still
-   closed. This is the one lever that moves ecosystem reach (C+ → B on completion) and
-   mitigates the bus-factor ceiling, and it costs almost nothing *after* the epic while it
-   would have taxed every package done before.
+2. **A framework API was proposed as the terminal package (F7).** The implementation work showed
+   that publishing the broad substrate carries substantial compatibility and assurance cost, while
+   no external consumer yet proves its utility. ADR 0010 therefore replaces that projection with a
+   consumer spike followed, if justified, by the smallest useful `GeometryGraph` facade.
 
-These are grades for capability the exit gates prove, so they inherit the epic's own evidence
-standard: re-score after the holdout reveals, not before.
+Future re-grades require observed consumer or corpus value, not completion of internal packages.
 
 ## Sources
 
 In-repo: [`capabilities.md`](capabilities.md), [`prior-art-feature-recognition.md`](prior-art-feature-recognition.md),
-ADRs [0001](adr/0001-standalone-geometry-only-apache-library.md)–[0009](adr/0009-filtering-belongs-to-a-recogniser.md),
+ADRs [0001](adr/0001-standalone-geometry-only-apache-library.md)–[0010](adr/0010-narrow-public-geometry-facade.md),
 [`benchmarks/recognition-budget.md`](benchmarks/recognition-budget.md),
 [`benchmarks/pattern-grid-scaling.md`](benchmarks/pattern-grid-scaling.md), `migration/PARITY.md`,
 the corpus suites under `tests/`, and [PR #174](https://github.com/pzfreo/b123d-recognisers/pull/174).
