@@ -947,15 +947,35 @@ def test_product_pair_refuses_real_inner_wire_taper_twist_and_anisotropy() -> No
     tapered = loft([profile, Pos(0, 0, 10) * profile.scale(0.8)])
     twisted = loft([profile, Pos(0, 0, 10) * Rot(0, 0, 9) * profile])
     inner_wire = Cylinder(20, 10) - Cylinder(5, 10)
-    anisotropic_profile = Polygon((-13, -7), (14.3, -5), (10.4, 9), (-11.7, 8))
-    anisotropic = extrude(anisotropic_profile, 10)
     parent = _take_inventory(_partition_rrp(10.0))
-    for unsupported in (tapered, twisted, inner_wire, anisotropic):
+    for unsupported in (tapered, twisted, inner_wire):
         result = correspondence_changes(parent, _take_inventory(unsupported))
         assert all(
             relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
             for relation in result.relations
         )
+
+    def anisotropic_piece(height: float, start: float):
+        points = []
+        for sector in range(5):
+            for offset, radius in enumerate((20.0, 16.0, 20.0, 18.0)):
+                angle = 2.0 * math.pi * (sector / 5 + offset / 20)
+                points.append((1.2 * radius * math.cos(angle), radius * math.sin(angle)))
+        return Pos(0, 0, start) * Rot(0, 0, 13) * extrude(Polygon(*points), height)
+
+    anisotropic_children = Compound(
+        [anisotropic_piece(4.0, 0.0), anisotropic_piece(6.0, 4.0)]
+    )
+    with pytest.raises(AssertionError):
+        _raw_partition_relation_oracle(
+            _raw_prism_partition_oracle(_partition_rrp(10.0)),
+            _raw_prism_partition_oracle(anisotropic_children),
+        )
+    result = correspondence_changes(parent, _take_inventory(anisotropic_children))
+    assert all(
+        relation.kind not in {ChangeKind.SPLIT, ChangeKind.MERGED}
+        for relation in result.relations
+    )
 
 
 def test_gap_does_not_become_a_partial_geometric_partition() -> None:
@@ -1318,6 +1338,110 @@ def test_partition_and_unrelated_multi_occurrence_f6b1_group_share_joint_cover()
     assert all(
         relation.kind not in {ChangeKind.ADDED, ChangeKind.REMOVED} for relation in result.relations
     )
+
+
+def test_independent_moved_resized_body_group_witness_and_competition() -> None:
+    rotation = ((0, -1, 0), (1, 0, 0), (0, 0, 1))
+    scale = 1.25
+    translation = (11.0, -7.0, 3.0)
+    source_part = _two_rrp_one_solid()
+    target_part = Pos(*translation) * _proper_transform(source_part.scale(scale), rotation)
+    before_product = _take_inventory(source_part)
+    after_product = _take_inventory(target_part)
+    before = correspondence_snapshot(before_product)
+    after = correspondence_snapshot(after_product)
+    assert before.body_groups == after.body_groups == ((0, 1),)
+
+    rows = []
+    for left in before.occurrences:
+        matches = []
+        for right_at, right in enumerate(after.occurrences):
+            if (
+                left.summary.repeat_count != right.summary.repeat_count
+                or left.summary.edge_count != right.summary.edge_count
+            ):
+                continue
+            rotated = tuple(
+                sum(rotation[row][column] * left.summary.centre[column] for column in range(3))
+                for row in range(3)
+            )
+            expected_centre = tuple(
+                scale * value + offset
+                for value, offset in zip(rotated, translation, strict=True)
+            )
+            if math.dist(expected_centre, right.summary.centre) > 1.0e-6:
+                continue
+            if right.summary.span != pytest.approx(
+                tuple(scale * value + translation[2] for value in left.summary.span),
+                abs=1.0e-6,
+            ):
+                continue
+            volume_bound = 2.0 * (
+                scale**3 * left.body.quantization.volume_quantum
+                + right.body.quantization.volume_quantum
+            )
+            area_bound = 2.0 * (
+                scale**2 * left.body.quantization.area_quantum
+                + right.body.quantization.area_quantum
+            )
+            if abs(
+                right.body.intrinsic.volume - scale**3 * left.body.intrinsic.volume
+            ) > volume_bound or abs(
+                right.body.intrinsic.surface_area
+                - scale**2 * left.body.intrinsic.surface_area
+            ) > area_bound:
+                continue
+            matches.append(right_at)
+        rows.append(tuple(matches))
+    assert all(len(row) == 1 for row in rows)
+    assert len({row[0] for row in rows}) == 2
+
+    def derive_witness(left_snapshot, right_snapshot, right_group=(0, 1)):
+        left = next(
+            item for item in left_snapshot.occurrences if item.summary.repeat_count == 5
+        )
+        right = next(
+            right_snapshot.occurrences[at]
+            for at in right_group
+            if right_snapshot.occurrences[at].summary.repeat_count == 5
+        )
+        exact_scale = (
+            right.body.quantization.characteristic_scale
+            / left.body.quantization.characteristic_scale
+        )
+        rotated = tuple(
+            sum(
+                rotation[row][column] * left.body.placement.centre_of_mass[column]
+                for column in range(3)
+            )
+            for row in range(3)
+        )
+        exact_translation = tuple(
+            target - exact_scale * source
+            for source, target in zip(
+                rotated, right.body.placement.centre_of_mass, strict=True
+            )
+        )
+        return RigidScaleWitness(rotation, exact_translation, exact_scale)
+
+    expected = derive_witness(before, after)
+    result = correspondence_changes(before_product, after_product)
+    assert [relation.kind for relation in result.relations] == [
+        ChangeKind.RESIZED,
+        ChangeKind.RESIZED,
+    ]
+    assert {relation.witness for relation in result.relations} == {expected}
+
+    duplicated_target = Compound([target_part, Pos(100, 0, 0) * target_part])
+    duplicated_product = _take_inventory(duplicated_target)
+    duplicated_snapshot = correspondence_snapshot(duplicated_product)
+    (ambiguous,) = correspondence_changes(before_product, duplicated_product).relations
+    assert ambiguous.kind is ChangeKind.AMBIGUOUS
+    assert (len(ambiguous.before_refs), len(ambiguous.after_refs)) == (2, 4)
+    assert set(ambiguous.candidate_witnesses) == {
+        derive_witness(before, duplicated_snapshot, group)
+        for group in duplicated_snapshot.body_groups
+    }
 
 
 def test_raw_joint_graph_exposes_connected_many_to_many_cover_ambiguity() -> None:
