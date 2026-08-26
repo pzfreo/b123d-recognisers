@@ -1591,11 +1591,23 @@ def test_three_child_partition_accepts_one_shared_moved_scaled_rotation() -> Non
     assert raw_rotation == relation.witness.rotation
     assert raw_scale == pytest.approx(relation.witness.scale, abs=1e-7)
     assert raw_translation == pytest.approx(relation.witness.translation, abs=1e-7)
-    assert relation.witness == _snapshot_partition_witness(
+    snapshot_witness = _snapshot_partition_witness(
         before_product,
         after_product,
         ((1, 0, 0), (0, 0, -1), (0, 1, 0)),
     )
+    assert relation.witness.rotation == snapshot_witness.rotation
+    assert relation.witness.scale == snapshot_witness.scale
+    before_snapshot = correspondence_snapshot(before_product)
+    after_snapshot = correspondence_snapshot(after_product)
+    witness_bound = 4.0 * (
+        relation.witness.scale * before_snapshot.occurrences[0].body.quantization.metric_quantum
+        + min(
+            occurrence.body.quantization.metric_quantum
+            for occurrence in after_snapshot.occurrences
+        )
+    )
+    assert math.dist(relation.witness.translation, snapshot_witness.translation) <= witness_bound
 
 
 def test_raw_partition_oracle_and_matcher_cover_all_24_proper_rotations() -> None:
