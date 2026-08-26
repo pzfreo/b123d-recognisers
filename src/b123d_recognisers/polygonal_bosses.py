@@ -257,7 +257,7 @@ def _polygonal_boss_blend_bridges(
     """Return only provenance-complete bridges for unambiguous six-support blend cycles."""
 
     vertical_set = set(vertical)
-    possible_pairs: list[frozenset[FaceNode]] = []
+    possible: list[tuple[FaceNode, frozenset[FaceNode]]] = []
     for node in graph.nodes:
         if node in vertical_set:
             continue
@@ -270,22 +270,32 @@ def _polygonal_boss_blend_bridges(
             for a, b in zip(graph.bounds(left)[2], graph.bounds(right)[2], strict=True)
         ):
             continue
-        possible_pairs.append(frozenset(supports))
-    possible_supports = set().union(*possible_pairs) if possible_pairs else set()
-    if (
-        len(possible_pairs) < 6
-        or not any(
+        possible.append((node, frozenset(supports)))
+
+    def contains_six_cycle(pairs: list[frozenset[FaceNode]]) -> bool:
+        possible_supports = set().union(*pairs) if pairs else set()
+        return len(pairs) >= 6 and any(
             len(component) == 6
-            and sum(pair <= set(component) for pair in possible_pairs) >= 6
+            and sum(pair <= set(component) for pair in pairs) >= 6
             for component in connected_components(
                 possible_supports,
-                lambda left, right: frozenset((left, right)) in possible_pairs,
+                lambda left, right: frozenset((left, right)) in pairs,
             )
         )
-    ):
+
+    possible_pairs = [pair for _node, pair in possible]
+    if not contains_six_cycle(possible_pairs):
         return frozenset()
 
     surfaces = EffectiveSurfaceIndex(graph)
+    cylindrical_pairs = [
+        pair
+        for node, pair in possible
+        if isinstance(fact := surfaces.fact(node), AnalyticSurfaceFact)
+        and fact.kind is SurfaceKind.CYLINDER
+    ]
+    if not contains_six_cycle(cylindrical_pairs):
+        return frozenset()
     index = BlendCollapseIndex(graph, surfaces)
     eligible: list[tuple[BlendChain, FaceNode, FaceNode]] = []
     for chain in index.chains():
