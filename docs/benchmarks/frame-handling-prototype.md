@@ -10,10 +10,12 @@ a framed result pairing that frame with the unchanged `RecognitionResult`, and t
 is deliberately absent from the package root and capability manifest.
 
 The origin is the material centre of mass. Two independent analytic direction classes establish
-axis lines and a right-handed basis. A single direction does not establish roll and is refused as
-`ambiguous-direction`. The prototype still orients each otherwise-unoriented line with a
-deterministic world-component sign convention. That is adequate to test the boundary on the named
-motions, but is not a geometry-established semantic sign and is a production gap. A transient
+axis lines and a right-handed basis. A single direction returns an explicit `AXIAL` gauge: roll is
+unobservable and its world-seeded basis is only a deterministic representative, not a semantic
+material direction. No analytic direction is refused. The prototype still orients each
+otherwise-unoriented line with a deterministic world-component sign convention. That is adequate
+to test the boundary on the named motions, but is not a geometry-established semantic sign and is
+a production gap. A transient
 normalized shape passes through the existing recognition and reconciliation stack once. Existing
 public entry points and their coordinate meaning are unchanged.
 

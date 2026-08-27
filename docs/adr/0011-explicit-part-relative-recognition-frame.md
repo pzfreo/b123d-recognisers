@@ -28,9 +28,10 @@ or default:
    coordinates and axis letters are explicitly local to the paired frame.
 3. Existing `build_recognition_result(part)` behavior remains unchanged. Framed recognition is a
    separate opt-in route until its stability gate passes.
-4. Frame inference is closed. If geometry does not establish two independent direction lines, it
-   returns a typed refusal. It must not use world XYZ to choose unobservable roll. The prototype's
-   remaining world-based line-sign convention is not accepted as production semantics.
+4. Frame inference is closed. Geometry with no analytic direction returns a typed refusal. A
+   single established axis returns an explicit `AXIAL` gauge: its chosen roll is a deterministic
+   representative and must not be treated as a semantic material axis. The prototype's remaining
+   world-based line-sign convention is not accepted as production semantics.
 5. Recognition still executes once through the existing registry and reconciliation stack. The
    boundary does not expose `GeometryGraph`, correspondence, candidates, or recogniser internals.
 
@@ -70,7 +71,8 @@ The sealed MFTRCAD holdout is not required for this architecture decision and re
 
 - Callers can distinguish part placement from recognition semantics without a broad free-axis
   record migration.
-- Ambiguous geometry produces an explicit non-result rather than presentation-dependent axes.
+- Unconstrained roll is explicit gauge rather than a hidden semantic axis; geometry with no
+  analytic direction produces an explicit non-result.
 - The existing public API and coordinate meaning remain compatible.
 - The prototype demonstrates high value, but the placement route is not yet release quality.
 - Recommendation: **revise and continue**. Do not abandon the boundary, and do not ship this

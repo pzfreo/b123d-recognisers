@@ -49,10 +49,11 @@ def test_frame_origin_and_axes_follow_a_rigid_motion() -> None:
     assert frame.origin == pytest.approx(tuple(expected), abs=1e-9)
 
 
-def test_surface_of_revolution_refuses_its_unobservable_roll_gauge() -> None:
+def test_surface_of_revolution_reports_its_unobservable_roll_gauge() -> None:
     frame = infer_part_frame(Cylinder(10, 30).rotate(Axis.X, 37))
 
-    assert frame == RefusedPartFrame(FrameRefusalReason.AMBIGUOUS_DIRECTION)
+    assert isinstance(frame, PartFrame)
+    assert frame.gauge is FrameGauge.AXIAL
 
 
 def test_frame_inference_refuses_material_without_an_analytic_direction() -> None:
