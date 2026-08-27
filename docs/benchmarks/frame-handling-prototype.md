@@ -5,19 +5,17 @@ architectural question is whether recognition should have an explicit part-relat
 
 ## Smallest contract tested
 
-`_experimental_frame.py` defines an immutable caller-space `PartFrame`, inverse point transforms,
-a framed result pairing that frame with the unchanged `RecognitionResult`, and typed refusals. It
-is deliberately absent from the package root and capability manifest.
+The spike defined an immutable caller-space `PartFrame`, inverse point transforms, a framed result
+pairing that frame with the unchanged `RecognitionResult`, and typed refusals.
 
 The origin is the material centre of mass. Two independent analytic direction classes establish
-axis lines and a right-handed basis. A single direction returns an explicit `AXIAL` gauge: roll is
-unobservable and its world-seeded basis is only a deterministic representative, not a semantic
-material direction. No analytic direction is refused. The prototype still orients each
-otherwise-unoriented line with a deterministic world-component sign convention. That is adequate
-to test the boundary on the named motions, but is not a geometry-established semantic sign and is
-a production gap. A transient
-normalized shape passes through the existing recognition and reconciliation stack once. Existing
-public entry points and their coordinate meaning are unchanged.
+axis lines and a right-handed basis. Production revision orients an observable line from the
+signed distribution of analytic-face area about the material centre. A symmetric distribution is
+not assigned invented meaning: `ORTHOGONAL` exposes a remaining discrete sign/interchange gauge.
+A single direction returns `AXIAL`, exposing continuous roll. Representatives of both gauges are
+usable coordinate frames but not semantic material directions. No analytic direction is refused.
+A transient normalized shape passes through the existing recognition and reconciliation stack
+once. Existing public entry points and their coordinate meaning are unchanged.
 
 This is normalization, not general free-axis recognition. Every record in a framed result is in
 the accompanying local frame and must not be interpreted in caller space.
@@ -51,10 +49,16 @@ or below the coordinate floor as unable to prove void and fails that candidate c
 | --- | ---: | ---: | ---: | ---: | ---: |
 | local baseline vs independently framed X30+T | 2,750 | **2,750 (100%)** | 0 | 0 | 1 |
 
-Only `10098.step` differs: its five baseline occurrences all remain and the transformed
-presentation introduces one extra Slot fragment. There are no family reclassifications or absent
-occurrences. This is an accounted downstream recess-boundary instability and remains a gate for a
-default route, but it no longer obscures the frame result.
+The production rerun retains 2,748/2,748 framed occurrences (100%), with no reclassification,
+absence, introduction, refusal or error. All 500 solids establish a `FULL` frame. Its machine
+report is [frame-corpus-500-production.json](frame-corpus-500-production.json); the original spike
+report remains alongside it rather than being rewritten.
+
+The former `10098.step` difference was traced to an exact `width > length` comparison on a nominally
+square recess. Width may exceed length by only a final-bit placement drift. The predicate now uses
+the package coordinate floor, with boundary tests; the focused model retains the same five
+occurrences and defining faces in both presentations. The complete 500-model report is repeated as
+a production gate rather than silently editing the earlier measurement.
 
 Raw X30+T retains 1,166/2,784 occurrences (41.9%), reclassifies 47, loses 1,571 and introduces
 seven. Framed normalization therefore recovers every raw baseline occurrence on the same named
@@ -65,24 +69,25 @@ sample. The complete machine report is [frame-corpus-500.json](frame-corpus-500.
 The legacy route is untouched and its goldens remain byte-identical. Normalizing even an
 unrotated input is not yet behavior-preserving: across all 500 models, legacy versus framed
 baseline retains 2,715/2,784 occurrences, reclassifies two, loses 67 and introduces 33.
-This is why the spike is opt-in and non-exported. The earlier rich-Passage failures were fixed by
+This is why the production route remains opt-in. The earlier rich-Passage failures were fixed by
 requiring exact axis/sides/length/position agreement and accepting only cyclic/winding-equivalent
 closed polygon sections; incompatible projections still fail closed.
 
 ## Runtime
 
-For the definitive 500-model pass, frame inference took 11.96 seconds, placement normalization
-4.35 seconds, framed recognition 436.12 seconds and raw recognition 417.77 seconds. Frame work is
-3.74% of framed recognition time; paired framed recognition including frame work is 8.29% slower
-than the paired raw route. Import time (24.98 seconds) is excluded from both.
+For the production 500-model pass, frame inference took 12.14 seconds, placement normalization
+4.22 seconds, framed recognition 434.12 seconds and raw recognition 409.75 seconds. Frame work is
+3.77% of framed recognition time; paired framed recognition including frame work is 9.93% slower
+than the paired raw route. Import time (24.89 seconds) is excluded from both. These are development
+machine measurements, not a latency guarantee.
 
 ## Recommendation
 
 **Revise and continue.** Keep the explicit frame-plus-local-result boundary and closed ambiguity
-behavior. Do not publish or make the placement implementation default yet. Its value is clear:
+behavior. Do not make the placement implementation default. Its value is clear:
 same-family retention rises from roughly 42% raw to 100% framed on real development data, while
 all golden cases become invariant. Its remaining work is equally clear: remove or tolerance-specify
-the one introduced Slot fragment, resolve axis-sign gauge, repeat cross-platform evidence, and
-reduce/profile end-to-end overhead.
+the one introduced Slot fragment and axis-sign semantics are now addressed; the remaining release
+gate is repeated corpus, performance, packaging and cross-platform evidence.
 
 The authoritative proposed contract and acceptance gate are in ADR 0011.

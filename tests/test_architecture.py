@@ -22,6 +22,7 @@ PUBLIC_MODULES = {
     "experimental_geometry",
     "fillets",
     "flats",
+    "frames",
     "grooves",
     "levels",
     "pads",

@@ -94,6 +94,17 @@ from b123d_recognisers.countersinks import (
 )
 from b123d_recognisers.fillets import Fillet, fillet_anchor, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
+from b123d_recognisers.frames import (
+    FramedRecognition,
+    FramedRecognitionResult,
+    FrameGauge,
+    FrameInference,
+    FrameRefusalReason,
+    PartFrame,
+    RefusedPartFrame,
+    build_framed_recognition_result,
+    infer_part_frame,
+)
 from b123d_recognisers.grooves import Groove, floor_face_anchor, recognise_grooves
 from b123d_recognisers.levels import (
     STEP_LADDER_BOUNDARY_MARGIN,
@@ -186,6 +197,11 @@ __all__ = [
     "Channel",
     "Fillet",
     "Flat",
+    "FrameGauge",
+    "FrameInference",
+    "FrameRefusalReason",
+    "FramedRecognition",
+    "FramedRecognitionResult",
     "Groove",
     "BossRecord",
     "CounterBore",
@@ -197,6 +213,7 @@ __all__ = [
     "HoleSpec",
     "LinearArray",
     "Plate",
+    "PartFrame",
     "Pocket",
     "PocketArray",
     "PocketGrid",
@@ -213,6 +230,7 @@ __all__ = [
     "TurnedProfile",
     "TurnedStep",
     "RecognitionResult",
+    "RefusedPartFrame",
     "BevelReject",
     "FaceEdges",
     "analyse_cylinders",
@@ -257,5 +275,7 @@ __all__ = [
     "recognise_slots",
     "recognise_turned_steps",
     "build_recognition_result",
+    "build_framed_recognition_result",
     "full_cylinders",
+    "infer_part_frame",
 ]

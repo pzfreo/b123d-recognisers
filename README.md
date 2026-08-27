@@ -63,6 +63,28 @@ holes = recognise_holes(part, cyls=cylinders)
 patterns = recognise_hole_patterns(holes)
 ```
 
+### Recognise independently of STEP placement
+
+Use the opt-in framed route when the same physical part must produce local coordinates independent
+of its placement in the imported file:
+
+```python
+from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
+
+framed = build_framed_recognition_result(part)
+if isinstance(framed, FramedRecognitionResult):
+    print(framed.frame.gauge)
+    print(framed.result.holes)  # coordinates and axis letters are local to framed.frame
+```
+
+The paired `PartFrame` converts points in either direction with `to_local()` and `to_world()`.
+`FULL` means geometry establishes a directed, ordered basis. `ORTHOGONAL` exposes an unobservable
+discrete sign or axis interchange, and `AXIAL` exposes unobservable roll. The axes returned for a
+gauged frame are deterministic representatives and must not be treated as semantic material
+directions. Geometry without an analytic direction returns a typed `RefusedPartFrame`.
+
+This route does not change `build_recognition_result()` or the caller-space meaning of its records.
+
 Every `recognise_*` function returns a deterministic list of frozen dataclass records. Records
 provide `to_dict()` projections containing only JSON-serialisable geometry values. The installed
 package also exposes a versioned capability manifest so larger CAD systems can validate which

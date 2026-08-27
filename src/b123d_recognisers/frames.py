@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Private experimental part-relative frame boundary for issue 274.
+"""Opt-in part-relative recognition with an explicit caller-space frame.
 
-This module is deliberately absent from the package root and capability manifest.  It tests an
-opt-in production shape: an explicit caller-space frame paired with the unchanged local-frame
-``RecognitionResult``.  Existing recognition entry points remain caller-space and byte compatible.
+Existing recognition entry points remain caller-space and byte compatible. Framed recognition
+pairs the unchanged local-frame ``RecognitionResult`` with the frame needed to interpret it.
 """
 
 from __future__ import annotations
@@ -32,12 +31,15 @@ _COMPONENT_EPS = 1e-12
 class FrameGauge(Enum):
     """How much of the returned basis is established by the solid.
 
-    ``FULL`` means two independent analytic directions establish the basis. ``AXIAL`` means the
-    solid establishes one axis while roll about it is explicitly non-semantic; the returned
-    perpendicular directions are only a deterministic representative of that gauge.
+    ``FULL`` means the solid establishes a directed, ordered basis. ``ORTHOGONAL`` means it
+    establishes at least two perpendicular direction lines, but a discrete sign or interchange
+    remains unobservable. ``AXIAL`` means it establishes one direction line while roll about it
+    is unobservable. In the latter two cases the returned axes are representatives of the gauge,
+    not semantic material directions.
     """
 
     FULL = "full"
+    ORTHOGONAL = "orthogonal"
     AXIAL = "axial"
 
 
@@ -118,15 +120,42 @@ class _DirectionClass:
     direction: Vector3
     area: float
     face_areas: list[float]
+    face_offsets: list[tuple[float, float]]
 
     @property
-    def signature(self) -> tuple[float, tuple[float, ...]]:
+    def signature(self) -> tuple[float, tuple[float, ...], tuple[tuple[float, float], ...]]:
         # Rotation-invariant ordering.  Quantisation settles final-bit OCCT area differences;
         # a remaining exact tie is a geometric gauge, not permission to inspect world XYZ.
         return (
             round(self.area, 9),
             tuple(sorted((round(v, 9) for v in self.face_areas), reverse=True)),
+            tuple(
+                sorted(
+                    ((round(abs(offset), 9), round(area, 9)) for offset, area in self.face_offsets),
+                    reverse=True,
+                )
+            ),
         )
+
+    def oriented(self) -> tuple[Vector3, bool]:
+        """Return the geometry-directed representative and whether its sign is observable."""
+
+        forward = tuple(
+            sorted(
+                ((round(offset, 9), round(area, 9)) for offset, area in self.face_offsets),
+                reverse=True,
+            )
+        )
+        reverse = tuple(
+            sorted(
+                ((round(-offset, 9), round(area, 9)) for offset, area in self.face_offsets),
+                reverse=True,
+            )
+        )
+        if forward == reverse:
+            return self.direction, False
+        sign = 1.0 if forward > reverse else -1.0
+        return cast(Vector3, tuple(sign * value for value in self.direction)), True
 
 
 def _dot(left, right) -> float:
@@ -205,33 +234,52 @@ def infer_part_frame(part: Part) -> FrameInference:
             props = GProp_GProps()
             BRepGProp.SurfaceProperties_s(face.wrapped, props)
             area = float(props.Mass())
-            if not math.isfinite(area):
+            centre = props.CentreOfMass()
+            face_centre = cast(Vector3, tuple(float(value) for value in centre.Coord()))
+            if not math.isfinite(area) or not all(math.isfinite(value) for value in face_centre):
                 return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+            offset = _dot(
+                tuple(face_centre[index] - origin[index] for index in range(3)), direction
+            )
             for direction_class in classes:
                 if abs(_dot(direction, direction_class.direction)) >= _PARALLEL_COS:
+                    if _dot(direction, direction_class.direction) < 0.0:
+                        offset = -offset
                     direction_class.area += area
                     direction_class.face_areas.append(area)
+                    direction_class.face_offsets.append((offset, area))
                     break
             else:
-                classes.append(_DirectionClass(direction, area, [area]))
+                classes.append(_DirectionClass(direction, area, [area], [(offset, area)]))
     except (RuntimeError, ValueError):
         return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
 
     ranked = sorted(classes, key=lambda item: item.signature, reverse=True)
     for first_index, first_class in enumerate(ranked):
         for second_class in ranked[first_index + 1 :]:
-            first, second = first_class.direction, second_class.direction
+            first, first_signed = first_class.oriented()
+            second, second_signed = second_class.oriented()
             if abs(_dot(first, second)) > _ORTHOGONAL_COS:
                 continue
             y = _unit(tuple(second[i] - _dot(first, second) * first[i] for i in range(3)))
             x = _clean(first)
             y = _clean(y)
             z = _clean(_unit(_cross(x, y)))
-            return PartFrame(origin, x, y, z, FrameGauge.FULL)
+            # Any equal-ranked direction class leaves a possible axis interchange. Be
+            # conservative even when the tied class was not selected for this representative:
+            # FULL promises that the complete ordered basis, not merely its first axis, is
+            # geometry-established.
+            ordering_distinct = len({item.signature for item in ranked}) == len(ranked)
+            gauge = (
+                FrameGauge.FULL
+                if first_signed and second_signed and ordering_distinct
+                else FrameGauge.ORTHOGONAL
+            )
+            return PartFrame(origin, x, y, z, gauge)
     if ranked:
         # One axis leaves roll unconstrained. World XYZ selects a deterministic *representative*
         # of the explicitly published AXIAL gauge; it does not claim a semantic material axis.
-        x = ranked[0].direction
+        x, _ = ranked[0].oriented()
         seed = min(
             ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
             key=lambda candidate: abs(_dot(x, candidate)),
