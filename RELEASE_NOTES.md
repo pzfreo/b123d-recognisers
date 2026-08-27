@@ -1,12 +1,17 @@
 # Release notes
 
-## Next patch
+## 0.4.3
 
 - **Added opt-in part-relative recognition.** `build_framed_recognition_result(part)` pairs the
   unchanged local `RecognitionResult` with an explicit `PartFrame`, allowing callers to separate
   physical-part coordinates from arbitrary STEP placement without changing the legacy entry point.
   Frame gauges state when discrete orientation (`ORTHOGONAL`) or continuous roll (`AXIAL`) is not
   observable from geometry; `FULL` is reserved for a geometry-directed ordered basis.
+
+- **Corrected prior-art dataset guidance.** MFCAD's in-repository STEP models and labels are MIT
+  licensed, while MFCAD++ and MFInstSeg require separate terms review. The documentation also
+  records that `.face_truth` labels are Python pickles and should be inspected with
+  `pickletools.dis` rather than loaded blindly.
 
 ## 0.4.2
 
