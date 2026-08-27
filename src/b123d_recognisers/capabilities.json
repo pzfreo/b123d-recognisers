@@ -2112,6 +2112,6 @@
   "format_version": 2,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.4.1.dev0"
+    "version": "0.4.2.dev0"
   }
 }
