@@ -110,8 +110,14 @@ training. And synthetic-to-real domain adaptation is an *active research problem
 evidence that these labels do not transfer cleanly to real parts. They are better used as a
 false-negative detector than as ground truth about capability.
 
-Licensing: AAGNet's code is MIT. The dataset terms are not stated on its repository and need
-checking before anything is vendored.
+Licensing: AAGNet's code is MIT, and so is [MFCAD](https://github.com/hducg/MFCAD) — its STEP
+models and labels are in-repository under that licence, so a sample can be pulled without
+credentials. MFCAD++ and MFInstSeg are distributed through Baidu AI Studio and Google Drive and
+their terms are not stated alongside the code; check before vendoring either.
+
+The `.face_truth` labels are Python pickles. Disassemble them with `pickletools.dis` rather than
+loading them blindly. The inspected files contain only `EMPTY_LIST`, `BININT1`, and `APPENDS`, with
+no `GLOBAL` or `REDUCE`; confirm that per file rather than assuming it across the full dataset.
 
 ## What this implies here
 
