@@ -33,18 +33,18 @@ _COMPONENT_EPS = 1e-12
 class FrameGauge(Enum):
     """How much of the returned basis is established by the solid.
 
-    ``FULL`` means two independent analytic directions establish the basis. ``AXIAL`` means only
-    one direction is observable (a surface of revolution); rotation of the other two axes about
-    it is a non-semantic gauge selected deterministically in the supplied presentation.
+    ``FULL`` means two independent analytic directions establish the basis. The enum is retained
+    in the result contract so future frame strategies can describe other *geometry-established*
+    gauges without silently inventing axes from the caller's world frame.
     """
 
     FULL = "full"
-    AXIAL = "axial"
 
 
 class FrameRefusalReason(Enum):
     NO_MATERIAL = "no-material"
     NO_ANALYTIC_DIRECTION = "no-analytic-direction"
+    AMBIGUOUS_DIRECTION = "ambiguous-direction"
     NONFINITE_GEOMETRY = "nonfinite-geometry"
 
 
@@ -230,15 +230,10 @@ def infer_part_frame(part: Part) -> FrameInference:
             z = _clean(_unit(_cross(x, y)))
             return PartFrame(origin, x, y, z, FrameGauge.FULL)
     if ranked:
-        x = ranked[0].direction
-        seed = min(
-            ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
-            key=lambda candidate: abs(_dot(x, candidate)),
-        )
-        y = _unit(tuple(seed[i] - _dot(x, seed) * x[i] for i in range(3)))
-        x, y = _clean(x), _clean(y)
-        z = _clean(_unit(_cross(x, y)))
-        return PartFrame(origin, x, y, z, FrameGauge.AXIAL)
+        # One axis leaves roll unconstrained. Choosing a perpendicular direction from world XYZ
+        # would be deterministic only in the supplied presentation, not rigid-equivariant, and
+        # would make local-frame recognition dependent on an axis the solid never established.
+        return RefusedPartFrame(FrameRefusalReason.AMBIGUOUS_DIRECTION)
     return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 
 
