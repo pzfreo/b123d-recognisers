@@ -118,6 +118,15 @@ MFTRCAD is evidence, not an oracle. Its feature-instance and relationship labels
 interactions and false negatives, but its taxonomy does not define this package's record contracts
 or reconciliation policy. Synthetic-corpus measurements remain separate from real-part evidence.
 
+The checked-in rigid-motion sweep at baseline `b03ba00` closes a separate synthetic-corpus blind
+spot. It validates face-by-face correspondence before matching accepted occurrences by defining
+evidence, so absence and reconciliation-driven family changes are measured rather than inferred
+from counts. Of 75 golden-corpus census records, Z30 retains 34 in-family, reclassifies 14 and loses
+27; X30 retains 29, reclassifies seven and loses 39; the X90 axis-permutation control retains all
+75. See `docs/benchmarks/rigid-motion-sweep.md` and its canonical JSON companion. These numbers
+order later F4b family work but do not themselves decide whether the supplied world frame is
+semantically meaningful or amend ADR 0001.
+
 Exit gate: the scanner reproduces a documented baseline without changing source recognition code;
 the holdout stays sealed.
 
