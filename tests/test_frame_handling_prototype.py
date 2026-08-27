@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import pytest
 from build123d import Axis, Box, Sphere
 
 from b123d_recognisers._experimental_frame import (
@@ -19,8 +18,9 @@ def test_frame_inference_tracks_a_rigidly_rotated_prism() -> None:
     frame = infer_part_frame(Box(10, 20, 30).rotate(Axis.X, 30))
 
     assert isinstance(frame, PartFrame)
+    axes = (frame.x, frame.y, frame.z)
     assert all(
-        abs(sum(left * right for left, right in zip(frame.axes[i], frame.axes[j], strict=True)))
+        abs(sum(left * right for left, right in zip(axes[i], axes[j], strict=True)))
         < 1e-12
         for i, j in ((0, 1), (0, 2), (1, 2))
     )
