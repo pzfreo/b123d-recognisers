@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from build123d import Solid  # noqa: E402
+from build123d import Compound, Shape  # noqa: E402
 from OCP.BRepAdaptor import BRepAdaptor_Surface  # noqa: E402
 from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform  # noqa: E402
 from OCP.BRepGProp import BRepGProp  # noqa: E402
@@ -142,7 +142,7 @@ def infer_frame(part, *, parallel_cos: float = 0.999) -> InferredFrame:
     raise ValueError("part does not expose two independent analytic direction classes")
 
 
-def normalize_part(part) -> tuple[Solid, InferredFrame]:
+def normalize_part(part) -> tuple[Shape, InferredFrame]:
     """Return a copied part rotated from its inferred world frame into local XYZ."""
 
     frame = infer_frame(part)
@@ -162,7 +162,10 @@ def normalize_part(part) -> tuple[Solid, InferredFrame]:
         values[8],
         0.0,
     )
-    return Solid(BRepBuilderAPI_Transform(part.wrapped, transform, True).Shape()), frame
+    # Preserve the transformed shape's real compound/solid kind.  Wrapping every result as a
+    # Solid made a transformed Compound present conflicting body ownership to FaceGraph on macOS.
+    transformed = BRepBuilderAPI_Transform(part.wrapped, transform, True).Shape()
+    return Compound.cast(transformed), frame
 
 
 def evaluate_goldens() -> dict[str, object]:
