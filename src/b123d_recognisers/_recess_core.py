@@ -63,17 +63,6 @@ _LENGTH_TIE_FRAC = 0.05
 _SLOT_MAX_SPAN_FRAC = 0.9
 
 
-def _width_exceeds_length(width: float, length: float) -> bool:
-    """Whether a wall separation is materially larger than its candidate run.
-
-    Bounding boxes evaluated through a rigid ``TopLoc`` placement can differ by final bits. A
-    nominal square is not a different recess merely because one span is 1.8e-15 shorter; a real
-    excess must clear the package coordinate floor.
-    """
-
-    return width - length > COORD_FLOOR
-
-
 def _concave_boundary_regions(wall: FaceNode, graph: FaceGraph) -> set[frozenset[FaceNode]]:
     """Distinct closing regions reached concavely from one proposed wall.
 
@@ -240,7 +229,7 @@ def _candidate(
     # A slot is elongated: its width (the wall separation) is not its largest
     # dimension.  A wider-than-long pair is a step/pocket or a sliver of two
     # incidental parallel faces.
-    if _width_exceeds_length(width, length):
+    if width > length:
         return None
     # Reject open / full-span features along the length (see _SLOT_MAX_SPAN_FRAC).
     if length >= _SLOT_MAX_SPAN_FRAC * part_ext[long_axis]:
@@ -390,7 +379,7 @@ def _floored_candidate(
         if int(cap_lo) + int(cap_hi) != 1:
             continue  # 0 = through on this axis; 2 = an enclosed end-cap pair, not a floor
         length = l_hi - l_lo
-        if _width_exceeds_length(width, length) and channel_bounds is None:
+        if width > length and channel_bounds is None:
             return None  # width is the smaller footprint dim (the wrong wall pair)
         if channel_bounds is None:
             if length >= _SLOT_MAX_SPAN_FRAC * part_ext[long_axis]:

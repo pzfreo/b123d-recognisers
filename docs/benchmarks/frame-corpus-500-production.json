@@ -3,28 +3,29 @@
   "dataset": "MFCAD++ test split (development evidence)",
   "framed_rigid_motion": {
     "absent": 0,
-    "baseline": 2748,
-    "introduced": 0,
+    "baseline": 2751,
+    "introduced": 1,
+    "introduced_by_family:slot": 1,
     "reclassified": 0,
-    "same_family": 2748
+    "same_family": 2751
   },
   "gauges": {
     "full": 500
   },
   "legacy_to_framed_baseline": {
-    "absent": 65,
+    "absent": 67,
     "absent_by_family:angled_step": 4,
     "absent_by_family:fillet": 2,
     "absent_by_family:plate": 1,
     "absent_by_family:pocket": 51,
     "absent_by_family:prismatic_pocket": 6,
-    "absent_by_family:slot": 1,
-    "baseline": 2779,
+    "absent_by_family:slot": 3,
+    "baseline": 2784,
     "introduced": 34,
     "introduced_by_family:fillet": 1,
     "introduced_by_family:pocket": 33,
     "reclassified": 2,
-    "same_family": 2712,
+    "same_family": 2715,
     "transitions:pocket->slot": 1,
     "transitions:slot->pocket": 1
   },
@@ -58,6 +59,45 @@
         "same_by_family": {
           "plate": 2,
           "pocket": 2,
+          "prismatic_pocket": 1
+        },
+        "same_family": 5,
+        "transitions": {}
+      }
+    },
+    {
+      "file": "10098.step",
+      "framed_rigid_motion": {
+        "absent": 0,
+        "absent_by_family": {},
+        "baseline": 5,
+        "introduced": 1,
+        "introduced_by_family": {
+          "slot": 1
+        },
+        "reclassified": 0,
+        "same_by_family": {
+          "boss": 1,
+          "hole": 2,
+          "pocket": 1,
+          "prismatic_pocket": 1
+        },
+        "same_family": 5,
+        "transitions": {}
+      },
+      "legacy_to_framed_baseline": {
+        "absent": 1,
+        "absent_by_family": {
+          "slot": 1
+        },
+        "baseline": 6,
+        "introduced": 0,
+        "introduced_by_family": {},
+        "reclassified": 0,
+        "same_by_family": {
+          "boss": 1,
+          "hole": 2,
+          "pocket": 1,
           "prismatic_pocket": 1
         },
         "same_family": 5,
@@ -2599,6 +2639,41 @@
       }
     },
     {
+      "file": "12736.step",
+      "framed_rigid_motion": {
+        "absent": 0,
+        "absent_by_family": {},
+        "baseline": 5,
+        "introduced": 0,
+        "introduced_by_family": {},
+        "reclassified": 0,
+        "same_by_family": {
+          "angled_step": 2,
+          "pocket": 2,
+          "prismatic_pocket": 1
+        },
+        "same_family": 5,
+        "transitions": {}
+      },
+      "legacy_to_framed_baseline": {
+        "absent": 1,
+        "absent_by_family": {
+          "slot": 1
+        },
+        "baseline": 6,
+        "introduced": 0,
+        "introduced_by_family": {},
+        "reclassified": 0,
+        "same_by_family": {
+          "angled_step": 2,
+          "pocket": 2,
+          "prismatic_pocket": 1
+        },
+        "same_family": 5,
+        "transitions": {}
+      }
+    },
+    {
       "file": "12772.step",
       "framed_rigid_motion": {
         "absent": 0,
@@ -2674,7 +2749,7 @@
   ],
   "presentation": "X30 then translation (173, -91, 42)",
   "raw_rigid_motion": {
-    "absent": 1566,
+    "absent": 1571,
     "absent_by_family:angled_step": 140,
     "absent_by_family:chamfer": 87,
     "absent_by_family:channel": 55,
@@ -2682,8 +2757,8 @@
     "absent_by_family:plate": 231,
     "absent_by_family:pocket": 507,
     "absent_by_family:prismatic_pocket": 230,
-    "absent_by_family:slot": 146,
-    "baseline": 2779,
+    "absent_by_family:slot": 151,
+    "baseline": 2784,
     "introduced": 7,
     "introduced_by_family:pocket": 1,
     "introduced_by_family:prismatic_pocket": 4,
@@ -2699,11 +2774,11 @@
   "schema": 1,
   "selection": "first 500 STEP filenames, lexical ascending",
   "timings": {
-    "frame_inference_seconds": 12.140914,
-    "framed_recognition_seconds": 434.117465,
-    "import_seconds": 24.89179,
-    "normalization_seconds": 4.215431,
-    "raw_recognition_seconds": 409.754936
+    "frame_inference_seconds": 14.122844,
+    "framed_recognition_seconds": 498.974891,
+    "import_seconds": 27.584254,
+    "normalization_seconds": 4.999739,
+    "raw_recognition_seconds": 479.760356
   },
-  "wall_seconds": 892.157046
+  "wall_seconds": 1032.919411
 }

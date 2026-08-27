@@ -25,7 +25,6 @@ from b123d_recognisers._recess_core import (
     _recognise_pockets_one,
     _recognise_slots_one,
     _slot_proposals_one,
-    _width_exceeds_length,
 )
 from b123d_recognisers._recess_faces import (
     _PRISM_PROBE_FLOOR,
@@ -287,12 +286,6 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
         )
         == 1.0
     )
-
-
-def test_nominal_square_recess_ignores_final_bit_span_drift() -> None:
-    assert not _width_exceeds_length(1.0, 1.0 - 2e-15)
-    assert not _width_exceeds_length(1.0 + _PRISM_PROBE_FLOOR, 1.0)
-    assert _width_exceeds_length(1.0 + _PRISM_PROBE_FLOOR * 1.01, 1.0)
 
 
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:

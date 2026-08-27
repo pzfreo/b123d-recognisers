@@ -60,7 +60,9 @@ Before acceptance and public exposure, a revised implementation must:
 - replace the world-based positive-sign convention with geometry-established orientation,
   explicitly represent the sign gauge, or prove recogniser invariance across every admissible
   sign choice;
-- eliminate or deliberately tolerance-specify the remaining introduced Slot fragment;
+- preserve legacy recess semantics and publish the remaining 10098 Slot fragment as a bounded
+  opt-in numerical limitation unless a frame-scoped policy can eliminate it without changing the
+  legacy route;
 - demonstrate deterministic results on the supported Linux, macOS and Windows CI matrix;
 - repeat the named 500-model development evaluation with a checked-in machine report; and
 - keep legacy public tests and goldens unchanged.

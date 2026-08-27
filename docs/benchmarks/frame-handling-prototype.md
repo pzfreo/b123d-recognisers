@@ -49,16 +49,19 @@ or below the coordinate floor as unable to prove void and fails that candidate c
 | --- | ---: | ---: | ---: | ---: | ---: |
 | local baseline vs independently framed X30+T | 2,750 | **2,750 (100%)** | 0 | 0 | 1 |
 
-The production rerun retains 2,748/2,748 framed occurrences (100%), with no reclassification,
-absence, introduction, refusal or error. All 500 solids establish a `FULL` frame. Its machine
-report is [frame-corpus-500-production.json](frame-corpus-500-production.json); the original spike
-report remains alongside it rather than being rewritten.
+The production rerun retains 2,751/2,751 framed baseline occurrences, with no reclassification,
+absence, refusal or error, and introduces the one Slot described below. All 500 solids establish a
+`FULL` frame. Its machine report is
+[frame-corpus-500-production.json](frame-corpus-500-production.json); the original spike report
+remains alongside it rather than being rewritten.
 
-The former `10098.step` difference was traced to an exact `width > length` comparison on a nominally
-square recess. Width may exceed length by only a final-bit placement drift. The predicate now uses
-the package coordinate floor, with boundary tests; the focused model retains the same five
-occurrences and defining faces in both presentations. The complete 500-model report is repeated as
-a production gate rather than silently editing the earlier measurement.
+`10098.step` still introduces one Slot fragment in the moved presentation. It is caused by an exact
+`width > length` distinction on a nominally square floored recess whose evaluated spans differ by
+1.8e-15 after placement. Applying even a small model-length tolerance globally changes two reviewed
+legacy Slot claims; a bounded ULP allowance has the same effect because those legacy candidates are
+also numerically square. The release therefore preserves legacy semantics and publishes this as a
+known opt-in limitation rather than hiding a regression. Framed recognition is not advertised as
+byte-identical under every rigid motion.
 
 Raw X30+T retains 1,166/2,784 occurrences (41.9%), reclassifies 47, loses 1,571 and introduces
 seven. Framed normalization therefore recovers every raw baseline occurrence on the same named
@@ -75,10 +78,10 @@ closed polygon sections; incompatible projections still fail closed.
 
 ## Runtime
 
-For the production 500-model pass, frame inference took 12.14 seconds, placement normalization
-4.22 seconds, framed recognition 434.12 seconds and raw recognition 409.75 seconds. Frame work is
-3.77% of framed recognition time; paired framed recognition including frame work is 9.93% slower
-than the paired raw route. Import time (24.89 seconds) is excluded from both. These are development
+For the final production 500-model pass, frame inference took 14.12 seconds, placement normalization
+5.00 seconds, framed recognition 498.97 seconds and raw recognition 479.76 seconds. Frame work is
+3.83% of framed recognition time; paired framed recognition including frame work is 8.00% slower
+than the paired raw route. Import time (27.58 seconds) is excluded from both. These are development
 machine measurements, not a latency guarantee.
 
 ## Recommendation
@@ -87,7 +90,8 @@ machine measurements, not a latency guarantee.
 behavior. Do not make the placement implementation default. Its value is clear:
 same-family retention rises from roughly 42% raw to 100% framed on real development data, while
 all golden cases become invariant. Its remaining work is equally clear: remove or tolerance-specify
-the one introduced Slot fragment and axis-sign semantics are now addressed; the remaining release
-gate is repeated corpus, performance, packaging and cross-platform evidence.
+axis-sign semantics are addressed. The one introduced Slot fragment is an explicitly accepted
+opt-in numerical limitation because eliminating it without a frame-scoped policy changes legacy
+recognition. The remaining release gate is packaging and cross-platform evidence.
 
 The authoritative proposed contract and acceptance gate are in ADR 0011.
