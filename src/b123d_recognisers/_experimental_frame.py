@@ -14,9 +14,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import cast
 
-from build123d import Compound, Pos, Shape
+from build123d import Location, Shape
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Trsf
@@ -246,29 +245,24 @@ def _normalize_part(part: Part, frame: PartFrame) -> Shape:
         values[0],
         values[1],
         values[2],
-        0.0,
+        offsets[0],
         values[3],
         values[4],
         values[5],
-        0.0,
+        offsets[1],
         values[6],
         values[7],
         values[8],
-        0.0,
+        offsets[2],
     )
-    # Clone only for the rotational change. Applying rotation and translation in one general
-    # transform perturbs coincident multi-solid plane groups differently on OCCT, which can make
-    # Plate attribution assign opposite role groups to different bodies. Translation is an exact
-    # TopLoc placement over the rotated topology and therefore keeps body authority intact.
-    transformed_solids = tuple(
-        Compound.cast(BRepBuilderAPI_Transform(solid.wrapped, transform, True).Shape())
-        for solid in part.solids()
-    )
-    if not transformed_solids:
+    if not part.solids():
         # Material-origin inference already excludes this, so reaching it means the caller
         # changed the shape concurrently between inference and normalization.
         raise ValueError("part has no solids at normalization")
-    return Pos(*offsets) * Compound(transformed_solids)
+    # A rigid TopLoc placement changes evaluated coordinates without rebuilding topology. A
+    # BRepBuilderAPI copied transform perturbs body ancestry and threshold geometry differently
+    # across OCCT platforms (most visibly Plate attribution on macOS).
+    return Location(gp_trsf=transform) * part
 
 
 def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> FramedRecognition:
