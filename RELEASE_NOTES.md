@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.4.1
+
+- **Fixed plate evidence when separate solids have coincident planes.** Plate discovery still
+  groups coplanar faces for its public value result, but attributed recognition now partitions
+  each low/high role by solid ownership and retains the unique solid proved on both sides. This
+  prevents an unrelated face on the same plane from contaminating an otherwise valid plate
+  occurrence. Multiple possible common solids remain ambiguous and fail closed.
+
 ## 0.4.0
 
 - **Added an experimental, graph-independent face-inspection contract.**

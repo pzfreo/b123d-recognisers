@@ -232,6 +232,31 @@ def test_separated_valid_bodies_retain_distinct_occurrence_identity() -> None:
         assert ledger.defining_of(left).isdisjoint(ledger.defining_of(right))
 
 
+def test_coincident_planes_from_other_solids_do_not_contaminate_plate_roles() -> None:
+    part = (
+        Box(80, 60, 10)
+        + Pos(0, -25, 30) * Box(80, 10, 40)
+        + Pos(0, 25, 30) * Box(80, 10, 40)
+    )
+
+    ledger = ClaimLedger(FaceGraph(part))
+    public = recognise_plates(part)
+    records = _discover_plates(part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.PLATES).candidates
+
+    assert [(record.axis, record.lo, record.hi) for record in records] == [
+        ("y", -30.0, -20.0),
+        ("y", 20.0, 30.0),
+        ("z", -5.0, 5.0),
+    ]
+    assert records == public
+    assert len(candidates) == len(records)
+    assert all(
+        ledger.graph.common_valid_solid(ledger.defining_of(candidate)) is not None
+        for candidate in candidates
+    )
+
+
 @pytest.mark.parametrize("offset", [(0, 0, 0), (0.2, 0.2, 0.2)])
 def test_coincident_and_near_interleaved_bodies_refuse(offset) -> None:
     part = Compound([build_fixture(), Pos(*offset) * copy.deepcopy(build_fixture())])

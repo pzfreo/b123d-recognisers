@@ -43,7 +43,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._adjacency import FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
@@ -245,6 +245,24 @@ def _discover_plates(
                 high = frozenset(writer.graph.require_node(face) for face in proposal.high_faces)
                 if not low or not high or low & high:
                     raise _PlateAttributionError("Plate role groups are empty or overlap")
+                low_by_solid: dict[SolidRef, set[FaceNode]] = {}
+                high_by_solid: dict[SolidRef, set[FaceNode]] = {}
+                for role, owner_groups in ((low, low_by_solid), (high, high_by_solid)):
+                    for node in role:
+                        solid = writer.graph.common_valid_solid((node,))
+                        if solid is None:
+                            raise _PlateAttributionError(
+                                "Plate role face has no unambiguous valid solid"
+                            )
+                        owner_groups.setdefault(solid, set()).add(node)
+                shared_solids = low_by_solid.keys() & high_by_solid.keys()
+                if len(shared_solids) != 1:
+                    raise _PlateAttributionError(
+                        "Plate role groups do not identify one common solid"
+                    )
+                solid = next(iter(shared_solids))
+                low = frozenset(low_by_solid[solid])
+                high = frozenset(high_by_solid[solid])
                 key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
                 bound.setdefault(key, {}).setdefault((low, high), proposal)
             if any(len(role_pairs) > 1 for role_pairs in bound.values()):
