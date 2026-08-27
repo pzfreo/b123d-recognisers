@@ -124,7 +124,7 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     ),
     "_experimental_frame": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "private #274 spike measures original analytic direction evidence for frame inference",
+        "private issue 274 spike measures original analytic direction evidence for frame inference",
     ),
     "flats": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar flat family gate"),
     "grooves": (
@@ -226,7 +226,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     ),
     "_experimental_frame:infer_part_frame:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "private #274 frame inference reads original plane and cylinder direction evidence",
+        "private issue 274 frame inference reads original plane and cylinder direction evidence",
     ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (
