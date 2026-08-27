@@ -200,9 +200,14 @@ def evaluate_goldens() -> dict[str, object]:
             continue
         rows = {}
         for rotation in ROTATIONS:
-            rotated = part.rotate(rotation.axis, rotation.degrees)
-            normalized_rotated, _rotated_frame = normalize_part(rotated)
-            occurrences = _occurrences(normalized_rotated)
+            try:
+                rotated = part.rotate(rotation.axis, rotation.degrees)
+                normalized_rotated, _rotated_frame = normalize_part(rotated)
+                occurrences = _occurrences(normalized_rotated)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"golden {fixture!r} failed after {rotation.name} normalization"
+                ) from exc
             pairs, absent, introduced = _match(baseline, occurrences)
             same = sum(baseline[left].family == occurrences[right].family for left, right in pairs)
             row = {
