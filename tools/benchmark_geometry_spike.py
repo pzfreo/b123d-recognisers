@@ -16,7 +16,7 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._blend_view import BlendCollapseIndex
 from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
-from b123d_recognisers.experimental_geometry import AnalyticSurface, GeometryGraph
+from b123d_recognisers.experimental_geometry import AnalyticSurface, GeometryGraph, inspect_face
 from b123d_recognisers.fillets import fillet_anchor
 
 
@@ -61,11 +61,11 @@ def _direct_fillet(face) -> tuple[float, tuple[float, float, float]]:
 
 
 def _facade_fillet(face) -> tuple[float, tuple[float, float, float]]:
-    graph = GeometryGraph(face)
-    ref = graph.ref(face)
-    fact = graph.surface_fact(ref)
+    inspection = inspect_face(face)
+    fact = inspection.surface
     assert isinstance(fact, AnalyticSurface)
-    return fact.parameters[6], graph.surface_anchor(ref)
+    assert inspection.anchor is not None
+    return fact.parameters[6], inspection.anchor
 
 
 def _run(name: str, iterations: int) -> dict[str, float | str]:

@@ -103,6 +103,14 @@ SurfaceFact = AnalyticSurface | RefusedSurface
 
 
 @dataclass(frozen=True, slots=True)
+class FaceInspection:
+    """One standalone face's closed analytic result and optional surface anchor."""
+
+    surface: SurfaceFact
+    anchor: tuple[float, float, float] | None
+
+
+@dataclass(frozen=True, slots=True)
 class BlendFact:
     ref: BlendRef
     blend_faces: frozenset[FaceRef]
@@ -133,23 +141,35 @@ class GeometryGraph:
     invalidates the facade and is unsupported during a run.
     """
 
-    def __init__(self, part: Part | None, *, _graph: FaceGraph | None = None) -> None:
+    def __init__(
+        self,
+        part: Part | None,
+        *,
+        _graph: FaceGraph | None = None,
+        _surfaces: EffectiveSurfaceIndex | None = None,
+    ) -> None:
         if _graph is None and part is None:
             raise TypeError("GeometryGraph requires a part")
         self.__graph = FaceGraph(part) if _graph is None else _graph
         self.__authority = object()
         self.__refs = tuple(FaceRef(self.__authority, node) for node in self.__graph.nodes)
         self.__by_node = dict(zip(self.__graph.nodes, self.__refs, strict=True))
-        self.__surfaces = EffectiveSurfaceIndex(self.__graph)
+        self.__surfaces = (
+            EffectiveSurfaceIndex(self.__graph) if _surfaces is None else _surfaces
+        )
+        if self.__surfaces.run_token is not self.__graph.run_token:
+            raise ValueError("surface index and geometry graph belong to different runs")
         self.__blends: BlendCollapseIndex | None = None
         self.__blend_refs: dict[BlendChain, BlendRef] = {}
         self.__boundary_refs: dict[object, BoundaryRef] = {}
 
     @classmethod
-    def _from_graph(cls, graph: FaceGraph) -> GeometryGraph:
+    def _from_graph(
+        cls, graph: FaceGraph, surfaces: EffectiveSurfaceIndex | None = None
+    ) -> GeometryGraph:
         """Package-private adapter for an existing aggregate recognition run."""
 
-        return cls(None, _graph=graph)
+        return cls(None, _graph=graph, _surfaces=surfaces)
 
     @property
     def faces(self) -> tuple[FaceRef, ...]:
@@ -186,11 +206,21 @@ class GeometryGraph:
             self.__by_node[node] for node in self.__graph.smooth_region(self._node(ref))
         )
 
-    def bounds(self, ref: FaceRef):
+    def bounds(
+        self, ref: FaceRef
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         return self.__graph.bounds(self._node(ref))
 
     def normal(self, ref: FaceRef) -> tuple[float, float, float] | None:
         return self.__graph.normal(self._node(ref))
+
+    def is_planar(self, ref: FaceRef) -> bool:
+        return self.__graph.is_planar(self._node(ref))
+
+    def _uses_graph(self, graph: object) -> bool:
+        """Internal same-run binding check for the evidence adapter."""
+
+        return graph is self.__graph
 
     def surface_fact(self, ref: FaceRef) -> SurfaceFact:
         fact = self.__surfaces.fact(self._node(ref))
@@ -301,6 +331,24 @@ class GeometryGraph:
         return tuple(result)
 
 
+def inspect_face(face: FaceLike) -> FaceInspection:
+    """Inspect one face without making the caller construct or retain a graph.
+
+    The implementation deliberately reuses the same effective-surface derivation as
+    ``GeometryGraph``.  The API is graph-independent: no graph or run-local handle
+    enters or leaves the call.
+    """
+
+    geometry = GeometryGraph(face)
+    ref = geometry.ref(face)
+    surface = geometry.surface_fact(ref)
+    try:
+        anchor = geometry.surface_anchor(ref)
+    except ValueError:
+        anchor = None
+    return FaceInspection(surface, anchor)
+
+
 __all__ = [
     "AnalyticSurface",
     "BlendFact",
@@ -308,6 +356,7 @@ __all__ = [
     "BoundaryRef",
     "CollapsedBridge",
     "FaceRef",
+    "FaceInspection",
     "GeometryGraph",
     "GeometryProvenance",
     "OrientationCapability",
@@ -316,4 +365,5 @@ __all__ = [
     "SurfaceKind",
     "SurfaceProvenance",
     "SurfaceRefusalReason",
+    "inspect_face",
 ]

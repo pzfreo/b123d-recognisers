@@ -75,6 +75,14 @@ MODULE_SEAM_EDGES = {
     "_dispositions": {"_candidates"},
     "_diagnostics": {"_candidates", "_dispositions", "chamfers"},
     "_claims": {"_adjacency", "_candidates"},
+    # One aggregate run constructs the graph-bound facade and shares its surface index.
+    "_run": {
+        "_adjacency",
+        "_cylinder_substrate",
+        "_effective_surfaces",
+        "_typing",
+        "experimental_geometry",
+    },
     # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
     # three other modules each derived separately before it was lifted.
     "_cylinder_substrate": {"_adjacency", "_geometry", "_typing"},
@@ -195,12 +203,18 @@ MODULE_SEAM_EDGES = {
         "_effective_surfaces",
         "_typing",
     },
-    "polygonal_bosses": {
-        "_adjacency",
-        "_analytic_surfaces",
+    # The only graph/evidence translation seam. Feature consumers receive facade refs and
+    # cannot import the concrete graph or writer themselves.
+    "_geometry_evidence": {
         "_candidates",
         "_claims",
+        "_typing",
+        "experimental_geometry",
+    },
+    "polygonal_bosses": {
+        "_candidates",
         "_geometry",
+        "_geometry_evidence",
         "_record",
         "_typing",
         "experimental_geometry",
@@ -520,6 +534,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         "part",
         "face_edges",
         "graph",
+        "geometry",
         "surfaces",
         "cylinders",
         "rotational",
@@ -811,7 +826,11 @@ def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     } == {"experimental_geometry"}
     assert {
         module for module, dependencies in graph.items() if "experimental_geometry" in dependencies
-    } == {"polygonal_bosses"}
+    } == {"_geometry_evidence", "_run", "polygonal_bosses"}
+    assert not (
+        graph["polygonal_bosses"]
+        & {"_adjacency", "_analytic_surfaces", "_blend_view", "_effective_surfaces"}
+    )
 
 
 def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:

@@ -9,6 +9,7 @@ import pytest
 from build123d import (
     Box,
     Cylinder,
+    GeomType,
     Pos,
     RegularPolygon,
     Rot,
@@ -32,10 +33,12 @@ from b123d_recognisers.experimental_geometry import (
     BlendRef,
     BoundaryRef,
     CollapsedBridge,
+    FaceInspection,
     FaceRef,
     GeometryGraph,
     GeometryProvenance,
     RefusedSurface,
+    inspect_face,
 )
 
 
@@ -91,6 +94,7 @@ def test_projected_value_schemas_do_not_leak_private_runtime_types() -> None:
         BlendFact,
         GeometryProvenance,
         CollapsedBridge,
+        FaceInspection,
     )
 
     assert all(
@@ -122,6 +126,18 @@ def test_surface_fact_and_anchor_support_the_draftwright_fillet_workflow() -> No
     assert Vertex(*anchor).distance_to(graph.face(ref)) < 1e-7
 
 
+def test_standalone_face_inspection_exposes_no_graph_handle() -> None:
+    face = Cylinder(8, 20).faces().filter_by(GeomType.CYLINDER)[0]
+
+    inspection = inspect_face(face)
+
+    assert isinstance(inspection.surface, AnalyticSurface)
+    assert inspection.surface.parameters[6] == pytest.approx(8)
+    assert inspection.anchor is not None
+    assert Vertex(*inspection.anchor).distance_to(face) < 1e-7
+    assert set(typing.get_type_hints(FaceInspection)) == {"surface", "anchor"}
+
+
 def test_recovered_surface_retains_recovery_and_orientation_provenance() -> None:
     face = _as_bspline_face(max(Box(10, 5, 2).faces(), key=lambda item: item.area))
     graph = GeometryGraph(face)
@@ -132,6 +148,10 @@ def test_recovered_surface_retains_recovery_and_orientation_provenance() -> None
     assert fact.provenance.value == "recovered"
     assert fact.orientation.value == "recovered-unoriented"
 
+    inspected = inspect_face(face)
+    assert inspected.surface == fact
+    assert inspected.anchor is not None
+
 
 def test_unsupported_surface_is_a_closed_refusal_value() -> None:
     graph = GeometryGraph(Torus(8, 2))
@@ -139,6 +159,9 @@ def test_unsupported_surface_is_a_closed_refusal_value() -> None:
     refusals = [graph.surface_fact(ref) for ref in graph.faces]
     assert any(isinstance(fact, RefusedSurface) for fact in refusals)
     assert all(isinstance(fact, (AnalyticSurface, RefusedSurface)) for fact in refusals)
+
+    inspected = inspect_face(Torus(8, 2).faces()[0])
+    assert isinstance(inspected.surface, RefusedSurface)
 
 
 def test_blend_collapse_retains_complete_opaque_provenance() -> None:

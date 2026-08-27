@@ -29,6 +29,7 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
+from b123d_recognisers.experimental_geometry import GeometryGraph
 from b123d_recognisers.polygonal_bosses import PolygonalStock, _discover_polygonal_stock
 from b123d_recognisers.result import _take_inventory
 from tests.golden._common import hex_prism
@@ -138,7 +139,9 @@ def _claim(part, **kwargs):
     ledger = ClaimLedger(FaceGraph(part))
     expected_record, expected, solid = _fresh_oracle(part, ledger.graph)
     public = recognise_polygonal_stock(part, **kwargs)
-    records = _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer, **kwargs)
+    records = _discover_polygonal_stock(
+        part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer, **kwargs
+    )
     assert public == [expected_record]
     assert records == [expected_record]
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
@@ -212,6 +215,7 @@ def test_shallow_compound_wrapper_keeps_the_one_solid_positive() -> None:
 class _ThresholdGraph:
     def __init__(self, *, normal_z: float, z_bounds: tuple[float, float]) -> None:
         self.nodes = (FaceNode(0),)
+        self.faces = self.nodes
         self._normal_z = normal_z
         self._z_bounds = z_bounds
 
@@ -422,20 +426,21 @@ def test_direct_common_and_ambiguous_cap_paths_are_frozen() -> None:
 def test_ring_degree_two_guard_rejects_an_extra_side_neighbour(monkeypatch) -> None:
     part = build_fixture()
     graph = FaceGraph(part)
-    sides = module._vertical_side_faces(graph, module._TOL)
-    original = graph.neighbours
+    geometry = GeometryGraph._from_graph(graph)
+    sides = module._vertical_side_faces(geometry, module._TOL)
+    original = GeometryGraph.neighbours
 
-    def neighbours(node):
-        found = set(original(node))
+    def neighbours(self, node):
+        found = set(original(self, node))
         if node is sides[0]:
             found.add(sides[3])
         elif node is sides[3]:
             found.add(sides[0])
         return tuple(found)
 
-    monkeypatch.setattr(graph, "neighbours", neighbours)
+    monkeypatch.setattr(GeometryGraph, "neighbours", neighbours)
     assert module._recognise_one(
-        part, tol=None, angle_tol=math.radians(2), whole_stock=True, graph=graph
+        part, tol=None, angle_tol=math.radians(2), whole_stock=True, graph=geometry
     ) == []
 
 
@@ -496,8 +501,10 @@ def test_wrong_graph_writer_inventory_and_body_fail_before_issue(monkeypatch) ->
     part = build_fixture()
     local = FaceGraph(part)
     foreign = ClaimLedger(FaceGraph(Pos(100, 0, 0) * part))
-    with pytest.raises(ValueError, match="one authority"):
-        _discover_polygonal_stock(part, graph=local, writer=foreign.writer)
+    with pytest.raises(ValueError, match="different runs"):
+        _discover_polygonal_stock(
+            part, graph=GeometryGraph._from_graph(local), writer=foreign.writer
+        )
     assert foreign.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
     ledger = ClaimLedger(local)
@@ -523,7 +530,9 @@ def test_foreign_translated_graph_and_late_cap_binding_fail_without_prefix(monke
     part = build_fixture()
     foreign = ClaimLedger(FaceGraph(Pos(100, 0, 0) * part))
     with pytest.raises(ValueError, match="different part|does not exactly match|does not belong"):
-        _discover_polygonal_stock(part, graph=foreign.graph, writer=foreign.writer)
+        _discover_polygonal_stock(
+            part, graph=GeometryGraph._from_graph(foreign.graph), writer=foreign.writer
+        )
     assert foreign.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
     ledger = ClaimLedger(FaceGraph(part))
@@ -539,7 +548,9 @@ def test_foreign_translated_graph_and_late_cap_binding_fail_without_prefix(monke
 
     monkeypatch.setattr(ledger.graph, "require_node", fail_on_last_cap)
     with pytest.raises(ValueError, match="late cap identity"):
-        _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
+        _discover_polygonal_stock(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
     assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
 
@@ -567,7 +578,9 @@ def test_copied_translated_or_duplicate_boundary_identity_fails_atomically(
 
     monkeypatch.setattr(module, "_recognise_one", corrupted)
     with pytest.raises(ValueError, match="different part|complete eight-face|no bbox"):
-        _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
+        _discover_polygonal_stock(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
     assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
 
@@ -583,7 +596,9 @@ def test_late_second_inventory_identity_failure_does_not_publish_first(monkeypat
 
     monkeypatch.setattr(module, "_recognise_one", two_proposals)
     with pytest.raises(ValueError, match="different part|no bbox"):
-        _discover_polygonal_stock(part, graph=ledger.graph, writer=ledger.writer)
+        _discover_polygonal_stock(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
     assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
 
 def test_terminal_status_identity_and_not_counted_census_are_truthful() -> None:
@@ -651,7 +666,7 @@ def test_private_core_constructor_and_cap_identity_paths_are_closed() -> None:
     assert isinstance(keywords["writer"], ast.Attribute) and keywords["writer"].attr == "writer"
     assert isinstance(keywords["writer"].value, ast.Name)
     assert keywords["writer"].value.id == "s"
-    assert isinstance(keywords["graph"], ast.Attribute) and keywords["graph"].attr == "graph"
+    assert isinstance(keywords["graph"], ast.Attribute) and keywords["graph"].attr == "geometry"
     assert isinstance(keywords["graph"].value, ast.Attribute)
     assert keywords["graph"].value.attr == "context"
     assert isinstance(keywords["graph"].value.value, ast.Name)

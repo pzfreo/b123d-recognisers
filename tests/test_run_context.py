@@ -144,8 +144,8 @@ def test_a_graph_over_the_wrong_solid_is_refused_rather_than_answered():
     so the check is at the door — the same guard `_rings` applies to its own caller.
     """
 
-    from b123d_recognisers._adjacency import FaceGraph
+    from b123d_recognisers.experimental_geometry import GeometryGraph
 
     hexagon = _golden("hexagonal_passage")
     with pytest.raises(ValueError):
-        r.recognise_polygonal_bosses(hexagon, graph=FaceGraph(Box(30, 30, 10)))
+        r.recognise_polygonal_bosses(hexagon, graph=GeometryGraph(Box(30, 30, 10)))

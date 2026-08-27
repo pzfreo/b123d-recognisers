@@ -216,6 +216,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "bounded facade anchor over the same graph-owned original face",
     ),
+    "experimental_geometry:is_planar:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "facade projection of the graph-owned planar query",
+    ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,

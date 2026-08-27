@@ -37,6 +37,7 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers.experimental_geometry import GeometryGraph
 from b123d_recognisers.polygonal_bosses import _discover_polygonal_bosses
 from b123d_recognisers.result import _take_inventory
 
@@ -121,7 +122,9 @@ def _irregular_hexagon(radius=20.0, height=30.0):
 def _claim(part, **kwargs):
     ledger = ClaimLedger(FaceGraph(part))
     public = recognise_polygonal_bosses(part, **kwargs)
-    records = _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer, **kwargs)
+    records = _discover_polygonal_bosses(
+        part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer, **kwargs
+    )
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     candidates = ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates
     assert len(candidates) == len(records)
@@ -605,7 +608,9 @@ def test_corrupted_expansion_refuses_before_candidate_publication(monkeypatch) -
 
     monkeypatch.setattr(CollapsedGraphView, "expand_arc", corrupted)
     with pytest.raises(ValueError, match="lost original provenance"):
-        _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer)
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
@@ -625,7 +630,9 @@ def test_corrupted_expansion_occurrence_multiset_refuses_atomically(monkeypatch,
         recognise_polygonal_bosses(part)
     ledger = ClaimLedger(FaceGraph(part))
     with pytest.raises(ValueError, match="lost original provenance"):
-        _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer)
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
@@ -653,7 +660,12 @@ def test_consumer_refuses_ineligible_chain_without_candidate_prefix(monkeypatch,
     monkeypatch.setattr(BlendCollapseIndex, "chains", changed)
     assert recognise_polygonal_bosses(part) == []
     ledger = ClaimLedger(FaceGraph(part))
-    assert _discover_polygonal_bosses(part, graph=ledger.graph, writer=ledger.writer) == []
+    assert (
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(ledger.graph), writer=ledger.writer
+        )
+        == []
+    )
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
@@ -674,9 +686,14 @@ def test_non_cylinder_blend_fact_refuses_full_consumer_path(monkeypatch) -> None
         return fact
 
     monkeypatch.setattr(EffectiveSurfaceIndex, "fact", changed)
-    assert recognise_polygonal_bosses(part, graph=graph) == []
+    assert recognise_polygonal_bosses(part, graph=GeometryGraph._from_graph(graph)) == []
     ledger = ClaimLedger(graph)
-    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert (
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(graph), writer=ledger.writer
+        )
+        == []
+    )
     assert len(hit_queries) == 2
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
@@ -709,10 +726,15 @@ def test_unequal_support_span_refuses_after_chain_issuance(monkeypatch) -> None:
 
     monkeypatch.setattr(BlendCollapseIndex, "chains", chains)
     monkeypatch.setattr(FaceGraph, "bounds", bounds)
-    assert recognise_polygonal_bosses(part, graph=graph) == []
+    assert recognise_polygonal_bosses(part, graph=GeometryGraph._from_graph(graph)) == []
     active = False
     ledger = ClaimLedger(graph)
-    assert _discover_polygonal_bosses(part, graph=graph, writer=ledger.writer) == []
+    assert (
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(graph), writer=ledger.writer
+        )
+        == []
+    )
     assert hit_generations == {1, 2}
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
@@ -845,28 +867,37 @@ def test_wrong_discovery_graph_and_foreign_writer_refuse_without_prefix() -> Non
     part = _attached()
     foreign = ClaimLedger(FaceGraph(Box(20, 20, 20)))
     with pytest.raises(ValueError):
-        _discover_polygonal_bosses(part, graph=foreign.graph, writer=foreign.writer)
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(foreign.graph), writer=foreign.writer
+        )
     assert foreign.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
     local = FaceGraph(part)
     other = ClaimLedger(FaceGraph(part))
-    with pytest.raises(ValueError, match="does not match"):
-        _discover_polygonal_bosses(part, graph=local, writer=other.writer)
+    with pytest.raises(ValueError, match="different runs"):
+        _discover_polygonal_bosses(
+            part, graph=GeometryGraph._from_graph(local), writer=other.writer
+        )
     assert other.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
     superset = Compound([part, Pos(150, 0, 0) * _attached()])
     superset_ledger = ClaimLedger(FaceGraph(superset))
     with pytest.raises(ValueError, match="exactly match"):
-        _discover_polygonal_bosses(part, graph=superset_ledger.graph, writer=superset_ledger.writer)
+        _discover_polygonal_bosses(
+            part,
+            graph=GeometryGraph._from_graph(superset_ledger.graph),
+            writer=superset_ledger.writer,
+        )
     assert superset_ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
 def test_supplied_single_graph_and_multi_solid_local_graph_routes() -> None:
     single = _attached()
     graph = FaceGraph(single)
+    geometry = GeometryGraph._from_graph(graph)
     ledger = ClaimLedger(graph)
-    public = recognise_polygonal_bosses(single, graph=graph)
-    records = _discover_polygonal_bosses(single, graph=graph, writer=ledger.writer)
+    public = recognise_polygonal_bosses(single, graph=geometry)
+    records = _discover_polygonal_bosses(single, graph=geometry, writer=ledger.writer)
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     _assert_six_side_role(
         single,
@@ -943,7 +974,7 @@ def test_private_core_has_one_production_writer_caller_and_one_boss_constructor(
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
     assert isinstance(writer.value, ast.Name) and writer.value.id == "s"
     graph = keywords["graph"]
-    assert isinstance(graph, ast.Attribute) and graph.attr == "graph"
+    assert isinstance(graph, ast.Attribute) and graph.attr == "geometry"
     assert isinstance(graph.value, ast.Attribute) and graph.value.attr == "context"
     assert isinstance(graph.value.value, ast.Name) and graph.value.value.id == "s"
     assert [(path, len(call.args)) for path, call in constructors] == [("polygonal_bosses.py", 0)]

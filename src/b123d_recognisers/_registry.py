@@ -445,7 +445,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             lambda s: list(
                 _discover_polygonal_bosses(
                     s.context.part,
-                    graph=s.context.graph,
+                    graph=s.context.geometry,
                     writer=s.writer,
                 )
             )
@@ -464,7 +464,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
             lambda s: list(
                 _discover_polygonal_stock(
                     s.context.part,
-                    graph=s.context.graph,
+                    graph=s.context.geometry,
                     writer=s.writer,
                 )
             )
