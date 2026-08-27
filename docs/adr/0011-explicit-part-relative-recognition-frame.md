@@ -34,8 +34,8 @@ or default:
 5. Recognition still executes once through the existing registry and reconciliation stack. The
    boundary does not expose `GeometryGraph`, correspondence, candidates, or recogniser internals.
 
-The current copied-OCCT-shape implementation remains experimental. It is evidence for the
-contract, not the production implementation selected by this ADR.
+The current topology-preserving placement implementation remains experimental. It is evidence for
+the contract, not a production implementation selected by this ADR.
 
 ## Evidence and gate
 
