@@ -118,6 +118,26 @@ MFTRCAD is evidence, not an oracle. Its feature-instance and relationship labels
 interactions and false negatives, but its taxonomy does not define this package's record contracts
 or reconciliation policy. Synthetic-corpus measurements remain separate from real-part evidence.
 
+The checked-in rigid-motion sweep at baseline `b03ba00` closes a separate synthetic-corpus blind
+spot. It validates face-by-face correspondence before matching accepted occurrences by defining
+evidence, so absence and reconciliation-driven family changes are measured rather than inferred
+from counts. Of 75 golden-corpus census records, Z30 retains 34 in-family, reclassifies 14 and loses
+27; X30 retains 29, reclassifies seven and loses 39; the X90 axis-permutation control retains all
+75. See `docs/benchmarks/rigid-motion-sweep.md` and its canonical JSON companion. These numbers
+order later F4b family work but do not themselves decide whether the supplied world frame is
+semantically meaningful or amend ADR 0001.
+
+A follow-on part-relative normalization prototype now tests that decision rather than stopping at
+measurement. Independently normalizing every original and rotated golden fixture retains all 75
+occurrences in-family at Z30, X30 and X90. On a deterministic 100-model MFCAD++ development sample,
+the 98 comparable X30 models improve from 217 same-family / 341 absent occurrences to 561
+same-family / one absent, at about 2.4% normalization overhead on a 20-model timing sample. This is
+strong evidence for continuing, but not a shipping decision: normalization changes 19 accepted
+fragments on the unrotated 100-model sample, four normalized rotation comparisons still differ,
+and two models trip legacy Passage compatibility. The public local-frame/free-axis contract and
+those reconciliation failures remain the exit gate. See
+`docs/benchmarks/frame-handling-prototype.md`.
+
 Exit gate: the scanner reproduces a documented baseline without changing source recognition code;
 the holdout stays sealed.
 

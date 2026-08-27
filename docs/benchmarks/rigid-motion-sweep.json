@@ -1,0 +1,941 @@
+{
+  "baseline_commit": "b03ba00ccc1970181580a55a6331332166ccb49c",
+  "fixtures": {
+    "angled_blind_step": {
+      "baseline_records": 2,
+      "rotations": {
+        "X30": {
+          "absent": 2,
+          "absent_by_family": {
+            "angled_step": 1,
+            "chamfer": 1
+          },
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "angled_step": 1,
+            "chamfer": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 2,
+          "absent_by_family": {
+            "angled_step": 1,
+            "chamfer": 1
+          },
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "blind_pockets_and_pocket_patterns": {
+      "baseline_records": 6,
+      "rotations": {
+        "X30": {
+          "absent": 6,
+          "absent_by_family": {
+            "pocket": 6
+          },
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 6,
+          "same_family": {
+            "pocket": 6
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 6,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {
+            "pocket->prismatic_pocket": 6
+          }
+        }
+      }
+    },
+    "bolt_circle_and_rectangular_grid": {
+      "baseline_records": 14,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 14,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 14,
+          "same_family": {
+            "hole": 12,
+            "hole_pattern": 2
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 14,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 14,
+          "same_family": {
+            "hole": 12,
+            "hole_pattern": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 14,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 14,
+          "same_family": {
+            "hole": 12,
+            "hole_pattern": 2
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "chamfers_fillets_and_flats": {
+      "baseline_records": 10,
+      "rotations": {
+        "X30": {
+          "absent": 8,
+          "absent_by_family": {
+            "chamfer": 4,
+            "fillet": 4
+          },
+          "baseline_records": 10,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "boss": 1,
+            "flat": 1
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 10,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 10,
+          "same_family": {
+            "boss": 1,
+            "chamfer": 4,
+            "fillet": 4,
+            "flat": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 8,
+          "absent_by_family": {
+            "chamfer": 4,
+            "fillet": 4
+          },
+          "baseline_records": 10,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "boss": 1,
+            "flat": 1
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "counterbored_and_countersunk_holes": {
+      "baseline_records": 3,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "countersink": 1,
+            "hole": 2
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "countersink": 1,
+            "hole": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "countersink": 1,
+            "hole": 2
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "double_d_bore": {
+      "baseline_records": 0,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "hexagonal_passage": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "passage": 1
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "passage": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "passage": 1
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "interrupted_and_cross_bores": {
+      "baseline_records": 2,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "hole": 2
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "hole": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "hole": 2
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "open_channels": {
+      "baseline_records": 4,
+      "rotations": {
+        "X30": {
+          "absent": 4,
+          "absent_by_family": {
+            "channel": 1,
+            "plate": 3
+          },
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 4,
+          "same_family": {
+            "channel": 1,
+            "plate": 3
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 4,
+          "absent_by_family": {
+            "channel": 1,
+            "plate": 3
+          },
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "plates_pads_levels_and_slanted_steps": {
+      "baseline_records": 4,
+      "rotations": {
+        "X30": {
+          "absent": 4,
+          "absent_by_family": {
+            "plate": 2,
+            "pocket": 2
+          },
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 4,
+          "same_family": {
+            "plate": 2,
+            "pocket": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 4,
+          "absent_by_family": {
+            "plate": 2,
+            "pocket": 2
+          },
+          "baseline_records": 4,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "polygonal_boss": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "plate": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "plate": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "plate": 1
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "polygonal_stock": {
+      "baseline_records": 0,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "repeating_radial_profile": {
+      "baseline_records": 0,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "simple_through_hole": {
+      "baseline_records": 2,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "boss": 1,
+            "hole": 1
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "boss": 1,
+            "hole": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "boss": 1,
+            "hole": 1
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "slanted_counterbore": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "hole": 1
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "hole": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "hole": 1
+          },
+          "transitions": {}
+        }
+      }
+    },
+    "slanted_steps": {
+      "baseline_records": 2,
+      "rotations": {
+        "X30": {
+          "absent": 2,
+          "absent_by_family": {
+            "pocket": 2
+          },
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 2,
+          "same_family": {
+            "pocket": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 2,
+          "absent_by_family": {
+            "pocket": 2
+          },
+          "baseline_records": 2,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "straight_and_obround_slots": {
+      "baseline_records": 5,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "slot": 1
+          },
+          "baseline_records": 5,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 4,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {
+            "slot->passage": 4
+          }
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 5,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 5,
+          "same_family": {
+            "slot": 5
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 1,
+          "absent_by_family": {
+            "slot": 1
+          },
+          "baseline_records": 5,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 4,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {
+            "slot->passage": 4
+          }
+        }
+      }
+    },
+    "traversal_order": {
+      "baseline_records": 9,
+      "rotations": {
+        "X30": {
+          "absent": 6,
+          "absent_by_family": {
+            "plate": 6
+          },
+          "baseline_records": 9,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 3,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {
+            "slot->passage": 3
+          }
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 9,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 9,
+          "same_family": {
+            "plate": 6,
+            "slot": 3
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 6,
+          "absent_by_family": {
+            "plate": 6
+          },
+          "baseline_records": 9,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 3,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {
+            "slot->passage": 3
+          }
+        }
+      }
+    },
+    "triangular_and_hex_pockets": {
+      "baseline_records": 3,
+      "rotations": {
+        "X30": {
+          "absent": 3,
+          "absent_by_family": {
+            "pocket": 1,
+            "prismatic_pocket": 2
+          },
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "pocket": 1,
+            "prismatic_pocket": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 1,
+          "retained_same_family": 2,
+          "same_family": {
+            "prismatic_pocket": 2
+          },
+          "transitions": {
+            "pocket->prismatic_pocket": 1
+          }
+        }
+      }
+    },
+    "turned_steps_and_grooves": {
+      "baseline_records": 6,
+      "rotations": {
+        "X30": {
+          "absent": 2,
+          "absent_by_family": {
+            "step": 2
+          },
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 4,
+          "same_family": {
+            "boss": 3,
+            "groove": 1
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 6,
+          "same_family": {
+            "boss": 3,
+            "groove": 1,
+            "step": 2
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 6,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 6,
+          "same_family": {
+            "boss": 3,
+            "groove": 1,
+            "step": 2
+          },
+          "transitions": {}
+        }
+      }
+    }
+  },
+  "matching": "one-to-one defining-face containment after validated rigid correspondence",
+  "schema": 1,
+  "totals": {
+    "X30": {
+      "absent": 39,
+      "baseline_records": 75,
+      "introduced": 0,
+      "reclassified": 7,
+      "retained_same_family": 29
+    },
+    "X90": {
+      "absent": 0,
+      "baseline_records": 75,
+      "introduced": 0,
+      "reclassified": 0,
+      "retained_same_family": 75
+    },
+    "Z30": {
+      "absent": 27,
+      "baseline_records": 75,
+      "introduced": 0,
+      "reclassified": 14,
+      "retained_same_family": 34
+    }
+  }
+}
