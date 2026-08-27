@@ -36,6 +36,7 @@ from b123d_recognisers.passages import (
     SectionPassage,
     _legacy_projection,
     _proposal_legacy_projection,
+    _same_legacy_passage_geometry,
     _unit,
     recognise_passages,
 )
@@ -365,6 +366,21 @@ def test_legacy_compatibility_mismatch_refuses_before_publication(monkeypatch) -
     )
     with pytest.raises(ValueError, match="historical legacy"):
         module._discover_section_passages(part, graph, None)
+
+
+def test_legacy_compatibility_accepts_only_equivalent_section_traversal() -> None:
+    section = ((0.0, 0.0), (2.0, 0.0), (2.0, 1.0), (0.0, 1.0))
+    expected = Passage("Z", 4, 10.0, (1.0, 0.5, 5.0), section)
+
+    assert _same_legacy_passage_geometry(
+        Passage("Z", 4, 10.0, expected.at, (*section[2:], *section[:2])), expected
+    )
+    assert _same_legacy_passage_geometry(
+        Passage("Z", 4, 10.0, expected.at, tuple(reversed(section))), expected
+    )
+    assert not _same_legacy_passage_geometry(
+        Passage("Z", 4, 10.001, expected.at, section), expected
+    )
 
 
 def test_equal_rich_records_on_distinct_wall_sets_refuse(monkeypatch) -> None:
