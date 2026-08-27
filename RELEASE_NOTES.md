@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.4.2
+
+- **Fixed aggregate evidence for two-sided countersinks and multiple edge pads.** A through bore
+  with countersink seats on both faces now retains the same deterministic first seat carried by
+  the public `HoleRecord`; the other seat remains an independent `CounterSink` instead of making
+  the aggregate fail. Distinct rectangular pads may now share an original stock-wall face when
+  OCCT merges their coplanar boundary, while unique top-face ownership and same-solid proof remain
+  required. These cases are frozen from Draftwright consumer regressions.
+
 ## 0.4.1
 
 - **Fixed plate evidence when separate solids have coincident planes.** Plate discovery still

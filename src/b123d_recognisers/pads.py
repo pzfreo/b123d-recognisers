@@ -227,7 +227,7 @@ def _discover_rectangular_pads(
         return records
 
     pending: list[tuple[RaisedPad, tuple[Any, ...]]] = []
-    used: set[Any] = set()
+    used_tops: set[Any] = set()
     for record, alternatives in occurrences:
         identity_signatures: list[tuple[Any, ...]] = []
         for proposal in alternatives:
@@ -247,12 +247,12 @@ def _discover_rectangular_pads(
             raise ValueError("equal Pad values have ambiguous defining occurrences")
         signature = next(iter(distinct))
         node_set = frozenset(signature)
-        if used & node_set:
-            raise ValueError("Pad occurrences share defining faces")
+        if signature[0] in used_tops:
+            raise ValueError("Pad occurrences share a defining top face")
         ordered = tuple(node for node in writer.graph.nodes if node in node_set)
         if writer.graph.common_valid_solid(ordered) is None:
             raise ValueError("Pad defining faces do not belong to one valid solid")
-        used.update(node_set)
+        used_tops.add(signature[0])
         pending.append((record, ordered))
     for record, nodes in pending:
         writer.add_defining(record, nodes, family=FamilyId.PADS)

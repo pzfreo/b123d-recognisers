@@ -10,7 +10,20 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from build123d import Box, Compound, Cylinder, Plane, Pos, Rot, Shell, export_step, import_step
+from build123d import (
+    Align,
+    Box,
+    Compound,
+    Cylinder,
+    Plane,
+    Pos,
+    Rot,
+    Shell,
+    SlotOverall,
+    export_step,
+    extrude,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
@@ -63,6 +76,19 @@ def _perforated_pad(radius: float, *, width: float = 30, depth: float = 20):
 def _through_perforated_pad(radius: float):
     solid = Box(80, 60, 10) + Pos(0, 0, 7) * Box(1, 1, 4)
     return solid - Cylinder(radius, 30)
+
+
+def _four_edge_pads_with_recesses():
+    minimum = (Align.MIN, Align.MIN, Align.MIN)
+    part = Box(180, 120, 22, align=minimum)
+    for x in (15, 125):
+        for y in (0, 102):
+            part += Pos(x, y, 22) * Box(40, 18, 14, align=minimum)
+    for y in (30, 90):
+        part -= Pos(35, y, 14) * extrude(Plane.XY * SlotOverall(42, 18), 8)
+    for x in (50, 130):
+        part -= Pos(x, 60, -1) * Cylinder(10, 24)
+    return part
 
 
 def _wall_fact(
@@ -270,6 +296,20 @@ def _assert_role(record, candidate, ledger) -> None:
 def test_simple_pad_has_exact_top_and_four_wall_roles() -> None:
     (record,), (candidate,), ledger = _claim(_pad())
     _assert_role(record, candidate, ledger)
+
+
+def test_separate_edge_pads_may_share_merged_stock_wall_faces() -> None:
+    records, candidates, ledger = _claim(_four_edge_pads_with_recesses())
+
+    assert len(records) == len(candidates) == 4
+    defining = [ledger.defining_of(candidate) for candidate in candidates]
+    assert any(
+        not left.isdisjoint(right)
+        for left in defining
+        for right in defining
+        if left != right
+    )
+    assert all(ledger.graph.common_valid_solid(nodes) is not None for nodes in defining)
 
 
 def test_equal_records_on_coincident_valid_solids_remain_distinct() -> None:
