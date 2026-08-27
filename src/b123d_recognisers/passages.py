@@ -67,6 +67,7 @@ from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._passage_compat import (
     PassageCompatibilityView,
     PrincipalProjection,
+    _canonical_section,
     compatibility_view,
     passage_from_view,
     principal_projection,
@@ -110,6 +111,24 @@ class Passage(Record):
     length: float
     at: tuple[float, float, float]
     section: tuple[tuple[float, float], ...]
+
+
+def _same_legacy_passage_geometry(left: Passage | None, right: Passage) -> bool:
+    """Compare closed section geometry without weakening the frozen legacy publication value."""
+
+    return left is not None and (
+        left.axis,
+        left.sides,
+        left.length,
+        left.at,
+        _canonical_section(left.section),
+    ) == (
+        right.axis,
+        right.sides,
+        right.length,
+        right.at,
+        _canonical_section(right.section),
+    )
 
 
 def _numbers(value: object, size: int, *, name: str) -> tuple[float, ...]:
@@ -381,7 +400,7 @@ def _discover_section_passages(
             # an odd number of millimetre quanta has a half-quantum midpoint (10060.step is the
             # concrete case).  The source displacement is bounded above; the frozen old finder is
             # the authority for its legacy value.
-            if full_precision_passage != legacy:
+            if not _same_legacy_passage_geometry(full_precision_passage, legacy):
                 raise ValueError("rich passage cannot reproduce its historical legacy value")
             compatibility = compatibility_view(
                 (

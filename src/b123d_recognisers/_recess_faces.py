@@ -44,6 +44,10 @@ _AXIS_ALIGNED_TOL = 1e-3
 # downstream report that prompted this saw nineteen losses across six parts and no gains.
 _MERGE_TOL = 0.5
 
+# OCCT cannot construct a volumetric probe at or below this coordinate extent. Keep this recess
+# tolerance in the lowest recess layer so reduction does not cross the ADR 0007 geometry seam.
+_PRISM_PROBE_FLOOR = 1e-6
+
 _FLOOR_TOL = 0.3
 
 _FLOOR_COVER_FRAC = 0.5

@@ -26,7 +26,11 @@ from b123d_recognisers._recess_core import (
     _recognise_slots_one,
     _slot_proposals_one,
 )
-from b123d_recognisers._recess_faces import _cylinder_faces, _planar_faces
+from b123d_recognisers._recess_faces import (
+    _PRISM_PROBE_FLOOR,
+    _cylinder_faces,
+    _planar_faces,
+)
 from b123d_recognisers._recess_obround import (
     _extend_obround_ends,
     _extend_obround_proposals,
@@ -274,6 +278,14 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
     ) == 0.5
     with pytest.raises(ValueError, match="positive extent"):
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
+    assert (
+        _prism_material_fraction(
+            {**spans, "x": (1.0, 1.0 + _PRISM_PROBE_FLOOR / 2)},
+            IntersectionPart(None),
+            inset=0,
+        )
+        == 1.0
+    )
 
 
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:

@@ -1,81 +1,88 @@
-# Part-relative frame-handling prototype
+# Part-relative frame-handling evaluation
 
-This prototype tests the underlying problem in issue #272 rather than treating the rigid-motion
-sweep as an outcome. It is implemented in `tools/frame_handling_prototype.py` and deliberately
-changes no package API, recogniser predicate, record schema or capability claim.
+This evidence supports issue #272 and spike #274. The rigid-motion sweep is instrumentation; the
+architectural question is whether recognition should have an explicit part-relative frame.
 
-## Approach
+## Smallest contract tested
 
-The prototype derives unoriented direction classes from planar-face normals and cylinder axes,
-weighted by analytic face area. The two strongest independent classes form a right-handed local
-frame. A surface of revolution may expose only one meaningful direction; its unconstrained roll is
-treated as gauge. A transient copy of the part is rotated into this frame and the existing
-recognition and reconciliation stack runs unchanged.
+`_experimental_frame.py` defines an immutable caller-space `PartFrame`, inverse point transforms,
+a framed result pairing that frame with the unchanged `RecognitionResult`, and typed refusals. It
+is deliberately absent from the package root and capability manifest.
 
-This is normalization, not general free-axis recognition. Public records produced by the
-experiment are still expressed in the normalized XYZ frame. Mapping them back to caller space—or
-superseding axis-letter records with free-axis records—remains a separate contract decision.
+The origin is the material centre of mass. Two independent analytic direction classes establish
+axis lines and a right-handed basis. A single direction returns an explicit `AXIAL` gauge: roll is
+unobservable and its world-seeded basis is only a deterministic representative, not a semantic
+material direction. No analytic direction is refused. The prototype still orients each
+otherwise-unoriented line with a deterministic world-component sign convention. That is adequate
+to test the boundary on the named motions, but is not a geometry-established semantic sign and is
+a production gap. A transient
+normalized shape passes through the existing recognition and reconciliation stack once. Existing
+public entry points and their coordinate meaning are unchanged.
 
-## Golden-corpus result
+This is normalization, not general free-axis recognition. Every record in a framed result is in
+the accompanying local frame and must not be interpreted in caller space.
 
-Each original fixture and each Z30, X30 and X90 presentation inferred its frame independently.
-Occurrence identity was compared using the face-evidence matcher from the rigid-motion sweep.
+## Golden result
 
-| presentation | baseline occurrences | same family | reclassified | absent | introduced |
+Every original, rotated and translated presentation inferred its frame independently. Occurrences
+were matched by defining-face evidence rather than census counts.
+
+| presentation | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Z30 | 75 | **75** | 0 | 0 | 0 |
-| X30 | 75 | **75** | 0 | 0 | 0 |
+| X30 + translation | 75 | **75** | 0 | 0 | 0 |
 | X90 | 75 | **75** | 0 | 0 | 0 |
 
-All 20 fixtures inferred a frame. This recovers both representative failure modes: families that
-previously disappeared and recess occurrences whose ownership changed between Slot/Passage or
-Pocket/PrismaticPocket.
+This covers both observed failure classes: disappearing families and frame-dependent
+Slot/Passage or Pocket/PrismaticPocket reconciliation.
 
-## MFCAD++ development sample
+## MFCAD++ development evaluation
 
-The external input was the first 100 STEP filenames in lexical order from the MFCAD++ test split
-at `/app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test`. This is open development
-evidence, not sealed holdout evidence. X30 was chosen as the single generic rotation because the
-golden result had already shown Z30 and X30 convergence.
+Selection is the first 500 STEP filenames in lexical ascending order from
+`MFCAD++_dataset/step/test` at `/app/workspaces-codex/datasets/mfcadpp`. This is named open
+development evidence. No MFTRCAD sealed holdout was used. The independent presentation is X30
+followed by translation `(173, -91, 42)`.
 
-Two models (`10191.step`, `10299.step`) reach a pre-existing assertion that a rich passage must
-reproduce its legacy projection after normalized X30 presentation. The comparable set is therefore
-98 models:
+All 500 models infer a full frame after one fix to a pre-existing recess probe: model `11281.step`
+created a positive but unconstructible 7.1e-15 bounding-box span. The reducer now treats spans at
+or below the coordinate floor as unable to prove void and fails that candidate closed.
 
-| route | baseline occurrences | same family | reclassified | absent | introduced |
+| framed comparison | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| raw X30 | 568 | 217 | 10 | **341** | 2 |
-| independently normalized X30 | 562 | **561** | 0 | **1** | 3 |
+| local baseline vs independently framed X30+T | 2,750 | **2,750 (100%)** | 0 | 0 | 1 |
 
-The differing baseline denominators are real: normalization itself changes the accepted inventory
-on some axis-aligned corpus models. Across all 100 unrotated models, raw versus normalized gives
-579 baseline occurrences, 566 same-family, one reclassified, 12 absent and six introduced. The
-four non-refused normalized-rotation mismatches are recess fragments: three introduced Slot
-fragments and one absent Slot fragment. They show that reconciliation remains sensitive to the
-small numerical/topological differences produced by an OCCT transform even after the larger
-world-frame gate is removed.
+Only `10098.step` differs: its five baseline occurrences all remain and the transformed
+presentation introduces one extra Slot fragment. There are no family reclassifications or absent
+occurrences. This is an accounted downstream recess-boundary instability and remains a gate for a
+default route, but it no longer obscures the frame result.
 
-## Cost sample
+Raw X30+T retains 1,166/2,784 occurrences (41.9%), reclassifies 47, loses 1,571 and introduces
+seven. Framed normalization therefore recovers every raw baseline occurrence on the same named
+sample. The complete machine report is [frame-corpus-500.json](frame-corpus-500.json).
 
-Over the first 20 models from the same selection, inference plus copied-shape transformation took
-0.236 seconds total versus 9.778 seconds for recognition of the normalized copies: **2.4%** added
-work. Median times were 10.1 ms and 390.8 ms respectively. Import time was excluded.
+## Compatibility
 
-## Honest conclusion
+The legacy route is untouched and its goldens remain byte-identical. Normalizing even an
+unrotated input is not yet behavior-preserving: across all 500 models, legacy versus framed
+baseline retains 2,715/2,784 occurrences, reclassifies two, loses 67 and introduces 33.
+This is why the spike is opt-in and non-exported. The earlier rich-Passage failures were fixed by
+requiring exact axis/sides/length/position agreement and accepting only cyclic/winding-equivalent
+closed polygon sections; incompatible projections still fail closed.
 
-The direction is useful enough to continue: a 38.2% same-family retention rate on the comparable
-raw X30 sample becomes 99.8%, and the complete golden corpus becomes invariant under all
-three probes. Runtime is not the constraint.
+## Runtime
 
-It is not ready to ship. Before a production route can be accepted it must:
+For the definitive 500-model pass, frame inference took 11.96 seconds, placement normalization
+4.35 seconds, framed recognition 436.12 seconds and raw recognition 417.77 seconds. Frame work is
+3.74% of framed recognition time; paired framed recognition including frame work is 8.29% slower
+than the paired raw route. Import time (24.98 seconds) is excluded from both.
 
-1. define whether consumers receive local-frame records plus the frame, or free-axis replacement
-   records in caller space;
-2. make recess discovery/reconciliation stable under normalization noise;
-3. resolve the two passage compatibility failures without weakening fail-closed evidence;
-4. specify ambiguity behavior for parts with insufficient or equally supported direction classes;
-5. validate a production-shaped implementation on a larger development draw before one final
-   sealed evaluation.
+## Recommendation
 
-The sweep is therefore retained as instrumentation supporting #272. It does not close #272; this
-prototype supplies the first evidence that the underlying problem is tractable and valuable.
+**Revise and continue.** Keep the explicit frame-plus-local-result boundary and closed ambiguity
+behavior. Do not publish or make the placement implementation default yet. Its value is clear:
+same-family retention rises from roughly 42% raw to 100% framed on real development data, while
+all golden cases become invariant. Its remaining work is equally clear: remove or tolerance-specify
+the one introduced Slot fragment, resolve axis-sign gauge, repeat cross-platform evidence, and
+reduce/profile end-to-end overhead.
+
+The authoritative proposed contract and acceptance gate are in ADR 0011.

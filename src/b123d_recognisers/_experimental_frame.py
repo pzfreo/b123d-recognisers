@@ -1,0 +1,297 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+"""Private experimental part-relative frame boundary for issue 274.
+
+This module is deliberately absent from the package root and capability manifest.  It tests an
+opt-in production shape: an explicit caller-space frame paired with the unchanged local-frame
+``RecognitionResult``.  Existing recognition entry points remain caller-space and byte compatible.
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+from enum import Enum
+from typing import cast
+
+from build123d import Location, Shape
+from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepGProp import BRepGProp
+from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
+from OCP.gp import gp_Trsf
+from OCP.GProp import GProp_GProps
+
+from b123d_recognisers._typing import Part, Vector3
+from b123d_recognisers.result import RecognitionResult, build_recognition_result
+
+_PARALLEL_COS = 0.999
+_ORTHOGONAL_COS = 1.0 - _PARALLEL_COS
+_COMPONENT_EPS = 1e-12
+
+
+class FrameGauge(Enum):
+    """How much of the returned basis is established by the solid.
+
+    ``FULL`` means two independent analytic directions establish the basis. ``AXIAL`` means the
+    solid establishes one axis while roll about it is explicitly non-semantic; the returned
+    perpendicular directions are only a deterministic representative of that gauge.
+    """
+
+    FULL = "full"
+    AXIAL = "axial"
+
+
+class FrameRefusalReason(Enum):
+    NO_MATERIAL = "no-material"
+    NO_ANALYTIC_DIRECTION = "no-analytic-direction"
+    NONFINITE_GEOMETRY = "nonfinite-geometry"
+
+
+@dataclass(frozen=True, slots=True)
+class RefusedPartFrame:
+    reason: FrameRefusalReason
+
+
+@dataclass(frozen=True, slots=True)
+class PartFrame:
+    """Caller-space placement of the local recognition coordinate system.
+
+    A caller-space point ``p`` maps to local coordinates
+    ``(dot(p-origin, x), dot(p-origin, y), dot(p-origin, z))``.  The inverse is the corresponding
+    linear combination of the three axes plus ``origin``.
+    """
+
+    origin: Vector3
+    x: Vector3
+    y: Vector3
+    z: Vector3
+    gauge: FrameGauge
+
+    def __post_init__(self) -> None:
+        vectors = (self.origin, self.x, self.y, self.z)
+        if not all(len(vector) == 3 for vector in vectors):
+            raise ValueError("frame values must be 3-vectors")
+        if not all(math.isfinite(value) for vector in vectors for value in vector):
+            raise ValueError("frame values must be finite")
+        for axis in (self.x, self.y, self.z):
+            if not math.isclose(_dot(axis, axis), 1.0, rel_tol=0.0, abs_tol=2e-9):
+                raise ValueError("frame directions must be unit length")
+        if any(
+            abs(_dot(left, right)) > 2e-9
+            for left, right in ((self.x, self.y), (self.x, self.z), (self.y, self.z))
+        ):
+            raise ValueError("frame directions must be orthogonal")
+        if _dot(_cross(self.x, self.y), self.z) < 1.0 - 2e-9:
+            raise ValueError("frame must be right handed")
+
+    def to_local(self, point: Vector3) -> Vector3:
+        relative = tuple(point[index] - self.origin[index] for index in range(3))
+        return cast(Vector3, tuple(_dot(relative, axis) for axis in (self.x, self.y, self.z)))
+
+    def to_world(self, point: Vector3) -> Vector3:
+        return cast(
+            Vector3,
+            tuple(
+                self.origin[index]
+                + point[0] * self.x[index]
+                + point[1] * self.y[index]
+                + point[2] * self.z[index]
+                for index in range(3)
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class FramedRecognitionResult:
+    """Existing recognition records expressed in the accompanying local frame."""
+
+    frame: PartFrame
+    result: RecognitionResult
+
+
+FrameInference = PartFrame | RefusedPartFrame
+FramedRecognition = FramedRecognitionResult | RefusedPartFrame
+
+
+@dataclass(slots=True)
+class _DirectionClass:
+    direction: Vector3
+    area: float
+    face_areas: list[float]
+
+    @property
+    def signature(self) -> tuple[float, tuple[float, ...]]:
+        # Rotation-invariant ordering.  Quantisation settles final-bit OCCT area differences;
+        # a remaining exact tie is a geometric gauge, not permission to inspect world XYZ.
+        return (
+            round(self.area, 9),
+            tuple(sorted((round(v, 9) for v in self.face_areas), reverse=True)),
+        )
+
+
+def _dot(left, right) -> float:
+    return sum(float(a) * float(b) for a, b in zip(left, right, strict=True))
+
+
+def _cross(left: Vector3, right: Vector3) -> Vector3:
+    return (
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    )
+
+
+def _unit(vector) -> Vector3:
+    values = tuple(float(value) for value in vector)
+    norm = math.hypot(*values)
+    if not math.isfinite(norm) or norm <= _COMPONENT_EPS:
+        raise ValueError("direction is nonfinite or degenerate")
+    return cast(Vector3, tuple(value / norm for value in values))
+
+
+def _canonical_sign(vector: Vector3) -> Vector3:
+    pivot = max(range(3), key=lambda index: (abs(vector[index]), index))
+    sign = -1.0 if vector[pivot] < 0.0 else 1.0
+    return cast(Vector3, tuple(sign * value for value in vector))
+
+
+def _clean(vector: Vector3) -> Vector3:
+    return cast(
+        Vector3,
+        tuple(
+            0.0
+            if abs(value) <= _COMPONENT_EPS
+            else math.copysign(1.0, value)
+            if abs(abs(value) - 1.0) <= _COMPONENT_EPS
+            else value
+            for value in vector
+        ),
+    )
+
+
+def _material_origin(part: Part) -> Vector3 | RefusedPartFrame:
+    props = GProp_GProps()
+    BRepGProp.VolumeProperties_s(part.wrapped, props)
+    mass = float(props.Mass())
+    if not math.isfinite(mass):
+        return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+    if mass <= _COMPONENT_EPS:
+        return RefusedPartFrame(FrameRefusalReason.NO_MATERIAL)
+    centre = props.CentreOfMass()
+    origin = cast(Vector3, tuple(float(value) for value in centre.Coord()))
+    if not all(math.isfinite(value) for value in origin):
+        return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+    return origin
+
+
+def infer_part_frame(part: Part) -> FrameInference:
+    """Infer a rigid-equivariant material origin and analytic local direction frame."""
+
+    origin = _material_origin(part)
+    if isinstance(origin, RefusedPartFrame):
+        return origin
+    classes: list[_DirectionClass] = []
+    try:
+        for face in part.faces():
+            surface = BRepAdaptor_Surface(face.wrapped)
+            kind = surface.GetType()
+            if kind == GeomAbs_Plane:
+                raw = tuple(float(value) for value in face.normal_at())
+            elif kind == GeomAbs_Cylinder:
+                raw = tuple(float(value) for value in surface.Cylinder().Axis().Direction().Coord())
+            else:
+                continue
+            direction = _canonical_sign(_unit(raw))
+            props = GProp_GProps()
+            BRepGProp.SurfaceProperties_s(face.wrapped, props)
+            area = float(props.Mass())
+            if not math.isfinite(area):
+                return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+            for direction_class in classes:
+                if abs(_dot(direction, direction_class.direction)) >= _PARALLEL_COS:
+                    direction_class.area += area
+                    direction_class.face_areas.append(area)
+                    break
+            else:
+                classes.append(_DirectionClass(direction, area, [area]))
+    except (RuntimeError, ValueError):
+        return RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+
+    ranked = sorted(classes, key=lambda item: item.signature, reverse=True)
+    for first_index, first_class in enumerate(ranked):
+        for second_class in ranked[first_index + 1 :]:
+            first, second = first_class.direction, second_class.direction
+            if abs(_dot(first, second)) > _ORTHOGONAL_COS:
+                continue
+            y = _unit(tuple(second[i] - _dot(first, second) * first[i] for i in range(3)))
+            x = _clean(first)
+            y = _clean(y)
+            z = _clean(_unit(_cross(x, y)))
+            return PartFrame(origin, x, y, z, FrameGauge.FULL)
+    if ranked:
+        # One axis leaves roll unconstrained. World XYZ selects a deterministic *representative*
+        # of the explicitly published AXIAL gauge; it does not claim a semantic material axis.
+        x = ranked[0].direction
+        seed = min(
+            ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+            key=lambda candidate: abs(_dot(x, candidate)),
+        )
+        y = _unit(tuple(seed[i] - _dot(x, seed) * x[i] for i in range(3)))
+        x, y = _clean(x), _clean(y)
+        z = _clean(_unit(_cross(x, y)))
+        return PartFrame(origin, x, y, z, FrameGauge.AXIAL)
+    return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
+
+
+def _normalize_part(part: Part, frame: PartFrame) -> Shape:
+    transform = gp_Trsf()
+    axes = (frame.x, frame.y, frame.z)
+    values = tuple(component for axis in axes for component in axis)
+    offsets = tuple(-_dot(axis, frame.origin) for axis in axes)
+    transform.SetValues(
+        values[0],
+        values[1],
+        values[2],
+        offsets[0],
+        values[3],
+        values[4],
+        values[5],
+        offsets[1],
+        values[6],
+        values[7],
+        values[8],
+        offsets[2],
+    )
+    if not part.solids():
+        # Material-origin inference already excludes this, so reaching it means the caller
+        # changed the shape concurrently between inference and normalization.
+        raise ValueError("part has no solids at normalization")
+    # A rigid TopLoc placement changes evaluated coordinates without rebuilding topology. A
+    # BRepBuilderAPI copied transform perturbs body ancestry and threshold geometry differently
+    # across OCCT platforms (most visibly Plate attribution on macOS).
+    return Location(gp_trsf=transform) * part
+
+
+def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> FramedRecognition:
+    """Recognise once in an inferred local frame, or return a closed frame refusal."""
+
+    frame = infer_part_frame(part)
+    if isinstance(frame, RefusedPartFrame):
+        return frame
+    normalized = _normalize_part(part, frame)
+    return FramedRecognitionResult(
+        frame, build_recognition_result(normalized, rotational=rotational)
+    )
+
+
+__all__ = [
+    "FrameGauge",
+    "FrameInference",
+    "FrameRefusalReason",
+    "FramedRecognition",
+    "FramedRecognitionResult",
+    "PartFrame",
+    "RefusedPartFrame",
+    "build_framed_recognition_result",
+    "infer_part_frame",
+]
