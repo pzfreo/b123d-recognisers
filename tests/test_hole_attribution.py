@@ -815,6 +815,26 @@ def test_nested_countersink_stays_predecessor_owned_and_hole_consulted(part, end
     )
 
 
+def test_two_sided_countersink_keeps_one_hole_predecessor_and_one_unmatched_seat() -> None:
+    part = (
+        Box(50, 50, 12)
+        - Cylinder(3, 12)
+        - Pos(0, 0, 4) * Cone(3, 7, 4)
+        - Pos(0, 0, -4) * Cone(7, 3, 4)
+    )
+
+    product = _take_inventory(part)
+    holes = product.physical.candidate_set(FamilyId.HOLES).candidates
+    countersinks = product.physical.candidate_set(FamilyId.COUNTERSINKS).candidates
+
+    assert len(holes) == 1
+    assert len(countersinks) == 2
+    assert isinstance(holes[0].record, HoleRecord)
+    assert holes[0].record.csink is countersinks[0].record
+    assert product.evidence.defining_of(holes[0])
+    assert all(product.evidence.defining_of(candidate) for candidate in countersinks)
+
+
 def _completed_countersinks(part):
     ledger = ClaimLedger(FaceGraph(part), definitions=PHYSICAL_DEFINITIONS)
     records = _discover_countersinks(part, writer=ledger.writer)

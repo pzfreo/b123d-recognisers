@@ -638,9 +638,9 @@ def _discover_holes(
                 raise ValueError("Hole occurrences share defining cylindrical faces")
 
             if proposal.matching_csinks:
-                if len(proposal.matching_csinks) != 1:
-                    raise ValueError("Hole has ambiguous matching CounterSink occurrences")
                 selected = proposal.matching_csinks[0]
+                if sum(item is selected for item in proposal.matching_csinks) != 1:
+                    raise ValueError("Hole has ambiguous matching CounterSink occurrences")
                 predecessor_matches = occurrences_by_record.get(id(selected), ())
                 if (
                     len(predecessor_matches) != 1
