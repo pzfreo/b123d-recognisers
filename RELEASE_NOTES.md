@@ -2,6 +2,15 @@
 
 ## 0.4.0
 
+- **Added an experimental, graph-independent face-inspection contract.**
+  `b123d_recognisers.experimental_geometry.inspect_face(face)` returns a closed analytic surface
+  fact and optional trimmed-surface anchor without exposing graph identity to the caller.
+  Draftwright's declared-fillet workflow is the first external consumer. The module is deliberately
+  absent from package-root exports and the capability manifest while its naming and refusal model
+  are reviewed. The larger `GeometryGraph` surface remains experimental and is consumed internally
+  by Polygonal Boss/Stock only; no recognition record, manifest schema or existing public result
+  changes in this release.
+
 - **Passage attribution now has one rich physical authority.** `SectionPassage` records canonical
   constant-section geometry on principal and free axes, while writer-free `recognise_passages`
   retains its historical schema-v1 values and order. Aggregate `.passages` is the accepted-rich
