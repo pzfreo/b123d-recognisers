@@ -27,6 +27,7 @@ from typing import Generic, TypeVar
 from build123d import Box, Pos
 
 from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_faces import _MERGE_TOL
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
@@ -202,6 +203,12 @@ def _prism_material_fraction(
         centre[ax] = (lo + hi) / 2
     if min(size.values()) <= 0:
         raise ValueError("prism spans must have positive extent")
+    if min(size.values()) <= COORD_FLOOR:
+        # A final-bit overlap between nominally disjoint face bounds can be positive while far
+        # below the kernel's constructible-solid floor (11281.step produced 7.1e-15). Such a
+        # sliver cannot prove an empty volumetric region; fail the candidate closed rather than
+        # asking OCCT to manufacture a degenerate Box and leaking Standard_DomainError.
+        return 1.0
     probe = Pos(centre["x"], centre["y"], centre["z"]) * Box(size["x"], size["y"], size["z"])
     inter = part.intersect(probe)
     # ``intersect`` returns None (empty), a single shape with ``.volume`` (older

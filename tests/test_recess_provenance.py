@@ -18,6 +18,7 @@ from b123d_recognisers import recognise_pockets, recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
@@ -274,6 +275,12 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
     ) == 0.5
     with pytest.raises(ValueError, match="positive extent"):
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
+    assert (
+        _prism_material_fraction(
+            {**spans, "x": (1.0, 1.0 + COORD_FLOOR / 2)}, IntersectionPart(None), inset=0
+        )
+        == 1.0
+    )
 
 
 def test_merge_preserves_distinct_split_cap_patch_groups() -> None:
