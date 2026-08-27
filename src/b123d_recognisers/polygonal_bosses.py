@@ -15,15 +15,18 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TypeVar, cast
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, connected_components
-from b123d_recognisers._analytic_surfaces import SurfaceKind
-from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
 from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import EvidenceWriter
-from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from b123d_recognisers._geometry_evidence import GeometryEvidenceBridge
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers.experimental_geometry import (
+    AnalyticSurface,
+    BlendFact,
+    FaceRef,
+    GeometryGraph,
+    SurfaceKind,
+)
 
 #: Whatever a caller keys its ring by: this module passes face nodes, the unit tests pass ints.
 #: The two polygon helpers below never look inside it, which is the point -- they are geometry
@@ -103,11 +106,31 @@ class _PolygonalProposal:
 class _CapSelection:
     """One unique terminal cap retained with the coordinate it establishes."""
 
-    node: FaceNode
+    node: FaceRef
     z: float
 
 
-def _heading(graph: FaceGraph, node: FaceNode) -> tuple[float, float, float]:
+def _connected_components(
+    items: list[_K] | set[_K], joined: Callable[[_K, _K], bool]
+) -> list[tuple[_K, ...]]:
+    """Local policy walk; the facade supplies adjacency, not component semantics."""
+
+    components: list[tuple[_K, ...]] = []
+    unseen = set(items)
+    while unseen:
+        connected = {unseen.pop()}
+        frontier = list(connected)
+        while frontier:
+            current = frontier.pop()
+            attached = {other for other in unseen if joined(current, other)}
+            unseen -= attached
+            connected |= attached
+            frontier.extend(attached)
+        components.append(tuple(connected))
+    return components
+
+
+def _heading(graph: GeometryGraph, node: FaceRef) -> tuple[float, float, float]:
     """A side face's outward normal, known to exist.
 
     Every node that reaches the ring helpers came through `_vertical_side_faces`, which already
@@ -120,8 +143,8 @@ def _heading(graph: FaceGraph, node: FaceNode) -> tuple[float, float, float]:
 
 
 def _cap_z(
-    graph: FaceGraph,
-    node: FaceNode,
+    graph: GeometryGraph,
+    node: FaceRef,
     tol: float,
     *,
     positive: bool,
@@ -153,9 +176,9 @@ def _cap_z(
 
 
 def _common_cap(
-    component: tuple[FaceNode, ...],
-    graph: FaceGraph,
-    adjacent_to: Callable[[FaceNode], set[FaceNode]],
+    component: tuple[FaceRef, ...],
+    graph: GeometryGraph,
+    adjacent_to: Callable[[FaceRef], set[FaceRef]],
     tol: float,
     *,
     upper: bool,
@@ -171,7 +194,7 @@ def _common_cap(
     candidate tops is not a boss whose top we can name.
     """
 
-    boundary: list[FaceNode] = []
+    boundary: list[FaceRef] = []
     component_set = set(component)
     for side in component:
         choices = []
@@ -209,11 +232,11 @@ def _common_cap(
 
 
 def _side_rings(
-    vertical: list[FaceNode],
-    graph: FaceGraph,
+    vertical: list[FaceRef],
+    graph: GeometryGraph,
     tol: float,
-    shares_edge: Callable[[FaceNode, FaceNode], bool],
-) -> list[tuple[FaceNode, ...]]:
+    shares_edge: Callable[[FaceRef, FaceRef], bool],
+) -> list[tuple[FaceRef, ...]]:
     """Group side faces into rings: connected, and spanning the same Z range.
 
     Both conditions are needed. Sharing an edge alone would chain a boss into the plate it
@@ -221,15 +244,15 @@ def _side_rings(
     ring with twelve sides.
     """
 
-    def same_span(i: FaceNode, j: FaceNode) -> bool:
+    def same_span(i: FaceRef, j: FaceRef) -> bool:
         lo_i, hi_i = graph.bounds(i)[2]
         lo_j, hi_j = graph.bounds(j)[2]
         return abs(lo_i - lo_j) <= tol and abs(hi_i - hi_j) <= tol
 
-    return connected_components(vertical, lambda i, j: same_span(i, j) and shares_edge(i, j))
+    return _connected_components(vertical, lambda i, j: same_span(i, j) and shares_edge(i, j))
 
 
-def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
+def _vertical_side_faces(graph: GeometryGraph, tol: float) -> list[FaceRef]:
     """The planar faces that could be prism sides: vertical, and tall enough to be walls.
 
     Only the selection is this recogniser's; the normal and the bounding box it selects on come
@@ -238,8 +261,8 @@ def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
     package now has one of.
     """
 
-    vertical: list[FaceNode] = []
-    for node in graph.nodes:
+    vertical: list[FaceRef] = []
+    for node in graph.faces:
         if not graph.is_planar(node):
             continue
         normal = graph.normal(node)
@@ -253,7 +276,7 @@ def _vertical_side_faces(graph: FaceGraph, tol: float) -> list[FaceNode]:
 
 
 def _six_support_cycle_indices(
-    pairs: tuple[frozenset[FaceNode], ...],
+    pairs: tuple[frozenset[FaceRef], ...],
 ) -> tuple[int, ...]:
     """Indices belonging to disjoint exact six-edge/six-node degree-two components."""
 
@@ -284,13 +307,13 @@ def _six_support_cycle_indices(
 
 
 def _polygonal_boss_blend_bridges(
-    graph: FaceGraph, vertical: list[FaceNode], tol: float
-) -> frozenset[frozenset[FaceNode]]:
+    graph: GeometryGraph, vertical: list[FaceRef], tol: float
+) -> frozenset[frozenset[FaceRef]]:
     """Return only provenance-complete bridges for unambiguous six-support blend cycles."""
 
     vertical_set = set(vertical)
-    possible: list[tuple[FaceNode, frozenset[FaceNode]]] = []
-    for node in graph.nodes:
+    possible: list[tuple[FaceRef, frozenset[FaceRef]]] = []
+    for node in graph.faces:
         if node in vertical_set:
             continue
         supports = vertical_set.intersection(graph.neighbours(node))
@@ -304,12 +327,12 @@ def _polygonal_boss_blend_bridges(
             continue
         possible.append((node, frozenset(supports)))
 
-    def contains_six_cycle(pairs: list[frozenset[FaceNode]]) -> bool:
+    def contains_six_cycle(pairs: list[frozenset[FaceRef]]) -> bool:
         possible_supports = set().union(*pairs) if pairs else set()
         return len(pairs) >= 6 and any(
             len(component) == 6
             and sum(pair <= set(component) for pair in pairs) >= 6
-            for component in connected_components(
+            for component in _connected_components(
                 possible_supports,
                 lambda left, right: frozenset((left, right)) in pairs,
             )
@@ -319,27 +342,25 @@ def _polygonal_boss_blend_bridges(
     if not contains_six_cycle(possible_pairs):
         return frozenset()
 
-    surfaces = EffectiveSurfaceIndex(graph)
     cylindrical_pairs = [
         pair
         for node, pair in possible
-        if isinstance(fact := surfaces.fact(node), AnalyticSurfaceFact)
+        if isinstance(fact := graph.surface_fact(node), AnalyticSurface)
         and fact.kind is SurfaceKind.CYLINDER
     ]
     if not contains_six_cycle(cylindrical_pairs):
         return frozenset()
-    index = BlendCollapseIndex(graph, surfaces)
-    eligible: list[tuple[BlendChain, FaceNode, FaceNode]] = []
-    for chain in index.chains():
-        if chain.side != "convex" or len(chain.blend_nodes) != 1:
+    eligible: list[tuple[BlendFact, FaceRef, FaceRef]] = []
+    for chain in graph.blend_facts():
+        if chain.side != "convex" or len(chain.blend_faces) != 1:
             continue
         if any(len(support) != 1 for support in chain.supports):
             continue
         left = next(iter(chain.supports[0]))
         right = next(iter(chain.supports[1]))
-        support_facts = (surfaces.fact(left), surfaces.fact(right))
+        support_facts = (graph.surface_fact(left), graph.surface_fact(right))
         if left is right or any(
-            not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE
+            not isinstance(fact, AnalyticSurface) or fact.kind is not SurfaceKind.PLANE
             for fact in support_facts
         ):
             continue
@@ -359,30 +380,20 @@ def _polygonal_boss_blend_bridges(
 
     if not selected:
         return frozenset()
-    view = index.view(selected)
-    logical_by_source = {
-        next(iter(sources)): logical
-        for logical in view.logical_nodes()
-        if len(sources := view.expand_node(logical)) == 1
-    }
+    bridges = graph.collapsed_bridges(tuple(chain.ref for chain in selected))
     for chain, pair in zip(selected, selected_pairs, strict=True):
         left, right = tuple(pair)
+        support_refs = frozenset((left, right))
         arcs = tuple(
-            arc
-            for arc in view.arcs_between(logical_by_source[left], logical_by_source[right])
-            if arc.synthetic
+            bridge for bridge in bridges if frozenset(bridge.supports) == support_refs
         )
         if len(arcs) != 1:
             raise ValueError("selected Polygonal Boss blend chain has no unique logical bridge")
-        provenance = view.expand_arc(arcs[0])
-        expected_nodes = frozenset((*chain.blend_nodes, *chain.supports[0], *chain.supports[1]))
-        expected_arcs = Counter(
-            arc.occurrence
-            for arc in (*chain.spring_arcs, *chain.internal_arcs, *chain.terminal_arcs)
-        )
-        if provenance.nodes != expected_nodes or Counter(
-            arc.occurrence for arc in provenance.arcs
-        ) != expected_arcs:
+        provenance = arcs[0].provenance
+        expected_nodes = frozenset((*chain.blend_faces, *chain.supports[0], *chain.supports[1]))
+        if provenance.faces != expected_nodes or Counter(provenance.boundary) != Counter(
+            chain.boundary
+        ):
             raise ValueError("selected Polygonal Boss bridge lost original provenance")
     return frozenset(selected_pairs)
 
@@ -484,7 +495,7 @@ def _recognise_one(
     tol: float | None,
     angle_tol: float,
     whole_stock: bool = False,
-    graph: FaceGraph | None = None,
+    graph: GeometryGraph | None = None,
 ) -> list[_PolygonalProposal]:
     tol = _TOL if tol is None else tol
     # The graph holds the face inventory, the adjacency and the per-face attributes this
@@ -496,13 +507,13 @@ def _recognise_one(
     # Memoising is also why an aggregate should hand its own graph down rather than let this
     # build a second one over the same faces: the run has already resolved some of them.
     if graph is None:
-        graph = FaceGraph(part)
+        graph = GeometryGraph(part)
     else:
         # A graph over the wrong solid would not raise here on its own -- it would answer
         # questions about the wrong faces, and a boss found on one solid would be reported for
         # another. Checked rather than trusted, as `_rings` checks its own caller.
         faces = tuple(part.faces())
-        resolved = {graph.require_node(face) for face in faces}
+        resolved = {graph.ref(face) for face in faces}
         if len(resolved) != len(faces) or len(resolved) != len(graph):
             raise ValueError("supplied Polygonal Boss graph does not exactly match the part")
 
@@ -515,12 +526,12 @@ def _recognise_one(
         else _polygonal_boss_blend_bridges(graph, vertical, tol)
     )
 
-    def shares_edge(i: FaceNode, j: FaceNode) -> bool:
+    def shares_edge(i: FaceRef, j: FaceRef) -> bool:
         return j in graph.neighbours(i) or frozenset((i, j)) in blend_bridges
 
     components = _side_rings(vertical, graph, tol, shares_edge)
 
-    def adjacent_to(node: FaceNode) -> set[FaceNode]:
+    def adjacent_to(node: FaceRef) -> set[FaceRef]:
         # A fresh set each time: `_common_cap` subtracts from what it gets back, and the graph
         # hands out a tuple precisely so one ring's bookkeeping cannot corrupt the next one's.
         return set(graph.neighbours(node))
@@ -618,7 +629,7 @@ def recognise_polygonal_bosses(
     *,
     tol: float | None = None,
     angle_tol: float = math.radians(2),
-    graph: FaceGraph | None = None,
+    graph: GeometryGraph | None = None,
 ) -> list[PolygonalBoss]:
     """Return regular hexagonal Z-axis bosses independently per physical solid.
 
@@ -639,8 +650,8 @@ def _discover_polygonal_bosses(
     *,
     tol: float | None = None,
     angle_tol: float = math.radians(2),
-    graph: FaceGraph | None = None,
-    writer: EvidenceWriter | None = None,
+    graph: GeometryGraph | None = None,
+    writer: object | None = None,
 ) -> list[PolygonalBoss]:
     """Shared Polygonal Boss discovery with optional aggregate evidence issuance."""
 
@@ -659,24 +670,22 @@ def _discover_polygonal_bosses(
     records = [cast("PolygonalBoss", proposal.record) for proposal in proposals]
     if writer is None:
         return records
-    if shared is not None and shared is not writer.graph:
-        raise ValueError("Polygonal Boss discovery graph does not match its evidence writer")
+    bridge = GeometryEvidenceBridge(writer, shared)
 
-    pending: list[tuple[PolygonalBoss, tuple[FaceNode, ...]]] = []
-    used: set[FaceNode] = set()
+    pending: list[tuple[PolygonalBoss, tuple[FaceRef, ...]]] = []
+    used: set[FaceRef] = set()
     for proposal, record in zip(proposals, records, strict=True):
-        resolved = {writer.graph.require_node(face) for face in proposal.side_faces}
-        nodes = tuple(node for node in writer.graph.nodes if node in resolved)
-        if len(nodes) != 6:
+        refs = bridge.refs(proposal.side_faces)
+        resolved = set(refs)
+        if len(refs) != 6:
             raise ValueError("a Polygonal Boss requires six distinct original side faces")
         if used & resolved:
             raise ValueError("Polygonal Boss occurrences share defining side faces")
-        if writer.graph.common_valid_solid(nodes) is None:
-            raise ValueError("Polygonal Boss side faces do not belong to one valid solid")
         used.update(resolved)
-        pending.append((record, nodes))
-    for record, nodes in pending:
-        writer.add_defining(record, nodes, family=FamilyId.POLYGONAL_BOSSES)
+        bridge.validate_defining(refs)
+        pending.append((record, refs))
+    for record, refs in pending:
+        bridge.add_defining(record, refs, family=FamilyId.POLYGONAL_BOSSES)
     return records
 
 
@@ -685,7 +694,7 @@ def recognise_polygonal_stock(
     *,
     tol: float | None = None,
     angle_tol: float = math.radians(2),
-    graph: FaceGraph | None = None,
+    graph: GeometryGraph | None = None,
 ) -> list[PolygonalStock]:
     """Return one record only when the complete part is a regular hexagonal prism.
 
@@ -709,16 +718,15 @@ def _discover_polygonal_stock(
     *,
     tol: float | None = None,
     angle_tol: float = math.radians(2),
-    graph: FaceGraph | None = None,
-    writer: EvidenceWriter | None = None,
+    graph: GeometryGraph | None = None,
+    writer: object | None = None,
 ) -> list[PolygonalStock]:
     """Discover exact-prism stock and optionally issue its complete eight-face boundary."""
 
     if len(list(part.solids())) != 1 or len(list(part.faces())) != 8:
         return []
-    if graph is not None and writer is not None and graph is not writer.graph:
-        raise ValueError("Polygonal Stock graph and writer must share one authority")
-    owner = writer.graph if writer is not None else graph
+    bridge = GeometryEvidenceBridge(writer, graph) if writer is not None else None
+    owner = bridge.geometry if bridge is not None else graph
     proposals = sorted(
         (
             proposal
@@ -733,18 +741,14 @@ def _discover_polygonal_stock(
     if writer is None:
         return records
 
-    pending: list[tuple[PolygonalStock, tuple[FaceNode, ...]]] = []
+    assert bridge is not None
+    pending: list[tuple[PolygonalStock, tuple[FaceRef, ...]]] = []
     for proposal, record in zip(proposals, records, strict=True):
-        resolved = {
-            writer.graph.require_node(face)
-            for face in (*proposal.side_faces, proposal.lower_cap, proposal.upper_cap)
-        }
-        nodes = tuple(node for node in writer.graph.nodes if node in resolved)
-        if len(nodes) != 8 or resolved != set(writer.graph.nodes):
+        refs = bridge.refs((*proposal.side_faces, proposal.lower_cap, proposal.upper_cap))
+        if len(refs) != 8 or set(refs) != set(bridge.geometry.faces):
             raise ValueError("Polygonal Stock requires its complete eight-face graph inventory")
-        if writer.graph.common_valid_solid(nodes) is None:
-            raise ValueError("Polygonal Stock boundary does not prove one valid solid")
-        pending.append((record, nodes))
-    for record, nodes in pending:
-        writer.add_defining(record, nodes, family=FamilyId.POLYGONAL_STOCK)
+        bridge.validate_defining(refs)
+        pending.append((record, refs))
+    for record, refs in pending:
+        bridge.add_defining(record, refs, family=FamilyId.POLYGONAL_STOCK)
     return records

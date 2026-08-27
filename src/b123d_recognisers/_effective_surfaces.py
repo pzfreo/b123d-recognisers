@@ -118,6 +118,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.TORUS_DEFERRED,
         "toroidal fillets are outside the four-primitive F1 seam",
     ),
+    "experimental_geometry": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F7 spike facade owns its bounded trimmed-surface anchor projection",
+    ),
     "flats": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar flat family gate"),
     "grooves": (
         SurfaceReaderDisposition.TORUS_DEFERRED,
@@ -207,6 +211,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "_section_passages:section_ring_proposals:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b original planar wall-cycle membership",
+    ),
+    "experimental_geometry:surface_anchor:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "bounded facade anchor over the same graph-owned original face",
+    ),
+    "experimental_geometry:is_planar:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "facade projection of the graph-owned planar query",
     ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (
