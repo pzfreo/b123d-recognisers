@@ -122,9 +122,9 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F7 spike facade owns its bounded trimmed-surface anchor projection",
     ),
-    "_experimental_frame": (
+    "frames": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "private issue 274 spike measures original analytic direction evidence for frame inference",
+        "part-frame inference reads original analytic direction evidence",
     ),
     "flats": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar flat family gate"),
     "grooves": (
@@ -224,9 +224,9 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "facade projection of the graph-owned planar query",
     ),
-    "_experimental_frame:infer_part_frame:adaptor:1": (
+    "frames:infer_part_frame:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "private issue 274 frame inference reads original plane and cylinder direction evidence",
+        "part-frame inference reads original plane and cylinder direction evidence",
     ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (

@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Axis, Pos, import_step  # noqa: E402
 
-from b123d_recognisers._experimental_frame import (  # noqa: E402
+from b123d_recognisers.frames import (  # noqa: E402
     PartFrame,
     RefusedPartFrame,
     _normalize_part,

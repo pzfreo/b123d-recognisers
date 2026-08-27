@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, Sphere, Vector
 
-from b123d_recognisers._experimental_frame import (
+from b123d_recognisers.frames import (
     FramedRecognitionResult,
     FrameGauge,
     FrameRefusalReason,
@@ -44,9 +44,24 @@ def test_frame_origin_and_axes_follow_a_rigid_motion() -> None:
     frame = infer_part_frame(part)
 
     assert isinstance(frame, PartFrame)
-    assert frame.gauge is FrameGauge.FULL
+    assert frame.gauge is FrameGauge.ORTHOGONAL
     expected = Vector(*source_frame.origin).rotate(Axis.X, 30) + Vector(13, -7, 5)
     assert frame.origin == pytest.approx(tuple(expected), abs=1e-9)
+
+
+def test_asymmetric_geometry_establishes_axes_that_follow_a_rigid_motion() -> None:
+    source = Box(10, 20, 30) + Pos(9, 18, 28) * Box(2, 3, 4)
+    source_frame = infer_part_frame(source)
+    assert isinstance(source_frame, PartFrame)
+    assert source_frame.gauge is FrameGauge.FULL
+
+    frame = infer_part_frame(Pos(13, -7, 5) * source.rotate(Axis.X, 30))
+
+    assert isinstance(frame, PartFrame)
+    assert frame.gauge is FrameGauge.FULL
+    for name in ("x", "y", "z"):
+        expected = Vector(*getattr(source_frame, name)).rotate(Axis.X, 30)
+        assert getattr(frame, name) == pytest.approx(tuple(expected), abs=1e-9)
 
 
 def test_surface_of_revolution_reports_its_unobservable_roll_gauge() -> None:

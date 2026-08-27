@@ -2145,13 +2145,21 @@ def test_partition_cap_metric_area_pcurve_and_angle_bounds_are_closed() -> None:
     )
 
     assert line.start is not None and line.start_parameter is not None
-    start_diagonal = point_diagonal
-    while (
-        (line.start[0] + start_diagonal - line.start[0]) ** 2
-        + (line.start[1] + start_diagonal - line.start[1]) ** 2
-        > metric**2
-    ):
-        start_diagonal = math.nextafter(start_diagonal, 0.0)
+    # Search the *represented coordinate deltas*, not adjacent values of the small offset.
+    # At a large model coordinate, many millions of offset ULPs can map to the same sum.
+    # Maintain a closed inside/outside bracket so this boundary test is both exact and bounded.
+    start_diagonal = 0.0
+    start_outside = metric
+    for _ in range(80):
+        candidate = (start_diagonal + start_outside) / 2.0
+        distance_squared = (
+            (line.start[0] + candidate - line.start[0]) ** 2
+            + (line.start[1] + candidate - line.start[1]) ** 2
+        )
+        if distance_squared <= metric**2:
+            start_diagonal = candidate
+        else:
+            start_outside = candidate
     start_equality = (
         line.start[0] + start_diagonal,
         line.start[1] + start_diagonal,
@@ -2175,13 +2183,6 @@ def test_partition_cap_metric_area_pcurve_and_angle_bounds_are_closed() -> None:
             ),
         )
     )
-    start_outside = math.nextafter(start_diagonal, math.inf)
-    while (
-        (line.start[0] + start_outside - line.start[0]) ** 2
-        + (line.start[1] + start_outside - line.start[1]) ** 2
-        <= metric**2
-    ):
-        start_outside = math.nextafter(start_outside, math.inf)
     assert not similar(
         replace(
             before,

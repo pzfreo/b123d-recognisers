@@ -1,5 +1,13 @@
 # Release notes
 
+## Next patch
+
+- **Added opt-in part-relative recognition.** `build_framed_recognition_result(part)` pairs the
+  unchanged local `RecognitionResult` with an explicit `PartFrame`, allowing callers to separate
+  physical-part coordinates from arbitrary STEP placement without changing the legacy entry point.
+  Frame gauges state when discrete orientation (`ORTHOGONAL`) or continuous roll (`AXIAL`) is not
+  observable from geometry; `FULL` is reserved for a geometry-directed ordered basis.
+
 ## 0.4.2
 
 - **Fixed aggregate evidence for two-sided countersinks and multiple edge pads.** A through bore
