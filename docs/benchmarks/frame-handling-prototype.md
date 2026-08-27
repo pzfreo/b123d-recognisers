@@ -5,7 +5,7 @@ architectural question is whether recognition should have an explicit part-relat
 
 ## Smallest contract tested
 
-`experimental_frame.py` defines an immutable caller-space `PartFrame`, inverse point transforms,
+`_experimental_frame.py` defines an immutable caller-space `PartFrame`, inverse point transforms,
 a framed result pairing that frame with the unchanged `RecognitionResult`, and typed refusals. It
 is deliberately absent from the package root and capability manifest.
 

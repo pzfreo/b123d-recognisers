@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, Sphere, Vector
 
-from b123d_recognisers.experimental_frame import (
+from b123d_recognisers._experimental_frame import (
     FramedRecognitionResult,
     FrameGauge,
     FrameRefusalReason,

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Experimental part-relative frame boundary for issue #274.
+"""Private experimental part-relative frame boundary for issue #274.
 
 This module is deliberately absent from the package root and capability manifest.  It tests an
 opt-in production shape: an explicit caller-space frame paired with the unchanged local-frame

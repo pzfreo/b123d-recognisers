@@ -18,7 +18,6 @@ from b123d_recognisers import recognise_pockets, recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
@@ -27,7 +26,11 @@ from b123d_recognisers._recess_core import (
     _recognise_slots_one,
     _slot_proposals_one,
 )
-from b123d_recognisers._recess_faces import _cylinder_faces, _planar_faces
+from b123d_recognisers._recess_faces import (
+    _PRISM_PROBE_FLOOR,
+    _cylinder_faces,
+    _planar_faces,
+)
 from b123d_recognisers._recess_obround import (
     _extend_obround_ends,
     _extend_obround_proposals,
@@ -277,7 +280,9 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
     assert (
         _prism_material_fraction(
-            {**spans, "x": (1.0, 1.0 + COORD_FLOOR / 2)}, IntersectionPart(None), inset=0
+            {**spans, "x": (1.0, 1.0 + _PRISM_PROBE_FLOOR / 2)},
+            IntersectionPart(None),
+            inset=0,
         )
         == 1.0
     )
