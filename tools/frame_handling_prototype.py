@@ -162,10 +162,16 @@ def normalize_part(part) -> tuple[Shape, InferredFrame]:
         values[8],
         0.0,
     )
-    # Preserve the transformed shape's real compound/solid kind.  Wrapping every result as a
-    # Solid made a transformed Compound present conflicting body ownership to FaceGraph on macOS.
-    transformed = BRepBuilderAPI_Transform(part.wrapped, transform, True).Shape()
-    return Compound.cast(transformed), frame
+    # Transform each source solid independently, then reassemble the aggregate. Transforming a
+    # complete multi-solid Compound lets OCCT rebuild face-to-solid ancestry differently on macOS,
+    # making opposite Plate role groups appear to belong to different bodies.
+    transformed = tuple(
+        Compound.cast(BRepBuilderAPI_Transform(solid.wrapped, transform, True).Shape())
+        for solid in part.solids()
+    )
+    if not transformed:
+        raise ValueError("part has no solids")
+    return Compound(transformed), frame
 
 
 def evaluate_goldens() -> dict[str, object]:
