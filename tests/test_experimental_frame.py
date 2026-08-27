@@ -20,6 +20,7 @@ from b123d_recognisers._experimental_frame import (
 )
 from b123d_recognisers.result import build_recognition_result
 from tests.golden._common import load_fixture
+from tools.frame_handling_prototype import evaluate_goldens, evaluate_translated_goldens
 
 
 def test_frame_point_transforms_are_inverse() -> None:
@@ -71,3 +72,35 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
     assert len(framed.result.slots) == len(legacy_before.slots) == 5
     assert framed.result.section_passages == ()
     assert build_recognition_result(part) == legacy_before
+
+
+def test_normalization_makes_the_complete_golden_inventory_rotation_invariant() -> None:
+    report = evaluate_goldens()
+
+    assert report["refused"] == {}
+    assert report["totals"] == {
+        name: {
+            "baseline_records": 75,
+            "same_family": 75,
+            "reclassified": 0,
+            "absent": 0,
+            "introduced": 0,
+        }
+        for name in ("Z30", "X30", "X90")
+    }
+
+
+def test_normalization_makes_the_complete_golden_inventory_translation_invariant() -> None:
+    report = evaluate_translated_goldens()
+
+    assert report["refused"] == {}
+    assert report["totals"] == {
+        name: {
+            "baseline_records": 75,
+            "same_family": 75,
+            "reclassified": 0,
+            "absent": 0,
+            "introduced": 0,
+        }
+        for name in ("T", "X30+T")
+    }
