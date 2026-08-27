@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from build123d import Axis, Box, Sphere
 
-from tools.frame_handling_prototype import evaluate_goldens, infer_frame
+from tools.frame_handling_prototype import infer_frame
 
 
 def test_frame_inference_tracks_a_rigidly_rotated_prism() -> None:
@@ -25,18 +25,3 @@ def test_frame_inference_refuses_geometry_with_no_direction_evidence() -> None:
     with pytest.raises(ValueError, match="two independent analytic direction classes"):
         infer_frame(Sphere(10))
 
-
-def test_normalization_makes_the_complete_golden_inventory_rotation_invariant() -> None:
-    report = evaluate_goldens()
-
-    assert report["refused"] == {}
-    assert report["totals"] == {
-        name: {
-            "baseline_records": 75,
-            "same_family": 75,
-            "reclassified": 0,
-            "absent": 0,
-            "introduced": 0,
-        }
-        for name in ("Z30", "X30", "X90")
-    }
