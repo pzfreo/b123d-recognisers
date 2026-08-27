@@ -1,9 +1,11 @@
 # ADR 0010 — Publish a narrow geometry facade; keep correspondence optional
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-26
+- **Accepted:** 2026-08-27
 - **Decider:** Paul Fremantle
-- **Evidence:** [epic 0004 retrospective](../epics/0004-architecture-retrospective.md)
+- **Evidence:** [epic 0004 retrospective](../epics/0004-architecture-retrospective.md),
+  [F7 geometry facade spike](../f7-geometry-facade-spike.md)
 
 ## Context
 
@@ -39,3 +41,43 @@ structure. Infrastructure tidiness alone is not an F7 deliverable.
 
 The detailed evidence and simplification programme are recorded in
 `docs/epics/0004-architecture-retrospective.md`.
+
+## Amendment (F7 consumer spike, issue #262)
+
+**The permitted surface in the decision above is wider than the evidence supports, and the
+roster is narrower than a facade.** The spike recorded in
+[`docs/f7-geometry-facade-spike.md`](../f7-geometry-facade-spike.md) ran two consumers through a
+provisional `GeometryGraph`. Polygonal Boss — in-package — exercised the whole surface, which
+proves the facade is *sufficient* and is not evidence that any consumer *needs* it. Draftwright's
+real workflow, declaring a fillet from its cylindrical face, needed one analytic fact and one
+on-surface anchor. Constructing a graph around a single face is conceptually larger than the
+problem, so the spike returned no-go on publishing `GeometryGraph` and go on the graph-independent
+`inspect_face(face)` contract.
+
+Two consequences for the decision above.
+
+**Blend facts, collapsed views and intrinsic section values leave the initial roster.** They are
+named as permitted, and no installed-wheel Draftwright operation consumes them. They remain
+private until a reviewed consumer demonstrates a need, on the same rule this ADR already applies
+to correspondence.
+
+**The initial roster is the declared-feature inspection family, not a geometry facade.** Every
+declared feature in Draftwright needs the same shape of answer — one closed analytic fact off one
+face, so that a declared feature and a detected one agree. Read from
+`src/draftwright/model/declare.py` at Draftwright 0.4.16.dev0 (`a81c418`), five already exist,
+spelled five different ways:
+
+| declared feature | current entry point | status |
+| --- | --- | --- |
+| fillet | `experimental_geometry.inspect_face` | consumed in production, Draftwright #1347 |
+| countersink | `cone_rims` | root export, countersink-family module |
+| chamfer | `classify_bevel` / `BevelReject` | root export, chamfer-family module |
+| double-D | `profiled_bores.read_double_d_tool` | public module, not root-exported |
+| pocket floor | `floor_face_anchor` | root export |
+
+Four of the five reach into a recogniser family's own module, which is why they read as ad hoc.
+Unifying them behind one `inspect_*` contract is a smaller and more stable surface than anything
+graph-shaped, and it serves the requirement they were each written for: declared/detected parity.
+
+`experimental_geometry` stays absent from the package root exports and the capability manifest
+until that roster is reviewed and accepted under #262.
