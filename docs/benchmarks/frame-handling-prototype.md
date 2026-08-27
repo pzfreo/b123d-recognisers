@@ -10,10 +10,12 @@ a framed result pairing that frame with the unchanged `RecognitionResult`, and t
 is deliberately absent from the package root and capability manifest.
 
 The origin is the material centre of mass. Two independent analytic direction classes establish
-a right-handed basis. A single direction does not establish roll and is refused as
-`ambiguous-direction`; world XYZ is never used to invent it. A transient normalized shape passes
-through the existing recognition and reconciliation stack once. Existing public entry points and
-their coordinate meaning are unchanged.
+axis lines and a right-handed basis. A single direction does not establish roll and is refused as
+`ambiguous-direction`. The prototype still orients each otherwise-unoriented line with a
+deterministic world-component sign convention. That is adequate to test the boundary on the named
+motions, but is not a geometry-established semantic sign and is a production gap. A transient
+normalized shape passes through the existing recognition and reconciliation stack once. Existing
+public entry points and their coordinate meaning are unchanged.
 
 This is normalization, not general free-axis recognition. Every record in a framed result is in
 the accompanying local frame and must not be interpreted in caller space.
@@ -87,6 +89,7 @@ hidden behind the smaller 3.65% number.
 behavior. Do not publish or make the copied-shape implementation default yet. Its value is clear:
 same-family retention rises from roughly 42% raw to 99.82% framed on real development data, while
 all golden cases become invariant. Its remaining work is equally clear: remove or tolerance-specify
-the 12-model instability, repeat cross-platform evidence, and reduce/profile end-to-end overhead.
+the 12-model instability, resolve axis-sign gauge, repeat cross-platform evidence, and
+reduce/profile end-to-end overhead.
 
 The authoritative proposed contract and acceptance gate are in ADR 0011.

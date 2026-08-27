@@ -28,8 +28,9 @@ or default:
    coordinates and axis letters are explicitly local to the paired frame.
 3. Existing `build_recognition_result(part)` behavior remains unchanged. Framed recognition is a
    separate opt-in route until its stability gate passes.
-4. Frame inference is closed. If geometry does not establish two independent directions, it
-   returns a typed refusal. It must not use world XYZ to choose unobservable roll.
+4. Frame inference is closed. If geometry does not establish two independent direction lines, it
+   returns a typed refusal. It must not use world XYZ to choose unobservable roll. The prototype's
+   remaining world-based line-sign convention is not accepted as production semantics.
 5. Recognition still executes once through the existing registry and reconciliation stack. The
    boundary does not expose `GeometryGraph`, correspondence, candidates, or recogniser internals.
 
@@ -56,6 +57,9 @@ the raw paired run, so copied-shape effects—not frame inference alone—need p
 
 Before acceptance and public exposure, a revised implementation must:
 
+- replace the world-based positive-sign convention with geometry-established orientation,
+  explicitly represent the sign gauge, or prove recogniser invariance across every admissible
+  sign choice;
 - eliminate or deliberately tolerance-specify the 12-model transform-instability taxonomy;
 - demonstrate deterministic results on the supported Linux, macOS and Windows CI matrix;
 - repeat the named 500-model development evaluation with a checked-in machine report; and
