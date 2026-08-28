@@ -1,5 +1,7 @@
 """Strict external-consumer fixture, checked against the built wheel."""
 
+from typing import Literal
+
 from build123d import BoundBox, Edge, Face, Solid
 from typing_extensions import assert_type
 
@@ -14,12 +16,20 @@ from b123d_recognisers import (
     recognise_holes,
 )
 from b123d_recognisers.inspection import (
+    BevelReject,
     FaceInspection,
     cone_rims,
     floor_face_anchor,
     inspect_face,
     read_double_d_tool,
 )
+
+
+def consume_bevel_rejection(error: BevelReject) -> None:
+    assert_type(
+        error.reason,
+        Literal["nonplanar", "degenerate", "aligned", "compound"],
+    )
 
 
 def consume(part: Solid, face: Face, bounds: BoundBox) -> None:

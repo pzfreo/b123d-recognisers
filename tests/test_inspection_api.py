@@ -16,7 +16,19 @@ from enum import Enum
 from pathlib import Path
 
 import pytest
-from build123d import Box, Cone, Cylinder, GeomType, Polygon, Pos, Sphere, Torus, Vertex
+from build123d import (
+    Align,
+    Box,
+    Cone,
+    Cylinder,
+    GeomType,
+    Polygon,
+    Pos,
+    Rot,
+    Sphere,
+    Torus,
+    Vertex,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.TopAbs import TopAbs_OUT
 
@@ -112,6 +124,37 @@ EXPECTED_SURFACE_PARAMETERS = {
     ],
 }
 
+EXPECTED_BEVEL_REASONS = ["nonplanar", "degenerate", "aligned", "compound"]
+
+EXPECTED_DOUBLE_D_RETURN_MEMBERS = [
+    {"name": "axis", "type": "str", "unit": None, "values": ["x", "y", "z"]},
+    {
+        "name": "major_diameter",
+        "type": "float",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "across_flats",
+        "type": "float",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "origin",
+        "type": "tuple[float,float,float]",
+        "unit": "model-length",
+        "values": None,
+    },
+    {"name": "depth", "type": "float", "unit": "model-length", "values": None},
+    {
+        "name": "profile_direction",
+        "type": "tuple[float,float,float]",
+        "unit": "unitless",
+        "values": None,
+    },
+]
+
 
 def _symbols() -> list[dict[str, object]]:
     manifest = inspection.inspection_api_manifest()
@@ -121,6 +164,27 @@ def _symbols() -> list[dict[str, object]]:
 def _resolve(qualified_name: str) -> object:
     module_name, _, name = qualified_name.rpartition(".")
     return getattr(importlib.import_module(module_name), name)
+
+
+def _manifest_contract(
+    manifest: dict[str, object], name: str
+) -> dict[str, object]:
+    api = typing.cast(dict[str, object], manifest["api"])
+    symbols = typing.cast(list[dict[str, object]], api["symbols"])
+    symbol = next(item for item in symbols if item["name"] == name)
+    return typing.cast(dict[str, object], symbol["contract"])
+
+
+def _assert_required_consumer_contract(manifest: dict[str, object]) -> None:
+    bevel = _manifest_contract(manifest, "BevelReject")
+    assert bevel["attributes"] == [
+        {"name": "reason", "type": "str", "values": EXPECTED_BEVEL_REASONS}
+    ]
+    double_d = _manifest_contract(manifest, "read_double_d_tool")
+    assert double_d["returns"] == {
+        "kind": "tuple",
+        "members": EXPECTED_DOUBLE_D_RETURN_MEMBERS,
+    }
 
 
 def _type_name(annotation: object) -> str:
@@ -194,9 +258,28 @@ def test_manifest_roster_and_runtime_contracts_are_derived_independently() -> No
             }
         elif kind == "exception":
             assert inspect.isclass(value) and issubclass(value, ValueError)
-            assert contract == {"base": "ValueError"}
+            reason = typing.get_type_hints(value)["reason"]
+            assert typing.get_origin(reason) is typing.Literal
+            assert contract == {
+                "attributes": [
+                    {
+                        "name": "reason",
+                        "type": "str",
+                        "values": list(typing.get_args(reason)),
+                    }
+                ],
+                "base": "ValueError",
+            }
         elif kind == "function":
-            assert contract == {"signature": str(inspect.signature(value))}
+            expected: dict[str, object] = {
+                "signature": str(inspect.signature(value))
+            }
+            if name == "read_double_d_tool":
+                expected["returns"] = {
+                    "kind": "tuple",
+                    "members": EXPECTED_DOUBLE_D_RETURN_MEMBERS,
+                }
+            assert contract == expected
         else:
             assert kind == "type-alias"
             assert set(typing.get_args(value)) == {
@@ -215,6 +298,93 @@ def test_manifest_freezes_each_surface_parameter_layout_and_unit() -> None:
 
     assert layouts == EXPECTED_SURFACE_PARAMETERS
     assert set(layouts) == {kind.value for kind in inspection.SurfaceKind}
+
+
+def test_manifest_freezes_bevel_reasons_and_double_d_tuple_semantics() -> None:
+    manifest = inspection.inspection_api_manifest()
+    _assert_required_consumer_contract(manifest)
+    for reason in EXPECTED_BEVEL_REASONS:
+        error = inspection.BevelReject(reason)
+        assert error.reason == reason
+        assert str(error) == reason
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            _manifest_contract(manifest, "BevelReject")["attributes"],
+        )[0].update({"values": ["nonplanar", "degenerate", "aligned"]}),
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            _manifest_contract(manifest, "BevelReject")["attributes"],
+        )[0].update({"values": [*EXPECTED_BEVEL_REASONS, "future"]}),
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            typing.cast(
+                dict[str, object],
+                _manifest_contract(manifest, "read_double_d_tool")["returns"],
+            )["members"],
+        ).reverse(),
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            typing.cast(
+                dict[str, object],
+                _manifest_contract(manifest, "read_double_d_tool")["returns"],
+            )["members"],
+        )[0].update({"name": "principal_axis"}),
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            typing.cast(
+                dict[str, object],
+                _manifest_contract(manifest, "read_double_d_tool")["returns"],
+            )["members"],
+        )[1].update({"type": "int"}),
+        lambda manifest: typing.cast(
+            list[dict[str, object]],
+            typing.cast(
+                dict[str, object],
+                _manifest_contract(manifest, "read_double_d_tool")["returns"],
+            )["members"],
+        )[1].update({"unit": "unitless"}),
+    ],
+)
+def test_consumer_gate_rejects_semantic_contract_drift(mutate) -> None:
+    manifest = inspection.inspection_api_manifest()
+    mutate(manifest)
+    with pytest.raises(AssertionError):
+        _assert_required_consumer_contract(manifest)
+
+
+@pytest.mark.parametrize(
+    ("rotation", "expected_axis"),
+    [(Rot(), "z"), (Rot(0, 90, 0), "x"), (Rot(90, 0, 0), "y")],
+)
+def test_double_d_manifest_member_order_reconstructs_runtime_read(
+    rotation, expected_axis: str
+) -> None:
+    centre = (Align.CENTER, Align.CENTER, Align.CENTER)
+    tool = rotation * (
+        Cylinder(5, 20, align=centre) & Box(7.2, 20, 40, align=centre)
+    )
+    values = inspection.read_double_d_tool(tool)
+    named = dict(
+        zip(
+            [member["name"] for member in EXPECTED_DOUBLE_D_RETURN_MEMBERS],
+            values,
+            strict=True,
+        )
+    )
+
+    assert named["axis"] == expected_axis
+    assert named["major_diameter"] == pytest.approx(10.0)
+    assert named["across_flats"] == pytest.approx(7.2)
+    assert named["origin"] == pytest.approx((0.0, 0.0, 0.0))
+    assert named["depth"] == pytest.approx(20.0)
+    profile_direction = typing.cast(tuple[float, float, float], named["profile_direction"])
+    assert math.dist(profile_direction, (0.0, 0.0, 0.0)) == pytest.approx(1.0)
+    assert profile_direction["xyz".index(expected_axis)] == pytest.approx(0.0)
 
 
 def test_surface_parameter_layouts_reconstruct_the_native_primitives() -> None:
@@ -604,7 +774,138 @@ def test_validator_rejects_non_objects_and_invalid_scalar_contracts() -> None:
     manifest = inspection.inspection_api_manifest()
     function = next(item for item in manifest["api"]["symbols"] if item["kind"] == "function")
     function["contract"]["signature"] = ""
+    with pytest.raises(inspection.InspectionApiManifestError, match="signature is invalid"):
+        inspection.validate_inspection_api_manifest(manifest)
+
+    manifest = inspection.inspection_api_manifest()
+    _manifest_contract(manifest, "BevelReject")["base"] = ""
+    with pytest.raises(inspection.InspectionApiManifestError, match="base is invalid"):
+        inspection.validate_inspection_api_manifest(manifest)
+
+    manifest = inspection.inspection_api_manifest()
+    _manifest_contract(manifest, "SurfaceFact")["definition"] = ""
     with pytest.raises(inspection.InspectionApiManifestError, match="contract value"):
+        inspection.validate_inspection_api_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (
+            lambda contract: contract.update({"attributes": []}),
+            "attributes must be a non-empty array",
+        ),
+        (
+            lambda contract: typing.cast(list[object], contract["attributes"]).__setitem__(
+                0, None
+            ),
+            "must be an object",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]], contract["attributes"]
+            )[0].pop("type"),
+            "missing required fields",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]], contract["attributes"]
+            )[0].update({"values": ["aligned", "aligned"]}),
+            "is invalid",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]], contract["attributes"]
+            ).append(
+                copy.deepcopy(
+                    typing.cast(
+                        list[dict[str, object]], contract["attributes"]
+                    )[0]
+                )
+            ),
+            "attribute names must be unique",
+        ),
+    ],
+)
+def test_validator_rejects_malformed_exception_attributes(mutate, message: str) -> None:
+    manifest = inspection.inspection_api_manifest()
+    mutate(_manifest_contract(manifest, "BevelReject"))
+    with pytest.raises(inspection.InspectionApiManifestError, match=message):
+        inspection.validate_inspection_api_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda contract: contract.pop("returns"), "contract is incomplete"),
+        (
+            lambda contract: contract.update({"returns": None}),
+            "returns must be an object",
+        ),
+        (
+            lambda contract: typing.cast(dict[str, object], contract["returns"]).update(
+                {"kind": "record"}
+            ),
+            "must define a tuple",
+        ),
+        (
+            lambda contract: typing.cast(dict[str, object], contract["returns"]).update(
+                {"members": []}
+            ),
+            "members must be a non-empty array",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[object],
+                typing.cast(dict[str, object], contract["returns"])["members"],
+            ).__setitem__(0, None),
+            "must be an object",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]],
+                typing.cast(dict[str, object], contract["returns"])["members"],
+            )[0].pop("type"),
+            "missing required fields",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]],
+                typing.cast(dict[str, object], contract["returns"])["members"],
+            )[0].update({"unit": "degrees"}),
+            "is invalid",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]],
+                typing.cast(dict[str, object], contract["returns"])["members"],
+            )[0].update({"values": ["x", "x"]}),
+            "is invalid",
+        ),
+        (
+            lambda contract: typing.cast(
+                list[dict[str, object]],
+                typing.cast(dict[str, object], contract["returns"])["members"],
+            ).append(
+                copy.deepcopy(
+                    typing.cast(
+                        list[dict[str, object]],
+                        typing.cast(dict[str, object], contract["returns"])[
+                            "members"
+                        ],
+                    )[0]
+                )
+            ),
+            "return member names must be unique",
+        ),
+    ],
+)
+def test_validator_rejects_malformed_function_return_contracts(
+    mutate, message: str
+) -> None:
+    manifest = inspection.inspection_api_manifest()
+    mutate(_manifest_contract(manifest, "read_double_d_tool"))
+    with pytest.raises(inspection.InspectionApiManifestError, match=message):
         inspection.validate_inspection_api_manifest(manifest)
 
 

@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.4.5
+
+- **Completed the supported inspection contract consumed by Draftwright.** The installed
+  inspection manifest now freezes the closed `BevelReject.reason` values and the ordered names,
+  types, and units of all six `read_double_d_tool()` return members. Runtime geometry behavior,
+  aliases, recogniser output, and the recogniser capability manifest are unchanged. This closes
+  the provider-contract gap in 0.4.4 that prevented a fail-closed downstream adoption.
+
 ## 0.4.4
 
 - **Promoted the consumer-proven declared-feature inspection API.** New consumers can import

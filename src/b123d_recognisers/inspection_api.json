@@ -146,6 +146,18 @@
           "b123d_recognisers.chamfers.BevelReject"
         ],
         "contract": {
+          "attributes": [
+            {
+              "name": "reason",
+              "type": "str",
+              "values": [
+                "nonplanar",
+                "degenerate",
+                "aligned",
+                "compound"
+              ]
+            }
+          ],
           "base": "ValueError"
         },
         "introduced_in": "0.4.4",
@@ -379,6 +391,51 @@
           "b123d_recognisers.profiled_bores.read_double_d_tool"
         ],
         "contract": {
+          "returns": {
+            "kind": "tuple",
+            "members": [
+              {
+                "name": "axis",
+                "type": "str",
+                "unit": null,
+                "values": [
+                  "x",
+                  "y",
+                  "z"
+                ]
+              },
+              {
+                "name": "major_diameter",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "across_flats",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "origin",
+                "type": "tuple[float,float,float]",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "depth",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "profile_direction",
+                "type": "tuple[float,float,float]",
+                "unit": "unitless",
+                "values": null
+              }
+            ]
+          },
           "signature": "(obj: 'Part', *, tol: 'float' = 1e-05) -> 'tuple[str, float, float, Vector3, float, Vector3]'"
         },
         "introduced_in": "0.4.4",

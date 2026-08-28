@@ -58,6 +58,45 @@ SURFACE_PARAMETERS = {
     ],
 }
 
+DOUBLE_D_TOOL_RETURN_MEMBERS = [
+    {
+        "name": "axis",
+        "type": "str",
+        "unit": None,
+        "values": ["x", "y", "z"],
+    },
+    {
+        "name": "major_diameter",
+        "type": "float",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "across_flats",
+        "type": "float",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "origin",
+        "type": "tuple[float,float,float]",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "depth",
+        "type": "float",
+        "unit": "model-length",
+        "values": None,
+    },
+    {
+        "name": "profile_direction",
+        "type": "tuple[float,float,float]",
+        "unit": "unitless",
+        "values": None,
+    },
+]
+
 SYMBOLS: dict[str, tuple[str, list[str]]] = {
     "AnalyticSurface": (
         "dataclass",
@@ -171,9 +210,25 @@ def _contract(name: str, kind: str, value: object) -> dict[str, object]:
         }
     if kind == "exception":
         assert inspect.isclass(value) and issubclass(value, Exception)
-        return {"base": value.__bases__[0].__name__}
+        hints = typing.get_type_hints(value)
+        reason = hints["reason"]
+        assert typing.get_origin(reason) is typing.Literal
+        reason_values = list(typing.get_args(reason))
+        assert reason_values and all(isinstance(item, str) for item in reason_values)
+        return {
+            "attributes": [
+                {"name": "reason", "type": "str", "values": reason_values}
+            ],
+            "base": value.__bases__[0].__name__,
+        }
     if kind == "function":
-        return {"signature": str(inspect.signature(value))}
+        contract: dict[str, object] = {"signature": str(inspect.signature(value))}
+        if name == "read_double_d_tool":
+            contract["returns"] = {
+                "kind": "tuple",
+                "members": DOUBLE_D_TOOL_RETURN_MEMBERS,
+            }
+        return contract
     if name == "SurfaceFact" and kind == "type-alias":
         return {"definition": "AnalyticSurface|RefusedSurface"}
     raise AssertionError(f"unsupported inspection API kind {kind!r}")

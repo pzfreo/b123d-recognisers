@@ -47,6 +47,12 @@ directions are unitless unit vectors and cone angles are radians:
 | `cone` (`SurfaceKind.CONE`) | `(apex_x, apex_y, apex_z, axis_x, axis_y, axis_z, signed_semi_angle)`, where the angle sign preserves the original cone direction after the axis is canonicalised |
 | `sphere` (`SurfaceKind.SPHERE`) | `(centre_x, centre_y, centre_z, radius)` |
 
+`BevelReject.reason` is a closed string contract: `nonplanar`, `degenerate`, `aligned`, or
+`compound`. `read_double_d_tool()` returns the ordered tuple `(axis, major_diameter,
+across_flats, origin, depth, profile_direction)`: `axis` is the principal-axis name `x`, `y`, or
+`z`; both diameters, all three origin coordinates, and depth use model-length units; the
+three-component profile direction is unitless.
+
 `FaceInspection.anchor`, when present, is proved in or on the actual trimmed face. It is not merely
 a point on the untrimmed underlying surface; inner wires and concave outer wires are respected.
 
