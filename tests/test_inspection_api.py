@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 from build123d import Box, Cone, Cylinder, GeomType, Polygon, Pos, Sphere, Torus, Vertex
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.TopAbs import TopAbs_OUT
 
 import b123d_recognisers as recognition
 import b123d_recognisers.experimental_geometry as experimental
@@ -362,6 +363,46 @@ def test_inspection_anchor_is_in_or_on_a_concave_trim() -> None:
     assert Vertex(*inspected.anchor).distance_to(face) < 1e-7
 
 
+def test_inspection_anchor_falls_back_to_a_proved_outer_boundary(monkeypatch) -> None:
+    class OutsideClassifier:
+        def __init__(self, *_args) -> None:
+            pass
+
+        def State(self):
+            return TopAbs_OUT
+
+    monkeypatch.setattr(inspection, "_BRepClass_FaceClassifier", OutsideClassifier)
+    face = max(Box(7, 9, 11).faces().filter_by(GeomType.PLANE), key=lambda item: item.center().Z)
+
+    anchor = inspection.inspect_face(face).anchor
+
+    assert anchor is not None
+    assert Vertex(*anchor).distance_to(face.outer_wire()) < 1e-7
+
+
+def test_inspection_omits_anchor_when_surface_bounds_are_invalid(monkeypatch) -> None:
+    class InvalidBounds:
+        def __init__(self, _wrapped) -> None:
+            pass
+
+        def FirstUParameter(self) -> float:
+            return math.nan
+
+        def LastUParameter(self) -> float:
+            return 1.0
+
+        def FirstVParameter(self) -> float:
+            return 0.0
+
+        def LastVParameter(self) -> float:
+            return 1.0
+
+    face = Cylinder(3, 8).faces().filter_by(GeomType.CYLINDER)[0]
+    monkeypatch.setattr(inspection, "_BRepAdaptor_Surface", InvalidBounds)
+
+    assert inspection.inspect_face(face).anchor is None
+
+
 def test_committed_manifest_is_the_deterministic_generator_output() -> None:
     subprocess.run(
         [sys.executable, "tools/generate_inspection_api_manifest.py", "--check"],
@@ -408,6 +449,16 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
                 {"unit": "pixels"}
             ),
             "unit",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"]["plane"][0].pop("unit"),
+            "missing required",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"]["plane"][0].update(
+                {"name": "not valid"}
+            ),
+            "name",
         ),
         (
             lambda value: value["api"]["surface_parameters"]["plane"].append(
@@ -474,6 +525,62 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             ),
             "contract is invalid",
         ),
+        (
+            lambda value: value["api"]["symbols"][0]["contract"]["fields"][0].pop(
+                "type"
+            ),
+            "missing required",
+        ),
+        (
+            lambda value: value["api"]["symbols"][0]["contract"]["fields"][0].update(
+                {"type": ""}
+            ),
+            "is invalid",
+        ),
+        (
+            lambda value: value["api"]["symbols"][0]["contract"]["fields"].append(
+                copy.deepcopy(value["api"]["symbols"][0]["contract"]["fields"][0])
+            ),
+            "field names must be unique",
+        ),
+        (
+            lambda value: next(
+                item for item in value["api"]["symbols"] if item["kind"] == "enum"
+            )["contract"].update({"members": []}),
+            "non-empty array",
+        ),
+        (
+            lambda value: next(
+                item for item in value["api"]["symbols"] if item["kind"] == "enum"
+            )["contract"]["members"].__setitem__(0, None),
+            "must be an object",
+        ),
+        (
+            lambda value: next(
+                item for item in value["api"]["symbols"] if item["kind"] == "enum"
+            )["contract"]["members"][0].pop("value"),
+            "missing required",
+        ),
+        (
+            lambda value: next(
+                item for item in value["api"]["symbols"] if item["kind"] == "enum"
+            )["contract"]["members"][0].update({"name": "not valid"}),
+            "is invalid",
+        ),
+        (
+            lambda value: next(
+                item for item in value["api"]["symbols"] if item["kind"] == "enum"
+            )["contract"]["members"].append(
+                copy.deepcopy(
+                    next(
+                        item
+                        for item in value["api"]["symbols"]
+                        if item["kind"] == "enum"
+                    )["contract"]["members"][0]
+                )
+            ),
+            "enum names and values must be unique",
+        ),
         (lambda value: value["api"]["symbols"].reverse(), "name-sorted"),
         (
             lambda value: value["api"]["symbols"].append(
@@ -499,3 +606,20 @@ def test_validator_rejects_non_objects_and_invalid_scalar_contracts() -> None:
     function["contract"]["signature"] = ""
     with pytest.raises(inspection.InspectionApiManifestError, match="contract value"):
         inspection.validate_inspection_api_manifest(manifest)
+
+
+def test_manifest_loader_rejects_a_resource_for_another_package_version(monkeypatch) -> None:
+    manifest = inspection.inspection_api_manifest()
+    manifest["package"]["version"] = "0.4.5"
+
+    class Resource:
+        def joinpath(self, _name: str):
+            return self
+
+        def read_text(self, *, encoding: str) -> str:
+            assert encoding == "utf-8"
+            return json.dumps(manifest)
+
+    monkeypatch.setattr(inspection, "files", lambda _package: Resource())
+    with pytest.raises(inspection.InspectionApiManifestError, match="does not match installed"):
+        inspection.inspection_api_manifest()
