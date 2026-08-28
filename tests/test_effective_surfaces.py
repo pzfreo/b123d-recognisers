@@ -1,4 +1,5 @@
 import math
+from dataclasses import replace
 
 import pytest
 from build123d import (
@@ -23,6 +24,7 @@ from OCP.GeomConvert import GeomConvert
 from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt, gp_Pnt2d
 from OCP.Standard import Standard_Failure
 from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TopAbs import TopAbs_IN, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
 
 from b123d_recognisers._adjacency import FaceGraph
@@ -104,6 +106,50 @@ def test_plane_material_side_is_a_separate_cached_closed_solid_certificate() -> 
         _ = first.material_side
 
 
+def test_surface_uses_are_opaque_and_detect_forgery_or_changed_facts(monkeypatch) -> None:
+    with pytest.raises(TypeError, match="issued by"):
+        SurfaceUse()
+
+    forged = object.__new__(SurfaceUse)
+    with pytest.raises(ValueError, match="authority was mutated"):
+        _ = forged.node
+
+    part = Box(10, 8, 4)
+    graph = FaceGraph(part)
+    query = effective_faces_for_graph(graph)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    issued = query.use(top)
+    assert isinstance(issued, SurfaceUse)
+    original = issued.surface
+
+    unissued = object.__new__(SurfaceUse)
+    object.__setattr__(
+        unissued,
+        "_SurfaceUse__authority",
+        issued._SurfaceUse__authority,
+    )
+    with pytest.raises(ValueError, match="not issued by this query"):
+        _ = unissued.node
+
+    monkeypatch.setattr(
+        EffectiveSurfaceIndex,
+        "fact",
+        lambda _self, _node: replace(original, kernel_reported_gap=1.0),
+    )
+    with pytest.raises(ValueError, match="no longer matches its issued fact"):
+        _ = issued.surface
+
+
+def test_face_query_returns_a_surface_refusal_for_an_unavailable_fact() -> None:
+    torus = Torus(10, 2)
+    query = effective_faces_for_graph(FaceGraph(torus))
+
+    refused = query.use(torus.faces()[0])
+
+    assert isinstance(refused, SurfaceUseRefusal)
+    assert refused.reason is MaterialSideRefusalReason.SURFACE_UNAVAILABLE
+
+
 def test_material_side_sampling_does_not_attach_a_mesh_to_the_input_face() -> None:
     part = Box(10, 8, 4)
     top = max(part.faces(), key=lambda face: face.center().Z)
@@ -115,6 +161,66 @@ def test_material_side_sampling_does_not_attach_a_mesh_to_the_input_face() -> No
     assert isinstance(result, SurfaceUse)
     assert BRep_Tool.Triangulation_s(top.wrapped, TopLoc_Location()) is None
 
+
+def test_material_side_sampling_refuses_uncleared_or_failed_samples(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module.Vertex, "distance_to", lambda _self, _edge: 0.0)
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY
+    )
+
+    monkeypatch.setattr(
+        module.Vertex,
+        "distance_to",
+        lambda _self, _edge: (_ for _ in ()).throw(RuntimeError("distance failure")),
+    )
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
+
+
+def test_material_side_sampling_refuses_missing_or_degenerate_triangulation(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module.BRep_Tool, "Triangulation_s", lambda *_args: None)
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
+
+    monkeypatch.undo()
+
+    class DegenerateTriangle:
+        def Get(self):
+            return (1, 2, 3)
+
+    class DegenerateTriangulation:
+        def NbNodes(self):
+            return 3
+
+        def NbTriangles(self):
+            return 1
+
+        def Node(self, _at):
+            return gp_Pnt(0.0, 0.0, 0.0)
+
+        def Triangle(self, _at):
+            return DegenerateTriangle()
+
+    monkeypatch.setattr(
+        module.BRep_Tool,
+        "Triangulation_s",
+        lambda *_args: DegenerateTriangulation(),
+    )
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
 
 def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypatch) -> None:
     import b123d_recognisers._effective_surfaces as module
@@ -131,6 +237,34 @@ def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypa
     centre = top.center()
     monkeypatch.setattr(module, "ShapeAnalysis_Surface", WrongUV)
 
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
+
+
+def test_plane_differential_refuses_degenerate_or_failed_kernel_reads(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+
+    class ZeroDifferential:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def D1(self, _u, _v, point, _along_u, _along_v) -> None:
+            point.SetCoord(centre.X, centre.Y, centre.Z)
+
+    monkeypatch.setattr(module, "BRepAdaptor_Surface", ZeroDifferential)
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
+
+    monkeypatch.setattr(
+        module,
+        "ShapeAnalysis_Surface",
+        lambda _surface: (_ for _ in ()).throw(RuntimeError("projection failure")),
+    )
     assert not module._regular_plane_differential(
         top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
     )
@@ -171,6 +305,74 @@ def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> N
     failed = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
     assert isinstance(failed, SurfaceUseRefusal)
     assert failed.reason is MaterialSideRefusalReason.PROBE_INDETERMINATE
+
+
+def test_material_side_propagates_nominal_and_sampling_refusals(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(
+        module,
+        "recovery_nominal",
+        lambda _face: (_ for _ in ()).throw(ValueError("invalid nominal")),
+    )
+    invalid = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(invalid, SurfaceUseRefusal)
+    assert invalid.reason is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+
+    monkeypatch.undo()
+    monkeypatch.setattr(
+        module,
+        "_triangle_samples",
+        lambda _face, *, probe_distance: MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY,
+    )
+    uncleared = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(uncleared, SurfaceUseRefusal)
+    assert uncleared.reason is MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY
+
+
+@pytest.mark.parametrize(
+    ("states", "reason"),
+    [
+        ((TopAbs_OUT, TopAbs_OUT), MaterialSideRefusalReason.PROBE_INDETERMINATE),
+        (
+            (TopAbs_OUT, TopAbs_IN, TopAbs_IN, TopAbs_OUT),
+            MaterialSideRefusalReason.SAMPLES_DISAGREE,
+        ),
+    ],
+)
+def test_material_side_refuses_indeterminate_or_disagreeing_probes(
+    monkeypatch, states, reason
+) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    class ScriptedClassifier:
+        def __init__(self, _solid) -> None:
+            self.states = iter(states)
+            self.state = None
+
+        def Perform(self, _point, _tolerance) -> None:
+            self.state = next(self.states)
+
+        def State(self):
+            return self.state
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+    samples = (
+        (centre.X - 1.0, centre.Y, centre.Z),
+        (centre.X + 1.0, centre.Y, centre.Z),
+    )
+    monkeypatch.setattr(module, "_triangle_samples", lambda *_args, **_kwargs: samples)
+    monkeypatch.setattr(module, "_regular_plane_differential", lambda *_args: True)
+    monkeypatch.setattr(module, "BRepClass3d_SolidClassifier", ScriptedClassifier)
+
+    refused = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+
+    assert isinstance(refused, SurfaceUseRefusal)
+    assert refused.reason is reason
 
 
 def _as_bspline_face(face: Face) -> Face:

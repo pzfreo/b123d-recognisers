@@ -42,6 +42,8 @@ from b123d_recognisers._effective_surfaces import (
     SurfaceKind,
     SurfaceProvenance,
     SurfaceRefusalReason,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
 )
 from b123d_recognisers.pads import (
     RaisedPad,
@@ -426,6 +428,38 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
+def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
+    import b123d_recognisers.pads as module
+
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._recognise_rectangular_pads_one
+
+    def reused_top(source, *, tol, face_surfaces):
+        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+        record = proposal.record
+        return [
+            proposal,
+            module._PadProposal(
+                RaisedPad(
+                    record.x0,
+                    record.x1,
+                    record.y0,
+                    record.y1,
+                    record.z0 - 1.0,
+                    record.z1,
+                ),
+                proposal.top_face,
+                proposal.wall_roles,
+            ),
+        ]
+
+    monkeypatch.setattr(module, "_recognise_rectangular_pads_one", reused_top)
+    with pytest.raises(ValueError, match="share a defining top face"):
+        _discover_rectangular_pads(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
 def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -> None:
     import b123d_recognisers.pads as module
 
@@ -470,6 +504,76 @@ def test_foreign_writer_refuses_before_publication() -> None:
     with pytest.raises(ValueError):
         _discover_rectangular_pads(_pad(), writer=foreign.writer)
     assert foreign.candidate_set(FamilyId.PADS).candidates == ()
+
+
+def test_foreign_surface_query_refuses_before_pad_discovery() -> None:
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    foreign_query = effective_faces_for_graph(FaceGraph(part))
+
+    with pytest.raises(ValueError, match="different runs"):
+        _discover_rectangular_pads(
+            part,
+            writer=ledger.writer,
+            face_surfaces=foreign_query,
+        )
+
+
+def test_pad_top_without_material_certificate_remains_suppression_only() -> None:
+    part = _pad()
+    delegate = effective_faces_for_graph(FaceGraph(part))
+
+    class MissingMaterialCertificate:
+        @property
+        def run_token(self):
+            return delegate.run_token
+
+        def fact(self, face):
+            return delegate.fact(face)
+
+        def use(self, face, *, material_side=False):
+            return delegate.use(face, material_side=False)
+
+    assert (
+        _discover_rectangular_pads(
+            part,
+            face_surfaces=MissingMaterialCertificate(),
+        )
+        == []
+    )
+
+
+def test_pad_surface_refusal_during_evidence_issuance_is_atomic() -> None:
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    delegate = effective_faces_for_graph(ledger.graph)
+    material_calls: dict[object, int] = {}
+
+    class LateRefusal:
+        @property
+        def run_token(self):
+            return delegate.run_token
+
+        def fact(self, face):
+            return delegate.fact(face)
+
+        def use(self, face, *, material_side=False):
+            node = ledger.graph.require_node(face)
+            if material_side:
+                material_calls[node] = material_calls.get(node, 0) + 1
+                if material_calls[node] > 1:
+                    return SurfaceUseRefusal(
+                        node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE
+                    )
+            return delegate.use(face, material_side=material_side)
+
+    with pytest.raises(ValueError, match="provenance became unavailable"):
+        _discover_rectangular_pads(
+            part,
+            writer=ledger.writer,
+            face_surfaces=LateRefusal(),
+        )
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
 def test_supported_transforms_preserve_writer_lifecycle() -> None:
