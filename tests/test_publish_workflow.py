@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[1]
 README = ROOT / "README.md"
 WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+FULL_MATRIX_WORKFLOW = ROOT / ".github" / "workflows" / "full-matrix.yml"
 
 
 def _parsed(path: Path) -> dict:
@@ -119,8 +120,8 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
 def test_ci_workflow_pins_node24_actions() -> None:
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
 
-    assert workflow.count("actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803") == 2
-    assert workflow.count("astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39") == 2
+    assert workflow.count("actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803") == 4
+    assert workflow.count("astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39") == 4
     assert workflow.count("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a") == 1
     assert workflow.count("codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f") == 1
     assert "actions/checkout@v" not in workflow
@@ -130,6 +131,49 @@ def test_ci_workflow_pins_node24_actions() -> None:
     assert "id-token: write" in workflow
     assert "use_oidc: true" in workflow
     assert "fail_ci_if_error: true" in workflow
+
+
+def test_ci_has_one_coverage_authority_and_a_separate_exhaustive_matrix() -> None:
+    ci = _parsed(CI_WORKFLOW)
+    full = _parsed(FULL_MATRIX_WORKFLOW)
+    triggers = ci.get("on", ci.get(True))
+
+    assert list(ci["jobs"]) == ["lint", "fast-test", "test", "compatibility"]
+    assert triggers["pull_request"] == {
+        "types": ["opened", "synchronize", "reopened", "ready_for_review"]
+    }
+    assert ci["jobs"]["fast-test"]["if"] == "github.event_name == 'pull_request'"
+    assert _steps(ci["jobs"]["fast-test"])[-1] == 'uv run pytest -n 2 -m "not slow"'
+    assert ci["jobs"]["test"]["runs-on"] == "ubuntu-latest"
+    assert ci["jobs"]["test"]["if"] == (
+        "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
+    )
+    assert "--cov-fail-under=91" in " ".join(_steps(ci["jobs"]["test"]))
+    assert "--cov" not in " ".join(_steps(ci["jobs"]["compatibility"]))
+    assert _steps(ci["jobs"]["compatibility"])[-1] == 'uv run pytest -n 2 -m "not slow"'
+    assert ci["jobs"]["compatibility"]["strategy"]["matrix"]["include"] == [
+        {"os": "ubuntu-latest", "python": "3.10"},
+        {"os": "ubuntu-latest", "python": "3.14"},
+        {"os": "macos-latest", "python": "3.12"},
+        {"os": "windows-latest", "python": "3.12"},
+    ]
+
+    matrix = full["jobs"]["test"]["strategy"]["matrix"]
+    assert matrix == {
+        "os": ["ubuntu-latest", "macos-latest", "windows-latest"],
+        "python": ["3.10", "3.12", "3.14"],
+    }
+    exhaustive = FULL_MATRIX_WORKFLOW.read_text(encoding="utf-8")
+    assert _triggers(full) == {"schedule", "workflow_dispatch"}
+    assert "pre-release" not in CI_WORKFLOW.read_text(encoding="utf-8")
+    assert exhaustive.count(
+        "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803"
+    ) == 1
+    assert exhaustive.count(
+        "astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39"
+    ) == 1
+    assert "actions/checkout@v" not in exhaustive
+    assert "astral-sh/setup-uv@v" not in exhaustive
 
 
 def test_readme_links_the_codecov_badge_to_the_public_project() -> None:
