@@ -9,7 +9,7 @@ The script exists because a release that moves some copies and not others fails 
 testing is not that it can write a version -- it is that a partial write cannot survive.
 
 ``uv version`` is stubbed here rather than run. It owns ``pyproject.toml`` and ``uv.lock``
-and is not this script's behaviour; what is, is what happens to the other two files around
+and is not this script's behaviour; what is, is what happens to the other three files around
 it, including when it fails.
 """
 
@@ -45,6 +45,15 @@ def _project(root: Path, version: str = "0.2.5") -> None:
                    indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    (root / "src/b123d_recognisers/inspection_api.json").write_text(
+        json.dumps(
+            {"api": {}, "package": {"name": "b123d-recognisers", "version": version}},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (root / "src/b123d_recognisers/__init__.py").write_text(
         'try:\n'
         '    __version__ = version("b123d-recognisers")\n'
@@ -56,9 +65,11 @@ def _project(root: Path, version: str = "0.2.5") -> None:
 
 def _versions(root: Path) -> dict[str, str]:
     manifest = json.loads((root / "src/b123d_recognisers/capabilities.json").read_text())
+    inspection = json.loads((root / "src/b123d_recognisers/inspection_api.json").read_text())
     init = (root / "src/b123d_recognisers/__init__.py").read_text(encoding="utf-8")
     return {
         "manifest": manifest["package"]["version"],
+        "inspection": inspection["package"]["version"],
         "fallback": init.split('__version__ = "')[-1].split('"')[0],
     }
 
@@ -73,7 +84,11 @@ def test_every_embedded_copy_moves_together(tmp_path, monkeypatch, target) -> No
 
     module.update(tmp_path, target)
 
-    assert _versions(tmp_path) == {"manifest": target, "fallback": target}
+    assert _versions(tmp_path) == {
+        "manifest": target,
+        "inspection": target,
+        "fallback": target,
+    }
 
 
 @pytest.mark.parametrize(
@@ -93,7 +108,7 @@ def test_a_version_that_is_not_a_release_or_a_snapshot_is_refused(tmp_path, targ
     with pytest.raises(ValueError):
         module.update(tmp_path, target)
 
-    assert _versions(tmp_path) == {"manifest": "0.2.5", "fallback": "0.2.5"}
+    assert set(_versions(tmp_path).values()) == {"0.2.5"}
 
 
 def test_a_failure_part_way_through_restores_every_file(tmp_path, monkeypatch) -> None:
@@ -117,7 +132,7 @@ def test_a_failure_part_way_through_restores_every_file(tmp_path, monkeypatch) -
     with pytest.raises(RuntimeError):
         module.update(tmp_path, "0.2.6")
 
-    assert _versions(tmp_path) == {"manifest": "0.2.5", "fallback": "0.2.5"}
+    assert set(_versions(tmp_path).values()) == {"0.2.5"}
     assert 'version = "0.2.5"' in (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
     assert 'version = "0.2.5"' in (tmp_path / "uv.lock").read_text(encoding="utf-8")
 
@@ -127,7 +142,7 @@ def test_a_failure_after_the_manifest_is_written_still_restores_it(tmp_path, mon
 
     That one raises inside the `uv version` stub, i.e. before the manifest and fallback are
     touched -- so a rollback restoring only `pyproject.toml` and `uv.lock` passed it. Failing
-    at the *last* write is what actually requires all four snapshots to be honoured.
+    at the *last* write is what actually requires all five snapshots to be honoured.
     """
 
     module = _load()
@@ -146,7 +161,7 @@ def test_a_failure_after_the_manifest_is_written_still_restores_it(tmp_path, mon
         module.update(tmp_path, "0.2.6")
 
     monkeypatch.undo()
-    assert _versions(tmp_path) == {"manifest": "0.2.5", "fallback": "0.2.5"}
+    assert set(_versions(tmp_path).values()) == {"0.2.5"}
 
 
 def test_a_source_tree_missing_the_fallback_is_refused_before_writing(tmp_path) -> None:
@@ -168,3 +183,7 @@ def test_a_source_tree_missing_the_fallback_is_refused_before_writing(tmp_path) 
 
     manifest = json.loads((tmp_path / "src/b123d_recognisers/capabilities.json").read_text())
     assert manifest["package"]["version"] == "0.2.5"
+    inspection = json.loads(
+        (tmp_path / "src/b123d_recognisers/inspection_api.json").read_text()
+    )
+    assert inspection["package"]["version"] == "0.2.5"

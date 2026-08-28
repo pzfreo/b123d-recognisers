@@ -1,5 +1,11 @@
 # F7 GeometryGraph consumer spike
 
+> **Publication follow-up (0.4.4, issue #186):** the recommended graph-independent surface and
+> four already-consumed family reads graduated as `b123d_recognisers.inspection`, backed by a
+> separate versioned manifest. `experimental_geometry.inspect_face` remains an exact-object
+> compatibility alias. `GeometryGraph` and the graph/blend surface remain experimental; none of
+> the no-go boundary below was widened.
+
 ## Decision
 
 **No-go on publishing `GeometryGraph` in its present form. Go on reviewing the graph-independent

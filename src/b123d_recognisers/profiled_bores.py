@@ -23,7 +23,7 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import part_scale
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers._typing import FaceLike, Part, Vector3
 
 
 @dataclass(frozen=True)
@@ -692,7 +692,9 @@ def _discover_double_d_bores(
     return ordered
 
 
-def read_double_d_tool(obj, *, tol: float = 1e-5) -> tuple:
+def read_double_d_tool(
+    obj: Part, *, tol: float = 1e-5
+) -> tuple[str, float, float, Vector3, float, Vector3]:
     """Read one constant double-D extrusion, rejecting merely matching end geometry."""
     bbox = obj.bounding_box()
     scan_tol = max(tol, part_scale(bbox) * 1e-5)

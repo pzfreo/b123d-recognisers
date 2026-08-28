@@ -16,6 +16,32 @@ Downstream CI can export the identical deterministic JSON with
 `b123d-recognisers-capabilities --format-version 2`. Unknown format versions fail closed. This
 page remains the human explanation of the machine-readable boundary.
 
+## Declared-feature inspection API
+
+The recognition-family manifest above remains format 2 and describes recognisers, records, and
+aggregate membership only. A separate format-1 document freezes the smaller API used by CAD front
+ends when a user selects geometry and declares a feature:
+
+```python
+from b123d_recognisers.inspection import inspection_api_manifest
+
+inspection_contract = inspection_api_manifest(format_version=1)
+```
+
+Its primary namespace is `b123d_recognisers.inspection`. The consumer-proven operation roster is
+`inspect_face`, `classify_bevel` / `BevelReject`, `cone_rims`, `read_double_d_tool`, and
+`floor_face_anchor`, together with the closed analytic result and refusal value types required by
+`inspect_face`. The manifest records exact signatures, enum values, dataclass fields, introduction
+versions, and compatibility aliases. Unknown format versions and unknown document fields fail
+closed.
+
+The old `experimental_geometry.inspect_face` and surface-value names are exact-object aliases, as
+are the existing root or family-module paths for the other four reads. New code should use the
+inspection namespace. This graduation does not publish `GeometryGraph`, opaque graph handles,
+adjacency, blend collapse, sections, correspondence, Candidate/evidence, registry, or
+reconciliation. Those remain private or experimental because no second external consumer proved
+their cost.
+
 ## Defining-face attribution status
 
 Attribution remains a private Candidate/evidence contract. Format 2 adds API roles and the counted

@@ -146,9 +146,13 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.TORUS_DEFERRED,
         "toroidal fillets are outside the four-primitive F1 seam",
     ),
+    "inspection": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "supported F7 inspection owns its bounded trimmed-surface anchor projection",
+    ),
     "experimental_geometry": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "F7 spike facade owns its bounded trimmed-surface anchor projection",
+        "experimental graph facade projects the graph-owned planar query",
     ),
     "frames": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -247,9 +251,9 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b original planar wall-cycle membership",
     ),
-    "experimental_geometry:surface_anchor:adaptor:1": (
+    "inspection:_surface_anchor:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "bounded facade anchor over the same graph-owned original face",
+        "bounded inspection anchor over the same graph-owned original face",
     ),
     "experimental_geometry:is_planar:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,

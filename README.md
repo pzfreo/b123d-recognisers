@@ -66,6 +66,30 @@ holes = recognise_holes(part, cyls=cylinders)
 patterns = recognise_hole_patterns(holes)
 ```
 
+### Inspect geometry for declared features
+
+CAD front ends that create a declared feature from a selected face can use the supported,
+single-face inspection namespace instead of importing recogniser internals:
+
+```python
+from b123d_recognisers.inspection import AnalyticSurface, SurfaceKind, inspect_face
+
+inspected = inspect_face(selected_face)
+if isinstance(inspected.surface, AnalyticSurface):
+    if inspected.surface.kind is SurfaceKind.CYLINDER:
+        print(inspected.surface.parameters, inspected.anchor)
+```
+
+The namespace also groups the four consumer-proven family reads: `classify_bevel` /
+`BevelReject`, `cone_rims`, `read_double_d_tool`, and `floor_face_anchor`. Existing root,
+family-module, and `experimental_geometry.inspect_face` imports remain exact-object compatibility
+aliases. `GeometryGraph`, adjacency, blend collapse, correspondence, evidence, and reconciliation
+are not part of this supported API.
+
+`inspection_api_manifest()` returns the separately versioned, installed-wheel contract for this
+roster. It does not change the recognition capability-manifest schema. See
+[`docs/capabilities.md`](docs/capabilities.md#declared-feature-inspection-api).
+
 ### Recognise independently of STEP placement
 
 Use the opt-in framed route when the same physical part must produce local coordinates independent

@@ -1,4 +1,4 @@
-"""Consumer-spike evidence for the provisional F7 geometry facade."""
+"""Experimental graph evidence and stable inspection compatibility coverage."""
 
 from __future__ import annotations
 

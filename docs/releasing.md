@@ -79,8 +79,8 @@ TestPyPI and PyPI accounts and publisher registrations are independent. Protect 
 
 ## Moving the version by hand
 
-`scripts/update-recogniser-version X.Y.Z[.devN]` is the only supported way. Four files
-hold the version — `pyproject.toml`, `uv.lock`, `capabilities.json`'s `package.version`, and
-the `PackageNotFoundError` fallback in `__init__.py` — and the script moves all four or
-restores all four. Editing any of them by hand is how the fallback came to sit at 0.2.2 through
-both the 0.2.3 and 0.2.4 releases.
+`scripts/update-recogniser-version X.Y.Z[.devN]` is the only supported way. Five files
+hold the version — `pyproject.toml`, `uv.lock`, the `package.version` fields in
+`capabilities.json` and `inspection_api.json`, and the `PackageNotFoundError` fallback in
+`__init__.py` — and the script moves all five or restores all five. Editing any of them by hand
+is how the fallback came to sit at 0.2.2 through both the 0.2.3 and 0.2.4 releases.
