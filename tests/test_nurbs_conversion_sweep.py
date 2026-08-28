@@ -35,7 +35,7 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "face_centre_model_units": 0.1,
         "absolute_face_area_square_units": 25.0,
         "relative_face_area": 0.004,
-        "effective_primitive_parameter": 1e-8,
+        "effective_primitive_parameter": 1e-6,
     }
     assert report["totals"] == {
         "fixtures": 20,

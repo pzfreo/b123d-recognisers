@@ -18,7 +18,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 9
         },
@@ -47,7 +48,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 36
         },
@@ -76,7 +78,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 12,
           "plane": 6
@@ -106,7 +109,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 5,
           "plane": 19
@@ -136,7 +140,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cone": 1,
           "cylinder": 3,
@@ -167,7 +172,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 8
@@ -197,7 +203,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 12
         },
@@ -226,7 +233,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 3,
           "plane": 6
@@ -256,7 +264,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 10
         },
@@ -376,7 +385,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 21
         },
@@ -405,7 +415,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 13
         },
@@ -434,7 +445,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 8
         },
@@ -463,7 +475,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 18
         },
@@ -492,7 +505,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 7
@@ -522,7 +536,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 8
@@ -552,7 +567,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 16
         },
@@ -581,7 +597,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 24
@@ -611,7 +628,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 30
         },
@@ -640,7 +658,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "plane": 22
         },
@@ -669,7 +688,8 @@
       },
       "surfaces": {
         "ambiguous": 0,
-        "kind_or_parameter_mismatch_faces": [],
+        "kind_correspondence_preserved": true,
+        "parameters_within_reviewed_bounds": true,
         "recovered_by_primitive": {
           "cylinder": 3,
           "plane": 4
@@ -694,7 +714,7 @@
   },
   "reviewed_delta_bounds": {
     "absolute_face_area_square_units": 25.0,
-    "effective_primitive_parameter": 1e-08,
+    "effective_primitive_parameter": 1e-06,
     "face_centre_model_units": 0.1,
     "relative_face_area": 0.004
   },

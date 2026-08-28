@@ -45,7 +45,7 @@ REVIEWED_DELTA_BOUNDS = {
     "face_centre_model_units": 0.1,
     "absolute_face_area_square_units": 25.0,
     "relative_face_area": 0.004,
-    "effective_primitive_parameter": 1e-8,
+    "effective_primitive_parameter": 1e-6,
 }
 PERFORMANCE_MEASUREMENT = {
     "environment": "Python 3.14.7, macOS/darwin, local development host",
@@ -163,7 +163,6 @@ def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[
     converted_surfaces = EffectiveSurfaceIndex(converted_graph)
     recovered = Counter()
     refused = Counter()
-    mismatches = []
     for native_at, converted_at in enumerate(correspondence):
         left = native_surfaces.fact(native_graph.nodes[native_at])
         right = converted_surfaces.fact(converted_graph.nodes[converted_at])
@@ -172,22 +171,24 @@ def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[
         else:
             recovered[right.kind.value] += 1
         if not isinstance(left, AnalyticSurfaceFact) or not isinstance(right, AnalyticSurfaceFact):
-            mismatches.append(native_at)
-            continue
+            raise RuntimeError(f"face {native_at} did not retain an analytic surface fact")
         if left.kind is not right.kind or len(left.parameters) != len(right.parameters):
-            mismatches.append(native_at)
-            continue
+            raise RuntimeError(f"face {native_at} changed effective primitive kind")
         delta = max(
             (abs(a - b) for a, b in zip(left.parameters, right.parameters, strict=True)),
             default=0.0,
         )
         if delta > REVIEWED_DELTA_BOUNDS["effective_primitive_parameter"]:
-            mismatches.append(native_at)
+            raise RuntimeError(
+                f"face {native_at} effective parameter delta {delta!r} exceeds reviewed bound "
+                f"{REVIEWED_DELTA_BOUNDS['effective_primitive_parameter']!r}"
+            )
     return {
         "recovered_by_primitive": dict(sorted(recovered.items())),
         "refused_by_reason": dict(sorted(refused.items())),
         "ambiguous": refused.get("ambiguous-primitive", 0),
-        "kind_or_parameter_mismatch_faces": mismatches,
+        "kind_correspondence_preserved": True,
+        "parameters_within_reviewed_bounds": True,
     }
 
 

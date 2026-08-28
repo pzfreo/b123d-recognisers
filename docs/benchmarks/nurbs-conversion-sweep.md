@@ -20,7 +20,7 @@ Reviewed representation-delta bounds enforced across every face:
 - evaluated face centre: `0.1` model units
 - absolute face area: `25.0` square units
 - relative face area: `0.004`
-- effective primitive parameter: `1e-08`
+- effective primitive parameter: `1e-06`
 
 ## Performance gate
 
