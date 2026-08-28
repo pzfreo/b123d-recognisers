@@ -211,7 +211,9 @@ def test_scorer_rejects_a_class_outside_the_closed_taxonomy() -> None:
 
 def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> None:
     external = tmp_path / "mapping.json"
-    assert _display_path(TAXONOMY) == "docs/benchmarks/effectiveness-taxonomy-v1.json"
+    assert _display_path(TAXONOMY) == str(
+        Path("docs") / "benchmarks" / "effectiveness-taxonomy-v1.json"
+    )
     assert _display_path(external) == str(external.resolve())
 
 
