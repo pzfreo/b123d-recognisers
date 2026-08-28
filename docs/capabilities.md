@@ -181,6 +181,15 @@ boundary, not evidence of whole-model support.
 
 ## Measured against third-party labelled corpora
 
+Epic 0005 uses a single versioned
+[`effectiveness baseline method`](benchmarks/effectiveness-baseline-method.md) and the frozen
+[`0.5.0 MFCAD++ result`](benchmarks/effectiveness-mfcadpp-500-0.5.0.md) for new MFCAD++
+development reports and MFInstSeg transfer baselines. It records exact numerators and denominators,
+accepted physical occurrences, defining-face agreement, instance recall where available,
+reconciliation drops, bounded diagnostics, empty models, runtime, versions and corpus selection.
+The historical measurements below predate that schema and remain evidence for the narrower claims
+they state; they are not silently promoted into the new baseline.
+
 MFTRCAD version 1 is also available as an external, relationship-labelled development source.
 Its provenance, deterministic development/holdout draw, malformed-model policy and deliberately
 non-authoritative taxonomy mapping are documented in

@@ -1,0 +1,40 @@
+{
+  "format": "b123d-recognisers-effectiveness-taxonomy",
+  "format_version": 1,
+  "datasets": {
+    "mfcadpp": {
+      "classes": {
+        "0": {"families": ["chamfers"], "name": "Chamfer", "status": "supported"},
+        "1": {"families": ["holes"], "name": "Through hole", "status": "supported"},
+        "2": {"families": ["passages"], "name": "Triangular passage", "status": "supported"},
+        "3": {"families": ["passages"], "name": "Rectangular passage", "status": "supported"},
+        "4": {"families": ["passages"], "name": "6-sided passage", "status": "supported"},
+        "5": {"families": [], "name": "Triangular through slot", "status": "unsupported"},
+        "6": {"families": ["slots"], "name": "Rectangular through slot", "status": "supported"},
+        "7": {"families": ["slots"], "name": "Circular through slot", "status": "supported"},
+        "8": {"families": [], "name": "Rectangular through step", "status": "unsupported"},
+        "9": {"families": [], "name": "2-sided through step", "status": "unsupported"},
+        "10": {"families": [], "name": "Slanted through step", "status": "unsupported"},
+        "11": {"families": ["bosses"], "name": "O-ring", "status": "supported"},
+        "12": {"families": ["holes"], "name": "Blind hole", "status": "supported"},
+        "13": {"families": ["prismatic-pockets"], "name": "Triangular pocket", "status": "supported"},
+        "14": {"families": ["pockets", "prismatic-pockets"], "name": "Rectangular pocket", "status": "supported"},
+        "15": {"families": ["prismatic-pockets"], "name": "6-sided pocket", "status": "supported"},
+        "16": {"families": ["pockets"], "name": "Circular end pocket", "status": "supported"},
+        "17": {"families": ["pockets"], "name": "Rectangular blind slot", "status": "supported"},
+        "18": {"families": ["pockets"], "name": "Vertical circular end blind slot", "status": "supported"},
+        "19": {"families": ["pockets"], "name": "Horizontal circular end blind slot", "status": "supported"},
+        "20": {"families": ["angled-steps"], "name": "Triangular blind step", "status": "supported"},
+        "21": {"families": ["fillets"], "name": "Circular blind step", "status": "supported"},
+        "22": {"families": ["pockets"], "name": "Rectangular blind step", "status": "supported"},
+        "23": {"families": ["fillets"], "name": "Round", "status": "supported"},
+        "24": {"families": [], "name": "Stock", "status": "incomparable"}
+      },
+      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership."
+    },
+    "mfinstseg": {
+      "classes_from": "mfcadpp",
+      "notes": "MFInstSeg uses the same 25-class feature vocabulary and adds instance and bottom-face labels."
+    }
+  }
+}
