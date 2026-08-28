@@ -3,7 +3,8 @@
 """Opt-in part-relative recognition with an explicit caller-space frame.
 
 Existing recognition entry points remain caller-space and byte compatible. Framed recognition
-pairs the unchanged local-frame ``RecognitionResult`` with the frame needed to interpret it.
+pairs the unchanged local-frame ``RecognitionResult`` and exact working shape with the frame
+needed to interpret them.
 """
 
 from __future__ import annotations
@@ -105,9 +106,10 @@ class PartFrame:
 
 @dataclass(frozen=True, slots=True)
 class FramedRecognitionResult:
-    """Existing recognition records expressed in the accompanying local frame."""
+    """The exact local working shape and records expressed in its accompanying frame."""
 
     frame: PartFrame
+    part: Shape
     result: RecognitionResult
 
 
@@ -328,7 +330,9 @@ def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> 
         return frame
     normalized = _normalize_part(part, frame)
     return FramedRecognitionResult(
-        frame, build_recognition_result(normalized, rotational=rotational)
+        frame,
+        normalized,
+        build_recognition_result(normalized, rotational=rotational),
     )
 
 

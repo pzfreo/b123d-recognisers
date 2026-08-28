@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.5.0
+
+- **Exposed the exact framed-recognition working shape.** Successful
+  `FramedRecognitionResult` values now include `part`, the topology-preserving local shape passed
+  to recognition. Consumers can therefore lower geometry and interpret records in one coordinate
+  system without reconstructing private normalization. This adds a required public dataclass field;
+  callers that manually construct `FramedRecognitionResult` must supply `(frame, part, result)`.
+  Existing frame refusals and the legacy caller-space recognition route are unchanged.
+
 ## 0.4.5
 
 - **Completed the supported inspection contract consumed by Draftwright.** The installed
