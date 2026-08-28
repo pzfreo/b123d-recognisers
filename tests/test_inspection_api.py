@@ -7,14 +7,17 @@ import dataclasses
 import importlib
 import inspect
 import json
+import math
 import subprocess
 import sys
+import types
 import typing
 from enum import Enum
 from pathlib import Path
 
 import pytest
-from build123d import Cylinder, GeomType, Torus, Vertex
+from build123d import Box, Cone, Cylinder, GeomType, Polygon, Pos, Sphere, Torus, Vertex
+from OCP.BRepAdaptor import BRepAdaptor_Surface
 
 import b123d_recognisers as recognition
 import b123d_recognisers.experimental_geometry as experimental
@@ -40,6 +43,74 @@ EXPECTED_KINDS = {
     "read_double_d_tool": "function",
 }
 
+EXPECTED_ALIASES = {
+    "AnalyticSurface": ["b123d_recognisers.experimental_geometry.AnalyticSurface"],
+    "BevelReject": [
+        "b123d_recognisers.BevelReject",
+        "b123d_recognisers.chamfers.BevelReject",
+    ],
+    "FaceInspection": ["b123d_recognisers.experimental_geometry.FaceInspection"],
+    "OrientationCapability": [
+        "b123d_recognisers.experimental_geometry.OrientationCapability"
+    ],
+    "RefusedSurface": ["b123d_recognisers.experimental_geometry.RefusedSurface"],
+    "SurfaceFact": ["b123d_recognisers.experimental_geometry.SurfaceFact"],
+    "SurfaceKind": ["b123d_recognisers.experimental_geometry.SurfaceKind"],
+    "SurfaceProvenance": [
+        "b123d_recognisers.experimental_geometry.SurfaceProvenance"
+    ],
+    "SurfaceRefusalReason": [
+        "b123d_recognisers.experimental_geometry.SurfaceRefusalReason"
+    ],
+    "classify_bevel": [
+        "b123d_recognisers.chamfers.classify_bevel",
+        "b123d_recognisers.classify_bevel",
+    ],
+    "cone_rims": [
+        "b123d_recognisers.cone_rims",
+        "b123d_recognisers.countersinks.cone_rims",
+    ],
+    "floor_face_anchor": [
+        "b123d_recognisers.floor_face_anchor",
+        "b123d_recognisers.grooves.floor_face_anchor",
+    ],
+    "inspect_face": ["b123d_recognisers.experimental_geometry.inspect_face"],
+    "read_double_d_tool": ["b123d_recognisers.profiled_bores.read_double_d_tool"],
+}
+
+EXPECTED_SURFACE_PARAMETERS = {
+    "cone": [
+        ("apex_x", "model-length"),
+        ("apex_y", "model-length"),
+        ("apex_z", "model-length"),
+        ("axis_x", "unitless"),
+        ("axis_y", "unitless"),
+        ("axis_z", "unitless"),
+        ("signed_semi_angle", "radian"),
+    ],
+    "cylinder": [
+        ("axis_point_x", "model-length"),
+        ("axis_point_y", "model-length"),
+        ("axis_point_z", "model-length"),
+        ("axis_x", "unitless"),
+        ("axis_y", "unitless"),
+        ("axis_z", "unitless"),
+        ("radius", "model-length"),
+    ],
+    "plane": [
+        ("normal_x", "unitless"),
+        ("normal_y", "unitless"),
+        ("normal_z", "unitless"),
+        ("offset", "model-length"),
+    ],
+    "sphere": [
+        ("centre_x", "model-length"),
+        ("centre_y", "model-length"),
+        ("centre_z", "model-length"),
+        ("radius", "model-length"),
+    ],
+}
+
 
 def _symbols() -> list[dict[str, object]]:
     manifest = inspection.inspection_api_manifest()
@@ -49,6 +120,26 @@ def _symbols() -> list[dict[str, object]]:
 def _resolve(qualified_name: str) -> object:
     module_name, _, name = qualified_name.rpartition(".")
     return getattr(importlib.import_module(module_name), name)
+
+
+def _type_name(annotation: object) -> str:
+    if annotation is type(None):
+        return "null"
+    if annotation in {bool, float, int, str}:
+        return typing.cast(type, annotation).__name__
+    if inspect.isclass(annotation) and annotation.__module__.startswith("b123d_recognisers"):
+        return annotation.__name__
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin in {typing.Union, types.UnionType}:
+        return "|".join(
+            sorted({_type_name(arg) for arg in args}, key=lambda item: (item == "null", item))
+        )
+    if origin is tuple:
+        return "tuple[" + ",".join(
+            "..." if arg is Ellipsis else _type_name(arg) for arg in args
+        ) + "]"
+    raise TypeError(annotation)
 
 
 def test_manifest_query_is_deterministic_isolated_and_separately_versioned() -> None:
@@ -77,15 +168,29 @@ def test_manifest_query_is_deterministic_isolated_and_separately_versioned() -> 
 def test_manifest_roster_and_runtime_contracts_are_derived_independently() -> None:
     declared = {typing.cast(str, item["name"]): item for item in _symbols()}
     assert {name: item["kind"] for name, item in declared.items()} == EXPECTED_KINDS
+    assert {name: item["aliases"] for name, item in declared.items()} == EXPECTED_ALIASES
 
     for name, kind in EXPECTED_KINDS.items():
         value = getattr(inspection, name)
         contract = typing.cast(dict[str, object], declared[name]["contract"])
         if kind == "dataclass":
-            assert contract == {"fields": [field.name for field in dataclasses.fields(value)]}
+            hints = typing.get_type_hints(value)
+            parameters = value.__dataclass_params__
+            assert contract == {
+                "fields": [
+                    {"name": field.name, "type": _type_name(hints[field.name])}
+                    for field in dataclasses.fields(value)
+                ],
+                "frozen": parameters.frozen,
+                "slots": getattr(parameters, "slots", "__slots__" in value.__dict__),
+            }
         elif kind == "enum":
             assert inspect.isclass(value) and issubclass(value, Enum)
-            assert contract == {"values": [member.value for member in value]}
+            assert contract == {
+                "members": [
+                    {"name": member.name, "value": member.value} for member in value
+                ]
+            }
         elif kind == "exception":
             assert inspect.isclass(value) and issubclass(value, ValueError)
             assert contract == {"base": "ValueError"}
@@ -98,6 +203,80 @@ def test_manifest_roster_and_runtime_contracts_are_derived_independently() -> No
                 inspection.RefusedSurface,
             }
             assert contract == {"definition": "AnalyticSurface|RefusedSurface"}
+
+
+def test_manifest_freezes_each_surface_parameter_layout_and_unit() -> None:
+    api = inspection.inspection_api_manifest()["api"]
+    layouts = {
+        kind: [(item["name"], item["unit"]) for item in layout]
+        for kind, layout in api["surface_parameters"].items()
+    }
+
+    assert layouts == EXPECTED_SURFACE_PARAMETERS
+    assert set(layouts) == {kind.value for kind in inspection.SurfaceKind}
+
+
+def test_surface_parameter_layouts_reconstruct_the_native_primitives() -> None:
+    plane_face = max(
+        Box(7, 9, 11).faces().filter_by(GeomType.PLANE),
+        key=lambda face: face.center().Z,
+    )
+    cylinder_face = (Pos(4, 5, 0) * Cylinder(3, 8)).faces().filter_by(GeomType.CYLINDER)[0]
+    cone_face = (Pos(2, 3, 0) * Cone(5, 2, 10)).faces().filter_by(GeomType.CONE)[0]
+    sphere_face = (Pos(2, 3, 4) * Sphere(5)).faces().filter_by(GeomType.SPHERE)[0]
+
+    facts = {}
+    for face in (plane_face, cylinder_face, cone_face, sphere_face):
+        fact = inspection.inspect_face(face).surface
+        assert isinstance(fact, inspection.AnalyticSurface)
+        names = [name for name, _unit in EXPECTED_SURFACE_PARAMETERS[fact.kind.value]]
+        facts[fact.kind] = dict(zip(names, fact.parameters, strict=True))
+
+    plane = facts[inspection.SurfaceKind.PLANE]
+    normal = (plane["normal_x"], plane["normal_y"], plane["normal_z"])
+    assert math.dist(normal, (0.0, 0.0, 0.0)) == pytest.approx(1.0)
+    for vertex in plane_face.vertices():
+        point = tuple(vertex)
+        assert sum(a * b for a, b in zip(point, normal, strict=True)) == pytest.approx(
+            plane["offset"]
+        )
+
+    cylinder = facts[inspection.SurfaceKind.CYLINDER]
+    axis_point = tuple(cylinder[f"axis_point_{axis}"] for axis in "xyz")
+    axis = tuple(cylinder[f"axis_{axis}"] for axis in "xyz")
+    assert axis_point == pytest.approx((4.0, 5.0, 0.0))
+    assert axis == pytest.approx((0.0, 0.0, 1.0))
+    assert cylinder["radius"] == pytest.approx(3.0)
+
+    cone = facts[inspection.SurfaceKind.CONE]
+    native_cone = BRepAdaptor_Surface(cone_face.wrapped).Cone()
+    apex = native_cone.Apex()
+    raw_axis = native_cone.Axis().Direction()
+    api_axis = tuple(cone[f"axis_{axis}"] for axis in "xyz")
+    direction_sign = math.copysign(
+        1.0,
+        sum(
+            api * raw
+            for api, raw in zip(
+                api_axis,
+                (float(raw_axis.X()), float(raw_axis.Y()), float(raw_axis.Z())),
+                strict=True,
+            )
+        ),
+    )
+    assert tuple(cone[f"apex_{axis}"] for axis in "xyz") == pytest.approx(
+        (float(apex.X()), float(apex.Y()), float(apex.Z()))
+    )
+    assert math.dist(api_axis, (0.0, 0.0, 0.0)) == pytest.approx(1.0)
+    assert cone["signed_semi_angle"] == pytest.approx(
+        direction_sign * float(native_cone.SemiAngle())
+    )
+
+    sphere = facts[inspection.SurfaceKind.SPHERE]
+    assert tuple(sphere[f"centre_{axis}"] for axis in "xyz") == pytest.approx(
+        (2.0, 3.0, 4.0)
+    )
+    assert sphere["radius"] == pytest.approx(5.0)
 
 
 def test_every_manifested_compatibility_alias_preserves_exact_identity() -> None:
@@ -125,6 +304,26 @@ def test_only_standalone_inspection_graduated_from_the_experimental_facade() -> 
     assert not hasattr(inspection, "GeometryGraph")
     assert not hasattr(recognition, "GeometryGraph")
     assert "GeometryGraph" not in inspection.__all__
+    assert not {
+        "AnalyticSurfaceFact",
+        "EffectiveSurfaceIndex",
+        "FaceGraph",
+        "RefusedSurfaceFact",
+    } & set(vars(inspection))
+
+
+def test_supported_module_all_is_the_exact_roster_plus_manifest_protocol() -> None:
+    manifest_protocol = {
+        "INSPECTION_API_FORMAT",
+        "INSPECTION_API_FORMAT_VERSION",
+        "InspectionApiManifest",
+        "InspectionApiManifestError",
+        "inspection_api_manifest",
+        "inspection_api_manifest_json",
+        "validate_inspection_api_manifest",
+    }
+
+    assert set(inspection.__all__) == set(EXPECTED_KINDS) | manifest_protocol
 
 
 def test_stable_inspect_face_returns_native_fact_anchor_and_closed_refusal() -> None:
@@ -141,6 +340,26 @@ def test_stable_inspect_face_returns_native_fact_anchor_and_closed_refusal() -> 
     refused = inspection.inspect_face(Torus(8, 2).faces()[0])
     assert isinstance(refused.surface, inspection.RefusedSurface)
     assert refused.surface.reason in set(inspection.SurfaceRefusalReason)
+
+
+def test_inspection_anchor_does_not_fall_inside_an_inner_trim() -> None:
+    part = Box(20, 20, 2) - Pos(0, 0, -1) * Cylinder(3, 4)
+    face = max(part.faces().filter_by(GeomType.PLANE), key=lambda item: item.center().Z)
+
+    inspected = inspection.inspect_face(face)
+
+    assert inspected.anchor is not None
+    assert Vertex(*inspected.anchor).distance_to(face) < 1e-7
+    assert Vertex(*inspected.anchor).distance_to(Vertex(0, 0, inspected.anchor[2])) > 0.0
+
+
+def test_inspection_anchor_is_in_or_on_a_concave_trim() -> None:
+    face = Polygon((0, 0), (4, 0), (4, 1), (1, 1), (1, 4), (0, 4)).face()
+
+    inspected = inspection.inspect_face(face)
+
+    assert inspected.anchor is not None
+    assert Vertex(*inspected.anchor).distance_to(face) < 1e-7
 
 
 def test_committed_manifest_is_the_deterministic_generator_output() -> None:
@@ -171,6 +390,31 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
         (lambda value: value["api"].update({"major": 2}), "API major"),
         (lambda value: value["api"].update({"major": True}), "API major"),
         (lambda value: value["api"].update({"namespace": "other"}), "namespace"),
+        (lambda value: value["api"].pop("surface_parameters"), "missing required"),
+        (
+            lambda value: value["api"].update({"surface_parameters": {}}),
+            "four supported",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"].update({"plane": []}),
+            "non-empty",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"]["plane"].__setitem__(0, None),
+            "must be an object",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"]["plane"][0].update(
+                {"unit": "pixels"}
+            ),
+            "unit",
+        ),
+        (
+            lambda value: value["api"]["surface_parameters"]["plane"].append(
+                copy.deepcopy(value["api"]["surface_parameters"]["plane"][0])
+            ),
+            "names must be unique",
+        ),
         (lambda value: value["api"].update({"symbols": []}), "non-empty"),
         (lambda value: value["api"]["symbols"].__setitem__(0, None), "must be an object"),
         (lambda value: value["api"]["symbols"][0].pop("kind"), "missing required"),
@@ -197,6 +441,18 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             ),
             "aliases",
         ),
+        (
+            lambda value: value["api"]["symbols"][1].update(
+                {"aliases": [value["api"]["symbols"][0]["aliases"][0]]}
+            ),
+            "one owner",
+        ),
+        (
+            lambda value: value["api"]["symbols"][0].update(
+                {"aliases": [value["api"]["symbols"][1]["qualified_name"]]}
+            ),
+            "collide with primary",
+        ),
         (lambda value: value["api"]["symbols"][0].update({"contract": None}), "contract"),
         (
             lambda value: value["api"]["symbols"][0]["contract"].update({"future": 1}),
@@ -204,7 +460,19 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
         ),
         (
             lambda value: value["api"]["symbols"][0].update({"contract": {"fields": []}}),
-            "contract values",
+            "incomplete",
+        ),
+        (
+            lambda value: value["api"]["symbols"][0]["contract"]["fields"].__setitem__(
+                0, None
+            ),
+            "must be an object",
+        ),
+        (
+            lambda value: value["api"]["symbols"][0]["contract"].update(
+                {"frozen": "yes"}
+            ),
+            "contract is invalid",
         ),
         (lambda value: value["api"]["symbols"].reverse(), "name-sorted"),
         (

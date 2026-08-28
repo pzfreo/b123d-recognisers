@@ -2,6 +2,104 @@
   "api": {
     "major": 1,
     "namespace": "b123d_recognisers.inspection",
+    "surface_parameters": {
+      "cone": [
+        {
+          "name": "apex_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "apex_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "apex_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "signed_semi_angle",
+          "unit": "radian"
+        }
+      ],
+      "cylinder": [
+        {
+          "name": "axis_point_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_point_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_point_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "radius",
+          "unit": "model-length"
+        }
+      ],
+      "plane": [
+        {
+          "name": "normal_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "normal_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "normal_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "offset",
+          "unit": "model-length"
+        }
+      ],
+      "sphere": [
+        {
+          "name": "centre_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "centre_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "centre_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "radius",
+          "unit": "model-length"
+        }
+      ]
+    },
     "symbols": [
       {
         "aliases": [
@@ -9,13 +107,33 @@
         ],
         "contract": {
           "fields": [
-            "kind",
-            "provenance",
-            "orientation",
-            "parameters",
-            "requested_tolerance",
-            "kernel_reported_gap"
-          ]
+            {
+              "name": "kind",
+              "type": "SurfaceKind"
+            },
+            {
+              "name": "provenance",
+              "type": "SurfaceProvenance"
+            },
+            {
+              "name": "orientation",
+              "type": "OrientationCapability"
+            },
+            {
+              "name": "parameters",
+              "type": "tuple[float,...]"
+            },
+            {
+              "name": "requested_tolerance",
+              "type": "float"
+            },
+            {
+              "name": "kernel_reported_gap",
+              "type": "float"
+            }
+          ],
+          "frozen": true,
+          "slots": true
         },
         "introduced_in": "0.4.4",
         "kind": "dataclass",
@@ -24,7 +142,8 @@
       },
       {
         "aliases": [
-          "b123d_recognisers.BevelReject"
+          "b123d_recognisers.BevelReject",
+          "b123d_recognisers.chamfers.BevelReject"
         ],
         "contract": {
           "base": "ValueError"
@@ -40,9 +159,17 @@
         ],
         "contract": {
           "fields": [
-            "surface",
-            "anchor"
-          ]
+            {
+              "name": "surface",
+              "type": "AnalyticSurface|RefusedSurface"
+            },
+            {
+              "name": "anchor",
+              "type": "tuple[float,float,float]|null"
+            }
+          ],
+          "frozen": true,
+          "slots": true
         },
         "introduced_in": "0.4.4",
         "kind": "dataclass",
@@ -54,9 +181,15 @@
           "b123d_recognisers.experimental_geometry.OrientationCapability"
         ],
         "contract": {
-          "values": [
-            "native-oriented",
-            "recovered-unoriented"
+          "members": [
+            {
+              "name": "NATIVE_ORIENTED",
+              "value": "native-oriented"
+            },
+            {
+              "name": "RECOVERED_UNORIENTED",
+              "value": "recovered-unoriented"
+            }
           ]
         },
         "introduced_in": "0.4.4",
@@ -70,8 +203,13 @@
         ],
         "contract": {
           "fields": [
-            "reason"
-          ]
+            {
+              "name": "reason",
+              "type": "SurfaceRefusalReason"
+            }
+          ],
+          "frozen": true,
+          "slots": true
         },
         "introduced_in": "0.4.4",
         "kind": "dataclass",
@@ -95,11 +233,23 @@
           "b123d_recognisers.experimental_geometry.SurfaceKind"
         ],
         "contract": {
-          "values": [
-            "plane",
-            "cylinder",
-            "cone",
-            "sphere"
+          "members": [
+            {
+              "name": "PLANE",
+              "value": "plane"
+            },
+            {
+              "name": "CYLINDER",
+              "value": "cylinder"
+            },
+            {
+              "name": "CONE",
+              "value": "cone"
+            },
+            {
+              "name": "SPHERE",
+              "value": "sphere"
+            }
           ]
         },
         "introduced_in": "0.4.4",
@@ -112,9 +262,15 @@
           "b123d_recognisers.experimental_geometry.SurfaceProvenance"
         ],
         "contract": {
-          "values": [
-            "native",
-            "recovered"
+          "members": [
+            {
+              "name": "NATIVE",
+              "value": "native"
+            },
+            {
+              "name": "RECOVERED",
+              "value": "recovered"
+            }
           ]
         },
         "introduced_in": "0.4.4",
@@ -127,15 +283,39 @@
           "b123d_recognisers.experimental_geometry.SurfaceRefusalReason"
         ],
         "contract": {
-          "values": [
-            "unsupported-kind",
-            "unsupported-torus-recovery",
-            "fit-unavailable",
-            "invalid-input",
-            "invalid-result",
-            "residual-exceeded",
-            "ambiguous-primitive",
-            "unsupported-occt-contract"
+          "members": [
+            {
+              "name": "UNSUPPORTED_KIND",
+              "value": "unsupported-kind"
+            },
+            {
+              "name": "UNSUPPORTED_TORUS_RECOVERY",
+              "value": "unsupported-torus-recovery"
+            },
+            {
+              "name": "FIT_UNAVAILABLE",
+              "value": "fit-unavailable"
+            },
+            {
+              "name": "INVALID_INPUT",
+              "value": "invalid-input"
+            },
+            {
+              "name": "INVALID_RESULT",
+              "value": "invalid-result"
+            },
+            {
+              "name": "RESIDUAL_EXCEEDED",
+              "value": "residual-exceeded"
+            },
+            {
+              "name": "AMBIGUOUS_PRIMITIVE",
+              "value": "ambiguous-primitive"
+            },
+            {
+              "name": "UNSUPPORTED_OCCT_CONTRACT",
+              "value": "unsupported-occt-contract"
+            }
           ]
         },
         "introduced_in": "0.4.4",
@@ -145,6 +325,7 @@
       },
       {
         "aliases": [
+          "b123d_recognisers.chamfers.classify_bevel",
           "b123d_recognisers.classify_bevel"
         ],
         "contract": {

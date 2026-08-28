@@ -32,8 +32,23 @@ Its primary namespace is `b123d_recognisers.inspection`. The consumer-proven ope
 `inspect_face`, `classify_bevel` / `BevelReject`, `cone_rims`, `read_double_d_tool`, and
 `floor_face_anchor`, together with the closed analytic result and refusal value types required by
 `inspect_face`. The manifest records exact signatures, enum values, dataclass fields, introduction
-versions, and compatibility aliases. Unknown format versions and unknown document fields fail
-closed.
+versions, and compatibility aliases. Enum member names and values, dataclass field types plus
+frozen/slotted status, and the positional analytic parameter layouts are part of that contract.
+Unknown format versions and unknown document fields fail closed.
+
+`AnalyticSurface.parameters` has one kind-specific positional layout. Coordinates, offsets,
+radii, requested tolerances, kernel gaps, and anchors use the model length unit (normally mm);
+directions are unitless unit vectors and cone angles are radians:
+
+| kind | positional parameters |
+| --- | --- |
+| `plane` (`SurfaceKind.PLANE`) | `(normal_x, normal_y, normal_z, offset)`, with canonical unit normal and `dot(point, normal) == offset` |
+| `cylinder` (`SurfaceKind.CYLINDER`) | `(axis_point_x, axis_point_y, axis_point_z, axis_x, axis_y, axis_z, radius)`, where `axis_point` is the closest point on the canonical axis to the global origin |
+| `cone` (`SurfaceKind.CONE`) | `(apex_x, apex_y, apex_z, axis_x, axis_y, axis_z, signed_semi_angle)`, where the angle sign preserves the original cone direction after the axis is canonicalised |
+| `sphere` (`SurfaceKind.SPHERE`) | `(centre_x, centre_y, centre_z, radius)` |
+
+`FaceInspection.anchor`, when present, is proved in or on the actual trimmed face. It is not merely
+a point on the untrimmed underlying surface; inner wires and concave outer wires are respected.
 
 The old `experimental_geometry.inspect_face` and surface-value names are exact-object aliases, as
 are the existing root or family-module paths for the other four reads. New code should use the

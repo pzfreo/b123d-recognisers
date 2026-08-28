@@ -14,21 +14,31 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import re
 from dataclasses import dataclass
 from enum import Enum
 from importlib.resources import files
+from itertools import product
 from typing import Any, TypeAlias, cast
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.Standard import Standard_Failure
+from OCP.BRepAdaptor import BRepAdaptor_Surface as _BRepAdaptor_Surface
+from OCP.BRepClass import BRepClass_FaceClassifier as _BRepClass_FaceClassifier
+from OCP.gp import gp_Pnt2d as _gp_Pnt2d
+from OCP.Standard import Standard_Failure as _Standard_Failure
+from OCP.TopAbs import TopAbs_IN as _TopAbs_IN
+from OCP.TopAbs import TopAbs_ON as _TopAbs_ON
 
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceGraph as _FaceGraph
 from b123d_recognisers._bevel import BevelReject, classify_bevel
 from b123d_recognisers._effective_surfaces import (
-    AnalyticSurfaceFact,
-    EffectiveSurfaceIndex,
-    RefusedSurfaceFact,
+    AnalyticSurfaceFact as _AnalyticSurfaceFact,
+)
+from b123d_recognisers._effective_surfaces import (
+    EffectiveSurfaceIndex as _EffectiveSurfaceIndex,
+)
+from b123d_recognisers._effective_surfaces import (
+    RefusedSurfaceFact as _RefusedSurfaceFact,
 )
 from b123d_recognisers._typing import FaceLike
 from b123d_recognisers.countersinks import cone_rims
@@ -41,7 +51,12 @@ _INSPECTION_API_MAJOR = 1
 _INSPECTION_NAMESPACE = "b123d_recognisers.inspection"
 _VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:[.+-][A-Za-z0-9.-]+)?$")
 _SYMBOL = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+_QUALIFIED = re.compile(
+    r"^b123d_recognisers(?:\.[A-Za-z][A-Za-z0-9_]*)+$"
+)
 _KINDS = {"dataclass", "enum", "exception", "function", "type-alias"}
+_PARAMETER_KINDS = {"plane", "cylinder", "cone", "sphere"}
+_PARAMETER_UNITS = {"model-length", "radian", "unitless"}
 
 InspectionApiManifest: TypeAlias = dict[str, Any]
 
@@ -108,8 +123,8 @@ class FaceInspection:
     anchor: tuple[float, float, float] | None
 
 
-def _project_surface_fact(fact: AnalyticSurfaceFact | RefusedSurfaceFact) -> SurfaceFact:
-    if isinstance(fact, RefusedSurfaceFact):
+def _project_surface_fact(fact: _AnalyticSurfaceFact | _RefusedSurfaceFact) -> SurfaceFact:
+    if isinstance(fact, _RefusedSurfaceFact):
         return RefusedSurface(SurfaceRefusalReason(fact.reason.value))
     return AnalyticSurface(
         SurfaceKind(fact.kind.value),
@@ -122,15 +137,62 @@ def _project_surface_fact(fact: AnalyticSurfaceFact | RefusedSurfaceFact) -> Sur
 
 
 def _surface_anchor(face: FaceLike) -> tuple[float, float, float]:
-    """Midpoint of the original trimmed parameter domain, or a closed refusal."""
+    """Return a point proved in/on the original trimmed face, or refuse.
+
+    The midpoint of a face's rectangular UV bounds can lie in an inner wire or outside a
+    concave outer wire.  Prefer the closest deterministic interior grid point, then fall
+    back to an outer-boundary midpoint, which is still on the trimmed face.
+    """
 
     try:
-        surface = BRepAdaptor_Surface(face.wrapped)
-        u = 0.5 * (surface.FirstUParameter() + surface.LastUParameter())
-        v = 0.5 * (surface.FirstVParameter() + surface.LastVParameter())
-        point = surface.Value(u, v)
-        return (float(point.X()), float(point.Y()), float(point.Z()))
-    except (AttributeError, Standard_Failure, RuntimeError, ValueError) as error:
+        surface = _BRepAdaptor_Surface(face.wrapped)
+        u_bounds = (float(surface.FirstUParameter()), float(surface.LastUParameter()))
+        v_bounds = (float(surface.FirstVParameter()), float(surface.LastVParameter()))
+        if not all(math.isfinite(value) for value in (*u_bounds, *v_bounds)):
+            raise ValueError("surface parameter bounds are not finite")
+
+        fractions = (0.5, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875)
+        samples = sorted(
+            product(fractions, repeat=2),
+            key=lambda item: (
+                (item[0] - 0.5) ** 2 + (item[1] - 0.5) ** 2,
+                item,
+            ),
+        )
+        for u_fraction, v_fraction in samples:
+            u = u_bounds[0] + u_fraction * (u_bounds[1] - u_bounds[0])
+            v = v_bounds[0] + v_fraction * (v_bounds[1] - v_bounds[0])
+            classifier = _BRepClass_FaceClassifier(
+                face.wrapped, _gp_Pnt2d(u, v), 1e-7
+            )
+            if classifier.State() not in {_TopAbs_IN, _TopAbs_ON}:
+                continue
+            point = surface.Value(u, v)
+            return (float(point.X()), float(point.Y()), float(point.Z()))
+
+        u_mid = 0.5 * (u_bounds[0] + u_bounds[1])
+        v_mid = 0.5 * (v_bounds[0] + v_bounds[1])
+        target = surface.Value(u_mid, v_mid)
+        target_xyz = (float(target.X()), float(target.Y()), float(target.Z()))
+        candidates: list[tuple[float, float, float]] = []
+        for edge in face.outer_wire().edges():
+            point = edge.position_at(0.5)
+            candidate = (float(point.X), float(point.Y), float(point.Z))
+            if all(math.isfinite(value) for value in candidate):
+                candidates.append(candidate)
+        if not candidates:
+            raise ValueError("surface outer boundary has no finite midpoint")
+        return min(
+            candidates,
+            key=lambda point: (
+                sum(
+                    (value - target_value) ** 2
+                    for value, target_value in zip(point, target_xyz, strict=True)
+                ),
+                point,
+            ),
+        )
+    except (AttributeError, _Standard_Failure, RuntimeError, ValueError) as error:
         raise ValueError("surface anchor is unavailable") from error
 
 
@@ -143,9 +205,9 @@ def inspect_face(face: FaceLike) -> FaceInspection:
     returned as :class:`RefusedSurface`; anchor failure is represented by ``None``.
     """
 
-    graph = FaceGraph(face)
+    graph = _FaceGraph(face)
     node = graph.require_node(face)
-    surface = _project_surface_fact(EffectiveSurfaceIndex(graph).fact(node))
+    surface = _project_surface_fact(_EffectiveSurfaceIndex(graph).fact(node))
     try:
         anchor = _surface_anchor(face)
     except ValueError:
@@ -200,18 +262,52 @@ def validate_inspection_api_manifest(manifest: object) -> None:
     api = manifest["api"]
     if not isinstance(api, dict):
         raise InspectionApiManifestError("api must be an object")
-    _keys(api, {"major", "namespace", "symbols"}, "api")
-    if set(api) != {"major", "namespace", "symbols"}:
+    api_fields = {"major", "namespace", "surface_parameters", "symbols"}
+    _keys(api, api_fields, "api")
+    if set(api) != api_fields:
         raise InspectionApiManifestError("api is missing required fields")
     if type(api["major"]) is not int or api["major"] != _INSPECTION_API_MAJOR:
         raise InspectionApiManifestError(f"unsupported inspection API major {api['major']!r}")
     if api["namespace"] != _INSPECTION_NAMESPACE:
         raise InspectionApiManifestError("inspection API namespace is invalid")
+    surface_parameters = api["surface_parameters"]
+    if (
+        not isinstance(surface_parameters, dict)
+        or set(surface_parameters) != _PARAMETER_KINDS
+    ):
+        raise InspectionApiManifestError(
+            "api.surface_parameters must define the four supported surface kinds"
+        )
+    for surface_kind, layout in surface_parameters.items():
+        context = f"api.surface_parameters.{surface_kind}"
+        if not isinstance(layout, list) or not layout:
+            raise InspectionApiManifestError(f"{context} must be a non-empty array")
+        parameter_names: list[str] = []
+        for index, parameter in enumerate(layout):
+            item_context = f"{context}[{index}]"
+            if not isinstance(parameter, dict):
+                raise InspectionApiManifestError(f"{item_context} must be an object")
+            _keys(parameter, {"name", "unit"}, item_context)
+            if set(parameter) != {"name", "unit"}:
+                raise InspectionApiManifestError(f"{item_context} is missing required fields")
+            parameter_name = parameter["name"]
+            if not isinstance(parameter_name, str) or not _SYMBOL.fullmatch(parameter_name):
+                raise InspectionApiManifestError(f"{item_context}.name is invalid")
+            if (
+                not isinstance(parameter["unit"], str)
+                or parameter["unit"] not in _PARAMETER_UNITS
+            ):
+                raise InspectionApiManifestError(f"{item_context}.unit is invalid")
+            parameter_names.append(parameter_name)
+        if len(parameter_names) != len(set(parameter_names)):
+            raise InspectionApiManifestError(f"{context} names must be unique")
     symbols = api["symbols"]
     if not isinstance(symbols, list) or not symbols:
         raise InspectionApiManifestError("api.symbols must be a non-empty array")
 
     names: list[str] = []
+    qualified_names: list[str] = []
+    all_aliases: list[str] = []
     for index, symbol in enumerate(symbols):
         context = f"api.symbols[{index}]"
         if not isinstance(symbol, dict):
@@ -233,6 +329,7 @@ def validate_inspection_api_manifest(manifest: object) -> None:
         names.append(name)
         if symbol["qualified_name"] != f"{_INSPECTION_NAMESPACE}.{name}":
             raise InspectionApiManifestError(f"{context}.qualified_name is invalid")
+        qualified_names.append(symbol["qualified_name"])
         kind = symbol["kind"]
         if not isinstance(kind, str) or kind not in _KINDS:
             raise InspectionApiManifestError(f"{context}.kind is invalid")
@@ -244,19 +341,20 @@ def validate_inspection_api_manifest(manifest: object) -> None:
             not isinstance(aliases, list)
             or not all(
                 isinstance(alias, str)
-                and alias.startswith("b123d_recognisers.")
+                and _QUALIFIED.fullmatch(alias)
                 and alias != symbol["qualified_name"]
                 for alias in aliases
             )
             or aliases != sorted(set(aliases))
         ):
             raise InspectionApiManifestError(f"{context}.aliases is invalid")
+        all_aliases.extend(aliases)
         contract = symbol["contract"]
         if not isinstance(contract, dict) or not contract:
             raise InspectionApiManifestError(f"{context}.contract must be a non-empty object")
         expected_contract = {
-            "dataclass": {"fields"},
-            "enum": {"values"},
+            "dataclass": {"fields", "frozen", "slots"},
+            "enum": {"members"},
             "exception": {"base"},
             "function": {"signature"},
             "type-alias": {"definition"},
@@ -264,19 +362,79 @@ def validate_inspection_api_manifest(manifest: object) -> None:
         _keys(contract, expected_contract, f"{context}.contract")
         if set(contract) != expected_contract:
             raise InspectionApiManifestError(f"{context}.contract is incomplete")
-        (contract_value,) = contract.values()
-        if kind in {"dataclass", "enum"}:
+        if kind == "dataclass":
+            fields = contract["fields"]
             if (
-                not isinstance(contract_value, list)
-                or not contract_value
-                or not all(isinstance(item, str) and item for item in contract_value)
-                or contract_value != list(dict.fromkeys(contract_value))
+                not isinstance(fields, list)
+                or not fields
+                or type(contract["frozen"]) is not bool
+                or type(contract["slots"]) is not bool
             ):
-                raise InspectionApiManifestError(f"{context}.contract values are invalid")
-        elif not isinstance(contract_value, str) or not contract_value:
-            raise InspectionApiManifestError(f"{context}.contract value is invalid")
+                raise InspectionApiManifestError(f"{context}.contract is invalid")
+            field_names: list[str] = []
+            for field_index, field in enumerate(fields):
+                field_context = f"{context}.contract.fields[{field_index}]"
+                if not isinstance(field, dict):
+                    raise InspectionApiManifestError(f"{field_context} must be an object")
+                _keys(field, {"name", "type"}, field_context)
+                if set(field) != {"name", "type"}:
+                    raise InspectionApiManifestError(
+                        f"{field_context} is missing required fields"
+                    )
+                if (
+                    not isinstance(field["name"], str)
+                    or not _SYMBOL.fullmatch(field["name"])
+                    or not isinstance(field["type"], str)
+                    or not field["type"]
+                ):
+                    raise InspectionApiManifestError(f"{field_context} is invalid")
+                field_names.append(field["name"])
+            if len(field_names) != len(set(field_names)):
+                raise InspectionApiManifestError(
+                    f"{context}.contract field names must be unique"
+                )
+        elif kind == "enum":
+            members = contract["members"]
+            if not isinstance(members, list) or not members:
+                raise InspectionApiManifestError(
+                    f"{context}.contract.members must be a non-empty array"
+                )
+            member_names: list[str] = []
+            member_values: list[str] = []
+            for member_index, member in enumerate(members):
+                member_context = f"{context}.contract.members[{member_index}]"
+                if not isinstance(member, dict):
+                    raise InspectionApiManifestError(f"{member_context} must be an object")
+                _keys(member, {"name", "value"}, member_context)
+                if set(member) != {"name", "value"}:
+                    raise InspectionApiManifestError(
+                        f"{member_context} is missing required fields"
+                    )
+                if (
+                    not isinstance(member["name"], str)
+                    or not _SYMBOL.fullmatch(member["name"])
+                    or not isinstance(member["value"], str)
+                    or not member["value"]
+                ):
+                    raise InspectionApiManifestError(f"{member_context} is invalid")
+                member_names.append(member["name"])
+                member_values.append(member["value"])
+            if len(member_names) != len(set(member_names)) or len(member_values) != len(
+                set(member_values)
+            ):
+                raise InspectionApiManifestError(
+                    f"{context}.contract enum names and values must be unique"
+                )
+        else:
+            (contract_value,) = contract.values()
+            if not isinstance(contract_value, str) or not contract_value:
+                raise InspectionApiManifestError(f"{context}.contract value is invalid")
     if names != sorted(names) or len(names) != len(set(names)):
         raise InspectionApiManifestError("inspection API symbols must be unique and name-sorted")
+    if len(all_aliases) != len(set(all_aliases)) or set(all_aliases) & set(qualified_names):
+        raise InspectionApiManifestError(
+            "inspection API aliases must have one owner and not collide with primary symbols"
+        )
 
 
 def _load_inspection_api_manifest() -> InspectionApiManifest:
@@ -324,6 +482,7 @@ __all__ = [
     "AnalyticSurface",
     "BevelReject",
     "FaceInspection",
+    "InspectionApiManifest",
     "InspectionApiManifestError",
     "OrientationCapability",
     "RefusedSurface",

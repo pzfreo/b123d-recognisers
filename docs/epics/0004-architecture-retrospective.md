@@ -12,6 +12,12 @@ The next step is therefore not to publish every private type. F7 must first prov
 against concrete out-of-tree Draftwright tasks. Private implementation breadth is not evidence that
 the same breadth belongs in a supported API.
 
+**Outcome follow-up:** the completed F7 spike found that Draftwright needed one graph-independent
+face inspection plus four existing declared-feature family reads, not a graph facade. ADR 0010 and
+#186 therefore publish `b123d_recognisers.inspection`; `GeometryGraph`, blend views, sections, and
+correspondence remain private or experimental. The pre-spike recommendations below are retained as
+the reasoning record, not as the current export roster.
+
 ## What the epic bought
 
 - Geometry references are issued by one graph and cannot be replaced by ordinal, hash, copied

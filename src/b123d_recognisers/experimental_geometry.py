@@ -178,7 +178,7 @@ class GeometryGraph:
         return _project_surface_fact(self.__surfaces.fact(self._node(ref)))
 
     def surface_anchor(self, ref: FaceRef) -> tuple[float, float, float]:
-        """Return the midpoint of the trimmed surface parameter domain.
+        """Return a deterministic point proved in/on the trimmed face.
 
         This is a leader/inspection anchor, not a topological identity.  Keeping
         it here prevents consumers from reopening the raw OCCT surface merely to

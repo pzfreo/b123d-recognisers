@@ -12,6 +12,8 @@ import argparse
 import dataclasses
 import inspect
 import json
+import types
+import typing
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -23,12 +25,51 @@ ROOT = Path(__file__).parents[1]
 TARGET = ROOT / "src" / "b123d_recognisers" / "inspection_api.json"
 NAMESPACE = "b123d_recognisers.inspection"
 
+SURFACE_PARAMETERS = {
+    "cone": [
+        ("apex_x", "model-length"),
+        ("apex_y", "model-length"),
+        ("apex_z", "model-length"),
+        ("axis_x", "unitless"),
+        ("axis_y", "unitless"),
+        ("axis_z", "unitless"),
+        ("signed_semi_angle", "radian"),
+    ],
+    "cylinder": [
+        ("axis_point_x", "model-length"),
+        ("axis_point_y", "model-length"),
+        ("axis_point_z", "model-length"),
+        ("axis_x", "unitless"),
+        ("axis_y", "unitless"),
+        ("axis_z", "unitless"),
+        ("radius", "model-length"),
+    ],
+    "plane": [
+        ("normal_x", "unitless"),
+        ("normal_y", "unitless"),
+        ("normal_z", "unitless"),
+        ("offset", "model-length"),
+    ],
+    "sphere": [
+        ("centre_x", "model-length"),
+        ("centre_y", "model-length"),
+        ("centre_z", "model-length"),
+        ("radius", "model-length"),
+    ],
+}
+
 SYMBOLS: dict[str, tuple[str, list[str]]] = {
     "AnalyticSurface": (
         "dataclass",
         ["b123d_recognisers.experimental_geometry.AnalyticSurface"],
     ),
-    "BevelReject": ("exception", ["b123d_recognisers.BevelReject"]),
+    "BevelReject": (
+        "exception",
+        [
+            "b123d_recognisers.BevelReject",
+            "b123d_recognisers.chamfers.BevelReject",
+        ],
+    ),
     "FaceInspection": (
         "dataclass",
         ["b123d_recognisers.experimental_geometry.FaceInspection"],
@@ -57,7 +98,13 @@ SYMBOLS: dict[str, tuple[str, list[str]]] = {
         "enum",
         ["b123d_recognisers.experimental_geometry.SurfaceRefusalReason"],
     ),
-    "classify_bevel": ("function", ["b123d_recognisers.classify_bevel"]),
+    "classify_bevel": (
+        "function",
+        [
+            "b123d_recognisers.chamfers.classify_bevel",
+            "b123d_recognisers.classify_bevel",
+        ],
+    ),
     "cone_rims": (
         "function",
         [
@@ -83,12 +130,45 @@ SYMBOLS: dict[str, tuple[str, list[str]]] = {
 }
 
 
+def _type_name(annotation: object) -> str:
+    if annotation is type(None):
+        return "null"
+    if annotation in {bool, float, int, str}:
+        return typing.cast(type, annotation).__name__
+    if inspect.isclass(annotation) and annotation.__module__.startswith("b123d_recognisers"):
+        return annotation.__name__
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin in {typing.Union, types.UnionType}:
+        return "|".join(
+            sorted({_type_name(arg) for arg in args}, key=lambda item: (item == "null", item))
+        )
+    if origin is tuple:
+        return "tuple[" + ",".join(
+            "..." if arg is Ellipsis else _type_name(arg) for arg in args
+        ) + "]"
+    raise TypeError(f"unsupported inspection field annotation {annotation!r}")
+
+
 def _contract(name: str, kind: str, value: object) -> dict[str, object]:
     if kind == "dataclass":
-        return {"fields": [field.name for field in dataclasses.fields(value)]}
+        hints = typing.get_type_hints(value)
+        parameters = value.__dataclass_params__
+        return {
+            "fields": [
+                {"name": field.name, "type": _type_name(hints[field.name])}
+                for field in dataclasses.fields(value)
+            ],
+            "frozen": bool(parameters.frozen),
+            "slots": bool(getattr(parameters, "slots", "__slots__" in value.__dict__)),
+        }
     if kind == "enum":
         assert inspect.isclass(value) and issubclass(value, Enum)
-        return {"values": [member.value for member in value]}
+        return {
+            "members": [
+                {"name": member.name, "value": member.value} for member in value
+            ]
+        }
     if kind == "exception":
         assert inspect.isclass(value) and issubclass(value, Exception)
         return {"base": value.__bases__[0].__name__}
@@ -114,7 +194,15 @@ def document() -> dict[str, Any]:
             }
         )
     return {
-        "api": {"major": 1, "namespace": NAMESPACE, "symbols": symbols},
+        "api": {
+            "major": 1,
+            "namespace": NAMESPACE,
+            "surface_parameters": {
+                kind: [{"name": name, "unit": unit} for name, unit in layout]
+                for kind, layout in SURFACE_PARAMETERS.items()
+            },
+            "symbols": symbols,
+        },
         "format": inspection.INSPECTION_API_FORMAT,
         "format_version": inspection.INSPECTION_API_FORMAT_VERSION,
         "package": {"name": "b123d-recognisers", "version": __version__},

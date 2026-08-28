@@ -80,6 +80,10 @@ if isinstance(inspected.surface, AnalyticSurface):
         print(inspected.surface.parameters, inspected.anchor)
 ```
 
+The manifest and [capability documentation](docs/capabilities.md#declared-feature-inspection-api)
+freeze the kind-specific parameter positions and units. When an anchor is present, it is proved
+in or on the selected face's actual trim, including faces with holes or concave outer boundaries.
+
 The namespace also groups the four consumer-proven family reads: `classify_bevel` /
 `BevelReject`, `cone_rims`, `read_double_d_tool`, and `floor_face_anchor`. Existing root,
 family-module, and `experimental_geometry.inspect_face` imports remain exact-object compatibility
