@@ -47,6 +47,16 @@ def _selection_hash(ids: list[str]) -> str:
     return hashlib.sha256(("\n".join(ids) + "\n").encode("utf-8")).hexdigest()
 
 
+def _display_path(path: Path) -> str:
+    """Keep repository paths portable and external provenance unambiguous."""
+
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def _mfcadpp_selection(
     root: Path,
 ) -> tuple[list[str], Callable[[str], DatasetTruth], dict[str, Any]]:
@@ -273,7 +283,7 @@ def main() -> int:
         "mapping": {
             "format_version": 1,
             "sha256": hashlib.sha256(args.taxonomy.read_bytes()).hexdigest(),
-            "path": str(args.taxonomy.relative_to(ROOT)),
+            "path": _display_path(args.taxonomy),
         },
         "models": rows,
         "summary": summary,

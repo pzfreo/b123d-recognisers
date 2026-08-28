@@ -23,7 +23,11 @@ from tools.effectiveness_report import (
     score_inventory,
     validate_report,
 )
-from tools.run_effectiveness_baseline import _mfcadpp_selection, _mfinstseg_selection
+from tools.run_effectiveness_baseline import (
+    _display_path,
+    _mfcadpp_selection,
+    _mfinstseg_selection,
+)
 
 ROOT = Path(__file__).parents[1]
 TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
@@ -64,6 +68,11 @@ def test_mfcadpp_adapter_rejects_missing_labels(tmp_path: Path) -> None:
 
     with pytest.raises(EffectivenessDataError, match="no ADVANCED_FACE labels"):
         load_mfcadpp_truth(step)
+
+
+def test_mfcadpp_selection_rejects_a_missing_corpus(tmp_path: Path) -> None:
+    with pytest.raises(EffectivenessDataError, match=r"no MFCAD\+\+ STEP files"):
+        _mfcadpp_selection(tmp_path / "missing")
 
 
 def test_mfinstseg_adapter_reads_semantic_instances_and_bottom(tmp_path: Path) -> None:
@@ -175,6 +184,33 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
     }
     assert row["taxonomy_mismatch_defining_faces"] == 0
     assert row["no_physical_records"] is False
+
+
+def test_scorer_rejects_a_class_outside_the_closed_taxonomy() -> None:
+    part = Box(1, 1, 1)
+    truth = DatasetTruth(
+        "unknown-class",
+        Path("unknown-class.step"),
+        (25,) * len(part.faces()),
+        (),
+        None,
+        "0" * 64,
+    )
+
+    with pytest.raises(EffectivenessDataError, match=r"unknown classes \[25\]"):
+        score_inventory(
+            truth,
+            part,
+            _take_inventory(part),
+            load_taxonomy(TAXONOMY, "mfcadpp"),
+            0.0,
+        )
+
+
+def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> None:
+    external = tmp_path / "mapping.json"
+    assert _display_path(TAXONOMY) == "docs/benchmarks/effectiveness-taxonomy-v1.json"
+    assert _display_path(external) == str(external.resolve())
 
 
 def _report() -> dict[str, object]:
