@@ -81,3 +81,17 @@ graph-shaped, and it serves the requirement they were each written for: declared
 
 `experimental_geometry` stays absent from the package root exports and the capability manifest
 until that roster is reviewed and accepted under #262.
+
+## Graduation outcome (issue #186)
+
+The five-operation roster was reviewed and promoted in 0.4.4 as
+`b123d_recognisers.inspection`, with its own closed format-1 `inspection_api.json` contract. The
+recognition capability manifest remains byte- and schema-independent. Existing root,
+family-module, and `experimental_geometry.inspect_face` paths are identity-preserving aliases so
+the publication does not fork behavior or require a flag-day consumer migration.
+
+Only the graph-independent surface values and operation roster graduated. `GeometryGraph`, its
+opaque identities, adjacency, blend collapse, sections, correspondence, evidence, registry, and
+reconciliation did not. This is the final interpretation of the original `geometry` namespace
+wording above: consumer evidence selected a narrower inspection namespace, while the broader
+facade remains an experiment.

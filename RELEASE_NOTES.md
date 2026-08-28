@@ -2,6 +2,15 @@
 
 ## 0.4.4
 
+- **Promoted the consumer-proven declared-feature inspection API.** New consumers can import
+  `inspect_face`, its closed analytic result/refusal values, `classify_bevel` / `BevelReject`,
+  `cone_rims`, `read_double_d_tool`, and `floor_face_anchor` from the supported
+  `b123d_recognisers.inspection` namespace. A separately versioned, fail-closed
+  `inspection_api.json` manifest freezes signatures, value schemas, and compatibility paths
+  without changing the recognition capability manifest. Existing root, family-module, and
+  `experimental_geometry.inspect_face` paths retain exact object identity. `GeometryGraph`,
+  adjacency, blend collapse, correspondence, and evidence remain private or experimental.
+
 - **Added exact NURBS-plane support for Raised Pads with a fail-closed ownership contract.**
   Exact analytic planes converted to B-splines are recovered under a versioned OCCT certificate,
   while material side is proved separately from the unchanged original face. Pad recognition now

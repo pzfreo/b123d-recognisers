@@ -18,7 +18,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def test_every_copy_of_the_version_agrees() -> None:
-    """The build version, the embedded fallback and the capability manifest are one value.
+    """The build version, fallback and both shipped manifests are one value.
 
     Derived rather than pinned to a literal, because a literal is what let the fallback go
     stale: it read 0.2.2 through both the 0.2.3 and 0.2.4 releases. Nothing exercises it
@@ -37,6 +37,12 @@ def test_every_copy_of_the_version_agrees() -> None:
         (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text(encoding="utf-8")
     )
     assert manifest["package"]["version"] == version
+    inspection = json.loads(
+        (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert inspection["package"]["version"] == version
 
 
 def test_stable_release_notes_record_the_proven_downstream_cutover() -> None:
@@ -117,6 +123,7 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     assert not any(name.endswith("/PRIVATE_BUILD_INPUT.txt") for name in names)
     assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
     assert any(name.endswith("/src/b123d_recognisers/capabilities.json") for name in names)
+    assert any(name.endswith("/src/b123d_recognisers/inspection_api.json") for name in names)
     assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
     # The vendored STEP corpora are excluded: 9 MB of third-party geometry the tests read and
     # no consumer of the sdist needs. Deleting that exclusion would otherwise pass silently
@@ -175,6 +182,10 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
         ROOT / "src" / "b123d_recognisers" / "capabilities.json"
     ).read_text(encoding="utf-8")
     manifest_digest = hashlib.sha256(source_manifest.encode()).hexdigest()
+    inspection_manifest = (
+        ROOT / "src" / "b123d_recognisers" / "inspection_api.json"
+    ).read_text(encoding="utf-8")
+    inspection_digest = hashlib.sha256(inspection_manifest.encode()).hexdigest()
     completed = subprocess.run(
         [
             sys.executable,
@@ -184,10 +195,17 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import sys; "
                 f"sys.path.insert(0, {str(target)!r}); "
                 "import b123d_recognisers as r; "
+                "import b123d_recognisers.experimental_geometry as e; "
+                "import b123d_recognisers.inspection as i; "
                 "import hashlib; "
                 "assert r.__version__; assert r.recognise_holes; "
                 "actual = hashlib.sha256(r.capability_manifest_json().encode()).hexdigest(); "
-                f"assert actual == {manifest_digest!r}"
+                f"assert actual == {manifest_digest!r}; "
+                "inspection = hashlib.sha256("
+                "i.inspection_api_manifest_json().encode()).hexdigest(); "
+                f"assert inspection == {inspection_digest!r}; "
+                "assert e.inspect_face is i.inspect_face; "
+                "assert r.classify_bevel is i.classify_bevel"
             ),
         ],
         cwd=tmp_path,

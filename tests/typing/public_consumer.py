@@ -1,6 +1,6 @@
 """Strict external-consumer fixture, checked against the built wheel."""
 
-from build123d import BoundBox, Face, Solid
+from build123d import BoundBox, Edge, Face, Solid
 from typing_extensions import assert_type
 
 from b123d_recognisers import (
@@ -12,6 +12,13 @@ from b123d_recognisers import (
     feature_census,
     recognise_bosses,
     recognise_holes,
+)
+from b123d_recognisers.inspection import (
+    FaceInspection,
+    cone_rims,
+    floor_face_anchor,
+    inspect_face,
+    read_double_d_tool,
 )
 
 
@@ -37,4 +44,11 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
             float,
             float,
         ],
+    )
+    assert_type(inspect_face(face), FaceInspection)
+    assert_type(cone_rims(face), tuple[Edge, Edge, float] | None)
+    assert_type(floor_face_anchor(face), tuple[float, float, float])
+    assert_type(
+        read_double_d_tool(part),
+        tuple[str, float, float, tuple[float, float, float], float, tuple[float, float, float]],
     )

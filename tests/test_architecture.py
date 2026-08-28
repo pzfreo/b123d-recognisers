@@ -24,6 +24,7 @@ PUBLIC_MODULES = {
     "flats",
     "frames",
     "grooves",
+    "inspection",
     "levels",
     "pads",
     "passages",
@@ -211,6 +212,18 @@ MODULE_SEAM_EDGES = {
         "_blend_view",
         "_effective_surfaces",
         "_typing",
+        "inspection",
+    },
+    # Supported F7 declaration-inspection surface. It projects the neutral analytic
+    # substrate and re-exports only the four independently proven family readers.
+    "inspection": {
+        "_adjacency",
+        "_bevel",
+        "_effective_surfaces",
+        "_typing",
+        "countersinks",
+        "grooves",
+        "profiled_bores",
     },
     # The only graph/evidence translation seam. Feature consumers receive facade refs and
     # cannot import the concrete graph or writer themselves.
@@ -1047,6 +1060,7 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
     forbidden_reexports: set[tuple[str, str]] = set()
     exempt = {
         "experimental_geometry.py",
+        "inspection.py",
         "_run.py",
         "_blend_view.py",
         "_effective_surfaces.py",
@@ -1068,6 +1082,7 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
         ("experimental_geometry.py", "BlendCollapseIndex.view"),
         ("experimental_geometry.py", "CollapsedGraphView.expand_arc"),
         ("experimental_geometry.py", "EffectiveSurfaceIndex"),
+        ("inspection.py", "EffectiveSurfaceIndex"),
         ("_run.py", "EffectiveSurfaceIndex"),
     }
     mutation_imports = """

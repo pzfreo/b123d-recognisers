@@ -1175,6 +1175,13 @@ changes, while split/merge ambiguity fails closed; recognition results remain un
 
 ### F7 — Published substrate API
 
+**Delivered scope correction (#262, #186):** the installed-wheel spike returned no-go on
+publishing `GeometryGraph`. The supported surface is the graph-independent
+`b123d_recognisers.inspection` roster used by five declared-feature workflows. Graph identity,
+adjacency, blends, collapsed views, sections, correspondence, and evidence remain private or
+experimental. ADR 0010 records why this narrower outcome supersedes the graph-shaped requirement
+below.
+
 The [architecture retrospective](0004-architecture-retrospective.md) and proposed ADR 0010 narrow
 this sequencing further: before production exports, an installed-wheel Draftwright fitness spike
 must identify two or three concrete consumer operations and the exact neutral symbols they need.
@@ -1190,9 +1197,9 @@ manifest.
 
 Required contract:
 
-- the published surface is one `GeometryGraph` facade, never the concrete private `FaceGraph`; its
-  exact graph, F2 arc/region, F1 surface, F3 view and F4a section roster is limited to operations
-  exercised by the installed-wheel Draftwright fitness spike;
+- the published surface is one graph-independent inspection namespace, never the concrete private
+  `FaceGraph` or provisional `GeometryGraph`; its exact surface/result and four family-reader
+  roster is limited to operations exercised by installed-wheel Draftwright;
 - the registry, disposition table, `FamilyId`, evidence sink/index and reconciliation remain
   private; no dynamic registration, filesystem discovery or plugin import path is introduced;
 - the substrate API is versioned and manifest-declared under ADR 0005 discipline, with a
@@ -1210,9 +1217,9 @@ substrate is not exported speculatively. A successful consumer spike may justify
 and graduation path; it does not by itself establish an ecosystem or remove the maintainer's
 evidence-throughput ceiling.
 
-Exit gate: a demonstration out-of-tree geometry consumer (separate package, not vendored) performs
-the named Draftwright operations against only the published facade and documented contracts. A
-separate geometry API manifest and versioned compatibility test cover that facade; the recogniser
+Exit gate: a demonstration out-of-tree geometry consumer performs the named Draftwright operations
+against only the published inspection namespace and documented contracts. A separate inspection
+API manifest and versioned compatibility test cover that roster; the recogniser
 capability manifest remains family-only and no internal adjudication symbol is reachable.
 
 ## Review and delivery process

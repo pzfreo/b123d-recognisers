@@ -45,7 +45,9 @@ query), and deliberately keep their names. Likewise the **shared single-face rea
 (``classify_bevel``/``BevelReject``, ``fillet_anchor``, ``cone_rims``,
 ``floor_face_anchor``, ``step_level_zs``): helpers shared with the declared
 front-end, not recognisers — they traffic in build123d/OCP objects and are exposed only where
-existing downstream compatibility requires them.
+existing downstream compatibility requires them. New declared-feature consumers should use the
+reviewed five-operation roster in :mod:`b123d_recognisers.inspection`; the broader helper set is
+not implied to be supported inspection API.
 
 ``FaceEdges`` is neither a recogniser nor substrate but a **shared memo**: pass one instance to
 several recognisers running over the same part and they stop re-deriving each face's edges,

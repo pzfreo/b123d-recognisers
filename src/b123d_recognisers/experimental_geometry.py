@@ -1,57 +1,35 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Experimental read-only geometry facade for the F7 consumer spike.
+"""Experimental graph facade retained after the F7 consumer spike.
 
-This module is deliberately absent from :mod:`b123d_recognisers`' root exports and
-capability manifest.  It exists to test a small graph-bound surface/blend contract
-with two real consumers before any supported API is frozen.
+The graph, opaque handles, adjacency and blend-collapse values in this module remain
+experimental and absent from :mod:`b123d_recognisers`' root exports.  The standalone
+surface inspection values are compatibility aliases for the supported
+:mod:`b123d_recognisers.inspection` API.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import cast
-
-from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.Standard import Standard_Failure
 
 from b123d_recognisers._adjacency import ArcKind, FaceGraph, FaceNode, SmoothSide
 from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
-from b123d_recognisers._effective_surfaces import (
-    AnalyticSurfaceFact,
-    EffectiveSurfaceIndex,
-    RefusedSurfaceFact,
-)
+from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
 from b123d_recognisers._typing import FaceLike, Part
-
-
-class SurfaceKind(Enum):
-    PLANE = "plane"
-    CYLINDER = "cylinder"
-    CONE = "cone"
-    SPHERE = "sphere"
-
-
-class SurfaceProvenance(Enum):
-    NATIVE = "native"
-    RECOVERED = "recovered"
-
-
-class OrientationCapability(Enum):
-    NATIVE_ORIENTED = "native-oriented"
-    RECOVERED_UNORIENTED = "recovered-unoriented"
-
-
-class SurfaceRefusalReason(Enum):
-    UNSUPPORTED_KIND = "unsupported-kind"
-    UNSUPPORTED_TORUS_RECOVERY = "unsupported-torus-recovery"
-    FIT_UNAVAILABLE = "fit-unavailable"
-    INVALID_INPUT = "invalid-input"
-    INVALID_RESULT = "invalid-result"
-    RESIDUAL_EXCEEDED = "residual-exceeded"
-    AMBIGUOUS_PRIMITIVE = "ambiguous-primitive"
-    UNSUPPORTED_OCCT_CONTRACT = "unsupported-occt-contract"
+from b123d_recognisers.inspection import (
+    AnalyticSurface,
+    FaceInspection,
+    OrientationCapability,
+    RefusedSurface,
+    SurfaceFact,
+    SurfaceKind,
+    SurfaceProvenance,
+    SurfaceRefusalReason,
+    _project_surface_fact,
+    _surface_anchor,
+    inspect_face,
+)
 
 
 class FaceRef:
@@ -82,32 +60,6 @@ class BlendRef:
     def __init__(self, authority: object, chain: object) -> None:
         self._authority = authority
         self._chain = chain
-
-
-@dataclass(frozen=True, slots=True)
-class AnalyticSurface:
-    kind: SurfaceKind
-    provenance: SurfaceProvenance
-    orientation: OrientationCapability
-    parameters: tuple[float, ...]
-    requested_tolerance: float
-    kernel_reported_gap: float
-
-
-@dataclass(frozen=True, slots=True)
-class RefusedSurface:
-    reason: SurfaceRefusalReason
-
-
-SurfaceFact = AnalyticSurface | RefusedSurface
-
-
-@dataclass(frozen=True, slots=True)
-class FaceInspection:
-    """One standalone face's closed analytic result and optional surface anchor."""
-
-    surface: SurfaceFact
-    anchor: tuple[float, float, float] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,37 +175,17 @@ class GeometryGraph:
         return graph is self.__graph
 
     def surface_fact(self, ref: FaceRef) -> SurfaceFact:
-        fact = self.__surfaces.fact(self._node(ref))
-        if isinstance(fact, RefusedSurfaceFact):
-            return RefusedSurface(SurfaceRefusalReason(fact.reason.value))
-        assert isinstance(fact, AnalyticSurfaceFact)
-        return AnalyticSurface(
-            SurfaceKind(fact.kind.value),
-            SurfaceProvenance(fact.provenance.value),
-            OrientationCapability(fact.orientation.value),
-            fact.parameters,
-            fact.requested_tolerance,
-            fact.kernel_reported_gap,
-        )
+        return _project_surface_fact(self.__surfaces.fact(self._node(ref)))
 
     def surface_anchor(self, ref: FaceRef) -> tuple[float, float, float]:
-        """Return the midpoint of the trimmed surface parameter domain.
+        """Return a deterministic point proved in/on the trimmed face.
 
         This is a leader/inspection anchor, not a topological identity.  Keeping
         it here prevents consumers from reopening the raw OCCT surface merely to
         locate a point on the same face whose analytic fact they just queried.
         """
 
-        face = self.face(ref)
-        try:
-            surface = BRepAdaptor_Surface(face.wrapped)
-            u = 0.5 * (surface.FirstUParameter() + surface.LastUParameter())
-            v = 0.5 * (surface.FirstVParameter() + surface.LastVParameter())
-            point = surface.Value(u, v)
-            values = (float(point.X()), float(point.Y()), float(point.Z()))
-        except (AttributeError, Standard_Failure, RuntimeError, ValueError) as error:
-            raise ValueError("surface anchor is unavailable") from error
-        return values
+        return _surface_anchor(self.face(ref))
 
     def blend_facts(self) -> tuple[BlendFact, ...]:
         if self.__blends is None:
@@ -329,24 +261,6 @@ class GeometryGraph:
                     )
                 )
         return tuple(result)
-
-
-def inspect_face(face: FaceLike) -> FaceInspection:
-    """Inspect one face without making the caller construct or retain a graph.
-
-    The implementation deliberately reuses the same effective-surface derivation as
-    ``GeometryGraph``.  The API is graph-independent: no graph or run-local handle
-    enters or leaves the call.
-    """
-
-    geometry = GeometryGraph(face)
-    ref = geometry.ref(face)
-    surface = geometry.surface_fact(ref)
-    try:
-        anchor = geometry.surface_anchor(ref)
-    except ValueError:
-        anchor = None
-    return FaceInspection(surface, anchor)
 
 
 __all__ = [
