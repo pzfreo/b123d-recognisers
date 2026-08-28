@@ -5,10 +5,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pytest
-from build123d import Axis, Box, Cylinder, Pos, Sphere, Vector
+from build123d import Axis, Box, Cylinder, Pos, Shape, Sphere, Vector
 
+import b123d_recognisers.frames as frames
+from b123d_recognisers._typing import Part
 from b123d_recognisers.frames import (
     FramedRecognitionResult,
     FrameGauge,
@@ -18,7 +21,7 @@ from b123d_recognisers.frames import (
     build_framed_recognition_result,
     infer_part_frame,
 )
-from b123d_recognisers.result import build_recognition_result
+from b123d_recognisers.result import RecognitionResult, build_recognition_result
 from tests.golden._common import load_fixture
 from tools.frame_handling_prototype import evaluate_goldens, evaluate_translated_goldens
 
@@ -88,6 +91,60 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
     assert len(framed.result.slots) == len(legacy_before.slots) == 5
     assert framed.result.section_passages == ()
     assert build_recognition_result(part) == legacy_before
+
+
+def test_framed_result_exposes_the_exact_shape_recognised(monkeypatch) -> None:
+    part = Pos(13, -7, 5) * Box(10, 20, 30).rotate(Axis.X, 30)
+    recognised_parts: list[Shape] = []
+    original = frames.build_recognition_result
+
+    def capture(working_part: Shape, *, rotational: bool = False) -> RecognitionResult:
+        recognised_parts.append(working_part)
+        return original(cast(Part, working_part), rotational=rotational)
+
+    monkeypatch.setattr(frames, "build_recognition_result", capture)
+
+    framed = build_framed_recognition_result(part)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    assert framed.part is recognised_parts[0]
+
+
+@pytest.mark.parametrize(
+    ("source", "gauge", "topology_expected"),
+    [
+        (
+            Box(10, 20, 30)
+            + Pos(9, 18, 28) * Box(2, 3, 4)
+            - Pos(3, 4, 0) * Cylinder(1, 30),
+            FrameGauge.FULL,
+            True,
+        ),
+        (Box(10, 20, 30), FrameGauge.ORTHOGONAL, False),
+        (Cylinder(10, 30), FrameGauge.AXIAL, True),
+    ],
+)
+def test_framed_working_shape_uses_the_published_local_coordinates(
+    source: Shape, gauge: FrameGauge, topology_expected: bool
+) -> None:
+    part = Pos(13, -7, 5) * source.rotate(Axis.X, 30)
+
+    framed = build_framed_recognition_result(part)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    assert framed.frame.gauge is gauge
+    expected = sorted(
+        tuple(round(value, 8) for value in framed.frame.to_local((vertex.X, vertex.Y, vertex.Z)))
+        for vertex in part.vertices()
+    )
+    actual = sorted(
+        tuple(round(value, 8) for value in (vertex.X, vertex.Y, vertex.Z))
+        for vertex in framed.part.vertices()
+    )
+    assert actual == expected
+    cylinder_evidence = framed.result.cylinders[0] + framed.result.cylinders[1]
+    assert bool(cylinder_evidence) is topology_expected
+    assert all(evidence["face"] in framed.part.faces() for evidence in cylinder_evidence)
 
 
 def test_normalization_makes_the_complete_golden_inventory_rotation_invariant() -> None:

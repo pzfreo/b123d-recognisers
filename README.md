@@ -110,10 +110,17 @@ from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_
 framed = build_framed_recognition_result(part)
 if isinstance(framed, FramedRecognitionResult):
     print(framed.frame.gauge)
+    print(framed.part.bounding_box())  # the exact local shape used for recognition
     print(framed.result.holes)  # coordinates and axis letters are local to framed.frame
 ```
 
 The paired `PartFrame` converts points in either direction with `to_local()` and `to_world()`.
+`framed.part` is the exact topology-preserving local working shape passed to recognition, not a
+consumer reconstruction. Its evaluated coordinates agree with `framed.result`, and
+`framed.frame` converts between it and the caller's input coordinates. Keep the successful
+`FramedRecognitionResult` alive while using topology-bearing recognition evidence: the result owns
+the identity relationship between that evidence and `framed.part`; the original input shape is a
+different caller-space object.
 `FULL` means geometry establishes a directed, ordered basis. `ORTHOGONAL` exposes an unobservable
 discrete sign or axis interchange, and `AXIAL` exposes unobservable roll. The axes returned for a
 gauged frame are deterministic representatives and must not be treated as semantic material

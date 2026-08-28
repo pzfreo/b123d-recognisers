@@ -3,7 +3,8 @@
 """Opt-in part-relative recognition with an explicit caller-space frame.
 
 Existing recognition entry points remain caller-space and byte compatible. Framed recognition
-pairs the unchanged local-frame ``RecognitionResult`` with the frame needed to interpret it.
+pairs the unchanged local-frame ``RecognitionResult`` and exact working shape with the frame
+needed to interpret them.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Trsf
 from OCP.GProp import GProp_GProps
+from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._typing import Part, Vector3
 from b123d_recognisers.result import RecognitionResult, build_recognition_result
@@ -105,9 +107,10 @@ class PartFrame:
 
 @dataclass(frozen=True, slots=True)
 class FramedRecognitionResult:
-    """Existing recognition records expressed in the accompanying local frame."""
+    """The exact local working shape and records expressed in its accompanying frame."""
 
     frame: PartFrame
+    part: Shape[TopoDS_Shape]
     result: RecognitionResult
 
 
@@ -291,7 +294,7 @@ def infer_part_frame(part: Part) -> FrameInference:
     return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 
 
-def _normalize_part(part: Part, frame: PartFrame) -> Shape:
+def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
     transform = gp_Trsf()
     axes = (frame.x, frame.y, frame.z)
     values = tuple(component for axis in axes for component in axis)
@@ -328,7 +331,9 @@ def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> 
         return frame
     normalized = _normalize_part(part, frame)
     return FramedRecognitionResult(
-        frame, build_recognition_result(normalized, rotational=rotational)
+        frame,
+        normalized,
+        build_recognition_result(normalized, rotational=rotational),
     )
 
 
