@@ -177,3 +177,36 @@ incidence are derived from exact graph topology and bounded pcurve authority bef
 erased. F6b maps that complete labelled graph under one proper signed-permutation/uniform-scale
 witness; it does not reinterpret the older wrapper-presentation direction fields, reduce the graph
 to a multiset, or treat a descriptor collision as body identity.
+
+## Amendment (first effective-surface consumer, issue #276)
+
+Recovered analytic geometry remains unoriented. A selected consumer may establish material side
+independently from the exact original graph-owned face when that face has one unambiguous valid
+closed-solid owner and bounded probes distinguish material from void. The effective-face query
+issues an opaque `SurfaceUse` retaining the original `FaceNode`, the native or recovered analytic
+fact and, when requested, a separate `MaterialSideCertificate`. Canonical plane-axis sign is never
+material-side evidence.
+
+For the first and only migrated family, Raised Pads, material-side certification is limited to a
+plane. With F1 local nominal `L`, the probe distance is
+`min(0.02, max(1e-4 * L, 10 * COORD_FLOOR))`; the solid-classifier tolerance is `COORD_FLOOR`.
+The authority meshes the exact original face, sorts non-degenerate triangles deterministically,
+and retains two to four largest triangle centroids whose distance from every trim edge is at least
+four probe distances. At every sample, the original surface differential must be regular and
+parallel to the candidate plane. Probes at both signs of the candidate direction must classify as
+exactly one `OUT` and one `IN`, and every sample must agree. No owner, ambiguous ownership, an
+open/invalid owner, insufficient boundary clearance, a degenerate differential, indeterminate
+classification or sample disagreement refuses the certificate.
+
+Every issued Pad Candidate retains five `SurfaceUse` dependencies covering exactly its five
+defining original faces; exactly the top dependency carries the material-side certificate. The
+Candidate issuer revalidates run identity, coverage, uniqueness, recovery facts and solid owner
+before publication and whenever frozen evidence is read. Other families cannot attach these
+dependencies until separately migrated and measured.
+
+`tools/nurbs_conversion_sweep.py` establishes conversion face identity from OCCT's one-to-one
+`BRepBuilderAPI_NurbsConvert.ModifiedShape` history before validating boundary structure,
+adjacency, orientation, recovered primitives, records and defining evidence. Its checked-in
+JSON/Markdown is byte-pinned. The measured claim is intentionally narrow: exact OCCT-converted
+plane geometry for Raised Pads under reviewed OCP/OCCT 7.9.3.1. Torus recovery, approximate or
+reverse-engineered NURBS, third-party exporters and every non-migrated family remain excluded.

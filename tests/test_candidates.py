@@ -26,6 +26,7 @@ from b123d_recognisers._candidates import (
     SplitTriangularTerminalFact,
 )
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._effective_surfaces import SurfaceUse, effective_faces_for_graph
 from b123d_recognisers._passage_compat import PassageCompatibilityView
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 
@@ -110,6 +111,55 @@ def test_physical_evidence_requires_one_valid_solid_but_legacy_remains_compatibl
         open_ledger.propose(FamilyId.SLOTS, Record(4), open_ledger.graph.nodes)
     open_legacy = open_ledger.propose(FamilyId.LEGACY, Record(5), open_ledger.graph.nodes)
     assert open_ledger.defining_of(open_legacy) == frozenset(open_ledger.graph.nodes)
+
+
+def test_surface_evidence_is_pad_only_complete_unique_and_material_sided() -> None:
+    part = Box(10, 10, 10)
+    graph = FaceGraph(part)
+    query = effective_faces_for_graph(graph)
+    first, second = graph.nodes[:2]
+    first_face = graph.face(first)
+    second_face = graph.face(second)
+    first_use = query.use(first_face)
+    second_use = query.use(second_face)
+    assert isinstance(first_use, SurfaceUse)
+    assert isinstance(second_use, SurfaceUse)
+
+    ledger = _registry_ledger(part)
+    foreign_use = effective_faces_for_graph(graph).use(first_face)
+    assert isinstance(foreign_use, SurfaceUse)
+    with pytest.raises(ValueError, match="another graph run"):
+        ledger.sink.propose(
+            FamilyId.PADS,
+            Record(0),
+            defining=[ledger.graph.nodes[0]],
+            surfaces=[foreign_use],
+        )
+
+    with pytest.raises(ValueError, match="only explicitly migrated"):
+        ClaimLedger(graph).sink.propose(
+            FamilyId.SLOTS, Record(1), defining=[first], surfaces=[first_use]
+        )
+    with pytest.raises(ValueError, match="repeats an original face"):
+        ClaimLedger(graph).sink.propose(
+            FamilyId.PADS, Record(2), defining=[first], surfaces=[first_use, first_use]
+        )
+    with pytest.raises(ValueError, match="cover every defining face"):
+        ClaimLedger(graph).sink.propose(
+            FamilyId.PADS,
+            Record(3),
+            defining=[first, second],
+            surfaces=[first_use],
+        )
+    with pytest.raises(ValueError, match="exactly one material-side"):
+        ClaimLedger(graph).sink.propose(
+            FamilyId.PADS,
+            Record(4),
+            defining=[first, second],
+            surfaces=[first_use, second_use],
+        )
+    with pytest.raises(ValueError, match="require effective-surface evidence"):
+        ClaimLedger(graph).sink.propose(FamilyId.PADS, Record(5), defining=[first])
 
 
 def test_observations_freeze_without_becoming_candidates_or_claims() -> None:

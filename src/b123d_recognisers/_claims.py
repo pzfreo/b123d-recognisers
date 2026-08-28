@@ -56,6 +56,7 @@ from b123d_recognisers._candidates import (
     FamilyId,
     _CandidateIssuer,
 )
+from b123d_recognisers._effective_surfaces import SurfaceUse
 
 
 @dataclass(frozen=True, eq=False, repr=False, slots=True)
@@ -94,13 +95,14 @@ class EvidenceWriter:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
+        surfaces: Iterable[SurfaceUse] = (),
     ) -> Candidate[object]:
         """Issue defining evidence without exposing any read or freeze operation."""
 
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        return self.sink.propose(family, claimant, defining=defining)
+        return self.sink.propose(family, claimant, defining=defining, surfaces=surfaces)
 
 
 class ClaimLedger:

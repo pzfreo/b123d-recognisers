@@ -23,6 +23,7 @@ from types import MappingProxyType
 from typing import Generic, TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
+from b123d_recognisers._effective_surfaces import SurfaceUse, _validate_surface_use
 from b123d_recognisers._passage_compat import CompatibilitySnapshot, PassageCompatibilityView
 
 RecordT = TypeVar("RecordT")
@@ -63,9 +64,10 @@ class FamilyId(Enum):
 
 @dataclass(frozen=True, slots=True)
 class Evidence:
-    """The graph nodes that establish one proposal."""
+    """Original defining nodes and every effective-surface dependency used to accept them."""
 
     defining: frozenset[FaceNode]
+    surfaces: tuple[SurfaceUse, ...] = ()
 
 
 class PredicateId(Enum):
@@ -225,11 +227,18 @@ class EvidenceSink:
         record: RecordT,
         *,
         defining: Iterable[FaceNode] = (),
+        surfaces: Iterable[SurfaceUse] = (),
         compatibility: PassageCompatibilityView | None = None,
     ) -> Candidate[RecordT]:
         """Atomically validate evidence and issue one identity-safe candidate."""
 
-        return self.__issuer.propose(family, record, defining=defining, compatibility=compatibility)
+        return self.__issuer.propose(
+            family,
+            record,
+            defining=defining,
+            surfaces=surfaces,
+            compatibility=compatibility,
+        )
 
     def observe(
         self,
@@ -400,6 +409,7 @@ class EvidenceIndex:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
+            or candidate.evidence.surfaces is not issued.surfaces
             or candidate.compatibility is not issued.compatibility
             or (
                 issued.compatibility is not None
@@ -407,6 +417,8 @@ class EvidenceIndex:
             )
         ):
             raise ValueError("candidate no longer matches its issued state")
+        for surface_use in issued.surfaces:
+            _validate_surface_use(surface_use, self._graph)
         return issued
 
     def _validate_observation(self, observation: Observation) -> _IssuedObservation:
@@ -436,6 +448,7 @@ class _IssuedCandidate:
     record: object
     evidence: Evidence
     defining: frozenset[FaceNode]
+    surfaces: tuple[SurfaceUse, ...]
     compatibility: PassageCompatibilityView | None
     compatibility_snapshot: CompatibilitySnapshot | None
 
@@ -504,6 +517,7 @@ class _CandidateIssuer:
         record: RecordT,
         *,
         defining: Iterable[FaceNode],
+        surfaces: Iterable[SurfaceUse] = (),
         compatibility: PassageCompatibilityView | None = None,
     ) -> Candidate[RecordT]:
         if self._sealed:
@@ -511,6 +525,7 @@ class _CandidateIssuer:
         if family in self._completed:
             raise RuntimeError(f"{family.value} candidate issuance is already completed")
         nodes = frozenset(defining)
+        surface_uses = tuple(surfaces)
         foreign = [node for node in nodes if not self._graph.owns(node)]
         if foreign:
             raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
@@ -520,6 +535,24 @@ class _CandidateIssuer:
             and self._graph.common_valid_solid(nodes) is None
         ):
             raise ValueError("physical defining evidence must belong to one valid closed solid")
+        if surface_uses:
+            if family is not FamilyId.PADS:
+                raise ValueError("only explicitly migrated families may carry surface evidence")
+            snapshots = tuple(_validate_surface_use(use, self._graph) for use in surface_uses)
+            surface_nodes = tuple(snapshot.node for snapshot in snapshots)
+            if len(surface_nodes) != len(set(surface_nodes)):
+                raise ValueError("surface evidence repeats an original face")
+            if frozenset(surface_nodes) != nodes:
+                raise ValueError("surface evidence must cover every defining face exactly once")
+            material = tuple(
+                snapshot.material_side
+                for snapshot in snapshots
+                if snapshot.material_side is not None
+            )
+            if len(material) != 1:
+                raise ValueError("Pad evidence requires exactly one material-side certificate")
+        elif family is FamilyId.PADS and nodes:
+            raise ValueError("Pad candidates require effective-surface evidence")
         if family is FamilyId.PASSAGES:
             if not isinstance(compatibility, PassageCompatibilityView):
                 raise ValueError("passage candidates require a compatibility fact")
@@ -528,7 +561,7 @@ class _CandidateIssuer:
         candidate = object.__new__(Candidate)
         object.__setattr__(candidate, "family", family)
         object.__setattr__(candidate, "record", record)
-        object.__setattr__(candidate, "evidence", Evidence(nodes))
+        object.__setattr__(candidate, "evidence", Evidence(nodes, surface_uses))
         object.__setattr__(candidate, "compatibility", compatibility)
         object.__setattr__(candidate, "_issuer", self._token)
         self._candidates.append(candidate)
@@ -538,6 +571,7 @@ class _CandidateIssuer:
             record,
             candidate.evidence,
             candidate.evidence.defining,
+            candidate.evidence.surfaces,
             compatibility,
             compatibility.issued_snapshot() if compatibility is not None else None,
         )
@@ -665,6 +699,7 @@ class _CandidateIssuer:
                             record,
                             evidence,
                             evidence.defining,
+                            evidence.surfaces,
                             None,
                             None,
                         ),

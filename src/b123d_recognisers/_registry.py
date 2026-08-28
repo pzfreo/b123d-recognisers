@@ -585,7 +585,15 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_rectangular_pads",
         (),
         always,
-        _simple(lambda s: list(_discover_rectangular_pads(s.context.part, writer=s.writer))),
+        _simple(
+            lambda s: list(
+                _discover_rectangular_pads(
+                    s.context.part,
+                    writer=s.writer,
+                    face_surfaces=s.context.face_surfaces,
+                )
+            )
+        ),
         NotCounted("not a distinct census key"),
         FullyAttributed("every returned Pad owns its exact top and four perimeter-wall faces"),
     ),

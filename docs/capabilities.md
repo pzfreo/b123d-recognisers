@@ -62,7 +62,7 @@ compatibility review, and release notes.
 | `recognise_pockets` | Floored rectangular recesses bounded within one solid; elongated blind slots are the same record class. After graph-proved curved end interruptions are trimmed, a paired-wall candidate's unrounded rectangular prism must be materially empty within that solid. | Through slots, open-ended channels, non-rectangular floors, same-solid internal islands/bridges that the simple record cannot express, and cross-solid composites. | Blind-pocket golden, floor/opening regressions, blind-U/rib adversaries, and MFCAD++/NIST change evidence. |
 | `recognise_polygonal_bosses` | Attached regular hexagonal Z-axis bosses with six outward side faces, one A/F value, a support cap, and a top cap. Six native constant-radius convex cylindrical corner-blend chains may explicitly bridge the otherwise retained planar side ring when their complete issuer-owned provenance forms one unambiguous cycle. | Other side counts, X/Y axes, whole-stock prisms, inward recesses, incomplete or competing blend cycles, automatic collapse, and cross-solid assemblies. | Polygonal-boss golden, blend-interrupted sharp-control/STEP/aggregate evidence, plus capability-negative tests. |
 | `recognise_polygonal_stock` | Exactly one solid consisting solely of a regular hexagonal Z-axis prism’s six sides and two caps. | Other side counts or axes, attachments, holes, chamfers, missing/extra faces, and multi-solid assemblies. | Polygonal-stock golden plus capability-negative tests. |
-| `recognise_rectangular_pads` | Bounded rectangular +Z islands with a filled XY footprint and body-local support. | Full-span steps, non-rectangular/perforated tops, -Z/side pads, and cross-solid support. | Plate/pad/level golden and pad tests. |
+| `recognise_rectangular_pads` | Bounded rectangular +Z islands with a filled XY footprint, body-local support, and exact face ownership in one valid closed solid. | Full-span steps, non-rectangular/perforated tops, -Z/side pads, cross-solid support, open/invalid bodies, and ambiguous or missing solid ownership. | Plate/pad/level golden and pad tests. |
 | `recognise_prismatic_pockets` | Floored recesses of any planar cross-section, found by walking the closed ring of walls: a triangular, hexagonal or rectangular pocket alike. Reports the section, so shape survives into the record. | Obround recesses, whose cylindrical ends form no closed planar ring — `recognise_pockets` reaches those; voids open at both ends (a passage) or capped at both (an enclosed cavity, unreachable by a tool). In the aggregate, a four-wall ring yields to a paired `Pocket`; a non-rectangular ring survives and defeats paired-wall fragments inside it. | Prismatic-pocket functional tests; `triangular_and_hex_pockets` golden; measured over 250 MFCAD++ models, capped rings reach 80 triangular, 72 hexagonal and 61 rectangular pockets where wall pairing reaches essentially only the rectangular ones. |
 | `recognise_repeating_radial_profiles` | Complete outer-wire profiles invariant under a proved sector rotation, independently per solid. | Gear semantics, partial-repeat inference, inner-only profiles, and cross-solid cycles. | Repeating-radial-profile and traversal-order goldens. |
 | `recognise_risers` | Full-span principal in-plane step-riser evidence, including bounded slanted transitions, independent of a level set. | Pads, pocket walls, partial corner notches, and end-treated/inset risers outside tolerance; shoulder selection remains a consumer projection. | Plate/level and slanted-step goldens. |
@@ -70,29 +70,67 @@ compatibility review, and release notes.
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. | Floored pockets, open-ended channels, merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Straight/obround-slot golden, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, and recess-reconciliation regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
 
-## Analytic surfaces are a precondition for every recogniser
+## Surface-representation support is family-specific
 
-Every recogniser above classifies faces by their surface type. A face is a hole wall because it is
-a `GeomAbs_Cylinder`, a floor because it is a `GeomAbs_Plane`. Imported geometry therefore has to
-arrive with its analytic surfaces intact.
+Most recognisers above still classify faces by their native surface type. A face is a hole wall
+because it arrives as a `GeomAbs_Cylinder`, a floor because it arrives as a `GeomAbs_Plane`.
+Imported geometry therefore still has to preserve native analytic surfaces for every family except
+the explicitly measured Raised Pad slice below.
 
 STEP carries analytic surfaces, and `tests/test_step_round_trip.py` proves the file boundary does
 not disturb them: all twenty golden fixtures exported to STEP and re-imported reproduce their
 pinned records exactly, with planes and cylinders still typed as such.
 
 That evidence covers geometry written by this project's own OCCT-based exporter. It shows that
-passing through a STEP file is not itself lossy; it does not measure any particular third-party
-CAD system's export, and no such corpus is checked in. The requirement is the same either way — a
-file whose faces arrive as analytic surfaces recognises, one whose faces arrive as B-splines does
-not — but the proven evidence is the round trip, not a survey of emitters.
+passing through a STEP file is not itself lossy. No third-party corpus is checked in, but the
+separate external measurement below now covers one Autodesk exporter corpus without redistributing
+its licensed models.
 
-Geometry whose faces are B-splines is **excluded, in every family at once**. A NURBS-only export
-can describe a face that is exactly a cylinder while typing it `GeomAbs_BSplineSurface`; no
-recogniser here inspects the underlying geometry to discover that, so recognition returns nothing
-rather than degrading partially. This is a whole-package boundary rather than a per-row exclusion,
-and it is held by test as a contrast against the analytic result. Supporting it would mean fitting
-analytic surfaces to B-spline faces and bounding the residual — a recognition-behaviour change
-under the usual evidence requirements, not a tolerance adjustment.
+`recognise_rectangular_pads` additionally supports exact plane geometry re-expressed by OCCT as
+B-spline faces. Its run-owned effective-surface query retains the exact original faces, bounded
+recovery certificates and a separate closed-solid material-side certificate for the top face.
+Every participating face must resolve to exactly one valid closed-solid owner; open shells,
+invalid bodies, and ambiguous or missing ownership return no Pad records.
+The [NURBS-conversion sweep](benchmarks/nurbs-conversion-sweep.md) validates a one-to-one face
+correspondence before comparing topology, complete records and exact defining evidence: across 20
+goldens it recovers 319/319 faces and retains the one native Pad with no changed, absent or
+introduced occurrence. Converted-input adversaries cover a positive Pad, pockets/voids, tier
+suppression, envelope contact, open ownership and multiple solids. This claim is limited to exact
+OCCT conversion under the reviewed OCP/OCCT 7.9.3.1 contract.
+
+The [external NURBS corpus spike](benchmarks/nurbs-external-corpus-spike.md) scans the complete
+42,912-model Fusion 360 Gallery Extended STEP archive, fixes an evenly spaced 1,000-model sample
+from its 8,673 B-spline-bearing files before OCCT import or fitting, and imports all 1,000. Of 12,729
+imported B-spline/Bezier faces, 48 (0.3771%) satisfy the bounded analytic-recovery contract: 31
+cylinders, 12 planes and 5 cones across 21 models. Nine of the recovered planes acquire a separate
+material-side certificate, three refuse it, and none changes Raised Pad output against a
+native-only counterfactual. The largest accepted kernel gap is 99.3612% of its face-local bound,
+so this is bounded recovery evidence, not an upgrade of the exact-conversion claim above.
+
+The same spike now measures the missing feature-unlock counterfactual. It leaves each original
+TopoDS input untouched, temporarily exposes recovered planes, cylinders and cones to every raw
+surface reader, and counts every aggregate family under both prismatic and rotational caller
+classifications. One affected model fails the untouched inventory baseline and is excluded. On the
+remaining 20 models, the combined overlay changes 11: 29 recovered cylinders become visible as 26
+internal and 3 external cylinder patches, with downstream gains of four Flat candidates in one
+model and one Hole candidate in one model. No candidate is lost. Recovered planes and cones unlock
+no result in either classification mode. The repeated research inventories take 93.608 seconds,
+including 30.850 seconds of untouched baselines; this is harness cost, not a proposed production
+hot path.
+
+That is a non-zero, narrowly cylinder-specific signal—not evidence for a general NURBS backlog.
+The new Hole and Flat candidates are not yet correctness claims: recovered curved orientation has
+not been certified and the individual candidates still need semantic review. A future migration
+should therefore start at the shared cylinder substrate with orientation/material-side proof and
+those measured cases as an external evaluation set. This sample gives no data-backed reason to
+migrate plane consumers beyond Pads or any cone consumer.
+
+B-spline input remains **excluded for every other family**, including all cylinder- and
+torus-dependent families. Refused or ambiguous analytic recovery and an unproved material owner
+fail closed. Reverse-engineered or otherwise uncontrolled inputs have no support claim even when
+an individual face happens to satisfy the bounded fitter. Aggregate results may therefore contain
+Raised Pads while other families remain absent; that is a deliberate per-family capability
+boundary, not evidence of whole-model support.
 
 ## Measured against third-party labelled corpora
 

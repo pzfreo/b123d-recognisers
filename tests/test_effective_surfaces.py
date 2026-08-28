@@ -1,4 +1,5 @@
 import math
+from dataclasses import replace
 
 import pytest
 from build123d import (
@@ -17,21 +18,28 @@ from build123d import (
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCP.BRepTools import BRepTools
 from OCP.Geom import Geom_BezierSurface, Geom_RectangularTrimmedSurface
 from OCP.GeomConvert import GeomConvert
-from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt
+from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt, gp_Pnt2d
 from OCP.Standard import Standard_Failure
 from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TopAbs import TopAbs_IN, TopAbs_OUT
+from OCP.TopLoc import TopLoc_Location
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._analytic_surfaces import validated_parameters
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
+    MaterialSideRefusalReason,
     OrientationCapability,
     SurfaceKind,
     SurfaceProvenance,
     SurfaceRefusalReason,
+    SurfaceUse,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -75,6 +83,296 @@ def test_effective_surface_index_rejects_foreign_nodes() -> None:
 
     with pytest.raises(ValueError, match="not issued"):
         left.fact(foreign)
+
+
+def test_plane_material_side_is_a_separate_cached_closed_solid_certificate() -> None:
+    part = Box(10, 8, 4)
+    graph = FaceGraph(part)
+    query = effective_faces_for_graph(graph)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+
+    first = query.use(top, material_side=True)
+    assert isinstance(first, SurfaceUse)
+    assert query.use(top, material_side=True) is first
+    assert first.surface.orientation is OrientationCapability.NATIVE_ORIENTED
+    assert first.material_side is not None
+    assert first.material_side.node is graph.require_node(top)
+    assert first.material_side.outward == pytest.approx((0.0, 0.0, 1.0))
+    assert len(first.material_side.sample_points) >= 2
+    assert first.material_side.probe_distance > first.material_side.classifier_tolerance
+
+    object.__setattr__(first.material_side, "outward", (0.0, 0.0, -1.0))
+    with pytest.raises(ValueError, match="no longer matches"):
+        _ = first.material_side
+
+
+def test_surface_uses_are_opaque_and_detect_forgery_or_changed_facts(monkeypatch) -> None:
+    with pytest.raises(TypeError, match="issued by"):
+        SurfaceUse()
+
+    forged = object.__new__(SurfaceUse)
+    with pytest.raises(ValueError, match="authority was mutated"):
+        _ = forged.node
+
+    part = Box(10, 8, 4)
+    graph = FaceGraph(part)
+    query = effective_faces_for_graph(graph)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    issued = query.use(top)
+    assert isinstance(issued, SurfaceUse)
+    original = issued.surface
+
+    unissued = object.__new__(SurfaceUse)
+    object.__setattr__(
+        unissued,
+        "_SurfaceUse__authority",
+        issued._SurfaceUse__authority,
+    )
+    with pytest.raises(ValueError, match="not issued by this query"):
+        _ = unissued.node
+
+    monkeypatch.setattr(
+        EffectiveSurfaceIndex,
+        "fact",
+        lambda _self, _node: replace(original, kernel_reported_gap=1.0),
+    )
+    with pytest.raises(ValueError, match="no longer matches its issued fact"):
+        _ = issued.surface
+
+
+def test_face_query_returns_a_surface_refusal_for_an_unavailable_fact() -> None:
+    torus = Torus(10, 2)
+    query = effective_faces_for_graph(FaceGraph(torus))
+
+    refused = query.use(torus.faces()[0])
+
+    assert isinstance(refused, SurfaceUseRefusal)
+    assert refused.reason is MaterialSideRefusalReason.SURFACE_UNAVAILABLE
+
+
+def test_material_side_sampling_does_not_attach_a_mesh_to_the_input_face() -> None:
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    BRepTools.Clean_s(part.wrapped)
+    assert BRep_Tool.Triangulation_s(top.wrapped, TopLoc_Location()) is None
+
+    result = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+
+    assert isinstance(result, SurfaceUse)
+    assert BRep_Tool.Triangulation_s(top.wrapped, TopLoc_Location()) is None
+
+
+def test_material_side_sampling_refuses_uncleared_or_failed_samples(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module.Vertex, "distance_to", lambda _self, _edge: 0.0)
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY
+    )
+
+    monkeypatch.setattr(
+        module.Vertex,
+        "distance_to",
+        lambda _self, _edge: (_ for _ in ()).throw(RuntimeError("distance failure")),
+    )
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
+
+
+def test_material_side_sampling_refuses_missing_or_degenerate_triangulation(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module.BRep_Tool, "Triangulation_s", lambda *_args: None)
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
+
+    monkeypatch.undo()
+
+    class DegenerateTriangle:
+        def Get(self):
+            return (1, 2, 3)
+
+    class DegenerateTriangulation:
+        def NbNodes(self):
+            return 3
+
+        def NbTriangles(self):
+            return 1
+
+        def Node(self, _at):
+            return gp_Pnt(0.0, 0.0, 0.0)
+
+        def Triangle(self, _at):
+            return DegenerateTriangle()
+
+    monkeypatch.setattr(
+        module.BRep_Tool,
+        "Triangulation_s",
+        lambda *_args: DegenerateTriangulation(),
+    )
+    assert (
+        module._triangle_samples(top, probe_distance=1e-3)
+        is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+    )
+
+def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    class WrongUV:
+        def __init__(self, _surface) -> None:
+            pass
+
+        def ValueOfUV(self, _point, _tolerance):
+            return gp_Pnt2d(1_000_000.0, 1_000_000.0)
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+    monkeypatch.setattr(module, "ShapeAnalysis_Surface", WrongUV)
+
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
+
+
+def test_plane_differential_refuses_degenerate_or_failed_kernel_reads(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+
+    class ZeroDifferential:
+        def __init__(self, _shape) -> None:
+            pass
+
+        def D1(self, _u, _v, point, _along_u, _along_v) -> None:
+            point.SetCoord(centre.X, centre.Y, centre.Z)
+
+    monkeypatch.setattr(module, "BRepAdaptor_Surface", ZeroDifferential)
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
+
+    monkeypatch.setattr(
+        module,
+        "ShapeAnalysis_Surface",
+        lambda _surface: (_ for _ in ()).throw(RuntimeError("projection failure")),
+    )
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
+
+
+def test_material_side_refuses_non_planes_and_faces_without_one_closed_owner() -> None:
+    cylinder = Cylinder(4, 10)
+    cylinder_query = effective_faces_for_graph(FaceGraph(cylinder))
+    curved = max(cylinder.faces(), key=lambda face: face.area)
+    unsupported = cylinder_query.use(curved, material_side=True)
+    assert isinstance(unsupported, SurfaceUseRefusal)
+    assert unsupported.reason is MaterialSideRefusalReason.UNSUPPORTED_PRIMITIVE
+
+    open_face = Face.make_rect(10, 8)
+    open_query = effective_faces_for_graph(FaceGraph(open_face))
+    unowned = open_query.use(open_face, material_side=True)
+    assert isinstance(unowned, SurfaceUseRefusal)
+    assert unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+
+def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module, "_regular_plane_differential", lambda *_args: False)
+    degenerate = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(degenerate, SurfaceUseRefusal)
+    assert degenerate.reason is MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
+
+    monkeypatch.undo()
+
+    class FailedClassifier:
+        def __init__(self, _solid) -> None:
+            raise RuntimeError("classifier failure")
+
+    monkeypatch.setattr(module, "BRepClass3d_SolidClassifier", FailedClassifier)
+    failed = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(failed, SurfaceUseRefusal)
+    assert failed.reason is MaterialSideRefusalReason.PROBE_INDETERMINATE
+
+
+def test_material_side_propagates_nominal_and_sampling_refusals(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(
+        module,
+        "recovery_nominal",
+        lambda _face: (_ for _ in ()).throw(ValueError("invalid nominal")),
+    )
+    invalid = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(invalid, SurfaceUseRefusal)
+    assert invalid.reason is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+
+    monkeypatch.undo()
+    monkeypatch.setattr(
+        module,
+        "_triangle_samples",
+        lambda _face, *, probe_distance: MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY,
+    )
+    uncleared = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(uncleared, SurfaceUseRefusal)
+    assert uncleared.reason is MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY
+
+
+@pytest.mark.parametrize(
+    ("states", "reason"),
+    [
+        ((TopAbs_OUT, TopAbs_OUT), MaterialSideRefusalReason.PROBE_INDETERMINATE),
+        (
+            (TopAbs_OUT, TopAbs_IN, TopAbs_IN, TopAbs_OUT),
+            MaterialSideRefusalReason.SAMPLES_DISAGREE,
+        ),
+    ],
+)
+def test_material_side_refuses_indeterminate_or_disagreeing_probes(
+    monkeypatch, states, reason
+) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    class ScriptedClassifier:
+        def __init__(self, _solid) -> None:
+            self.states = iter(states)
+            self.state = None
+
+        def Perform(self, _point, _tolerance) -> None:
+            self.state = next(self.states)
+
+        def State(self):
+            return self.state
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+    samples = (
+        (centre.X - 1.0, centre.Y, centre.Z),
+        (centre.X + 1.0, centre.Y, centre.Z),
+    )
+    monkeypatch.setattr(module, "_triangle_samples", lambda *_args, **_kwargs: samples)
+    monkeypatch.setattr(module, "_regular_plane_differential", lambda *_args: True)
+    monkeypatch.setattr(module, "BRepClass3d_SolidClassifier", ScriptedClassifier)
+
+    refused = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+
+    assert isinstance(refused, SurfaceUseRefusal)
+    assert refused.reason is reason
 
 
 def _as_bspline_face(face: Face) -> Face:
@@ -501,15 +799,25 @@ def test_oriented_query_reports_an_unavailable_surface() -> None:
         EffectiveSurfaceIndex(graph).oriented_fact(graph.nodes[0])
 
 
+def test_face_query_refuses_foreign_graphs_and_faces() -> None:
+    graph = FaceGraph(Box(1, 1, 1))
+    foreign = FaceGraph(Box(2, 2, 2))
+
+    with pytest.raises(ValueError, match="different runs"):
+        effective_faces_for_graph(graph, EffectiveSurfaceIndex(foreign))
+
+    query = effective_faces_for_graph(graph)
+    with pytest.raises(ValueError, match="different part"):
+        query.fact(foreign.face(foreign.nodes[0]))
+
+
 @pytest.mark.parametrize("failure", [Standard_Failure("adaptor failure"), RuntimeError("failure")])
 def test_adaptor_failures_are_closed_invalid_inputs(monkeypatch, failure: Exception) -> None:
     class FailedAdaptor:
         def __init__(self, _shape) -> None:
             raise failure
 
-    monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor
-    )
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -526,9 +834,7 @@ def test_unknown_native_surface_kind_is_explicitly_unsupported(monkeypatch) -> N
         def GetType(self) -> int:
             return 999
 
-    monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor
-    )
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (

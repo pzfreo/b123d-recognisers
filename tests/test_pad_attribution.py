@@ -15,6 +15,7 @@ from build123d import (
     Box,
     Compound,
     Cylinder,
+    Part,
     Plane,
     Pos,
     Rot,
@@ -25,6 +26,7 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
@@ -33,6 +35,16 @@ from b123d_recognisers import recognise_rectangular_pads
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
+    MaterialSideRefusalReason,
+    RefusedSurfaceFact,
+    SurfaceKind,
+    SurfaceProvenance,
+    SurfaceRefusalReason,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
+)
 from b123d_recognisers.pads import (
     RaisedPad,
     _discover_rectangular_pads,
@@ -66,6 +78,10 @@ def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
 
 def _pad():
     return Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4)
+
+
+def _as_nurbs(part) -> Part:
+    return Part(BRepBuilderAPI_NurbsConvert(part.wrapped, True).Shape())
 
 
 def _perforated_pad(radius: float, *, width: float = 30, depth: float = 20):
@@ -146,12 +162,10 @@ def _fresh_expected(part, *, tol: float | None = None) -> list[_ExpectedPad]:
                 properties = GProp_GProps()
                 BRepGProp.SurfaceProperties_s(face.wrapped, properties)
                 full_x = (
-                    bb.min.X + threshold >= bounds.min.X
-                    and bb.max.X - threshold <= bounds.max.X
+                    bb.min.X + threshold >= bounds.min.X and bb.max.X - threshold <= bounds.max.X
                 )
                 full_y = (
-                    bb.min.Y + threshold >= bounds.min.Y
-                    and bb.max.Y - threshold <= bounds.max.Y
+                    bb.min.Y + threshold >= bounds.min.Y and bb.max.Y - threshold <= bounds.max.Y
                 )
                 if (
                     dx > threshold
@@ -272,6 +286,13 @@ def _assert_role(record, candidate, ledger) -> None:
     defining = ledger.defining_of(candidate)
     assert len(defining) == 5
     assert ledger.graph.common_valid_solid(defining) is not None
+    surface_uses = candidate.evidence.surfaces
+    assert {use.node for use in surface_uses} == defining
+    assert all(use.surface.kind is SurfaceKind.PLANE for use in surface_uses)
+    material = [use.material_side for use in surface_uses if use.material_side is not None]
+    assert len(material) == 1
+    assert material[0].node in defining and material[0].outward[2] > 0.999
+    assert len(material[0].sample_points) >= 2
     top = [
         node
         for node in defining
@@ -287,9 +308,7 @@ def _assert_role(record, candidate, ledger) -> None:
         record.z0, abs=0.001
     )
     assert all(
-        ledger.graph.is_planar(node)
-        and abs(ledger.graph.normal(node)[2]) < 1e-4
-        for node in walls
+        ledger.graph.is_planar(node) and abs(ledger.graph.normal(node)[2]) < 1e-4 for node in walls
     )
 
 
@@ -304,10 +323,7 @@ def test_separate_edge_pads_may_share_merged_stock_wall_faces() -> None:
     assert len(records) == len(candidates) == 4
     defining = [ledger.defining_of(candidate) for candidate in candidates]
     assert any(
-        not left.isdisjoint(right)
-        for left in defining
-        for right in defining
-        if left != right
+        not left.isdisjoint(right) for left in defining for right in defining if left != right
     )
     assert all(ledger.graph.common_valid_solid(nodes) is not None for nodes in defining)
 
@@ -369,12 +385,17 @@ def test_later_body_failure_leaves_family_empty(monkeypatch) -> None:
     part = Compound([Pos(-60, 0, 0) * _pad(), Pos(60, 0, 0) * _pad()])
     ledger = ClaimLedger(FaceGraph(part))
     original = ledger.graph.common_valid_solid
-    calls = 0
+    owners = tuple(
+        dict.fromkeys(
+            owner for node in ledger.graph.nodes if (owner := original((node,))) is not None
+        )
+    )
+    assert len(owners) == 2
 
     def fail_second(nodes):
-        nonlocal calls
-        calls += 1
-        return None if calls == 2 else original(nodes)
+        defining = tuple(nodes)
+        owner = original(defining)
+        return None if len(defining) == 5 and owner is owners[1] else owner
 
     monkeypatch.setattr(ledger.graph, "common_valid_solid", fail_second)
     with pytest.raises(ValueError, match="one valid solid"):
@@ -389,8 +410,8 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
     ledger = ClaimLedger(FaceGraph(part))
     original = module._recognise_rectangular_pads_one
 
-    def permuted(source, *, tol):
-        (proposal,) = original(source, tol=tol)
+    def permuted(source, *, tol, face_surfaces):
+        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
         roles = proposal.wall_roles
         return [
             proposal,
@@ -407,14 +428,46 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
+def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
+    import b123d_recognisers.pads as module
+
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    original = module._recognise_rectangular_pads_one
+
+    def reused_top(source, *, tol, face_surfaces):
+        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+        record = proposal.record
+        return [
+            proposal,
+            module._PadProposal(
+                RaisedPad(
+                    record.x0,
+                    record.x1,
+                    record.y0,
+                    record.y1,
+                    record.z0 - 1.0,
+                    record.z1,
+                ),
+                proposal.top_face,
+                proposal.wall_roles,
+            ),
+        ]
+
+    monkeypatch.setattr(module, "_recognise_rectangular_pads_one", reused_top)
+    with pytest.raises(ValueError, match="share a defining top face"):
+        _discover_rectangular_pads(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
 def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -> None:
     import b123d_recognisers.pads as module
 
     part = _pad()
     original = module._recognise_rectangular_pads_one
 
-    def repeated(source, *, tol):
-        (proposal,) = original(source, tol=tol)
+    def repeated(source, *, tol, face_surfaces):
+        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
         wrapped = module._PadProposal(
             proposal.record,
             copy.copy(proposal.top_face),
@@ -451,6 +504,76 @@ def test_foreign_writer_refuses_before_publication() -> None:
     with pytest.raises(ValueError):
         _discover_rectangular_pads(_pad(), writer=foreign.writer)
     assert foreign.candidate_set(FamilyId.PADS).candidates == ()
+
+
+def test_foreign_surface_query_refuses_before_pad_discovery() -> None:
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    foreign_query = effective_faces_for_graph(FaceGraph(part))
+
+    with pytest.raises(ValueError, match="different runs"):
+        _discover_rectangular_pads(
+            part,
+            writer=ledger.writer,
+            face_surfaces=foreign_query,
+        )
+
+
+def test_pad_top_without_material_certificate_remains_suppression_only() -> None:
+    part = _pad()
+    delegate = effective_faces_for_graph(FaceGraph(part))
+
+    class MissingMaterialCertificate:
+        @property
+        def run_token(self):
+            return delegate.run_token
+
+        def fact(self, face):
+            return delegate.fact(face)
+
+        def use(self, face, *, material_side=False):
+            return delegate.use(face, material_side=False)
+
+    assert (
+        _discover_rectangular_pads(
+            part,
+            face_surfaces=MissingMaterialCertificate(),
+        )
+        == []
+    )
+
+
+def test_pad_surface_refusal_during_evidence_issuance_is_atomic() -> None:
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    delegate = effective_faces_for_graph(ledger.graph)
+    material_calls: dict[object, int] = {}
+
+    class LateRefusal:
+        @property
+        def run_token(self):
+            return delegate.run_token
+
+        def fact(self, face):
+            return delegate.fact(face)
+
+        def use(self, face, *, material_side=False):
+            node = ledger.graph.require_node(face)
+            if material_side:
+                material_calls[node] = material_calls.get(node, 0) + 1
+                if material_calls[node] > 1:
+                    return SurfaceUseRefusal(
+                        node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE
+                    )
+            return delegate.use(face, material_side=material_side)
+
+    with pytest.raises(ValueError, match="provenance became unavailable"):
+        _discover_rectangular_pads(
+            part,
+            writer=ledger.writer,
+            face_surfaces=LateRefusal(),
+        )
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
 def test_supported_transforms_preserve_writer_lifecycle() -> None:
@@ -512,12 +635,11 @@ def test_reversed_vertical_face_orientation_preserves_unsigned_wall_roles(monkey
     _assert_role(record, candidate, ledger)
 
 
-def test_open_shell_keeps_public_behavior_but_refuses_aggregate() -> None:
+def test_open_shell_refuses_both_entry_points_without_material_side_authority() -> None:
     shell = Shell(_pad().faces())
-    assert recognise_rectangular_pads(shell)
+    assert recognise_rectangular_pads(shell) == []
     ledger = ClaimLedger(FaceGraph(shell))
-    with pytest.raises(ValueError, match="one valid solid"):
-        _discover_rectangular_pads(shell, writer=ledger.writer)
+    assert _discover_rectangular_pads(shell, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
@@ -615,9 +737,7 @@ def test_absolute_height_threshold_is_strict(height: float, accepted: bool) -> N
 
 @pytest.mark.parametrize(("width", "accepted"), [(0.199, False), (0.2, False), (0.201, True)])
 @pytest.mark.parametrize("axis", ["x", "y"])
-def test_footprint_width_threshold_is_strict(
-    width: float, accepted: bool, axis: str
-) -> None:
+def test_footprint_width_threshold_is_strict(width: float, accepted: bool, axis: str) -> None:
     island = Box(width, 2, 2) if axis == "x" else Box(2, width, 2)
     part = Box(20, 20, 2) + Pos(0, 0, 2) * island
     if accepted:
@@ -631,13 +751,9 @@ def test_footprint_width_threshold_is_strict(
         assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
-@pytest.mark.parametrize(
-    ("width", "accepted"), [(19.598, True), (19.6, False), (19.602, False)]
-)
+@pytest.mark.parametrize(("width", "accepted"), [(19.598, True), (19.6, False), (19.602, False)])
 @pytest.mark.parametrize("axis", ["x", "y"])
-def test_full_span_margin_boundary_is_inclusive(
-    width: float, accepted: bool, axis: str
-) -> None:
+def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool, axis: str) -> None:
     island = Box(width, 2, 2) if axis == "x" else Box(2, width, 2)
     part = Box(20, 20, 2) + Pos(0, 0, 2) * island
     if accepted:
@@ -762,8 +878,8 @@ def test_invalid_role_snapshots_refuse_before_publication(monkeypatch, mode: str
     ledger = ClaimLedger(FaceGraph(part))
     original = module._recognise_rectangular_pads_one
 
-    def changed(source, *, tol):
-        (proposal,) = original(source, tol=tol)
+    def changed(source, *, tol, face_surfaces):
+        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
         roles = proposal.wall_roles
         if mode == "role_alias":
             roles = (roles[0], roles[0], roles[2], roles[3])
@@ -790,9 +906,9 @@ def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> 
     original = module._recognise_rectangular_pads_one
     first_roles = None
 
-    def reused(source, *, tol):
+    def reused(source, *, tol, face_surfaces):
         nonlocal first_roles
-        proposals = original(source, tol=tol)
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces)
         if first_roles is None:
             first_roles = proposals[0].wall_roles
             return proposals
@@ -836,3 +952,116 @@ def test_terminal_inventory_retains_nonempty_pad_identity() -> None:
     assert len(candidates) == len(product.result.pads) == 1
     assert candidates[0].record is product.result.pads[0]
     assert len(product.evidence.defining_of(candidates[0])) == 5
+
+
+def test_nurbs_conversion_recovers_pad_standalone_and_aggregate() -> None:
+    native = [record.to_dict() for record in recognise_rectangular_pads(_pad())]
+    converted = _as_nurbs(_pad())
+
+    assert [record.to_dict() for record in recognise_rectangular_pads(converted)] == native
+
+    product = _take_inventory(converted)
+    assert [record.to_dict() for record in product.result.pads] == native
+    (candidate,) = product.physical.candidate_set(FamilyId.PADS).candidates
+    defining = product.evidence.defining_of(candidate)
+    assert len(defining) == 5
+    facts = tuple(product.context.surfaces.fact(node) for node in defining)
+    assert all(
+        isinstance(fact, AnalyticSurfaceFact) and fact.provenance is SurfaceProvenance.RECOVERED
+        for fact in facts
+    )
+    uses = candidate.evidence.surfaces
+    assert len(uses) == 5
+    assert all(use.surface.provenance is SurfaceProvenance.RECOVERED for use in uses)
+    material = [use.material_side for use in uses if use.material_side is not None]
+    assert len(material) == 1
+    top_use = next(use for use in uses if use.material_side is not None)
+    assert top_use.surface.certificate is not None
+    assert top_use.node is material[0].node
+    assert material[0].outward == pytest.approx((0.0, 0.0, 1.0))
+
+
+@pytest.mark.parametrize(
+    ("part", "expected"),
+    [
+        (
+            Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4) + Pos(0, 0, 11) * Box(1, 1, 4),
+            1,
+        ),
+        (Box(80, 60, 10) + Pos(25, 0, 7) * Box(30, 20, 4), 1),
+        (
+            Compound([Pos(-60, 0, 0) * _pad(), Pos(60, 0, 0) * _pad()]),
+            2,
+        ),
+        (Shell(_pad().faces()), 0),
+    ],
+)
+def test_nurbs_pad_adversaries_preserve_tiers_envelope_and_ownership(part, expected) -> None:
+    converted = _as_nurbs(part)
+    native_records = recognise_rectangular_pads(part)
+    converted_records = recognise_rectangular_pads(converted)
+    assert len(native_records) == len(converted_records) == expected
+    assert [record.to_dict() for record in converted_records] == [
+        record.to_dict() for record in native_records
+    ]
+    assert [record.to_dict() for record in _take_inventory(converted).result.pads] == [
+        record.to_dict() for record in converted_records
+    ]
+
+
+def test_nurbs_pad_refuses_ambiguous_recovery_in_both_entry_points(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as surfaces
+
+    converted = _as_nurbs(_pad())
+
+    def ambiguous(self, node):
+        return RefusedSurfaceFact(node, SurfaceRefusalReason.AMBIGUOUS_PRIMITIVE)
+
+    monkeypatch.setattr(surfaces.EffectiveSurfaceIndex, "fact", ambiguous)
+    assert recognise_rectangular_pads(converted) == []
+    assert _take_inventory(converted).result.pads == ()
+
+
+def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as surfaces
+
+    monkeypatch.setattr(
+        surfaces._EffectiveFaceSurfaces,
+        "_certify_plane",
+        lambda _self, _node, _surface: MaterialSideRefusalReason.SAMPLES_DISAGREE,
+    )
+    assert recognise_rectangular_pads(_pad()) == []
+    assert _take_inventory(_pad()).result.pads == ()
+
+
+def test_refused_lower_tier_cannot_introduce_the_upper_pad(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as surfaces
+
+    original = surfaces._EffectiveFaceSurfaces._certify_plane
+
+    def refuse_lower(self, node, surface):
+        if surface.kind is SurfaceKind.PLANE and abs(surface.parameters[3] - 9.0) <= 1e-9:
+            return MaterialSideRefusalReason.SAMPLES_DISAGREE
+        return original(self, node, surface)
+
+    monkeypatch.setattr(surfaces._EffectiveFaceSurfaces, "_certify_plane", refuse_lower)
+    part = (
+        Box(80, 60, 10)
+        + Pos(0, 0, 7) * Box(30, 20, 4)
+        + Pos(0, 0, 11) * Box(1, 1, 4)
+    )
+
+    assert recognise_rectangular_pads(part) == []
+    assert _take_inventory(part).result.pads == ()
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        Box(80, 60, 10),
+        Box(80, 60, 10) - Pos(0, 0, 8) * Box(30, 20, 4),
+        Box(80, 60, 10) + Pos(0, 0, 7) * Box(80, 20, 4),
+    ],
+)
+def test_nurbs_conversion_does_not_turn_stock_ledges_or_recesses_into_pads(part) -> None:
+    assert recognise_rectangular_pads(_as_nurbs(part)) == []
