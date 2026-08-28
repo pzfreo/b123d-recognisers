@@ -110,6 +110,7 @@ def test_report_preserves_result_and_closed_family_roster() -> None:
         (item.proposed, item.accepted, item.rejected, item.dispositions) == (0, 0, 0, ())
         for item in report.families
     )
+    assert all(item.proposed == item.accepted + item.rejected for item in report.families)
     assert report.diagnostics == ()
 
 
@@ -131,6 +132,7 @@ def test_reconciliation_loss_is_counted_without_identity_leakage() -> None:
     assert passage.dispositions[0].reason is r.ReconciliationReason.DEFAULT_ACCEPTED
     assert report.result.slots == ()
     assert len(report.result.passages) == 1
+    assert all(item.proposed == item.accepted + item.rejected for item in report.families)
 
 
 def test_classification_distinguishes_not_applicable_from_evaluated_empty() -> None:
