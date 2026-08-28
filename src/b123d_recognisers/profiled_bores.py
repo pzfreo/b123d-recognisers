@@ -695,7 +695,13 @@ def _discover_double_d_bores(
 def read_double_d_tool(
     obj: Part, *, tol: float = 1e-5
 ) -> tuple[str, float, float, Vector3, float, Vector3]:
-    """Read one constant double-D extrusion, rejecting merely matching end geometry."""
+    """Read one constant double-D extrusion, rejecting merely matching end geometry.
+
+    Returns ``(axis, major_diameter, across_flats, origin, depth,
+    profile_direction)``. ``axis`` is the principal-axis name ``"x"``, ``"y"`` or
+    ``"z"``; diameters, ``origin`` coordinates and ``depth`` use model-length units;
+    ``profile_direction`` is a unitless direction in the profile plane.
+    """
     bbox = obj.bounding_box()
     scan_tol = max(tol, part_scale(bbox) * 1e-5)
     ends: list[tuple[str, float, DoubleDProfile, object]] = []

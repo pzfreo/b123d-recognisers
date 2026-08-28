@@ -94,6 +94,11 @@ are not part of this supported API.
 roster. It does not change the recognition capability-manifest schema. See
 [`docs/capabilities.md`](docs/capabilities.md#declared-feature-inspection-api).
 
+That contract includes the closed `BevelReject.reason` values and the ordered
+`read_double_d_tool()` result: `(axis, major_diameter, across_flats, origin, depth,
+profile_direction)`. Diameters, origin coordinates, and depth use model-length units;
+`profile_direction` is unitless and `axis` is one of `x`, `y`, or `z`.
+
 ### Recognise independently of STEP placement
 
 Use the opt-in framed route when the same physical part must produce local coordinates independent

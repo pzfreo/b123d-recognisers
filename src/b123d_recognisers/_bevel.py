@@ -19,6 +19,8 @@ layer. Naming it is what lets the seam map have an opinion.
 
 from __future__ import annotations
 
+from typing import Literal, TypeAlias
+
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.GeomAbs import GeomAbs_Plane
@@ -32,6 +34,10 @@ from b123d_recognisers._typing import FaceLike, Part, Vector3
 #: is a single-axis bevel rather than a compound corner. Dimensionless (ADR 0008).
 _RUN_AXIS_COS = 0.05
 
+_BevelRejectReason: TypeAlias = Literal[
+    "nonplanar", "degenerate", "aligned", "compound"
+]
+
 
 class BevelReject(ValueError):
     """*face* is not a single-axis oblique planar bevel; ``reason`` says why:
@@ -39,7 +45,9 @@ class BevelReject(ValueError):
     shallow draft angle — a real face, not a chamfer), or ``"compound"`` (oblique on all
     three axes — a corner bevel, out of scope)."""
 
-    def __init__(self, reason: str) -> None:
+    reason: _BevelRejectReason
+
+    def __init__(self, reason: _BevelRejectReason) -> None:
         self.reason = reason
         super().__init__(reason)
 
