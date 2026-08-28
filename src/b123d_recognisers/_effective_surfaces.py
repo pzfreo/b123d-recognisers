@@ -18,6 +18,7 @@ import OCP
 from build123d import Vertex
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy
 from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.GeomAbs import (
@@ -34,6 +35,7 @@ from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition, ShapeAnalysis_
 from OCP.Standard import Standard_Failure
 from OCP.TopAbs import TopAbs_IN, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
+from OCP.TopoDS import TopoDS
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken, SolidRef
 from b123d_recognisers._analytic_surfaces import (
@@ -579,15 +581,19 @@ def _triangle_samples(
     """Choose deterministic interior triangle centroids with explicit trim clearance."""
 
     try:
+        # Meshing a TopoDS_Face attaches triangulation to that face.  Recognition
+        # is observational, so work on an independent geometry copy and leave the
+        # graph-owned input topology (and any caller-owned mesh state) untouched.
+        mesh_face = TopoDS.Face_s(BRepBuilderAPI_Copy(face.wrapped, True, False).Shape())
         BRepMesh_IncrementalMesh(
-            face.wrapped,
+            mesh_face,
             max(probe_distance, COORD_FLOOR),
             False,
             0.5,
-            True,
+            False,
         )
         location = TopLoc_Location()
-        triangulation = BRep_Tool.Triangulation_s(face.wrapped, location)
+        triangulation = BRep_Tool.Triangulation_s(mesh_face, location)
         if triangulation is None:
             return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
         transform = location.Transformation()
@@ -641,6 +647,16 @@ def _regular_plane_differential(
         )
         here, along_u, along_v = gp_Pnt(), gp_Vec(), gp_Vec()
         BRepAdaptor_Surface(face.wrapped).D1(uv.X(), uv.Y(), here, along_u, along_v)
+        projection_gap = math.sqrt(
+            math.fsum(
+                (actual - expected) ** 2
+                for actual, expected in zip(
+                    (here.X(), here.Y(), here.Z()), point, strict=True
+                )
+            )
+        )
+        if not math.isfinite(projection_gap) or projection_gap > recovery_tolerance(face):
+            return False
         cross = along_u.Crossed(along_v)
         magnitude = float(cross.Magnitude())
         if not math.isfinite(magnitude) or magnitude <= COORD_FLOOR * COORD_FLOOR:

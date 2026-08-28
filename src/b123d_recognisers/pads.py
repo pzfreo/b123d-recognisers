@@ -107,7 +107,8 @@ def _recognise_rectangular_pads_one(
     """Recognise pads using one solid's faces and bounds."""
     bb = part.bounding_box()
     tol = _TOL if tol is None else tol
-    raw_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
+    suppression_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
+    certified_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
     for face in part.faces():
         fact = face_surfaces.fact(face)
         if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
@@ -128,22 +129,29 @@ def _recognise_rectangular_pads_one(
         full_y = bb.min.Y + tol >= fb.min.Y and bb.max.Y - tol <= fb.max.Y
         if full_x or full_y:
             continue
+        top = (
+            round(fb.min.X, 3),
+            round(fb.max.X, 3),
+            round(fb.min.Y, 3),
+            round(fb.max.Y, 3),
+            round(fb.max.Z, 3),
+            face,
+        )
         top_surface = face_surfaces.use(face, material_side=True)
         if isinstance(top_surface, SurfaceUseRefusal):
+            # Tier suppression is conservative context, not a feature claim.
+            # Keep unverified geometric ledges in that context; refusing a ledge
+            # must never introduce a Pad claim on the tier above it.
+            suppression_tops.append(top)
             continue
         certificate = top_surface.material_side
-        if certificate is None or certificate.outward[2] < AXIS_ALIGNED_COS:
+        if certificate is None:
+            suppression_tops.append(top)
             continue
-        raw_tops.append(
-            (
-                round(fb.min.X, 3),
-                round(fb.max.X, 3),
-                round(fb.min.Y, 3),
-                round(fb.max.Y, 3),
-                round(fb.max.Z, 3),
-                face,
-            )
-        )
+        if certificate.outward[2] < AXIS_ALIGNED_COS:
+            continue
+        suppression_tops.append(top)
+        certified_tops.append(top)
 
     # Recover each pad's base from its own four downward perimeter walls. A
     # part-global "highest horizontal level below the top" is wrong when another
@@ -160,7 +168,7 @@ def _recognise_rectangular_pads_one(
         vertical_faces.append((face, fb, Vector(*direction)))
 
     proposals: list[_PadProposal] = []
-    for x0, x1, y0, y1, z1, top_face in raw_tops:
+    for x0, x1, y0, y1, z1, top_face in certified_tops:
         roles = (
             _wall_role(vertical_faces, axis="x", pos=x0, lo=y0, hi=y1, top=z1, tol=tol),
             _wall_role(vertical_faces, axis="x", pos=x1, lo=y0, hi=y1, top=z1, tol=tol),
@@ -187,7 +195,10 @@ def _recognise_rectangular_pads_one(
     # recovered local base.  Lower ledges on a sloped support can touch the pad in plan
     # without belonging to that stack; comparing every different Z discarded the
     # real upper pad.  Disjoint pads may legitimately have any number of heights.
-    raw_regions = [RaisedPad(x0, x1, y0, y1, z1, z1) for x0, x1, y0, y1, z1, _face in raw_tops]
+    raw_regions = [
+        RaisedPad(x0, x1, y0, y1, z1, z1)
+        for x0, x1, y0, y1, z1, _face in suppression_tops
+    ]
     return [
         proposal
         for proposal in proposals
@@ -202,7 +213,9 @@ def recognise_rectangular_pads(part: Part, *, tol: float | None = None) -> list[
     and is bounded on both in-plane axes. Full-span steps are excluded;
     non-rectangular pocket floors and perforated plate faces fail the area test.
     Body-local walls and bounds prevent a detached component from being treated
-    as a pad raised from another component.
+    as a pad raised from another component. Each input face must have one unique
+    owner in a valid closed solid; open, invalid, or ambiguous body ownership is
+    refused and returns no Pad records.
     """
     return _discover_rectangular_pads(part, tol=tol)
 

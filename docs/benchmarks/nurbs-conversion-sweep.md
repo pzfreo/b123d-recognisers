@@ -15,12 +15,12 @@ records.
 Recovered primitives: cone 1, cylinder 34, plane 284.
 Refused facts: 0.
 
-Maximum observed representation deltas:
+Reviewed representation-delta bounds enforced across every face:
 
-- evaluated face centre: `0.089732087815` model units
-- absolute face area: `24.358163410252` square units
-- relative face area: `0.003570750722`
-- effective primitive parameter: `0`
+- evaluated face centre: `0.1` model units
+- absolute face area: `25.0` square units
+- relative face area: `0.004`
+- effective primitive parameter: `1e-08`
 
 ## Performance gate
 

@@ -17,11 +17,13 @@ from build123d import (
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCP.BRepTools import BRepTools
 from OCP.Geom import Geom_BezierSurface, Geom_RectangularTrimmedSurface
 from OCP.GeomConvert import GeomConvert
-from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt
+from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt, gp_Pnt2d
 from OCP.Standard import Standard_Failure
 from OCP.TColgp import TColgp_Array2OfPnt
+from OCP.TopLoc import TopLoc_Location
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._analytic_surfaces import validated_parameters
@@ -100,6 +102,38 @@ def test_plane_material_side_is_a_separate_cached_closed_solid_certificate() -> 
     object.__setattr__(first.material_side, "outward", (0.0, 0.0, -1.0))
     with pytest.raises(ValueError, match="no longer matches"):
         _ = first.material_side
+
+
+def test_material_side_sampling_does_not_attach_a_mesh_to_the_input_face() -> None:
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    BRepTools.Clean_s(part.wrapped)
+    assert BRep_Tool.Triangulation_s(top.wrapped, TopLoc_Location()) is None
+
+    result = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+
+    assert isinstance(result, SurfaceUse)
+    assert BRep_Tool.Triangulation_s(top.wrapped, TopLoc_Location()) is None
+
+
+def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    class WrongUV:
+        def __init__(self, _surface) -> None:
+            pass
+
+        def ValueOfUV(self, _point, _tolerance):
+            return gp_Pnt2d(1_000_000.0, 1_000_000.0)
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    centre = top.center()
+    monkeypatch.setattr(module, "ShapeAnalysis_Surface", WrongUV)
+
+    assert not module._regular_plane_differential(
+        top, (centre.X, centre.Y, centre.Z), (0.0, 0.0, 1.0)
+    )
 
 
 def test_material_side_refuses_non_planes_and_faces_without_one_closed_owner() -> None:

@@ -930,6 +930,27 @@ def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(monkeypat
     assert _take_inventory(_pad()).result.pads == ()
 
 
+def test_refused_lower_tier_cannot_introduce_the_upper_pad(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as surfaces
+
+    original = surfaces._EffectiveFaceSurfaces._certify_plane
+
+    def refuse_lower(self, node, surface):
+        if surface.kind is SurfaceKind.PLANE and abs(surface.parameters[3] - 9.0) <= 1e-9:
+            return MaterialSideRefusalReason.SAMPLES_DISAGREE
+        return original(self, node, surface)
+
+    monkeypatch.setattr(surfaces._EffectiveFaceSurfaces, "_certify_plane", refuse_lower)
+    part = (
+        Box(80, 60, 10)
+        + Pos(0, 0, 7) * Box(30, 20, 4)
+        + Pos(0, 0, 11) * Box(1, 1, 4)
+    )
+
+    assert recognise_rectangular_pads(part) == []
+    assert _take_inventory(part).result.pads == ()
+
+
 @pytest.mark.parametrize(
     "part",
     [

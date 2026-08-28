@@ -41,6 +41,12 @@ JSON_REPORT = ROOT / "docs" / "benchmarks" / "nurbs-conversion-sweep.json"
 MARKDOWN_REPORT = ROOT / "docs" / "benchmarks" / "nurbs-conversion-sweep.md"
 BASELINE_COMMIT = "4b21f79d8a1a96f9970cbf160e3277be0e2289ca"
 PERFORMANCE_BUDGET_SECONDS = 3.0
+REVIEWED_DELTA_BOUNDS = {
+    "face_centre_model_units": 0.1,
+    "absolute_face_area_square_units": 25.0,
+    "relative_face_area": 0.004,
+    "effective_primitive_parameter": 1e-8,
+}
 PERFORMANCE_MEASUREMENT = {
     "environment": "Python 3.14.7, macOS/darwin, local development host",
     "measured_at": "2026-08-28",
@@ -100,7 +106,7 @@ def _boundary_signature(face) -> tuple[int, int, int]:
     )
 
 
-def _validate_topology(native, converted, correspondence: tuple[int, ...]) -> dict[str, float]:
+def _validate_topology(native, converted, correspondence: tuple[int, ...]) -> dict[str, bool]:
     before, after = tuple(native.faces()), tuple(converted.faces())
     before_graph, after_graph = FaceGraph(native), FaceGraph(converted)
     inverse = {converted_at: native_at for native_at, converted_at in enumerate(correspondence)}
@@ -129,10 +135,25 @@ def _validate_topology(native, converted, correspondence: tuple[int, ...]) -> di
             maximum_relative_area_delta,
             area_delta / float(left.area) if left.area else 0.0,
         )
+    observed = {
+        "face_centre_model_units": maximum_centre_delta,
+        "absolute_face_area_square_units": maximum_area_delta,
+        "relative_face_area": maximum_relative_area_delta,
+    }
+    for name, value in observed.items():
+        if value > REVIEWED_DELTA_BOUNDS[name]:
+            raise RuntimeError(
+                f"{name} delta {value!r} exceeds reviewed bound "
+                f"{REVIEWED_DELTA_BOUNDS[name]!r}"
+            )
+    # Do not serialize raw OCCT integration results: their insignificant final
+    # digits vary by platform. The checked-in evidence records only the stable
+    # structural result and the deliberately coarse reviewed bounds.
     return {
-        "maximum_face_centre_delta": round(maximum_centre_delta, 12),
-        "maximum_absolute_face_area_delta": round(maximum_area_delta, 12),
-        "maximum_relative_face_area_delta": round(maximum_relative_area_delta, 12),
+        "boundary_structure_preserved": True,
+        "adjacency_preserved": True,
+        "orientation_preserved": True,
+        "evaluated_geometry_within_reviewed_bounds": True,
     }
 
 
@@ -143,7 +164,6 @@ def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[
     recovered = Counter()
     refused = Counter()
     mismatches = []
-    maximum_parameter_delta = 0.0
     for native_at, converted_at in enumerate(correspondence):
         left = native_surfaces.fact(native_graph.nodes[native_at])
         right = converted_surfaces.fact(converted_graph.nodes[converted_at])
@@ -161,15 +181,13 @@ def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[
             (abs(a - b) for a, b in zip(left.parameters, right.parameters, strict=True)),
             default=0.0,
         )
-        maximum_parameter_delta = max(maximum_parameter_delta, delta)
-        if delta > 1e-8:
+        if delta > REVIEWED_DELTA_BOUNDS["effective_primitive_parameter"]:
             mismatches.append(native_at)
     return {
         "recovered_by_primitive": dict(sorted(recovered.items())),
         "refused_by_reason": dict(sorted(refused.items())),
         "ambiguous": refused.get("ambiguous-primitive", 0),
         "kind_or_parameter_mismatch_faces": mismatches,
-        "maximum_parameter_delta": round(maximum_parameter_delta, 12),
     }
 
 
@@ -259,7 +277,6 @@ def sweep() -> dict[str, Any]:
     totals: Counter[str] = Counter()
     recovered: Counter[str] = Counter()
     refused: Counter[str] = Counter()
-    maxima: Counter[str] = Counter()
     for fixture_path in sorted(GOLDEN_ROOT.glob("*/fixture.py")):
         native = load_fixture(fixture_path).build_fixture()
         converted, converter = _convert(native)
@@ -281,11 +298,6 @@ def sweep() -> dict[str, Any]:
             totals[field] += occurrences[field]
         recovered.update(surfaces["recovered_by_primitive"])
         refused.update(surfaces["refused_by_reason"])
-        for key, value in topology.items():
-            maxima[key] = max(maxima[key], value)
-        maxima["maximum_parameter_delta"] = max(
-            maxima["maximum_parameter_delta"], surfaces["maximum_parameter_delta"]
-        )
         fixtures[fixture_path.parent.name] = {
             "faces": len(correspondence),
             "topology": topology,
@@ -293,9 +305,10 @@ def sweep() -> dict[str, Any]:
             "raised_pads": occurrences,
         }
     return {
-        "schema": 1,
+        "schema": 2,
         "baseline_commit": BASELINE_COMMIT,
         "face_correspondence": "OCCT BRepBuilderAPI_NurbsConvert.ModifiedShape one-to-one history",
+        "reviewed_delta_bounds": REVIEWED_DELTA_BOUNDS,
         "performance_budget_seconds": PERFORMANCE_BUDGET_SECONDS,
         "performance_measurement": PERFORMANCE_MEASUREMENT,
         "totals": {
@@ -304,7 +317,6 @@ def sweep() -> dict[str, Any]:
             "faces": sum(fixture["faces"] for fixture in fixtures.values()),
             "recovered_by_primitive": dict(sorted(recovered.items())),
             "refused_by_reason": dict(sorted(refused.items())),
-            **dict(maxima),
         },
         "fixtures": fixtures,
     }
@@ -334,12 +346,15 @@ def markdown(report: dict[str, Any]) -> str:
         + ".",
         f"Refused facts: {sum(total['refused_by_reason'].values())}.",
         "",
-        "Maximum observed representation deltas:",
+        "Reviewed representation-delta bounds enforced across every face:",
         "",
-        f"- evaluated face centre: `{total['maximum_face_centre_delta']}` model units",
-        f"- absolute face area: `{total['maximum_absolute_face_area_delta']}` square units",
-        f"- relative face area: `{total['maximum_relative_face_area_delta']}`",
-        f"- effective primitive parameter: `{total.get('maximum_parameter_delta', 0.0)}`",
+        f"- evaluated face centre: `{report['reviewed_delta_bounds']['face_centre_model_units']}` "
+        "model units",
+        f"- absolute face area: "
+        f"`{report['reviewed_delta_bounds']['absolute_face_area_square_units']}` square units",
+        f"- relative face area: `{report['reviewed_delta_bounds']['relative_face_area']}`",
+        f"- effective primitive parameter: "
+        f"`{report['reviewed_delta_bounds']['effective_primitive_parameter']}`",
         "",
         "## Performance gate",
         "",

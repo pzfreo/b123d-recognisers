@@ -1,5 +1,15 @@
 # Release notes
 
+## 0.4.4
+
+- **Added exact NURBS-plane support for Raised Pads with a fail-closed ownership contract.**
+  Exact analytic planes converted to B-splines are recovered under a versioned OCCT certificate,
+  while material side is proved separately from the unchanged original face. Pad recognition now
+  requires every participating face to have exactly one owner in a valid closed solid; open
+  shells, invalid bodies, and ambiguous or missing ownership intentionally return no Pad records.
+  A pinned 20-fixture conversion sweep validates face correspondence, topology, complete records,
+  defining evidence, reviewed geometry bounds, and a separate performance ceiling.
+
 ## 0.4.3
 
 - **Added opt-in part-relative recognition.** `build_framed_recognition_result(part)` pairs the

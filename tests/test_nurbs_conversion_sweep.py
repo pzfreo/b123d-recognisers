@@ -10,6 +10,7 @@ from tools.nurbs_conversion_sweep import (
     JSON_REPORT,
     MARKDOWN_REPORT,
     PERFORMANCE_BUDGET_SECONDS,
+    REVIEWED_DELTA_BOUNDS,
     markdown,
     sweep,
 )
@@ -26,9 +27,16 @@ def test_checked_in_nurbs_conversion_evidence_is_current(report) -> None:
 
 
 def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
+    assert report["schema"] == 2
     assert report["face_correspondence"].startswith(
         "OCCT BRepBuilderAPI_NurbsConvert.ModifiedShape one-to-one"
     )
+    assert report["reviewed_delta_bounds"] == REVIEWED_DELTA_BOUNDS == {
+        "face_centre_model_units": 0.1,
+        "absolute_face_area_square_units": 25.0,
+        "relative_face_area": 0.004,
+        "effective_primitive_parameter": 1e-8,
+    }
     assert report["totals"] == {
         "fixtures": 20,
         "faces": 319,
@@ -41,11 +49,10 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "introduced": 0,
         "recovered_by_primitive": {"cone": 1, "cylinder": 34, "plane": 284},
         "refused_by_reason": {},
-        "maximum_face_centre_delta": 0.089732087815,
-        "maximum_absolute_face_area_delta": 24.358163410252,
-        "maximum_relative_face_area_delta": 0.003570750722,
-        "maximum_parameter_delta": 0,
     }
+    assert all(
+        all(fixture["topology"].values()) for fixture in report["fixtures"].values()
+    )
 
 
 def test_converted_pad_retains_every_surface_and_material_side_certificate(report) -> None:

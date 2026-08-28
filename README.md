@@ -21,7 +21,9 @@ Most recognition families classify faces by native analytic surface type, so imp
 should preserve its planes, cylinders and cones. STEP carries them, and every pinned fixture is
 proven to survive an export and re-import unchanged. Raised Pads additionally have measured support
 for exact planes re-expressed as B-splines; other B-spline families remain outside the proven
-domain. See [`docs/capabilities.md`](docs/capabilities.md).
+domain. Raised Pad recognition also requires exact face membership in one valid closed solid;
+open shells, invalid bodies, and ambiguous or missing solid ownership return no Pad records. See
+[`docs/capabilities.md`](docs/capabilities.md).
 
 That makes the library a useful foundation for systems which inspect, classify, annotate, compare,
 or modify imported CAD. For example, a STEP editor can recognise a hole, present its diameter and

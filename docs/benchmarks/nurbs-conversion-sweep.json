@@ -19,16 +19,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 9
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "blind_pockets_and_pocket_patterns": {
@@ -48,16 +48,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 36
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "bolt_circle_and_rectangular_grid": {
@@ -77,7 +77,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 12,
           "plane": 6
@@ -85,9 +84,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 24.358163410252,
-        "maximum_face_centre_delta": 0.040223798802,
-        "maximum_relative_face_area_delta": 0.002683525751
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "chamfers_fillets_and_flats": {
@@ -107,7 +107,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 5,
           "plane": 19
@@ -115,9 +114,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 7.586040076783,
-        "maximum_face_centre_delta": 0.004988749745,
-        "maximum_relative_face_area_delta": 0.002640634142
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "counterbored_and_countersunk_holes": {
@@ -137,7 +137,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cone": 1,
           "cylinder": 3,
@@ -146,9 +145,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 5.172833291581,
-        "maximum_face_centre_delta": 0.023682727294,
-        "maximum_relative_face_area_delta": 0.002683525751
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "double_d_bore": {
@@ -168,7 +168,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 8
@@ -176,9 +175,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 1.32195e-07,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 1.58e-10
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "hexagonal_passage": {
@@ -198,16 +198,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 12
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "interrupted_and_cross_bores": {
@@ -227,7 +227,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 3,
           "plane": 6
@@ -235,9 +234,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 2.71292703167,
-        "maximum_face_centre_delta": 0.005428931183,
-        "maximum_relative_face_area_delta": 0.002624904202
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "open_channels": {
@@ -257,16 +257,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 10
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "plates_pads_levels_and_slanted_steps": {
@@ -377,16 +377,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 21
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "polygonal_boss": {
@@ -406,16 +406,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 13
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "polygonal_stock": {
@@ -435,16 +435,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 8
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "repeating_radial_profile": {
@@ -464,16 +464,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 18
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 1e-12,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "simple_through_hole": {
@@ -493,7 +493,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 7
@@ -501,9 +500,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 3.403902172945,
-        "maximum_face_centre_delta": 0.012839895029,
-        "maximum_relative_face_area_delta": 0.002683525751
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "slanted_counterbore": {
@@ -523,7 +523,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 8
@@ -531,9 +530,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 4.216264532258,
-        "maximum_face_centre_delta": 0.089732087815,
-        "maximum_relative_face_area_delta": 0.003570750722
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "slanted_steps": {
@@ -553,16 +553,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 16
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "straight_and_obround_slots": {
@@ -582,7 +582,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 2,
           "plane": 24
@@ -590,9 +589,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.775721394959,
-        "maximum_face_centre_delta": 0.001314397593,
-        "maximum_relative_face_area_delta": 0.001409408275
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "traversal_order": {
@@ -612,16 +612,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 30
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 0.0,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "triangular_and_hex_pockets": {
@@ -641,16 +641,16 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "plane": 22
         },
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 1e-12,
-        "maximum_face_centre_delta": 0.0,
-        "maximum_relative_face_area_delta": 0.0
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     },
     "turned_steps_and_grooves": {
@@ -670,7 +670,6 @@
       "surfaces": {
         "ambiguous": 0,
         "kind_or_parameter_mismatch_faces": [],
-        "maximum_parameter_delta": 0.0,
         "recovered_by_primitive": {
           "cylinder": 3,
           "plane": 4
@@ -678,9 +677,10 @@
         "refused_by_reason": {}
       },
       "topology": {
-        "maximum_absolute_face_area_delta": 12.772275350122,
-        "maximum_face_centre_delta": 0.018298202946,
-        "maximum_relative_face_area_delta": 0.002683525751
+        "adjacency_preserved": true,
+        "boundary_structure_preserved": true,
+        "evaluated_geometry_within_reviewed_bounds": true,
+        "orientation_preserved": true
       }
     }
   },
@@ -692,7 +692,13 @@
     "repeat": 3,
     "workload": "20 native plus 20 converted fixtures: all effective facts, standalone Pads and aggregate inventory; conversion excluded"
   },
-  "schema": 1,
+  "reviewed_delta_bounds": {
+    "absolute_face_area_square_units": 25.0,
+    "effective_primitive_parameter": 1e-08,
+    "face_centre_model_units": 0.1,
+    "relative_face_area": 0.004
+  },
+  "schema": 2,
   "totals": {
     "absent": 0,
     "changed_record": 0,
@@ -700,10 +706,6 @@
     "faces": 319,
     "fixtures": 20,
     "introduced": 0,
-    "maximum_absolute_face_area_delta": 24.358163410252,
-    "maximum_face_centre_delta": 0.089732087815,
-    "maximum_parameter_delta": 0,
-    "maximum_relative_face_area_delta": 0.003570750722,
     "native_occurrences": 1,
     "reclassified": 0,
     "recovered_by_primitive": {
