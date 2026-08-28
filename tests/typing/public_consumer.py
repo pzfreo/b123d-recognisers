@@ -3,6 +3,7 @@
 from typing import Literal
 
 from build123d import BoundBox, Edge, Face, Shape, Solid
+from OCP.TopoDS import TopoDS_Shape
 from typing_extensions import assert_type
 
 from b123d_recognisers import (
@@ -46,7 +47,7 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     assert_type(result.bosses, tuple[BossRecord, ...])
     framed = build_framed_recognition_result(part)
     if isinstance(framed, FramedRecognitionResult):
-        assert_type(framed.part, Shape)
+        assert_type(framed.part, Shape[TopoDS_Shape])
     assert_type(result.step_ladder_for_z_span(0.0, 10.0), list[float])
     assert_type(result.step_ladder(bounds), list[float])
     assert_type(feature_census(part), dict[str, int])

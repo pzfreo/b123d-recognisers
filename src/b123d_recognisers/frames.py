@@ -20,6 +20,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Plane
 from OCP.gp import gp_Trsf
 from OCP.GProp import GProp_GProps
+from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._typing import Part, Vector3
 from b123d_recognisers.result import RecognitionResult, build_recognition_result
@@ -109,7 +110,7 @@ class FramedRecognitionResult:
     """The exact local working shape and records expressed in its accompanying frame."""
 
     frame: PartFrame
-    part: Shape
+    part: Shape[TopoDS_Shape]
     result: RecognitionResult
 
 
@@ -293,7 +294,7 @@ def infer_part_frame(part: Part) -> FrameInference:
     return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 
 
-def _normalize_part(part: Part, frame: PartFrame) -> Shape:
+def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
     transform = gp_Trsf()
     axes = (frame.x, frame.y, frame.z)
     values = tuple(component for axis in axes for component in axis)
