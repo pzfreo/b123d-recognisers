@@ -35,11 +35,23 @@ three layers green when changing public types.
 uv sync --dev
 uv run ruff check .
 uv run mypy
-uv run pytest
+uv run pytest -n 2 -m "not slow"
 ```
 
-`uv run pytest` is also the coverage measurement used by CI. It records line and branch coverage,
-prints missing branches, writes `coverage.xml`, and fails below the evidence-based 91.4% combined
-floor. The floor was set from a clean Python 3.10 run at 91.47% combined coverage (93.44% lines and
-85.48% branches) before the focused profiled-bore tests were added. Raise the floor when coverage
-improves durably; do not weaken it or replace behavior assertions with execution-only tests.
+The command above is the fast edit/test tier. It excludes measured expensive whole-inventory,
+corpus, transformation, packaging and correspondence modules and uses two worker processes. Run
+the complete coverage-free suite with `uv run pytest`, or only the expensive tier with
+`uv run pytest -m slow`.
+
+One canonical Linux/Python 3.12 CI job records line and branch coverage, prints missing branches,
+writes `coverage.xml`, and fails below the 91% combined floor:
+
+```bash
+uv run pytest --cov=b123d_recognisers --cov-branch --cov-report=term-missing \
+  --cov-report=xml:coverage.xml --cov-fail-under=91
+```
+
+Compatibility jobs do not repeat coverage instrumentation. The complete suite and coverage gate
+remain required before merge; draft pull requests use the fast tier for shorter iteration. Raise
+the floor when coverage improves durably; do not weaken it or replace behavior assertions with
+execution-only tests.
