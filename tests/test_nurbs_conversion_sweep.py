@@ -6,11 +6,13 @@ import json
 
 import pytest
 
+from b123d_recognisers._analytic_surfaces import SurfaceKind
 from tools.nurbs_conversion_sweep import (
     JSON_REPORT,
     MARKDOWN_REPORT,
     PERFORMANCE_BUDGET_SECONDS,
     REVIEWED_DELTA_BOUNDS,
+    _parameter_delta,
     markdown,
     sweep,
 )
@@ -35,7 +37,7 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "face_centre_model_units": 0.1,
         "absolute_face_area_square_units": 25.0,
         "relative_face_area": 0.004,
-        "effective_primitive_parameter": 1e-6,
+        "effective_primitive_parameter": 1e-8,
     }
     assert report["totals"] == {
         "fixtures": 20,
@@ -53,6 +55,13 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
     assert all(
         all(fixture["topology"].values()) for fixture in report["fixtures"].values()
     )
+
+
+def test_parameter_delta_ignores_equivalent_plane_direction_gauge() -> None:
+    native = (-0.7071067811865475, 0.7071067811865475, 0.0, 72.12489168102783)
+    converted = (0.7071067811865476, -0.7071067811865475, 0.0, -72.12489168102785)
+
+    assert _parameter_delta(SurfaceKind.PLANE, native, converted) < 1e-12
 
 
 def test_converted_pad_retains_every_surface_and_material_side_certificate(report) -> None:

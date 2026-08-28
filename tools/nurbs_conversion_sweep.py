@@ -27,6 +27,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert  # noqa: E402
 
 from b123d_recognisers import recognise_rectangular_pads  # noqa: E402
 from b123d_recognisers._adjacency import FaceGraph  # noqa: E402
+from b123d_recognisers._analytic_surfaces import SurfaceKind  # noqa: E402
 from b123d_recognisers._candidates import FamilyId  # noqa: E402
 from b123d_recognisers._effective_surfaces import (  # noqa: E402
     AnalyticSurfaceFact,
@@ -45,7 +46,7 @@ REVIEWED_DELTA_BOUNDS = {
     "face_centre_model_units": 0.1,
     "absolute_face_area_square_units": 25.0,
     "relative_face_area": 0.004,
-    "effective_primitive_parameter": 1e-6,
+    "effective_primitive_parameter": 1e-8,
 }
 PERFORMANCE_MEASUREMENT = {
     "environment": "Python 3.14.7, macOS/darwin, local development host",
@@ -157,6 +158,36 @@ def _validate_topology(native, converted, correspondence: tuple[int, ...]) -> di
     }
 
 
+def _parameter_delta(
+    kind: SurfaceKind, left: tuple[float, ...], right: tuple[float, ...]
+) -> float:
+    """Return a primitive-gauge-invariant maximum parameter delta.
+
+    Plane and axis directions describe the same geometry after simultaneous sign
+    reversal. Near an equal-component dominant-axis tie, native and converted OCCT
+    surfaces can choose opposite signs on different platforms; comparing their raw
+    tuples would turn an equivalent plane offset into a delta twice its magnitude.
+    """
+
+    if kind is SurfaceKind.PLANE:
+        gauge = 1.0 if sum(a * b for a, b in zip(left[:3], right[:3], strict=True)) >= 0 else -1.0
+        deltas = [abs(a - gauge * b) for a, b in zip(left[:3], right[:3], strict=True)]
+        deltas.append(abs(left[3] - gauge * right[3]))
+    elif kind is SurfaceKind.CYLINDER:
+        gauge = 1.0 if sum(a * b for a, b in zip(left[3:6], right[3:6], strict=True)) >= 0 else -1.0
+        deltas = [abs(a - b) for a, b in zip(left[:3], right[:3], strict=True)]
+        deltas.extend(abs(a - gauge * b) for a, b in zip(left[3:6], right[3:6], strict=True))
+        deltas.append(abs(left[6] - right[6]))
+    elif kind is SurfaceKind.CONE:
+        gauge = 1.0 if sum(a * b for a, b in zip(left[3:6], right[3:6], strict=True)) >= 0 else -1.0
+        deltas = [abs(a - b) for a, b in zip(left[:3], right[:3], strict=True)]
+        deltas.extend(abs(a - gauge * b) for a, b in zip(left[3:6], right[3:6], strict=True))
+        deltas.append(abs(left[6] - gauge * right[6]))
+    else:
+        deltas = [abs(a - b) for a, b in zip(left, right, strict=True)]
+    return max(deltas, default=0.0)
+
+
 def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[str, Any]:
     native_graph, converted_graph = FaceGraph(native), FaceGraph(converted)
     native_surfaces = EffectiveSurfaceIndex(native_graph)
@@ -174,10 +205,7 @@ def _surface_report(native, converted, correspondence: tuple[int, ...]) -> dict[
             raise RuntimeError(f"face {native_at} did not retain an analytic surface fact")
         if left.kind is not right.kind or len(left.parameters) != len(right.parameters):
             raise RuntimeError(f"face {native_at} changed effective primitive kind")
-        delta = max(
-            (abs(a - b) for a, b in zip(left.parameters, right.parameters, strict=True)),
-            default=0.0,
-        )
+        delta = _parameter_delta(left.kind, left.parameters, right.parameters)
         if delta > REVIEWED_DELTA_BOUNDS["effective_primitive_parameter"]:
             raise RuntimeError(
                 f"face {native_at} effective parameter delta {delta!r} exceeds reviewed bound "

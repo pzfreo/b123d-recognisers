@@ -714,7 +714,7 @@
   },
   "reviewed_delta_bounds": {
     "absolute_face_area_square_units": 25.0,
-    "effective_primitive_parameter": 1e-06,
+    "effective_primitive_parameter": 1e-08,
     "face_centre_model_units": 0.1,
     "relative_face_area": 0.004
   },
