@@ -70,11 +70,12 @@ compatibility review, and release notes.
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. | Floored pockets, open-ended channels, merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Straight/obround-slot golden, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, and recess-reconciliation regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
 
-## Analytic surfaces are a precondition for every recogniser
+## Surface-representation support is family-specific
 
-Every recogniser above classifies faces by their surface type. A face is a hole wall because it is
-a `GeomAbs_Cylinder`, a floor because it is a `GeomAbs_Plane`. Imported geometry therefore has to
-arrive with its analytic surfaces intact.
+Most recognisers above still classify faces by their native surface type. A face is a hole wall
+because it arrives as a `GeomAbs_Cylinder`, a floor because it arrives as a `GeomAbs_Plane`.
+Imported geometry therefore still has to preserve native analytic surfaces for every family except
+the explicitly measured Raised Pad slice below.
 
 STEP carries analytic surfaces, and `tests/test_step_round_trip.py` proves the file boundary does
 not disturb them: all twenty golden fixtures exported to STEP and re-imported reproduce their
@@ -82,17 +83,23 @@ pinned records exactly, with planes and cylinders still typed as such.
 
 That evidence covers geometry written by this project's own OCCT-based exporter. It shows that
 passing through a STEP file is not itself lossy; it does not measure any particular third-party
-CAD system's export, and no such corpus is checked in. The requirement is the same either way — a
-file whose faces arrive as analytic surfaces recognises, one whose faces arrive as B-splines does
-not — but the proven evidence is the round trip, not a survey of emitters.
+CAD system's export, and no such corpus is checked in.
 
-Geometry whose faces are B-splines is **excluded, in every family at once**. A NURBS-only export
-can describe a face that is exactly a cylinder while typing it `GeomAbs_BSplineSurface`; no
-recogniser here inspects the underlying geometry to discover that, so recognition returns nothing
-rather than degrading partially. This is a whole-package boundary rather than a per-row exclusion,
-and it is held by test as a contrast against the analytic result. Supporting it would mean fitting
-analytic surfaces to B-spline faces and bounding the residual — a recognition-behaviour change
-under the usual evidence requirements, not a tolerance adjustment.
+`recognise_rectangular_pads` additionally supports exact plane geometry re-expressed by OCCT as
+B-spline faces. Its run-owned effective-surface query retains the exact original faces, bounded
+recovery certificates and a separate closed-solid material-side certificate for the top face.
+The [NURBS-conversion sweep](benchmarks/nurbs-conversion-sweep.md) validates a one-to-one face
+correspondence before comparing topology, complete records and exact defining evidence: across 20
+goldens it recovers 319/319 faces and retains the one native Pad with no changed, absent or
+introduced occurrence. Converted-input adversaries cover a positive Pad, pockets/voids, tier
+suppression, envelope contact, open ownership and multiple solids. This claim is limited to exact
+OCCT conversion under the reviewed OCP/OCCT 7.9.3.1 contract.
+
+B-spline input remains **excluded for every other family**, including all cylinder- and
+torus-dependent families. Refused or ambiguous analytic recovery, an unproved material owner,
+approximate/reverse-engineered surfaces and unmeasured third-party exporters fail closed. Aggregate
+results may therefore contain Raised Pads while other families remain absent; that is a deliberate
+per-family capability boundary, not evidence of whole-model support.
 
 ## Measured against third-party labelled corpora
 

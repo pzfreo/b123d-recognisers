@@ -14,12 +14,10 @@ pinned canonical records as the constructed part. STEP carries planes, cylinders
 analytic surface entities, and OCCT restores them as such, so the recognisers see what they saw
 before. This is the case a CAD kernel that preserves analytic geometry delivers.
 
-*B-spline surfaces do not.* When the same solid reaches the recognisers as NURBS — a face that is
-geometrically a cylinder but typed ``GeomAbs_BSplineSurface`` — recognition returns nothing at all.
-Every recogniser in this package classifies faces by surface type, so a NURBS-only export is
-outside the proven domain rather than partially supported. That exclusion is recorded in
-``docs/capabilities.md``; the test below holds it to a contrast rather than an empty assertion, so
-adding B-spline support fails here and forces the capability document to be updated with it.
+*B-spline support is family-specific.* Raised Pads now consume bounded effective-plane facts and a
+separate material-side certificate. Every other family still classifies native surface types, so
+the cylinder-based control below remains absent after conversion. The selected-family positive and
+its exact evidence are pinned by ``test_nurbs_conversion_sweep.py`` and Pad adversaries.
 
 These tests write STEP to a temporary directory. No STEP bytes are committed: per
 ``migration/PARITY.md`` the goldens compare semantic record projections, never file contents.
@@ -106,13 +104,8 @@ def test_step_round_trip_preserves_analytic_surface_types(tmp_path):
     }
 
 
-def test_nurbs_only_geometry_is_outside_the_proven_domain(tmp_path):
-    """Surfaces delivered as B-splines are an explicit exclusion, not partial support.
-
-    Recognition is surface-type classified throughout, so a NURBS-only export loses every family
-    at once rather than degrading. ``docs/capabilities.md`` records this as excluded. If support is
-    ever added, this test fails and the capability document has to be updated alongside it.
-    """
+def test_nurbs_only_cylinders_remain_outside_non_migrated_families(tmp_path):
+    """Pad plane support does not silently unlock cylinder-dependent families."""
 
     part = load_fixture(GOLDEN_ROOT / "simple_through_hole" / "fixture.py").build_fixture()
     analytic_census = feature_census(part)

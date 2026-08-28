@@ -55,7 +55,7 @@ MODULE_SEAM_EDGES = {
     # Three recognisers begin with the same two questions of a face. Naming the layer is
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
-    "_candidates": {"_adjacency", "_passage_compat"},
+    "_candidates": {"_adjacency", "_effective_surfaces", "_passage_compat"},
     "_correspondence": {
         "_adjacency",
         "_body_geometry",
@@ -75,7 +75,7 @@ MODULE_SEAM_EDGES = {
     },
     "_dispositions": {"_candidates"},
     "_diagnostics": {"_candidates", "_dispositions", "chamfers"},
-    "_claims": {"_adjacency", "_candidates"},
+    "_claims": {"_adjacency", "_candidates", "_effective_surfaces"},
     # One aggregate run constructs the graph-bound facade and shares its surface index.
     "_run": {
         "_adjacency",
@@ -106,7 +106,15 @@ MODULE_SEAM_EDGES = {
         "_record",
         "_typing",
     },
-    "pads": {"_candidates", "_claims", "_geometry", "_record", "_typing"},
+    "pads": {
+        "_analytic_surfaces",
+        "_candidates",
+        "_claims",
+        "_effective_surfaces",
+        "_geometry",
+        "_record",
+        "_typing",
+    },
     "_hole_patterns": {"_hole_features", "_pattern_geometry", "_record", "_typing"},
     # Ring geometry: `passages` owned it while it was the only family walking rings.
     "_rings": {"_adjacency", "_geometry", "_typing"},
@@ -192,7 +200,7 @@ MODULE_SEAM_EDGES = {
     "_sections": set(),
     "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
-    "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry"},
+    "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry", "_typing"},
     # Neutral opt-in support bridges consume only original graph and effective-surface facts.
     "_blend_view": {"_adjacency", "_analytic_surfaces", "_effective_surfaces"},
     # Provisional F7 spike facade: explicitly public-by-module but absent from root exports.
@@ -408,10 +416,10 @@ def test_every_arc_reader_has_one_reviewed_disposition() -> None:
 
     assert found == set(ARC_READER_SITES)
     assert set(ARC_READER_SITES.values()) <= {
-            "any-smooth",
-            "exact-nonsmooth",
-            "facade-projection",
-            "legacy-contract",
+        "any-smooth",
+        "exact-nonsmooth",
+        "facade-projection",
+        "legacy-contract",
         "legacy-source",
         "opposed-nonsmooth",
         "pair-agreement",
@@ -427,6 +435,7 @@ def test_effective_surface_reader_roster_covers_every_raw_classification() -> No
     from b123d_recognisers._effective_surfaces import (
         SURFACE_READER_ROSTER,
         SURFACE_READER_SITES,
+        SurfaceReaderDisposition,
     )
 
     reader_sites: set[str] = set()
@@ -473,7 +482,22 @@ def test_effective_surface_reader_roster_covers_every_raw_classification() -> No
             reader_sites.add(f"{path.stem}:{function}:{kind}:{ordinal[base]}")
 
     assert reader_sites == set(SURFACE_READER_SITES)
-    assert {site.split(":", 1)[0] for site in reader_sites} == set(SURFACE_READER_ROSTER)
+    raw_modules = {site.split(":", 1)[0] for site in reader_sites}
+    reviewed_raw = {
+        module
+        for module, (disposition, _rationale) in SURFACE_READER_ROSTER.items()
+        if disposition is not SurfaceReaderDisposition.MIGRATED_EFFECTIVE
+    }
+    migrated = {
+        module
+        for module, (disposition, _rationale) in SURFACE_READER_ROSTER.items()
+        if disposition is SurfaceReaderDisposition.MIGRATED_EFFECTIVE
+    }
+    assert raw_modules == reviewed_raw
+    assert migrated == {"pads"}
+    pad_source = (PACKAGE / "pads.py").read_text(encoding="utf-8")
+    assert "face_surfaces.fact(" in pad_source
+    assert "face_surfaces.use(" in pad_source
     assert all(rationale.strip() for _, rationale in SURFACE_READER_ROSTER.values())
     assert all(rationale.strip() for _, rationale in SURFACE_READER_SITES.values())
 
@@ -537,6 +561,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         "graph",
         "geometry",
         "surfaces",
+        "face_surfaces",
         "cylinders",
         "rotational",
     }
@@ -822,9 +847,9 @@ def test_internal_module_seams_match_adr_0007() -> None:
 
 def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     graph = _package_import_graph()
-    assert {
-        module for module, dependencies in graph.items() if "_blend_view" in dependencies
-    } == {"experimental_geometry"}
+    assert {module for module, dependencies in graph.items() if "_blend_view" in dependencies} == {
+        "experimental_geometry"
+    }
     assert {
         module for module, dependencies in graph.items() if "experimental_geometry" in dependencies
     } == {"_geometry_evidence", "_run", "polygonal_bosses"}
@@ -880,8 +905,7 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
             for node in ast.walk(tree)
             if isinstance(node, ast.Assign)
             and isinstance(node.value, ast.Call)
-            and qualified(node.value.func)
-            == "b123d_recognisers._blend_view.BlendCollapseIndex"
+            and qualified(node.value.func) == "b123d_recognisers._blend_view.BlendCollapseIndex"
             for target in node.targets
             if isinstance(target, ast.Name)
         }

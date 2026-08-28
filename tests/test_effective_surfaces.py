@@ -28,10 +28,14 @@ from b123d_recognisers._analytic_surfaces import validated_parameters
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
+    MaterialSideRefusalReason,
     OrientationCapability,
     SurfaceKind,
     SurfaceProvenance,
     SurfaceRefusalReason,
+    SurfaceUse,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
     recovery_nominal,
     recovery_tolerance,
 )
@@ -75,6 +79,64 @@ def test_effective_surface_index_rejects_foreign_nodes() -> None:
 
     with pytest.raises(ValueError, match="not issued"):
         left.fact(foreign)
+
+
+def test_plane_material_side_is_a_separate_cached_closed_solid_certificate() -> None:
+    part = Box(10, 8, 4)
+    graph = FaceGraph(part)
+    query = effective_faces_for_graph(graph)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+
+    first = query.use(top, material_side=True)
+    assert isinstance(first, SurfaceUse)
+    assert query.use(top, material_side=True) is first
+    assert first.surface.orientation is OrientationCapability.NATIVE_ORIENTED
+    assert first.material_side is not None
+    assert first.material_side.node is graph.require_node(top)
+    assert first.material_side.outward == pytest.approx((0.0, 0.0, 1.0))
+    assert len(first.material_side.sample_points) >= 2
+    assert first.material_side.probe_distance > first.material_side.classifier_tolerance
+
+    object.__setattr__(first.material_side, "outward", (0.0, 0.0, -1.0))
+    with pytest.raises(ValueError, match="no longer matches"):
+        _ = first.material_side
+
+
+def test_material_side_refuses_non_planes_and_faces_without_one_closed_owner() -> None:
+    cylinder = Cylinder(4, 10)
+    cylinder_query = effective_faces_for_graph(FaceGraph(cylinder))
+    curved = max(cylinder.faces(), key=lambda face: face.area)
+    unsupported = cylinder_query.use(curved, material_side=True)
+    assert isinstance(unsupported, SurfaceUseRefusal)
+    assert unsupported.reason is MaterialSideRefusalReason.UNSUPPORTED_PRIMITIVE
+
+    open_face = Face.make_rect(10, 8)
+    open_query = effective_faces_for_graph(FaceGraph(open_face))
+    unowned = open_query.use(open_face, material_side=True)
+    assert isinstance(unowned, SurfaceUseRefusal)
+    assert unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+
+def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as module
+
+    part = Box(10, 8, 4)
+    top = max(part.faces(), key=lambda face: face.center().Z)
+    monkeypatch.setattr(module, "_regular_plane_differential", lambda *_args: False)
+    degenerate = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(degenerate, SurfaceUseRefusal)
+    assert degenerate.reason is MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
+
+    monkeypatch.undo()
+
+    class FailedClassifier:
+        def __init__(self, _solid) -> None:
+            raise RuntimeError("classifier failure")
+
+    monkeypatch.setattr(module, "BRepClass3d_SolidClassifier", FailedClassifier)
+    failed = effective_faces_for_graph(FaceGraph(part)).use(top, material_side=True)
+    assert isinstance(failed, SurfaceUseRefusal)
+    assert failed.reason is MaterialSideRefusalReason.PROBE_INDETERMINATE
 
 
 def _as_bspline_face(face: Face) -> Face:
@@ -501,15 +563,25 @@ def test_oriented_query_reports_an_unavailable_surface() -> None:
         EffectiveSurfaceIndex(graph).oriented_fact(graph.nodes[0])
 
 
+def test_face_query_refuses_foreign_graphs_and_faces() -> None:
+    graph = FaceGraph(Box(1, 1, 1))
+    foreign = FaceGraph(Box(2, 2, 2))
+
+    with pytest.raises(ValueError, match="different runs"):
+        effective_faces_for_graph(graph, EffectiveSurfaceIndex(foreign))
+
+    query = effective_faces_for_graph(graph)
+    with pytest.raises(ValueError, match="different part"):
+        query.fact(foreign.face(foreign.nodes[0]))
+
+
 @pytest.mark.parametrize("failure", [Standard_Failure("adaptor failure"), RuntimeError("failure")])
 def test_adaptor_failures_are_closed_invalid_inputs(monkeypatch, failure: Exception) -> None:
     class FailedAdaptor:
         def __init__(self, _shape) -> None:
             raise failure
 
-    monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor
-    )
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -526,9 +598,7 @@ def test_unknown_native_surface_kind_is_explicitly_unsupported(monkeypatch) -> N
         def GetType(self) -> int:
             return 999
 
-    monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor
-    )
+    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (

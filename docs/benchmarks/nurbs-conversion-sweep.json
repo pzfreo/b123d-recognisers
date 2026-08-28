@@ -1,0 +1,717 @@
+{
+  "baseline_commit": "4b21f79d8a1a96f9970cbf160e3277be0e2289ca",
+  "face_correspondence": "OCCT BRepBuilderAPI_NurbsConvert.ModifiedShape one-to-one history",
+  "fixtures": {
+    "angled_blind_step": {
+      "faces": 9,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 9
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "blind_pockets_and_pocket_patterns": {
+      "faces": 36,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 36
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "bolt_circle_and_rectangular_grid": {
+      "faces": 18,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 12,
+          "plane": 6
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 24.358163410252,
+        "maximum_face_centre_delta": 0.040223798802,
+        "maximum_relative_face_area_delta": 0.002683525751
+      }
+    },
+    "chamfers_fillets_and_flats": {
+      "faces": 24,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 5,
+          "plane": 19
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 7.586040076783,
+        "maximum_face_centre_delta": 0.004988749745,
+        "maximum_relative_face_area_delta": 0.002640634142
+      }
+    },
+    "counterbored_and_countersunk_holes": {
+      "faces": 11,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cone": 1,
+          "cylinder": 3,
+          "plane": 7
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 5.172833291581,
+        "maximum_face_centre_delta": 0.023682727294,
+        "maximum_relative_face_area_delta": 0.002683525751
+      }
+    },
+    "double_d_bore": {
+      "faces": 10,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 2,
+          "plane": 8
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 1.32195e-07,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 1.58e-10
+      }
+    },
+    "hexagonal_passage": {
+      "faces": 12,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 12
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "interrupted_and_cross_bores": {
+      "faces": 9,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 3,
+          "plane": 6
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 2.71292703167,
+        "maximum_face_centre_delta": 0.005428931183,
+        "maximum_relative_face_area_delta": 0.002624904202
+      }
+    },
+    "open_channels": {
+      "faces": 10,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 10
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "plates_pads_levels_and_slanted_steps": {
+      "faces": 21,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 1,
+        "converted_provenance": [
+          [
+            {
+              "face": 16,
+              "kind": "plane",
+              "material_side": null,
+              "orientation_capability": "recovered-unoriented",
+              "recovery": {
+                "authority": "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract",
+                "maximum_distance_bound": 1.06e-05,
+                "occt_version": "7.9.3.1"
+              },
+              "surface_provenance": "recovered"
+            },
+            {
+              "face": 17,
+              "kind": "plane",
+              "material_side": null,
+              "orientation_capability": "recovered-unoriented",
+              "recovery": {
+                "authority": "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract",
+                "maximum_distance_bound": 9.470588235294117e-06,
+                "occt_version": "7.9.3.1"
+              },
+              "surface_provenance": "recovered"
+            },
+            {
+              "face": 18,
+              "kind": "plane",
+              "material_side": null,
+              "orientation_capability": "recovered-unoriented",
+              "recovery": {
+                "authority": "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract",
+                "maximum_distance_bound": 1.06e-05,
+                "occt_version": "7.9.3.1"
+              },
+              "surface_provenance": "recovered"
+            },
+            {
+              "face": 19,
+              "kind": "plane",
+              "material_side": null,
+              "orientation_capability": "recovered-unoriented",
+              "recovery": {
+                "authority": "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract",
+                "maximum_distance_bound": 9.470588235294117e-06,
+                "occt_version": "7.9.3.1"
+              },
+              "surface_provenance": "recovered"
+            },
+            {
+              "face": 20,
+              "kind": "plane",
+              "material_side": {
+                "authority": "original-face triangulation and OCCT closed-solid side probes",
+                "classifier_tolerance": 1e-06,
+                "outward": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "probe_distance": 0.0010285714285714286,
+                "samples": 2
+              },
+              "orientation_capability": "recovered-unoriented",
+              "recovery": {
+                "authority": "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract",
+                "maximum_distance_bound": 1.1285714285714287e-05,
+                "occt_version": "7.9.3.1"
+              },
+              "surface_provenance": "recovered"
+            }
+          ]
+        ],
+        "converted_records": [
+          {
+            "x0": 18.0,
+            "x1": 42.0,
+            "y0": -9.0,
+            "y1": 9.0,
+            "z0": 12.0,
+            "z1": 28.0
+          }
+        ],
+        "introduced": 0,
+        "native_occurrences": 1,
+        "native_records": [
+          {
+            "x0": 18.0,
+            "x1": 42.0,
+            "y0": -9.0,
+            "y1": 9.0,
+            "z0": 12.0,
+            "z1": 28.0
+          }
+        ],
+        "reclassified": 0,
+        "same_family": 1
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 21
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "polygonal_boss": {
+      "faces": 13,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 13
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "polygonal_stock": {
+      "faces": 8,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 8
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "repeating_radial_profile": {
+      "faces": 18,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 18
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 1e-12,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "simple_through_hole": {
+      "faces": 9,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 2,
+          "plane": 7
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 3.403902172945,
+        "maximum_face_centre_delta": 0.012839895029,
+        "maximum_relative_face_area_delta": 0.002683525751
+      }
+    },
+    "slanted_counterbore": {
+      "faces": 10,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 2,
+          "plane": 8
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 4.216264532258,
+        "maximum_face_centre_delta": 0.089732087815,
+        "maximum_relative_face_area_delta": 0.003570750722
+      }
+    },
+    "slanted_steps": {
+      "faces": 16,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 16
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "straight_and_obround_slots": {
+      "faces": 26,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 2,
+          "plane": 24
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.775721394959,
+        "maximum_face_centre_delta": 0.001314397593,
+        "maximum_relative_face_area_delta": 0.001409408275
+      }
+    },
+    "traversal_order": {
+      "faces": 30,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 30
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 0.0,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "triangular_and_hex_pockets": {
+      "faces": 22,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "plane": 22
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 1e-12,
+        "maximum_face_centre_delta": 0.0,
+        "maximum_relative_face_area_delta": 0.0
+      }
+    },
+    "turned_steps_and_grooves": {
+      "faces": 7,
+      "raised_pads": {
+        "absent": 0,
+        "changed_record": 0,
+        "converted_occurrences": 0,
+        "converted_provenance": [],
+        "converted_records": [],
+        "introduced": 0,
+        "native_occurrences": 0,
+        "native_records": [],
+        "reclassified": 0,
+        "same_family": 0
+      },
+      "surfaces": {
+        "ambiguous": 0,
+        "kind_or_parameter_mismatch_faces": [],
+        "maximum_parameter_delta": 0.0,
+        "recovered_by_primitive": {
+          "cylinder": 3,
+          "plane": 4
+        },
+        "refused_by_reason": {}
+      },
+      "topology": {
+        "maximum_absolute_face_area_delta": 12.772275350122,
+        "maximum_face_centre_delta": 0.018298202946,
+        "maximum_relative_face_area_delta": 0.002683525751
+      }
+    }
+  },
+  "performance_budget_seconds": 3.0,
+  "performance_measurement": {
+    "environment": "Python 3.14.7, macOS/darwin, local development host",
+    "measured_at": "2026-08-28",
+    "median_seconds": 2.133,
+    "repeat": 3,
+    "workload": "20 native plus 20 converted fixtures: all effective facts, standalone Pads and aggregate inventory; conversion excluded"
+  },
+  "schema": 1,
+  "totals": {
+    "absent": 0,
+    "changed_record": 0,
+    "converted_occurrences": 1,
+    "faces": 319,
+    "fixtures": 20,
+    "introduced": 0,
+    "maximum_absolute_face_area_delta": 24.358163410252,
+    "maximum_face_centre_delta": 0.089732087815,
+    "maximum_parameter_delta": 0,
+    "maximum_relative_face_area_delta": 0.003570750722,
+    "native_occurrences": 1,
+    "reclassified": 0,
+    "recovered_by_primitive": {
+      "cone": 1,
+      "cylinder": 34,
+      "plane": 284
+    },
+    "refused_by_reason": {},
+    "same_family": 1
+  }
+}

@@ -185,6 +185,11 @@ FAMILIES = {
         "records": [("RaisedPad", "output", ["RecognitionResult.pads"])],
         "census": None,
         "goldens": ["plates_pads_levels_and_slanted_steps"],
+        "tests": [
+            "docs/benchmarks/nurbs-conversion-sweep.json",
+            "tests/test_nurbs_conversion_sweep.py",
+            "tests/test_pad_attribution.py",
+        ],
     },
     "repeating-radial-profiles": {
         "recognisers": [("recognise_repeating_radial_profiles", "part")],

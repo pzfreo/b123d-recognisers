@@ -1662,7 +1662,10 @@
       ],
       "status": "supported",
       "test_evidence": [
+        "docs/benchmarks/nurbs-conversion-sweep.json",
         "tests/test_capability_claims.py",
+        "tests/test_nurbs_conversion_sweep.py",
+        "tests/test_pad_attribution.py",
         "tests/test_recogniser_contract.py"
       ]
     },

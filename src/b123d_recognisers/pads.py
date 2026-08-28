@@ -7,13 +7,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from OCP.BRepAdaptor import BRepAdaptor_Surface
+from build123d import Vector
 from OCP.BRepGProp import BRepGProp
-from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
+from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
+    EffectiveFaceSurfaceQuery,
+    SurfaceUse,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
+    effective_faces_for_part,
+)
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, AXIS_ZERO_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
@@ -63,9 +71,7 @@ def _wall_role(
         if n_axis < AXIS_ALIGNED_COS:
             continue
         plane_pos = (
-            (bounds.min.X + bounds.max.X) / 2
-            if axis == "x"
-            else (bounds.min.Y + bounds.max.Y) / 2
+            (bounds.min.X + bounds.max.X) / 2 if axis == "x" else (bounds.min.Y + bounds.max.Y) / 2
         )
         cross_lo = bounds.min.Y if axis == "x" else bounds.min.X
         cross_hi = bounds.max.Y if axis == "x" else bounds.max.X
@@ -86,10 +92,7 @@ def _wall_role(
 def _touches_plan(a: RaisedPad, b: RaisedPad, *, tol: float) -> bool:
     """Return the current tolerance-inclusive XY contact predicate."""
 
-    return (
-        min(a.x1, b.x1) - max(a.x0, b.x0) >= -tol
-        and min(a.y1, b.y1) - max(a.y0, b.y0) >= -tol
-    )
+    return min(a.x1, b.x1) - max(a.x0, b.x0) >= -tol and min(a.y1, b.y1) - max(a.y0, b.y0) >= -tol
 
 
 def _tier_suppresses(pad: RaisedPad, region: RaisedPad, *, tol: float) -> bool:
@@ -98,20 +101,19 @@ def _tier_suppresses(pad: RaisedPad, region: RaisedPad, *, tol: float) -> bool:
     return abs(region.z1 - pad.z0) <= tol and _touches_plan(pad, region, tol=tol)
 
 
-def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProposal]:
+def _recognise_rectangular_pads_one(
+    part, *, tol: float | None, face_surfaces: EffectiveFaceSurfaceQuery
+) -> list[_PadProposal]:
     """Recognise pads using one solid's faces and bounds."""
     bb = part.bounding_box()
     tol = _TOL if tol is None else tol
     raw_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
     for face in part.faces():
-        surf = BRepAdaptor_Surface(face.wrapped)
-        if surf.GetType() != GeomAbs_Plane:
+        fact = face_surfaces.fact(face)
+        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
             continue
-        try:
-            normal = face.normal_at()
-        except Exception:  # noqa: BLE001 - degenerate faces are not pads
-            continue
-        if normal.Z < AXIS_ALIGNED_COS:
+        direction = fact.parameters[:3]
+        if abs(direction[2]) < AXIS_ALIGNED_COS:
             continue
         fb = face.bounding_box()
         dx = fb.max.X - fb.min.X
@@ -125,6 +127,12 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProp
         full_x = bb.min.X + tol >= fb.min.X and bb.max.X - tol <= fb.max.X
         full_y = bb.min.Y + tol >= fb.min.Y and bb.max.Y - tol <= fb.max.Y
         if full_x or full_y:
+            continue
+        top_surface = face_surfaces.use(face, material_side=True)
+        if isinstance(top_surface, SurfaceUseRefusal):
+            continue
+        certificate = top_surface.material_side
+        if certificate is None or certificate.outward[2] < AXIS_ALIGNED_COS:
             continue
         raw_tops.append(
             (
@@ -142,17 +150,14 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProp
     # feature has an unrelated intervening Z level.
     vertical_faces = []
     for face in part.faces():
-        surf = BRepAdaptor_Surface(face.wrapped)
-        if surf.GetType() != GeomAbs_Plane:
+        fact = face_surfaces.fact(face)
+        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
             continue
-        try:
-            normal = face.normal_at()
-        except Exception:  # noqa: BLE001 - degenerate faces cannot bound a pad
-            continue
-        if abs(normal.Z) > AXIS_ZERO_COS:
+        direction = fact.parameters[:3]
+        if abs(direction[2]) > AXIS_ZERO_COS:
             continue
         fb = face.bounding_box()
-        vertical_faces.append((face, fb, normal))
+        vertical_faces.append((face, fb, Vector(*direction)))
 
     proposals: list[_PadProposal] = []
     for x0, x1, y0, y1, z1, top_face in raw_tops:
@@ -186,10 +191,7 @@ def _recognise_rectangular_pads_one(part, *, tol: float | None) -> list[_PadProp
     return [
         proposal
         for proposal in proposals
-        if not any(
-            _tier_suppresses(proposal.record, other, tol=tol)
-            for other in raw_regions
-        )
+        if not any(_tier_suppresses(proposal.record, other, tol=tol) for other in raw_regions)
     ]
 
 
@@ -210,15 +212,27 @@ def _discover_rectangular_pads(
     *,
     tol: float | None = None,
     writer: EvidenceWriter | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[RaisedPad]:
     """Shared rectangular-pad discovery with optional aggregate evidence issuance."""
+
+    if face_surfaces is None:
+        face_surfaces = (
+            effective_faces_for_part(part)
+            if writer is None
+            else effective_faces_for_graph(writer.graph)
+        )
+    elif writer is not None and face_surfaces.run_token is not writer.graph.run_token:
+        raise ValueError("Pad surface facts and evidence writer belong to different runs")
 
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
     occurrences: list[tuple[RaisedPad, tuple[_PadProposal, ...]]] = []
     for solid in sources:
         by_record: dict[RaisedPad, list[_PadProposal]] = {}
-        for proposal in _recognise_rectangular_pads_one(solid, tol=tol):
+        for proposal in _recognise_rectangular_pads_one(
+            solid, tol=tol, face_surfaces=face_surfaces
+        ):
             by_record.setdefault(proposal.record, []).append(proposal)
         occurrences.extend((record, tuple(group)) for record, group in by_record.items())
     occurrences.sort(key=lambda item: item[0])
@@ -226,7 +240,7 @@ def _discover_rectangular_pads(
     if writer is None:
         return records
 
-    pending: list[tuple[RaisedPad, tuple[Any, ...]]] = []
+    pending: list[tuple[RaisedPad, tuple[Any, ...], tuple[SurfaceUse, ...]]] = []
     used_tops: set[Any] = set()
     for record, alternatives in occurrences:
         identity_signatures: list[tuple[Any, ...]] = []
@@ -253,7 +267,22 @@ def _discover_rectangular_pads(
         if writer.graph.common_valid_solid(ordered) is None:
             raise ValueError("Pad defining faces do not belong to one valid solid")
         used_tops.add(signature[0])
-        pending.append((record, ordered))
-    for record, nodes in pending:
-        writer.add_defining(record, nodes, family=FamilyId.PADS)
+        selected = alternatives[0]
+        selected_faces = (selected.top_face, *(faces[0] for faces in selected.wall_roles))
+        issued_uses = tuple(
+            face_surfaces.use(face, material_side=face is selected.top_face)
+            for face in selected_faces
+        )
+        if any(isinstance(use, SurfaceUseRefusal) for use in issued_uses):
+            raise ValueError("Pad surface provenance became unavailable before issuance")
+        surface_by_node = {use.node: use for use in issued_uses if isinstance(use, SurfaceUse)}
+        surface_uses = tuple(surface_by_node[node] for node in ordered)
+        pending.append((record, ordered, surface_uses))
+    for record, nodes, surface_uses in pending:
+        writer.add_defining(
+            record,
+            nodes,
+            family=FamilyId.PADS,
+            surfaces=surface_uses,
+        )
     return records

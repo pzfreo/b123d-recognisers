@@ -15,8 +15,11 @@ from enum import Enum
 from typing import Protocol, TypeAlias
 
 import OCP
+from build123d import Vertex
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepClass3d import BRepClass3d_SolidClassifier
+from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.GeomAbs import (
     GeomAbs_BezierSurface,
     GeomAbs_BSplineSurface,
@@ -26,21 +29,30 @@ from OCP.GeomAbs import (
     GeomAbs_Sphere,
     GeomAbs_Torus,
 )
-from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Sphere
-from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition
+from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Pnt, gp_Sphere, gp_Vec
+from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition, ShapeAnalysis_Surface
 from OCP.Standard import Standard_Failure
+from OCP.TopAbs import TopAbs_IN, TopAbs_OUT
+from OCP.TopLoc import TopLoc_Location
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken
+from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken, SolidRef
 from b123d_recognisers._analytic_surfaces import (
     SurfaceKind,
     native_primitive,
     validated_parameters,
 )
 from b123d_recognisers._geometry import COORD_FLOOR
+from b123d_recognisers._typing import FaceLike, Part
 
 _RECOVERY_REL = 1e-6
 _SUPPORTED_OCCT_CERTIFICATE_VERSIONS = frozenset({"7.9.3.1"})
 _CERTIFICATE_AUTHORITY = "OCCT ShapeAnalysis_CanonicalRecognition face maximum-distance contract"
+_MATERIAL_SIDE_AUTHORITY = "original-face triangulation and OCCT closed-solid side probes"
+_MATERIAL_PROBE_REL = 1e-4
+_MATERIAL_PROBE_CAP = 0.02
+_MATERIAL_CLASSIFIER_TOLERANCE = COORD_FLOOR
+_MATERIAL_MIN_SAMPLES = 2
+_MATERIAL_MAX_SAMPLES = 4
 
 
 class SurfaceProvenance(Enum):
@@ -69,6 +81,20 @@ class SurfaceReaderDisposition(Enum):
     PENDING_MIGRATION = "pending-migration"
     ORIENTATION_DEFERRED = "orientation-deferred"
     TORUS_DEFERRED = "torus-deferred"
+    MIGRATED_EFFECTIVE = "migrated-effective"
+
+
+class MaterialSideRefusalReason(Enum):
+    """Closed reasons why a surface cannot acquire a material-side certificate."""
+
+    SURFACE_UNAVAILABLE = "surface-unavailable"
+    UNSUPPORTED_PRIMITIVE = "unsupported-primitive"
+    OWNER_UNPROVEN = "owner-unproven"
+    SAMPLE_UNAVAILABLE = "sample-unavailable"
+    SAMPLE_NEAR_BOUNDARY = "sample-near-boundary"
+    DIFFERENTIAL_DEGENERATE = "differential-degenerate"
+    PROBE_INDETERMINATE = "probe-indeterminate"
+    SAMPLES_DISAGREE = "samples-disagree"
 
 
 # Complete baseline roster of modules making face-surface classification decisions. Tests derive
@@ -132,8 +158,11 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         "groove evidence includes conical and toroidal surfaces",
     ),
     "levels": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar level and step gates"),
-    "pads": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar pad family gate"),
     "plates": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar plate family gate"),
+    "pads": (
+        SurfaceReaderDisposition.MIGRATED_EFFECTIVE,
+        "plane membership uses run-owned effective facts; top side uses a separate certificate",
+    ),
     "polygonal_bosses": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar polygonal-side membership gate",
@@ -331,14 +360,6 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar riser gate",
     ),
-    "pads:_recognise_rectangular_pads_one:adaptor:1": (
-        SurfaceReaderDisposition.PENDING_MIGRATION,
-        "planar cap gate",
-    ),
-    "pads:_recognise_rectangular_pads_one:adaptor:2": (
-        SurfaceReaderDisposition.PENDING_MIGRATION,
-        "planar wall gate",
-    ),
     "plates:_discover_plates:adaptor:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar plate inventory gate",
@@ -430,11 +451,375 @@ class RefusedSurfaceFact:
 EffectiveSurfaceFact: TypeAlias = AnalyticSurfaceFact | RefusedSurfaceFact
 
 
+@dataclass(frozen=True, slots=True)
+class MaterialSideCertificate:
+    """Independent proof of which candidate plane direction points out of one solid."""
+
+    node: FaceNode
+    solid: SolidRef
+    outward: tuple[float, float, float]
+    sample_points: tuple[tuple[float, float, float], ...]
+    probe_distance: float
+    classifier_tolerance: float
+    original_orientation: int
+    authority: str
+
+
+@dataclass(frozen=True, slots=True)
+class SurfaceUseRefusal:
+    """A closed refusal to issue one provenance-bearing surface dependency."""
+
+    node: FaceNode
+    reason: MaterialSideRefusalReason
+
+
+@dataclass(frozen=True, slots=True)
+class _SurfaceUseSnapshot:
+    node: FaceNode
+    surface: AnalyticSurfaceFact
+    material_side: MaterialSideCertificate | None
+    surface_state: tuple[object, ...]
+    material_state: tuple[object, ...] | None
+
+
+class SurfaceUse:
+    """Opaque, run-issued surface provenance retained by Candidate evidence."""
+
+    __slots__ = ("__authority",)
+
+    def __init__(self) -> None:
+        raise TypeError("surface uses are issued by an effective-face query")
+
+    @property
+    def node(self) -> FaceNode:
+        return _surface_use_authority(self)._validate(self).node
+
+    @property
+    def surface(self) -> AnalyticSurfaceFact:
+        return _surface_use_authority(self)._validate(self).surface
+
+    @property
+    def material_side(self) -> MaterialSideCertificate | None:
+        return _surface_use_authority(self)._validate(self).material_side
+
+
+SurfaceUseResult: TypeAlias = SurfaceUse | SurfaceUseRefusal
+
+
+def _surface_state(surface: AnalyticSurfaceFact) -> tuple[object, ...]:
+    recovery = surface.certificate
+    return (
+        surface.node,
+        surface.kind,
+        surface.provenance,
+        surface.orientation,
+        surface.parameters,
+        surface.requested_tolerance,
+        surface.kernel_reported_gap,
+        None
+        if recovery is None
+        else (
+            recovery.occt_version,
+            recovery.authority,
+            recovery.maximum_distance_bound,
+        ),
+    )
+
+
+def _material_state(certificate: MaterialSideCertificate) -> tuple[object, ...]:
+    return (
+        certificate.node,
+        certificate.solid,
+        certificate.outward,
+        certificate.sample_points,
+        certificate.probe_distance,
+        certificate.classifier_tolerance,
+        certificate.original_orientation,
+        certificate.authority,
+    )
+
+
 class EffectiveSurfaceQuery(Protocol):
     @property
     def run_token(self) -> GraphRunToken: ...
 
     def fact(self, node: FaceNode) -> EffectiveSurfaceFact: ...
+
+
+class EffectiveFaceSurfaceQuery(Protocol):
+    """Restricted face-keyed projection for explicitly migrated family consumers."""
+
+    @property
+    def run_token(self) -> GraphRunToken: ...
+
+    def fact(self, face: FaceLike) -> EffectiveSurfaceFact: ...
+
+    def use(self, face: FaceLike, *, material_side: bool = False) -> SurfaceUseResult: ...
+
+
+def _surface_use_authority(surface_use: SurfaceUse) -> _EffectiveFaceSurfaces:
+    authority = getattr(surface_use, "_SurfaceUse__authority", None)
+    if not isinstance(authority, _EffectiveFaceSurfaces):
+        raise ValueError("surface-use authority was mutated")
+    return authority
+
+
+def _validate_surface_use(surface_use: SurfaceUse, graph: FaceGraph) -> _SurfaceUseSnapshot:
+    """Validate one opaque surface dependency against the Candidate's graph run."""
+
+    authority = _surface_use_authority(surface_use)
+    if authority._graph is not graph or authority.run_token is not graph.run_token:
+        raise ValueError("surface use belongs to another graph run")
+    return authority._validate(surface_use)
+
+
+def _triangle_samples(
+    face: FaceLike, *, probe_distance: float
+) -> tuple[tuple[float, float, float], ...] | MaterialSideRefusalReason:
+    """Choose deterministic interior triangle centroids with explicit trim clearance."""
+
+    try:
+        BRepMesh_IncrementalMesh(
+            face.wrapped,
+            max(probe_distance, COORD_FLOOR),
+            False,
+            0.5,
+            True,
+        )
+        location = TopLoc_Location()
+        triangulation = BRep_Tool.Triangulation_s(face.wrapped, location)
+        if triangulation is None:
+            return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+        transform = location.Transformation()
+        nodes = tuple(
+            triangulation.Node(at).Transformed(transform)
+            for at in range(1, triangulation.NbNodes() + 1)
+        )
+        candidates: list[tuple[float, tuple[float, float, float]]] = []
+        for at in range(1, triangulation.NbTriangles() + 1):
+            indices = triangulation.Triangle(at).Get()
+            points = tuple(nodes[index - 1] for index in indices)
+            ab = gp_Vec(points[0], points[1])
+            ac = gp_Vec(points[0], points[2])
+            area2 = float(ab.Crossed(ac).Magnitude())
+            if not math.isfinite(area2) or area2 <= COORD_FLOOR * COORD_FLOOR:
+                continue
+            point = tuple(
+                math.fsum(getattr(vertex, axis)() for vertex in points) / 3.0
+                for axis in ("X", "Y", "Z")
+            )
+            candidates.append((area2, (point[0], point[1], point[2])))
+        candidates.sort(key=lambda item: (-item[0], item[1]))
+        if not candidates:
+            return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+        cleared = []
+        edges = tuple(face.edges())
+        for _area, point in candidates:
+            vertex = Vertex(*point)
+            clearance = min((float(vertex.distance_to(edge)) for edge in edges), default=0.0)
+            if math.isfinite(clearance) and clearance >= 4.0 * probe_distance:
+                cleared.append(point)
+            if len(cleared) == _MATERIAL_MAX_SAMPLES:
+                break
+        if len(cleared) < _MATERIAL_MIN_SAMPLES:
+            return MaterialSideRefusalReason.SAMPLE_NEAR_BOUNDARY
+        return tuple(cleared)
+    except (Standard_Failure, RuntimeError, ValueError):
+        return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+
+
+def _regular_plane_differential(
+    face: FaceLike,
+    point: tuple[float, float, float],
+    direction: tuple[float, float, float],
+) -> bool:
+    """Require a non-degenerate original differential aligned with the recovered plane."""
+
+    try:
+        uv = ShapeAnalysis_Surface(BRep_Tool.Surface_s(face.wrapped)).ValueOfUV(
+            gp_Pnt(*point), COORD_FLOOR
+        )
+        here, along_u, along_v = gp_Pnt(), gp_Vec(), gp_Vec()
+        BRepAdaptor_Surface(face.wrapped).D1(uv.X(), uv.Y(), here, along_u, along_v)
+        cross = along_u.Crossed(along_v)
+        magnitude = float(cross.Magnitude())
+        if not math.isfinite(magnitude) or magnitude <= COORD_FLOOR * COORD_FLOOR:
+            return False
+        cross.Scale(1.0 / magnitude)
+        alignment = abs(
+            cross.X() * direction[0] + cross.Y() * direction[1] + cross.Z() * direction[2]
+        )
+        return math.isfinite(alignment) and alignment >= 1.0 - 1e-9
+    except (Standard_Failure, RuntimeError, ValueError):
+        return False
+
+
+class _EffectiveFaceSurfaces:
+    """Bind effective facts and issued use-provenance to exact original faces."""
+
+    def __init__(self, graph: FaceGraph, surfaces: EffectiveSurfaceQuery) -> None:
+        if graph.run_token is not surfaces.run_token:
+            raise ValueError("face graph and effective surfaces belong to different runs")
+        self._graph = graph
+        self._surfaces = surfaces
+        self._uses: dict[tuple[FaceNode, bool], SurfaceUseResult] = {}
+        self._issued: dict[int, tuple[SurfaceUse, _SurfaceUseSnapshot]] = {}
+
+    @property
+    def run_token(self) -> GraphRunToken:
+        return self._graph.run_token
+
+    def fact(self, face: FaceLike) -> EffectiveSurfaceFact:
+        return self._surfaces.fact(self._graph.require_node(face))
+
+    def use(self, face: FaceLike, *, material_side: bool = False) -> SurfaceUseResult:
+        """Issue an immutable dependency, certifying plane material side when requested."""
+
+        node = self._graph.require_node(face)
+        key = (node, material_side)
+        cached = self._uses.get(key)
+        if cached is not None:
+            return cached
+        surface = self._surfaces.fact(node)
+        if not isinstance(surface, AnalyticSurfaceFact):
+            result: SurfaceUseResult = SurfaceUseRefusal(
+                node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE
+            )
+        elif material_side:
+            certificate = self._certify_plane(node, surface)
+            if isinstance(certificate, MaterialSideRefusalReason):
+                result = SurfaceUseRefusal(node, certificate)
+            else:
+                result = self._issue(node, surface, certificate)
+        else:
+            result = self._issue(node, surface, None)
+        self._uses[key] = result
+        return result
+
+    def _issue(
+        self,
+        node: FaceNode,
+        surface: AnalyticSurfaceFact,
+        material_side: MaterialSideCertificate | None,
+    ) -> SurfaceUse:
+        use = object.__new__(SurfaceUse)
+        object.__setattr__(use, "_SurfaceUse__authority", self)
+        snapshot = _SurfaceUseSnapshot(
+            node,
+            surface,
+            material_side,
+            _surface_state(surface),
+            _material_state(material_side) if material_side is not None else None,
+        )
+        self._issued[id(use)] = (use, snapshot)
+        return use
+
+    def _validate(self, use: SurfaceUse) -> _SurfaceUseSnapshot:
+        issued = self._issued.get(id(use))
+        if issued is None or issued[0] is not use:
+            raise ValueError("surface use was not issued by this query")
+        snapshot = issued[1]
+        current = self._surfaces.fact(snapshot.node)
+        if (
+            current is not snapshot.surface
+            or current.node is not snapshot.node
+            or _surface_state(current) != snapshot.surface_state
+        ):
+            raise ValueError("surface use no longer matches its issued fact")
+        certificate = snapshot.material_side
+        if certificate is not None and (
+            certificate.node is not snapshot.node
+            or self._graph.common_valid_solid((snapshot.node,)) is not certificate.solid
+            or _material_state(certificate) != snapshot.material_state
+            or int(self._graph.face(snapshot.node).wrapped.Orientation())
+            != certificate.original_orientation
+        ):
+            raise ValueError("material-side certificate no longer matches its graph owner")
+        return snapshot
+
+    def _certify_plane(
+        self, node: FaceNode, surface: AnalyticSurfaceFact
+    ) -> MaterialSideCertificate | MaterialSideRefusalReason:
+        if surface.kind is not SurfaceKind.PLANE:
+            return MaterialSideRefusalReason.UNSUPPORTED_PRIMITIVE
+        solid = self._graph.common_valid_solid((node,))
+        if solid is None:
+            return MaterialSideRefusalReason.OWNER_UNPROVEN
+        face = self._graph.face(node)
+        try:
+            nominal = recovery_nominal(face)
+        except ValueError:
+            return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
+        probe_distance = min(
+            _MATERIAL_PROBE_CAP,
+            max(_MATERIAL_PROBE_REL * nominal, 10.0 * COORD_FLOOR),
+        )
+        samples = _triangle_samples(face, probe_distance=probe_distance)
+        if isinstance(samples, MaterialSideRefusalReason):
+            return samples
+        direction = (
+            surface.parameters[0],
+            surface.parameters[1],
+            surface.parameters[2],
+        )
+        signs: list[int] = []
+        try:
+            classifier = BRepClass3d_SolidClassifier(self._graph.solid_shape(solid).wrapped)
+            for point in samples:
+                if not _regular_plane_differential(face, point, direction):
+                    return MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
+                states = []
+                for sign in (1.0, -1.0):
+                    classifier.Perform(
+                        gp_Pnt(
+                            *(
+                                coordinate + sign * probe_distance * axis
+                                for coordinate, axis in zip(point, direction, strict=True)
+                            )
+                        ),
+                        _MATERIAL_CLASSIFIER_TOLERANCE,
+                    )
+                    states.append(classifier.State())
+                if tuple(states) == (TopAbs_OUT, TopAbs_IN):
+                    signs.append(1)
+                elif tuple(states) == (TopAbs_IN, TopAbs_OUT):
+                    signs.append(-1)
+                else:
+                    return MaterialSideRefusalReason.PROBE_INDETERMINATE
+        except (Standard_Failure, RuntimeError, ValueError):
+            return MaterialSideRefusalReason.PROBE_INDETERMINATE
+        if len(set(signs)) != 1:
+            return MaterialSideRefusalReason.SAMPLES_DISAGREE
+        outward_sign = signs[0]
+        return MaterialSideCertificate(
+            node=node,
+            solid=solid,
+            outward=(
+                outward_sign * direction[0],
+                outward_sign * direction[1],
+                outward_sign * direction[2],
+            ),
+            sample_points=samples,
+            probe_distance=probe_distance,
+            classifier_tolerance=_MATERIAL_CLASSIFIER_TOLERANCE,
+            original_orientation=int(face.wrapped.Orientation()),
+            authority=_MATERIAL_SIDE_AUTHORITY,
+        )
+
+
+def effective_faces_for_graph(
+    graph: FaceGraph, surfaces: EffectiveSurfaceQuery | None = None
+) -> EffectiveFaceSurfaceQuery:
+    """Issue the restricted family query for an existing run-owned graph."""
+
+    effective = EffectiveSurfaceIndex(graph) if surfaces is None else surfaces
+    return _EffectiveFaceSurfaces(graph, effective)
+
+
+def effective_faces_for_part(part: Part) -> EffectiveFaceSurfaceQuery:
+    """Issue one short-lived query for a standalone recogniser invocation."""
+
+    return effective_faces_for_graph(FaceGraph(part))
 
 
 def _physical_boundary_length(face) -> float:
