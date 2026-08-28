@@ -10,8 +10,10 @@ from b123d_recognisers import (
     BossRecord,
     FramedRecognitionResult,
     HoleRecord,
+    RecognitionReport,
     RecognitionResult,
     build_framed_recognition_result,
+    build_recognition_report,
     build_recognition_result,
     classify_bevel,
     feature_census,
@@ -39,10 +41,13 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     holes = recognise_holes(part)
     bosses = recognise_bosses(part)
     result = build_recognition_result(part)
+    report = build_recognition_report(part)
 
     assert_type(holes, list[HoleRecord])
     assert_type(bosses, list[BossRecord])
     assert_type(result, RecognitionResult)
+    assert_type(report, RecognitionReport)
+    assert_type(report.result, RecognitionResult)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
     framed = build_framed_recognition_result(part)

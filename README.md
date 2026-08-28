@@ -55,6 +55,12 @@ for hole in result.holes:
 usual entry point for a CAD application. Its frozen result can be inspected directly or projected
 to JSON-compatible dictionaries for storage, indexing, comparison, or an editing pipeline.
 
+For bounded lifecycle explanations from the same single run, use
+`build_recognition_report()`. Its immutable report distinguishes evaluated-empty families,
+classification-gated families, accepted/rejected candidates and supported residual diagnostics.
+It is deliberately not an exhaustive explanation of unsupported geometry; a missing diagnostic
+does not prove that no unsupported feature is present.
+
 Individual recognisers are also public when an application needs a narrower answer. Reusable
 evidence can be injected explicitly so it is not rediscovered:
 

@@ -365,6 +365,13 @@ subclass. It owns every public recogniser family, preserves classification-gated
 empty inventories explicitly, and makes no claim that every geometry fact has
 Draftwright IR, DSL, code-generation, drawing, or completeness semantics.
 
+`build_recognition_report()` pairs that unchanged inventory with bounded lifecycle explanations
+from the same run. It records whether each physical family ran, candidate and final disposition
+counts, and only the residual diagnostic codes established by frozen evidence. It does not scan
+unclaimed geometry or imply that an evaluated-empty family has no unsupported related geometry.
+ADR 0012 defines this compatibility boundary; framed explanations and surface-cache summaries are
+not shipped.
+
 Every public `recognise_*` export must appear exactly once in the recogniser table above. CI derives
 that export inventory from the installed public module rather than trusting this page,
 so adding a recogniser without an explicit capability claim fails closed even before the

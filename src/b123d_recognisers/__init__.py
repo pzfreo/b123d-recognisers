@@ -94,6 +94,19 @@ from b123d_recognisers.countersinks import (
     countersink_matches_hole,
     recognise_countersinks,
 )
+from b123d_recognisers.explanations import (
+    DispositionExplanation,
+    ExplanationCoverage,
+    FamilyEvaluation,
+    FamilyExplanation,
+    RecognitionDiagnostic,
+    RecognitionDiagnosticCode,
+    RecognitionDiagnosticStatus,
+    RecognitionOutcome,
+    RecognitionReport,
+    ReconciliationReason,
+    build_recognition_report,
+)
 from b123d_recognisers.fillets import Fillet, fillet_anchor, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.frames import (
@@ -204,6 +217,16 @@ __all__ = [
     "FrameRefusalReason",
     "FramedRecognition",
     "FramedRecognitionResult",
+    "DispositionExplanation",
+    "ExplanationCoverage",
+    "FamilyEvaluation",
+    "FamilyExplanation",
+    "RecognitionDiagnostic",
+    "RecognitionDiagnosticCode",
+    "RecognitionDiagnosticStatus",
+    "RecognitionOutcome",
+    "RecognitionReport",
+    "ReconciliationReason",
     "Groove",
     "BossRecord",
     "CounterBore",
@@ -278,6 +301,7 @@ __all__ = [
     "recognise_turned_steps",
     "build_recognition_result",
     "build_framed_recognition_result",
+    "build_recognition_report",
     "full_cylinders",
     "infer_part_frame",
 ]
