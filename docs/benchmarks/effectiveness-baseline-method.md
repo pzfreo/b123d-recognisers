@@ -72,6 +72,9 @@ uv run python tools/run_effectiveness_baseline.py \
   --output docs/benchmarks/effectiveness-mfcadpp-500-0.5.0.json
 ```
 
+The frozen result and interpretation are in the
+[`0.5.0 MFCAD++ baseline`](effectiveness-mfcadpp-500-0.5.0.md).
+
 MFCAD++ is open development evidence. Models and labels may be inspected to diagnose omissions.
 The report remains a false-negative detector and regression baseline, not an independent transfer
 estimate.
