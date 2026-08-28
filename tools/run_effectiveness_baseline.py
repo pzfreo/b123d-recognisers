@@ -128,7 +128,7 @@ def _write_new_report(path: Path, contents: str) -> None:
     temporary: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", dir=path.parent, delete=False
+            mode="w", encoding="utf-8", newline="", dir=path.parent, delete=False
         ) as handle:
             temporary = Path(handle.name)
             handle.write(contents)
