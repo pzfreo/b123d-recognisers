@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import re
+import statistics
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -331,6 +332,98 @@ def canonical_json(value: object) -> str:
     return json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
 
 
+def summarize_rows(
+    rows: list[dict[str, Any]], selected: int, invalid: int
+) -> dict[str, Any]:
+    """Derive every aggregate from the immutable per-model evidence."""
+
+    valid = [row for row in rows if row.get("status") == "evaluated"]
+    records: Counter[str] = Counter()
+    mapped_classes: Counter[str] = Counter()
+    drops: Counter[str] = Counter()
+    diagnostics: Counter[str] = Counter()
+    observations: Counter[str] = Counter()
+    per_class: dict[str, Counter[str]] = {}
+    mismatches = 0
+    for row in valid:
+        records.update(row["physical_records"])
+        mapped_classes.update(row["mapped_dataset_class_records"])
+        drops.update(row["reconciliation_drops"])
+        diagnostics.update(row["unsupported_diagnostics"])
+        observations.update(row["predicate_observations"])
+        mismatches += row["taxonomy_mismatch_defining_faces"]
+        for class_id, class_row in row["classes"].items():
+            aggregate = per_class.setdefault(class_id, Counter())
+            for field in (
+                "labelled_faces",
+                "matched_defining_faces",
+                "mapped_defining_faces",
+                "truth_instances",
+                "recalled_instances",
+            ):
+                aggregate[field] += class_row[field]
+            aggregate["status"] = class_row["status"]
+
+    def ratio(numerator: int, denominator: int) -> dict[str, int | float | None]:
+        return {
+            "numerator": numerator,
+            "denominator": denominator,
+            "value": None if denominator == 0 else numerator / denominator,
+        }
+
+    classes = {}
+    for class_id, aggregate in sorted(per_class.items(), key=lambda item: int(item[0])):
+        classes[class_id] = {
+            "status": aggregate["status"],
+            "defining_face_precision": ratio(
+                aggregate["matched_defining_faces"], aggregate["mapped_defining_faces"]
+            ),
+            "defining_face_recall": ratio(
+                aggregate["matched_defining_faces"], aggregate["labelled_faces"]
+            ),
+            "instance_recall": ratio(
+                aggregate["recalled_instances"], aggregate["truth_instances"]
+            ),
+        }
+    return {
+        "selected": selected,
+        "loaded": selected - invalid,
+        "invalid": invalid,
+        "evaluated": len(valid),
+        "empty": sum(row["no_physical_records"] for row in valid),
+        "physical_records": dict(sorted(records.items())),
+        "mapped_dataset_class_records": dict(sorted(mapped_classes.items())),
+        "taxonomy_mismatch_defining_faces": mismatches,
+        "reconciliation_drops": dict(sorted(drops.items())),
+        "unsupported_diagnostics": dict(sorted(diagnostics.items())),
+        "predicate_observations": dict(sorted(observations.items())),
+        "classes": classes,
+    }
+
+
+def summarize_runtime(rows: list[dict[str, Any]]) -> dict[str, int | float | None]:
+    """Derive the runtime distribution from evaluated model rows."""
+
+    values = sorted(row["seconds"] for row in rows if row.get("status") == "evaluated")
+    if not values:
+        return {
+            "count": 0,
+            "total_seconds": 0.0,
+            "min_seconds": None,
+            "median_seconds": None,
+            "p95_seconds": None,
+            "max_seconds": None,
+        }
+    return {
+        "count": len(values),
+        "total_seconds": sum(values),
+        "min_seconds": values[0],
+        "median_seconds": statistics.median(values),
+        "p95_seconds": values[math.ceil(0.95 * len(values)) - 1],
+        "max_seconds": values[-1],
+    }
+
+
 def validate_report(report: object) -> None:
     """Validate the closed top-level report contract and its denominator invariants."""
 
@@ -417,6 +510,11 @@ def validate_report(report: object) -> None:
         ids.append(row["model_id"])
     if ids != sorted(ids) or len(ids) != len(set(ids)):
         raise EffectivenessDataError("model rows must have unique sorted IDs")
+    expected_selection_hash = hashlib.sha256(
+        ("\n".join(ids) + "\n").encode("utf-8")
+    ).hexdigest()
+    if selection["selected_ids_sha256"] != expected_selection_hash:
+        raise EffectivenessDataError("selection hash does not match model rows")
     summary = report["summary"]
     if not isinstance(summary, dict):
         raise EffectivenessDataError("summary must be an object")
@@ -447,6 +545,15 @@ def validate_report(report: object) -> None:
         or runtime.get("count") != summary["evaluated"]
     ):
         raise EffectivenessDataError("runtime metadata does not match evaluated models")
+    try:
+        expected_summary = summarize_rows(models, len(models), statuses["invalid"])
+        expected_runtime = summarize_runtime(models)
+    except (KeyError, TypeError, ValueError) as error:
+        raise EffectivenessDataError("evaluated model row has invalid nested evidence") from error
+    if summary != expected_summary:
+        raise EffectivenessDataError("summary does not match model evidence")
+    if runtime != expected_runtime:
+        raise EffectivenessDataError("runtime does not match model evidence")
 
 
 __all__ = [
@@ -459,5 +566,7 @@ __all__ = [
     "load_mfinstseg_truth",
     "load_taxonomy",
     "score_inventory",
+    "summarize_rows",
+    "summarize_runtime",
     "validate_report",
 ]

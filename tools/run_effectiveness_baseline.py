@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import math
+import os
 import platform
-import statistics
 import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter
 from collections.abc import Callable
@@ -29,6 +29,8 @@ from tools.effectiveness_report import (  # noqa: E402
     load_mfinstseg_truth,
     load_taxonomy,
     score_inventory,
+    summarize_rows,
+    summarize_runtime,
     validate_report,
 )
 
@@ -119,90 +121,27 @@ def _mfinstseg_selection(
     )
 
 
-def _ratio(numerator: int, denominator: int) -> dict[str, int | float | None]:
-    return {
-        "numerator": numerator,
-        "denominator": denominator,
-        "value": None if denominator == 0 else numerator / denominator,
-    }
+def _write_new_report(path: Path, contents: str) -> None:
+    """Atomically create a report, refusing to replace historical evidence."""
 
-
-def _summarize(rows: list[dict[str, Any]], selected: int, invalid: int) -> dict[str, Any]:
-    valid = [row for row in rows if row.get("status") == "evaluated"]
-    records: Counter[str] = Counter()
-    mapped_classes: Counter[str] = Counter()
-    drops: Counter[str] = Counter()
-    diagnostics: Counter[str] = Counter()
-    observations: Counter[str] = Counter()
-    per_class: dict[str, Counter[str]] = {}
-    mismatches = 0
-    for row in valid:
-        records.update(row["physical_records"])
-        mapped_classes.update(row["mapped_dataset_class_records"])
-        drops.update(row["reconciliation_drops"])
-        diagnostics.update(row["unsupported_diagnostics"])
-        observations.update(row["predicate_observations"])
-        mismatches += row["taxonomy_mismatch_defining_faces"]
-        for class_id, class_row in row["classes"].items():
-            aggregate = per_class.setdefault(class_id, Counter())
-            for field in (
-                "labelled_faces",
-                "matched_defining_faces",
-                "mapped_defining_faces",
-                "truth_instances",
-                "recalled_instances",
-            ):
-                aggregate[field] += class_row[field]
-            aggregate["status"] = class_row["status"]
-    classes = {}
-    for class_id, aggregate in sorted(per_class.items(), key=lambda item: int(item[0])):
-        classes[class_id] = {
-            "status": aggregate["status"],
-            "defining_face_precision": _ratio(
-                aggregate["matched_defining_faces"], aggregate["mapped_defining_faces"]
-            ),
-            "defining_face_recall": _ratio(
-                aggregate["matched_defining_faces"], aggregate["labelled_faces"]
-            ),
-            "instance_recall": _ratio(
-                aggregate["recalled_instances"], aggregate["truth_instances"]
-            ),
-        }
-    return {
-        "selected": selected,
-        "loaded": selected - invalid,
-        "invalid": invalid,
-        "evaluated": len(valid),
-        "empty": sum(row["no_physical_records"] for row in valid),
-        "physical_records": dict(sorted(records.items())),
-        "mapped_dataset_class_records": dict(sorted(mapped_classes.items())),
-        "taxonomy_mismatch_defining_faces": mismatches,
-        "reconciliation_drops": dict(sorted(drops.items())),
-        "unsupported_diagnostics": dict(sorted(diagnostics.items())),
-        "predicate_observations": dict(sorted(observations.items())),
-        "classes": classes,
-    }
-
-
-def _runtime(rows: list[dict[str, Any]]) -> dict[str, int | float | None]:
-    values = sorted(row["seconds"] for row in rows if row.get("status") == "evaluated")
-    if not values:
-        return {
-            "count": 0,
-            "total_seconds": 0.0,
-            "min_seconds": None,
-            "median_seconds": None,
-            "p95_seconds": None,
-            "max_seconds": None,
-        }
-    return {
-        "count": len(values),
-        "total_seconds": sum(values),
-        "min_seconds": values[0],
-        "median_seconds": statistics.median(values),
-        "p95_seconds": values[math.ceil(0.95 * len(values)) - 1],
-        "max_seconds": values[-1],
-    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent, delete=False
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(temporary, path)
+    except FileExistsError as error:
+        raise EffectivenessDataError(f"refusing to overwrite existing report: {path}") from error
+    except OSError as error:
+        raise EffectivenessDataError(f"could not create report {path}: {error}") from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def _environment() -> dict[str, str]:
@@ -267,7 +206,7 @@ def main() -> int:
             invalid += 1
             row = {"model_id": model_id, "status": "invalid", "reason": str(error)}
         rows.append(row)
-    summary = _summarize(rows, len(ids), invalid)
+    summary = summarize_rows(rows, len(ids), invalid)
     report = {
         "format": REPORT_FORMAT,
         "format_version": REPORT_FORMAT_VERSION,
@@ -287,7 +226,7 @@ def main() -> int:
         },
         "models": rows,
         "summary": summary,
-        "runtime": _runtime(rows),
+        "runtime": summarize_runtime(rows),
     }
     validate_report(report)
     if invalid and not args.allow_invalid:
@@ -297,8 +236,10 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(canonical_json(report), encoding="utf-8")
+    try:
+        _write_new_report(args.output, canonical_json(report))
+    except EffectivenessDataError as error:
+        parser.error(str(error))
     print(canonical_json(summary), end="")
     return 0
 

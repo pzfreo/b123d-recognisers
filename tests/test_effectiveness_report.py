@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -27,6 +28,7 @@ from tools.run_effectiveness_baseline import (
     _display_path,
     _mfcadpp_selection,
     _mfinstseg_selection,
+    _write_new_report,
 )
 
 ROOT = Path(__file__).parents[1]
@@ -223,12 +225,25 @@ def _report() -> dict[str, object]:
         "selection": {
             "rule": "fixture",
             "limit": None,
-            "selected_ids_sha256": "0" * 64,
+            "selected_ids_sha256": hashlib.sha256(b"a\n").hexdigest(),
             "excluded": {},
         },
         "mapping": {"format_version": 1, "sha256": "0" * 64, "path": "mapping.json"},
         "models": [{"model_id": "a", "status": "invalid", "reason": "fixture"}],
-        "summary": {"selected": 1, "loaded": 0, "invalid": 1, "evaluated": 0, "empty": 0},
+        "summary": {
+            "selected": 1,
+            "loaded": 0,
+            "invalid": 1,
+            "evaluated": 0,
+            "empty": 0,
+            "physical_records": {},
+            "mapped_dataset_class_records": {},
+            "taxonomy_mismatch_defining_faces": 0,
+            "reconciliation_drops": {},
+            "unsupported_diagnostics": {},
+            "predicate_observations": {},
+            "classes": {},
+        },
         "runtime": {
             "count": 0,
             "total_seconds": 0.0,
@@ -267,6 +282,33 @@ def test_report_validation_rejects_denominator_drift_and_duplicate_models() -> N
     ]
     with pytest.raises(EffectivenessDataError, match="unique sorted"):
         validate_report(report)
+
+
+def test_report_validation_recomputes_selection_summary_and_runtime() -> None:
+    report = _report()
+    report["selection"]["selected_ids_sha256"] = "0" * 64
+    with pytest.raises(EffectivenessDataError, match="selection hash"):
+        validate_report(report)
+
+    report = _report()
+    report["summary"]["physical_records"] = {"holes": 1}
+    with pytest.raises(EffectivenessDataError, match="summary does not match"):
+        validate_report(report)
+
+    report = _report()
+    report["runtime"]["total_seconds"] = 1.0
+    with pytest.raises(EffectivenessDataError, match="runtime does not match"):
+        validate_report(report)
+
+
+def test_report_creation_is_exclusive_and_preserves_existing_bytes(tmp_path: Path) -> None:
+    output = tmp_path / "frozen.json"
+    _write_new_report(output, "first\n")
+
+    with pytest.raises(EffectivenessDataError, match="refusing to overwrite"):
+        _write_new_report(output, "second\n")
+
+    assert output.read_bytes() == b"first\n"
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:
