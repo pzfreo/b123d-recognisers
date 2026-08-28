@@ -10,6 +10,16 @@
   A pinned 20-fixture conversion sweep validates face correspondence, topology, complete records,
   defining evidence, reviewed geometry bounds, and a separate performance ceiling.
 
+- **Measured NURBS recovery on an external human-authored STEP corpus.** A reproducible scanner
+  keeps the licensed Fusion 360 Gallery data outside the repository, fixes its sample before OCCT
+  import or fitting, and records every refusal and import failure. Across 1,000 B-spline-bearing
+  models, recovery accepts 48/12,729 spline faces (0.3771%) across 21 models and changes no Pad
+  result. A topology-preserving counterfactual also exposes each recovered primitive to every
+  recogniser under both classification modes: cylinders add 29 patch records, four Flat candidates
+  and one Hole candidate across 11/20 completed affected models, while recovered planes and cones
+  add nothing. The results support a focused cylinder-orientation investigation, not blanket
+  family migration; changed candidates remain unvalidated until curved orientation is proved.
+
 ## 0.4.3
 
 - **Added opt-in part-relative recognition.** `build_framed_recognition_result(part)` pairs the

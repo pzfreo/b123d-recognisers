@@ -82,8 +82,9 @@ not disturb them: all twenty golden fixtures exported to STEP and re-imported re
 pinned records exactly, with planes and cylinders still typed as such.
 
 That evidence covers geometry written by this project's own OCCT-based exporter. It shows that
-passing through a STEP file is not itself lossy; it does not measure any particular third-party
-CAD system's export, and no such corpus is checked in.
+passing through a STEP file is not itself lossy. No third-party corpus is checked in, but the
+separate external measurement below now covers one Autodesk exporter corpus without redistributing
+its licensed models.
 
 `recognise_rectangular_pads` additionally supports exact plane geometry re-expressed by OCCT as
 B-spline faces. Its run-owned effective-surface query retains the exact original faces, bounded
@@ -97,11 +98,39 @@ introduced occurrence. Converted-input adversaries cover a positive Pad, pockets
 suppression, envelope contact, open ownership and multiple solids. This claim is limited to exact
 OCCT conversion under the reviewed OCP/OCCT 7.9.3.1 contract.
 
+The [external NURBS corpus spike](benchmarks/nurbs-external-corpus-spike.md) scans the complete
+42,912-model Fusion 360 Gallery Extended STEP archive, fixes an evenly spaced 1,000-model sample
+from its 8,673 B-spline-bearing files before OCCT import or fitting, and imports all 1,000. Of 12,729
+imported B-spline/Bezier faces, 48 (0.3771%) satisfy the bounded analytic-recovery contract: 31
+cylinders, 12 planes and 5 cones across 21 models. Nine of the recovered planes acquire a separate
+material-side certificate, three refuse it, and none changes Raised Pad output against a
+native-only counterfactual. The largest accepted kernel gap is 99.3612% of its face-local bound,
+so this is bounded recovery evidence, not an upgrade of the exact-conversion claim above.
+
+The same spike now measures the missing feature-unlock counterfactual. It leaves each original
+TopoDS input untouched, temporarily exposes recovered planes, cylinders and cones to every raw
+surface reader, and counts every aggregate family under both prismatic and rotational caller
+classifications. One affected model fails the untouched inventory baseline and is excluded. On the
+remaining 20 models, the combined overlay changes 11: 29 recovered cylinders become visible as 26
+internal and 3 external cylinder patches, with downstream gains of four Flat candidates in one
+model and one Hole candidate in one model. No candidate is lost. Recovered planes and cones unlock
+no result in either classification mode. The repeated research inventories take 93.608 seconds,
+including 30.850 seconds of untouched baselines; this is harness cost, not a proposed production
+hot path.
+
+That is a non-zero, narrowly cylinder-specific signal—not evidence for a general NURBS backlog.
+The new Hole and Flat candidates are not yet correctness claims: recovered curved orientation has
+not been certified and the individual candidates still need semantic review. A future migration
+should therefore start at the shared cylinder substrate with orientation/material-side proof and
+those measured cases as an external evaluation set. This sample gives no data-backed reason to
+migrate plane consumers beyond Pads or any cone consumer.
+
 B-spline input remains **excluded for every other family**, including all cylinder- and
-torus-dependent families. Refused or ambiguous analytic recovery, an unproved material owner,
-approximate/reverse-engineered surfaces and unmeasured third-party exporters fail closed. Aggregate
-results may therefore contain Raised Pads while other families remain absent; that is a deliberate
-per-family capability boundary, not evidence of whole-model support.
+torus-dependent families. Refused or ambiguous analytic recovery and an unproved material owner
+fail closed. Reverse-engineered or otherwise uncontrolled inputs have no support claim even when
+an individual face happens to satisfy the bounded fitter. Aggregate results may therefore contain
+Raised Pads while other families remain absent; that is a deliberate per-family capability
+boundary, not evidence of whole-model support.
 
 ## Measured against third-party labelled corpora
 
