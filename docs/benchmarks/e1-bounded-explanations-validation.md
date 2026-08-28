@@ -31,6 +31,32 @@ summary/score vector, and every per-model field except measured seconds. This in
 records, mapped classes, defining-face counts, taxonomy mismatches, reconciliation drops,
 predicate observations, residual diagnostics, source hashes and status. All fields matched.
 
+Run the exact comparison after generating the E1 report (change `current_path` only when a
+different new output path was selected):
+
+```bash
+uv run python - <<'PY'
+import json
+from pathlib import Path
+
+baseline_path = Path("docs/benchmarks/effectiveness-mfcadpp-500-0.5.0.json")
+current_path = Path("/tmp/b123d-e1-igyBJO/effectiveness.json")
+baseline = json.loads(baseline_path.read_text())
+current = json.loads(current_path.read_text())
+assert baseline["dataset"] == current["dataset"]
+assert baseline["selection"] == current["selection"]
+assert baseline["mapping"] == current["mapping"]
+assert baseline["summary"] == current["summary"]
+assert len(baseline["models"]) == len(current["models"]) == 500
+for old, new in zip(baseline["models"], current["models"], strict=True):
+    assert old.keys() == new.keys()
+    assert {key: value for key, value in old.items() if key != "seconds"} == {
+        key: value for key, value in new.items() if key != "seconds"
+    }
+print("500/500 per-model recognition rows and complete summary match")
+PY
+```
+
 The rerun's descriptive recognition runtime was 203.753 s total, 0.377 s median and 0.707 s p95
 per model. Runtime is host-load evidence rather than a semantic equality field.
 
@@ -47,3 +73,36 @@ report. Each projected report retained the exact existing `RecognitionResult` ob
 
 This isolates the additive projection cost from recognition. `build_recognition_report()` still
 runs recognition once; callers of `build_recognition_result()` pay no new projection work.
+
+The executable benchmark harness was:
+
+```bash
+uv run python - <<'PY'
+import statistics
+import time
+
+from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, extrude
+
+from b123d_recognisers.explanations import _project_report
+from b123d_recognisers.result import _take_inventory
+
+with BuildPart() as tool:
+    with BuildSketch(Plane.XY):
+        Polygon(
+            (-15, -15), (15, -15), (15, 15), (9, 15),
+            (9, -9), (-9, -9), (-9, 15), (-15, 15),
+        )
+    extrude(amount=40, both=True)
+product = _take_inventory(Box(60, 60, 20) - tool.part)
+rounds = []
+for _ in range(5):
+    started = time.perf_counter()
+    for _ in range(10_000):
+        report = _project_report(product)
+    rounds.append(time.perf_counter() - started)
+assert report.result is product.result
+print("seconds:", rounds)
+print("minimum microseconds/report:", min(rounds) * 100)
+print("median microseconds/report:", statistics.median(rounds) * 100)
+PY
+```
