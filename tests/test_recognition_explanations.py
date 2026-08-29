@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import pytest
 from build123d import (
     Box,
     BuildPart,
@@ -114,6 +115,12 @@ def test_report_preserves_result_and_closed_family_roster() -> None:
     assert report.diagnostics == ()
 
 
+def test_explicit_raw_report_is_the_legacy_compatibility_contract() -> None:
+    part = Box(10, 10, 10)
+
+    assert r.build_raw_recognition_report(part) == r.build_recognition_report(part)
+
+
 def test_reconciliation_loss_is_counted_without_identity_leakage() -> None:
     report = r.build_recognition_report(_u_passage())
 
@@ -196,6 +203,28 @@ def test_bounded_residual_projects_publicly_and_tracks_raw_coordinates() -> None
     ) == tuple(
         (item.family, item.evaluation, item.proposed, item.accepted, item.rejected)
         for item in original.families
+    )
+
+
+def test_framed_bounded_residual_retains_local_meaning_under_rigid_presentation() -> None:
+    part = _side_subdivided_blind_step()
+    original = r.build_framed_recognition_report(part)
+    transformed = r.build_framed_recognition_report(
+        Pos(100, -20, 5) * Rot(30, 17, 11) * part
+    )
+
+    assert isinstance(original, r.FramedRecognitionReport)
+    assert isinstance(transformed, r.FramedRecognitionReport)
+    assert len(original.report.diagnostics) == len(transformed.report.diagnostics) == 1
+    assert transformed.report.diagnostics[0].at == pytest.approx(
+        original.report.diagnostics[0].at, abs=1e-8
+    )
+    assert tuple(
+        (item.family, item.evaluation, item.proposed, item.accepted, item.rejected)
+        for item in transformed.report.families
+    ) == tuple(
+        (item.family, item.evaluation, item.proposed, item.accepted, item.rejected)
+        for item in original.report.families
     )
 
 

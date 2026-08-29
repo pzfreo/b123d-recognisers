@@ -18,6 +18,7 @@ from b123d_recognisers import (
     RecognitionResult,
     Slot,
     TurnedStep,
+    build_raw_recognition_result,
     build_recognition_result,
 )
 from b123d_recognisers._candidates import FamilyId
@@ -40,6 +41,12 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
     )
     with pytest.raises(FrozenInstanceError):
         result.holes = ()
+
+
+def test_explicit_raw_result_is_the_legacy_compatibility_contract() -> None:
+    part = _plate_with_holes()
+
+    assert build_raw_recognition_result(part) == build_recognition_result(part)
 
 
 def test_projection_rejects_a_record_from_the_wrong_family_contract():

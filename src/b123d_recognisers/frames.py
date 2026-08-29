@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Opt-in part-relative recognition with an explicit caller-space frame.
+"""Ordinary part-relative recognition with an explicit caller-space frame.
 
-Existing recognition entry points remain caller-space and byte compatible. Framed recognition
-pairs the unchanged local-frame ``RecognitionResult`` and exact working shape with the frame
-needed to interpret them.
+The explicit raw compatibility entry points remain caller-space and byte compatible. Framed
+recognition pairs the unchanged local-frame result or report and exact working shape with the
+frame needed to interpret them.
 """
 
 from __future__ import annotations
@@ -23,7 +23,8 @@ from OCP.GProp import GProp_GProps
 from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._typing import Part, Vector3
-from b123d_recognisers.result import RecognitionResult, build_recognition_result
+from b123d_recognisers.explanations import RecognitionReport, build_raw_recognition_report
+from b123d_recognisers.result import RecognitionResult, build_raw_recognition_result
 
 _PARALLEL_COS = 0.999
 _ORTHOGONAL_COS = 1.0 - _PARALLEL_COS
@@ -114,8 +115,18 @@ class FramedRecognitionResult:
     result: RecognitionResult
 
 
+@dataclass(frozen=True, slots=True)
+class FramedRecognitionReport:
+    """The exact local working shape and bounded report expressed in one frame."""
+
+    frame: PartFrame
+    part: Shape[TopoDS_Shape]
+    report: RecognitionReport
+
+
 FrameInference = PartFrame | RefusedPartFrame
 FramedRecognition = FramedRecognitionResult | RefusedPartFrame
+FramedReport = FramedRecognitionReport | RefusedPartFrame
 
 
 @dataclass(slots=True)
@@ -333,7 +344,21 @@ def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> 
     return FramedRecognitionResult(
         frame,
         normalized,
-        build_recognition_result(normalized, rotational=rotational),
+        build_raw_recognition_result(normalized, rotational=rotational),
+    )
+
+
+def build_framed_recognition_report(part: Part, *, rotational: bool = False) -> FramedReport:
+    """Recognise once in an inferred frame with bounded explanations, or refuse closed."""
+
+    frame = infer_part_frame(part)
+    if isinstance(frame, RefusedPartFrame):
+        return frame
+    normalized = _normalize_part(part, frame)
+    return FramedRecognitionReport(
+        frame,
+        normalized,
+        build_raw_recognition_report(normalized, rotational=rotational),
     )
 
 
@@ -342,9 +367,12 @@ __all__ = [
     "FrameInference",
     "FrameRefusalReason",
     "FramedRecognition",
+    "FramedRecognitionReport",
     "FramedRecognitionResult",
+    "FramedReport",
     "PartFrame",
     "RefusedPartFrame",
+    "build_framed_recognition_report",
     "build_framed_recognition_result",
     "infer_part_frame",
 ]

@@ -100,3 +100,24 @@ still issues exactly one Candidate owning the complete eight-face boundary of on
 Generic caller-space axes remain unsupported by the raw route and become principal only through the
 existing explicit framed boundary. The framed result continues to pair the exact working shape,
 local records and frame; no consumer may infer or substitute a different representative.
+
+## Amendment (ordinary safe route, Epic 0005 E2 / issue #317)
+
+Framed recognition is the ordinary aggregate route from 0.5. Documentation and named downstream
+consumers migrate to `build_framed_recognition_result`; a successful caller retains its
+`PartFrame`, exact local working shape and result as one provenance value. A typed frame refusal
+never silently falls back to raw recognition.
+
+This decision is staged rather than changing an existing function's return type. Version 0.5 adds
+the explicit `build_raw_recognition_result` name. The existing `build_recognition_result` name
+continues as an exact raw/world-coordinate compatibility wrapper for 0.5 and is scheduled for
+removal in 0.6. The explicit raw route remains supported after that removal for callers whose
+coordinate contract genuinely requires it. No semantic reassignment of the ambiguous old name is
+planned.
+
+The migration does not change frame inference, record schemas, recognition predicates or
+reconciliation. It changes which already accepted boundary is recommended and consumed. A
+consumer must move its shape-derived classification, bounding geometry and record-to-domain
+conversion onto the returned local working part; swapping only the recognition call would mix
+coordinate systems. An immutable package release precedes cross-repository adoption under ADR
+0005.

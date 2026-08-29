@@ -410,13 +410,19 @@ subclass. It owns every public recogniser family, preserves classification-gated
 empty inventories explicitly, and makes no claim that every geometry fact has
 Draftwright IR, DSL, code-generation, drawing, or completeness semantics.
 
-`build_recognition_report()` pairs that unchanged inventory with bounded lifecycle explanations
-from the same run. It records whether each physical family ran, candidate and final disposition
-counts, and only the residual diagnostic codes established by frozen evidence. It does not scan
-unclaimed geometry or imply that an evaluated-empty family has no unsupported related geometry.
-ADR 0012 defines this compatibility boundary; framed explanations and surface-cache summaries are
-not shipped. The [E1 validation](benchmarks/e1-bounded-explanations-validation.md) records exact
-MFCAD++ parity and the separately measured projection cost.
+The ordinary aggregate APIs are `build_framed_recognition_result()` and
+`build_framed_recognition_report()`. A successful value owns the inferred caller-space
+`PartFrame`, exact topology-preserving local working shape, and its local result or bounded report.
+The report records whether each physical family ran, candidate and final disposition counts, and
+only residual diagnostic codes established by frozen evidence. It does not scan unclaimed geometry
+or imply that an evaluated-empty family has no unsupported related geometry. A frame refusal is
+typed and never triggers an implicit raw fallback.
+
+`build_raw_recognition_result()` and `build_raw_recognition_report()` are the explicit
+caller/world-coordinate compatibility routes. The older ambiguous names without `raw` retain that
+exact behavior in 0.5 and are scheduled for removal in 0.6. ADRs 0011 and 0012 define these
+boundaries. The [E1 validation](benchmarks/e1-bounded-explanations-validation.md) records exact
+MFCAD++ parity and the separately measured bounded-projection cost.
 
 Every public `recognise_*` export must appear exactly once in the recogniser table above. CI derives
 that export inventory from the installed public module rather than trusting this page,

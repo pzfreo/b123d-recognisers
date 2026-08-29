@@ -37,29 +37,40 @@ whose construction history is not available.
 
 ## Recognise an imported model
 
-Import a STEP file with build123d, then run the shared recognition orchestration to obtain one
-consistent feature inventory:
+Import a STEP file with build123d, then use the framed aggregate so the same physical part keeps
+one local recognition meaning independently of its placement in the file:
 
 ```python
 from build123d import import_step
-from b123d_recognisers import build_recognition_result
+from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
 
 part = import_step("gearbox-housing.step")
-result = build_recognition_result(part)
+framed = build_framed_recognition_result(part)
 
-for hole in result.holes:
-    print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
+if isinstance(framed, FramedRecognitionResult):
+    for hole in framed.result.holes:
+        print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
+else:
+    print("frame refused:", framed.reason.value)
 ```
 
-`build_recognition_result()` shares intermediate geometric analysis across recognisers and is the
-usual entry point for a CAD application. Its frozen result can be inspected directly or projected
-to JSON-compatible dictionaries for storage, indexing, comparison, or an editing pipeline.
+The successful value owns the inferred `PartFrame`, the exact topology-preserving local `part`
+passed to recognition, and its frozen `RecognitionResult`. Keep those values together: record
+coordinates and axis letters are local to `framed.frame`, and topology-bearing evidence belongs to
+`framed.part`.
 
 For bounded lifecycle explanations from the same single run, use
-`build_recognition_report()`. Its immutable report distinguishes evaluated-empty families,
-classification-gated families, accepted/rejected candidates and supported residual diagnostics.
-It is deliberately not an exhaustive explanation of unsupported geometry; a missing diagnostic
-does not prove that no unsupported feature is present.
+`build_framed_recognition_report()`. Its successful immutable value pairs the same frame and exact
+working part with a report that distinguishes evaluated-empty families, classification-gated
+families, accepted/rejected candidates and supported residual diagnostics. It is deliberately not
+an exhaustive explanation of unsupported geometry; a missing diagnostic does not prove that no
+unsupported feature is present.
+
+Applications that deliberately require records in the caller/world coordinate system can use the
+explicit compatibility routes `build_raw_recognition_result()` and
+`build_raw_recognition_report()`. The older ambiguous names `build_recognition_result()` and
+`build_recognition_report()` retain exactly that raw behavior in 0.5 and are scheduled for removal
+in 0.6; they never silently normalize or fall back after a frame refusal.
 
 Individual recognisers are also public when an application needs a narrower answer. Reusable
 evidence can be injected explicitly so it is not rediscovered:
@@ -105,10 +116,9 @@ That contract includes the closed `BevelReject.reason` values and the ordered
 profile_direction)`. Diameters, origin coordinates, and depth use model-length units;
 `profile_direction` is unitless and `axis` is one of `x`, `y`, or `z`.
 
-### Recognise independently of STEP placement
+### Interpret a framed result
 
-Use the opt-in framed route when the same physical part must produce local coordinates independent
-of its placement in the imported file:
+The ordinary aggregate route returns a typed refusal when it cannot establish a frame:
 
 ```python
 from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
@@ -132,7 +142,8 @@ discrete sign or axis interchange, and `AXIAL` exposes unobservable roll. The ax
 gauged frame are deterministic representatives and must not be treated as semantic material
 directions. Geometry without an analytic direction returns a typed `RefusedPartFrame`.
 
-This route does not change `build_recognition_result()` or the caller-space meaning of its records.
+The explicit raw compatibility routes retain caller-space meaning. A frame refusal never silently
+falls back to them; that policy belongs to the caller.
 
 Every `recognise_*` function returns a deterministic list of frozen dataclass records. Records
 provide `to_dict()` projections containing only JSON-serialisable geometry values. The installed

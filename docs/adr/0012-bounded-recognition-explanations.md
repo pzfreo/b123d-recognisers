@@ -91,3 +91,18 @@ generated into exports.
   query it and therefore are not a stable statement about the part.
 - **Attach raw explanations to `FramedRecognitionResult`:** risks confusing local diagnostic
   coordinates with caller coordinates and broadens ADR 0011 without a paired working-shape API.
+
+## Amendment (framed bounded report, Epic 0005 E2 / issue #317)
+
+The framed route is now the ordinary aggregate boundary, so explanations may not remain raw-only.
+`build_framed_recognition_report(part, *, rotational=False)` infers one frame, creates the exact
+topology-preserving local working shape, executes the existing report orchestration once on that
+shape, and returns `FramedRecognitionReport(frame, part, report)`. Its diagnostics and result use
+the same local coordinates and topology identity as `part`. Frame inference refusal returns the
+same `RefusedPartFrame` values and performs no recognition; there is no implicit raw fallback.
+
+Version 0.5 also names the existing caller-coordinate path explicitly as
+`build_raw_recognition_report`. The ambiguous `build_recognition_report` remains an exact raw
+compatibility wrapper through 0.5 and is scheduled for removal in 0.6 alongside the corresponding
+result wrapper. Explanation coverage remains bounded; this amendment creates no new diagnostic,
+surface scan, candidate authority or serialized schema.

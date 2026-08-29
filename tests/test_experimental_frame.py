@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Contract tests for the opt-in part-relative recognition frame spike."""
+"""Contract tests for the ordinary part-relative recognition frame."""
 
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ from build123d import Axis, Box, Cylinder, Pos, RegularPolygon, Shape, Sphere, V
 import b123d_recognisers.frames as frames
 from b123d_recognisers._typing import Part
 from b123d_recognisers.frames import (
+    FramedRecognitionReport,
     FramedRecognitionResult,
     FrameGauge,
     FrameRefusalReason,
     PartFrame,
     RefusedPartFrame,
+    build_framed_recognition_report,
     build_framed_recognition_result,
     infer_part_frame,
 )
@@ -136,18 +138,48 @@ def test_framed_polygonal_stock_record_is_exactly_rigid_motion_invariant() -> No
 def test_framed_result_exposes_the_exact_shape_recognised(monkeypatch) -> None:
     part = Pos(13, -7, 5) * Box(10, 20, 30).rotate(Axis.X, 30)
     recognised_parts: list[Shape] = []
-    original = frames.build_recognition_result
+    original = frames.build_raw_recognition_result
 
     def capture(working_part: Shape, *, rotational: bool = False) -> RecognitionResult:
         recognised_parts.append(working_part)
         return original(cast(Part, working_part), rotational=rotational)
 
-    monkeypatch.setattr(frames, "build_recognition_result", capture)
+    monkeypatch.setattr(frames, "build_raw_recognition_result", capture)
 
     framed = build_framed_recognition_result(part)
 
     assert isinstance(framed, FramedRecognitionResult)
     assert framed.part is recognised_parts[0]
+
+
+def test_framed_report_owns_the_exact_shape_report_recognised(monkeypatch) -> None:
+    part = Pos(13, -7, 5) * Box(10, 20, 30).rotate(Axis.X, 30)
+    recognised_parts: list[Shape] = []
+    original = frames.build_raw_recognition_report
+
+    def capture(working_part: Shape, *, rotational: bool = False):
+        recognised_parts.append(working_part)
+        return original(cast(Part, working_part), rotational=rotational)
+
+    monkeypatch.setattr(frames, "build_raw_recognition_report", capture)
+
+    framed = build_framed_recognition_report(part)
+
+    assert isinstance(framed, FramedRecognitionReport)
+    assert framed.part is recognised_parts[0]
+    assert framed.report.result.holes == ()
+    assert framed.report.coverage.value == "bounded"
+
+
+def test_framed_report_refuses_without_running_raw_recognition(monkeypatch) -> None:
+    def forbidden(*args, **kwargs):
+        raise AssertionError("raw report must not run after frame refusal")
+
+    monkeypatch.setattr(frames, "build_raw_recognition_report", forbidden)
+
+    assert build_framed_recognition_report(Sphere(10)) == RefusedPartFrame(
+        FrameRefusalReason.NO_ANALYTIC_DIRECTION
+    )
 
 
 @pytest.mark.parametrize(

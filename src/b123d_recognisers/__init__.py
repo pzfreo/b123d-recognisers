@@ -109,18 +109,22 @@ from b123d_recognisers.explanations import (
     RecognitionOutcome,
     RecognitionReport,
     ReconciliationReason,
+    build_raw_recognition_report,
     build_recognition_report,
 )
 from b123d_recognisers.fillets import Fillet, fillet_anchor, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.frames import (
     FramedRecognition,
+    FramedRecognitionReport,
     FramedRecognitionResult,
+    FramedReport,
     FrameGauge,
     FrameInference,
     FrameRefusalReason,
     PartFrame,
     RefusedPartFrame,
+    build_framed_recognition_report,
     build_framed_recognition_result,
     infer_part_frame,
 )
@@ -165,7 +169,11 @@ from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
 )
-from b123d_recognisers.result import RecognitionResult, build_recognition_result
+from b123d_recognisers.result import (
+    RecognitionResult,
+    build_raw_recognition_result,
+    build_recognition_result,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -223,7 +231,9 @@ __all__ = [
     "FrameInference",
     "FrameRefusalReason",
     "FramedRecognition",
+    "FramedRecognitionReport",
     "FramedRecognitionResult",
+    "FramedReport",
     "DispositionExplanation",
     "ExplanationCoverage",
     "FamilyEvaluation",
@@ -311,8 +321,11 @@ __all__ = [
     "recognise_slot_patterns",
     "recognise_slots",
     "recognise_turned_steps",
+    "build_raw_recognition_result",
     "build_recognition_result",
+    "build_framed_recognition_report",
     "build_framed_recognition_result",
+    "build_raw_recognition_report",
     "build_recognition_report",
     "full_cylinders",
     "infer_part_frame",
