@@ -254,11 +254,6 @@ def _recognise_blended_rectangular_pads_one(
         fact = face_surfaces.fact(top_face)
         if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
             continue
-        top_use = face_surfaces.use(top_face, material_side=True)
-        if isinstance(top_use, SurfaceUseRefusal) or top_use.material_side is None:
-            continue
-        if top_use.material_side.outward[2] < AXIS_ALIGNED_COS:
-            continue
         top_bounds = top_face.bounding_box()
         z1 = round(top_bounds.max.Z, 3)
         if bb.min.Z + tol >= z1:
@@ -306,6 +301,12 @@ def _recognise_blended_rectangular_pads_one(
             for actual, expected in zip(role_cross_spans, expected_cross_spans, strict=True)
         ):
             continue  # the unchanged sharp path owns uninterrupted wall roles
+
+        top_use = face_surfaces.use(top_face, material_side=True)
+        if isinstance(top_use, SurfaceUseRefusal) or top_use.material_side is None:
+            continue
+        if top_use.material_side.outward[2] < AXIS_ALIGNED_COS:
+            continue
 
         if eligible_chains is None:
             eligible_chains = []
