@@ -84,3 +84,19 @@ The sealed MFTRCAD holdout is not required for this architecture decision and re
   working-shape field is a pre-1.0 minor-version compatibility event.
 - The topology-preserving placement route is release quality as an explicit opt-in API.
 - Making it the default recogniser path remains deferred to a separate compatibility decision.
+
+## Amendment (principal-axis Polygonal Stock, issue #311)
+
+An `ORTHOGONAL` frame may map a regular prism's physical extrusion direction to any local principal
+axis. Frame inference must not reorder that valid representative for one family: doing so would
+silently change every other local record. Instead, whole-part `PolygonalStock` recognition accepts
+X, Y or Z in the supplied recognition frame and uses its existing `axis` field to disambiguate
+`base` and `top`; its centre, flat directions and flat centres remain full local 3-D values.
+
+This is an additive pre-1.0 record-value expansion, not a schema replacement. Existing direct
+Z-axis records remain byte-identical. Attached `PolygonalBoss` stays Z-only because its support and
+material-side semantics are a separate contract without corresponding evidence. The stock family
+still issues exactly one Candidate owning the complete eight-face boundary of one valid solid.
+Generic caller-space axes remain unsupported by the raw route and become principal only through the
+existing explicit framed boundary. The framed result continues to pair the exact working shape,
+local records and frame; no consumer may infer or substitute a different representative.

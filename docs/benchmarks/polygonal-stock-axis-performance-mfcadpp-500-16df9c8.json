@@ -1,0 +1,5029 @@
+{
+  "all_pre_existing_outputs_equal": true,
+  "disabled": {
+    "maximum_seconds": 1.4958159439847805,
+    "median_seconds": 0.4663789800251834,
+    "total_seconds": 246.39915505750105
+  },
+  "enabled": {
+    "maximum_seconds": 1.4667893709847704,
+    "median_seconds": 0.4560770665120799,
+    "total_seconds": 243.41406810015906
+  },
+  "enabled_to_disabled_total_ratio": 0.9878851574931522,
+  "environment": {
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "format": "b123d-recognisers-polygonal-stock-axis-paired-benchmark",
+  "format_version": 1,
+  "implementation_commit": "16df9c8ce82536515f9e88aad9cb4cf69c9dcea7",
+  "legacy_z_stock": 0,
+  "models": [
+    {
+      "disabled_seconds": 1.4958159439847805,
+      "enabled_first": false,
+      "enabled_seconds": 1.4028694499866106,
+      "id": "1000.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36732778599252924,
+      "enabled_first": true,
+      "enabled_seconds": 0.31596651900326833,
+      "id": "10000.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5047587740118615,
+      "enabled_first": false,
+      "enabled_seconds": 0.4421874650288373,
+      "id": "10007.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31716012296965346,
+      "enabled_first": true,
+      "enabled_seconds": 0.2881040890351869,
+      "id": "10015.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2704656230052933,
+      "enabled_first": false,
+      "enabled_seconds": 0.23614913399796933,
+      "id": "1002.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.0139138090307824,
+      "enabled_first": true,
+      "enabled_seconds": 1.173763555008918,
+      "id": "10020.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.42405543400673196,
+      "enabled_first": false,
+      "enabled_seconds": 0.4381520620081574,
+      "id": "10027.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31011997803580016,
+      "enabled_first": true,
+      "enabled_seconds": 0.35678224900038913,
+      "id": "10033.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.933361366041936,
+      "enabled_first": false,
+      "enabled_seconds": 0.9030245220055804,
+      "id": "10038.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.45174569700611755,
+      "enabled_first": true,
+      "enabled_seconds": 0.4723128500045277,
+      "id": "1004.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.33129259798442945,
+      "enabled_first": false,
+      "enabled_seconds": 0.2687002479797229,
+      "id": "10044.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46945395303191617,
+      "enabled_first": true,
+      "enabled_seconds": 0.5393260890268721,
+      "id": "10046.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5872081909910776,
+      "enabled_first": false,
+      "enabled_seconds": 0.45324799604713917,
+      "id": "10047.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5423340449924581,
+      "enabled_first": true,
+      "enabled_seconds": 0.48350436601322144,
+      "id": "10049.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.503664220974315,
+      "enabled_first": false,
+      "enabled_seconds": 0.3994696000008844,
+      "id": "10060.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6121850230265409,
+      "enabled_first": true,
+      "enabled_seconds": 0.621897695993539,
+      "id": "10063.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37402971304254606,
+      "enabled_first": false,
+      "enabled_seconds": 0.3309776359819807,
+      "id": "1007.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.9144353520241566,
+      "enabled_first": true,
+      "enabled_seconds": 0.7404451820184477,
+      "id": "10070.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4483923509833403,
+      "enabled_first": false,
+      "enabled_seconds": 0.44432388397399336,
+      "id": "10077.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2405228290008381,
+      "enabled_first": true,
+      "enabled_seconds": 0.28117321903118864,
+      "id": "1008.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4664247530163266,
+      "enabled_first": false,
+      "enabled_seconds": 0.4178941569989547,
+      "id": "10092.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5658366419957019,
+      "enabled_first": true,
+      "enabled_seconds": 0.43915369402384385,
+      "id": "10096.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44328068901086226,
+      "enabled_first": false,
+      "enabled_seconds": 0.37010109098628163,
+      "id": "10098.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3772641390096396,
+      "enabled_first": true,
+      "enabled_seconds": 0.34923624398652464,
+      "id": "10101.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6885618990054354,
+      "enabled_first": false,
+      "enabled_seconds": 0.6420548599562608,
+      "id": "10103.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31081491702934727,
+      "enabled_first": true,
+      "enabled_seconds": 0.32086715201148763,
+      "id": "10116.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3741766469902359,
+      "enabled_first": false,
+      "enabled_seconds": 0.31546077301027253,
+      "id": "10118.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.352790235017892,
+      "enabled_first": true,
+      "enabled_seconds": 0.3283003990072757,
+      "id": "10119.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.436047415016219,
+      "enabled_first": false,
+      "enabled_seconds": 0.4727766989963129,
+      "id": "10127.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5308363499934785,
+      "enabled_first": true,
+      "enabled_seconds": 0.5523947280016728,
+      "id": "1013.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2813757940311916,
+      "enabled_first": false,
+      "enabled_seconds": 0.2841769339866005,
+      "id": "10131.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.211578720016405,
+      "enabled_first": true,
+      "enabled_seconds": 0.25887962098931894,
+      "id": "10137.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.40939133398933336,
+      "enabled_first": false,
+      "enabled_seconds": 0.42857171600917354,
+      "id": "10138.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5155021980172023,
+      "enabled_first": true,
+      "enabled_seconds": 0.5155556240351871,
+      "id": "10146.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34241067396942526,
+      "enabled_first": false,
+      "enabled_seconds": 0.35177357599604875,
+      "id": "10155.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5642307059606537,
+      "enabled_first": true,
+      "enabled_seconds": 0.47000193200074136,
+      "id": "10156.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4245225469931029,
+      "enabled_first": false,
+      "enabled_seconds": 0.43926988198654726,
+      "id": "10163.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6271414349903353,
+      "enabled_first": true,
+      "enabled_seconds": 0.6303773639956489,
+      "id": "10167.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.29021015198668465,
+      "enabled_first": false,
+      "enabled_seconds": 0.24069168395362794,
+      "id": "1017.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3147940870258026,
+      "enabled_first": true,
+      "enabled_seconds": 0.33565071801422164,
+      "id": "10170.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5343429920030758,
+      "enabled_first": false,
+      "enabled_seconds": 0.4808612269698642,
+      "id": "10190.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.42880487901857123,
+      "enabled_first": true,
+      "enabled_seconds": 0.3757547080167569,
+      "id": "10191.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4250774399843067,
+      "enabled_first": false,
+      "enabled_seconds": 0.3732202699757181,
+      "id": "10203.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5863062950083986,
+      "enabled_first": true,
+      "enabled_seconds": 0.6406385220470838,
+      "id": "10212.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3250175580033101,
+      "enabled_first": false,
+      "enabled_seconds": 0.40342735598096624,
+      "id": "10224.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3183392319479026,
+      "enabled_first": true,
+      "enabled_seconds": 0.3290726179839112,
+      "id": "10226.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.0412453779717907,
+      "enabled_first": false,
+      "enabled_seconds": 1.0071692260098644,
+      "id": "10228.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5019648870220408,
+      "enabled_first": true,
+      "enabled_seconds": 0.522757553961128,
+      "id": "10229.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7427058590110391,
+      "enabled_first": false,
+      "enabled_seconds": 0.7525263460120186,
+      "id": "10240.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5579109709942713,
+      "enabled_first": true,
+      "enabled_seconds": 0.5756363259861246,
+      "id": "10245.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5447816119994968,
+      "enabled_first": false,
+      "enabled_seconds": 0.5210906949942,
+      "id": "10247.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36579456698382273,
+      "enabled_first": true,
+      "enabled_seconds": 0.3247900719870813,
+      "id": "10252.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6365657660062425,
+      "enabled_first": false,
+      "enabled_seconds": 0.6291584999999031,
+      "id": "10255.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.9868157150340267,
+      "enabled_first": true,
+      "enabled_seconds": 1.0988058139919303,
+      "id": "10258.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.466737053997349,
+      "enabled_first": false,
+      "enabled_seconds": 0.43787070096004754,
+      "id": "10260.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5798152870265767,
+      "enabled_first": true,
+      "enabled_seconds": 0.5905874040327035,
+      "id": "10261.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3136392890010029,
+      "enabled_first": false,
+      "enabled_seconds": 0.3230510439607315,
+      "id": "10269.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3047583529842086,
+      "enabled_first": true,
+      "enabled_seconds": 0.3283072129706852,
+      "id": "10278.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6659799769986421,
+      "enabled_first": false,
+      "enabled_seconds": 0.5955052339704707,
+      "id": "1028.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.28112541895825416,
+      "enabled_first": true,
+      "enabled_seconds": 0.32389620097819716,
+      "id": "10285.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6832447089836933,
+      "enabled_first": false,
+      "enabled_seconds": 0.5655022540013306,
+      "id": "10286.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5465117240091786,
+      "enabled_first": true,
+      "enabled_seconds": 0.569593250984326,
+      "id": "10293.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43361545202787966,
+      "enabled_first": false,
+      "enabled_seconds": 0.4785754220210947,
+      "id": "10299.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41000033100135624,
+      "enabled_first": true,
+      "enabled_seconds": 0.5550055040512234,
+      "id": "10308.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.61634863197105,
+      "enabled_first": false,
+      "enabled_seconds": 0.5904641100205481,
+      "id": "10314.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.369401192991063,
+      "enabled_first": true,
+      "enabled_seconds": 0.4245514060021378,
+      "id": "10317.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43474863102892414,
+      "enabled_first": false,
+      "enabled_seconds": 0.398928974987939,
+      "id": "10318.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36827808094676584,
+      "enabled_first": true,
+      "enabled_seconds": 0.3557506880024448,
+      "id": "10327.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5749486000277102,
+      "enabled_first": false,
+      "enabled_seconds": 0.5225201199646108,
+      "id": "10340.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4788974070106633,
+      "enabled_first": true,
+      "enabled_seconds": 0.4188087430084124,
+      "id": "10344.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.45065018901368603,
+      "enabled_first": false,
+      "enabled_seconds": 0.41893137199804187,
+      "id": "10347.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.23458237299928442,
+      "enabled_first": true,
+      "enabled_seconds": 0.24600682297023013,
+      "id": "10348.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5186688989633694,
+      "enabled_first": false,
+      "enabled_seconds": 0.4727238869527355,
+      "id": "10350.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.21618561795912683,
+      "enabled_first": true,
+      "enabled_seconds": 0.19277717598015442,
+      "id": "10354.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31759133096784353,
+      "enabled_first": false,
+      "enabled_seconds": 0.34007091098465025,
+      "id": "10356.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.28156925895018503,
+      "enabled_first": true,
+      "enabled_seconds": 0.27417759597301483,
+      "id": "10363.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3250130969681777,
+      "enabled_first": false,
+      "enabled_seconds": 0.34606538503430784,
+      "id": "10364.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5329156029620208,
+      "enabled_first": true,
+      "enabled_seconds": 0.43653464899398386,
+      "id": "1037.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.47698227397631854,
+      "enabled_first": false,
+      "enabled_seconds": 0.389435590011999,
+      "id": "10371.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46740278601646423,
+      "enabled_first": true,
+      "enabled_seconds": 0.4921351720113307,
+      "id": "10376.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7236398810055107,
+      "enabled_first": false,
+      "enabled_seconds": 0.8185946060111746,
+      "id": "10387.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3354172569816001,
+      "enabled_first": true,
+      "enabled_seconds": 0.3239364019827917,
+      "id": "10395.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.502646847977303,
+      "enabled_first": false,
+      "enabled_seconds": 0.4411570680094883,
+      "id": "10400.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.48137442994629964,
+      "enabled_first": true,
+      "enabled_seconds": 0.475464434013702,
+      "id": "10407.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5251085289637558,
+      "enabled_first": false,
+      "enabled_seconds": 0.5055456300033256,
+      "id": "10409.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3848281860118732,
+      "enabled_first": true,
+      "enabled_seconds": 0.391961621993687,
+      "id": "10410.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5392026510089636,
+      "enabled_first": false,
+      "enabled_seconds": 0.5286135979695246,
+      "id": "10414.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5111463090288453,
+      "enabled_first": true,
+      "enabled_seconds": 0.5530291019822471,
+      "id": "10428.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.729786230949685,
+      "enabled_first": false,
+      "enabled_seconds": 0.711922523973044,
+      "id": "10431.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6258278469904326,
+      "enabled_first": true,
+      "enabled_seconds": 0.603540048992727,
+      "id": "10433.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.39250756904948503,
+      "enabled_first": false,
+      "enabled_seconds": 0.34183218801626936,
+      "id": "10437.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4235665330197662,
+      "enabled_first": true,
+      "enabled_seconds": 0.42509881098521873,
+      "id": "10438.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5233849009964615,
+      "enabled_first": false,
+      "enabled_seconds": 0.4948128790128976,
+      "id": "10461.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2733048450318165,
+      "enabled_first": true,
+      "enabled_seconds": 0.2848750450066291,
+      "id": "10463.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46633320703404024,
+      "enabled_first": false,
+      "enabled_seconds": 0.5112523669959046,
+      "id": "10465.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6387955769896507,
+      "enabled_first": true,
+      "enabled_seconds": 0.5840068829711527,
+      "id": "10469.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5154718959820457,
+      "enabled_first": false,
+      "enabled_seconds": 0.46600350900553167,
+      "id": "10484.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3336547890212387,
+      "enabled_first": true,
+      "enabled_seconds": 0.2680213100393303,
+      "id": "10490.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2877992239664309,
+      "enabled_first": false,
+      "enabled_seconds": 0.24762354500126094,
+      "id": "10491.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31185288401320577,
+      "enabled_first": true,
+      "enabled_seconds": 0.29219698102679104,
+      "id": "10492.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5193680860102177,
+      "enabled_first": false,
+      "enabled_seconds": 0.4858199459849857,
+      "id": "10499.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.20135002699680626,
+      "enabled_first": true,
+      "enabled_seconds": 0.22070264298235998,
+      "id": "10505.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44006285700015724,
+      "enabled_first": false,
+      "enabled_seconds": 0.42240906599909067,
+      "id": "10513.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5809301100089215,
+      "enabled_first": true,
+      "enabled_seconds": 0.544242303003557,
+      "id": "10518.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.39887649402953684,
+      "enabled_first": false,
+      "enabled_seconds": 0.43284655100433156,
+      "id": "10520.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6968691360088997,
+      "enabled_first": true,
+      "enabled_seconds": 0.6326786329736933,
+      "id": "10525.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5754710979526863,
+      "enabled_first": false,
+      "enabled_seconds": 0.51035390002653,
+      "id": "10526.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3213297359761782,
+      "enabled_first": true,
+      "enabled_seconds": 0.30689421098213643,
+      "id": "10527.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5393302370212041,
+      "enabled_first": false,
+      "enabled_seconds": 0.6323862699791789,
+      "id": "10531.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.23421170603251085,
+      "enabled_first": true,
+      "enabled_seconds": 0.30358783301198855,
+      "id": "10534.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.552720791019965,
+      "enabled_first": false,
+      "enabled_seconds": 0.532275651989039,
+      "id": "10536.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5051434600027278,
+      "enabled_first": true,
+      "enabled_seconds": 0.48303897195728496,
+      "id": "10537.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7055777249624953,
+      "enabled_first": false,
+      "enabled_seconds": 0.8209638179978356,
+      "id": "10545.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5563514080131426,
+      "enabled_first": true,
+      "enabled_seconds": 0.565628491982352,
+      "id": "10550.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5852726679877378,
+      "enabled_first": false,
+      "enabled_seconds": 0.4948043719632551,
+      "id": "10558.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3492509829811752,
+      "enabled_first": true,
+      "enabled_seconds": 0.2828254629857838,
+      "id": "10568.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.48648303700610995,
+      "enabled_first": false,
+      "enabled_seconds": 0.47783554397756234,
+      "id": "10575.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7165855020284653,
+      "enabled_first": true,
+      "enabled_seconds": 0.6739369360147975,
+      "id": "10583.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34369007201166824,
+      "enabled_first": false,
+      "enabled_seconds": 0.27760925999609753,
+      "id": "10594.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8057074239477515,
+      "enabled_first": true,
+      "enabled_seconds": 0.844027291983366,
+      "id": "10600.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5251559019670822,
+      "enabled_first": false,
+      "enabled_seconds": 0.45639083202695474,
+      "id": "10601.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.32494975498411804,
+      "enabled_first": true,
+      "enabled_seconds": 0.35447608603863046,
+      "id": "10602.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7032930080313236,
+      "enabled_first": false,
+      "enabled_seconds": 0.6825366789707914,
+      "id": "1061.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2506746150320396,
+      "enabled_first": true,
+      "enabled_seconds": 0.2635175929754041,
+      "id": "10614.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46315379603765905,
+      "enabled_first": false,
+      "enabled_seconds": 0.6305632959702052,
+      "id": "1062.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3531817910261452,
+      "enabled_first": true,
+      "enabled_seconds": 0.34123570000519976,
+      "id": "10627.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31797182303853333,
+      "enabled_first": false,
+      "enabled_seconds": 0.2913616270525381,
+      "id": "10633.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4089652280090377,
+      "enabled_first": true,
+      "enabled_seconds": 0.40844171098433435,
+      "id": "10643.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4792204269906506,
+      "enabled_first": false,
+      "enabled_seconds": 0.412656169035472,
+      "id": "10649.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7360547549906187,
+      "enabled_first": true,
+      "enabled_seconds": 0.7772405039868318,
+      "id": "10650.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.388062062964309,
+      "enabled_first": false,
+      "enabled_seconds": 0.36402159405406564,
+      "id": "10652.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7074040399747901,
+      "enabled_first": true,
+      "enabled_seconds": 0.6093101329752244,
+      "id": "10653.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4059723319951445,
+      "enabled_first": false,
+      "enabled_seconds": 0.42606020101811737,
+      "id": "10656.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6875770009937696,
+      "enabled_first": true,
+      "enabled_seconds": 0.6835977529990487,
+      "id": "1067.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4938423449639231,
+      "enabled_first": false,
+      "enabled_seconds": 0.4972612090059556,
+      "id": "10673.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6907865360262804,
+      "enabled_first": true,
+      "enabled_seconds": 0.7155971479951404,
+      "id": "10683.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5833221839857288,
+      "enabled_first": false,
+      "enabled_seconds": 0.5121098009985872,
+      "id": "10684.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4021772569976747,
+      "enabled_first": true,
+      "enabled_seconds": 0.4474651860073209,
+      "id": "1069.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5320391900022514,
+      "enabled_first": false,
+      "enabled_seconds": 0.46139833302004263,
+      "id": "10710.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4744013150339015,
+      "enabled_first": true,
+      "enabled_seconds": 0.4068463870207779,
+      "id": "10712.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3499545240192674,
+      "enabled_first": false,
+      "enabled_seconds": 0.3080147359869443,
+      "id": "10715.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.582509065978229,
+      "enabled_first": true,
+      "enabled_seconds": 0.6036706289742142,
+      "id": "1072.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3266749760368839,
+      "enabled_first": false,
+      "enabled_seconds": 0.329600865021348,
+      "id": "10722.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.49353009898914024,
+      "enabled_first": true,
+      "enabled_seconds": 0.4084217569907196,
+      "id": "10727.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4359757120255381,
+      "enabled_first": false,
+      "enabled_seconds": 0.4408393669873476,
+      "id": "10733.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3325925979879685,
+      "enabled_first": true,
+      "enabled_seconds": 0.45697470201412216,
+      "id": "10736.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43926776497391984,
+      "enabled_first": false,
+      "enabled_seconds": 0.5357500889804214,
+      "id": "10737.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37927970296004787,
+      "enabled_first": true,
+      "enabled_seconds": 0.41725436301203445,
+      "id": "10743.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4750698239658959,
+      "enabled_first": false,
+      "enabled_seconds": 0.45662543503567576,
+      "id": "10746.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7924506359850056,
+      "enabled_first": true,
+      "enabled_seconds": 0.7481128810322843,
+      "id": "10753.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6605835430091247,
+      "enabled_first": false,
+      "enabled_seconds": 0.5396122650126927,
+      "id": "10757.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.39141123299486935,
+      "enabled_first": true,
+      "enabled_seconds": 0.44654442300088704,
+      "id": "10761.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7809467879706062,
+      "enabled_first": false,
+      "enabled_seconds": 0.8805423289886676,
+      "id": "10770.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.0320851469878107,
+      "enabled_first": true,
+      "enabled_seconds": 0.9326752979541197,
+      "id": "10776.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2781925610033795,
+      "enabled_first": false,
+      "enabled_seconds": 0.2727018150035292,
+      "id": "10778.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43516954296501353,
+      "enabled_first": true,
+      "enabled_seconds": 0.41047830996103585,
+      "id": "10786.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6306237640092149,
+      "enabled_first": false,
+      "enabled_seconds": 0.5653128260164522,
+      "id": "10794.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.313659357954748,
+      "enabled_first": true,
+      "enabled_seconds": 0.3202545160311274,
+      "id": "10805.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5483408410218544,
+      "enabled_first": false,
+      "enabled_seconds": 0.5189190909732133,
+      "id": "10810.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.20324289001291618,
+      "enabled_first": true,
+      "enabled_seconds": 0.2285411080229096,
+      "id": "10812.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.23275112098781392,
+      "enabled_first": false,
+      "enabled_seconds": 0.23089393897680566,
+      "id": "10834.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6092746159993112,
+      "enabled_first": true,
+      "enabled_seconds": 0.6413119109929539,
+      "id": "10841.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6531327820266597,
+      "enabled_first": false,
+      "enabled_seconds": 0.6182867639581673,
+      "id": "10847.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5856025039684027,
+      "enabled_first": true,
+      "enabled_seconds": 0.6985975439893082,
+      "id": "10849.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5154019769979641,
+      "enabled_first": false,
+      "enabled_seconds": 0.5733308999915607,
+      "id": "10851.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.182204045006074,
+      "enabled_first": true,
+      "enabled_seconds": 0.1962895659962669,
+      "id": "10877.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.1546231000102125,
+      "enabled_first": false,
+      "enabled_seconds": 0.1482551529770717,
+      "id": "1088.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5722611590172164,
+      "enabled_first": true,
+      "enabled_seconds": 0.5661199259920977,
+      "id": "10881.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4425186360022053,
+      "enabled_first": false,
+      "enabled_seconds": 0.48139825102407485,
+      "id": "10885.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6226813030079938,
+      "enabled_first": true,
+      "enabled_seconds": 0.693375097005628,
+      "id": "10893.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3180456390255131,
+      "enabled_first": false,
+      "enabled_seconds": 0.3640791840152815,
+      "id": "10895.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3448218710254878,
+      "enabled_first": true,
+      "enabled_seconds": 0.3857606850215234,
+      "id": "10897.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6956247040070593,
+      "enabled_first": false,
+      "enabled_seconds": 0.6032262949738652,
+      "id": "10902.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8081562530132942,
+      "enabled_first": true,
+      "enabled_seconds": 0.791620429023169,
+      "id": "10908.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5617440239875577,
+      "enabled_first": false,
+      "enabled_seconds": 0.6056873659836128,
+      "id": "10914.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4564171090023592,
+      "enabled_first": true,
+      "enabled_seconds": 0.45287502196151763,
+      "id": "10923.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5807485870318487,
+      "enabled_first": false,
+      "enabled_seconds": 0.6770955440006219,
+      "id": "10929.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44169528200291097,
+      "enabled_first": true,
+      "enabled_seconds": 0.4271032589604147,
+      "id": "10943.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7798329779761843,
+      "enabled_first": false,
+      "enabled_seconds": 0.6961274089990184,
+      "id": "10946.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5134732379810885,
+      "enabled_first": true,
+      "enabled_seconds": 0.5535065980511717,
+      "id": "10948.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5497758300043643,
+      "enabled_first": false,
+      "enabled_seconds": 0.5609254380105995,
+      "id": "1095.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.0616789640043862,
+      "enabled_first": true,
+      "enabled_seconds": 1.110566355055198,
+      "id": "10955.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6346445019589737,
+      "enabled_first": false,
+      "enabled_seconds": 0.7107823260012083,
+      "id": "10964.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6493810570100322,
+      "enabled_first": true,
+      "enabled_seconds": 0.693780105037149,
+      "id": "10966.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8605767599656247,
+      "enabled_first": false,
+      "enabled_seconds": 0.8767812649603002,
+      "id": "10968.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5187905980274081,
+      "enabled_first": true,
+      "enabled_seconds": 0.5301774659892544,
+      "id": "10986.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34817397402366623,
+      "enabled_first": false,
+      "enabled_seconds": 0.3590473380172625,
+      "id": "10987.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2533036600216292,
+      "enabled_first": true,
+      "enabled_seconds": 0.2609739420004189,
+      "id": "10988.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4281186770531349,
+      "enabled_first": false,
+      "enabled_seconds": 0.3696188919711858,
+      "id": "10989.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2148479039897211,
+      "enabled_first": true,
+      "enabled_seconds": 0.19257012504385784,
+      "id": "10990.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2800838460098021,
+      "enabled_first": false,
+      "enabled_seconds": 0.2854893520125188,
+      "id": "10994.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3559088080073707,
+      "enabled_first": true,
+      "enabled_seconds": 0.349288486992009,
+      "id": "10998.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4745003909920342,
+      "enabled_first": false,
+      "enabled_seconds": 0.46099159005098045,
+      "id": "11004.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4782308210269548,
+      "enabled_first": true,
+      "enabled_seconds": 0.4557633009972051,
+      "id": "11014.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.733199134003371,
+      "enabled_first": false,
+      "enabled_seconds": 0.755847307969816,
+      "id": "11029.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4065297399647534,
+      "enabled_first": true,
+      "enabled_seconds": 0.47557013999903575,
+      "id": "11035.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44758343196008354,
+      "enabled_first": false,
+      "enabled_seconds": 0.4244940170319751,
+      "id": "11037.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7562674430082552,
+      "enabled_first": true,
+      "enabled_seconds": 0.834343949041795,
+      "id": "11038.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5049546580412425,
+      "enabled_first": false,
+      "enabled_seconds": 0.4944739469792694,
+      "id": "11041.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.717667321965564,
+      "enabled_first": true,
+      "enabled_seconds": 0.6971912459703162,
+      "id": "11051.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4823741410509683,
+      "enabled_first": false,
+      "enabled_seconds": 0.4954592799767852,
+      "id": "11064.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3861991429585032,
+      "enabled_first": true,
+      "enabled_seconds": 0.4187561080325395,
+      "id": "11073.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.506851040001493,
+      "enabled_first": false,
+      "enabled_seconds": 0.4104250849923119,
+      "id": "11074.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4322294169687666,
+      "enabled_first": true,
+      "enabled_seconds": 0.36261606600601226,
+      "id": "11078.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4430833910009824,
+      "enabled_first": false,
+      "enabled_seconds": 0.5081576840020716,
+      "id": "11082.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7453073589713313,
+      "enabled_first": true,
+      "enabled_seconds": 0.8488385880482383,
+      "id": "11092.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5237927859998308,
+      "enabled_first": false,
+      "enabled_seconds": 0.42602632398484275,
+      "id": "11097.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.21868845500284806,
+      "enabled_first": true,
+      "enabled_seconds": 0.22877897904254496,
+      "id": "11098.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6488741820212454,
+      "enabled_first": false,
+      "enabled_seconds": 0.5410621810005978,
+      "id": "11108.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.547590846021194,
+      "enabled_first": true,
+      "enabled_seconds": 0.45806655898923054,
+      "id": "11110.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6788054820499383,
+      "enabled_first": false,
+      "enabled_seconds": 0.5641534859896637,
+      "id": "11112.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5435254740295932,
+      "enabled_first": true,
+      "enabled_seconds": 0.5675864900113083,
+      "id": "11117.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7279669839772396,
+      "enabled_first": false,
+      "enabled_seconds": 0.7951266469899565,
+      "id": "11120.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4548480529920198,
+      "enabled_first": true,
+      "enabled_seconds": 0.4906298909918405,
+      "id": "11124.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.29488434601807967,
+      "enabled_first": false,
+      "enabled_seconds": 0.35264923196518794,
+      "id": "1113.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5778066519997083,
+      "enabled_first": true,
+      "enabled_seconds": 0.6537400070228614,
+      "id": "11131.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.26705979800317436,
+      "enabled_first": false,
+      "enabled_seconds": 0.2943033970077522,
+      "id": "11133.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44854840502375737,
+      "enabled_first": true,
+      "enabled_seconds": 0.45749362104106694,
+      "id": "11134.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36875716398935765,
+      "enabled_first": false,
+      "enabled_seconds": 0.4309569039614871,
+      "id": "11135.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41802554699825123,
+      "enabled_first": true,
+      "enabled_seconds": 0.45855955098522827,
+      "id": "11145.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.47788439103169367,
+      "enabled_first": false,
+      "enabled_seconds": 0.5240036870236509,
+      "id": "11149.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6442337030312046,
+      "enabled_first": true,
+      "enabled_seconds": 0.7772350360173732,
+      "id": "1116.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4862283819820732,
+      "enabled_first": false,
+      "enabled_seconds": 0.5702797429985367,
+      "id": "11161.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5357191420043819,
+      "enabled_first": true,
+      "enabled_seconds": 0.4894312969991006,
+      "id": "11163.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4880841629928909,
+      "enabled_first": false,
+      "enabled_seconds": 0.47351950901793316,
+      "id": "1118.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6423950280295685,
+      "enabled_first": true,
+      "enabled_seconds": 0.5677155930316076,
+      "id": "11183.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5410346449934877,
+      "enabled_first": false,
+      "enabled_seconds": 0.40229750802973285,
+      "id": "11186.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4652282620081678,
+      "enabled_first": true,
+      "enabled_seconds": 0.3959361899760552,
+      "id": "11188.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6380526979919523,
+      "enabled_first": false,
+      "enabled_seconds": 0.5220514390384778,
+      "id": "11189.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3582263350253925,
+      "enabled_first": true,
+      "enabled_seconds": 0.4234482110477984,
+      "id": "1119.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.452587510982994,
+      "enabled_first": false,
+      "enabled_seconds": 0.45827499200822785,
+      "id": "11190.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.48761725798249245,
+      "enabled_first": true,
+      "enabled_seconds": 0.394967378990259,
+      "id": "11201.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46673944703070447,
+      "enabled_first": false,
+      "enabled_seconds": 0.49796579097164795,
+      "id": "11203.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37377005600137636,
+      "enabled_first": true,
+      "enabled_seconds": 0.3658180630300194,
+      "id": "11205.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4026471840334125,
+      "enabled_first": false,
+      "enabled_seconds": 0.3852338750148192,
+      "id": "11211.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4461814889800735,
+      "enabled_first": true,
+      "enabled_seconds": 0.46312899701297283,
+      "id": "11220.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44279125600587577,
+      "enabled_first": false,
+      "enabled_seconds": 0.48330303898546845,
+      "id": "11223.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.27876238198950887,
+      "enabled_first": true,
+      "enabled_seconds": 0.30493023904273286,
+      "id": "11225.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5016641549882479,
+      "enabled_first": false,
+      "enabled_seconds": 0.43683474499266595,
+      "id": "11229.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.20391738298349082,
+      "enabled_first": true,
+      "enabled_seconds": 0.20560117397690192,
+      "id": "1123.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8960630060173571,
+      "enabled_first": false,
+      "enabled_seconds": 0.8788435879978351,
+      "id": "11241.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5277163679711521,
+      "enabled_first": true,
+      "enabled_seconds": 0.5030423119897023,
+      "id": "11242.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.26423362002242357,
+      "enabled_first": false,
+      "enabled_seconds": 0.26096492900978774,
+      "id": "1125.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41770687000826,
+      "enabled_first": true,
+      "enabled_seconds": 0.41689921502256766,
+      "id": "11251.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7416623419849202,
+      "enabled_first": false,
+      "enabled_seconds": 0.6140498020104133,
+      "id": "11252.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3953930029529147,
+      "enabled_first": true,
+      "enabled_seconds": 0.41329408501042053,
+      "id": "11253.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3851158620091155,
+      "enabled_first": false,
+      "enabled_seconds": 0.36040410498389974,
+      "id": "11257.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3948240450117737,
+      "enabled_first": true,
+      "enabled_seconds": 0.42667053698096424,
+      "id": "11262.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4213212199974805,
+      "enabled_first": false,
+      "enabled_seconds": 0.44469715299783275,
+      "id": "11268.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3175039329798892,
+      "enabled_first": true,
+      "enabled_seconds": 0.3148523449781351,
+      "id": "11272.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5242116629960947,
+      "enabled_first": false,
+      "enabled_seconds": 0.5220054190140218,
+      "id": "11281.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3128417620318942,
+      "enabled_first": true,
+      "enabled_seconds": 0.31147553998744115,
+      "id": "11286.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8476490440079942,
+      "enabled_first": false,
+      "enabled_seconds": 0.7793537669931538,
+      "id": "1129.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.48852406500373036,
+      "enabled_first": true,
+      "enabled_seconds": 0.4906157029909082,
+      "id": "11295.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6841823919676244,
+      "enabled_first": false,
+      "enabled_seconds": 0.5658035230007954,
+      "id": "11302.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7216574550257064,
+      "enabled_first": true,
+      "enabled_seconds": 0.7629935439908877,
+      "id": "11314.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5242943390039727,
+      "enabled_first": false,
+      "enabled_seconds": 0.47708215803140774,
+      "id": "11318.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2676079709781334,
+      "enabled_first": true,
+      "enabled_seconds": 0.2808295669965446,
+      "id": "11319.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37408619397319853,
+      "enabled_first": false,
+      "enabled_seconds": 0.3492400639806874,
+      "id": "11323.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2946417460334487,
+      "enabled_first": true,
+      "enabled_seconds": 0.3537691049859859,
+      "id": "11332.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6186301900306717,
+      "enabled_first": false,
+      "enabled_seconds": 0.6276027879794128,
+      "id": "1134.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.28074226900935173,
+      "enabled_first": true,
+      "enabled_seconds": 0.2549097070004791,
+      "id": "11345.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.49287529301363975,
+      "enabled_first": false,
+      "enabled_seconds": 0.4640447699930519,
+      "id": "11346.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2948480199556798,
+      "enabled_first": true,
+      "enabled_seconds": 0.30543547100387514,
+      "id": "11354.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.20314721000613645,
+      "enabled_first": false,
+      "enabled_seconds": 0.22424631798639894,
+      "id": "11357.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5051394359907135,
+      "enabled_first": true,
+      "enabled_seconds": 0.5249836799921468,
+      "id": "1137.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5787319939699955,
+      "enabled_first": false,
+      "enabled_seconds": 0.5384625939768739,
+      "id": "11374.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5468174869893119,
+      "enabled_first": true,
+      "enabled_seconds": 0.5064817249658518,
+      "id": "11377.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4958551379968412,
+      "enabled_first": false,
+      "enabled_seconds": 0.4598937680129893,
+      "id": "1139.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2136088740080595,
+      "enabled_first": true,
+      "enabled_seconds": 0.21224176697432995,
+      "id": "11398.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.503731464035809,
+      "enabled_first": false,
+      "enabled_seconds": 0.4535290759522468,
+      "id": "11408.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.33580775698646903,
+      "enabled_first": true,
+      "enabled_seconds": 0.371300833998248,
+      "id": "11413.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.29415995202725753,
+      "enabled_first": false,
+      "enabled_seconds": 0.32285024801967666,
+      "id": "11415.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3066870800103061,
+      "enabled_first": true,
+      "enabled_seconds": 0.33403186802752316,
+      "id": "11424.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.40105442702770233,
+      "enabled_first": false,
+      "enabled_seconds": 0.4196012389729731,
+      "id": "11428.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37493875104701146,
+      "enabled_first": true,
+      "enabled_seconds": 0.38064186996780336,
+      "id": "11429.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6683912849985063,
+      "enabled_first": false,
+      "enabled_seconds": 0.6710292109637521,
+      "id": "11430.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6018291220534593,
+      "enabled_first": true,
+      "enabled_seconds": 0.5867120589828119,
+      "id": "11435.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4928371770074591,
+      "enabled_first": false,
+      "enabled_seconds": 0.4524449040181935,
+      "id": "11439.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.26540903199929744,
+      "enabled_first": true,
+      "enabled_seconds": 0.2730974809965119,
+      "id": "1144.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31134261400438845,
+      "enabled_first": false,
+      "enabled_seconds": 0.2787291599670425,
+      "id": "11440.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4015559309627861,
+      "enabled_first": true,
+      "enabled_seconds": 0.3709992649964988,
+      "id": "11449.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.20131492003565654,
+      "enabled_first": false,
+      "enabled_seconds": 0.18626857595518231,
+      "id": "11450.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.26172385696554556,
+      "enabled_first": true,
+      "enabled_seconds": 0.290437834977638,
+      "id": "11454.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6121345889987424,
+      "enabled_first": false,
+      "enabled_seconds": 0.699904763023369,
+      "id": "11455.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41309684002771974,
+      "enabled_first": true,
+      "enabled_seconds": 0.5189608850050718,
+      "id": "11459.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.33656365697970614,
+      "enabled_first": false,
+      "enabled_seconds": 0.2822258269879967,
+      "id": "11464.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43597936001606286,
+      "enabled_first": true,
+      "enabled_seconds": 0.519044786982704,
+      "id": "11475.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3899164220201783,
+      "enabled_first": false,
+      "enabled_seconds": 0.4006265529897064,
+      "id": "11481.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4931135569931939,
+      "enabled_first": true,
+      "enabled_seconds": 0.5295742589514703,
+      "id": "1149.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2559644319699146,
+      "enabled_first": false,
+      "enabled_seconds": 0.22895489900838584,
+      "id": "11498.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.47733525303192437,
+      "enabled_first": true,
+      "enabled_seconds": 0.4270045150187798,
+      "id": "115.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5621296589961275,
+      "enabled_first": false,
+      "enabled_seconds": 0.49615939101204276,
+      "id": "11511.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.42950617702445015,
+      "enabled_first": true,
+      "enabled_seconds": 0.5107777130324394,
+      "id": "11512.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.26622448302805424,
+      "enabled_first": false,
+      "enabled_seconds": 0.3524575639748946,
+      "id": "11515.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5788612780161202,
+      "enabled_first": true,
+      "enabled_seconds": 0.6675820689997636,
+      "id": "11519.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.42852596601005644,
+      "enabled_first": false,
+      "enabled_seconds": 0.5227155300090089,
+      "id": "11525.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4558205399662256,
+      "enabled_first": true,
+      "enabled_seconds": 0.45123058499302715,
+      "id": "11526.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.627193329972215,
+      "enabled_first": false,
+      "enabled_seconds": 0.5273557329783216,
+      "id": "11532.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.9064637420233339,
+      "enabled_first": true,
+      "enabled_seconds": 0.9931151409982704,
+      "id": "11534.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6944384939852171,
+      "enabled_first": false,
+      "enabled_seconds": 0.6513948329957202,
+      "id": "11542.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3300871360115707,
+      "enabled_first": true,
+      "enabled_seconds": 0.3201937779667787,
+      "id": "11555.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4459933949983679,
+      "enabled_first": false,
+      "enabled_seconds": 0.379321179992985,
+      "id": "11570.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.32815350499004126,
+      "enabled_first": true,
+      "enabled_seconds": 0.3555643379804678,
+      "id": "11576.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.9267622259794734,
+      "enabled_first": false,
+      "enabled_seconds": 0.8570418650051579,
+      "id": "11583.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7133768490166403,
+      "enabled_first": true,
+      "enabled_seconds": 0.7119877880322747,
+      "id": "11592.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2999813369824551,
+      "enabled_first": false,
+      "enabled_seconds": 0.309855711995624,
+      "id": "116.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3544834530330263,
+      "enabled_first": true,
+      "enabled_seconds": 0.30525075003970414,
+      "id": "11603.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6814902040059678,
+      "enabled_first": false,
+      "enabled_seconds": 0.6655423000338487,
+      "id": "11621.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.525215120986104,
+      "enabled_first": true,
+      "enabled_seconds": 0.5272564319893718,
+      "id": "11631.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7241610899800435,
+      "enabled_first": false,
+      "enabled_seconds": 0.7467108640121296,
+      "id": "11639.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5262939960230142,
+      "enabled_first": true,
+      "enabled_seconds": 0.5567939739557914,
+      "id": "11642.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6438111339812167,
+      "enabled_first": false,
+      "enabled_seconds": 0.693198751017917,
+      "id": "11645.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.40948604705045,
+      "enabled_first": true,
+      "enabled_seconds": 0.46701601397944614,
+      "id": "11652.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4964829979580827,
+      "enabled_first": false,
+      "enabled_seconds": 0.5154046239913441,
+      "id": "11654.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2956828680471517,
+      "enabled_first": true,
+      "enabled_seconds": 0.3086209410103038,
+      "id": "11655.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6706783099798486,
+      "enabled_first": false,
+      "enabled_seconds": 0.6123829879797995,
+      "id": "11660.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8711344579933211,
+      "enabled_first": true,
+      "enabled_seconds": 0.8227700170245953,
+      "id": "11662.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2516869640094228,
+      "enabled_first": false,
+      "enabled_seconds": 0.2590620970004238,
+      "id": "1168.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37943365197861567,
+      "enabled_first": true,
+      "enabled_seconds": 0.38680270698387176,
+      "id": "11682.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5932666820008308,
+      "enabled_first": false,
+      "enabled_seconds": 0.5079776900238357,
+      "id": "11683.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4477944920072332,
+      "enabled_first": true,
+      "enabled_seconds": 0.45171257201582193,
+      "id": "11687.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6198461669846438,
+      "enabled_first": false,
+      "enabled_seconds": 0.6829364849836566,
+      "id": "11694.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.14195057802135125,
+      "enabled_first": true,
+      "enabled_seconds": 0.15020756499143317,
+      "id": "11697.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4392694730195217,
+      "enabled_first": false,
+      "enabled_seconds": 0.3638555760262534,
+      "id": "11698.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.1846222080057487,
+      "enabled_first": true,
+      "enabled_seconds": 0.17013595101889223,
+      "id": "11724.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5312499779975042,
+      "enabled_first": false,
+      "enabled_seconds": 0.6556743549881503,
+      "id": "11731.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3716630599810742,
+      "enabled_first": true,
+      "enabled_seconds": 0.37202501198044047,
+      "id": "11750.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3297448639641516,
+      "enabled_first": false,
+      "enabled_seconds": 0.29913871904136613,
+      "id": "11763.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6535822169971652,
+      "enabled_first": true,
+      "enabled_seconds": 0.602123033022508,
+      "id": "11776.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46459500899072737,
+      "enabled_first": false,
+      "enabled_seconds": 0.4707466039690189,
+      "id": "11809.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6157251900294796,
+      "enabled_first": true,
+      "enabled_seconds": 0.6361344030010514,
+      "id": "11821.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3432594499900006,
+      "enabled_first": false,
+      "enabled_seconds": 0.3755550319910981,
+      "id": "11822.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3907242800341919,
+      "enabled_first": true,
+      "enabled_seconds": 0.38411879900377244,
+      "id": "11831.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2993361559929326,
+      "enabled_first": false,
+      "enabled_seconds": 0.33559343102388084,
+      "id": "11836.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.45908088801661506,
+      "enabled_first": true,
+      "enabled_seconds": 0.41210135899018496,
+      "id": "11841.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6549988889601082,
+      "enabled_first": false,
+      "enabled_seconds": 0.6970355900120921,
+      "id": "11845.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3771964669576846,
+      "enabled_first": true,
+      "enabled_seconds": 0.4449055099976249,
+      "id": "11851.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4879990059998818,
+      "enabled_first": false,
+      "enabled_seconds": 0.6061836139997467,
+      "id": "11865.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5881476119975559,
+      "enabled_first": true,
+      "enabled_seconds": 0.6007435530191287,
+      "id": "11867.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8035357560147531,
+      "enabled_first": false,
+      "enabled_seconds": 0.7151981229544617,
+      "id": "11872.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.28918388299643993,
+      "enabled_first": true,
+      "enabled_seconds": 0.23731526400661096,
+      "id": "11882.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4719433310092427,
+      "enabled_first": false,
+      "enabled_seconds": 0.42438537697307765,
+      "id": "11886.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3995554529828951,
+      "enabled_first": true,
+      "enabled_seconds": 0.40769832901423797,
+      "id": "11889.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6468013410340063,
+      "enabled_first": false,
+      "enabled_seconds": 0.7618577309767716,
+      "id": "11896.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3714801630121656,
+      "enabled_first": true,
+      "enabled_seconds": 0.3569252619636245,
+      "id": "11899.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7776372819789685,
+      "enabled_first": false,
+      "enabled_seconds": 0.760504093952477,
+      "id": "11905.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2806565119535662,
+      "enabled_first": true,
+      "enabled_seconds": 0.36305350600741804,
+      "id": "11906.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3376508619985543,
+      "enabled_first": false,
+      "enabled_seconds": 0.3064772720099427,
+      "id": "11917.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.47094801801722497,
+      "enabled_first": true,
+      "enabled_seconds": 0.5225784319918603,
+      "id": "11931.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5488232260104269,
+      "enabled_first": false,
+      "enabled_seconds": 0.5309151190449484,
+      "id": "11934.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3581175060244277,
+      "enabled_first": true,
+      "enabled_seconds": 0.33476049202727154,
+      "id": "11948.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3109042340074666,
+      "enabled_first": false,
+      "enabled_seconds": 0.2915488349972293,
+      "id": "11954.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5805319650098681,
+      "enabled_first": true,
+      "enabled_seconds": 0.648539803980384,
+      "id": "11956.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.15043419698486105,
+      "enabled_first": false,
+      "enabled_seconds": 0.15019747702172026,
+      "id": "11963.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3855049519916065,
+      "enabled_first": true,
+      "enabled_seconds": 0.4096232780138962,
+      "id": "11966.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6289200680330396,
+      "enabled_first": false,
+      "enabled_seconds": 0.4860439089825377,
+      "id": "11967.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.352078864001669,
+      "enabled_first": true,
+      "enabled_seconds": 0.3040625279536471,
+      "id": "11971.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.2135356310172938,
+      "enabled_first": false,
+      "enabled_seconds": 1.2174293450079858,
+      "id": "11974.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4645646149874665,
+      "enabled_first": true,
+      "enabled_seconds": 0.4671468239976093,
+      "id": "11985.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6097304099821486,
+      "enabled_first": false,
+      "enabled_seconds": 0.5490077569847926,
+      "id": "11994.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6946134699974209,
+      "enabled_first": true,
+      "enabled_seconds": 0.7523388999979943,
+      "id": "12009.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44374430301832035,
+      "enabled_first": false,
+      "enabled_seconds": 0.5403361570206471,
+      "id": "1201.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7576543070026673,
+      "enabled_first": true,
+      "enabled_seconds": 0.6536055100150406,
+      "id": "12013.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7064145049662329,
+      "enabled_first": false,
+      "enabled_seconds": 0.7595742880366743,
+      "id": "12016.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.624318225949537,
+      "enabled_first": true,
+      "enabled_seconds": 0.5999791620415635,
+      "id": "12024.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36939896404510364,
+      "enabled_first": false,
+      "enabled_seconds": 0.30333246605005115,
+      "id": "12029.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8981769650126807,
+      "enabled_first": true,
+      "enabled_seconds": 0.9655264350003563,
+      "id": "1203.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.38969084998825565,
+      "enabled_first": false,
+      "enabled_seconds": 0.3682047229958698,
+      "id": "12036.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5197506479453295,
+      "enabled_first": true,
+      "enabled_seconds": 0.5779252640204504,
+      "id": "12042.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.22618573100771755,
+      "enabled_first": false,
+      "enabled_seconds": 0.25193206599215046,
+      "id": "12043.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3233044929802418,
+      "enabled_first": true,
+      "enabled_seconds": 0.31693688104860485,
+      "id": "12046.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.453169482992962,
+      "enabled_first": false,
+      "enabled_seconds": 0.44252814596984535,
+      "id": "12047.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.24308565101819113,
+      "enabled_first": true,
+      "enabled_seconds": 0.22345245798351243,
+      "id": "12056.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.25034996902104467,
+      "enabled_first": false,
+      "enabled_seconds": 0.22901013295631856,
+      "id": "12058.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.46467044501332566,
+      "enabled_first": true,
+      "enabled_seconds": 0.4980760750477202,
+      "id": "12060.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8478181569953449,
+      "enabled_first": false,
+      "enabled_seconds": 0.6492991840350442,
+      "id": "12062.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5004591000033543,
+      "enabled_first": true,
+      "enabled_seconds": 0.5047366929939017,
+      "id": "12083.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5460662500117905,
+      "enabled_first": false,
+      "enabled_seconds": 0.48929308296646923,
+      "id": "12102.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8477155189611949,
+      "enabled_first": true,
+      "enabled_seconds": 0.9547289850306697,
+      "id": "12107.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.31665109703317285,
+      "enabled_first": false,
+      "enabled_seconds": 0.31082955800229684,
+      "id": "12110.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.23350470495643094,
+      "enabled_first": true,
+      "enabled_seconds": 0.26898610504576936,
+      "id": "12114.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7193831219919957,
+      "enabled_first": false,
+      "enabled_seconds": 0.770005501981359,
+      "id": "12118.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.39408601296599954,
+      "enabled_first": true,
+      "enabled_seconds": 0.4278686239849776,
+      "id": "12120.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7612652080133557,
+      "enabled_first": false,
+      "enabled_seconds": 0.6781230240012519,
+      "id": "12121.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4238229769980535,
+      "enabled_first": true,
+      "enabled_seconds": 0.4650351020391099,
+      "id": "12134.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4620661659864709,
+      "enabled_first": false,
+      "enabled_seconds": 0.5139741590246558,
+      "id": "12139.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5707424330175854,
+      "enabled_first": true,
+      "enabled_seconds": 0.6334382370114326,
+      "id": "1214.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7543394509702921,
+      "enabled_first": false,
+      "enabled_seconds": 0.8202795570250601,
+      "id": "12140.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4426229390082881,
+      "enabled_first": true,
+      "enabled_seconds": 0.4503679790068418,
+      "id": "12141.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37301679904339835,
+      "enabled_first": false,
+      "enabled_seconds": 0.32769827399170026,
+      "id": "12142.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2819442719919607,
+      "enabled_first": true,
+      "enabled_seconds": 0.2615702509647235,
+      "id": "12148.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6168078810442239,
+      "enabled_first": false,
+      "enabled_seconds": 0.46564481302630156,
+      "id": "1215.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8511838470003568,
+      "enabled_first": true,
+      "enabled_seconds": 0.8604914390016347,
+      "id": "12161.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4250194350024685,
+      "enabled_first": false,
+      "enabled_seconds": 0.3565394969773479,
+      "id": "12169.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4094530859729275,
+      "enabled_first": true,
+      "enabled_seconds": 0.45930326503003016,
+      "id": "12171.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.35741001699352637,
+      "enabled_first": false,
+      "enabled_seconds": 0.3434568819939159,
+      "id": "1219.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.35775421402649954,
+      "enabled_first": true,
+      "enabled_seconds": 0.40768255497096106,
+      "id": "12201.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5299122119904496,
+      "enabled_first": false,
+      "enabled_seconds": 0.5566305549582466,
+      "id": "12204.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.535051017999649,
+      "enabled_first": true,
+      "enabled_seconds": 0.6414350389968604,
+      "id": "12206.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2620849760132842,
+      "enabled_first": false,
+      "enabled_seconds": 0.23086037900066003,
+      "id": "12208.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4877935830154456,
+      "enabled_first": true,
+      "enabled_seconds": 0.4490448950091377,
+      "id": "12211.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.10866501100827,
+      "enabled_first": false,
+      "enabled_seconds": 0.978577931993641,
+      "id": "12214.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3523914500256069,
+      "enabled_first": true,
+      "enabled_seconds": 0.36594305600738153,
+      "id": "12218.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.49618935701437294,
+      "enabled_first": false,
+      "enabled_seconds": 0.5617284920299426,
+      "id": "12229.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3796559009933844,
+      "enabled_first": true,
+      "enabled_seconds": 0.43395907699596137,
+      "id": "12258.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8321308580343612,
+      "enabled_first": false,
+      "enabled_seconds": 0.8585192610044032,
+      "id": "12267.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3969836760079488,
+      "enabled_first": true,
+      "enabled_seconds": 0.33725266699912027,
+      "id": "12269.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7081407079822384,
+      "enabled_first": false,
+      "enabled_seconds": 0.6349947759881616,
+      "id": "12275.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.36861494596814737,
+      "enabled_first": true,
+      "enabled_seconds": 0.3483089620131068,
+      "id": "12279.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.32785987202078104,
+      "enabled_first": false,
+      "enabled_seconds": 0.3086265250458382,
+      "id": "12281.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34993719996418804,
+      "enabled_first": true,
+      "enabled_seconds": 0.32996817003004253,
+      "id": "12288.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5428169430233538,
+      "enabled_first": false,
+      "enabled_seconds": 0.49517881497740746,
+      "id": "12291.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.30320222000591457,
+      "enabled_first": true,
+      "enabled_seconds": 0.2653572210110724,
+      "id": "12298.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5774715479929,
+      "enabled_first": false,
+      "enabled_seconds": 0.5269640269689262,
+      "id": "12301.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5810782170156017,
+      "enabled_first": true,
+      "enabled_seconds": 0.5180796150234528,
+      "id": "12307.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7553231820347719,
+      "enabled_first": false,
+      "enabled_seconds": 0.6723956060013734,
+      "id": "12317.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.45746964804129675,
+      "enabled_first": true,
+      "enabled_seconds": 0.5174082050216384,
+      "id": "12324.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7721569459536113,
+      "enabled_first": false,
+      "enabled_seconds": 0.7444455950171687,
+      "id": "12328.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.44835743302246556,
+      "enabled_first": true,
+      "enabled_seconds": 0.38102567399619147,
+      "id": "12339.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5518366940086707,
+      "enabled_first": false,
+      "enabled_seconds": 0.4302104550297372,
+      "id": "12345.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34031128900824115,
+      "enabled_first": true,
+      "enabled_seconds": 0.30138598702615127,
+      "id": "12349.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8853441249812022,
+      "enabled_first": false,
+      "enabled_seconds": 0.8017315429751761,
+      "id": "12354.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6800362479989417,
+      "enabled_first": true,
+      "enabled_seconds": 0.7471401799703017,
+      "id": "12355.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.845538113033399,
+      "enabled_first": false,
+      "enabled_seconds": 0.4147582389996387,
+      "id": "1236.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.377235914056655,
+      "enabled_first": true,
+      "enabled_seconds": 0.34245996800018474,
+      "id": "12369.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5087161029805429,
+      "enabled_first": false,
+      "enabled_seconds": 0.4706702359835617,
+      "id": "12372.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5019568860298023,
+      "enabled_first": true,
+      "enabled_seconds": 0.4177362920017913,
+      "id": "12374.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5813431460410357,
+      "enabled_first": false,
+      "enabled_seconds": 0.4314131750143133,
+      "id": "12375.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.35739782598102465,
+      "enabled_first": true,
+      "enabled_seconds": 0.34078692202456295,
+      "id": "12380.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.27267398103140295,
+      "enabled_first": false,
+      "enabled_seconds": 0.26404578803339973,
+      "id": "12387.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41542931500589475,
+      "enabled_first": true,
+      "enabled_seconds": 0.3477210470009595,
+      "id": "12396.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.13856081903213635,
+      "enabled_first": false,
+      "enabled_seconds": 0.13631304894806817,
+      "id": "12398.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.18974650197196752,
+      "enabled_first": true,
+      "enabled_seconds": 0.171782115008682,
+      "id": "12405.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3448769609676674,
+      "enabled_first": false,
+      "enabled_seconds": 0.3969255029805936,
+      "id": "12406.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4196105689625256,
+      "enabled_first": true,
+      "enabled_seconds": 0.416801433020737,
+      "id": "12409.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.9223398659960367,
+      "enabled_first": false,
+      "enabled_seconds": 0.9201931610004976,
+      "id": "12419.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.21341980202123523,
+      "enabled_first": true,
+      "enabled_seconds": 0.25117063301149756,
+      "id": "12431.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8983433269895613,
+      "enabled_first": false,
+      "enabled_seconds": 0.8167257769964635,
+      "id": "12436.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3973057839903049,
+      "enabled_first": true,
+      "enabled_seconds": 0.37780883099185303,
+      "id": "12445.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7141279139905237,
+      "enabled_first": false,
+      "enabled_seconds": 0.7035574299516156,
+      "id": "12451.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4326329469913617,
+      "enabled_first": true,
+      "enabled_seconds": 0.4397686249576509,
+      "id": "12454.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.565373843011912,
+      "enabled_first": false,
+      "enabled_seconds": 0.5488290989887901,
+      "id": "1246.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2378418020089157,
+      "enabled_first": true,
+      "enabled_seconds": 0.24266682099550962,
+      "id": "12463.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.47092871798668057,
+      "enabled_first": false,
+      "enabled_seconds": 0.45092950999969617,
+      "id": "1247.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3290962830069475,
+      "enabled_first": true,
+      "enabled_seconds": 0.3317750259884633,
+      "id": "12475.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4846459020045586,
+      "enabled_first": false,
+      "enabled_seconds": 0.43390505900606513,
+      "id": "12484.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3943826809991151,
+      "enabled_first": true,
+      "enabled_seconds": 0.42033092299243435,
+      "id": "12497.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.41383309301454574,
+      "enabled_first": false,
+      "enabled_seconds": 0.4069110950222239,
+      "id": "12503.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.42913885100279003,
+      "enabled_first": true,
+      "enabled_seconds": 0.42937904299469665,
+      "id": "12517.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4802120699896477,
+      "enabled_first": false,
+      "enabled_seconds": 0.3825302500044927,
+      "id": "12520.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4262621669913642,
+      "enabled_first": true,
+      "enabled_seconds": 0.345867890981026,
+      "id": "1254.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5608162609860301,
+      "enabled_first": false,
+      "enabled_seconds": 0.5344456970342435,
+      "id": "12540.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3351265189703554,
+      "enabled_first": true,
+      "enabled_seconds": 0.32642173604108393,
+      "id": "12546.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.023537494998891,
+      "enabled_first": false,
+      "enabled_seconds": 0.8881623700144701,
+      "id": "12547.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.32712600397644565,
+      "enabled_first": true,
+      "enabled_seconds": 0.31248744699405506,
+      "id": "12552.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3837933060131036,
+      "enabled_first": false,
+      "enabled_seconds": 0.3685767409624532,
+      "id": "12554.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6037496830103919,
+      "enabled_first": true,
+      "enabled_seconds": 0.573252679023426,
+      "id": "12555.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6338018939713947,
+      "enabled_first": false,
+      "enabled_seconds": 0.5998322819941677,
+      "id": "12556.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.368292182974983,
+      "enabled_first": true,
+      "enabled_seconds": 0.3831821140483953,
+      "id": "12557.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.28726639901287854,
+      "enabled_first": false,
+      "enabled_seconds": 0.3161810910096392,
+      "id": "12578.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4317019900190644,
+      "enabled_first": true,
+      "enabled_seconds": 0.4090134840225801,
+      "id": "1258.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.504978604032658,
+      "enabled_first": false,
+      "enabled_seconds": 0.4816681439988315,
+      "id": "12589.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6540448369923979,
+      "enabled_first": true,
+      "enabled_seconds": 0.6642685640254058,
+      "id": "12603.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.38158285099780187,
+      "enabled_first": false,
+      "enabled_seconds": 0.3433044769917615,
+      "id": "12606.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5478612409788184,
+      "enabled_first": true,
+      "enabled_seconds": 0.4627107349806465,
+      "id": "12614.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.8823912360239774,
+      "enabled_first": false,
+      "enabled_seconds": 0.7445590120041743,
+      "id": "12616.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.40743970801122487,
+      "enabled_first": true,
+      "enabled_seconds": 0.3919218910159543,
+      "id": "12626.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4713664360460825,
+      "enabled_first": false,
+      "enabled_seconds": 0.47496447002049536,
+      "id": "12643.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.2953217870090157,
+      "enabled_first": true,
+      "enabled_seconds": 0.3217017559800297,
+      "id": "12649.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.48950104898540303,
+      "enabled_first": false,
+      "enabled_seconds": 0.5618618919979781,
+      "id": "12667.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6225979209993966,
+      "enabled_first": true,
+      "enabled_seconds": 0.8695447550271638,
+      "id": "1267.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.37246272998163477,
+      "enabled_first": false,
+      "enabled_seconds": 0.41545834502903745,
+      "id": "12671.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6400374950026162,
+      "enabled_first": true,
+      "enabled_seconds": 0.8714969590073451,
+      "id": "12677.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.21378165896749124,
+      "enabled_first": false,
+      "enabled_seconds": 0.21140010899398476,
+      "id": "12682.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4996410830062814,
+      "enabled_first": true,
+      "enabled_seconds": 0.5175159150385298,
+      "id": "12684.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.38586464000400156,
+      "enabled_first": false,
+      "enabled_seconds": 0.3942799419746734,
+      "id": "12689.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.43777102598687634,
+      "enabled_first": true,
+      "enabled_seconds": 0.3925106619717553,
+      "id": "1269.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6693246680079028,
+      "enabled_first": false,
+      "enabled_seconds": 0.5517916639801115,
+      "id": "12698.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.12114909803494811,
+      "enabled_first": true,
+      "enabled_seconds": 0.1218072620104067,
+      "id": "12719.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5467768909875304,
+      "enabled_first": false,
+      "enabled_seconds": 0.5900447169551626,
+      "id": "12726.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.45636322104837745,
+      "enabled_first": true,
+      "enabled_seconds": 0.45564072899287567,
+      "id": "12729.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.5474091910291463,
+      "enabled_first": false,
+      "enabled_seconds": 0.48634429700905457,
+      "id": "12736.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6461389050236903,
+      "enabled_first": true,
+      "enabled_seconds": 0.5865362310432829,
+      "id": "1274.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.3911484379786998,
+      "enabled_first": false,
+      "enabled_seconds": 0.4013355519855395,
+      "id": "12743.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.27237626403803006,
+      "enabled_first": true,
+      "enabled_seconds": 0.2821412660414353,
+      "id": "12750.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.1570708719664253,
+      "enabled_first": false,
+      "enabled_seconds": 1.2908931149868295,
+      "id": "1276.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7791279469965957,
+      "enabled_first": true,
+      "enabled_seconds": 0.7265181129914708,
+      "id": "12772.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7013832129887305,
+      "enabled_first": false,
+      "enabled_seconds": 0.7628547420026734,
+      "id": "12777.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4656583620235324,
+      "enabled_first": true,
+      "enabled_seconds": 0.4729218289721757,
+      "id": "12783.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7178766030119732,
+      "enabled_first": false,
+      "enabled_seconds": 0.6346433139988221,
+      "id": "12791.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.6293759010150097,
+      "enabled_first": true,
+      "enabled_seconds": 0.6416830330272205,
+      "id": "12792.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4827381819486618,
+      "enabled_first": false,
+      "enabled_seconds": 0.4989993399940431,
+      "id": "12793.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4929752260213718,
+      "enabled_first": true,
+      "enabled_seconds": 0.5981536410399713,
+      "id": "12794.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.4028300220379606,
+      "enabled_first": false,
+      "enabled_seconds": 0.40630939102265984,
+      "id": "12805.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.34801717899972573,
+      "enabled_first": true,
+      "enabled_seconds": 0.3770383929950185,
+      "id": "12812.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.7548625600175001,
+      "enabled_first": false,
+      "enabled_seconds": 0.6649115130421706,
+      "id": "12816.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 1.45248326001456,
+      "enabled_first": true,
+      "enabled_seconds": 1.4667893709847704,
+      "id": "1282.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.1809816460008733,
+      "enabled_first": false,
+      "enabled_seconds": 0.22575378499459475,
+      "id": "12830.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    },
+    {
+      "disabled_seconds": 0.40418565896106884,
+      "enabled_first": true,
+      "enabled_seconds": 0.40176479902584106,
+      "id": "12832.step",
+      "legacy_z_stock": 0,
+      "pre_existing_outputs_equal": true,
+      "principal_axis_stock": 0
+    }
+  ],
+  "paired_median_delta_seconds": -0.0027303619717713445,
+  "principal_axis_stock": 0,
+  "selection": [
+    "1000.step",
+    "10000.step",
+    "10007.step",
+    "10015.step",
+    "1002.step",
+    "10020.step",
+    "10027.step",
+    "10033.step",
+    "10038.step",
+    "1004.step",
+    "10044.step",
+    "10046.step",
+    "10047.step",
+    "10049.step",
+    "10060.step",
+    "10063.step",
+    "1007.step",
+    "10070.step",
+    "10077.step",
+    "1008.step",
+    "10092.step",
+    "10096.step",
+    "10098.step",
+    "10101.step",
+    "10103.step",
+    "10116.step",
+    "10118.step",
+    "10119.step",
+    "10127.step",
+    "1013.step",
+    "10131.step",
+    "10137.step",
+    "10138.step",
+    "10146.step",
+    "10155.step",
+    "10156.step",
+    "10163.step",
+    "10167.step",
+    "1017.step",
+    "10170.step",
+    "10190.step",
+    "10191.step",
+    "10203.step",
+    "10212.step",
+    "10224.step",
+    "10226.step",
+    "10228.step",
+    "10229.step",
+    "10240.step",
+    "10245.step",
+    "10247.step",
+    "10252.step",
+    "10255.step",
+    "10258.step",
+    "10260.step",
+    "10261.step",
+    "10269.step",
+    "10278.step",
+    "1028.step",
+    "10285.step",
+    "10286.step",
+    "10293.step",
+    "10299.step",
+    "10308.step",
+    "10314.step",
+    "10317.step",
+    "10318.step",
+    "10327.step",
+    "10340.step",
+    "10344.step",
+    "10347.step",
+    "10348.step",
+    "10350.step",
+    "10354.step",
+    "10356.step",
+    "10363.step",
+    "10364.step",
+    "1037.step",
+    "10371.step",
+    "10376.step",
+    "10387.step",
+    "10395.step",
+    "10400.step",
+    "10407.step",
+    "10409.step",
+    "10410.step",
+    "10414.step",
+    "10428.step",
+    "10431.step",
+    "10433.step",
+    "10437.step",
+    "10438.step",
+    "10461.step",
+    "10463.step",
+    "10465.step",
+    "10469.step",
+    "10484.step",
+    "10490.step",
+    "10491.step",
+    "10492.step",
+    "10499.step",
+    "10505.step",
+    "10513.step",
+    "10518.step",
+    "10520.step",
+    "10525.step",
+    "10526.step",
+    "10527.step",
+    "10531.step",
+    "10534.step",
+    "10536.step",
+    "10537.step",
+    "10545.step",
+    "10550.step",
+    "10558.step",
+    "10568.step",
+    "10575.step",
+    "10583.step",
+    "10594.step",
+    "10600.step",
+    "10601.step",
+    "10602.step",
+    "1061.step",
+    "10614.step",
+    "1062.step",
+    "10627.step",
+    "10633.step",
+    "10643.step",
+    "10649.step",
+    "10650.step",
+    "10652.step",
+    "10653.step",
+    "10656.step",
+    "1067.step",
+    "10673.step",
+    "10683.step",
+    "10684.step",
+    "1069.step",
+    "10710.step",
+    "10712.step",
+    "10715.step",
+    "1072.step",
+    "10722.step",
+    "10727.step",
+    "10733.step",
+    "10736.step",
+    "10737.step",
+    "10743.step",
+    "10746.step",
+    "10753.step",
+    "10757.step",
+    "10761.step",
+    "10770.step",
+    "10776.step",
+    "10778.step",
+    "10786.step",
+    "10794.step",
+    "10805.step",
+    "10810.step",
+    "10812.step",
+    "10834.step",
+    "10841.step",
+    "10847.step",
+    "10849.step",
+    "10851.step",
+    "10877.step",
+    "1088.step",
+    "10881.step",
+    "10885.step",
+    "10893.step",
+    "10895.step",
+    "10897.step",
+    "10902.step",
+    "10908.step",
+    "10914.step",
+    "10923.step",
+    "10929.step",
+    "10943.step",
+    "10946.step",
+    "10948.step",
+    "1095.step",
+    "10955.step",
+    "10964.step",
+    "10966.step",
+    "10968.step",
+    "10986.step",
+    "10987.step",
+    "10988.step",
+    "10989.step",
+    "10990.step",
+    "10994.step",
+    "10998.step",
+    "11004.step",
+    "11014.step",
+    "11029.step",
+    "11035.step",
+    "11037.step",
+    "11038.step",
+    "11041.step",
+    "11051.step",
+    "11064.step",
+    "11073.step",
+    "11074.step",
+    "11078.step",
+    "11082.step",
+    "11092.step",
+    "11097.step",
+    "11098.step",
+    "11108.step",
+    "11110.step",
+    "11112.step",
+    "11117.step",
+    "11120.step",
+    "11124.step",
+    "1113.step",
+    "11131.step",
+    "11133.step",
+    "11134.step",
+    "11135.step",
+    "11145.step",
+    "11149.step",
+    "1116.step",
+    "11161.step",
+    "11163.step",
+    "1118.step",
+    "11183.step",
+    "11186.step",
+    "11188.step",
+    "11189.step",
+    "1119.step",
+    "11190.step",
+    "11201.step",
+    "11203.step",
+    "11205.step",
+    "11211.step",
+    "11220.step",
+    "11223.step",
+    "11225.step",
+    "11229.step",
+    "1123.step",
+    "11241.step",
+    "11242.step",
+    "1125.step",
+    "11251.step",
+    "11252.step",
+    "11253.step",
+    "11257.step",
+    "11262.step",
+    "11268.step",
+    "11272.step",
+    "11281.step",
+    "11286.step",
+    "1129.step",
+    "11295.step",
+    "11302.step",
+    "11314.step",
+    "11318.step",
+    "11319.step",
+    "11323.step",
+    "11332.step",
+    "1134.step",
+    "11345.step",
+    "11346.step",
+    "11354.step",
+    "11357.step",
+    "1137.step",
+    "11374.step",
+    "11377.step",
+    "1139.step",
+    "11398.step",
+    "11408.step",
+    "11413.step",
+    "11415.step",
+    "11424.step",
+    "11428.step",
+    "11429.step",
+    "11430.step",
+    "11435.step",
+    "11439.step",
+    "1144.step",
+    "11440.step",
+    "11449.step",
+    "11450.step",
+    "11454.step",
+    "11455.step",
+    "11459.step",
+    "11464.step",
+    "11475.step",
+    "11481.step",
+    "1149.step",
+    "11498.step",
+    "115.step",
+    "11511.step",
+    "11512.step",
+    "11515.step",
+    "11519.step",
+    "11525.step",
+    "11526.step",
+    "11532.step",
+    "11534.step",
+    "11542.step",
+    "11555.step",
+    "11570.step",
+    "11576.step",
+    "11583.step",
+    "11592.step",
+    "116.step",
+    "11603.step",
+    "11621.step",
+    "11631.step",
+    "11639.step",
+    "11642.step",
+    "11645.step",
+    "11652.step",
+    "11654.step",
+    "11655.step",
+    "11660.step",
+    "11662.step",
+    "1168.step",
+    "11682.step",
+    "11683.step",
+    "11687.step",
+    "11694.step",
+    "11697.step",
+    "11698.step",
+    "11724.step",
+    "11731.step",
+    "11750.step",
+    "11763.step",
+    "11776.step",
+    "11809.step",
+    "11821.step",
+    "11822.step",
+    "11831.step",
+    "11836.step",
+    "11841.step",
+    "11845.step",
+    "11851.step",
+    "11865.step",
+    "11867.step",
+    "11872.step",
+    "11882.step",
+    "11886.step",
+    "11889.step",
+    "11896.step",
+    "11899.step",
+    "11905.step",
+    "11906.step",
+    "11917.step",
+    "11931.step",
+    "11934.step",
+    "11948.step",
+    "11954.step",
+    "11956.step",
+    "11963.step",
+    "11966.step",
+    "11967.step",
+    "11971.step",
+    "11974.step",
+    "11985.step",
+    "11994.step",
+    "12009.step",
+    "1201.step",
+    "12013.step",
+    "12016.step",
+    "12024.step",
+    "12029.step",
+    "1203.step",
+    "12036.step",
+    "12042.step",
+    "12043.step",
+    "12046.step",
+    "12047.step",
+    "12056.step",
+    "12058.step",
+    "12060.step",
+    "12062.step",
+    "12083.step",
+    "12102.step",
+    "12107.step",
+    "12110.step",
+    "12114.step",
+    "12118.step",
+    "12120.step",
+    "12121.step",
+    "12134.step",
+    "12139.step",
+    "1214.step",
+    "12140.step",
+    "12141.step",
+    "12142.step",
+    "12148.step",
+    "1215.step",
+    "12161.step",
+    "12169.step",
+    "12171.step",
+    "1219.step",
+    "12201.step",
+    "12204.step",
+    "12206.step",
+    "12208.step",
+    "12211.step",
+    "12214.step",
+    "12218.step",
+    "12229.step",
+    "12258.step",
+    "12267.step",
+    "12269.step",
+    "12275.step",
+    "12279.step",
+    "12281.step",
+    "12288.step",
+    "12291.step",
+    "12298.step",
+    "12301.step",
+    "12307.step",
+    "12317.step",
+    "12324.step",
+    "12328.step",
+    "12339.step",
+    "12345.step",
+    "12349.step",
+    "12354.step",
+    "12355.step",
+    "1236.step",
+    "12369.step",
+    "12372.step",
+    "12374.step",
+    "12375.step",
+    "12380.step",
+    "12387.step",
+    "12396.step",
+    "12398.step",
+    "12405.step",
+    "12406.step",
+    "12409.step",
+    "12419.step",
+    "12431.step",
+    "12436.step",
+    "12445.step",
+    "12451.step",
+    "12454.step",
+    "1246.step",
+    "12463.step",
+    "1247.step",
+    "12475.step",
+    "12484.step",
+    "12497.step",
+    "12503.step",
+    "12517.step",
+    "12520.step",
+    "1254.step",
+    "12540.step",
+    "12546.step",
+    "12547.step",
+    "12552.step",
+    "12554.step",
+    "12555.step",
+    "12556.step",
+    "12557.step",
+    "12578.step",
+    "1258.step",
+    "12589.step",
+    "12603.step",
+    "12606.step",
+    "12614.step",
+    "12616.step",
+    "12626.step",
+    "12643.step",
+    "12649.step",
+    "12667.step",
+    "1267.step",
+    "12671.step",
+    "12677.step",
+    "12682.step",
+    "12684.step",
+    "12689.step",
+    "1269.step",
+    "12698.step",
+    "12719.step",
+    "12726.step",
+    "12729.step",
+    "12736.step",
+    "1274.step",
+    "12743.step",
+    "12750.step",
+    "1276.step",
+    "12772.step",
+    "12777.step",
+    "12783.step",
+    "12791.step",
+    "12792.step",
+    "12793.step",
+    "12794.step",
+    "12805.step",
+    "12812.step",
+    "12816.step",
+    "1282.step",
+    "12830.step",
+    "12832.step"
+  ],
+  "workload": "mfcadpp"
+}

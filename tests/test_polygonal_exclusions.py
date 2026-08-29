@@ -3,10 +3,13 @@
 
 """What ``recognise_polygonal_bosses`` and ``recognise_polygonal_stock`` refuse.
 
-Epic 0001 finding 4. ``docs/capabilities.md`` promises a narrow class — an *attached regular
+Epic 0001 finding 4. ``docs/capabilities.md`` promises a narrow boss class — an *attached regular
 hexagonal Z-axis boss* with six outward side faces, one across-flats value, a support cap and a
 top cap — and excludes other side counts, X/Y axes, whole-stock prisms, inward recesses,
 incomplete rings and cross-solid assemblies.
+
+Whole Polygonal Stock is separately principal-axis covariant; that widening does not alter the
+attached-boss exclusions below.
 
 Side count and axis are already covered by ``test_capability_claims``. What was not covered is
 the evidence *within* a six-sided Z-axis candidate: whether the ring is complete, whether the

@@ -59,7 +59,7 @@ def _polygonal_prism(side_count: int):
     return extrude(RegularPolygon(20, side_count), 30)
 
 
-def test_polygonal_records_are_hexagonal_z_axis_only() -> None:
+def test_polygonal_records_are_hexagonal_with_stock_on_any_principal_axis() -> None:
     for side_count in (4, 8):
         prism = _polygonal_prism(side_count)
         attached = Box(100, 80, 10) + Pos(0, 0, 5) * prism
@@ -69,7 +69,7 @@ def test_polygonal_records_are_hexagonal_z_axis_only() -> None:
     x_axis_prism = Rot(0, 90, 0) * _polygonal_prism(6)
     x_axis_boss = Box(10, 100, 80) + Pos(5, 0, 0) * x_axis_prism
     assert recognise_polygonal_bosses(x_axis_boss) == []
-    assert recognise_polygonal_stock(x_axis_prism) == []
+    assert [record.axis for record in recognise_polygonal_stock(x_axis_prism)] == ["x"]
 
 
 def _double_d_tool(height: float):
