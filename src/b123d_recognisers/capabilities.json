@@ -287,7 +287,7 @@
         "tests/golden/circular_blind_step/expected.json"
       ],
       "id": "circular-blind-steps",
-      "introduced_in": "0.5.0",
+      "introduced_in": "0.4.6",
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_circular_blind_steps",
@@ -996,7 +996,7 @@
         "tests/golden/paired_ramp_step/expected.json"
       ],
       "id": "paired-ramp-steps",
-      "introduced_in": "0.5.0",
+      "introduced_in": "0.4.6",
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_paired_ramp_steps",
@@ -2164,7 +2164,7 @@
         "tests/golden/rectangular_through_step/expected.json"
       ],
       "id": "through-steps",
-      "introduced_in": "0.5.0",
+      "introduced_in": "0.4.6",
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_through_steps",
@@ -2294,6 +2294,6 @@
   "format_version": 2,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.5.0.dev0"
+    "version": "0.4.7.dev0"
   }
 }

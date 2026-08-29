@@ -38,7 +38,7 @@ FAMILIES = {
         "records": [("PairedRampStep", "output", ["RecognitionResult.paired_ramp_steps"])],
         "census": "paired_ramp_step",
         "goldens": ["paired_ramp_step"],
-        "introduced": "0.5.0",
+        "introduced": "0.4.6",
         "tests": ["tests/test_paired_ramp_steps.py"],
     },
     "through-steps": {
@@ -46,7 +46,7 @@ FAMILIES = {
         "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],
         "census": "through_step",
         "goldens": ["rectangular_through_step"],
-        "introduced": "0.5.0",
+        "introduced": "0.4.6",
         "tests": ["tests/test_through_steps.py"],
     },
     "circular-blind-steps": {
@@ -56,7 +56,7 @@ FAMILIES = {
         ],
         "census": "circular_blind_step",
         "goldens": ["circular_blind_step"],
-        "introduced": "0.5.0",
+        "introduced": "0.4.6",
         "tests": ["tests/test_circular_blind_steps.py"],
     },
     "prismatic-pockets": {
