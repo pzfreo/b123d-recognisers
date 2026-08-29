@@ -119,6 +119,19 @@ def _candidate(
     )[axis]
     scale = part_scale(bounds)
     tolerance = length_tol(scale, rel=1e-9, floor=1e-6)
+    solid_extents = (
+        bounds.max.X - bounds.min.X,
+        bounds.max.Y - bounds.min.Y,
+        bounds.max.Z - bounds.min.Z,
+    )
+    # A through cut opening along the stock's unique thickness direction is a top-opening
+    # triangular pocket, not a side step.  Using the solid extents (rather than world Z) keeps
+    # this boundary invariant under principal-axis permutations while preserving the explicit
+    # exclusion in the family contract.
+    if solid_extents[axis] < min(
+        solid_extents[index] for index in (0, 1, 2) if index != axis
+    ) - tolerance:
+        return None
     exterior = [
         node
         for node in terminals

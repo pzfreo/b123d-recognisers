@@ -26,6 +26,7 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
+from tests.golden.triangular_and_hex_pockets.fixture import build_fixture as pocket_fixture
 
 
 def _side_cut(
@@ -77,6 +78,10 @@ def test_aggregate_candidate_result_and_census_are_one_accepted_occurrence() -> 
 
 def test_a_blind_v_recess_is_not_a_through_side_step() -> None:
     assert recognise_paired_ramp_steps(_side_cut(blind=True)) == []
+
+
+def test_a_top_opening_triangular_pocket_is_not_a_side_step() -> None:
+    assert recognise_paired_ramp_steps(pocket_fixture()) == []
 
 
 def test_an_asymmetric_v_is_outside_the_first_supported_domain() -> None:
