@@ -57,6 +57,22 @@ def test_exact_diagonal_cylinder_uses_stable_dominant_axis_tie_break():
     assert {record["axis"] for record in z_cylinders} == {"z"}
 
 
+def test_native_analytic_scan_does_not_enter_effective_recovery() -> None:
+    class RecoveryMustNotRun:
+        def fact(self, _face):
+            raise AssertionError("native analytic faces must stay on the adaptor fast path")
+
+        def use(self, _face, *, material_side=False):
+            raise AssertionError("native analytic faces must not request recovered material side")
+
+    inventory = analyse_cylinders(
+        Box(10, 10, 10) + Cylinder(2, 14),
+        face_surfaces=RecoveryMustNotRun(),  # type: ignore[arg-type]
+    )
+
+    assert any(item["external"] for group in inventory for item in group)
+
+
 @pytest.mark.parametrize(
     ("part", "external"),
     [(Cylinder(4, 10), True), (Box(12, 12, 10) - Cylinder(2, 10), False)],

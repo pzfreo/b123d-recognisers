@@ -6,11 +6,12 @@ import math
 from typing import TypeVar
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cylinder
+from OCP.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Cylinder
 
 from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
 from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
     EffectiveFaceSurfaceQuery,
     SurfaceUse,
     effective_faces_for_graph,
@@ -85,8 +86,13 @@ def analyse_cylinders(
                 cyl.Axis().Location().Z(),
             )
         else:
+            if surf.GetType() not in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface):
+                continue
             if effective is None:
                 effective = effective_faces_for_graph(FaceGraph(part))
+            fact = effective.fact(face)
+            if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.CYLINDER:
+                continue
             issued = effective.use(face, material_side=True)
             if (
                 not isinstance(issued, SurfaceUse)

@@ -323,13 +323,29 @@ def test_exact_converted_cylinder_material_side_is_transform_invariant(part, exp
     assert len(issued.material_side.outward_samples) >= 2
 
 
-def test_material_side_refuses_faces_without_one_closed_owner() -> None:
+def test_material_side_refuses_faces_without_one_closed_owner(monkeypatch) -> None:
 
     open_face = Face.make_rect(10, 8)
     open_query = effective_faces_for_graph(FaceGraph(open_face))
     unowned = open_query.use(open_face, material_side=True)
     assert isinstance(unowned, SurfaceUseRefusal)
     assert unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+    cylinder_side = max(Cylinder(4, 10).faces(), key=lambda face: face.area)
+    recovered_open = _as_bspline_face(cylinder_side)
+    recovered_query = effective_faces_for_graph(FaceGraph(recovered_open))
+    recovered_unowned = recovered_query.use(recovered_open, material_side=True)
+    assert isinstance(recovered_unowned, SurfaceUseRefusal)
+    assert recovered_unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+    ambiguous = Cylinder(4, 10)
+    ambiguous_graph = FaceGraph(ambiguous)
+    monkeypatch.setattr(ambiguous_graph, "common_valid_solid", lambda _nodes: None)
+    ambiguous_query = effective_faces_for_graph(ambiguous_graph)
+    ambiguous_curved = max(ambiguous.faces(), key=lambda face: face.area)
+    ambiguous_use = ambiguous_query.use(ambiguous_curved, material_side=True)
+    assert isinstance(ambiguous_use, SurfaceUseRefusal)
+    assert ambiguous_use.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
 
 
 def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> None:
