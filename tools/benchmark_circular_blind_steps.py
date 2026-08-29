@@ -59,6 +59,19 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
         enabled, enabled_seconds = measurements[True]
         enabled_result = enabled.result
         disabled_result = disabled.result
+        enabled_fillets = enabled.physical.candidate_set(FamilyId.FILLETS).candidates
+        rejected_fillets = {
+            item.candidate
+            for item in enabled.reconciliation.dispositions
+            if item.reason is ReasonCode.FILLET_SUPERSEDED_BY_CIRCULAR_BLIND_STEP
+        }
+        expected_enabled_fillets = tuple(
+            candidate.record for candidate in enabled_fillets if candidate not in rejected_fillets
+        )
+        exact_fillet_reconciliation = (
+            disabled_result.fillets == tuple(candidate.record for candidate in enabled_fillets)
+            and enabled_result.fillets == expected_enabled_fillets
+        )
         rows.append(
             {
                 "id": model_id,
@@ -69,7 +82,9 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
                         fillets=disabled_result.fillets,
                     )
                     == disabled_result
+                    and exact_fillet_reconciliation
                 ),
+                "exact_fillet_reconciliation": exact_fillet_reconciliation,
                 "raw_circular_blind_steps": len(
                     enabled.physical.candidate_set(
                         FamilyId.CIRCULAR_BLIND_STEPS
@@ -90,6 +105,9 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
     return {
         "all_pre_existing_outputs_equal": all(
             row["pre_existing_outputs_equal"] for row in rows
+        ),
+        "all_fillet_reconciliations_exact": all(
+            row["exact_fillet_reconciliation"] for row in rows
         ),
         "raw_circular_blind_steps": sum(row["raw_circular_blind_steps"] for row in rows),
         "accepted_circular_blind_steps": sum(
