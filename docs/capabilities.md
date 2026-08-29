@@ -127,7 +127,7 @@ provenance, refusal, native, STEP and aggregate tests. Corpus and runtime effect
 reported evidence rather than being inferred from this authored sweep. The
 [MFCAD++ E4 comparison](benchmarks/effectiveness-mfcadpp-500-e4-pad.md) has exact score-vector parity
 over the frozen 500-model development selection and a same-process enabled/disabled timing ratio of
-1.0058; that corpus contains no newly accepted complete Pad corner-blend cycle.
+1.0221; that corpus contains no newly accepted complete Pad corner-blend cycle.
 
 ## Surface-representation support is family-specific
 
