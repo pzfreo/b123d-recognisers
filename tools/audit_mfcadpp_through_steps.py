@@ -123,6 +123,13 @@ def _counts(values: list[str]) -> tuple[tuple[str, int], ...]:
     return tuple(sorted(Counter(values).items()))
 
 
+def _arc_name(graph: FaceGraph, left: FaceNode, right: FaceNode) -> str | None:
+    """Return one closed arc value for descriptive evidence, preserving absence."""
+
+    kind = graph.arc(left, right)
+    return None if kind is None else str(kind)
+
+
 def _solid_bounds(solid: Any) -> tuple[tuple[float, float], ...]:
     bounds = solid.bounding_box()
     return (
@@ -210,18 +217,19 @@ def describe_component(graph: FaceGraph, nodes: tuple[FaceNode, ...]) -> Compone
     )
     internal = _counts(
         [
-            str(graph.arc(left, right))
+            kind
             for at, left in enumerate(ordered)
             for right in ordered[at + 1 :]
-            if graph.arc(left, right) is not None
+            if (kind := _arc_name(graph, left, right)) is not None
         ]
     )
     boundary = _counts(
         [
-            str(graph.arc(node, neighbour))
+            kind
             for node in ordered
             for neighbour in graph.neighbours(node)
             if neighbour not in component
+            if (kind := _arc_name(graph, node, neighbour)) is not None
         ]
     )
     regions = _regions(graph, {graph.require_node(face) for face in solid.faces()}, planes)
