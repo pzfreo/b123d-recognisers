@@ -12,7 +12,11 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
-from tools.audit_mfcadpp_through_steps import _rank_clusters, describe_component
+from tools.audit_mfcadpp_through_steps import (
+    _is_two_wall_boundary_interruption,
+    _rank_clusters,
+    describe_component,
+)
 
 
 def _step():
@@ -113,3 +117,24 @@ def test_cluster_ranking_and_samples_ignore_input_traversal_order() -> None:
         "model_id": "a",
         "face_indices": [4, 7],
     }
+
+
+def test_broad_interruption_motif_requires_every_remaining_safety_proof() -> None:
+    product = _take_inventory(_step())
+    disposition = next(
+        item
+        for item in product.reconciliation.for_family(FamilyId.THROUGH_STEPS)
+        if item.outcome is Outcome.ACCEPTED
+    )
+    anatomy = asdict(
+        describe_component(
+            product.context.graph,
+            tuple(product.evidence.defining_of(disposition.candidate)),
+        )
+    )
+    anatomy["first_failed_gate"] = "nonrectangular_regions"
+    anatomy["rectangular_outer_faces"] = 1
+
+    assert _is_two_wall_boundary_interruption(anatomy)
+    anatomy["exact_empty_prism"] = False
+    assert not _is_two_wall_boundary_interruption(anatomy)

@@ -322,6 +322,58 @@ def _rank_clusters(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _is_two_wall_boundary_interruption(anatomy: dict[str, Any]) -> bool:
+    """Whether only non-pristine wall boundaries block the complete two-wall proof."""
+
+    return bool(
+        anatomy["first_failed_gate"] == "nonrectangular_regions"
+        and anatomy["face_count"] == 2
+        and anatomy["surface_counts"] == (("PLANE", 2),)
+        and sorted(count for _axis, count in anatomy["principal_plane_axes"]) == [1, 1]
+        and anatomy["nonprincipal_planar_faces"] == 0
+        and anatomy["internal_arc_counts"] == (("concave", 1),)
+        and anatomy["full_run_faces"] == 2
+        and anatomy["terminal_count"] == 2
+        and anatomy["exact_empty_prism"] is True
+    )
+
+
+def _rank_broad_motifs(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    interrupted = [item for item in items if _is_two_wall_boundary_interruption(item["anatomy"])]
+    subtypes = Counter(
+        (
+            item["anatomy"]["rectangular_outer_faces"],
+            item["anatomy"]["faces_with_inner_wires"],
+            item["anatomy"]["faces_with_curved_edges"],
+        )
+        for item in interrupted
+    )
+    return [
+        {
+            "motif": "two_wall_boundary_interruption",
+            "definition": (
+                "exactly two orthogonal principal planar faces with one concave join, both "
+                "spanning the inferred run, two terminal planes, and an exactly empty envelope "
+                "prism; one or both wall boundaries are not pristine four-run rectangles"
+            ),
+            "components": len(interrupted),
+            "faces": sum(item["face_count"] for item in interrupted),
+            "component_share_of_unrecalled": (
+                len(interrupted) / len(items) if items else None
+            ),
+            "subtypes": [
+                {
+                    "rectangular_outer_faces": key[0],
+                    "faces_with_inner_wires": key[1],
+                    "faces_with_curved_edges": key[2],
+                    "components": count,
+                }
+                for key, count in sorted(subtypes.items(), key=lambda row: (-row[1], row[0]))
+            ],
+        }
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
@@ -398,6 +450,7 @@ def main() -> int:
             "recalled_components": recalled_components,
             "unrecalled_components": len(items),
         },
+        "ranked_broad_motifs": _rank_broad_motifs(items),
         "clusters": _rank_clusters(items),
         "unrecalled_components": items,
     }
