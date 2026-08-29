@@ -9,9 +9,9 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 
 | rotation | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Z30 | 75 | 34 | 14 | 27 | 0 |
-| X30 | 75 | 29 | 7 | 39 | 0 |
-| X90 | 75 | 75 | 0 | 0 | 0 |
+| Z30 | 76 | 34 | 14 | 28 | 0 |
+| X30 | 76 | 29 | 7 | 40 | 0 |
+| X90 | 76 | 76 | 0 | 0 | 0 |
 
 ## Affected fixtures
 
@@ -19,6 +19,7 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 - **blind_pockets_and_pocket_patterns** — Z30: 6 reclassified, 0 absent; transitions pocket->prismatic_pocket ×6; X30: 0 reclassified, 6 absent; absent pocket ×6
 - **chamfers_fillets_and_flats** — Z30: 0 reclassified, 8 absent; absent chamfer ×4, fillet ×4; X30: 0 reclassified, 8 absent; absent chamfer ×4, fillet ×4
 - **open_channels** — Z30: 0 reclassified, 4 absent; absent channel ×1, plate ×3; X30: 0 reclassified, 4 absent; absent channel ×1, plate ×3
+- **paired_ramp_step** — Z30: 0 reclassified, 1 absent; absent paired_ramp_step ×1; X30: 0 reclassified, 1 absent; absent paired_ramp_step ×1
 - **plates_pads_levels_and_slanted_steps** — Z30: 0 reclassified, 4 absent; absent plate ×2, pocket ×2; X30: 0 reclassified, 4 absent; absent plate ×2, pocket ×2
 - **polygonal_boss** — X30: 0 reclassified, 1 absent; absent plate ×1
 - **slanted_steps** — Z30: 0 reclassified, 2 absent; absent pocket ×2; X30: 0 reclassified, 2 absent; absent pocket ×2

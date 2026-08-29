@@ -133,6 +133,7 @@ from b123d_recognisers.levels import (
     step_level_zs,
 )
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
+from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
 from b123d_recognisers.passages import (
     Passage,
     PassageCompatibilityError,
@@ -206,6 +207,7 @@ __all__ = [
     "PassageFrame",
     "PassageSection",
     "PassageSectionVertex",
+    "PairedRampStep",
     "SectionPassage",
     "BoltCircle",
     "Chamfer",
@@ -275,6 +277,7 @@ __all__ = [
     "capability_manifest_json",
     "validate_capability_manifest",
     "recognise_angled_steps",
+    "recognise_paired_ramp_steps",
     "PrismaticPocket",
     "recognise_passages",
     "recognise_section_passages",

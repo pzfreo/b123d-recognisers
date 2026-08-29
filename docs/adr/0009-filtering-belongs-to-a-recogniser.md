@@ -125,3 +125,7 @@ chains, one degree-two cycle, no touching competing eligible chain, and the exis
 cap and height predicates. A missing, partial, concave, multi-node, ambiguous or competing cycle is
 declined by this recogniser without changing the neutral result or any sibling family. Polygonal
 Stock and all other consumers remain base-graph-only.
+
+Issue #297 adds no shared filter. `FaceGraph` still exposes every face and the shared bevel reader
+still returns every supported single-axis oblique plane. `recognise_paired_ramp_steps` alone applies
+the visible mirror-pair, principal-run, arc, exterior-opening and terminal gates.

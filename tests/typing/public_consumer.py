@@ -10,6 +10,7 @@ from b123d_recognisers import (
     BossRecord,
     FramedRecognitionResult,
     HoleRecord,
+    PairedRampStep,
     RecognitionReport,
     RecognitionResult,
     build_framed_recognition_result,
@@ -19,6 +20,7 @@ from b123d_recognisers import (
     feature_census,
     recognise_bosses,
     recognise_holes,
+    recognise_paired_ramp_steps,
 )
 from b123d_recognisers.inspection import (
     BevelReject,
@@ -40,16 +42,19 @@ def consume_bevel_rejection(error: BevelReject) -> None:
 def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     holes = recognise_holes(part)
     bosses = recognise_bosses(part)
+    paired_ramp_steps = recognise_paired_ramp_steps(part)
     result = build_recognition_result(part)
     report = build_recognition_report(part)
 
     assert_type(holes, list[HoleRecord])
     assert_type(bosses, list[BossRecord])
+    assert_type(paired_ramp_steps, list[PairedRampStep])
     assert_type(result, RecognitionResult)
     assert_type(report, RecognitionReport)
     assert_type(report.result, RecognitionResult)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
+    assert_type(result.paired_ramp_steps, tuple[PairedRampStep, ...])
     framed = build_framed_recognition_result(part)
     if isinstance(framed, FramedRecognitionResult):
         assert_type(framed.part, Shape[TopoDS_Shape])

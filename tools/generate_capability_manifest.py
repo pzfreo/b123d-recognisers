@@ -33,6 +33,14 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "paired-ramp-steps": {
+        "recognisers": [("recognise_paired_ramp_steps", "part")],
+        "records": [("PairedRampStep", "output", ["RecognitionResult.paired_ramp_steps"])],
+        "census": "paired_ramp_step",
+        "goldens": ["paired_ramp_step"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_paired_ramp_steps.py"],
+    },
     "prismatic-pockets": {
         "recognisers": [("recognise_prismatic_pockets", "part")],
         "records": [

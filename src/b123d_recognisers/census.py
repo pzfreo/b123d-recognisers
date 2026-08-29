@@ -52,6 +52,7 @@ CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
     ("passage", "section_passages"),
     ("chamfer", "chamfers"),
     ("angled_step", "angled_steps"),
+    ("paired_ramp_step", "paired_ramp_steps"),
     ("fillet", "fillets"),
     ("countersink", "countersinks"),
     ("plate", "plates"),

@@ -123,6 +123,7 @@
           }
         ],
         "pads": [],
+        "paired_ramp_steps": [],
         "passages": [],
         "plates": [],
         "pocket_patterns": [],
@@ -251,6 +252,7 @@
           }
         ],
         "pads": [],
+        "paired_ramp_steps": [],
         "passages": [],
         "plates": [],
         "pocket_patterns": [],
@@ -278,6 +280,7 @@
       "groove": 0,
       "hole": 2,
       "hole_pattern": 0,
+      "paired_ramp_step": 0,
       "passage": 0,
       "plate": 0,
       "pocket": 0,
@@ -362,6 +365,7 @@
           "spotface": null
         }
       ],
+      "recognise_paired_ramp_steps": [],
       "recognise_passages": [],
       "recognise_plates": [],
       "recognise_pocket_patterns": [],

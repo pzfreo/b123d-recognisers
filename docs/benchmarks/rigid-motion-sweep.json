@@ -414,6 +414,50 @@
         }
       }
     },
+    "paired_ramp_step": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "paired_ramp_step": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "paired_ramp_step": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 1,
+          "absent_by_family": {
+            "paired_ramp_step": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
     "plates_pads_levels_and_slanted_steps": {
       "baseline_records": 4,
       "rotations": {
@@ -917,22 +961,22 @@
   "schema": 1,
   "totals": {
     "X30": {
-      "absent": 39,
-      "baseline_records": 75,
+      "absent": 40,
+      "baseline_records": 76,
       "introduced": 0,
       "reclassified": 7,
       "retained_same_family": 29
     },
     "X90": {
       "absent": 0,
-      "baseline_records": 75,
+      "baseline_records": 76,
       "introduced": 0,
       "reclassified": 0,
-      "retained_same_family": 75
+      "retained_same_family": 76
     },
     "Z30": {
-      "absent": 27,
-      "baseline_records": 75,
+      "absent": 28,
+      "baseline_records": 76,
       "introduced": 0,
       "reclassified": 14,
       "retained_same_family": 34
