@@ -87,7 +87,9 @@ def test_recovered_hole_candidate_retains_original_cylinder_dependency() -> None
 
     records = _discover_holes(converted, writer=ledger.writer)
 
-    assert len(records) == 1
+    expected = recognise_holes(native)
+    assert records == recognise_holes(converted) == expected
+    assert _take_inventory(converted).result.holes == tuple(expected)
     (candidate,) = ledger.candidate_set(FamilyId.HOLES).candidates
     (surface_use,) = candidate.evidence.surfaces
     assert surface_use.node in candidate.evidence.defining
@@ -95,6 +97,22 @@ def test_recovered_hole_candidate_retains_original_cylinder_dependency() -> None
     assert surface_use.surface.provenance is SurfaceProvenance.RECOVERED
     assert surface_use.material_side is not None
     assert surface_use.material_side.candidate_outward_sign == -1
+
+
+def test_recovered_hole_end_plane_refusal_cannot_claim_through(monkeypatch) -> None:
+    import b123d_recognisers._effective_surfaces as surfaces
+
+    native = Box(12, 12, 10) - Cylinder(2, 10)
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+    monkeypatch.setattr(
+        surfaces._EffectiveFaceSurfaces,
+        "_certify_plane",
+        lambda _self, _node, _surface: surfaces.MaterialSideRefusalReason.SAMPLES_DISAGREE,
+    )
+
+    (refused_end,) = recognise_holes(converted)
+
+    assert refused_end.bottom == "unknown"
 
 
 def _through():
@@ -965,8 +983,8 @@ def test_duplicate_hole_face_ownership_refuses_without_prefix(monkeypatch) -> No
     ledger = ClaimLedger(FaceGraph(part))
     original = module._merge_stacks
 
-    def duplicate(stacks, edge_faces, cache=None):
-        merged = original(stacks, edge_faces, cache)
+    def duplicate(stacks, edge_faces, cache=None, face_surfaces=None):
+        merged = original(stacks, edge_faces, cache, face_surfaces)
         return [*merged, merged[0]]
 
     monkeypatch.setattr(module, "_merge_stacks", duplicate)

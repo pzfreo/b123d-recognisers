@@ -5,8 +5,14 @@
 import math
 from typing import TypeVar
 
+from OCP.Bnd import Bnd_Box
+from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBndLib import BRepBndLib
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCP.GeomAbs import GeomAbs_BezierSurface, GeomAbs_BSplineSurface, GeomAbs_Cylinder
+from OCP.gp import gp_Trsf
+from OCP.Standard import Standard_Failure
 
 from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
 from b123d_recognisers._analytic_surfaces import SurfaceKind
@@ -15,6 +21,7 @@ from b123d_recognisers._effective_surfaces import (
     EffectiveFaceSurfaceQuery,
     SurfaceUse,
     effective_faces_for_graph,
+    recovery_tolerance,
 )
 from b123d_recognisers._geometry import COORD_FLOOR, _axis_letter_of, length_tol, quantise
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
@@ -32,6 +39,131 @@ _FULL_CYL_MIN_EXTENT = math.pi * 1.05
 # band's own diameter per ADR 0008: the gap a sliver face or a tangent seam leaves scales with
 # the cylinder, so a fixed millimetre gap splits a small bore's stack and welds a large one's.
 _STACK_GAP_FRAC = 0.0125
+_RECOVERED_ANGLE_SAMPLES_PER_EDGE = 32
+
+
+def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+    return math.fsum(a * b for a, b in zip(left, right, strict=True))
+
+
+def _cross(
+    left: tuple[float, float, float], right: tuple[float, float, float]
+) -> tuple[float, float, float]:
+    return (
+        left[1] * right[2] - left[2] * right[1],
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0],
+    )
+
+
+def _normalised(vector: tuple[float, float, float]) -> tuple[float, float, float]:
+    magnitude = math.sqrt(_dot(vector, vector))
+    if not math.isfinite(magnitude) or magnitude <= COORD_FLOOR:
+        raise ValueError("recovered cylinder axis basis is degenerate")
+    return tuple(component / magnitude for component in vector)  # type: ignore[return-value]
+
+
+def _axis_basis(
+    direction: tuple[float, float, float],
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    seed = min(
+        ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+        key=lambda candidate: abs(_dot(direction, candidate)),
+    )
+    across = _normalised(_cross(direction, seed))
+    return across, _normalised(_cross(direction, across))
+
+
+def _recovered_axis_bounds(
+    face, direction: tuple[float, float, float]
+) -> tuple[float, float] | None:
+    """Use OCCT's exact-geometry optimal bounds after aligning the recovered axis to Z."""
+
+    try:
+        across, up = _axis_basis(direction)
+        transform = gp_Trsf()
+        transform.SetValues(
+            across[0],
+            across[1],
+            across[2],
+            0.0,
+            up[0],
+            up[1],
+            up[2],
+            0.0,
+            direction[0],
+            direction[1],
+            direction[2],
+            0.0,
+        )
+        aligned = BRepBuilderAPI_Transform(face.wrapped, transform, True).Shape()
+        bounds = Bnd_Box()
+        BRepBndLib.AddOptimal_s(aligned, bounds, False, False)
+        values = bounds.Get()
+        lo, hi = float(values[2]), float(values[5])
+        if not math.isfinite(lo) or not math.isfinite(hi) or hi < lo:
+            return None
+        vertex_coordinates = tuple(
+            vertex.X * direction[0] + vertex.Y * direction[1] + vertex.Z * direction[2]
+            for vertex in face.vertices()
+        )
+        if vertex_coordinates:
+            tolerance = recovery_tolerance(face)
+            vertex_lo, vertex_hi = min(vertex_coordinates), max(vertex_coordinates)
+            if abs(lo - vertex_lo) <= tolerance:
+                lo = vertex_lo
+            if abs(hi - vertex_hi) <= tolerance:
+                hi = vertex_hi
+        return lo, hi
+    except (Standard_Failure, RuntimeError, ValueError):
+        return None
+
+
+def _recovered_angular_lower_bound(
+    face,
+    axis_point: tuple[float, float, float],
+    direction: tuple[float, float, float],
+    radius: float,
+) -> float | None:
+    """Return a conservative observed angular span from exact original trim points.
+
+    A topological seam proves a complete turn. Otherwise exact points distributed along every
+    original boundary edge prove only the smallest circular arc containing those observations;
+    undersampling can reject a useful patch but cannot promote a narrow patch to a full cylinder.
+    """
+
+    try:
+        edges = tuple(face.edges())
+        if any(BRep_Tool.IsClosed_s(edge.wrapped, face.wrapped) for edge in edges):
+            return 2.0 * math.pi
+        across, up = _axis_basis(direction)
+        radial_tolerance = recovery_tolerance(face)
+        angles: list[float] = []
+        for edge in edges:
+            for index in range(_RECOVERED_ANGLE_SAMPLES_PER_EDGE + 1):
+                point = edge.position_at(index / _RECOVERED_ANGLE_SAMPLES_PER_EDGE)
+                relative = (
+                    point.X - axis_point[0],
+                    point.Y - axis_point[1],
+                    point.Z - axis_point[2],
+                )
+                along = _dot(relative, direction)
+                radial = tuple(
+                    coordinate - along * axis
+                    for coordinate, axis in zip(relative, direction, strict=True)
+                )
+                magnitude = math.sqrt(_dot(radial, radial))
+                if not math.isfinite(magnitude) or abs(magnitude - radius) > radial_tolerance:
+                    return None
+                angles.append(math.atan2(_dot(radial, up), _dot(radial, across)) % (2.0 * math.pi))
+        if len(angles) < 2:
+            return None
+        ordered = sorted(set(angles))
+        gaps = [right - left for left, right in zip(ordered, ordered[1:], strict=False)]
+        gaps.append(ordered[0] + 2.0 * math.pi - ordered[-1])
+        return 2.0 * math.pi - max(gaps)
+    except (Standard_Failure, RuntimeError, ValueError):
+        return None
 
 
 def analyse_cylinders(
@@ -85,6 +217,7 @@ def analyse_cylinders(
                 cyl.Axis().Location().Y(),
                 cyl.Axis().Location().Z(),
             )
+            u_extent = surf.LastUParameter() - surf.FirstUParameter()
         else:
             if surf.GetType() not in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface):
                 continue
@@ -132,15 +265,16 @@ def analyse_cylinders(
                 s_ap + sign * surf.LastVParameter(),
             )
         else:
-            axial = tuple(
-                vertex.X * dir_xyz[0] + vertex.Y * dir_xyz[1] + vertex.Z * dir_xyz[2]
-                for vertex in face.vertices()
-            )
+            recovered_bounds = _recovered_axis_bounds(face, dir_xyz)
+            u_extent = _recovered_angular_lower_bound(face, ap_xyz, dir_xyz, r)
+            if recovered_bounds is None or u_extent is None:
+                continue
+            axial = recovered_bounds
         rec: CylinderEvidence = dict(
             diameter=quantise(r * 2),
             axis=ax,
             solid_idx=solid_idx,
-            u_extent=surf.LastUParameter() - surf.FirstUParameter(),
+            u_extent=u_extent,
             axis_xyz=ap_xyz,
             dir_xyz=dir_xyz,
             s_lo=min(axial),

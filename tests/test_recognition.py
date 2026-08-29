@@ -100,6 +100,44 @@ def test_exact_converted_external_cylinder_reaches_the_existing_boss_consumer():
     assert recognise_bosses(converted) == recognise_bosses(native)
 
 
+def test_recovered_angular_span_does_not_trust_spline_u_units(monkeypatch):
+    import b123d_recognisers._cylinder_substrate as substrate
+
+    converted = Part(BRepBuilderAPI_NurbsConvert(Cylinder(4, 10).wrapped, True).Shape())
+    original = substrate.BRepAdaptor_Surface
+
+    class AffineUAdaptor:
+        def __init__(self, face):
+            self._real = original(face)
+
+        def __getattr__(self, name):
+            return getattr(self._real, name)
+
+        def FirstUParameter(self):
+            return 10.0 + 7.0 * self._real.FirstUParameter()
+
+        def LastUParameter(self):
+            return 10.0 + 7.0 * self._real.LastUParameter()
+
+    monkeypatch.setattr(substrate, "BRepAdaptor_Surface", AffineUAdaptor)
+
+    (recovered,) = analyse_cylinders(converted)[0]
+    assert recovered["u_extent"] == pytest.approx(2.0 * math.pi)
+
+
+def test_recovered_axis_bounds_include_curved_trim_extrema() -> None:
+    native = Cylinder(5, 20) & Sphere(8)
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+
+    (before,) = analyse_cylinders(native)[0]
+    (after,) = analyse_cylinders(converted)[0]
+
+    assert after["s_lo"] == pytest.approx(before["s_lo"])
+    assert after["s_hi"] == pytest.approx(before["s_hi"])
+    assert after["s_lo"] == pytest.approx(-math.sqrt(8**2 - 5**2))
+    assert after["s_hi"] == pytest.approx(math.sqrt(8**2 - 5**2))
+
+
 class TestFindHoles:
     @pytest.mark.timeout(60)
     def test_plain_through_hole(self):

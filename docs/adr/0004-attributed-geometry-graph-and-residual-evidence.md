@@ -238,8 +238,16 @@ respectively negative or positive radial certificate; native facts retain their 
 oriented-cylinder compatibility contract without paying for a duplicate solid-probe proof.
 Standalone record-only calls remain geometry facades and do not expose these run-local handles.
 
-This amendment changes no Hole, Boss or Flat feature predicate. Exact OCCT-converted cylinders are
-supported by the shared inventory and reach the existing Boss and Hole discovery consumers, but a
-complete converted model can still differ where a downstream recogniser deliberately reads a
-non-cylinder native surface (for example Hole end classification). Such differences remain an
-explicit family migration boundary, not permission to reinterpret every B-spline face.
+Recovered cylinder trim measures never reuse spline parameter units. A topological seam proves a
+complete turn; otherwise exact points distributed along every original trim edge provide a
+conservative angular lower bound, which may refuse a marginal patch but cannot promote a narrow
+one. Axial extrema come from OCCT optimal bounds after rigidly aligning the recovered axis with Z;
+values within the recovery bound of an exact boundary vertex snap to that vertex to remove bounding
+box enlargement. Reparameterized-U and curved-trim fixtures guard both decisions.
+
+Hole end classification is the one paired downstream migration: a B-spline/Bezier partner must
+recover as a plane and acquire its own material-side certificate before its outward normal may
+classify an end as open or flat. Refusal remains `unknown`; cones, tori, spheres and cylinders keep
+their existing native-only end rules. Exact converted through-hole records now match native records
+through standalone and aggregate routes. No Boss or Flat feature predicate changes, and this is not
+permission to reinterpret every B-spline face.

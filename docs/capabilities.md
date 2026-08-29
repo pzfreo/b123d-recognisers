@@ -169,16 +169,20 @@ hot path.
 That is a non-zero, narrowly cylinder-specific signal—not evidence for a general NURBS backlog.
 The shared cylinder inventory now consumes exact recovered cylinders only after independent radial
 material-side proof against one valid closed-solid owner. Hole and Boss aggregate Candidates retain
-the original cylinder faces and their recovery/material-side dependencies; exact converted OD and
-bore fixtures cover both radial signs, transforms, aggregate attribution and the existing Boss
-consumer. No Hole, Boss or Flat feature predicate was relaxed.
+the original cylinder faces and their recovery/material-side dependencies. Recovered angular span
+comes from original trim topology/points rather than spline U units, and recovered axial bounds use
+OCCT optimal exact-geometry bounds in the cylinder frame. Exact converted OD and bore fixtures cover
+both radial signs, transforms, curved trims, aggregate attribution and the existing Boss consumer.
+The paired recovered-plane end query gives exact converted through Holes the same complete record in
+standalone and aggregate routes; refusal reports an `unknown` end rather than guessing. No Hole,
+Boss or Flat admission threshold was relaxed.
 
 The four Flat and one Hole candidates from the external spike remain prioritisation evidence rather
 than correctness claims until the licensed source archive can be rerun and those models adjudicated.
-A wholly converted model may also stop at a downstream native-surface boundary: for example, Hole
-end classification still distinguishes planes, cones and tori from original topology, so cylinder
-discovery alone does not claim complete native-versus-converted Hole record parity. This sample gives
-no data-backed reason to migrate plane consumers beyond Pads or any cone consumer.
+A wholly converted model may still stop at a downstream native-surface boundary: Hole end cones,
+tori, spheres and cylinders remain native-only even though certified recovered planes now establish
+open/flat ends. This sample gives no data-backed reason to migrate plane consumers beyond Pads and
+that bounded Hole end role, or to migrate any cone consumer.
 
 B-spline input remains **excluded beyond the measured Raised Pad and shared-cylinder boundaries**.
 Torus-dependent branches remain excluded. Refused or ambiguous analytic recovery and an unproved

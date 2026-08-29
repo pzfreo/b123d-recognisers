@@ -9,7 +9,15 @@ from typing import cast
 
 from build123d import Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
+from OCP.GeomAbs import (
+    GeomAbs_BezierSurface,
+    GeomAbs_BSplineSurface,
+    GeomAbs_Cone,
+    GeomAbs_Cylinder,
+    GeomAbs_Plane,
+    GeomAbs_Sphere,
+    GeomAbs_Torus,
+)
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
@@ -31,10 +39,12 @@ from b123d_recognisers._cylinder_substrate import (
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveFaceSurfaceQuery,
+    SurfaceKind,
     SurfaceProvenance,
     SurfaceUse,
     SurfaceUseRefusal,
     effective_faces_for_graph,
+    effective_faces_for_part,
 )
 from b123d_recognisers._geometry import _unit, length_tol, quantise
 from b123d_recognisers._record import Record
@@ -70,6 +80,10 @@ _SAME_DIAMETER_FRAC = 1e-4
 _DIAMETER_FLOOR = 1e-9
 
 
+def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+    return math.fsum(a * b for a, b in zip(left, right, strict=True))
+
+
 def _cylinder_dependency(
     effective: EffectiveFaceSurfaceQuery, face: Face
 ) -> SurfaceUse | SurfaceUseRefusal:
@@ -80,6 +94,24 @@ def _cylinder_dependency(
         isinstance(fact, AnalyticSurfaceFact) and fact.provenance is SurfaceProvenance.RECOVERED
     )
     return effective.use(face, material_side=recovered)
+
+
+def _family_surface_query(
+    part: Part,
+    writer: EvidenceWriter | None,
+    supplied: EffectiveFaceSurfaceQuery | None,
+) -> EffectiveFaceSurfaceQuery | None:
+    if supplied is not None:
+        return supplied
+    if writer is not None:
+        return effective_faces_for_graph(writer.graph)
+    if any(
+        BRepAdaptor_Surface(face.wrapped).GetType()
+        in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface)
+        for face in part.faces()
+    ):
+        return effective_faces_for_part(part)
+    return None
 
 
 def _same_diameter(a: float, b: float) -> bool:
@@ -257,15 +289,18 @@ def _classify_end(
     hi_end: bool,
     edge_faces: dict,
     cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
     if cache is None:
-        return _classify_end_uncached(seg, s_end, hi_end, edge_faces)
+        return _classify_end_uncached(seg, s_end, hi_end, edge_faces, face_surfaces=face_surfaces)
     key = ("ce", id(seg), round(s_end, 9), hi_end)
     hit = cache.get(key)
     if hit is not None and hit[0] is seg:
         return cast(str, hit[1])
-    result = _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache)
+    result = _classify_end_uncached(
+        seg, s_end, hi_end, edge_faces, cache, face_surfaces=face_surfaces
+    )
     cache[key] = (seg, result)
     return result
 
@@ -276,6 +311,7 @@ def _classify_end_uncached(
     hi_end: bool,
     edge_faces: dict,
     cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
@@ -334,12 +370,24 @@ def _classify_end_uncached(
             return "open" if curls_in else "flat"
         if kind == GeomAbs_Plane:
             n = partner.normal_at(partner.center())
-            dot = (n.X * dx + n.Y * dy + n.Z * dz) * e_sign
+            normal = (n.X, n.Y, n.Z)
+        elif kind in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface) and face_surfaces is not None:
+            fact = face_surfaces.fact(partner)
+            if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
+                continue
+            plane_use = face_surfaces.use(partner, material_side=True)
+            if not isinstance(plane_use, SurfaceUse) or plane_use.material_side is None:
+                continue
+            normal = plane_use.material_side.outward
+        else:
+            normal = None
+        if normal is not None:
+            dot = _dot(normal, (dx, dy, dz)) * e_sign
             if dot < -0.5:
                 return "flat"
             if dot > 0.5:
                 return "open"
-        elif kind == GeomAbs_Sphere:
+        if kind == GeomAbs_Sphere:
             # Convex (material inside the sphere): the bore exits through a
             # spherical surface. Concave (a ball-nose cavity): a closed
             # bottom — reported as "flat" (no rounded-bottom category).
@@ -376,7 +424,10 @@ def _shared_transition(
 
 
 def _merge_stacks(
-    stacks: list[list[SegmentEvidence]], edge_faces: dict, cache: dict | None = None
+    stacks: list[list[SegmentEvidence]],
+    edge_faces: dict,
+    cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[list[SegmentEvidence]]:
     """Recombine coaxial stacks that are one hole:
 
@@ -400,8 +451,10 @@ def _merge_stacks(
             closed = ("flat", "drill_point")
             if (
                 _same_diameter(a["diameter"], b["diameter"])
-                and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
-                and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
+                and _classify_end(a, a["s_hi"], True, edge_faces, cache, face_surfaces)
+                not in closed
+                and _classify_end(b, b["s_lo"], False, edge_faces, cache, face_surfaces)
+                not in closed
             ):
                 joined = cast(
                     SegmentEvidence,
@@ -434,7 +487,10 @@ def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink
 
 
 def _drilled_from(
-    stack: list[SegmentEvidence], edge_faces: dict, cache: dict
+    stack: list[SegmentEvidence],
+    edge_faces: dict,
+    cache: dict,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> tuple[bool, SegmentEvidence, float, str]:
     """Which end of a coaxial stack is the opening, and what closes the other.
 
@@ -449,8 +505,8 @@ def _drilled_from(
 
     lo_seg = min(stack, key=lambda s: s["s_lo"])
     hi_seg = max(stack, key=lambda s: s["s_hi"])
-    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache)
-    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache)
+    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache, face_surfaces)
+    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache, face_surfaces)
 
     if lo_state == "open" and hi_state != "open":
         from_hi = False
@@ -585,7 +641,10 @@ def _discover_holes(
 ) -> list[HoleRecord]:
     """Discover Holes and stage exact cylindrical/predecessor evidence atomically."""
 
-    z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+    effective = _family_surface_query(part, writer, face_surfaces)
+    z_cyls, cross_cyls = (
+        cyls if cyls is not None else analyse_cylinders(part, face_surfaces=effective)
+    )
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
         return []
@@ -594,12 +653,17 @@ def _discover_holes(
     # classified by _merge_stacks and again in the loop below, each scan walking
     # every face's edges.
     cache: dict = {}
-    stacks = _merge_stacks(_merge_runs(_segments(internal), _line_key), edge_faces, cache)
+    stacks = _merge_stacks(
+        _merge_runs(_segments(internal), _line_key),
+        edge_faces,
+        cache,
+        effective,
+    )
 
     proposals: list[_HoleProposal] = []
     for stack in stacks:
         d = stack[0]["dir_xyz"]
-        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache)
+        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache, effective)
 
         # Order segments from the opening inward; the bore is the narrowest
         # (not the farthest — a through hole counterbored from both sides has
@@ -641,9 +705,7 @@ def _discover_holes(
         proposals = composed
 
     if writer is not None:
-        effective = (
-            effective_faces_for_graph(writer.graph) if face_surfaces is None else face_surfaces
-        )
+        assert effective is not None
         occurrences_by_record: dict[int, list[CompletedOccurrence]] = {}
         for occurrence in predecessor_occurrences:
             predecessor_record = occurrence.record(CounterSink)
@@ -722,7 +784,10 @@ def _discover_bosses(
 ) -> list[BossRecord]:
     """Discover Bosses and validate every defining segment before publication."""
 
-    z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+    effective = _family_surface_query(part, writer, face_surfaces)
+    z_cyls, cross_cyls = (
+        cyls if cyls is not None else analyse_cylinders(part, face_surfaces=effective)
+    )
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
         return []
@@ -732,8 +797,8 @@ def _discover_bosses(
     proposals: list[_BossProposal] = []
     for seg in _segments(external):
         d = seg["dir_xyz"]
-        lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache)
-        hi_state = _classify_end(seg, seg["s_hi"], True, edge_faces, cache)
+        lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache, effective)
+        hi_state = _classify_end(seg, seg["s_hi"], True, edge_faces, cache, effective)
         # The free end is the open one (its cap faces away from the segment);
         # default to the high end when both or neither are open.
         from_hi = not (lo_state == "open" and hi_state != "open")
@@ -750,9 +815,7 @@ def _discover_bosses(
         )
 
     if writer is not None:
-        effective = (
-            effective_faces_for_graph(writer.graph) if face_surfaces is None else face_surfaces
-        )
+        assert effective is not None
         pending: list[tuple[BossRecord, tuple[FaceNode, ...]]] = []
         for proposal in proposals:
             resolved = {writer.graph.require_node(face) for face in proposal.segment_faces}
