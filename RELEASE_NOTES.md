@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.5.0
+## 0.4.6
 
 - **Connected canonical cylinder recovery to Hole and Boss recognition.** Exact cylinders
   represented by eligible B-spline or Bezier faces can now participate through the same aggregate

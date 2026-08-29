@@ -81,7 +81,8 @@ The sealed MFTRCAD holdout is not required for this architecture decision and re
 - Unconstrained roll is explicit gauge rather than a hidden semantic axis; geometry with no
   analytic direction produces an explicit non-result.
 - The legacy public API and coordinate meaning remain compatible. The framed result's required
-  working-shape field is a pre-1.0 minor-version compatibility event.
+  working-shape field shipped in 0.4.6 as an explicitly approved pre-1.0 patch compatibility
+  event; callers constructing `FramedRecognitionResult` directly must add the working shape.
 - The topology-preserving placement route is release quality as an explicit opt-in API.
 - Making it the default recogniser path remains deferred to a separate compatibility decision.
 
