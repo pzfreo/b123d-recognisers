@@ -83,20 +83,31 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("workload", choices=("mfcadpp", "census"))
+    parser.add_argument("--root", type=Path)
     parser.add_argument("--limit", type=int, default=30)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
     from build123d import import_step
 
-    paths = sorted(args.root.glob("*.st*p"))[: args.limit]
+    if args.workload == "mfcadpp":
+        if args.root is None:
+            parser.error("mfcadpp requires --root")
+        paths = sorted(args.root.glob("*.st*p"))[: args.limit]
+    else:
+        paths = sorted(
+            path
+            for corpus in ("nist", "gramel")
+            for path in (ROOT / "tests" / "corpus" / corpus).glob("*.st*p")
+        )
     if not paths:
         parser.error("the selected workload contains no STEP files")
     report = {
         "format": "b123d-recognisers-through-step-paired-benchmark",
         "format_version": 1,
         "implementation_commit": _commit(),
+        "workload": args.workload,
         "selection": [path.name for path in paths],
         "environment": {"python": platform.python_version(), "platform": platform.platform()},
         **_measure([(path.name, import_step(path)) for path in paths]),
