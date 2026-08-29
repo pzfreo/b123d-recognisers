@@ -1,0 +1,228 @@
+{
+  "dataset": "MFCAD++ published test split (development evidence)",
+  "face_identity": "zero-based build123d face order, validated across normalization",
+  "models": [
+    {
+      "file": "10492.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 9.522181,
+        "origin": [
+          26.320942548811,
+          27.402680747185,
+          23.374759500401
+        ],
+        "x": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "y": [
+          0.0,
+          -0.165429420935,
+          0.986221631627
+        ],
+        "z": [
+          0.0,
+          0.986221631627,
+          0.165429420935
+        ]
+      },
+      "local_aggregate_angled_steps": 0,
+      "local_direct_angled_steps": 0,
+      "occurrences": [
+        {
+          "correspondence": {
+            "center_error": 1e-15,
+            "local_center": [
+              10.26593814618,
+              -2.986390614763,
+              -23.230812726197
+            ],
+            "local_normal": [
+              -0.0,
+              0.989422661525,
+              -0.145061355505
+            ],
+            "normal_error": 0.0,
+            "raw_center": [
+              16.055004402631,
+              4.985987586418,
+              16.586456578489
+            ],
+            "raw_normal": [
+              0.0,
+              -0.306742264668,
+              0.951792615577
+            ],
+            "validated": true
+          },
+          "defining_face_index": 14,
+          "local_discovery": {
+            "found_axes": [],
+            "gate": "nearest_axis_aligned_planes",
+            "reason": "missing-both-bridged-principal-planes",
+            "required_axes": [
+              "y",
+              "z"
+            ],
+            "run_axis": "x",
+            "slant_normal": [
+              -0.0,
+              0.989422661525,
+              -0.145061355505
+            ]
+          },
+          "raw_record": "AngledStep(axis='x', leg1=9.972, leg2=3.214, angle=17.86, length=32.11, at=(16.055, 4.986, 16.586))"
+        }
+      ],
+      "raw_aggregate_angled_steps": 1,
+      "step_sha256": "4771d946d9b859bc62589161bc660b0548ef654e061ee1009e7dafcfa846091b"
+    },
+    {
+      "file": "10649.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 17.439433,
+        "origin": [
+          8.202665904057,
+          14.809762940534,
+          16.491184116546
+        ],
+        "x": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "y": [
+          0.954034293093,
+          -0.299697460121,
+          0.0
+        ],
+        "z": [
+          0.299697460121,
+          0.954034293093,
+          0.0
+        ]
+      },
+      "local_aggregate_angled_steps": 0,
+      "local_direct_angled_steps": 0,
+      "occurrences": [
+        {
+          "correspondence": {
+            "center_error": 2e-15,
+            "local_center": [
+              4.752224070749,
+              -1.32293131298,
+              -12.223347458206
+            ],
+            "local_normal": [
+              0.0,
+              -0.497067318746,
+              -0.86771198023
+            ],
+            "normal_error": 0.0,
+            "raw_center": [
+              3.277237876667,
+              3.544749443432,
+              21.243408187295
+            ],
+            "raw_normal": [
+              -0.734270344651,
+              -0.67885717273,
+              0.0
+            ],
+            "validated": true
+          },
+          "defining_face_index": 2,
+          "local_discovery": {
+            "found_axes": [],
+            "gate": "nearest_axis_aligned_planes",
+            "reason": "missing-both-bridged-principal-planes",
+            "required_axes": [
+              "y",
+              "z"
+            ],
+            "run_axis": "x",
+            "slant_normal": [
+              0.0,
+              -0.497067318746,
+              -0.86771198023
+            ]
+          },
+          "raw_record": "AngledStep(axis='z', leg1=7.089, leg2=6.554, angle=42.75, length=32.252, at=(3.277, 3.545, 21.243))"
+        },
+        {
+          "correspondence": {
+            "center_error": 2e-15,
+            "local_center": [
+              -15.491184116546,
+              -5.795908591257,
+              -5.582864625184
+            ],
+            "local_normal": [
+              -0.707106781187,
+              -0.67460411813,
+              -0.211918106356
+            ],
+            "normal_error": 0.0,
+            "raw_center": [
+              1.0,
+              11.220537718307,
+              1.0
+            ],
+            "raw_normal": [
+              -0.707106781187,
+              -0.0,
+              -0.707106781187
+            ],
+            "validated": true
+          },
+          "defining_face_index": 8,
+          "local_discovery": {
+            "gate": "classify_bevel",
+            "reason": "compound"
+          },
+          "raw_record": "AngledStep(axis='y', leg1=2.0, leg2=2.0, angle=45.0, length=22.441, at=(1.0, 11.221, 1.0))"
+        },
+        {
+          "correspondence": {
+            "center_error": 3e-15,
+            "local_center": [
+              -12.577809220926,
+              15.042633146905,
+              -2.018917188119
+            ],
+            "local_normal": [
+              0.765114303022,
+              0.614297416487,
+              0.192973540692
+            ],
+            "normal_error": 0.0,
+            "raw_center": [
+              21.948789431145,
+              8.375407760496,
+              3.91337489562
+            ],
+            "raw_normal": [
+              0.643894481503,
+              -0.0,
+              0.765114303022
+            ],
+            "validated": true
+          },
+          "defining_face_index": 19,
+          "local_discovery": {
+            "gate": "classify_bevel",
+            "reason": "compound"
+          },
+          "raw_record": "AngledStep(axis='y', leg1=2.377, leg2=2.0, angle=40.08, length=16.751, at=(21.949, 8.375, 3.913))"
+        }
+      ],
+      "raw_aggregate_angled_steps": 3,
+      "step_sha256": "0f6c9e2681bdceda2af648304f00760ea02f4dd99f7b24c48c52a4ce284eb31f"
+    }
+  ],
+  "schema": 1,
+  "selection": "exact model IDs 10492 and 10649 from the first-500 mismatch report"
+}
