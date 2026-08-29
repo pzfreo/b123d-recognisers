@@ -45,7 +45,9 @@ ring is discovered directly in every orientation and then consistently reconcile
 specific rectangular Pocket in the aggregate. Triangular, hexagonal and rectangular principal-Y
 STEP round trips retain those outcomes. Existing tests retain the through-passage distinction,
 both cap orientations, multiple occurrence identity, obround exclusion, exact wall provenance and
-rectangular precedence. The focused module has 30 passing tests.
+rectangular precedence. A non-principal 37° whole-part presentation additionally proves all three
+shapes through the public framed aggregate route, including rectangular Pocket precedence. The
+focused module has 33 passing tests.
 
 ## Decision
 

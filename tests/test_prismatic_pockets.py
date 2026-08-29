@@ -40,6 +40,10 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
+from b123d_recognisers.frames import (
+    FramedRecognitionResult,
+    build_framed_recognition_result,
+)
 
 
 def _prism(*corners, height=14):
@@ -184,26 +188,33 @@ def test_polygonal_pockets_are_covariant_across_signed_principal_axes(
 
 
 @pytest.mark.parametrize(
-    ("rotation_axis", "degrees"),
+    ("rotation_axis", "degrees", "expected_axis", "expected_open_sign"),
     [
-        (Axis.X, 0),
-        (Axis.Y, 180),
-        (Axis.X, -90),
-        (Axis.X, 90),
-        (Axis.Y, 90),
-        (Axis.Y, -90),
+        (Axis.X, 0, "z", 1),
+        (Axis.Y, 180, "z", -1),
+        (Axis.X, -90, "y", 1),
+        (Axis.X, 90, "y", -1),
+        (Axis.Y, 90, "x", 1),
+        (Axis.Y, -90, "x", -1),
     ],
 )
 def test_rectangular_ring_covariance_preserves_aggregate_pocket_precedence(
     rotation_axis: Axis,
     degrees: float,
+    expected_axis: str,
+    expected_open_sign: int,
 ) -> None:
     part = Pos(17, -11, 9) * _rectangular().rotate(rotation_axis, degrees)
 
     (ring,) = r.recognise_prismatic_pockets(part)
     result = r.build_recognition_result(part)
 
-    assert (ring.sides, ring.depth) == (4, 9.0)
+    assert (ring.axis, ring.sides, ring.depth, ring.open_sign) == (
+        expected_axis,
+        4,
+        9.0,
+        expected_open_sign,
+    )
     assert result.prismatic_pockets == ()
     assert len(result.pockets) == 1
 
@@ -239,9 +250,34 @@ def test_principal_y_rectangular_ring_round_trip_keeps_pocket_precedence(
     imported = import_step(path)
     result = r.build_recognition_result(imported)
 
-    assert len(r.recognise_prismatic_pockets(imported)) == 1
+    (ring,) = r.recognise_prismatic_pockets(imported)
+    assert (ring.axis, ring.sides, ring.depth, ring.open_sign) == ("y", 4, 9.0, 1)
     assert result.prismatic_pockets == ()
     assert len(result.pockets) == 1
+
+
+@pytest.mark.parametrize(
+    ("fixture", "sides", "rectangular"),
+    [(_triangular, 3, False), (_hexagonal, 6, False), (_rectangular, 4, True)],
+)
+def test_principal_ring_contract_survives_arbitrary_rigid_presentation_in_framed_aggregate(
+    fixture,
+    sides: int,
+    rectangular: bool,
+) -> None:
+    presented = Pos(-31, 17, 23) * fixture().rotate(
+        Axis((0, 0, 0), (1, 1, 0)), 37
+    )
+
+    framed = build_framed_recognition_result(presented)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    if rectangular:
+        assert framed.result.prismatic_pockets == ()
+        assert len(framed.result.pockets) == 1
+    else:
+        (pocket,) = framed.result.prismatic_pockets
+        assert (pocket.sides, pocket.depth) == (sides, 8.0)
 
 
 def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():
