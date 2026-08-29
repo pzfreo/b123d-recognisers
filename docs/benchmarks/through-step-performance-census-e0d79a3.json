@@ -1,0 +1,145 @@
+{
+  "all_pre_existing_outputs_equal": true,
+  "disabled": {
+    "maximum_seconds": 58.72664749703836,
+    "median_seconds": 7.307360676000826,
+    "total_seconds": 177.17539013596252
+  },
+  "enabled": {
+    "maximum_seconds": 62.12920561700594,
+    "median_seconds": 7.669551758968737,
+    "total_seconds": 187.72130711190403
+  },
+  "enabled_to_disabled_total_ratio": 1.0595224707440953,
+  "environment": {
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "format": "b123d-recognisers-through-step-paired-benchmark",
+  "format_version": 1,
+  "implementation_commit": "e0d79a340d60d058f5541c6e60ed3361dc49baf1",
+  "models": [
+    {
+      "disabled_seconds": 0.09387065604096279,
+      "enabled_first": true,
+      "enabled_seconds": 0.1197304530069232,
+      "id": "GRM-03_thumbwheel_drive_screw.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.060140908986795694,
+      "enabled_first": false,
+      "enabled_seconds": 0.06798489298671484,
+      "id": "GRM-05_depth_lock_bolt.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 1.8444918749737553,
+      "enabled_first": true,
+      "enabled_seconds": 1.5241341379587539,
+      "id": "string_post.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 7.307360676000826,
+      "enabled_first": false,
+      "enabled_seconds": 7.2450178759754635,
+      "id": "nist_ctc_01_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 58.72664749703836,
+      "enabled_first": true,
+      "enabled_seconds": 62.12920561700594,
+      "id": "nist_ctc_02_asme1_rc.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 5.2962691389839165,
+      "enabled_first": false,
+      "enabled_seconds": 6.1531922640278935,
+      "id": "nist_ctc_03_asme1_rc.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 31.654540850024205,
+      "enabled_first": true,
+      "enabled_seconds": 29.47321062698029,
+      "id": "nist_ctc_04_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 9.077335832989775,
+      "enabled_first": false,
+      "enabled_seconds": 9.936705339001492,
+      "id": "nist_ctc_05_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 6.554564312973525,
+      "enabled_first": true,
+      "enabled_seconds": 7.669551758968737,
+      "id": "nist_ftc_06_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 17.145842571975663,
+      "enabled_first": false,
+      "enabled_seconds": 22.464940414996818,
+      "id": "nist_ftc_07_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 12.528255250013899,
+      "enabled_first": true,
+      "enabled_seconds": 13.832649664022028,
+      "id": "nist_ftc_08_asme1_rc.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 6.113487599999644,
+      "enabled_first": false,
+      "enabled_seconds": 5.39461549196858,
+      "id": "nist_ftc_09_asme1_rd.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 20.772582965961192,
+      "enabled_first": true,
+      "enabled_seconds": 21.710368575004395,
+      "id": "nist_ftc_10_asme1_rb.stp",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    }
+  ],
+  "paired_median_delta_seconds": 0.856923125043977,
+  "selection": [
+    "GRM-03_thumbwheel_drive_screw.step",
+    "GRM-05_depth_lock_bolt.step",
+    "string_post.step",
+    "nist_ctc_01_asme1_rd.stp",
+    "nist_ctc_02_asme1_rc.stp",
+    "nist_ctc_03_asme1_rc.stp",
+    "nist_ctc_04_asme1_rd.stp",
+    "nist_ctc_05_asme1_rd.stp",
+    "nist_ftc_06_asme1_rd.stp",
+    "nist_ftc_07_asme1_rd.stp",
+    "nist_ftc_08_asme1_rc.stp",
+    "nist_ftc_09_asme1_rd.stp",
+    "nist_ftc_10_asme1_rb.stp"
+  ],
+  "through_steps": 0,
+  "workload": "census"
+}

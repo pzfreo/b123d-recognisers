@@ -150,6 +150,9 @@ def test_rectangular_step_is_rotation_mirror_scale_and_step_roundtrip_stable(tmp
     assert recognise_through_steps(Rot(0, 90, 0) * base) == [
         ThroughStep("x", 20.0, (0.0, 7.5, -12.5), ((0.0, -20.0), (0.0, -5.0), (15.0, -5.0)))
     ]
+    mirrored = recognise_through_steps(base.mirror(Plane.YZ))
+    assert len(mirrored) == 1
+    assert (mirrored[0].axis, mirrored[0].length) == ("z", 20.0)
 
     for scale in (0.001, 1000.0):
         (step,) = recognise_through_steps(_step(scale))
@@ -188,6 +191,20 @@ def test_channels_pockets_and_slots_are_not_through_steps():
 
     for part in (channel, pocket, slot):
         assert recognise_through_steps(part) == []
+
+
+def test_a_third_cospanning_concave_wall_is_not_one_open_step():
+    channel = Box(40, 30, 20) - Box(20, 10, 30)
+
+    assert recognise_through_steps(channel) == []
+
+
+def test_material_inside_the_inferred_removed_prism_fails_closed():
+    rib_into_void = Pos(10, 7.5, 0) * Box(10, 2, 20)
+    obstructed = _step() + rib_into_void
+
+    assert obstructed.is_valid
+    assert recognise_through_steps(obstructed) == []
 
 
 def test_an_additive_l_solid_has_the_same_history_free_geometry():
@@ -252,6 +269,19 @@ def test_compound_members_are_recognised_independently():
     second = Pos(100, 0, 0) * _step()
 
     assert len(recognise_through_steps(Compound(children=[first, second]))) == 2
+
+    forward = recognise_through_steps(Compound(children=[first, second]))
+    reverse = recognise_through_steps(Compound(children=[second, first]))
+    assert forward == reverse
+
+
+def test_open_body_and_cross_solid_final_shape_composite_are_refused():
+    assert recognise_through_steps(Shell(list(_step().faces()))) == []
+
+    vertical_arm = Box(20, 30, 20)
+    horizontal_arm = Pos(15, -10, 0) * Box(10, 10, 20)
+    cross_solid = Compound(children=[vertical_arm, horizontal_arm])
+    assert recognise_through_steps(cross_solid) == []
 
 
 def test_foreign_evidence_fails_before_any_family_candidate_is_issued(monkeypatch):
