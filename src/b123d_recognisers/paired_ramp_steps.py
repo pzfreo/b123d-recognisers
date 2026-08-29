@@ -4,8 +4,9 @@
 
 This family deliberately starts with the unfragmented, mirror-symmetric case.  Two oblique
 planar quadrilaterals meet along the run axis, share one convex exterior opening and one concave
-five-sided terminal, and belong to one valid solid.  Polygonal pockets have superficially similar
-adjacency; the paired cross-section, arc directions and terminal contract are the discriminator.
+three- or five-sided terminal, and belong to one valid solid. Polygonal pockets have superficially
+similar adjacency; the paired cross-section, arc directions and terminal contract discriminate
+geometry, while rigid axis permutations deliberately remain equivalent.
 """
 
 from __future__ import annotations
