@@ -166,6 +166,7 @@ def test_framed_report_owns_the_exact_shape_report_recognised(monkeypatch) -> No
     framed = build_framed_recognition_report(part)
 
     assert isinstance(framed, FramedRecognitionReport)
+    assert len(recognised_parts) == 1
     assert framed.part is recognised_parts[0]
     assert framed.report.result.holes == ()
     assert framed.report.coverage.value == "bounded"

@@ -1,4 +1,4 @@
-"""Deterministic external-corpus evaluation for the part-relative frame spike.
+"""Deterministic external-corpus evaluation for the ordinary part-relative frame.
 
 The tool uses development data only.  It compares accepted occurrences by defining-face evidence,
 records every refusal/error, and separates import, normalization and recognition time.  Progress is
@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import platform
+import subprocess
 import sys
 import time
 from collections import Counter
@@ -20,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Axis, Pos, import_step  # noqa: E402
 
+from b123d_recognisers import __version__  # noqa: E402
 from b123d_recognisers.frames import (  # noqa: E402
     PartFrame,
     RefusedPartFrame,
@@ -27,6 +30,16 @@ from b123d_recognisers.frames import (  # noqa: E402
     infer_part_frame,
 )
 from tools.rigid_motion_sweep import Occurrence, _match, _occurrences  # noqa: E402
+
+
+def _commit() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def _comparison(left: tuple[Occurrence, ...], right: tuple[Occurrence, ...]) -> dict[str, Any]:
@@ -164,6 +177,12 @@ def evaluate(root: Path, *, limit: int = 500, progress_every: int = 25) -> dict[
 
     return {
         "schema": 1,
+        "implementation_commit": _commit(),
+        "package_version": __version__,
+        "environment": {
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+        },
         "dataset": "MFCAD++ test split (development evidence)",
         "selection": f"first {limit} STEP filenames, lexical ascending",
         "presentation": "X30 then translation (173, -91, 42)",
@@ -185,14 +204,18 @@ def main() -> None:
     parser.add_argument("root", type=Path, help="directory containing MFCAD++ STEP files")
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--progress-every", type=int, default=25)
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    print(
-        json.dumps(
-            evaluate(args.root, limit=args.limit, progress_every=args.progress_every),
-            indent=2,
-            sort_keys=True,
-        )
+    rendered = json.dumps(
+        evaluate(args.root, limit=args.limit, progress_every=args.progress_every),
+        indent=2,
+        sort_keys=True,
     )
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    else:
+        print(rendered)
 
 
 if __name__ == "__main__":
