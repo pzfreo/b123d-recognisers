@@ -110,7 +110,7 @@ compatibility review, and release notes.
 | `recognise_pockets` | Floored rectangular recesses bounded within one solid; elongated blind slots are the same record class. After graph-proved curved end interruptions are trimmed, a paired-wall candidate's unrounded rectangular prism must be materially empty within that solid. | Through slots, open-ended channels, non-rectangular floors, same-solid internal islands/bridges that the simple record cannot express, and cross-solid composites. | Blind-pocket golden, floor/opening regressions, blind-U/rib adversaries, and MFCAD++/NIST change evidence. |
 | `recognise_polygonal_bosses` | Attached regular hexagonal Z-axis bosses with six outward side faces, one A/F value, a support cap, and a top cap. Six native constant-radius convex cylindrical corner-blend chains may explicitly bridge the otherwise retained planar side ring when their complete issuer-owned provenance forms one unambiguous cycle. | Other side counts, X/Y axes, whole-stock prisms, inward recesses, incomplete or competing blend cycles, automatic collapse, and cross-solid assemblies. | Polygonal-boss golden, blend-interrupted sharp-control/STEP/aggregate evidence, plus capability-negative tests. |
 | `recognise_polygonal_stock` | Exactly one solid consisting solely of a regular hexagonal Z-axis prism’s six sides and two caps. | Other side counts or axes, attachments, holes, chamfers, missing/extra faces, and multi-solid assemblies. | Polygonal-stock golden plus capability-negative tests. |
-| `recognise_rectangular_pads` | Bounded rectangular +Z islands with a filled XY footprint, body-local support, and exact face ownership in one valid closed solid. | Full-span steps, non-rectangular/perforated tops, -Z/side pads, cross-solid support, open/invalid bodies, and ambiguous or missing solid ownership. | Plate/pad/level golden and pad tests. |
+| `recognise_rectangular_pads` | Bounded rectangular +Z islands with a filled XY footprint, body-local support, and exact face ownership in one valid closed solid. A complete, unambiguous four-chain convex cylindrical corner-blend cycle may reconstruct the same four planar wall roles and rounded top. | Full-span steps, non-rectangular/perforated tops, -Z/side pads, partial or competing corner-blend cycles, cross-solid support, open/invalid bodies, and ambiguous or missing solid ownership. | Plate/pad/level golden; sharp, blend-cycle, STEP, provenance/refusal and aggregate pad tests; authored blend sweep. |
 | `recognise_prismatic_pockets` | Floored recesses of any planar cross-section, found by walking the closed ring of walls: a triangular, hexagonal or rectangular pocket alike. Reports the section, so shape survives into the record. | Obround recesses, whose cylindrical ends form no closed planar ring — `recognise_pockets` reaches those; voids open at both ends (a passage) or capped at both (an enclosed cavity, unreachable by a tool). In the aggregate, a four-wall ring yields to a paired `Pocket`; a non-rectangular ring survives and defeats paired-wall fragments inside it. | Prismatic-pocket functional tests; `triangular_and_hex_pockets` golden; measured over 250 MFCAD++ models, capped rings reach 80 triangular, 72 hexagonal and 61 rectangular pockets where wall pairing reaches essentially only the rectangular ones. |
 | `recognise_repeating_radial_profiles` | Complete outer-wire profiles invariant under a proved sector rotation, independently per solid. | Gear semantics, partial-repeat inference, inner-only profiles, and cross-solid cycles. | Repeating-radial-profile and traversal-order goldens. |
 | `recognise_risers` | Full-span principal in-plane step-riser evidence, including bounded slanted transitions, independent of a level set. | Pads, pocket walls, partial corner notches, and end-treated/inset risers outside tolerance; shoulder selection remains a consumer projection. | Plate/level and slanted-step goldens. |
@@ -120,11 +120,14 @@ compatibility review, and release notes.
 
 The [authored boundary-blend sweep](benchmarks/blend-boundary-sweep.md) holds each feature body
 fixed while filleting only the boundary used by its named recogniser. Across fifteen valid blended
-variants, Polygonal Boss preserves its exact records through its existing selected blend view;
-Hole and Groove remain present with legitimately changed dimensions; Pocket consistently
-reclassifies to Prismatic Pocket; and Rectangular Pad disappears. This is prioritisation evidence
-for a later Pad consumer, not a support claim or a change to the closed registry. Any such consumer
-still requires its own provenance, refusal, aggregate, corpus and runtime evidence.
+variants, Polygonal Boss and Rectangular Pad preserve their exact records through their selected
+blend views; Hole and Groove remain present with legitimately changed dimensions; and Pocket
+consistently reclassifies to Prismatic Pocket. Pad's complete-cycle support has independent
+provenance, refusal, native, STEP and aggregate tests. Corpus and runtime effects remain separately
+reported evidence rather than being inferred from this authored sweep. The
+[MFCAD++ E4 comparison](benchmarks/effectiveness-mfcadpp-500-e4-pad.md) has exact score-vector parity
+over the frozen 500-model development selection and a same-process enabled/disabled timing ratio of
+1.0221; that corpus contains no newly accepted complete Pad corner-blend cycle.
 
 ## Surface-representation support is family-specific
 

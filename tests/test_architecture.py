@@ -133,6 +133,7 @@ MODULE_SEAM_EDGES = {
         "_geometry",
         "_record",
         "_typing",
+        "experimental_geometry",
     },
     "_hole_patterns": {"_hole_features", "_pattern_geometry", "_record", "_typing"},
     # Ring geometry: `passages` owned it while it was the only family walking rings.
@@ -886,7 +887,7 @@ def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     }
     assert {
         module for module, dependencies in graph.items() if "experimental_geometry" in dependencies
-    } == {"_geometry_evidence", "_run", "polygonal_bosses"}
+    } == {"_geometry_evidence", "_run", "pads", "polygonal_bosses"}
     assert not (
         graph["polygonal_bosses"]
         & {"_adjacency", "_analytic_surfaces", "_blend_view", "_effective_surfaces"}

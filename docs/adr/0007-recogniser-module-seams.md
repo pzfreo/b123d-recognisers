@@ -393,3 +393,21 @@ the mirror-pair, principal-run, terminal-topology and arc-direction gates, publi
 and writes its two original ramp faces plus the required closing terminal as defining evidence.
 `_registry` is its sole aggregate caller. No sibling recogniser imports it and no new shared
 recognition substrate is introduced.
+
+## Amendment (second selected blend-view consumer, issue #277)
+
+Issue #277 authorises `pads` as the second and only additional production consumer of the
+`experimental_geometry` facade. The registry passes the run-owned `GeometryGraph`; the public
+writer-free facade keeps its signature and creates only short-lived local state. `pads` may read
+neutral blend facts and request a view for one explicitly selected four-chain cycle. It may not
+import `_blend_view`, `_adjacency` or the concrete effective-surface index, and it may not read
+Fillet Candidates, claims, inventory, disposition or reconciliation. The earlier issue #192
+statement that Polygonal Boss is the sole consumer is superseded only by this named Pad consumer;
+all other families remain base-graph-only.
+
+The selected cycle must contain exactly four convex singleton cylindrical chains, each joining one
+unique adjacent pair among four original axis-aligned planar wall roles. Every bridge expands to
+the complete issuer-owned face and boundary-occurrence provenance before proposal staging. The
+rounded planar top and four original planar walls remain the complete defining evidence; blend
+faces are consulted only. Partial, duplicate, competing, non-singleton or corrupted cycles fail
+closed without changing the neutral graph or another family.

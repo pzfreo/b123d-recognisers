@@ -8,6 +8,7 @@ import pytest
 
 from tools.blend_boundary_sweep import (
     BASELINE_COMMIT,
+    IMPLEMENTATION_COMMIT,
     JSON_REPORT,
     MARKDOWN_REPORT,
     PERFORMANCE_BUDGET_SECONDS,
@@ -33,24 +34,30 @@ def test_sweep_separates_survival_loss_and_reclassification(report) -> None:
     assert report["baseline_commit"] == BASELINE_COMMIT == (
         "5569f1405c87be8156e20726152d481623fee6c0"
     )
+    assert report["implementation_commit"] == IMPLEMENTATION_COMMIT == (
+        "50262610a82114276f736baec64278f5fc12b567"
+    )
     assert report["radii_role"] == "authored input geometry, not recognition thresholds"
     assert report["performance_budget_seconds"] == PERFORMANCE_BUDGET_SECONDS == 30.0
     assert report["performance_measurement"] == PERFORMANCE_MEASUREMENT
-    assert PERFORMANCE_MEASUREMENT["median_seconds"] == 11.518
+    assert PERFORMANCE_MEASUREMENT["median_seconds"] == 16.098
     assert report["totals"] == {
         "cases": 5,
         "variants": 15,
-        "same-family": 3,
+        "same-family": 6,
         "changed-record": 6,
         "reclassified": 3,
-        "absent": 3,
+        "absent": 0,
     }
 
 
-def test_sweep_identifies_pad_as_the_second_consumer_candidate(report) -> None:
+def test_sweep_proves_pad_as_the_second_selected_consumer(report) -> None:
     pad = report["cases"]["rectangular-pad-side-boundary"]
-    assert {variant["outcome"] for variant in pad["variants"]} == {"absent"}
-    assert all(variant["removed_families"] == ["pads"] for variant in pad["variants"])
+    assert {variant["outcome"] for variant in pad["variants"]} == {"same-family"}
+    assert all(
+        variant["expected_records"] == pad["plain_records"]["pads"]
+        for variant in pad["variants"]
+    )
 
     boss = report["cases"]["polygonal-boss-side-boundary"]
     assert {variant["outcome"] for variant in boss["variants"]} == {"same-family"}
