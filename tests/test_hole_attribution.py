@@ -17,6 +17,7 @@ from build123d import (
     Cone,
     Cylinder,
     GeomType,
+    Part,
     Plane,
     Pos,
     Rectangle,
@@ -31,6 +32,7 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
 from b123d_recognisers import recognise_holes
@@ -51,6 +53,7 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
+from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceProvenance
 from b123d_recognisers._geometry import length_tol, quantise
 from b123d_recognisers._hole_features import (
     CounterBore,
@@ -75,6 +78,23 @@ from b123d_recognisers.countersinks import (
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
+
+
+def test_recovered_hole_candidate_retains_original_cylinder_dependency() -> None:
+    native = Box(12, 12, 10) - Cylinder(2, 10)
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+    ledger = ClaimLedger(FaceGraph(converted))
+
+    records = _discover_holes(converted, writer=ledger.writer)
+
+    assert len(records) == 1
+    (candidate,) = ledger.candidate_set(FamilyId.HOLES).candidates
+    (surface_use,) = candidate.evidence.surfaces
+    assert surface_use.node in candidate.evidence.defining
+    assert surface_use.surface.kind is SurfaceKind.CYLINDER
+    assert surface_use.surface.provenance is SurfaceProvenance.RECOVERED
+    assert surface_use.material_side is not None
+    assert surface_use.material_side.candidate_outward_sign == -1
 
 
 def _through():

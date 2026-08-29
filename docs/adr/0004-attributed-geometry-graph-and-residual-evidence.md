@@ -210,3 +210,34 @@ adjacency, orientation, recovered primitives, records and defining evidence. Its
 JSON/Markdown is byte-pinned. The measured claim is intentionally narrow: exact OCCT-converted
 plane geometry for Raised Pads under reviewed OCP/OCCT 7.9.3.1. Torus recovery, approximate or
 reverse-engineered NURBS, third-party exporters and every non-migrated family remain excluded.
+
+## Amendment (recovered-cylinder substrate, issue #276)
+
+The same independent authority may certify native or recovered cylinders. Cylinder material side
+is local radial polarity, not the canonical axis sign and not one global normal. Deterministically
+selected mesh centroids are projected back to the exact original curved face; the original
+differential must be regular and parallel to the recovered cylinder's radial direction. Projected
+samples must remain four probe distances from every trim boundary. At least two retained samples
+must classify one radial probe `OUT` and the opposite probe `IN`, and all samples must agree on the
+same radial sign. Seam-adjacent projected samples are discarded rather than treated as evidence.
+The probe scale, classifier tolerance, ownership refusals and recovery certificate remain those of
+the plane authority above.
+
+`MaterialSideCertificate.candidate_outward_sign` records that agreed primitive-normal polarity;
+its `outward_samples` retain every proved local normal. The compatibility `outward` value is the
+global direction for a plane and the first retained local sample for a cylinder. Cylinder consumers
+must use the sign, never that sample vector, to distinguish an external OD from an internal bore.
+
+The public native-cylinder dictionary path remains a raw compatibility fast path. Non-native faces
+enter `analyse_cylinders` only through the restricted effective-face query and only after a cylinder
+fact plus material-side certificate has been issued. Aggregate orchestration supplies its existing
+run-owned query, so graph, recovery and material-side authority are derived once. Hole and Boss
+Candidates retain one cylinder `SurfaceUse` for every defining original face; the issuer requires
+complete one-to-one coverage, cylinder kind, and respectively negative or positive radial polarity.
+Standalone record-only calls remain geometry facades and do not expose these run-local handles.
+
+This amendment changes no Hole, Boss or Flat feature predicate. Exact OCCT-converted cylinders are
+supported by the shared inventory and reach the existing Boss and Hole discovery consumers, but a
+complete converted model can still differ where a downstream recogniser deliberately reads a
+non-cylinder native surface (for example Hole end classification). Such differences remain an
+explicit family migration boundary, not permission to reinterpret every B-spline face.

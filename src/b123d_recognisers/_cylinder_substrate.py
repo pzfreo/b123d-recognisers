@@ -8,8 +8,14 @@ from typing import TypeVar
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers._adjacency import frame_points_outward
-from b123d_recognisers._geometry import _axis_letter_of, length_tol, quantise
+from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
+from b123d_recognisers._analytic_surfaces import SurfaceKind
+from b123d_recognisers._effective_surfaces import (
+    EffectiveFaceSurfaceQuery,
+    SurfaceUse,
+    effective_faces_for_graph,
+)
+from b123d_recognisers._geometry import COORD_FLOOR, _axis_letter_of, length_tol, quantise
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part
 
 #: Whatever record type the caller groups. _merge_runs cares only about ``s_lo``/``s_hi`` and the
@@ -27,7 +33,9 @@ _FULL_CYL_MIN_EXTENT = math.pi * 1.05
 _STACK_GAP_FRAC = 0.0125
 
 
-def analyse_cylinders(part: Part) -> CylinderInventory:
+def analyse_cylinders(
+    part: Part, *, face_surfaces: EffectiveFaceSurfaceQuery | None = None
+) -> CylinderInventory:
     """Return (z_cyls, cross_cyls) from OCP cylindrical face analysis.
 
     Each entry is a dict with keys: diameter, axis (dominant axis letter),
@@ -53,36 +61,88 @@ def analyse_cylinders(part: Part) -> CylinderInventory:
         if solids
         else [(0, f) for f in part.faces()]
     )
+    effective = face_surfaces
     for solid_idx, face in faces_by_solid:
         surf = BRepAdaptor_Surface(face.wrapped)
-        if surf.GetType() != GeomAbs_Cylinder:
-            continue
-        cyl = surf.Cylinder()
-        r = cyl.Radius()
-        d = cyl.Axis().Direction()
-        ap = cyl.Axis().Location()
-        ax = _axis_letter_of((d.X(), d.Y(), d.Z()))
+        native = surf.GetType() == GeomAbs_Cylinder
+        material_use: SurfaceUse | None = None
+        if native:
+            cyl = surf.Cylinder()
+            r = cyl.Radius()
+            d_xyz = (
+                cyl.Axis().Direction().X(),
+                cyl.Axis().Direction().Y(),
+                cyl.Axis().Direction().Z(),
+            )
+            ap_xyz = (
+                cyl.Axis().Location().X(),
+                cyl.Axis().Location().Y(),
+                cyl.Axis().Location().Z(),
+            )
+        else:
+            if effective is None:
+                effective = effective_faces_for_graph(FaceGraph(part))
+            issued = effective.use(face, material_side=True)
+            if (
+                not isinstance(issued, SurfaceUse)
+                or issued.surface.kind is not SurfaceKind.CYLINDER
+            ):
+                continue
+            material_use = issued
+            ap_xyz = (
+                0.0
+                if abs(issued.surface.parameters[0]) <= COORD_FLOOR
+                else quantise(issued.surface.parameters[0]),
+                0.0
+                if abs(issued.surface.parameters[1]) <= COORD_FLOOR
+                else quantise(issued.surface.parameters[1]),
+                0.0
+                if abs(issued.surface.parameters[2]) <= COORD_FLOOR
+                else quantise(issued.surface.parameters[2]),
+            )
+            d_xyz = (
+                quantise(issued.surface.parameters[3]),
+                quantise(issued.surface.parameters[4]),
+                quantise(issued.surface.parameters[5]),
+            )
+            r = issued.surface.parameters[6]
+        ax = _axis_letter_of(d_xyz)
         # Canonical direction (dominant component positive) so coaxial faces
         # report comparable axial coordinates whichever way their frame points
-        sign = 1.0 if {"x": d.X(), "y": d.Y(), "z": d.Z()}[ax] > 0 else -1.0
-        dir_xyz = (sign * d.X(), sign * d.Y(), sign * d.Z())
-        v0, v1 = surf.FirstVParameter(), surf.LastVParameter()
-        # s(P) = P·dir for P = ap + v*d  →  s = ap·dir + sign*v
-        s_ap = ap.X() * dir_xyz[0] + ap.Y() * dir_xyz[1] + ap.Z() * dir_xyz[2]
-        s0, s1 = s_ap + sign * v0, s_ap + sign * v1
+        sign = 1.0 if {"x": d_xyz[0], "y": d_xyz[1], "z": d_xyz[2]}[ax] > 0 else -1.0
+        dir_xyz = tuple(sign * value for value in d_xyz)
+        if native:
+            s_ap = math.fsum(
+                coordinate * direction
+                for coordinate, direction in zip(ap_xyz, dir_xyz, strict=True)
+            )
+            axial = (
+                s_ap + sign * surf.FirstVParameter(),
+                s_ap + sign * surf.LastVParameter(),
+            )
+        else:
+            axial = tuple(
+                vertex.X * dir_xyz[0] + vertex.Y * dir_xyz[1] + vertex.Z * dir_xyz[2]
+                for vertex in face.vertices()
+            )
         rec: CylinderEvidence = dict(
             diameter=quantise(r * 2),
             axis=ax,
             solid_idx=solid_idx,
             u_extent=surf.LastUParameter() - surf.FirstUParameter(),
-            axis_xyz=(ap.X(), ap.Y(), ap.Z()),
+            axis_xyz=ap_xyz,
             dir_xyz=dir_xyz,
-            s_lo=min(s0, s1),
-            s_hi=max(s0, s1),
+            s_lo=min(axial),
+            s_hi=max(axial),
             face=face,
             # Outward material (boss/OD) vs bore: a right-handed cylinder's natural normal
             # points away from the axis, so a frame pointing outward is an external surface.
-            external=bool(frame_points_outward(face)),
+            external=(
+                bool(frame_points_outward(face))
+                if material_use is None
+                else material_use.material_side is not None
+                and material_use.material_side.candidate_outward_sign > 0
+            ),
         )
         (z_cyls if ax == "z" else cross_cyls).append(rec)
     return z_cyls, cross_cyls
@@ -156,8 +216,6 @@ def full_cylinders(cyls: list[CylinderEvidence]) -> list[CylinderEvidence]:
         if sum(c["u_extent"] for c in run) >= _FULL_CYL_MIN_EXTENT:
             keep.extend(run)
     return keep
-
-
 
 
 # ---------------------------------------------------------------------------

@@ -96,14 +96,21 @@ MODULE_SEAM_EDGES = {
         "_typing",
         "experimental_geometry",
     },
-    # `_adjacency` for `frame_points_outward`: the material-side convention, which this and
-    # three other modules each derived separately before it was lifted.
-    "_cylinder_substrate": {"_adjacency", "_geometry", "_typing"},
+    # Native cylinders retain the compatibility fast path; recovered cylinders consume the
+    # restricted run-owned analytic/material-side query recorded by ADR 0004.
+    "_cylinder_substrate": {
+        "_adjacency",
+        "_analytic_surfaces",
+        "_effective_surfaces",
+        "_geometry",
+        "_typing",
+    },
     "_hole_features": {
         "_adjacency",
         "_candidates",
         "_claims",
         "_cylinder_substrate",
+        "_effective_surfaces",
         "_geometry",
         "_record",
         "_typing",

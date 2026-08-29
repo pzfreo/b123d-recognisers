@@ -92,7 +92,7 @@ def test_measure_recovers_exact_converted_planes_and_reads_segmentation(tmp_path
     assert published["feature_counterfactual"] == report["feature_counterfactual"]
 
 
-def test_counterfactual_measures_features_unlocked_by_recovered_surfaces() -> None:
+def test_counterfactual_treats_production_recovered_cylinders_as_the_baseline() -> None:
     converted = Part(BRepBuilderAPI_NurbsConvert(Cylinder(5, 10).wrapped, True).Shape())
     graph = FaceGraph(converted)
     surfaces = EffectiveSurfaceIndex(graph)
@@ -104,12 +104,7 @@ def test_counterfactual_measures_features_unlocked_by_recovered_surfaces() -> No
 
     measured = _measure_counterfactual(converted, bindings)
 
-    assert measured["baseline_counts"]["external_cylinder_patches"] == 0
-    assert measured["scenarios"]["cylinder"]["delta"] == {
-        "external_cylinder_patches": 1,
-        "bosses": 1,
-    }
-    assert measured["scenarios"]["combined"]["delta"] == {
-        "external_cylinder_patches": 1,
-        "bosses": 1,
-    }
+    assert measured["baseline_counts"]["external_cylinder_patches"] == 1
+    assert measured["baseline_counts"]["bosses"] == 1
+    assert measured["scenarios"]["cylinder"]["delta"] == {}
+    assert measured["scenarios"]["combined"]["delta"] == {}

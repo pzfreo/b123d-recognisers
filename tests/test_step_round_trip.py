@@ -104,8 +104,8 @@ def test_step_round_trip_preserves_analytic_surface_types(tmp_path):
     }
 
 
-def test_nurbs_only_cylinders_remain_outside_non_migrated_families(tmp_path):
-    """Pad plane support does not silently unlock cylinder-dependent families."""
+def test_nurbs_only_cylinders_reach_only_the_migrated_shared_consumers(tmp_path):
+    """Exact recovered cylinders reach Hole/Boss without unlocking unrelated families."""
 
     part = load_fixture(GOLDEN_ROOT / "simple_through_hole" / "fixture.py").build_fixture()
     analytic_census = feature_census(part)
@@ -114,4 +114,9 @@ def test_nurbs_only_cylinders_remain_outside_non_migrated_families(tmp_path):
     nurbs = _through_step(_as_nurbs(part), tmp_path, "nurbs")
 
     assert _surface_types(nurbs) == {GeomAbs_SurfaceType.GeomAbs_BSplineSurface}
-    assert set(feature_census(nurbs).values()) == {0}
+    recovered_census = feature_census(nurbs)
+    assert recovered_census["hole"] == analytic_census["hole"] == 1
+    assert recovered_census["boss"] == analytic_census["boss"] == 1
+    assert all(
+        count == 0 for family, count in recovered_census.items() if family not in {"hole", "boss"}
+    )

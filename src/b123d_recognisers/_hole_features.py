@@ -28,6 +28,12 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
+from b123d_recognisers._effective_surfaces import (
+    EffectiveFaceSurfaceQuery,
+    SurfaceUse,
+    SurfaceUseRefusal,
+    effective_faces_for_graph,
+)
 from b123d_recognisers._geometry import _unit, length_tol, quantise
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
@@ -561,6 +567,7 @@ def _discover_holes(
     face_edges: FaceEdges | None = None,
     writer: EvidenceWriter | None = None,
     predecessor_occurrences: Sequence[CompletedOccurrence] = (),
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[HoleRecord]:
     """Discover Holes and stage exact cylindrical/predecessor evidence atomically."""
 
@@ -620,6 +627,9 @@ def _discover_holes(
         proposals = composed
 
     if writer is not None:
+        effective = (
+            effective_faces_for_graph(writer.graph) if face_surfaces is None else face_surfaces
+        )
         occurrences_by_record: dict[int, list[CompletedOccurrence]] = {}
         for occurrence in predecessor_occurrences:
             predecessor_record = occurrence.record(CounterSink)
@@ -657,8 +667,18 @@ def _discover_holes(
             used_nodes.update(resolved)
             pending.append((proposal.record, nodes))
 
+        issued_pending: list[tuple[HoleRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
-            writer.add_defining(record, nodes, family=FamilyId.HOLES)
+            issued = tuple(
+                effective.use(writer.graph.face(node), material_side=True) for node in nodes
+            )
+            if any(isinstance(use, SurfaceUseRefusal) for use in issued):
+                raise ValueError("Hole cylinder provenance is unavailable")
+            uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
+            issued_pending.append((record, nodes, uses))
+
+        for record, nodes, uses in issued_pending:
+            writer.add_defining(record, nodes, family=FamilyId.HOLES, surfaces=uses)
 
     return [proposal.record for proposal in proposals]
 
@@ -684,6 +704,7 @@ def _discover_bosses(
     cyls: CylinderInventory | None = None,
     face_edges: FaceEdges | None = None,
     writer: EvidenceWriter | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[BossRecord]:
     """Discover Bosses and validate every defining segment before publication."""
 
@@ -715,15 +736,27 @@ def _discover_bosses(
         )
 
     if writer is not None:
-        pending = []
+        effective = (
+            effective_faces_for_graph(writer.graph) if face_surfaces is None else face_surfaces
+        )
+        pending: list[tuple[BossRecord, tuple[FaceNode, ...]]] = []
         for proposal in proposals:
             resolved = {writer.graph.require_node(face) for face in proposal.segment_faces}
             nodes = tuple(node for node in writer.graph.nodes if node in resolved)
             if not nodes or writer.graph.common_valid_solid(nodes) is None:
                 raise ValueError("Boss defining faces do not prove one valid solid")
             pending.append((proposal.record, nodes))
+        issued_pending: list[tuple[BossRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
-            writer.add_defining(record, nodes, family=FamilyId.BOSSES)
+            issued = tuple(
+                effective.use(writer.graph.face(node), material_side=True) for node in nodes
+            )
+            if any(isinstance(use, SurfaceUseRefusal) for use in issued):
+                raise ValueError("Boss cylinder provenance is unavailable")
+            uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
+            issued_pending.append((record, nodes, uses))
+        for record, nodes, uses in issued_pending:
+            writer.add_defining(record, nodes, family=FamilyId.BOSSES, surfaces=uses)
 
     return [proposal.record for proposal in proposals]
 

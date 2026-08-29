@@ -23,7 +23,7 @@ from types import MappingProxyType
 from typing import Generic, TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
-from b123d_recognisers._effective_surfaces import SurfaceUse, _validate_surface_use
+from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceUse, _validate_surface_use
 from b123d_recognisers._passage_compat import CompatibilitySnapshot, PassageCompatibilityView
 
 RecordT = TypeVar("RecordT")
@@ -537,7 +537,8 @@ class _CandidateIssuer:
         ):
             raise ValueError("physical defining evidence must belong to one valid closed solid")
         if surface_uses:
-            if family is not FamilyId.PADS:
+            migrated_surface_families = (FamilyId.PADS, FamilyId.HOLES, FamilyId.BOSSES)
+            if family not in migrated_surface_families:
                 raise ValueError("only explicitly migrated families may carry surface evidence")
             snapshots = tuple(_validate_surface_use(use, self._graph) for use in surface_uses)
             surface_nodes = tuple(snapshot.node for snapshot in snapshots)
@@ -550,8 +551,21 @@ class _CandidateIssuer:
                 for snapshot in snapshots
                 if snapshot.material_side is not None
             )
-            if len(material) != 1:
+            if family is FamilyId.PADS and len(material) != 1:
                 raise ValueError("Pad evidence requires exactly one material-side certificate")
+            if family in (FamilyId.HOLES, FamilyId.BOSSES):
+                expected_sign = -1 if family is FamilyId.HOLES else 1
+                if (
+                    any(snapshot.surface.kind is not SurfaceKind.CYLINDER for snapshot in snapshots)
+                    or len(material) != len(snapshots)
+                    or any(
+                        certificate.candidate_outward_sign != expected_sign
+                        for certificate in material
+                    )
+                ):
+                    raise ValueError(
+                        f"{family.value} cylinder evidence has incompatible material side"
+                    )
         elif family is FamilyId.PADS and nodes:
             raise ValueError("Pad candidates require effective-surface evidence")
         if family is FamilyId.PASSAGES:
