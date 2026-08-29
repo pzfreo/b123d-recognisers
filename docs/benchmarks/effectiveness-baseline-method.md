@@ -16,8 +16,10 @@ This follows ADR 0003's one-inventory and reconciliation authority and ADR 0004'
 between geometric evidence and corpus labels. A matching label is comparison evidence, not
 permission to change ownership, tolerance, or public semantics.
 
-The version-1 taxonomy is
-[`effectiveness-taxonomy-v1.json`](effectiveness-taxonomy-v1.json). Every published class is
+Historical reports through E5d use
+[`effectiveness-taxonomy-v1.json`](effectiveness-taxonomy-v1.json). E5f and later reports use
+[`effectiveness-taxonomy-v2.json`](effectiveness-taxonomy-v2.json), which moves MFCAD++ class 21
+from the former Fillet proxy to the dedicated Circular Blind Step family. Every published class is
 `supported`, `unsupported`, or `incomparable`; `Stock` is incomparable. A supported class names all
 package families that can legitimately report that geometry. This is deliberately many-to-many:
 for example, a rectangular ring can be proposed by both Pocket and Prismatic Pocket machinery,

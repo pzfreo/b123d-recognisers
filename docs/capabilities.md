@@ -220,6 +220,9 @@ added 39 conservative occurrences with 78/78 correct defining faces. The E5d
 [`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
 100% defining-face precision while expanding to 92 occurrences and 184/415 defining-face recall;
 both increments record paired runtime sentinels separately.
+The E5f [`Circular Blind Step result`](benchmarks/effectiveness-mfcadpp-500-e5f-circular-blind-step.md)
+adds 118 accepted occurrences with 236/236 defining-face precision and reconciles exactly 114
+overlapping Fillets; its MFCAD++ and real-part paired runtime ratios remain below 1.04.
 The historical measurements below predate that schema and remain evidence for the narrower claims
 they state; they are not silently promoted into the new baseline.
 
