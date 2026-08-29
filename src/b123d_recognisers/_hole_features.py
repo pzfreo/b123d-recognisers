@@ -42,10 +42,10 @@ from b123d_recognisers._effective_surfaces import (
     EffectiveFaceSurfaceQuery,
     EffectiveSurfaceFact,
     SurfaceKind,
-    SurfaceProvenance,
     SurfaceUse,
     SurfaceUseRefusal,
     SurfaceUseResult,
+    cylinder_surface_dependency,
     effective_faces_for_graph,
     effective_faces_for_part,
 )
@@ -85,18 +85,6 @@ _DIAMETER_FLOOR = 1e-9
 
 def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
     return math.fsum(a * b for a, b in zip(left, right, strict=True))
-
-
-def _cylinder_dependency(
-    effective: EffectiveFaceSurfaceQuery, face: Face
-) -> SurfaceUse | SurfaceUseRefusal:
-    """Issue material-side proof only where recovered orientation requires it."""
-
-    fact = effective.fact(face)
-    recovered = (
-        isinstance(fact, AnalyticSurfaceFact) and fact.provenance is SurfaceProvenance.RECOVERED
-    )
-    return effective.use(face, material_side=recovered)
 
 
 class _LazyPartSurfaceQuery:
@@ -778,7 +766,7 @@ def _discover_holes(
         issued_pending: list[tuple[HoleRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
             issued = tuple(
-                _cylinder_dependency(effective, writer.graph.face(node)) for node in nodes
+                cylinder_surface_dependency(effective, writer.graph.face(node)) for node in nodes
             )
             if any(isinstance(use, SurfaceUseRefusal) for use in issued):
                 raise ValueError("Hole cylinder provenance is unavailable")
@@ -858,7 +846,7 @@ def _discover_bosses(
         issued_pending: list[tuple[BossRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
             issued = tuple(
-                _cylinder_dependency(effective, writer.graph.face(node)) for node in nodes
+                cylinder_surface_dependency(effective, writer.graph.face(node)) for node in nodes
             )
             if any(isinstance(use, SurfaceUseRefusal) for use in issued):
                 raise ValueError("Boss cylinder provenance is unavailable")

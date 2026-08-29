@@ -1,12 +1,6 @@
 {
   "canonicalizer_version": 1,
-  "fixture": "rectangular_through_step",
-  "provenance": {
-    "creator": "Paul Fremantle",
-    "license": "Apache-2.0",
-    "source_path": "tests/test_through_steps.py",
-    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
-  },
+  "fixture": "circular_blind_step",
   "recognition": {
     "aggregate": {
       "prismatic": {
@@ -15,11 +9,63 @@
         "bosses": [],
         "chamfers": [],
         "channels": [],
-        "circular_blind_steps": [],
+        "circular_blind_steps": [
+          {
+            "_type": "CircularBlindStep",
+            "axis": "x",
+            "centreline": [
+              [
+                -5.0,
+                15.0,
+                10.0
+              ],
+              [
+                20.0,
+                15.0,
+                10.0
+              ]
+            ],
+            "length": 25.0,
+            "radius": 4.0,
+            "section": [
+              [
+                11.0,
+                10.0
+              ],
+              [
+                15.0,
+                10.0
+              ],
+              [
+                15.0,
+                6.0
+              ]
+            ]
+          }
+        ],
         "countersinks": [],
         "cylinders": [
           [],
-          []
+          [
+            {
+              "axis": "x",
+              "axis_xyz": [
+                -5.0,
+                15.0,
+                10.0
+              ],
+              "diameter": 8.0,
+              "dir_xyz": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "external": false,
+              "s_hi": 20.0,
+              "s_lo": -5.0,
+              "u_extent": 1.57079633
+            }
+          ]
         ],
         "double_d_bores": [],
         "fillets": [],
@@ -42,32 +88,7 @@
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
-        "through_steps": [
-          {
-            "_type": "ThroughStep",
-            "at": [
-              12.5,
-              7.5,
-              0.0
-            ],
-            "axis": "z",
-            "length": 20.0,
-            "section": [
-              [
-                5.0,
-                15.0
-              ],
-              [
-                5.0,
-                0.0
-              ],
-              [
-                20.0,
-                0.0
-              ]
-            ]
-          }
-        ],
+        "through_steps": [],
         "turned_steps": []
       },
       "rotational": {
@@ -80,7 +101,26 @@
         "countersinks": [],
         "cylinders": [
           [],
-          []
+          [
+            {
+              "axis": "x",
+              "axis_xyz": [
+                -5.0,
+                15.0,
+                10.0
+              ],
+              "diameter": 8.0,
+              "dir_xyz": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "external": false,
+              "s_hi": 20.0,
+              "s_lo": -5.0,
+              "u_extent": 1.57079633
+            }
+          ]
         ],
         "double_d_bores": [],
         "fillets": [],
@@ -112,7 +152,7 @@
       "boss": 0,
       "chamfer": 0,
       "channel": 0,
-      "circular_blind_step": 0,
+      "circular_blind_step": 1,
       "countersink": 0,
       "fillet": 0,
       "flat": 0,
@@ -126,14 +166,47 @@
       "prismatic_pocket": 0,
       "slot": 0,
       "step": 0,
-      "through_step": 1
+      "through_step": 0
     },
     "individual": {
       "recognise_angled_steps": [],
       "recognise_bosses": [],
       "recognise_chamfers": [],
       "recognise_channels": [],
-      "recognise_circular_blind_steps": [],
+      "recognise_circular_blind_steps": [
+        {
+          "_type": "CircularBlindStep",
+          "axis": "x",
+          "centreline": [
+            [
+              -5.0,
+              15.0,
+              10.0
+            ],
+            [
+              20.0,
+              15.0,
+              10.0
+            ]
+          ],
+          "length": 25.0,
+          "radius": 4.0,
+          "section": [
+            [
+              11.0,
+              10.0
+            ],
+            [
+              15.0,
+              10.0
+            ],
+            [
+              15.0,
+              6.0
+            ]
+          ]
+        }
+      ],
       "recognise_countersinks": [],
       "recognise_double_d_bores": [],
       "recognise_face_levels": [
@@ -162,7 +235,19 @@
           "z": 10.0
         }
       ],
-      "recognise_fillets": [],
+      "recognise_fillets": [
+        {
+          "_type": "Fillet",
+          "at": [
+            7.5,
+            12.172,
+            7.172
+          ],
+          "axis": "x",
+          "radius": 4.0,
+          "turned": false
+        }
+      ],
       "recognise_flats": [],
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
@@ -180,38 +265,32 @@
       "recognise_risers": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
-      "recognise_through_steps": [
-        {
-          "_type": "ThroughStep",
-          "at": [
-            12.5,
-            7.5,
-            0.0
-          ],
-          "axis": "z",
-          "length": 20.0,
-          "section": [
-            [
-              5.0,
-              15.0
-            ],
-            [
-              5.0,
-              0.0
-            ],
-            [
-              20.0,
-              0.0
-            ]
-          ]
-        }
-      ],
+      "recognise_through_steps": [],
       "recognise_turned_steps": []
     },
     "substrates": {
       "analyse_cylinders": [
         [],
-        []
+        [
+          {
+            "axis": "x",
+            "axis_xyz": [
+              -5.0,
+              15.0,
+              10.0
+            ],
+            "diameter": 8.0,
+            "dir_xyz": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "external": false,
+            "s_hi": 20.0,
+            "s_lo": -5.0,
+            "u_extent": 1.57079633
+          }
+        ]
       ],
       "feature_diameters": [],
       "full_cylinders": [
@@ -222,7 +301,6 @@
     }
   },
   "source": {
-    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "repository": "https://github.com/pzfreo/draftwright.git"
+    "repository": "https://github.com/pzfreo/b123d-recognisers.git"
   }
 }

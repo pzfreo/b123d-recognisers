@@ -51,6 +51,9 @@ class ReconciliationReason(Enum):
     SLOT_SUPERSEDED_BY_PASSAGE = "recess.slot_superseded_by_passage"
     PASSAGE_SUPERSEDED_BY_SLOT = "recess.passage_superseded_by_slot"
     CHAMFER_SUPERSEDED_BY_ANGLED_STEP = "bevel.chamfer_superseded_by_angled_step"
+    FILLET_SUPERSEDED_BY_CIRCULAR_BLIND_STEP = (
+        "blend.fillet_superseded_by_circular_blind_step"
+    )
     TURNED_STEP_GROOVE_COMPATIBLE = "turned.step_groove_compatible"
     GROOVE_TURNED_STEP_COMPATIBLE = "turned.groove_step_compatible"
 

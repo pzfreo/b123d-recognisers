@@ -18,6 +18,7 @@ PUBLIC_MODULES = {
     "capabilities",
     "census",
     "chamfers",
+    "circular_blind_steps",
     "countersinks",
     "experimental_geometry",
     "explanations",
@@ -76,6 +77,16 @@ MODULE_SEAM_EDGES = {
         "_record",
         "_typing",
         "_volume_probe",
+    },
+    "circular_blind_steps": {
+        "_adjacency",
+        "_candidates",
+        "_claims",
+        "_cylinder_substrate",
+        "_effective_surfaces",
+        "_geometry",
+        "_record",
+        "_typing",
     },
     "_candidates": {"_adjacency", "_effective_surfaces", "_passage_compat"},
     "_correspondence": {
@@ -217,6 +228,7 @@ MODULE_SEAM_EDGES = {
         "_typing",
         "angled_steps",
         "chamfers",
+        "circular_blind_steps",
         "countersinks",
         "fillets",
         "flats",
@@ -283,6 +295,8 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    "src/b123d_recognisers/circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/through_steps:_relation:arc:1": "legacy-contract",
@@ -556,10 +570,13 @@ def test_effective_surface_reader_roster_covers_every_raw_classification() -> No
         if disposition is SurfaceReaderDisposition.MIGRATED_EFFECTIVE
     }
     assert raw_modules == reviewed_raw
-    assert migrated == {"pads"}
+    assert migrated == {"circular_blind_steps", "pads"}
     pad_source = (PACKAGE / "pads.py").read_text(encoding="utf-8")
     assert "face_surfaces.fact(" in pad_source
     assert "face_surfaces.use(" in pad_source
+    circular_source = (PACKAGE / "circular_blind_steps.py").read_text(encoding="utf-8")
+    assert "effective.fact(" in circular_source
+    assert "effective.use(" in circular_source
     assert all(rationale.strip() for _, rationale in SURFACE_READER_ROSTER.values())
     assert all(rationale.strip() for _, rationale in SURFACE_READER_SITES.values())
 

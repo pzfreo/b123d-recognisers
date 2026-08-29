@@ -88,6 +88,10 @@ from b123d_recognisers.angled_steps import (
     recognise_angled_steps,
 )
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
+from b123d_recognisers.circular_blind_steps import (
+    CircularBlindStep,
+    recognise_circular_blind_steps,
+)
 from b123d_recognisers.countersinks import (
     CounterSink,
     cone_rims,
@@ -278,6 +282,8 @@ __all__ = [
     "capability_manifest_json",
     "validate_capability_manifest",
     "recognise_angled_steps",
+    "CircularBlindStep",
+    "recognise_circular_blind_steps",
     "recognise_paired_ramp_steps",
     "ThroughStep",
     "recognise_through_steps",

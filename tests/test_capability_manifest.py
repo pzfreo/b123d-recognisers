@@ -364,7 +364,9 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
             "introduced after",
         ),
         (
-            lambda value: value["families"][5].pop("census_rationale"),
+            lambda value: next(
+                family for family in value["families"] if "census_rationale" in family
+            ).pop("census_rationale"),
             "needs census_rationale",
         ),
         (
@@ -557,7 +559,9 @@ def test_reserved_family_shape_and_global_uniqueness_rules_fail_closed() -> None
         validate_capability_manifest(manifest)
 
     manifest = capability_manifest()
-    manifest["families"][10]["records"].reverse()
+    next(family for family in manifest["families"] if family["id"] == "passages")[
+        "records"
+    ].reverse()
     with pytest.raises(CapabilityManifestError, match="records are not sorted"):
         validate_capability_manifest(manifest)
 

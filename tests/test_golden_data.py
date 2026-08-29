@@ -17,6 +17,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",
+    "recognise_circular_blind_steps",
     "recognise_countersinks",
     "recognise_double_d_bores",
     "recognise_face_levels",

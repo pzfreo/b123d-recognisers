@@ -120,6 +120,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge geom_type validates rectangular boundaries and their complete linear seam",
     ),
+    "circular_blind_steps": (
+        SurfaceReaderDisposition.MIGRATED_EFFECTIVE,
+        "planar membership and native/recovered cylinder provenance use the run-owned query",
+    ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -589,6 +593,23 @@ class EffectiveFaceSurfaceQuery(Protocol):
     def fact(self, face: FaceLike) -> EffectiveSurfaceFact: ...
 
     def use(self, face: FaceLike, *, material_side: bool = False) -> SurfaceUseResult: ...
+
+
+def cylinder_surface_dependency(
+    effective: EffectiveFaceSurfaceQuery, face: FaceLike
+) -> SurfaceUseResult:
+    """Issue the provenance needed to consume a native or recovered cylinder.
+
+    Native topology already supplies orientation, while a recovered primitive needs the
+    independently certified material side. Hole and circular-step discovery share this neutral
+    distinction; neither family owns it.
+    """
+
+    fact = effective.fact(face)
+    recovered = (
+        isinstance(fact, AnalyticSurfaceFact) and fact.provenance is SurfaceProvenance.RECOVERED
+    )
+    return effective.use(face, material_side=recovered)
 
 
 def _surface_use_authority(surface_use: SurfaceUse) -> _EffectiveFaceSurfaces:

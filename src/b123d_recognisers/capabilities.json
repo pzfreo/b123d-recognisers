@@ -278,6 +278,69 @@
       ]
     },
     {
+      "census_name": "circular_blind_step",
+      "census_output": "RecognitionResult.circular_blind_steps",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/circular_blind_step/expected.json"
+      ],
+      "id": "circular-blind-steps",
+      "introduced_in": "0.5.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_circular_blind_steps",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.circular_blind_steps"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "centreline": {
+              "required": true,
+              "type": "tuple[tuple[float,3],2]",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "section": {
+              "required": true,
+              "type": "tuple[tuple[float,2],3]",
+              "units": "mm"
+            }
+          },
+          "name": "CircularBlindStep",
+          "qualified_name": "b123d_recognisers.CircularBlindStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_circular_blind_steps.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "countersink",
       "census_output": "RecognitionResult.countersinks",
       "documentation": [

@@ -49,6 +49,16 @@ FAMILIES = {
         "introduced": "0.5.0",
         "tests": ["tests/test_through_steps.py"],
     },
+    "circular-blind-steps": {
+        "recognisers": [("recognise_circular_blind_steps", "part")],
+        "records": [
+            ("CircularBlindStep", "output", ["RecognitionResult.circular_blind_steps"])
+        ],
+        "census": "circular_blind_step",
+        "goldens": ["circular_blind_step"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_circular_blind_steps.py"],
+    },
     "prismatic-pockets": {
         "recognisers": [("recognise_prismatic_pockets", "part")],
         "records": [("PrismaticPocket", "output", ["RecognitionResult.prismatic_pockets"])],
