@@ -362,6 +362,8 @@ def _recognise_blended_rectangular_pads_one(
 
         # Four quarter-circle removals explain the rounded top exactly; another trim or hole
         # cannot borrow the blend cycle's permission to become a Pad.
+        if len(top_face.wires()) != 1:
+            continue
         removed = math.fsum((1.0 - math.pi / 4.0) * chain.radius**2 for chain in selected)
         expected_area = (x1 - x0) * (y1 - y0) - removed
         if abs(_surface_area(top_face) - expected_area) > max(tol * tol, 0.005 * expected_area):

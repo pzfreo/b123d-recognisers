@@ -1045,8 +1045,14 @@ def test_corrupted_pad_blend_expansion_refuses_before_publication(monkeypatch) -
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
-def test_rounded_perforated_top_cannot_borrow_corner_cycle() -> None:
-    assert recognise_rectangular_pads(_blended_pad() - Cylinder(2, 30)) == []
+@pytest.mark.parametrize("radius", (0.1, 0.2, 0.5, 2.0))
+def test_rounded_perforated_top_cannot_borrow_corner_cycle(radius: float) -> None:
+    part = _blended_pad() - Cylinder(radius, 30)
+
+    assert recognise_rectangular_pads(part) == []
+    product = _take_inventory(part)
+    assert product.result.pads == ()
+    assert product.physical.candidate_set(FamilyId.PADS).candidates == ()
 
 
 def test_blended_pad_survives_step_roundtrip(tmp_path) -> None:
