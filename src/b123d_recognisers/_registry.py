@@ -331,6 +331,7 @@ def _holes(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]
             face_edges=services.context.face_edges,
             writer=services.writer,
             predecessor_occurrences=occurrences,
+            face_surfaces=services.context.face_surfaces,
         )
     )
 
@@ -429,6 +430,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                     cyls=s.cylinders,
                     face_edges=s.context.face_edges,
                     writer=s.writer,
+                    face_surfaces=s.context.face_surfaces,
                 )
             )
         ),

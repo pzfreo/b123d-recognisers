@@ -14,6 +14,7 @@ from build123d import (
     Compound,
     Cylinder,
     GeomType,
+    Part,
     Pos,
     Rot,
     Shell,
@@ -23,6 +24,7 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
 from b123d_recognisers import recognise_bosses
@@ -35,10 +37,25 @@ from b123d_recognisers._adjacency import (
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceProvenance
 from b123d_recognisers._hole_features import _discover_bosses
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
+
+
+def test_recovered_boss_candidate_retains_original_cylinder_dependency() -> None:
+    converted = Part(BRepBuilderAPI_NurbsConvert(Cylinder(4, 10).wrapped, True).Shape())
+    ledger = ClaimLedger(FaceGraph(converted))
+
+    assert _discover_bosses(converted, writer=ledger.writer) == recognise_bosses(converted)
+    (candidate,) = ledger.candidate_set(FamilyId.BOSSES).candidates
+    (surface_use,) = candidate.evidence.surfaces
+    assert surface_use.node in candidate.evidence.defining
+    assert surface_use.surface.kind is SurfaceKind.CYLINDER
+    assert surface_use.surface.provenance is SurfaceProvenance.RECOVERED
+    assert surface_use.material_side is not None
+    assert surface_use.material_side.candidate_outward_sign == 1
 
 
 def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
@@ -192,9 +209,7 @@ def _fresh_end_state(part, segment, coordinate, high):
         if kind == GeomAbs_Plane:
             normal = partner.normal_at(partner.center())
             dot = (
-                normal.X * direction[0]
-                + normal.Y * direction[1]
-                + normal.Z * direction[2]
+                normal.X * direction[0] + normal.Y * direction[1] + normal.Z * direction[2]
             ) * sign
             if dot < -0.5:
                 return "flat"
@@ -341,8 +356,7 @@ def test_mixed_axis_emission_keeps_z_before_cross_and_occurrence_binding() -> No
     assert records[1].axis == pytest.approx((1.0, 0.0, 0.0))
     candidates = ledger.candidate_set(FamilyId.BOSSES).candidates
     assert all(
-        candidate.record is record
-        for candidate, record in zip(candidates, records, strict=True)
+        candidate.record is record for candidate, record in zip(candidates, records, strict=True)
     )
 
 
@@ -381,11 +395,7 @@ def test_step_round_trip_preserves_segment_role_correspondence(tmp_path) -> None
 
 
 def test_keyway_split_segment_claims_every_original_face() -> None:
-    part = (
-        Cylinder(20, 20)
-        - Pos(15, 0, 0) * Box(20, 4, 30)
-        - Pos(-15, 0, 0) * Box(20, 4, 30)
-    )
+    part = Cylinder(20, 20) - Pos(15, 0, 0) * Box(20, 4, 30) - Pos(-15, 0, 0) * Box(20, 4, 30)
     ledger, records = _claimed(part)
     candidates = ledger.candidate_set(FamilyId.BOSSES).candidates
     assert len(records) == len(candidates) == 1

@@ -167,18 +167,32 @@ including 30.850 seconds of untouched baselines; this is harness cost, not a pro
 hot path.
 
 That is a non-zero, narrowly cylinder-specific signal—not evidence for a general NURBS backlog.
-The new Hole and Flat candidates are not yet correctness claims: recovered curved orientation has
-not been certified and the individual candidates still need semantic review. A future migration
-should therefore start at the shared cylinder substrate with orientation/material-side proof and
-those measured cases as an external evaluation set. This sample gives no data-backed reason to
-migrate plane consumers beyond Pads or any cone consumer.
+The shared cylinder inventory now consumes exact recovered cylinders only after independent radial
+material-side proof against one valid closed-solid owner. Hole and Boss aggregate Candidates retain
+the original cylinder faces and their recovery/material-side dependencies. Recovered angular span
+comes from original trim topology/points rather than spline U units, and recovered axial bounds use
+OCCT optimal exact-geometry bounds in the cylinder frame. Exact converted OD and bore fixtures cover
+both radial signs, transforms, curved trims, aggregate attribution and the existing Boss consumer.
+Native and recovered axis lines, directions and axial extrema use one post-measurement canonical
+output seam; standalone native Hole/Boss calls retain their fast path because the recovery graph is
+created lazily only when an eligible spline face is encountered.
+The paired recovered-plane end query gives exact converted through Holes the same complete record in
+standalone and aggregate routes; refusal reports an `unknown` end rather than guessing. No Hole,
+Boss or Flat admission threshold was relaxed.
 
-B-spline input remains **excluded for every other family**, including all cylinder- and
-torus-dependent families. Refused or ambiguous analytic recovery and an unproved material owner
-fail closed. Reverse-engineered or otherwise uncontrolled inputs have no support claim even when
-an individual face happens to satisfy the bounded fitter. Aggregate results may therefore contain
-Raised Pads while other families remain absent; that is a deliberate per-family capability
-boundary, not evidence of whole-model support.
+The four Flat and one Hole candidates from the external spike remain prioritisation evidence rather
+than correctness claims until the licensed source archive can be rerun and those models adjudicated.
+A wholly converted model may still stop at a downstream native-surface boundary: Hole end cones,
+tori, spheres and cylinders remain native-only even though certified recovered planes now establish
+open/flat ends. This sample gives no data-backed reason to migrate plane consumers beyond Pads and
+that bounded Hole end role, or to migrate any cone consumer.
+
+B-spline input remains **excluded beyond the measured Raised Pad and shared-cylinder boundaries**.
+Torus-dependent branches remain excluded. Refused or ambiguous analytic recovery and an unproved
+material owner fail closed. Reverse-engineered or otherwise uncontrolled inputs have no support
+claim even when an individual face happens to satisfy the bounded fitter. Aggregate results may
+therefore contain only the families whose complete downstream predicates remain supported; that is
+a deliberate per-family boundary, not evidence of whole-model support.
 
 ## Measured against third-party labelled corpora
 

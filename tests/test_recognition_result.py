@@ -107,7 +107,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
         return fake
 
-    def fake_cylinders(part):
+    def fake_cylinders(part, *, face_surfaces=None):
+        assert face_surfaces is not None
         calls["cylinders"] = calls.get("cylinders", 0) + 1
         return cylinders
 

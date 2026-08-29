@@ -9,11 +9,20 @@ from typing import cast
 
 from build123d import Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
+from OCP.GeomAbs import (
+    GeomAbs_BezierSurface,
+    GeomAbs_BSplineSurface,
+    GeomAbs_Cone,
+    GeomAbs_Cylinder,
+    GeomAbs_Plane,
+    GeomAbs_Sphere,
+    GeomAbs_Torus,
+)
 
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceNode,
+    GraphRunToken,
     edge_face_map,
     frame_points_outward,
     neighbours,
@@ -28,9 +37,21 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
+from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
+    EffectiveFaceSurfaceQuery,
+    EffectiveSurfaceFact,
+    SurfaceKind,
+    SurfaceProvenance,
+    SurfaceUse,
+    SurfaceUseRefusal,
+    SurfaceUseResult,
+    effective_faces_for_graph,
+    effective_faces_for_part,
+)
 from b123d_recognisers._geometry import _unit, length_tol, quantise
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
+from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, FaceLike, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
 
@@ -60,6 +81,57 @@ _full_cyls = full_cylinders
 _SAME_DIAMETER_FRAC = 1e-4
 #: Smallest diameter the proportional test will divide by; see `_same_diameter`.
 _DIAMETER_FLOOR = 1e-9
+
+
+def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
+    return math.fsum(a * b for a, b in zip(left, right, strict=True))
+
+
+def _cylinder_dependency(
+    effective: EffectiveFaceSurfaceQuery, face: Face
+) -> SurfaceUse | SurfaceUseRefusal:
+    """Issue material-side proof only where recovered orientation requires it."""
+
+    fact = effective.fact(face)
+    recovered = (
+        isinstance(fact, AnalyticSurfaceFact) and fact.provenance is SurfaceProvenance.RECOVERED
+    )
+    return effective.use(face, material_side=recovered)
+
+
+class _LazyPartSurfaceQuery:
+    """Defer the standalone recovery graph until a spline face actually needs it."""
+
+    def __init__(self, part: Part) -> None:
+        self._part = part
+        self._delegate: EffectiveFaceSurfaceQuery | None = None
+
+    def _query(self) -> EffectiveFaceSurfaceQuery:
+        if self._delegate is None:
+            self._delegate = effective_faces_for_part(self._part)
+        return self._delegate
+
+    @property
+    def run_token(self) -> GraphRunToken:
+        return self._query().run_token
+
+    def fact(self, face: FaceLike) -> EffectiveSurfaceFact:
+        return self._query().fact(face)
+
+    def use(self, face: FaceLike, *, material_side: bool = False) -> SurfaceUseResult:
+        return self._query().use(face, material_side=material_side)
+
+
+def _family_surface_query(
+    part: Part,
+    writer: EvidenceWriter | None,
+    supplied: EffectiveFaceSurfaceQuery | None,
+) -> EffectiveFaceSurfaceQuery | None:
+    if supplied is not None:
+        return supplied
+    if writer is not None:
+        return effective_faces_for_graph(writer.graph)
+    return _LazyPartSurfaceQuery(part)
 
 
 def _same_diameter(a: float, b: float) -> bool:
@@ -191,6 +263,18 @@ def _axis_point(seg: SegmentEvidence, s: float) -> tuple[float, float, float]:
     return (ax + t * dx, ay + t * dy, az + t * dz)
 
 
+def _canonical_hole_axis_point(
+    seg: SegmentEvidence, s: float
+) -> tuple[float, float, float]:
+    """Remove the final kernel-noise digit from a reconstructed Hole location."""
+
+    measured = _axis_point(seg, s)
+    # Axis reconstruction combines independently measured anchors, directions and bounds. Eleven
+    # significant figures removes their last kernel-noise digit while remaining far tighter than
+    # the public record serializer and all length predicates.
+    return tuple(quantise(value, figures=11) for value in measured)  # type: ignore[return-value]
+
+
 def _end_partners(
     seg: SegmentEvidence, s_end: float, edge_faces: dict, cache: dict | None = None
 ) -> list:
@@ -237,15 +321,18 @@ def _classify_end(
     hi_end: bool,
     edge_faces: dict,
     cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
     if cache is None:
-        return _classify_end_uncached(seg, s_end, hi_end, edge_faces)
+        return _classify_end_uncached(seg, s_end, hi_end, edge_faces, face_surfaces=face_surfaces)
     key = ("ce", id(seg), round(s_end, 9), hi_end)
     hit = cache.get(key)
     if hit is not None and hit[0] is seg:
         return cast(str, hit[1])
-    result = _classify_end_uncached(seg, s_end, hi_end, edge_faces, cache)
+    result = _classify_end_uncached(
+        seg, s_end, hi_end, edge_faces, cache, face_surfaces=face_surfaces
+    )
     cache[key] = (seg, result)
     return result
 
@@ -256,6 +343,7 @@ def _classify_end_uncached(
     hi_end: bool,
     edge_faces: dict,
     cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
@@ -314,12 +402,24 @@ def _classify_end_uncached(
             return "open" if curls_in else "flat"
         if kind == GeomAbs_Plane:
             n = partner.normal_at(partner.center())
-            dot = (n.X * dx + n.Y * dy + n.Z * dz) * e_sign
+            normal = (n.X, n.Y, n.Z)
+        elif kind in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface) and face_surfaces is not None:
+            fact = face_surfaces.fact(partner)
+            if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
+                continue
+            plane_use = face_surfaces.use(partner, material_side=True)
+            if not isinstance(plane_use, SurfaceUse) or plane_use.material_side is None:
+                continue
+            normal = plane_use.material_side.outward
+        else:
+            normal = None
+        if normal is not None:
+            dot = _dot(normal, (dx, dy, dz)) * e_sign
             if dot < -0.5:
                 return "flat"
             if dot > 0.5:
                 return "open"
-        elif kind == GeomAbs_Sphere:
+        if kind == GeomAbs_Sphere:
             # Convex (material inside the sphere): the bore exits through a
             # spherical surface. Concave (a ball-nose cavity): a closed
             # bottom — reported as "flat" (no rounded-bottom category).
@@ -356,7 +456,10 @@ def _shared_transition(
 
 
 def _merge_stacks(
-    stacks: list[list[SegmentEvidence]], edge_faces: dict, cache: dict | None = None
+    stacks: list[list[SegmentEvidence]],
+    edge_faces: dict,
+    cache: dict | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[list[SegmentEvidence]]:
     """Recombine coaxial stacks that are one hole:
 
@@ -380,8 +483,10 @@ def _merge_stacks(
             closed = ("flat", "drill_point")
             if (
                 _same_diameter(a["diameter"], b["diameter"])
-                and _classify_end(a, a["s_hi"], True, edge_faces, cache) not in closed
-                and _classify_end(b, b["s_lo"], False, edge_faces, cache) not in closed
+                and _classify_end(a, a["s_hi"], True, edge_faces, cache, face_surfaces)
+                not in closed
+                and _classify_end(b, b["s_lo"], False, edge_faces, cache, face_surfaces)
+                not in closed
             ):
                 joined = cast(
                     SegmentEvidence,
@@ -414,7 +519,10 @@ def _csink_for_hole(h: HoleRecord, csinks: Sequence[CounterSink]) -> CounterSink
 
 
 def _drilled_from(
-    stack: list[SegmentEvidence], edge_faces: dict, cache: dict
+    stack: list[SegmentEvidence],
+    edge_faces: dict,
+    cache: dict,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> tuple[bool, SegmentEvidence, float, str]:
     """Which end of a coaxial stack is the opening, and what closes the other.
 
@@ -429,8 +537,8 @@ def _drilled_from(
 
     lo_seg = min(stack, key=lambda s: s["s_lo"])
     hi_seg = max(stack, key=lambda s: s["s_hi"])
-    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache)
-    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache)
+    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache, face_surfaces)
+    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache, face_surfaces)
 
     if lo_state == "open" and hi_state != "open":
         from_hi = False
@@ -561,10 +669,14 @@ def _discover_holes(
     face_edges: FaceEdges | None = None,
     writer: EvidenceWriter | None = None,
     predecessor_occurrences: Sequence[CompletedOccurrence] = (),
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[HoleRecord]:
     """Discover Holes and stage exact cylindrical/predecessor evidence atomically."""
 
-    z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+    effective = _family_surface_query(part, writer, face_surfaces)
+    z_cyls, cross_cyls = (
+        cyls if cyls is not None else analyse_cylinders(part, face_surfaces=effective)
+    )
     internal = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if not c["external"]]
     if not internal:
         return []
@@ -573,12 +685,17 @@ def _discover_holes(
     # classified by _merge_stacks and again in the loop below, each scan walking
     # every face's edges.
     cache: dict = {}
-    stacks = _merge_stacks(_merge_runs(_segments(internal), _line_key), edge_faces, cache)
+    stacks = _merge_stacks(
+        _merge_runs(_segments(internal), _line_key),
+        edge_faces,
+        cache,
+        effective,
+    )
 
     proposals: list[_HoleProposal] = []
     for stack in stacks:
         d = stack[0]["dir_xyz"]
-        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache)
+        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache, effective)
 
         # Order segments from the opening inward; the bore is the narrowest
         # (not the farthest — a through hole counterbored from both sides has
@@ -599,7 +716,7 @@ def _discover_holes(
         depth = _bore_depth(stack, bore, bottom=bottom, from_hi=from_hi)
         record = HoleRecord(
             axis=_unit(tuple(-c for c in d) if from_hi else d),
-            location=_axis_point(opening_seg, opening_s),
+            location=_canonical_hole_axis_point(opening_seg, opening_s),
             diameter=bore["diameter"],
             depth=round(depth.depth, 2),
             bottom=bottom,
@@ -620,6 +737,7 @@ def _discover_holes(
         proposals = composed
 
     if writer is not None:
+        assert effective is not None
         occurrences_by_record: dict[int, list[CompletedOccurrence]] = {}
         for occurrence in predecessor_occurrences:
             predecessor_record = occurrence.record(CounterSink)
@@ -657,8 +775,18 @@ def _discover_holes(
             used_nodes.update(resolved)
             pending.append((proposal.record, nodes))
 
+        issued_pending: list[tuple[HoleRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
-            writer.add_defining(record, nodes, family=FamilyId.HOLES)
+            issued = tuple(
+                _cylinder_dependency(effective, writer.graph.face(node)) for node in nodes
+            )
+            if any(isinstance(use, SurfaceUseRefusal) for use in issued):
+                raise ValueError("Hole cylinder provenance is unavailable")
+            uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
+            issued_pending.append((record, nodes, uses))
+
+        for record, nodes, uses in issued_pending:
+            writer.add_defining(record, nodes, family=FamilyId.HOLES, surfaces=uses)
 
     return [proposal.record for proposal in proposals]
 
@@ -684,10 +812,14 @@ def _discover_bosses(
     cyls: CylinderInventory | None = None,
     face_edges: FaceEdges | None = None,
     writer: EvidenceWriter | None = None,
+    face_surfaces: EffectiveFaceSurfaceQuery | None = None,
 ) -> list[BossRecord]:
     """Discover Bosses and validate every defining segment before publication."""
 
-    z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+    effective = _family_surface_query(part, writer, face_surfaces)
+    z_cyls, cross_cyls = (
+        cyls if cyls is not None else analyse_cylinders(part, face_surfaces=effective)
+    )
     external = [c for c in _full_cyls(z_cyls) + _full_cyls(cross_cyls) if c["external"]]
     if not external:
         return []
@@ -697,8 +829,8 @@ def _discover_bosses(
     proposals: list[_BossProposal] = []
     for seg in _segments(external):
         d = seg["dir_xyz"]
-        lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache)
-        hi_state = _classify_end(seg, seg["s_hi"], True, edge_faces, cache)
+        lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache, effective)
+        hi_state = _classify_end(seg, seg["s_hi"], True, edge_faces, cache, effective)
         # The free end is the open one (its cap faces away from the segment);
         # default to the high end when both or neither are open.
         from_hi = not (lo_state == "open" and hi_state != "open")
@@ -715,15 +847,25 @@ def _discover_bosses(
         )
 
     if writer is not None:
-        pending = []
+        assert effective is not None
+        pending: list[tuple[BossRecord, tuple[FaceNode, ...]]] = []
         for proposal in proposals:
             resolved = {writer.graph.require_node(face) for face in proposal.segment_faces}
             nodes = tuple(node for node in writer.graph.nodes if node in resolved)
             if not nodes or writer.graph.common_valid_solid(nodes) is None:
                 raise ValueError("Boss defining faces do not prove one valid solid")
             pending.append((proposal.record, nodes))
+        issued_pending: list[tuple[BossRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
         for record, nodes in pending:
-            writer.add_defining(record, nodes, family=FamilyId.BOSSES)
+            issued = tuple(
+                _cylinder_dependency(effective, writer.graph.face(node)) for node in nodes
+            )
+            if any(isinstance(use, SurfaceUseRefusal) for use in issued):
+                raise ValueError("Boss cylinder provenance is unavailable")
+            uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
+            issued_pending.append((record, nodes, uses))
+        for record, nodes, uses in issued_pending:
+            writer.add_defining(record, nodes, family=FamilyId.BOSSES, surfaces=uses)
 
     return [proposal.record for proposal in proposals]
 

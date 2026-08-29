@@ -9,6 +9,7 @@ from build123d import (
     Cone,
     Cylinder,
     Face,
+    Part,
     Plane,
     Sphere,
     Torus,
@@ -17,9 +18,10 @@ from build123d import (
 )
 from OCP.BRep import BRep_Tool
 from OCP.BRepAdaptor import BRepAdaptor_Surface
-from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_NurbsConvert
 from OCP.BRepTools import BRepTools
 from OCP.Geom import Geom_BezierSurface, Geom_RectangularTrimmedSurface
+from OCP.GeomAbs import GeomAbs_Cylinder
 from OCP.GeomConvert import GeomConvert
 from OCP.gp import gp_Ax3, gp_Cylinder, gp_Dir, gp_Pnt, gp_Pnt2d
 from OCP.Standard import Standard_Failure
@@ -222,6 +224,7 @@ def test_material_side_sampling_refuses_missing_or_degenerate_triangulation(monk
         is MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
     )
 
+
 def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypatch) -> None:
     import b123d_recognisers._effective_surfaces as module
 
@@ -270,19 +273,79 @@ def test_plane_differential_refuses_degenerate_or_failed_kernel_reads(monkeypatc
     )
 
 
-def test_material_side_refuses_non_planes_and_faces_without_one_closed_owner() -> None:
+def test_cylinder_material_side_certifies_external_and_internal_radial_polarity() -> None:
     cylinder = Cylinder(4, 10)
     cylinder_query = effective_faces_for_graph(FaceGraph(cylinder))
     curved = max(cylinder.faces(), key=lambda face: face.area)
-    unsupported = cylinder_query.use(curved, material_side=True)
-    assert isinstance(unsupported, SurfaceUseRefusal)
-    assert unsupported.reason is MaterialSideRefusalReason.UNSUPPORTED_PRIMITIVE
+    external = cylinder_query.use(curved, material_side=True)
+    assert isinstance(external, SurfaceUse)
+    assert external.material_side is not None
+    assert external.material_side.outward == external.material_side.outward_samples[0]
+    assert external.material_side.candidate_outward_sign == 1
+    assert len(external.material_side.outward_samples) >= 2
+
+    bored = Box(12, 12, 10) - Cylinder(2, 10)
+    bore = next(
+        face
+        for face in bored.faces()
+        if BRepAdaptor_Surface(face.wrapped).GetType() == GeomAbs_Cylinder
+    )
+    internal = effective_faces_for_graph(FaceGraph(bored)).use(bore, material_side=True)
+    assert isinstance(internal, SurfaceUse)
+    assert internal.material_side is not None
+    assert internal.material_side.candidate_outward_sign == -1
+
+
+@pytest.mark.parametrize(
+    ("part", "expected_sign"),
+    [
+        (Cylinder(4, 10).rotate(Axis.X, 37), 1),
+        ((Box(12, 12, 10) - Cylinder(2, 10)).rotate(Axis.Y, 29), -1),
+    ],
+)
+def test_exact_converted_cylinder_material_side_is_transform_invariant(part, expected_sign) -> None:
+    converted = Part(BRepBuilderAPI_NurbsConvert(part.wrapped, True).Shape())
+    graph = FaceGraph(converted)
+    query = effective_faces_for_graph(graph)
+    curved = next(
+        graph.face(node)
+        for node in graph.nodes
+        if isinstance(query.fact(graph.face(node)), AnalyticSurfaceFact)
+        and query.fact(graph.face(node)).kind is SurfaceKind.CYLINDER
+    )
+
+    issued = query.use(curved, material_side=True)
+
+    assert isinstance(issued, SurfaceUse)
+    assert issued.surface.provenance is SurfaceProvenance.RECOVERED
+    assert issued.material_side is not None
+    assert issued.material_side.candidate_outward_sign == expected_sign
+    assert len(issued.material_side.outward_samples) >= 2
+
+
+def test_material_side_refuses_faces_without_one_closed_owner(monkeypatch) -> None:
 
     open_face = Face.make_rect(10, 8)
     open_query = effective_faces_for_graph(FaceGraph(open_face))
     unowned = open_query.use(open_face, material_side=True)
     assert isinstance(unowned, SurfaceUseRefusal)
     assert unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+    cylinder_side = max(Cylinder(4, 10).faces(), key=lambda face: face.area)
+    recovered_open = _as_bspline_face(cylinder_side)
+    recovered_query = effective_faces_for_graph(FaceGraph(recovered_open))
+    recovered_unowned = recovered_query.use(recovered_open, material_side=True)
+    assert isinstance(recovered_unowned, SurfaceUseRefusal)
+    assert recovered_unowned.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
+
+    ambiguous = Cylinder(4, 10)
+    ambiguous_graph = FaceGraph(ambiguous)
+    monkeypatch.setattr(ambiguous_graph, "common_valid_solid", lambda _nodes: None)
+    ambiguous_query = effective_faces_for_graph(ambiguous_graph)
+    ambiguous_curved = max(ambiguous.faces(), key=lambda face: face.area)
+    ambiguous_use = ambiguous_query.use(ambiguous_curved, material_side=True)
+    assert isinstance(ambiguous_use, SurfaceUseRefusal)
+    assert ambiguous_use.reason is MaterialSideRefusalReason.OWNER_UNPROVEN
 
 
 def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> None:

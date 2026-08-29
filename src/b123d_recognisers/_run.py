@@ -82,14 +82,17 @@ def start(
     face_edges = FaceEdges()
     graph = FaceGraph(part, face_edges=face_edges)
     surfaces = EffectiveSurfaceIndex(graph)
-    derived = analyse_cylinders(part) if cylinders is None else cylinders
+    face_surfaces = effective_faces_for_graph(graph, surfaces)
+    derived = (
+        analyse_cylinders(part, face_surfaces=face_surfaces) if cylinders is None else cylinders
+    )
     return RecognitionContext(
         part=part,
         face_edges=face_edges,
         graph=graph,
         geometry=GeometryGraph._from_graph(graph, surfaces),
         surfaces=surfaces,
-        face_surfaces=effective_faces_for_graph(graph, surfaces),
+        face_surfaces=face_surfaces,
         cylinders=(tuple(derived[0]), tuple(derived[1])),
         rotational=rotational,
     )

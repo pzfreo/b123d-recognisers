@@ -38,11 +38,8 @@ from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken, SolidRef
-from b123d_recognisers._analytic_surfaces import (
-    SurfaceKind,
-    native_primitive,
-    validated_parameters,
-)
+from b123d_recognisers._analytic_surfaces import SurfaceKind as SurfaceKind
+from b123d_recognisers._analytic_surfaces import native_primitive, validated_parameters
 from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._typing import FaceLike, Part
 
@@ -121,8 +118,8 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
-        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
-        "cylinder kind can migrate, but external/bore material side waits for F2",
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "native compatibility fast path stays raw; non-native cylinders use effective facts",
     ),
     "_hole_features": (
         SurfaceReaderDisposition.TORUS_DEFERRED,
@@ -269,8 +266,8 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     ),
     "_bevel:classify_bevel:adaptor:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "plane gate"),
     "_cylinder_substrate:analyse_cylinders:adaptor:1": (
-        SurfaceReaderDisposition.ORIENTATION_DEFERRED,
-        "cylinder geometry plus material side waits for F2",
+        SurfaceReaderDisposition.MIGRATED_EFFECTIVE,
+        "native fast path plus run-owned recovered cylinder and radial-side query",
     ),
     "_hole_features:_classify_end_uncached:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
@@ -467,11 +464,20 @@ EffectiveSurfaceFact: TypeAlias = AnalyticSurfaceFact | RefusedSurfaceFact
 
 @dataclass(frozen=True, slots=True)
 class MaterialSideCertificate:
-    """Independent proof of which candidate plane direction points out of one solid."""
+    """Independent proof of which candidate normal points out of one solid.
+
+    ``candidate_outward_sign`` applies to the primitive's candidate normal at every retained
+    sample.  A plane has one global candidate direction, retained in ``outward`` for compatibility;
+    for a cylinder ``outward`` is the first retained sample normal and ``outward_samples`` carries
+    every position-dependent radial normal.  Consumers must use the sign, not that sample vector,
+    to classify a cylinder as internal or external.
+    """
 
     node: FaceNode
     solid: SolidRef
     outward: tuple[float, float, float]
+    candidate_outward_sign: int
+    outward_samples: tuple[tuple[float, float, float], ...]
     sample_points: tuple[tuple[float, float, float], ...]
     probe_distance: float
     classifier_tolerance: float
@@ -545,6 +551,8 @@ def _material_state(certificate: MaterialSideCertificate) -> tuple[object, ...]:
         certificate.node,
         certificate.solid,
         certificate.outward,
+        certificate.candidate_outward_sign,
+        certificate.outward_samples,
         certificate.sample_points,
         certificate.probe_distance,
         certificate.classifier_tolerance,
@@ -646,12 +654,12 @@ def _triangle_samples(
         return MaterialSideRefusalReason.SAMPLE_UNAVAILABLE
 
 
-def _regular_plane_differential(
+def _regular_surface_differential(
     face: FaceLike,
     point: tuple[float, float, float],
     direction: tuple[float, float, float],
 ) -> bool:
-    """Require a non-degenerate original differential aligned with the recovered plane."""
+    """Require a non-degenerate original differential aligned with a candidate normal."""
 
     try:
         uv = ShapeAnalysis_Surface(BRep_Tool.Surface_s(face.wrapped)).ValueOfUV(
@@ -662,9 +670,7 @@ def _regular_plane_differential(
         projection_gap = math.sqrt(
             math.fsum(
                 (actual - expected) ** 2
-                for actual, expected in zip(
-                    (here.X(), here.Y(), here.Z()), point, strict=True
-                )
+                for actual, expected in zip((here.X(), here.Y(), here.Z()), point, strict=True)
             )
         )
         if not math.isfinite(projection_gap) or projection_gap > recovery_tolerance(face):
@@ -680,6 +686,74 @@ def _regular_plane_differential(
         return math.isfinite(alignment) and alignment >= 1.0 - 1e-9
     except (Standard_Failure, RuntimeError, ValueError):
         return False
+
+
+# Kept as a private compatibility alias for tests and downstream source users while the authority
+# widens from its original plane-only contract.
+_regular_plane_differential = _regular_surface_differential
+
+
+def _candidate_normal(
+    surface: AnalyticSurfaceFact,
+    point: tuple[float, float, float],
+) -> tuple[float, float, float] | None:
+    """Return the primitive's canonical local normal, without assigning material side."""
+
+    if surface.kind is SurfaceKind.PLANE:
+        return (surface.parameters[0], surface.parameters[1], surface.parameters[2])
+    if surface.kind is not SurfaceKind.CYLINDER:
+        return None
+    axis_point = surface.parameters[:3]
+    axis_direction = surface.parameters[3:6]
+    relative = tuple(
+        coordinate - origin for coordinate, origin in zip(point, axis_point, strict=True)
+    )
+    along = math.fsum(
+        coordinate * direction
+        for coordinate, direction in zip(relative, axis_direction, strict=True)
+    )
+    radial = tuple(
+        coordinate - along * direction
+        for coordinate, direction in zip(relative, axis_direction, strict=True)
+    )
+    magnitude = math.sqrt(math.fsum(component * component for component in radial))
+    radius = surface.parameters[6]
+    if (
+        not math.isfinite(magnitude)
+        or magnitude <= COORD_FLOOR
+        or abs(magnitude - radius) > max(surface.requested_tolerance, COORD_FLOOR)
+    ):
+        return None
+    return tuple(component / magnitude for component in radial)  # type: ignore[return-value]
+
+
+def _regular_cylinder_sample(
+    face: FaceLike,
+    seed: tuple[float, float, float],
+    surface: AnalyticSurfaceFact,
+    *,
+    probe_distance: float,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]] | None:
+    """Project a mesh seed to the original curved face and prove its recovered radial normal."""
+
+    try:
+        uv = ShapeAnalysis_Surface(BRep_Tool.Surface_s(face.wrapped)).ValueOfUV(
+            gp_Pnt(*seed), max(probe_distance, COORD_FLOOR)
+        )
+        here, along_u, along_v = gp_Pnt(), gp_Vec(), gp_Vec()
+        BRepAdaptor_Surface(face.wrapped).D1(uv.X(), uv.Y(), here, along_u, along_v)
+        point = (here.X(), here.Y(), here.Z())
+        direction = _candidate_normal(surface, point)
+        if direction is None or not _regular_surface_differential(face, point, direction):
+            return None
+        clearance = min(
+            (float(Vertex(*point).distance_to(edge)) for edge in face.edges()), default=0.0
+        )
+        if not math.isfinite(clearance) or clearance < 4.0 * probe_distance:
+            return None
+        return point, direction
+    except (Standard_Failure, RuntimeError, ValueError):
+        return None
 
 
 class _EffectiveFaceSurfaces:
@@ -714,7 +788,11 @@ class _EffectiveFaceSurfaces:
                 node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE
             )
         elif material_side:
-            certificate = self._certify_plane(node, surface)
+            certificate = (
+                self._certify_plane(node, surface)
+                if surface.kind is SurfaceKind.PLANE
+                else self._certify_material_side(node, surface)
+            )
             if isinstance(certificate, MaterialSideRefusalReason):
                 result = SurfaceUseRefusal(node, certificate)
             else:
@@ -765,10 +843,10 @@ class _EffectiveFaceSurfaces:
             raise ValueError("material-side certificate no longer matches its graph owner")
         return snapshot
 
-    def _certify_plane(
+    def _certify_material_side(
         self, node: FaceNode, surface: AnalyticSurfaceFact
     ) -> MaterialSideCertificate | MaterialSideRefusalReason:
-        if surface.kind is not SurfaceKind.PLANE:
+        if surface.kind not in (SurfaceKind.PLANE, SurfaceKind.CYLINDER):
             return MaterialSideRefusalReason.UNSUPPORTED_PRIMITIVE
         solid = self._graph.common_valid_solid((node,))
         if solid is None:
@@ -785,24 +863,37 @@ class _EffectiveFaceSurfaces:
         samples = _triangle_samples(face, probe_distance=probe_distance)
         if isinstance(samples, MaterialSideRefusalReason):
             return samples
-        direction = (
-            surface.parameters[0],
-            surface.parameters[1],
-            surface.parameters[2],
-        )
         signs: list[int] = []
+        certified_samples: list[tuple[float, float, float]] = []
+        candidate_normals: list[tuple[float, float, float]] = []
         try:
             classifier = BRepClass3d_SolidClassifier(self._graph.solid_shape(solid).wrapped)
             for point in samples:
-                if not _regular_plane_differential(face, point, direction):
-                    return MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
+                if surface.kind is SurfaceKind.PLANE:
+                    direction = _candidate_normal(surface, point)
+                    if direction is None or not _regular_plane_differential(face, point, direction):
+                        return MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
+                    certified_point = point
+                else:
+                    cylinder_sample = _regular_cylinder_sample(
+                        face, point, surface, probe_distance=probe_distance
+                    )
+                    if cylinder_sample is None:
+                        # A triangulation seed can project onto a periodic seam even though other
+                        # retained interior seeds are well clear.  The same bounded minimum-sample
+                        # rule applies after projection; one seam seed is not authority to refuse
+                        # an otherwise independently proved curved side.
+                        continue
+                    certified_point, direction = cylinder_sample
+                certified_samples.append(certified_point)
+                candidate_normals.append(direction)
                 states = []
                 for sign in (1.0, -1.0):
                     classifier.Perform(
                         gp_Pnt(
                             *(
                                 coordinate + sign * probe_distance * axis
-                                for coordinate, axis in zip(point, direction, strict=True)
+                                for coordinate, axis in zip(certified_point, direction, strict=True)
                             )
                         ),
                         _MATERIAL_CLASSIFIER_TOLERANCE,
@@ -816,23 +907,38 @@ class _EffectiveFaceSurfaces:
                     return MaterialSideRefusalReason.PROBE_INDETERMINATE
         except (Standard_Failure, RuntimeError, ValueError):
             return MaterialSideRefusalReason.PROBE_INDETERMINATE
+        if len(signs) < _MATERIAL_MIN_SAMPLES:
+            return MaterialSideRefusalReason.DIFFERENTIAL_DEGENERATE
         if len(set(signs)) != 1:
             return MaterialSideRefusalReason.SAMPLES_DISAGREE
         outward_sign = signs[0]
-        return MaterialSideCertificate(
-            node=node,
-            solid=solid,
-            outward=(
+        outward_samples = tuple(
+            (
                 outward_sign * direction[0],
                 outward_sign * direction[1],
                 outward_sign * direction[2],
-            ),
-            sample_points=samples,
+            )
+            for direction in candidate_normals
+        )
+        return MaterialSideCertificate(
+            node=node,
+            solid=solid,
+            outward=outward_samples[0],
+            candidate_outward_sign=outward_sign,
+            outward_samples=outward_samples,
+            sample_points=tuple(certified_samples),
             probe_distance=probe_distance,
             classifier_tolerance=_MATERIAL_CLASSIFIER_TOLERANCE,
             original_orientation=int(face.wrapped.Orientation()),
             authority=_MATERIAL_SIDE_AUTHORITY,
         )
+
+    def _certify_plane(
+        self, node: FaceNode, surface: AnalyticSurfaceFact
+    ) -> MaterialSideCertificate | MaterialSideRefusalReason:
+        """Compatibility seam for the original plane-only certificate tests."""
+
+        return self._certify_material_side(node, surface)
 
 
 def effective_faces_for_graph(

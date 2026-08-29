@@ -12,15 +12,18 @@ from build123d import (
     Cone,
     Cylinder,
     GeomType,
+    Part,
     Plane,
     Pos,
     Rectangle,
+    Rot,
     Sphere,
     chamfer,
     extrude,
     fillet,
     mirror,
 )
+from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 
 from b123d_recognisers import (
     BossRecord,
@@ -53,6 +56,107 @@ def test_exact_diagonal_cylinder_uses_stable_dominant_axis_tie_break():
     assert z_cylinders
     assert cross_cylinders == []
     assert {record["axis"] for record in z_cylinders} == {"z"}
+
+
+def test_native_analytic_scan_does_not_enter_effective_recovery() -> None:
+    class RecoveryMustNotRun:
+        def fact(self, _face):
+            raise AssertionError("native analytic faces must stay on the adaptor fast path")
+
+        def use(self, _face, *, material_side=False):
+            raise AssertionError("native analytic faces must not request recovered material side")
+
+    inventory = analyse_cylinders(
+        Box(10, 10, 10) + Cylinder(2, 14),
+        face_surfaces=RecoveryMustNotRun(),  # type: ignore[arg-type]
+    )
+
+    assert any(item["external"] for group in inventory for item in group)
+
+
+def test_native_hole_and_boss_calls_do_not_build_the_lazy_recovery_graph(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as families
+
+    def recovery_must_not_run(_part):
+        raise AssertionError("native family calls must not build an effective-surface graph")
+
+    monkeypatch.setattr(families, "effective_faces_for_part", recovery_must_not_run)
+
+    assert recognise_holes(Box(12, 12, 10) - Cylinder(2, 10))
+    assert recognise_bosses(Cylinder(4, 10))
+
+
+@pytest.mark.parametrize(
+    ("part", "external"),
+    [(Cylinder(4, 10), True), (Box(12, 12, 10) - Cylinder(2, 10), False)],
+)
+def test_exact_converted_cylinder_inventory_preserves_semantic_geometry(part, external):
+    converted = Part(BRepBuilderAPI_NurbsConvert(part.wrapped, True).Shape())
+    native = [item for group in analyse_cylinders(part) for item in group]
+    recovered = [item for group in analyse_cylinders(converted) for item in group]
+
+    assert len(native) == len(recovered) == 1
+    before, after = native[0], recovered[0]
+    assert after["diameter"] == before["diameter"]
+    assert after["axis"] == before["axis"]
+    assert after["external"] is before["external"] is external
+    assert after["dir_xyz"] == pytest.approx(before["dir_xyz"])
+    assert after["s_lo"] == pytest.approx(before["s_lo"])
+    assert after["s_hi"] == pytest.approx(before["s_hi"])
+    assert after["u_extent"] == pytest.approx(before["u_extent"])
+
+
+def test_exact_converted_external_cylinder_reaches_the_existing_boss_consumer():
+    native = Cylinder(4, 10)
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+
+    assert recognise_bosses(converted) == recognise_bosses(native)
+
+
+@pytest.mark.parametrize("rotation", [Rot(0, 90, 0), Rot(31, 17, 43)])
+def test_transformed_exact_converted_hole_has_exact_record_parity(rotation):
+    native = rotation * (Box(12, 12, 10) - Cylinder(2, 10))
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+
+    assert recognise_holes(converted) == recognise_holes(native)
+
+
+def test_recovered_angular_span_does_not_trust_spline_u_units(monkeypatch):
+    import b123d_recognisers._cylinder_substrate as substrate
+
+    converted = Part(BRepBuilderAPI_NurbsConvert(Cylinder(4, 10).wrapped, True).Shape())
+    original = substrate.BRepAdaptor_Surface
+
+    class AffineUAdaptor:
+        def __init__(self, face):
+            self._real = original(face)
+
+        def __getattr__(self, name):
+            return getattr(self._real, name)
+
+        def FirstUParameter(self):
+            return 10.0 + 7.0 * self._real.FirstUParameter()
+
+        def LastUParameter(self):
+            return 10.0 + 7.0 * self._real.LastUParameter()
+
+    monkeypatch.setattr(substrate, "BRepAdaptor_Surface", AffineUAdaptor)
+
+    (recovered,) = analyse_cylinders(converted)[0]
+    assert recovered["u_extent"] == pytest.approx(2.0 * math.pi)
+
+
+def test_recovered_axis_bounds_include_curved_trim_extrema() -> None:
+    native = Cylinder(5, 20) & Sphere(8)
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+
+    (before,) = analyse_cylinders(native)[0]
+    (after,) = analyse_cylinders(converted)[0]
+
+    assert after["s_lo"] == pytest.approx(before["s_lo"])
+    assert after["s_hi"] == pytest.approx(before["s_hi"])
+    assert after["s_lo"] == pytest.approx(-math.sqrt(8**2 - 5**2))
+    assert after["s_hi"] == pytest.approx(math.sqrt(8**2 - 5**2))
 
 
 class TestFindHoles:
@@ -323,9 +427,7 @@ class TestFindHoles:
     def test_filleted_opening_lip_stays_through(self):
         # The lip fillet is a torus flaring outward — an opening
         part = Box(60, 60, 20) - Cylinder(5, 20)
-        edge = [
-            e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 10) < 0.01
-        ]
+        edge = [e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 10) < 0.01]
         (hole,) = recognise_holes(fillet(edge, 1.0))
         assert hole.bottom == "through"
         assert hole.axis == pytest.approx((0.0, 0.0, -1.0))
@@ -423,9 +525,7 @@ class TestFindHoles:
         # A deburr chamfer on the floor rim is an apex-outward cone like a
         # drill point, but it never reaches the axis — the bottom is flat.
         part = Box(60, 60, 40) - Pos(0, 0, 17.5) * Cylinder(15, 5)
-        edge = [
-            e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 15) < 0.01
-        ]
+        edge = [e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 15) < 0.01]
         (hole,) = recognise_holes(chamfer(edge, 1.0))
         assert hole.bottom == "flat"
 
@@ -434,13 +534,9 @@ class TestFindHoles:
         # A thread-relief groove at the bottom of a blind bore: depth runs to
         # the true bottom, not to the last bore land above the groove.
         part = (
-            Box(60, 60, 40)
-            - Pos(0, 0, 12.5) * Cylinder(4.25, 15)
-            - Pos(0, 0, 6) * Cylinder(5.0, 2)
+            Box(60, 60, 40) - Pos(0, 0, 12.5) * Cylinder(4.25, 15) - Pos(0, 0, 6) * Cylinder(5.0, 2)
         )
-        edge = [
-            e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 20) < 0.01
-        ]
+        edge = [e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 20) < 0.01]
         (hole,) = recognise_holes(chamfer(edge, 1.0))
         assert hole.diameter == pytest.approx(8.5)
         assert hole.depth == pytest.approx(14.0)
@@ -480,9 +576,7 @@ class TestFindBosses:
     @pytest.mark.timeout(60)
     def test_filleted_free_end_keeps_orientation(self):
         part = Box(60, 60, 10) + Pos(0, 0, 9) * Cylinder(12, 8)
-        edge = [
-            e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 13) < 0.01
-        ]
+        edge = [e for e in part.edges().filter_by(GeomType.CIRCLE) if abs(e.center().Z - 13) < 0.01]
         (boss,) = recognise_bosses(fillet(edge, 1.0))
         assert boss.axis == pytest.approx((0.0, 0.0, 1.0))
         assert boss.location[2] == pytest.approx(12.0)  # free end, below the fillet
@@ -862,9 +956,7 @@ class TestFullCylinders:
 class TestHoleSpec:
     @pytest.mark.timeout(60)
     def test_identical_holes_share_one_spec(self):
-        part = (
-            Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(5, 20)
-        )
+        part = Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(5, 20)
         a, b = recognise_holes(part)
         sa, sb = HoleSpec.from_hole(a), HoleSpec.from_hole(b)
         assert sa == sb
@@ -873,9 +965,7 @@ class TestHoleSpec:
 
     @pytest.mark.timeout(60)
     def test_different_diameter_is_a_different_spec(self):
-        part = (
-            Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(7, 20)
-        )
+        part = Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(7, 20)
         a, b = recognise_holes(part)
         assert HoleSpec.from_hole(a) != HoleSpec.from_hole(b)
 
@@ -888,9 +978,7 @@ class TestHoleSpec:
 
     @pytest.mark.timeout(60)
     def test_usable_as_dict_key_for_grouping(self):
-        part = (
-            Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(5, 20)
-        )
+        part = Box(120, 60, 20) - Pos(-30, 0, 0) * Cylinder(5, 20) - Pos(30, 0, 0) * Cylinder(5, 20)
         groups: dict = {}
         for h in recognise_holes(part):
             groups.setdefault(HoleSpec.from_hole(h), []).append(h)
