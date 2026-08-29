@@ -68,3 +68,35 @@ def test_pocket_reclassification_is_not_reported_as_simple_loss(report) -> None:
         variant["introduced_families"] == ["prismatic_pockets"]
         for variant in pocket["variants"]
     )
+
+
+def test_hole_and_groove_survival_changes_only_authored_span(report) -> None:
+    holes = report["cases"]["through-hole-rims"]
+    for variant in holes["variants"]:
+        radius = variant["radius_model_units"]
+        assert variant["outcome"] == "changed-record"
+        assert len(variant["expected_records"]) == 2
+        for record, x in zip(variant["expected_records"], (-18.0, 18.0), strict=True):
+            assert record == {
+                "axis": [0.0, 0.0, -1.0],
+                "bottom": "through",
+                "cbore": None,
+                "csink": None,
+                "depth": 20.0 - 2.0 * radius,
+                "diameter": 8.0,
+                "location": [x, 0.0, 10.0 - radius],
+                "spotface": None,
+            }
+
+    groove = report["cases"]["ring-groove-lead-ins"]
+    for variant in groove["variants"]:
+        radius = variant["radius_model_units"]
+        assert variant["outcome"] == "changed-record"
+        assert variant["expected_records"] == [
+            {
+                "at": [0.0, 0.0, 11.25 + radius / 2.0],
+                "axis": "z",
+                "diameter": 24.0,
+                "width": 2.5 - radius,
+            }
+        ]
