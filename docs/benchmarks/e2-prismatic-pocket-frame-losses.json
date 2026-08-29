@@ -1,0 +1,838 @@
+{
+  "absent_occurrences": 6,
+  "dataset": "MFCAD++ published test split (development evidence)",
+  "face_identity": "zero-based build123d face order, validated across normalization",
+  "models": [
+    {
+      "absent_occurrences": [
+        {
+          "correspondence": [
+            {
+              "center_error": 3e-15,
+              "face_index": 11,
+              "local_normal": [
+                0.81613235522,
+                0.173184678118,
+                -0.551303043731
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.0,
+                -0.57786501777,
+                0.81613235522
+              ]
+            },
+            {
+              "center_error": 1e-15,
+              "face_index": 12,
+              "local_normal": [
+                -0.922959050359,
+                0.115353000096,
+                -0.367206041247
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.0,
+                -0.384898157127,
+                -0.922959050359
+              ]
+            },
+            {
+              "center_error": 2e-15,
+              "face_index": 13,
+              "local_normal": [
+                0.237892089268,
+                -0.291093622723,
+                0.926645485973
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.0,
+                0.971291590545,
+                0.237892089268
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            11,
+            12,
+            13
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.81613235522,
+                  0.922959050359,
+                  0.237892089268
+                ],
+                "all_walls_parallel": false,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 0.716042984758,
+                "low_span_spread": 0.930244952802
+              },
+              {
+                "absolute_normal_components": [
+                  0.173184678118,
+                  0.115353000096,
+                  0.291093622723
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 0.120842368929,
+                "low_span_spread": 0.393744568535
+              },
+              {
+                "absolute_normal_components": [
+                  0.551303043731,
+                  0.367206041247,
+                  0.926645485973
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 1.253416765526,
+                "low_span_spread": 0.384680484014
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "no-common-principal-run-axis",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 17.439433,
+          "local_run_direction": [
+            0.0,
+            0.954034293093,
+            0.299697460121
+          ],
+          "raw_record": "PrismaticPocket(axis='x', sides=3, depth=2.312, open_sign=-1, at=(1.156, 24.532, 7.782), section=((23.825, 8.569), (24.228, 6.923), (25.542, 7.853)))",
+          "raw_run_axis": "x"
+        }
+      ],
+      "file": "10649.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 17.439433,
+        "origin": [
+          8.202665904057,
+          14.809762940534,
+          16.491184116546
+        ],
+        "x": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "y": [
+          0.954034293093,
+          -0.299697460121,
+          0.0
+        ],
+        "z": [
+          0.299697460121,
+          0.954034293093,
+          0.0
+        ]
+      },
+      "local_aggregate_prismatic_pockets": 0,
+      "local_direct_prismatic_pockets": 0,
+      "raw_aggregate_prismatic_pockets": 1,
+      "raw_direct_prismatic_pockets": 1,
+      "step_sha256": "0f6c9e2681bdceda2af648304f00760ea02f4dd99f7b24c48c52a4ce284eb31f"
+    },
+    {
+      "absent_occurrences": [
+        {
+          "correspondence": [
+            {
+              "center_error": 4e-15,
+              "face_index": 26,
+              "local_normal": [
+                -0.005732439087,
+                0.821260372079,
+                -0.570524793847
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.570524793847,
+                -0.821280378193,
+                0.0
+              ]
+            },
+            {
+              "center_error": 5e-15,
+              "face_index": 27,
+              "local_normal": [
+                -0.001805037044,
+                0.258599415017,
+                0.965982962787
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.965982962787,
+                -0.258605714565,
+                -0.0
+              ]
+            },
+            {
+              "center_error": 5e-15,
+              "face_index": 28,
+              "local_normal": [
+                0.006510843783,
+                -0.932778858493,
+                -0.360390357893
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.360390357893,
+                0.932801581226,
+                -0.0
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            26,
+            27,
+            28
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.005732439087,
+                  0.001805037044,
+                  0.006510843783
+                ],
+                "all_walls_parallel": true,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 0.024820707803,
+                "low_span_spread": 0.018260243121
+              },
+              {
+                "absolute_normal_components": [
+                  0.821260372079,
+                  0.258599415017,
+                  0.932778858493
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 2.61606165068,
+                "low_span_spread": 3.555949468764
+              },
+              {
+                "absolute_normal_components": [
+                  0.570524793847,
+                  0.965982962787,
+                  0.360390357893
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 5.118975894653,
+                "low_span_spread": 1.652364781953
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "unequal-principal-spans",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 0.399921,
+          "local_run_direction": [
+            0.999975640336,
+            0.006979880731,
+            0.0
+          ],
+          "raw_record": "PrismaticPocket(axis='z', sides=3, depth=3.735, open_sign=1, at=(23.059, 39.516, 37.192), section=((20.251, 36.586), (27.022, 39.203), (21.904, 42.759)))",
+          "raw_run_axis": "z"
+        },
+        {
+          "correspondence": [
+            {
+              "center_error": 6e-15,
+              "face_index": 29,
+              "local_normal": [
+                -0.003585855558,
+                0.513729151835,
+                0.857944928416
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.857944928416,
+                -0.51374166641,
+                -0.0
+              ]
+            },
+            {
+              "center_error": 9e-15,
+              "face_index": 30,
+              "local_normal": [
+                -0.003760530804,
+                0.538754076663,
+                -0.84245468916
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.84245468916,
+                -0.538767200851,
+                0.0
+              ]
+            },
+            {
+              "center_error": 3e-15,
+              "face_index": 31,
+              "local_normal": [
+                0.006962191162,
+                -0.997441336462,
+                0.07114989958
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.07114989958,
+                0.99746563439,
+                -0.0
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            29,
+            30,
+            31
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.003585855558,
+                  0.003760530804,
+                  0.006962191162
+                ],
+                "all_walls_parallel": true,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 0.016700723216,
+                "low_span_spread": 0.001545695696
+              },
+              {
+                "absolute_normal_components": [
+                  0.513729151835,
+                  0.538754076663,
+                  0.997441336462
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 0.221444764277,
+                "low_span_spread": 2.392636355042
+              },
+              {
+                "absolute_normal_components": [
+                  0.857944928416,
+                  0.84245468916,
+                  0.07114989958
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 1.671799675525,
+                "low_span_spread": 1.432757384529
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "unequal-principal-spans",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 0.399921,
+          "local_run_direction": [
+            0.999975640336,
+            0.006979880731,
+            0.0
+          ],
+          "raw_record": "PrismaticPocket(axis='z', sides=3, depth=33.264, open_sign=1, at=(35.023, 39.508, 22.428), section=((33.511, 38.784), (36.615, 38.563), (34.944, 41.177)))",
+          "raw_run_axis": "z"
+        }
+      ],
+      "file": "10653.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 0.399921,
+        "origin": [
+          18.34813781609,
+          26.62275696533,
+          19.1496742204
+        ],
+        "x": [
+          0.0,
+          0.006979880731,
+          0.999975640336
+        ],
+        "y": [
+          0.0,
+          -0.999975640336,
+          0.006979880731
+        ],
+        "z": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "local_aggregate_prismatic_pockets": 1,
+      "local_direct_prismatic_pockets": 1,
+      "raw_aggregate_prismatic_pockets": 3,
+      "raw_direct_prismatic_pockets": 3,
+      "step_sha256": "ea56e5d814a79c7e80c69947e39b6c934b2ffc045867321abd032301c32a7956"
+    },
+    {
+      "absent_occurrences": [
+        {
+          "correspondence": [
+            {
+              "center_error": 1e-15,
+              "face_index": 12,
+              "local_normal": [
+                -0.383548562353,
+                -0.923476580575,
+                0.009028036644
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.383654799434,
+                -0.0,
+                0.923476580575
+              ]
+            },
+            {
+              "center_error": 3e-15,
+              "face_index": 13,
+              "local_normal": [
+                0.607758439076,
+                -0.793993092881,
+                -0.014305529982
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.607926778861,
+                -0.0,
+                0.793993092881
+              ]
+            },
+            {
+              "center_error": 0.0,
+              "face_index": 14,
+              "local_normal": [
+                0.991307001429,
+                0.129483487694,
+                -0.023333566626
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.991581578295,
+                0.0,
+                -0.129483487694
+              ]
+            },
+            {
+              "center_error": 2e-15,
+              "face_index": 15,
+              "local_normal": [
+                0.383548562353,
+                0.923476580575,
+                -0.009028036644
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.383654799434,
+                0.0,
+                -0.923476580575
+              ]
+            },
+            {
+              "center_error": 2e-15,
+              "face_index": 16,
+              "local_normal": [
+                -0.607758439076,
+                0.793993092881,
+                0.014305529982
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.607926778861,
+                -0.0,
+                -0.793993092881
+              ]
+            },
+            {
+              "center_error": 2e-15,
+              "face_index": 17,
+              "local_normal": [
+                -0.991307001429,
+                -0.129483487694,
+                0.023333566626
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.991581578295,
+                -0.0,
+                0.129483487694
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.383548562353,
+                  0.607758439076,
+                  0.991307001429,
+                  0.383548562353,
+                  0.607758439076,
+                  0.991307001429
+                ],
+                "all_walls_parallel": false,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 3.427068535484,
+                "low_span_spread": 3.427068535485
+              },
+              {
+                "absolute_normal_components": [
+                  0.923476580575,
+                  0.793993092881,
+                  0.129483487694,
+                  0.923476580575,
+                  0.793993092881,
+                  0.129483487694
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 3.19257054372,
+                "low_span_spread": 3.19257054372
+              },
+              {
+                "absolute_normal_components": [
+                  0.009028036644,
+                  0.014305529982,
+                  0.023333566626,
+                  0.009028036644,
+                  0.014305529982,
+                  0.023333566626
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 0.080666969859,
+                "low_span_spread": 0.080666969859
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "no-common-principal-run-axis",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 1.34839,
+          "local_run_direction": [
+            0.023531666115,
+            0.0,
+            0.999723092006
+          ],
+          "raw_record": "PrismaticPocket(axis='y', sides=6, depth=6.209, open_sign=-1, at=(8.164, 3.105, 16.505), section=((6.32, 15.739), (7.905, 14.526), (9.748, 15.292), (10.007, 17.271), (8.422, 18.484), (6.579, 17.719)))",
+          "raw_run_axis": "y"
+        },
+        {
+          "correspondence": [
+            {
+              "center_error": 3e-15,
+              "face_index": 18,
+              "local_normal": [
+                -0.120826505028,
+                -0.992669565938,
+                0.002844036511
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.12085997212,
+                -0.0,
+                0.992669565938
+              ]
+            },
+            {
+              "center_error": 4e-15,
+              "face_index": 19,
+              "local_normal": [
+                0.860894958914,
+                0.508379035673,
+                -0.02026390397
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.861133413641,
+                0.0,
+                -0.508379035673
+              ]
+            },
+            {
+              "center_error": 2e-15,
+              "face_index": 20,
+              "local_normal": [
+                -0.875098314406,
+                0.483506621717,
+                0.020598225166
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.875340703244,
+                -0.0,
+                -0.483506621717
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            18,
+            19,
+            20
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.120826505028,
+                  0.860894958914,
+                  0.875098314406
+                ],
+                "all_walls_parallel": false,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 1.656984857877,
+                "low_span_spread": 2.036442384438
+              },
+              {
+                "absolute_normal_components": [
+                  0.992669565938,
+                  0.508379035673,
+                  0.483506621717
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 0.449808447205,
+                "low_span_spread": 3.000637367675
+              },
+              {
+                "absolute_normal_components": [
+                  0.002844036511,
+                  0.02026390397,
+                  0.020598225166
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 0.047934155604,
+                "low_span_spread": 0.039002414513
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "no-common-principal-run-axis",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 1.34839,
+          "local_run_direction": [
+            0.023531666115,
+            0.0,
+            0.999723092006
+          ],
+          "raw_record": "PrismaticPocket(axis='y', sides=3, depth=13.952, open_sign=-1, at=(10.863, 6.976, 23.303), section=((8.953, 22.003), (12.647, 22.453), (10.99, 25.454)))",
+          "raw_run_axis": "y"
+        }
+      ],
+      "file": "10761.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 1.34839,
+        "origin": [
+          7.969344421447,
+          14.25401843831,
+          21.231118632538
+        ],
+        "x": [
+          0.999723092006,
+          0.023531666115,
+          0.0
+        ],
+        "y": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "z": [
+          -0.023531666115,
+          0.999723092006,
+          0.0
+        ]
+      },
+      "local_aggregate_prismatic_pockets": 0,
+      "local_direct_prismatic_pockets": 0,
+      "raw_aggregate_prismatic_pockets": 2,
+      "raw_direct_prismatic_pockets": 2,
+      "step_sha256": "14a924b4b4102ddba38039f65f8616e6008a5575e1fcbf42a51dab071e901e1c"
+    },
+    {
+      "absent_occurrences": [
+        {
+          "correspondence": [
+            {
+              "center_error": 0.0,
+              "face_index": 19,
+              "local_normal": [
+                0.981454423397,
+                0.189796647777,
+                -0.026915558469
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.0,
+                0.981823422257,
+                -0.189796647777
+              ]
+            },
+            {
+              "center_error": 1.1e-14,
+              "face_index": 20,
+              "local_normal": [
+                -0.33290063778,
+                -0.942917714996,
+                0.00912951877
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                0.0,
+                -0.333025798922,
+                0.942917714996
+              ]
+            },
+            {
+              "center_error": 4e-15,
+              "face_index": 21,
+              "local_normal": [
+                -0.583502175849,
+                0.811953905735,
+                0.016002054254
+              ],
+              "normal_error": 0.0,
+              "raw_normal": [
+                -0.0,
+                -0.583721556019,
+                -0.811953905735
+              ]
+            }
+          ],
+          "defining_face_indices": [
+            19,
+            20,
+            21
+          ],
+          "local_ring_boundary": {
+            "axes": [
+              {
+                "absolute_normal_components": [
+                  0.981454423397,
+                  0.33290063778,
+                  0.583502175849
+                ],
+                "all_walls_parallel": false,
+                "axis": "x",
+                "equal_span": false,
+                "high_span_spread": 6.868672259778,
+                "low_span_spread": 1.527825573368
+              },
+              {
+                "absolute_normal_components": [
+                  0.189796647777,
+                  0.942917714996,
+                  0.811953905735
+                ],
+                "all_walls_parallel": false,
+                "axis": "y",
+                "equal_span": false,
+                "high_span_spread": 2.966644559657,
+                "low_span_spread": 4.93981178975
+              },
+              {
+                "absolute_normal_components": [
+                  0.026915558469,
+                  0.00912951877,
+                  0.016002054254
+                ],
+                "all_walls_parallel": false,
+                "axis": "z",
+                "equal_span": false,
+                "high_span_spread": 0.041899325705,
+                "low_span_spread": 0.188367534349
+              }
+            ],
+            "axis_zero_cos": 0.01,
+            "first_boundary": "no-common-principal-run-axis",
+            "passing_axes": [],
+            "span_epsilon": 1e-06
+          },
+          "local_run_deviation_from_principal_degrees": 1.570895,
+          "local_run_direction": [
+            -0.027413848416,
+            0.0,
+            -0.999624169833
+          ],
+          "raw_record": "PrismaticPocket(axis='x', sides=3, depth=6.171, open_sign=1, at=(38.966, 10.738, 29.95), section=((7.428, 26.325), (15.828, 29.292), (8.957, 34.232)))",
+          "raw_run_axis": "x"
+        }
+      ],
+      "file": "11203.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 1.570895,
+        "origin": [
+          21.025542367362,
+          9.53463104442,
+          21.454653508948
+        ],
+        "x": [
+          -0.027413848416,
+          0.999624169833,
+          0.0
+        ],
+        "y": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "z": [
+          -0.999624169833,
+          -0.027413848416,
+          0.0
+        ]
+      },
+      "local_aggregate_prismatic_pockets": 0,
+      "local_direct_prismatic_pockets": 0,
+      "raw_aggregate_prismatic_pockets": 1,
+      "raw_direct_prismatic_pockets": 1,
+      "step_sha256": "4f494651d2fe0bf49102a877f6368ae7893f1b51160c077c9c90da28bcbfb312"
+    }
+  ],
+  "schema": 1,
+  "selection": "four model IDs carrying all six first-500 PrismaticPocket losses"
+}
