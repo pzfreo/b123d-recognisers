@@ -173,6 +173,9 @@ the original cylinder faces and their recovery/material-side dependencies. Recov
 comes from original trim topology/points rather than spline U units, and recovered axial bounds use
 OCCT optimal exact-geometry bounds in the cylinder frame. Exact converted OD and bore fixtures cover
 both radial signs, transforms, curved trims, aggregate attribution and the existing Boss consumer.
+Native and recovered axis lines, directions and axial extrema use one post-measurement canonical
+output seam; standalone native Hole/Boss calls retain their fast path because the recovery graph is
+created lazily only when an eligible spline face is encountered.
 The paired recovered-plane end query gives exact converted through Holes the same complete record in
 standalone and aggregate routes; refusal reports an `unknown` end rather than guessing. No Hole,
 Boss or Flat admission threshold was relaxed.

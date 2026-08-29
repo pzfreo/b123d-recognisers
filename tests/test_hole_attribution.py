@@ -99,6 +99,15 @@ def test_recovered_hole_candidate_retains_original_cylinder_dependency() -> None
     assert surface_use.material_side.candidate_outward_sign == -1
 
 
+def test_nonprincipal_converted_hole_keeps_standalone_and_aggregate_parity() -> None:
+    native = Rot(31, 17, 43) * (Box(12, 12, 10) - Cylinder(2, 10))
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+    expected = recognise_holes(native)
+
+    assert recognise_holes(converted) == expected
+    assert _take_inventory(converted).result.holes == tuple(expected)
+
+
 def test_recovered_hole_end_plane_refusal_cannot_claim_through(monkeypatch) -> None:
     import b123d_recognisers._effective_surfaces as surfaces
 

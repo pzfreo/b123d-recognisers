@@ -237,6 +237,9 @@ complete one-to-one coverage and cylinder kind. Recovered dependencies additiona
 respectively negative or positive radial certificate; native facts retain their established
 oriented-cylinder compatibility contract without paying for a duplicate solid-probe proof.
 Standalone record-only calls remain geometry facades and do not expose these run-local handles.
+Their effective query is a lazy shared facade: native-only Hole/Boss calls never construct a second
+face graph, while the first eligible spline face creates one query reused by cylinder and end-plane
+classification.
 
 Recovered cylinder trim measures never reuse spline parameter units. A topological seam proves a
 complete turn; otherwise exact points distributed along every original trim edge provide a
@@ -244,6 +247,11 @@ conservative angular lower bound, which may refuse a marginal patch but cannot p
 one. Axial extrema come from OCCT optimal bounds after rigidly aligning the recovered axis with Z;
 values within the recovery bound of an exact boundary vertex snap to that vertex to remove bounding
 box enlargement. Reparameterized-U and curved-trim fixtures guard both decisions.
+Native and recovered axes are measured at full available precision and only then pass through one
+common output canonicalisation seam. The historical native axis anchor remains unchanged because
+it is public cylinder evidence; downstream axis-point projection is invariant to the anchor's
+position on that line. The same seam canonicalises direction and axial extrema, preserving exact
+record equality under principal and non-principal rigid transforms without degrading trim measures.
 
 Hole end classification is the one paired downstream migration: a B-spline/Bezier partner must
 recover as a plane and acquire its own material-side certificate before its outward normal may

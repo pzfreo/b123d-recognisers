@@ -42,6 +42,19 @@ _STACK_GAP_FRAC = 0.0125
 _RECOVERED_ANGLE_SAMPLES_PER_EDGE = 32
 
 
+def _canonical_component(value: float, *, direction: bool = False) -> float:
+    """Canonicalise measured output only after native/recovered geometry is complete."""
+
+    floor = 1e-12 if direction else COORD_FLOOR
+    return 0.0 if abs(value) <= floor else quantise(value, figures=12)
+
+
+def _canonical_vector(
+    vector: tuple[float, float, float], *, direction: bool = False
+) -> tuple[float, float, float]:
+    return tuple(_canonical_component(value, direction=direction) for value in vector)  # type: ignore[return-value]
+
+
 def _dot(left: tuple[float, float, float], right: tuple[float, float, float]) -> float:
     return math.fsum(a * b for a, b in zip(left, right, strict=True))
 
@@ -234,20 +247,14 @@ def analyse_cylinders(
                 continue
             material_use = issued
             ap_xyz = (
-                0.0
-                if abs(issued.surface.parameters[0]) <= COORD_FLOOR
-                else quantise(issued.surface.parameters[0]),
-                0.0
-                if abs(issued.surface.parameters[1]) <= COORD_FLOOR
-                else quantise(issued.surface.parameters[1]),
-                0.0
-                if abs(issued.surface.parameters[2]) <= COORD_FLOOR
-                else quantise(issued.surface.parameters[2]),
+                issued.surface.parameters[0],
+                issued.surface.parameters[1],
+                issued.surface.parameters[2],
             )
             d_xyz = (
-                quantise(issued.surface.parameters[3]),
-                quantise(issued.surface.parameters[4]),
-                quantise(issued.surface.parameters[5]),
+                issued.surface.parameters[3],
+                issued.surface.parameters[4],
+                issued.surface.parameters[5],
             )
             r = issued.surface.parameters[6]
         ax = _axis_letter_of(d_xyz)
@@ -270,6 +277,16 @@ def analyse_cylinders(
             if recovered_bounds is None or u_extent is None:
                 continue
             axial = recovered_bounds
+        # Canonicalise native and recovered measurements through the same output seam. Keep full
+        # precision until here: the raw direction is needed by transformed trim measurements
+        # above. Preserve the historical native axis anchor because it is public evidence; the
+        # downstream axis-point calculation is invariant to where that anchor lies on the line.
+        ap_xyz = _canonical_vector(ap_xyz)
+        dir_xyz = _canonical_vector(dir_xyz, direction=True)
+        axial = (
+            _canonical_component(axial[0]),
+            _canonical_component(axial[1]),
+        )
         rec: CylinderEvidence = dict(
             diameter=quantise(r * 2),
             axis=ax,

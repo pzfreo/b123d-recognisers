@@ -22,6 +22,7 @@ from OCP.GeomAbs import (
 from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceNode,
+    GraphRunToken,
     edge_face_map,
     frame_points_outward,
     neighbours,
@@ -39,16 +40,18 @@ from b123d_recognisers._cylinder_substrate import (
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveFaceSurfaceQuery,
+    EffectiveSurfaceFact,
     SurfaceKind,
     SurfaceProvenance,
     SurfaceUse,
     SurfaceUseRefusal,
+    SurfaceUseResult,
     effective_faces_for_graph,
     effective_faces_for_part,
 )
 from b123d_recognisers._geometry import _unit, length_tol, quantise
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, Part, Vector3
+from b123d_recognisers._typing import CylinderEvidence, CylinderInventory, FaceLike, Part, Vector3
 from b123d_recognisers.countersinks import CounterSink, countersink_matches_hole
 
 
@@ -96,6 +99,29 @@ def _cylinder_dependency(
     return effective.use(face, material_side=recovered)
 
 
+class _LazyPartSurfaceQuery:
+    """Defer the standalone recovery graph until a spline face actually needs it."""
+
+    def __init__(self, part: Part) -> None:
+        self._part = part
+        self._delegate: EffectiveFaceSurfaceQuery | None = None
+
+    def _query(self) -> EffectiveFaceSurfaceQuery:
+        if self._delegate is None:
+            self._delegate = effective_faces_for_part(self._part)
+        return self._delegate
+
+    @property
+    def run_token(self) -> GraphRunToken:
+        return self._query().run_token
+
+    def fact(self, face: FaceLike) -> EffectiveSurfaceFact:
+        return self._query().fact(face)
+
+    def use(self, face: FaceLike, *, material_side: bool = False) -> SurfaceUseResult:
+        return self._query().use(face, material_side=material_side)
+
+
 def _family_surface_query(
     part: Part,
     writer: EvidenceWriter | None,
@@ -105,13 +131,7 @@ def _family_surface_query(
         return supplied
     if writer is not None:
         return effective_faces_for_graph(writer.graph)
-    if any(
-        BRepAdaptor_Surface(face.wrapped).GetType()
-        in (GeomAbs_BSplineSurface, GeomAbs_BezierSurface)
-        for face in part.faces()
-    ):
-        return effective_faces_for_part(part)
-    return None
+    return _LazyPartSurfaceQuery(part)
 
 
 def _same_diameter(a: float, b: float) -> bool:
@@ -241,6 +261,18 @@ def _axis_point(seg: SegmentEvidence, s: float) -> tuple[float, float, float]:
     s_ap = ax * dx + ay * dy + az * dz
     t = s - s_ap
     return (ax + t * dx, ay + t * dy, az + t * dz)
+
+
+def _canonical_hole_axis_point(
+    seg: SegmentEvidence, s: float
+) -> tuple[float, float, float]:
+    """Remove the final kernel-noise digit from a reconstructed Hole location."""
+
+    measured = _axis_point(seg, s)
+    # Axis reconstruction combines independently measured anchors, directions and bounds. Eleven
+    # significant figures removes their last kernel-noise digit while remaining far tighter than
+    # the public record serializer and all length predicates.
+    return tuple(quantise(value, figures=11) for value in measured)  # type: ignore[return-value]
 
 
 def _end_partners(
@@ -684,7 +716,7 @@ def _discover_holes(
         depth = _bore_depth(stack, bore, bottom=bottom, from_hi=from_hi)
         record = HoleRecord(
             axis=_unit(tuple(-c for c in d) if from_hi else d),
-            location=_axis_point(opening_seg, opening_s),
+            location=_canonical_hole_axis_point(opening_seg, opening_s),
             diameter=bore["diameter"],
             depth=round(depth.depth, 2),
             bottom=bottom,

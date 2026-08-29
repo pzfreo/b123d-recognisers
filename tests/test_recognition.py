@@ -16,6 +16,7 @@ from build123d import (
     Plane,
     Pos,
     Rectangle,
+    Rot,
     Sphere,
     chamfer,
     extrude,
@@ -73,6 +74,18 @@ def test_native_analytic_scan_does_not_enter_effective_recovery() -> None:
     assert any(item["external"] for group in inventory for item in group)
 
 
+def test_native_hole_and_boss_calls_do_not_build_the_lazy_recovery_graph(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as families
+
+    def recovery_must_not_run(_part):
+        raise AssertionError("native family calls must not build an effective-surface graph")
+
+    monkeypatch.setattr(families, "effective_faces_for_part", recovery_must_not_run)
+
+    assert recognise_holes(Box(12, 12, 10) - Cylinder(2, 10))
+    assert recognise_bosses(Cylinder(4, 10))
+
+
 @pytest.mark.parametrize(
     ("part", "external"),
     [(Cylinder(4, 10), True), (Box(12, 12, 10) - Cylinder(2, 10), False)],
@@ -98,6 +111,14 @@ def test_exact_converted_external_cylinder_reaches_the_existing_boss_consumer():
     converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
 
     assert recognise_bosses(converted) == recognise_bosses(native)
+
+
+@pytest.mark.parametrize("rotation", [Rot(0, 90, 0), Rot(31, 17, 43)])
+def test_transformed_exact_converted_hole_has_exact_record_parity(rotation):
+    native = rotation * (Box(12, 12, 10) - Cylinder(2, 10))
+    converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
+
+    assert recognise_holes(converted) == recognise_holes(native)
 
 
 def test_recovered_angular_span_does_not_trust_spline_u_units(monkeypatch):
