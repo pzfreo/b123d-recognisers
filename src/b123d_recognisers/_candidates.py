@@ -23,8 +23,8 @@ from types import MappingProxyType
 from typing import Generic, TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
-from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._effective_surfaces import (
+    SurfaceKind,
     SurfaceProvenance,
     SurfaceUse,
     _validate_surface_use,

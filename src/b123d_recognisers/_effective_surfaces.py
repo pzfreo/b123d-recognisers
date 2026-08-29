@@ -38,11 +38,8 @@ from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, GraphRunToken, SolidRef
-from b123d_recognisers._analytic_surfaces import (
-    SurfaceKind,
-    native_primitive,
-    validated_parameters,
-)
+from b123d_recognisers._analytic_surfaces import SurfaceKind as SurfaceKind
+from b123d_recognisers._analytic_surfaces import native_primitive, validated_parameters
 from b123d_recognisers._geometry import COORD_FLOOR
 from b123d_recognisers._typing import FaceLike, Part
 

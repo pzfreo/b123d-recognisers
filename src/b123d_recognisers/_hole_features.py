@@ -27,7 +27,6 @@ from b123d_recognisers._adjacency import (
     frame_points_outward,
     neighbours,
 )
-from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._candidates import CompletedOccurrence, FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._cylinder_substrate import (
@@ -42,6 +41,7 @@ from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveFaceSurfaceQuery,
     EffectiveSurfaceFact,
+    SurfaceKind,
     SurfaceProvenance,
     SurfaceUse,
     SurfaceUseRefusal,
