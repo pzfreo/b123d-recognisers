@@ -1,0 +1,6948 @@
+{
+  "accepted_family_overlaps": {
+    "fillets": 114,
+    "plates": 3
+  },
+  "class_id": 21,
+  "component_derivation": "non-native shared-edge same-class connected components",
+  "dataset": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+  "defining_face_precision": 1.0,
+  "defining_faces": 236,
+  "derived_component_recall": 0.6763005780346821,
+  "derived_components": 173,
+  "first_failed_gate_counts": {
+    "external_cylinder": 0,
+    "incomplete_convex_sector_boundary": 31,
+    "material_in_swept_sector": 0,
+    "missing_cylinder_terminal_pair": 7,
+    "nonprincipal_or_cross_axis_terminal": 0,
+    "not_blind_to_envelope": 17,
+    "not_concave": 0,
+    "not_quarter_cylinder": 1,
+    "recognisable": 117
+  },
+  "format": "b123d-recognisers-mfcadpp-circular-blind-step-audit",
+  "format_version": 1,
+  "implementation_commit": "b17ae81aceb390a53e058667407f3cbee188f471",
+  "labelled_faces": 354,
+  "labels_used_for": "selection and scoring only; never candidate geometry",
+  "models": [
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              7
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1000",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            10
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10000",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              8
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            7
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10033",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            11,
+            36
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10063",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            23,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1007",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              5
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            10,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10118",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18,
+            27
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10127",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            17
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            7
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10156",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              7
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10163",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              8
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            32
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10190",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10191",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10212",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            13,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10224",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10252",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            8,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10258",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            7
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            8,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10269",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1028",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            11,
+            12
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10285",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            25,
+            27
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10293",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              12
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            21
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10314",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            1
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10327",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            4
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            8
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            15,
+            16
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            23,
+            24
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            27,
+            28
+          ]
+        }
+      ],
+      "labelled_components": 5,
+      "model_id": "10347",
+      "predictions": 3,
+      "recalled_components": 3
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            4
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            19,
+            20
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10356",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1037",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            12,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10400",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            25,
+            26
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10409",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            4
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10410",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4,
+              5
+            ],
+            "face_count": 4,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                2
+              ],
+              [
+                "convex",
+                2
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                2
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10491",
+      "predictions": 2,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              4
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            27
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10499",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            13,
+            27
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10520",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            8,
+            21
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10536",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10550",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              10
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            1,
+            2
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1061",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10614",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            14
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            19,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 3,
+      "model_id": "10627",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              6,
+              10
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            0,
+            8
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            24,
+            25
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10656",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1067",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            5
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            20
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            21,
+            22
+          ]
+        }
+      ],
+      "labelled_components": 3,
+      "model_id": "10683",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            11,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1069",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            15,
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10715",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            8
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10737",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10746",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            15,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10757",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10761",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10778",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            5
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            11,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10794",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            6
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10834",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            13,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10851",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10881",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10893",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            22
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10948",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10964",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            26,
+            27
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10966",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10986",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10987",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            4
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            8
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "10989",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "10990",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            19,
+            26
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11035",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            16
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              8
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                2
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            18,
+            26
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11037",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11051",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            1,
+            18
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            20,
+            21
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 3,
+      "model_id": "11074",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11097",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11108",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11120",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            21,
+            28
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11161",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            7
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              8
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            9,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11163",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            15
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "1119",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            15,
+            16
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11203",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            13,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11211",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            4
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11223",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            29
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11281",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              4,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_quarter_cylinder",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            19
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11345",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11429",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              7
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                2
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            10,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11435",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              5
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            7
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11439",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11454",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              3,
+              4,
+              4,
+              7
+            ],
+            "face_count": 5,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                5
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                2
+              ],
+              [
+                "PLANE",
+                3
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3,
+            4,
+            15,
+            17
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              11
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                2
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            33,
+            34
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "1149",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            8
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11498",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "115",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11519",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            12,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11525",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            19,
+            20
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11532",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18,
+            19
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11555",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11570",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11655",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              8,
+              8
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11731",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11776",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            11,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11821",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              4
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                3
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11831",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            21
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11886",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            11
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            13,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11905",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            12,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11966",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            29
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            5
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "11967",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11985",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            24,
+            25
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "11994",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            18
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            19
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            8,
+            12
+          ]
+        }
+      ],
+      "labelled_components": 3,
+      "model_id": "12029",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12036",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            8,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12046",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12056",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12062",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            30,
+            31
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12083",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1215",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            25,
+            26
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12171",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18,
+            19
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "1219",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            19
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            11,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "12204",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            17,
+            18
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12208",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            4
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12214",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            15,
+            16
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12218",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12258",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            14
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12279",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            9
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12281",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              8
+            ],
+            "face_count": 2,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            27
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12291",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12324",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            19,
+            20
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12339",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            3,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12349",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12355",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            10,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12372",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4,
+              10
+            ],
+            "face_count": 3,
+            "first_failed_gate": "incomplete_convex_sector_boundary",
+            "internal_arc_counts": [
+              [
+                "concave",
+                2
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                2
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            6,
+            11
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12380",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12409",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            6,
+            35
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12419",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            23,
+            24
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12454",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            14
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "1254",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            2,
+            3
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              8
+            ],
+            "face_count": 1,
+            "first_failed_gate": "missing_cylinder_terminal_pair",
+            "internal_arc_counts": [],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "12546",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            12,
+            13
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12578",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            6
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18,
+            19
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 3,
+      "model_id": "12589",
+      "predictions": 3,
+      "recalled_components": 3
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              6
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            4,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12603",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            5,
+            6
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12649",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            14,
+            15
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12667",
+      "predictions": 0,
+      "recalled_components": 0
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            7,
+            8
+          ]
+        }
+      ],
+      "labelled_components": 1,
+      "model_id": "12689",
+      "predictions": 1,
+      "recalled_components": 1
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            16,
+            17
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            18,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "12793",
+      "predictions": 2,
+      "recalled_components": 2
+    },
+    {
+      "components": [
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "recognisable",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            12,
+            14
+          ]
+        },
+        {
+          "anatomy": {
+            "edge_counts": [
+              3,
+              4
+            ],
+            "face_count": 2,
+            "first_failed_gate": "not_blind_to_envelope",
+            "internal_arc_counts": [
+              [
+                "concave",
+                1
+              ]
+            ],
+            "surface_counts": [
+              [
+                "CYLINDER",
+                1
+              ],
+              [
+                "PLANE",
+                1
+              ]
+            ]
+          },
+          "face_indices": [
+            22,
+            23
+          ]
+        }
+      ],
+      "labelled_components": 2,
+      "model_id": "12805",
+      "predictions": 1,
+      "recalled_components": 1
+    }
+  ],
+  "models_evaluated": 500,
+  "models_invalid": 0,
+  "models_loaded": 500,
+  "motifs": [
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4
+        ],
+        "face_count": 2,
+        "first_failed_gate": "recognisable",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 115
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4
+        ],
+        "face_count": 2,
+        "first_failed_gate": "not_blind_to_envelope",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 15
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          4
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            3
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 5
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          5
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 5
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          6
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 4
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          8
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 4
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          4
+        ],
+        "face_count": 1,
+        "first_failed_gate": "missing_cylinder_terminal_pair",
+        "internal_arc_counts": [],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ]
+        ]
+      },
+      "count": 4
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          7
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 2
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          10
+        ],
+        "face_count": 2,
+        "first_failed_gate": "not_blind_to_envelope",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          12
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          3,
+          4,
+          4,
+          7
+        ],
+        "face_count": 5,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            5
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            2
+          ],
+          [
+            "PLANE",
+            3
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          10
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            2
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          11
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            2
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          4,
+          5
+        ],
+        "face_count": 4,
+        "first_failed_gate": "recognisable",
+        "internal_arc_counts": [
+          [
+            "concave",
+            2
+          ],
+          [
+            "convex",
+            2
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            2
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          5
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            3
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          7
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            2
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          4,
+          8
+        ],
+        "face_count": 3,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            2
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            2
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3,
+          6
+        ],
+        "face_count": 2,
+        "first_failed_gate": "not_blind_to_envelope",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3
+        ],
+        "face_count": 1,
+        "first_failed_gate": "missing_cylinder_terminal_pair",
+        "internal_arc_counts": [],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          3
+        ],
+        "face_count": 1,
+        "first_failed_gate": "missing_cylinder_terminal_pair",
+        "internal_arc_counts": [],
+        "surface_counts": [
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          4,
+          5
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          4,
+          5
+        ],
+        "face_count": 2,
+        "first_failed_gate": "not_quarter_cylinder",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          4,
+          5
+        ],
+        "face_count": 2,
+        "first_failed_gate": "recognisable",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          4,
+          6
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          6,
+          10
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          8,
+          8
+        ],
+        "face_count": 2,
+        "first_failed_gate": "incomplete_convex_sector_boundary",
+        "internal_arc_counts": [
+          [
+            "concave",
+            1
+          ]
+        ],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ],
+          [
+            "PLANE",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    },
+    {
+      "anatomy": {
+        "edge_counts": [
+          8
+        ],
+        "face_count": 1,
+        "first_failed_gate": "missing_cylinder_terminal_pair",
+        "internal_arc_counts": [],
+        "surface_counts": [
+          [
+            "CYLINDER",
+            1
+          ]
+        ]
+      },
+      "count": 1
+    }
+  ],
+  "prediction_label_pairs": {
+    "21,21": 118
+  },
+  "prediction_precision": 1.0,
+  "predictions": 118,
+  "recalled_components": 117,
+  "selection": {
+    "rule": "lexically first 500 STEP files",
+    "selected": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df"
+  },
+  "true_defining_faces": 236,
+  "true_predictions": 118
+}
