@@ -38,7 +38,7 @@ from b123d_recognisers.result import _take_inventory  # noqa: E402
 JSON_REPORT = ROOT / "docs" / "benchmarks" / "blend-boundary-sweep.json"
 MARKDOWN_REPORT = ROOT / "docs" / "benchmarks" / "blend-boundary-sweep.md"
 BASELINE_COMMIT = "5569f1405c87be8156e20726152d481623fee6c0"
-IMPLEMENTATION_COMMIT = "565f934c0774ce5a7c862ed0f51579fd74bdb3cd"
+IMPLEMENTATION_COMMIT = "50262610a82114276f736baec64278f5fc12b567"
 PERFORMANCE_BUDGET_SECONDS = 30.0
 PERFORMANCE_MEASUREMENT = {
     "environment": "Python 3.12.14, Linux, shared development host",

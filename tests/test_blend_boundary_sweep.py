@@ -35,7 +35,7 @@ def test_sweep_separates_survival_loss_and_reclassification(report) -> None:
         "5569f1405c87be8156e20726152d481623fee6c0"
     )
     assert report["implementation_commit"] == IMPLEMENTATION_COMMIT == (
-        "565f934c0774ce5a7c862ed0f51579fd74bdb3cd"
+        "50262610a82114276f736baec64278f5fc12b567"
     )
     assert report["radii_role"] == "authored input geometry, not recognition thresholds"
     assert report["performance_budget_seconds"] == PERFORMANCE_BUDGET_SECONDS == 30.0

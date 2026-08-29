@@ -1519,7 +1519,7 @@
       ]
     }
   },
-  "implementation_commit": "565f934c0774ce5a7c862ed0f51579fd74bdb3cd",
+  "implementation_commit": "50262610a82114276f736baec64278f5fc12b567",
   "performance_budget_seconds": 30.0,
   "performance_measurement": {
     "environment": "Python 3.12.14, Linux, shared development host",
