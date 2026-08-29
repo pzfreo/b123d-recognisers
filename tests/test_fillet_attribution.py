@@ -518,7 +518,10 @@ def test_reversed_face_traversal_preserves_occurrence_roles(monkeypatch) -> None
         Cylinder(10, 20),
         Box(30, 30, 20) - Cylinder(5, 20),
         _internal_pocket_round(),
+        Rot(0, 90, 0) * _internal_pocket_round(),
         _through_slot(),
+        Rot(90, 0, 0) * _through_slot(),
+        _through_slot().mirror(),
     ],
 )
 def test_rejected_round_context_issues_no_fillet_candidate(part) -> None:
