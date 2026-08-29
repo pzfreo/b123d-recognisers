@@ -528,6 +528,17 @@ def test_foreign_surface_query_refuses_before_pad_discovery() -> None:
         )
 
 
+def test_foreign_geometry_refuses_before_pad_discovery() -> None:
+    part = _pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    foreign_graph = FaceGraph(part)
+    foreign_surfaces = EffectiveSurfaceIndex(foreign_graph)
+    foreign_geometry = GeometryGraph._from_graph(foreign_graph, foreign_surfaces)
+
+    with pytest.raises(ValueError, match="different runs"):
+        _discover_rectangular_pads(part, writer=ledger.writer, geometry=foreign_geometry)
+
+
 def test_pad_top_without_material_certificate_remains_suppression_only() -> None:
     part = _pad()
     delegate = effective_faces_for_graph(FaceGraph(part))
@@ -1001,6 +1012,33 @@ def test_duplicate_corner_chain_refuses_ambiguous_cycle(monkeypatch) -> None:
     assert _discover_rectangular_pads(part, face_surfaces=query, geometry=geometry) == []
 
 
+@pytest.mark.parametrize("mode", ("concave", "multi-node"))
+def test_ineligible_corner_chain_is_not_selected(monkeypatch, mode: str) -> None:
+    part = _blended_pad()
+    graph = FaceGraph(part)
+    surfaces = EffectiveSurfaceIndex(graph)
+    query = effective_faces_for_graph(graph, surfaces)
+    geometry = GeometryGraph._from_graph(graph, surfaces)
+    original = GeometryGraph.blend_facts
+
+    def ineligible(self):
+        chains = list(original(self))
+        first = chains[0]
+        if mode == "concave":
+            chains[0] = replace(first, side="concave")
+        else:
+            extra = next(
+                geometry.ref(face)
+                for face in part.faces()
+                if geometry.ref(face) not in first.supports[0]
+            )
+            chains[0] = replace(first, supports=(first.supports[0] | {extra}, first.supports[1]))
+        return tuple(chains)
+
+    monkeypatch.setattr(GeometryGraph, "blend_facts", ineligible)
+    assert _discover_rectangular_pads(part, face_surfaces=query, geometry=geometry) == []
+
+
 def test_non_cylindrical_corner_chain_is_not_selected(monkeypatch) -> None:
     part = _blended_pad()
     graph = FaceGraph(part)
@@ -1016,6 +1054,36 @@ def test_non_cylindrical_corner_chain_is_not_selected(monkeypatch) -> None:
 
     monkeypatch.setattr(GeometryGraph, "surface_fact", planar)
     assert _discover_rectangular_pads(part, face_surfaces=query, geometry=geometry) == []
+
+
+def test_unexplained_rounded_top_area_is_not_selected(monkeypatch) -> None:
+    import b123d_recognisers.pads as module
+
+    monkeypatch.setattr(module, "_surface_area", lambda _face: 0.0)
+    assert recognise_rectangular_pads(_blended_pad()) == []
+
+
+@pytest.mark.parametrize("mode", ("cycle", "chain"))
+def test_invalid_collapsed_bridge_shape_refuses_atomically(monkeypatch, mode: str) -> None:
+    part = _blended_pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    surfaces = EffectiveSurfaceIndex(ledger.graph)
+    query = effective_faces_for_graph(ledger.graph, surfaces)
+    geometry = GeometryGraph._from_graph(ledger.graph, surfaces)
+    original = GeometryGraph.collapsed_bridges
+
+    def invalid(self, selected):
+        bridges = original(self, selected)
+        if mode == "cycle":
+            return bridges[:-1]
+        return (replace(bridges[0], supports=()), *bridges[1:])
+
+    monkeypatch.setattr(GeometryGraph, "collapsed_bridges", invalid)
+    with pytest.raises(ValueError, match="no unique logical bridge"):
+        _discover_rectangular_pads(
+            part, writer=ledger.writer, face_surfaces=query, geometry=geometry
+        )
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
 def test_corrupted_pad_blend_expansion_refuses_before_publication(monkeypatch) -> None:
@@ -1132,7 +1200,10 @@ def test_nurbs_pad_refuses_ambiguous_recovery_in_both_entry_points(monkeypatch) 
     assert _take_inventory(converted).result.pads == ()
 
 
-def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(monkeypatch) -> None:
+@pytest.mark.parametrize("part_factory", (_pad, _blended_pad))
+def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(
+    monkeypatch, part_factory
+) -> None:
     import b123d_recognisers._effective_surfaces as surfaces
 
     monkeypatch.setattr(
@@ -1140,8 +1211,8 @@ def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(monkeypat
         "_certify_plane",
         lambda _self, _node, _surface: MaterialSideRefusalReason.SAMPLES_DISAGREE,
     )
-    assert recognise_rectangular_pads(_pad()) == []
-    assert _take_inventory(_pad()).result.pads == ()
+    assert recognise_rectangular_pads(part_factory()) == []
+    assert _take_inventory(part_factory()).result.pads == ()
 
 
 def test_refused_lower_tier_cannot_introduce_the_upper_pad(monkeypatch) -> None:

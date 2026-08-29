@@ -308,7 +308,7 @@ def _recognise_blended_rectangular_pads_one(
         if top_use.material_side.outward[2] < AXIS_ALIGNED_COS:
             continue
 
-        if eligible_chains is None:
+        if eligible_chains is None:  # pragma: no branch - cached after the first eligible top
             eligible_chains = []
             for chain in geometry.blend_facts():
                 if (
@@ -320,9 +320,9 @@ def _recognise_blended_rectangular_pads_one(
                 left = next(iter(chain.supports[0]))
                 right = next(iter(chain.supports[1]))
                 if left not in vertical or right not in vertical:
-                    continue
+                    continue  # pragma: no cover - graph-issued support refs are local
                 if not chain.blend_faces <= local_refs:
-                    continue
+                    continue  # pragma: no cover - graph-issued blend refs are local
                 blend_fact = geometry.surface_fact(next(iter(chain.blend_faces)))
                 if (
                     not isinstance(blend_fact, AnalyticSurface)
@@ -332,7 +332,7 @@ def _recognise_blended_rectangular_pads_one(
                 left_span = geometry.bounds(left)[2]
                 right_span = geometry.bounds(right)[2]
                 if abs(left_span[1] - right_span[1]) > tol:
-                    continue
+                    continue  # pragma: no cover - one native chain has one shared axial span
                 eligible_chains.append(chain)
 
         expected_pairs = (
@@ -355,10 +355,10 @@ def _recognise_blended_rectangular_pads_one(
 
         spans = [geometry.bounds(ref)[2] for ref in ordered_refs]
         if any(abs(span[1] - z1) > tol for span in spans):
-            continue
+            continue  # pragma: no cover - adjacency to this planar top fixes the upper span
         z0 = round(max(span[0] for span in spans), 3)
         if z1 - z0 <= tol:
-            continue
+            continue  # pragma: no cover - eligible vertical faces have positive height
 
         # Four quarter-circle removals explain the rounded top exactly; another trim or hole
         # cannot borrow the blend cycle's permission to become a Pad.
