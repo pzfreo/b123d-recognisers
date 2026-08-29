@@ -120,11 +120,14 @@ compatibility review, and release notes.
 
 The [authored boundary-blend sweep](benchmarks/blend-boundary-sweep.md) holds each feature body
 fixed while filleting only the boundary used by its named recogniser. Across fifteen valid blended
-variants, Polygonal Boss preserves its exact records through its existing selected blend view;
-Hole and Groove remain present with legitimately changed dimensions; Pocket consistently
-reclassifies to Prismatic Pocket; and Rectangular Pad disappears. This is prioritisation evidence
-for a later Pad consumer, not a support claim or a change to the closed registry. Any such consumer
-still requires its own provenance, refusal, aggregate, corpus and runtime evidence.
+variants, Polygonal Boss and Rectangular Pad preserve their exact records through their selected
+blend views; Hole and Groove remain present with legitimately changed dimensions; and Pocket
+consistently reclassifies to Prismatic Pocket. Pad's complete-cycle support has independent
+provenance, refusal, native, STEP and aggregate tests. Corpus and runtime effects remain separately
+reported evidence rather than being inferred from this authored sweep. The
+[MFCAD++ E4 comparison](benchmarks/effectiveness-mfcadpp-500-e4-pad.md) has exact score-vector parity
+over the frozen 500-model development selection and a same-process enabled/disabled timing ratio of
+1.0058; that corpus contains no newly accepted complete Pad corner-blend cycle.
 
 ## Surface-representation support is family-specific
 

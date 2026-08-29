@@ -1,0 +1,69 @@
+# MFCAD++ E4: Rectangular Pad corner-blend consumer
+
+Canonical result: [`effectiveness-mfcadpp-500-e4-pad-565f934.json`](effectiveness-mfcadpp-500-e4-pad-565f934.json).
+Metric definitions and corpus policy are in the
+[`effectiveness baseline method`](effectiveness-baseline-method.md).
+
+## Provenance
+
+- Implementation commit: `565f934c0774ce5a7c862ed0f51579fd74bdb3cd`
+- Comparison report: `effectiveness-mfcadpp-500-e3-cylinders-9b44cf0.json`
+- Corpus: the same first 500 unique IDs in lexical order from the published MFCAD++ test split
+- Selection hash: `323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`
+- Result: 500 selected, loaded and evaluated; no invalid or empty models
+
+The exact command was:
+
+```bash
+uv run python tools/run_effectiveness_baseline.py \
+  mfcadpp /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
+  --dataset-version \
+  'MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823' \
+  --limit 500 \
+  --output docs/benchmarks/effectiveness-mfcadpp-500-e4-pad-565f934.json
+```
+
+## Effectiveness result
+
+The implementation has exact score-vector parity with the preceding E3 report. After removing
+only package commit, environment, runtime aggregates and per-model seconds, both canonical reports
+have SHA-256 `2e9588f0af238c4ae59409642d1b192188da00a2d0b39e4636f5bae14bac0305`.
+All family counts, mapped records, defining-face numerators and denominators, reconciliation drops,
+diagnostics, mismatches and per-model outputs are unchanged. In particular, both reports contain
+two Rectangular Pad records.
+
+This is neutral transfer across the known MFCAD++ selection, not a corpus gain. The dataset contains
+no newly accepted complete Pad corner-blend cycle. The independent authored sweep supplies the
+positive effect: its three valid rounded Pads move from absent to exact sharp-record parity. Corpus
+labels did not shape the predicate and do not override the complete-cycle geometric proof.
+
+## Runtime interpretation
+
+The final full run recorded 254.684 seconds total, 0.460 seconds median and 0.946 seconds p95. The
+older E3 report recorded 196.435, 0.364 and 0.723 seconds respectively on the shared host. Two
+intermediate implementations exposed real eager-work problems and were rejected before review:
+their totals were 407.799 and 464.495 seconds. The final consumer defers blend discovery until four
+interrupted Pad wall roles exist and defers material-side certification until after that structural
+gate.
+
+Because separate full runs on a shared host do not isolate code cost, a same-process paired sentinel
+imported the first 30 models once and alternated the final consumer with the blend proposal route
+disabled. Pad outputs were identical. Enabled time was 15.281 seconds versus 15.193 seconds disabled
+(ratio 1.0058); the paired median delta was -0.00485 seconds. This bounds the consumer's measured
+incremental cost to noise at that selection while preserving the less favourable full-run timing as
+reported evidence.
+
+The repository's absolute census check also ran unchanged: its minimum was 184.224 seconds against
+the stale 109.651-second ceiling (`99.683 × 1.10`), so it failed rather than being waived. The
+budget document already records later same-host census minima near 146 seconds and requires a
+back-to-back ratio when the machine baseline has moved. A paired run imported the same 13 NIST and
+Gramel parts once, alternated enabled/disabled order by part, and asserted exact census equality.
+Enabled total was 202.511 seconds versus 187.631 seconds disabled, ratio 1.0793; median per-part
+times were 9.428 and 9.326 seconds, with a 0.136-second paired median delta. That is within the
+authoritative 1.10 census budget. The composite minimum was 3.564 seconds and is retained as a
+descriptive shared-host result, consistent with that arm's documented instability.
+
+## Transfer boundary
+
+MFInstSeg remains unavailable in this workspace. No independent transfer or instance-recall claim
+is made, and MFCAD++ is not presented as a substitute.

@@ -819,29 +819,54 @@
       },
       "variants": [
         {
-          "expected_records": [],
+          "expected_records": [
+            {
+              "x0": 10.0,
+              "x1": 30.0,
+              "y0": 10.0,
+              "y1": 25.0,
+              "z0": 4.0,
+              "z1": 13.0
+            }
+          ],
           "introduced_families": [],
-          "outcome": "absent",
+          "outcome": "same-family",
           "radius_model_units": 0.5,
           "records": {
             "fillets": [],
             "grooves": [],
             "holes": [],
-            "pads": [],
+            "pads": [
+              {
+                "x0": 10.0,
+                "x1": 30.0,
+                "y0": 10.0,
+                "y1": 25.0,
+                "z0": 4.0,
+                "z1": 13.0
+              }
+            ],
             "pockets": [],
             "polygonal_bosses": [],
             "prismatic_pockets": []
           },
-          "removed_families": [
-            "pads"
-          ]
+          "removed_families": []
         },
         {
-          "expected_records": [],
+          "expected_records": [
+            {
+              "x0": 10.0,
+              "x1": 30.0,
+              "y0": 10.0,
+              "y1": 25.0,
+              "z0": 4.0,
+              "z1": 13.0
+            }
+          ],
           "introduced_families": [
             "fillets"
           ],
-          "outcome": "absent",
+          "outcome": "same-family",
           "radius_model_units": 1.0,
           "records": {
             "fillets": [
@@ -888,21 +913,37 @@
             ],
             "grooves": [],
             "holes": [],
-            "pads": [],
+            "pads": [
+              {
+                "x0": 10.0,
+                "x1": 30.0,
+                "y0": 10.0,
+                "y1": 25.0,
+                "z0": 4.0,
+                "z1": 13.0
+              }
+            ],
             "pockets": [],
             "polygonal_bosses": [],
             "prismatic_pockets": []
           },
-          "removed_families": [
-            "pads"
-          ]
+          "removed_families": []
         },
         {
-          "expected_records": [],
+          "expected_records": [
+            {
+              "x0": 10.0,
+              "x1": 30.0,
+              "y0": 10.0,
+              "y1": 25.0,
+              "z0": 4.0,
+              "z1": 13.0
+            }
+          ],
           "introduced_families": [
             "fillets"
           ],
-          "outcome": "absent",
+          "outcome": "same-family",
           "radius_model_units": 2.0,
           "records": {
             "fillets": [
@@ -949,14 +990,21 @@
             ],
             "grooves": [],
             "holes": [],
-            "pads": [],
+            "pads": [
+              {
+                "x0": 10.0,
+                "x1": 30.0,
+                "y0": 10.0,
+                "y1": 25.0,
+                "z0": 4.0,
+                "z1": 13.0
+              }
+            ],
             "pockets": [],
             "polygonal_bosses": [],
             "prismatic_pockets": []
           },
-          "removed_families": [
-            "pads"
-          ]
+          "removed_families": []
         }
       ]
     },
@@ -1471,11 +1519,12 @@
       ]
     }
   },
+  "implementation_commit": "565f934c0774ce5a7c862ed0f51579fd74bdb3cd",
   "performance_budget_seconds": 30.0,
   "performance_measurement": {
     "environment": "Python 3.12.14, Linux, shared development host",
     "measured_at": "2026-08-29",
-    "median_seconds": 11.518,
+    "median_seconds": 16.098,
     "repeat": 3,
     "workload": "five plain controls plus fifteen blended aggregate inventories"
   },
@@ -1483,11 +1532,11 @@
   "schema": 1,
   "selection": "authored cases; only each named recogniser boundary is blended",
   "totals": {
-    "absent": 3,
+    "absent": 0,
     "cases": 5,
     "changed-record": 6,
     "reclassified": 3,
-    "same-family": 3,
+    "same-family": 6,
     "variants": 15
   }
 }
