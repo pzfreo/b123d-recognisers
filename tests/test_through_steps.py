@@ -223,8 +223,11 @@ def test_a_step_capped_at_one_run_end_is_blind_not_through():
 
 
 def test_a_convex_straight_boundary_notch_preserves_the_step_proof():
-    part = _step() - Pos(3, 7, 0) * Box(4, 4, 8)
+    part = _step() - Pos(5, 14, 0) * Box(4, 4, 4)
+    defining_wall = next(face for face in part.faces() if pytest.approx(5.0) == face.center().X)
 
+    assert len(defining_wall.wires()) == 1
+    assert len(defining_wall.edges()) == 8
     assert recognise_through_steps(part) == recognise_through_steps(_step())
 
 
@@ -280,6 +283,36 @@ def test_an_inner_wire_interruption_is_rotation_scale_and_step_stable(tmp_path):
     path = tmp_path / "pierced.step"
     export_step(pierced(1.0), path)
     assert recognise_through_steps(import_step(path)) == recognise_through_steps(_step())
+
+
+def test_an_interrupted_wall_keeps_exact_graph_owned_evidence_and_aggregate_parity():
+    drill = Pos(0, 7, 0) * Rot(0, 90, 0) * Cylinder(2, 15)
+    part = _step() - drill
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+
+    direct = recognise_through_steps(part, ledger=ledger)
+
+    assert direct == recognise_through_steps(part)
+    assert len(ledger.claims) == 1
+    defining = ledger.claims[0].defining
+    assert len(defining) == 2
+    assert all(graph.require_node(graph.face(node)) is node for node in defining)
+    assert any(len(graph.face(node).wires()) > 1 for node in defining)
+
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.THROUGH_STEPS).candidates
+    assert len(candidates) == 1
+    aggregate_defining = product.evidence.defining_of(candidates[0])
+    assert product.result.through_steps == tuple(direct)
+    assert len(aggregate_defining) == 2
+    assert all(
+        product.context.graph.require_node(product.context.graph.face(node)) is node
+        for node in aggregate_defining
+    )
+    assert any(
+        len(product.context.graph.face(node).wires()) > 1 for node in aggregate_defining
+    )
 
 
 def test_an_interruption_crossing_the_defining_seam_fails_closed():
