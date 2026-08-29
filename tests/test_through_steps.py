@@ -222,19 +222,21 @@ def test_a_step_capped_at_one_run_end_is_blind_not_through():
     assert recognise_through_steps(stock - removal) == []
 
 
-def test_an_interrupted_defining_wall_is_not_a_simple_through_step():
-    part = _step() - Pos(3, 7, 0) * Box(4, 4, 8)
+def test_a_convex_straight_boundary_notch_preserves_the_step_proof():
+    part = _step() - Pos(5, 14, 0) * Box(4, 4, 4)
+    defining_wall = next(face for face in part.faces() if pytest.approx(5.0) == face.center().X)
 
-    assert recognise_through_steps(part) == []
+    assert len(defining_wall.wires()) == 1
+    assert len(defining_wall.edges()) == 8
+    assert recognise_through_steps(part) == recognise_through_steps(_step())
 
 
 def test_a_tapered_defining_wall_is_not_a_constant_section_step():
-    base = _step()
-    with BuildPart() as branch:
-        with BuildSketch(Plane.YZ.offset(2)):
-            Polygon((10, -10), (15, -10), (15, 10))
-        extrude(amount=4)
-    tapered = base - branch.part
+    with BuildPart() as removal:
+        with BuildSketch(Plane.XY.offset(-10)):
+            Polygon((5, 0), (20, 0), (20, 15), (8, 15))
+        extrude(amount=20)
+    tapered = Box(40, 30, 20) - removal.part
 
     assert recognise_through_steps(tapered) == []
     assert recognise_through_steps(Rot(0, 0, 180) * tapered) == []
@@ -256,12 +258,68 @@ def test_four_curved_edges_are_not_four_straight_principal_runs():
     assert not _four_principal_runs(wire, 2)
 
 
-def test_a_scalloped_defining_wall_is_not_a_rectangular_step():
+def test_a_curved_boundary_interruption_preserves_the_step_proof():
     scallop = Pos(6, 15, 0) * Rot(0, 90, 0) * Cylinder(10, 4)
     part = _step() - scallop
 
-    assert recognise_through_steps(part) == []
-    assert recognise_through_steps(Rot(0, 0, 180) * part) == []
+    assert recognise_through_steps(part) == recognise_through_steps(_step())
+    assert recognise_through_steps(Rot(0, 0, 180) * part) == recognise_through_steps(
+        Rot(0, 0, 180) * _step()
+    )
+
+
+def test_an_inner_wire_interruption_is_rotation_scale_and_step_stable(tmp_path):
+    def pierced(scale: float):
+        drill = Pos(0, 7 * scale, 0) * Rot(0, 90, 0) * Cylinder(2 * scale, 15 * scale)
+        return _step(scale) - drill
+
+    for scale in (0.05, 1.0, 100.0):
+        part = pierced(scale)
+        assert recognise_through_steps(part) == recognise_through_steps(_step(scale))
+        assert recognise_through_steps(Rot(90, 0, 0) * part) == recognise_through_steps(
+            Rot(90, 0, 0) * _step(scale)
+        )
+
+    path = tmp_path / "pierced.step"
+    export_step(pierced(1.0), path)
+    assert recognise_through_steps(import_step(path)) == recognise_through_steps(_step())
+
+
+def test_an_interrupted_wall_keeps_exact_graph_owned_evidence_and_aggregate_parity():
+    drill = Pos(0, 7, 0) * Rot(0, 90, 0) * Cylinder(2, 15)
+    part = _step() - drill
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+
+    direct = recognise_through_steps(part, ledger=ledger)
+
+    assert direct == recognise_through_steps(part)
+    assert len(ledger.claims) == 1
+    defining = ledger.claims[0].defining
+    assert len(defining) == 2
+    assert all(graph.require_node(graph.face(node)) is node for node in defining)
+    assert any(len(graph.face(node).wires()) > 1 for node in defining)
+
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.THROUGH_STEPS).candidates
+    assert len(candidates) == 1
+    aggregate_defining = product.evidence.defining_of(candidates[0])
+    assert product.result.through_steps == tuple(direct)
+    assert len(aggregate_defining) == 2
+    assert all(
+        product.context.graph.require_node(product.context.graph.face(node)) is node
+        for node in aggregate_defining
+    )
+    assert any(
+        len(product.context.graph.face(node).wires()) > 1 for node in aggregate_defining
+    )
+
+
+def test_an_interruption_crossing_the_defining_seam_fails_closed():
+    interrupted = _step() - Pos(5, 0, 0) * Cylinder(2, 20)
+
+    assert interrupted.is_valid
+    assert recognise_through_steps(interrupted) == []
 
 
 def test_compound_members_are_recognised_independently():

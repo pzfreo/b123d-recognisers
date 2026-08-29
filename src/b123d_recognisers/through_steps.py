@@ -2,10 +2,11 @@
 # Copyright 2024-2026 Paul Fremantle
 """Conservative rectangular through-step recognition.
 
-The supported occurrence is exactly two rectangular principal-plane regions joined by one
-concave seam, open across the complete run of one valid source solid.  The open section records
-the removed quadrant explicitly.  Channels, pockets, capped cuts, interrupted walls, tapered or
-curved walls, and partial-run steps remain outside this bounded family.
+The supported occurrence is exactly two principal-plane regions joined by one concave seam, open
+across the complete run of one valid source solid.  The open section records the removed quadrant
+explicitly. Boundary interruptions from independent geometry are permitted only when the complete
+seam, envelope, terminals and empty removed prism remain proved. Channels, pockets, capped cuts,
+tapered or curved walls, seam interruptions and partial-run steps remain outside this family.
 """
 
 from __future__ import annotations
@@ -13,14 +14,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from build123d import Face, GeomType, Wire
+from build123d import GeomType, Wire
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, axis_aligned_axis
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._geometry import COORD_FLOOR, SMOOTH_ARC_GAP
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import EdgeLike, Part
+from b123d_recognisers._typing import Part
 from b123d_recognisers._volume_probe import prism_is_empty
 
 _AXES = "xyz"
@@ -84,36 +85,6 @@ def _four_principal_runs(wire: Wire, normal_axis: int) -> bool:
     return len(run_axes) == 4 and all(run_axes.count(axis) == 2 for axis in in_plane)
 
 
-def _rectangular_region(graph: FaceGraph, nodes: frozenset[FaceNode]) -> bool:
-    if not nodes:
-        return False
-    seed = min(nodes, key=lambda node: node.index)
-    plane = axis_aligned_axis(graph.face(seed).wrapped)
-    if plane is None:
-        return False
-    if len(nodes) == 1:
-        face = graph.face(seed)
-        wires = face.wires()
-        return len(wires) == 1 and _four_principal_runs(face.outer_wire(), plane[0])
-    uses: dict[EdgeLike, int] = {}
-    for node in nodes:
-        for edge in graph.edges(node):
-            uses[edge] = uses.get(edge, 0) + 1
-    if any(count > 2 for count in uses.values()):
-        return False
-    boundary = [edge for edge, count in uses.items() if count == 1]
-    if not boundary:
-        return False
-    combined = list(Wire.combine(boundary, tol=COORD_FLOOR))
-    if len(combined) != 1 or not combined[0].is_closed:
-        return False
-    try:
-        face = Face(combined[0])
-    except Exception:
-        return False
-    return face.is_valid and _four_principal_runs(combined[0], plane[0])
-
-
 def _coplanar_region(
     graph: FaceGraph,
     seed: FaceNode,
@@ -158,8 +129,6 @@ def _regions(
             continue
         region = _coplanar_region(graph, seed, planes) & solid_nodes
         seen.update(region)
-        if not _rectangular_region(graph, region):
-            continue
         axis, coordinate = plane
         measured = tuple(
             (
