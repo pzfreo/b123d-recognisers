@@ -13,6 +13,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_paired_ramp_steps",
     "recognise_passages",
     "recognise_prismatic_pockets",
+    "recognise_through_steps",
     "recognise_bosses",
     "recognise_chamfers",
     "recognise_channels",

@@ -79,6 +79,7 @@ from b123d_recognisers.slots import (
     recognise_pocket_patterns,
     recognise_slot_patterns,
 )
+from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
 
 
@@ -709,6 +710,17 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         FullyAttributed(
             "every returned paired-ramp step claims both original ramps and its closing terminal"
         ),
+    ),
+    PhysicalDefinition(
+        FamilyId.THROUGH_STEPS,
+        (ThroughStep,),
+        "through_steps",
+        "recognise_through_steps",
+        (),
+        prismatic,
+        _simple(lambda s: list(recognise_through_steps(s.context.part, ledger=s.writer))),
+        Counted("through_step"),
+        FullyAttributed("every returned through step claims both rectangular wall regions"),
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,

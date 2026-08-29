@@ -27,7 +27,6 @@ from b123d_recognisers._recess_core import (
     _slot_proposals_one,
 )
 from b123d_recognisers._recess_faces import (
-    _PRISM_PROBE_FLOOR,
     _cylinder_faces,
     _planar_faces,
 )
@@ -50,6 +49,7 @@ from b123d_recognisers._recess_reduce import (
     _same_channel_line,
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from b123d_recognisers._volume_probe import PRISM_PROBE_FLOOR
 
 ROOT = Path(__file__).parents[1]
 
@@ -280,7 +280,7 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
     assert (
         _prism_material_fraction(
-            {**spans, "x": (1.0, 1.0 + _PRISM_PROBE_FLOOR / 2)},
+            {**spans, "x": (1.0, 1.0 + PRISM_PROBE_FLOOR / 2)},
             IntersectionPart(None),
             inset=0,
         )

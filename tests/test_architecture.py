@@ -29,6 +29,7 @@ PUBLIC_MODULES = {
     "levels",
     "pads",
     "paired_ramp_steps",
+    "through_steps",
     "passages",
     "plates",
     "prismatic_pockets",
@@ -66,6 +67,15 @@ MODULE_SEAM_EDGES = {
         "_geometry",
         "_record",
         "_typing",
+    },
+    "through_steps": {
+        "_adjacency",
+        "_candidates",
+        "_claims",
+        "_geometry",
+        "_record",
+        "_typing",
+        "_volume_probe",
     },
     "_candidates": {"_adjacency", "_effective_surfaces", "_passage_compat"},
     "_correspondence": {
@@ -139,12 +149,20 @@ MODULE_SEAM_EDGES = {
     # Ring geometry: `passages` owned it while it was the only family walking rings.
     "_rings": {"_adjacency", "_geometry", "_typing"},
     "_recess_records": {"_record", "_typing"},
+    # Exact volumetric evidence is shared without importing either recognition policy.
+    "_volume_probe": {"_typing"},
     # The recess stack, bottom to top: faces are read, candidates are proposed from them,
     # obround ends recover the ones no wall pair found, and reduction turns what is left into
     # features. Each layer may import the ones below it and none may import one above, which is
     # the property the split was for -- a family predicate cannot quietly become substrate.
-    "_recess_faces": {"_adjacency", "_recess_records", "_typing"},
-    "_recess_reduce": {"_adjacency", "_recess_faces", "_recess_records", "_typing"},
+    "_recess_faces": {"_adjacency", "_recess_records", "_typing", "_volume_probe"},
+    "_recess_reduce": {
+        "_adjacency",
+        "_recess_faces",
+        "_recess_records",
+        "_typing",
+        "_volume_probe",
+    },
     "_recess_obround": {
         "_adjacency",
         "_geometry",
@@ -206,6 +224,7 @@ MODULE_SEAM_EDGES = {
         "levels",
         "pads",
         "paired_ramp_steps",
+        "through_steps",
         "passages",
         "plates",
         "polygonal_bosses",
@@ -266,6 +285,10 @@ MODULE_SEAM_EDGES = {
 ARC_READER_SITES = {
     "src/b123d_recognisers/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/through_steps:_relation:arc:1": "legacy-contract",
+    "src/b123d_recognisers/through_steps:_coplanar_region:arc:1": "legacy-contract",
+    "src/b123d_recognisers/through_steps:_common_terminal:arc:1": "legacy-contract",
+    "src/b123d_recognisers/through_steps:_common_terminal:arc:2": "legacy-contract",
     "src/b123d_recognisers/experimental_geometry:arc:arc:1": "facade-projection",
     "src/b123d_recognisers/experimental_geometry:smooth_side:smooth_side:1": "facade-projection",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:1": "legacy-contract",

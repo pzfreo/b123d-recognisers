@@ -64,6 +64,7 @@ from b123d_recognisers import (
     SlotArray,
     SlotGrid,
     StepShoulder,
+    ThroughStep,
     TurnedStep,
     analyse_cylinders,
     project_step_shoulders,
@@ -91,6 +92,7 @@ from b123d_recognisers import (
     recognise_risers,
     recognise_slot_patterns,
     recognise_slots,
+    recognise_through_steps,
     recognise_turned_steps,
 )
 from b123d_recognisers._record import Record
@@ -128,6 +130,7 @@ _EXPECTED_RECORD_TYPES = {
     TurnedStep,
     RepeatingRadialProfile,
     PairedRampStep,
+    ThroughStep,
 }
 
 
@@ -225,10 +228,12 @@ def _angled_stepped_box():
 
 
 def _paired_ramp_side_cut():
-    cutter = Pos(20, 20, 0) * extrude(
-        Plane.XZ * Polygon((0, -8), (0, 8), (-10, 0)), 25
-    )
+    cutter = Pos(20, 20, 0) * extrude(Plane.XZ * Polygon((0, -8), (0, 8), (-10, 0)), 25)
     return Box(40, 40, 30) - cutter
+
+
+def _rectangular_through_step():
+    return Box(40, 30, 20) - Pos(15, 10, 0) * Box(20, 20, 30)
 
 
 def _chamfered_box():
@@ -302,6 +307,7 @@ def _records_from_recognisers():
         ("hole_patterns:grid", recognise_hole_patterns(recognise_holes(_grid_plate()))),
         ("recognise_angled_steps", recognise_angled_steps(_angled_stepped_box())),
         ("recognise_paired_ramp_steps", recognise_paired_ramp_steps(_paired_ramp_side_cut())),
+        ("recognise_through_steps", recognise_through_steps(_rectangular_through_step())),
         ("recognise_passages", recognise_passages(_passaged_block())),
         ("recognise_chamfers", recognise_chamfers(_chamfered_box())),
         ("recognise_channels", recognise_channels(channel)),
@@ -394,6 +400,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_double_d_bores,
         recognise_angled_steps,
         recognise_paired_ramp_steps,
+        recognise_through_steps,
         recognise_passages,
         recognise_chamfers,
         recognise_channels,

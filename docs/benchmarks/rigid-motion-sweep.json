@@ -459,15 +459,16 @@
       }
     },
     "plates_pads_levels_and_slanted_steps": {
-      "baseline_records": 4,
+      "baseline_records": 5,
       "rotations": {
         "X30": {
-          "absent": 4,
+          "absent": 5,
           "absent_by_family": {
             "plate": 2,
-            "pocket": 2
+            "pocket": 2,
+            "through_step": 1
           },
-          "baseline_records": 4,
+          "baseline_records": 5,
           "introduced": 0,
           "introduced_by_family": {},
           "reclassified": 0,
@@ -478,24 +479,26 @@
         "X90": {
           "absent": 0,
           "absent_by_family": {},
-          "baseline_records": 4,
+          "baseline_records": 5,
           "introduced": 0,
           "introduced_by_family": {},
           "reclassified": 0,
-          "retained_same_family": 4,
+          "retained_same_family": 5,
           "same_family": {
             "plate": 2,
-            "pocket": 2
+            "pocket": 2,
+            "through_step": 1
           },
           "transitions": {}
         },
         "Z30": {
-          "absent": 4,
+          "absent": 5,
           "absent_by_family": {
             "plate": 2,
-            "pocket": 2
+            "pocket": 2,
+            "through_step": 1
           },
-          "baseline_records": 4,
+          "baseline_records": 5,
           "introduced": 0,
           "introduced_by_family": {},
           "reclassified": 0,
@@ -578,6 +581,50 @@
           "absent": 0,
           "absent_by_family": {},
           "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "rectangular_through_step": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "through_step": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "through_step": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 1,
+          "absent_by_family": {
+            "through_step": 1
+          },
+          "baseline_records": 1,
           "introduced": 0,
           "introduced_by_family": {},
           "reclassified": 0,
@@ -961,22 +1008,22 @@
   "schema": 1,
   "totals": {
     "X30": {
-      "absent": 40,
-      "baseline_records": 76,
+      "absent": 42,
+      "baseline_records": 78,
       "introduced": 0,
       "reclassified": 7,
       "retained_same_family": 29
     },
     "X90": {
       "absent": 0,
-      "baseline_records": 76,
+      "baseline_records": 78,
       "introduced": 0,
       "reclassified": 0,
-      "retained_same_family": 76
+      "retained_same_family": 78
     },
     "Z30": {
-      "absent": 28,
-      "baseline_records": 76,
+      "absent": 30,
+      "baseline_records": 78,
       "introduced": 0,
       "reclassified": 14,
       "retained_same_family": 34

@@ -219,6 +219,7 @@
           }
         ],
         "step_levels": [],
+        "through_steps": [],
         "turned_steps": []
       },
       "rotational": {
@@ -381,6 +382,7 @@
           }
         ],
         "step_levels": [],
+        "through_steps": [],
         "turned_steps": []
       }
     },
@@ -401,7 +403,8 @@
       "pocket": 0,
       "prismatic_pocket": 0,
       "slot": 3,
-      "step": 0
+      "step": 0,
+      "through_step": 0
     },
     "individual": {
       "recognise_angled_steps": [],
@@ -719,6 +722,7 @@
           "width_axis": "y"
         }
       ],
+      "recognise_through_steps": [],
       "recognise_turned_steps": []
     },
     "substrates": {

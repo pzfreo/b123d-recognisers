@@ -1,0 +1,1027 @@
+{
+  "class_id": 8,
+  "derivation": "connected components of same-class original faces under shared-edge adjacency",
+  "derived_component_recall": 0.2154696132596685,
+  "derived_components": 181,
+  "format": "b123d-recognisers-mfcadpp-derived-components",
+  "format_version": 1,
+  "implementation_commit": "068346486e72a524b659bfbe61400f3a860e0f92",
+  "labelled_faces": 415,
+  "models": [
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "10007",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "10015",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10038",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10070",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "10101",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10103",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "10116",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "10118",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "10127",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10131",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 8,
+      "model_id": "10137",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "1017",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "10229",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 3,
+      "labelled_faces": 5,
+      "model_id": "10247",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10269",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10285",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10299",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10308",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 6,
+      "model_id": "10318",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10348",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "10350",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 6,
+      "model_id": "10354",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10363",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 7,
+      "model_id": "1037",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10395",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "10410",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "10414",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10465",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10484",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10505",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10525",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "10527",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10558",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10583",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10594",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 6,
+      "model_id": "10614",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10633",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10673",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1072",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10736",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10737",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "10743",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10753",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10776",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10786",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10805",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10812",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10834",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "10877",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10885",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10929",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10948",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 6,
+      "model_id": "1095",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10966",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 8,
+      "model_id": "10986",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10989",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10990",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "10994",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11004",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11029",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11041",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11097",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "11110",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1116",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11190",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11211",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11223",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 3,
+      "labelled_faces": 7,
+      "model_id": "1123",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11242",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1125",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11318",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "11319",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11345",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "11374",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11377",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 2,
+      "model_id": "11398",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "11440",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11450",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11464",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "11515",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11519",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11526",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "11555",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "11570",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "11576",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11603",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11621",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 8,
+      "model_id": "11631",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11655",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11698",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11724",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "11750",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "11809",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11831",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11836",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "11851",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11882",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11899",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11905",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "11934",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11963",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11971",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "11974",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "11994",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "12016",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12036",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12042",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "12046",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 3,
+      "labelled_faces": 10,
+      "model_id": "12047",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12056",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12110",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 3,
+      "labelled_faces": 6,
+      "model_id": "12114",
+      "recalled_components": 3,
+      "through_step_claims": 3
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "1214",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "12140",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12148",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 3,
+      "labelled_faces": 5,
+      "model_id": "1215",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1219",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12201",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12204",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12281",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 4,
+      "model_id": "12298",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12307",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12339",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12349",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1236",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12369",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 6,
+      "model_id": "12372",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "12396",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1246",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12484",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "12497",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 3,
+      "model_id": "1254",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12554",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "12603",
+      "recalled_components": 1,
+      "through_step_claims": 1
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12606",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12614",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12643",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 4,
+      "model_id": "12667",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12682",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12684",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12689",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "1269",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 1,
+      "labelled_faces": 2,
+      "model_id": "12726",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    },
+    {
+      "derived_components": 2,
+      "labelled_faces": 3,
+      "model_id": "12792",
+      "recalled_components": 0,
+      "through_step_claims": 0
+    }
+  ],
+  "models_with_class": 144,
+  "native_instance_labels": false,
+  "recalled_components": 39,
+  "selection": {
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df"
+  }
+}

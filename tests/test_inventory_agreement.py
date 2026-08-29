@@ -61,6 +61,7 @@ SHARED = {
     "chamfer": "chamfers",
     "angled_step": "angled_steps",
     "paired_ramp_step": "paired_ramp_steps",
+    "through_step": "through_steps",
     "fillet": "fillets",
     "countersink": "countersinks",
     "plate": "plates",
@@ -77,9 +78,7 @@ def _disagreements(part):
     }
 
 
-@pytest.mark.parametrize(
-    "fixture", sorted(p.parent.name for p in GOLDEN.glob("*/fixture.py"))
-)
+@pytest.mark.parametrize("fixture", sorted(p.parent.name for p in GOLDEN.glob("*/fixture.py")))
 def test_the_two_inventories_agree_on_every_golden(fixture):
     """Every synthetic part, one family at a time, so a failure names the family."""
 
@@ -153,9 +152,9 @@ def test_the_shared_map_still_covers_every_family_the_census_counts():
     That is the failure mode this file exists to prevent, one level up.
     """
 
-    counted = set(feature_census(load_fixture(
-        GOLDEN / "simple_through_hole" / "fixture.py"
-    ).build_fixture()))
+    counted = set(
+        feature_census(load_fixture(GOLDEN / "simple_through_hole" / "fixture.py").build_fixture())
+    )
     # `step` and `flat` are the documented exceptions: a compatibility rule and a substrate.
     assert counted - set(SHARED) == {"step", "flat"}
 
