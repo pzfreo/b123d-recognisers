@@ -247,31 +247,7 @@ def _recognise_blended_rectangular_pads_one(
         ):
             vertical[ref] = (face, face.bounding_box(), normal)
 
-    eligible_chains: list[BlendFact] = []
-    for chain in geometry.blend_facts():
-        if (
-            chain.side != "convex"
-            or len(chain.blend_faces) != 1
-            or any(len(support) != 1 for support in chain.supports)
-        ):
-            continue
-        left = next(iter(chain.supports[0]))
-        right = next(iter(chain.supports[1]))
-        if left not in vertical or right not in vertical:
-            continue
-        if not chain.blend_faces <= local_refs:
-            continue
-        blend_fact = geometry.surface_fact(next(iter(chain.blend_faces)))
-        if (
-            not isinstance(blend_fact, AnalyticSurface)
-            or blend_fact.kind is not InspectionSurfaceKind.CYLINDER
-        ):
-            continue
-        left_span = geometry.bounds(left)[2]
-        right_span = geometry.bounds(right)[2]
-        if abs(left_span[1] - right_span[1]) > tol:
-            continue
-        eligible_chains.append(chain)
+    eligible_chains: list[BlendFact] | None = None
 
     proposals: list[_PadProposal] = []
     for top_ref, top_face in refs.items():
@@ -314,6 +290,49 @@ def _recognise_blended_rectangular_pads_one(
         y1 = round(sum(geometry.bounds(roles["y1"])[1]) / 2, 3)
         if x1 - x0 <= tol or y1 - y0 <= tol:
             continue
+        full_x = bb.min.X + tol >= x0 and bb.max.X - tol <= x1
+        full_y = bb.min.Y + tol >= y0 and bb.max.Y - tol <= y1
+        if full_x or full_y:
+            continue
+        role_cross_spans = (
+            geometry.bounds(roles["x0"])[1],
+            geometry.bounds(roles["x1"])[1],
+            geometry.bounds(roles["y0"])[0],
+            geometry.bounds(roles["y1"])[0],
+        )
+        expected_cross_spans = ((y0, y1), (y0, y1), (x0, x1), (x0, x1))
+        if all(
+            actual[0] <= expected[0] + tol and actual[1] >= expected[1] - tol
+            for actual, expected in zip(role_cross_spans, expected_cross_spans, strict=True)
+        ):
+            continue  # the unchanged sharp path owns uninterrupted wall roles
+
+        if eligible_chains is None:
+            eligible_chains = []
+            for chain in geometry.blend_facts():
+                if (
+                    chain.side != "convex"
+                    or len(chain.blend_faces) != 1
+                    or any(len(support) != 1 for support in chain.supports)
+                ):
+                    continue
+                left = next(iter(chain.supports[0]))
+                right = next(iter(chain.supports[1]))
+                if left not in vertical or right not in vertical:
+                    continue
+                if not chain.blend_faces <= local_refs:
+                    continue
+                blend_fact = geometry.surface_fact(next(iter(chain.blend_faces)))
+                if (
+                    not isinstance(blend_fact, AnalyticSurface)
+                    or blend_fact.kind is not InspectionSurfaceKind.CYLINDER
+                ):
+                    continue
+                left_span = geometry.bounds(left)[2]
+                right_span = geometry.bounds(right)[2]
+                if abs(left_span[1] - right_span[1]) > tol:
+                    continue
+                eligible_chains.append(chain)
 
         expected_pairs = (
             frozenset((roles["x0"], roles["y0"])),
