@@ -16,8 +16,13 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
+from dataclasses import replace
+from pathlib import Path
+
+import pytest
 from attribution_audit import assert_ring_role, attributed_run
 from build123d import (
+    Axis,
     Box,
     BuildPart,
     BuildSketch,
@@ -25,7 +30,9 @@ from build123d import (
     Plane,
     Polygon,
     Pos,
+    export_step,
     extrude,
+    import_step,
     mirror,
 )
 
@@ -34,6 +41,10 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
+from b123d_recognisers.frames import (
+    FramedRecognitionResult,
+    build_framed_recognition_result,
+)
 
 
 def _prism(*corners, height=14):
@@ -54,6 +65,12 @@ def _rectangular():
     """The shape both families reach, so the overlap has something to be about."""
 
     return Box(120, 80, 20) - Pos(0, 0, 8) * Box(20, 12, 14)
+
+
+def _hexagonal():
+    return Box(120, 80, 20) - Pos(0, 0, 2) * _prism(
+        (-12, -7), (-6, -12), (6, -12), (12, -7), (6, -2), (-6, -2)
+    )
 
 
 def _through():
@@ -122,9 +139,7 @@ def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
     """
 
     triangle = _triangular()
-    hexagon = Box(120, 80, 20) - Pos(0, 0, 2) * _prism(
-        (-12, -7), (-6, -12), (6, -12), (12, -7), (6, -2), (-6, -2)
-    )
+    hexagon = _hexagonal()
 
     tri_ledger, (tri,) = _claimed(triangle)
     hex_ledger, (hexa,) = _claimed(hexagon)
@@ -137,6 +152,142 @@ def test_the_section_is_what_separates_a_triangle_from_a_hexagon():
         defining = ledger.defining_of(candidate)
         assert len(defining) == pocket.sides
         assert all(abs(ledger.graph.normal(node)[2]) < 1e-6 for node in defining)
+
+
+@pytest.mark.parametrize(
+    ("rotation_axis", "degrees", "expected_axis", "expected_open_sign"),
+    [
+        (Axis.X, 0, "z", 1),
+        (Axis.Y, 180, "z", -1),
+        (Axis.X, -90, "y", 1),
+        (Axis.X, 90, "y", -1),
+        (Axis.Y, 90, "x", 1),
+        (Axis.Y, -90, "x", -1),
+    ],
+)
+@pytest.mark.parametrize(("fixture", "sides"), [(_triangular, 3), (_hexagonal, 6)])
+def test_polygonal_pockets_are_covariant_across_signed_principal_axes(
+    fixture,
+    sides: int,
+    rotation_axis: Axis,
+    degrees: float,
+    expected_axis: str,
+    expected_open_sign: int,
+) -> None:
+    part = Pos(17, -11, 9) * fixture().rotate(rotation_axis, degrees)
+
+    (direct,) = r.recognise_prismatic_pockets(part)
+    result = r.build_recognition_result(part)
+
+    assert (direct.axis, direct.sides, direct.depth, direct.open_sign) == (
+        expected_axis,
+        sides,
+        8.0,
+        expected_open_sign,
+    )
+    assert result.prismatic_pockets == (direct,)
+
+
+@pytest.mark.parametrize(
+    ("rotation_axis", "degrees", "expected_axis", "expected_open_sign"),
+    [
+        (Axis.X, 0, "z", 1),
+        (Axis.Y, 180, "z", -1),
+        (Axis.X, -90, "y", 1),
+        (Axis.X, 90, "y", -1),
+        (Axis.Y, 90, "x", 1),
+        (Axis.Y, -90, "x", -1),
+    ],
+)
+def test_rectangular_ring_covariance_preserves_aggregate_pocket_precedence(
+    rotation_axis: Axis,
+    degrees: float,
+    expected_axis: str,
+    expected_open_sign: int,
+) -> None:
+    part = Pos(17, -11, 9) * _rectangular().rotate(rotation_axis, degrees)
+
+    (ring,) = r.recognise_prismatic_pockets(part)
+    result = r.build_recognition_result(part)
+
+    assert (ring.axis, ring.sides, ring.depth, ring.open_sign) == (
+        expected_axis,
+        4,
+        9.0,
+        expected_open_sign,
+    )
+    assert result.prismatic_pockets == ()
+    assert len(result.pockets) == 1
+
+
+@pytest.mark.parametrize(("fixture", "sides"), [(_triangular, 3), (_hexagonal, 6)])
+def test_principal_y_polygonal_pocket_survives_step_round_trip(
+    fixture,
+    sides: int,
+    tmp_path: Path,
+) -> None:
+    part = Pos(17, -11, 9) * fixture().rotate(Axis.X, -90)
+    path = tmp_path / f"principal-y-{sides}-sided-pocket.step"
+
+    assert export_step(part, path)
+    imported = import_step(path)
+
+    (pocket,) = r.recognise_prismatic_pockets(imported)
+    assert (pocket.axis, pocket.sides, pocket.depth, pocket.open_sign) == (
+        "y",
+        sides,
+        8.0,
+        1,
+    )
+
+
+def test_principal_y_rectangular_ring_round_trip_keeps_pocket_precedence(
+    tmp_path: Path,
+) -> None:
+    part = Pos(17, -11, 9) * _rectangular().rotate(Axis.X, -90)
+    path = tmp_path / "principal-y-rectangular-pocket.step"
+
+    assert export_step(part, path)
+    imported = import_step(path)
+    result = r.build_recognition_result(imported)
+
+    (ring,) = r.recognise_prismatic_pockets(imported)
+    assert (ring.axis, ring.sides, ring.depth, ring.open_sign) == ("y", 4, 9.0, 1)
+    assert result.prismatic_pockets == ()
+    assert len(result.pockets) == 1
+
+
+@pytest.mark.parametrize(
+    ("fixture", "sides", "rectangular"),
+    [(_triangular, 3, False), (_hexagonal, 6, False), (_rectangular, 4, True)],
+)
+def test_principal_ring_contract_survives_arbitrary_rigid_presentation_in_framed_aggregate(
+    fixture,
+    sides: int,
+    rectangular: bool,
+) -> None:
+    baseline = build_framed_recognition_result(fixture())
+    presented = Pos(-31, 17, 23) * fixture().rotate(
+        Axis((0, 0, 0), (1, 1, 0)), 37
+    )
+
+    framed = build_framed_recognition_result(presented)
+
+    assert isinstance(baseline, FramedRecognitionResult)
+    assert isinstance(framed, FramedRecognitionResult)
+    if rectangular:
+        assert baseline.result.prismatic_pockets == framed.result.prismatic_pockets == ()
+        (baseline_pocket,) = baseline.result.pockets
+        (presented_pocket,) = framed.result.pockets
+        assert presented_pocket.body_key == pytest.approx(
+            baseline_pocket.body_key, abs=1e-9
+        )
+        assert replace(presented_pocket, body_key=baseline_pocket.body_key) == baseline_pocket
+    else:
+        assert framed.result.prismatic_pockets == baseline.result.prismatic_pockets
+        assert baseline.result.pockets == framed.result.pockets == ()
+        (pocket,) = framed.result.prismatic_pockets
+        assert (pocket.sides, pocket.depth) == (sides, 8.0)
 
 
 def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():
