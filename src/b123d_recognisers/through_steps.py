@@ -32,8 +32,11 @@ class ThroughStep(Record):
     """One principal-axis rectangular open-profile step spanning a source solid.
 
     ``section`` is the canonical three-point open polyline perpendicular to ``axis``: envelope
-    endpoint, concave corner, envelope endpoint.  Its orientation and both leg dimensions are
-    explicit rather than inferred from unsigned widths.
+    endpoint, concave corner, envelope endpoint. Each pair uses the two non-run coordinates in
+    ascending ``x``, ``y``, ``z`` order (``yz`` for an x run, ``xz`` for y, ``xy`` for z).
+    ``at`` is the caller-coordinate midpoint of the proved empty removed prism. Its orientation,
+    anchor and both leg dimensions are therefore explicit rather than inferred from unsigned
+    widths.
     """
 
     axis: str

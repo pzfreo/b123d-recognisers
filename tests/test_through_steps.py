@@ -144,6 +144,13 @@ def test_rectangular_step_is_rotation_mirror_scale_and_step_roundtrip_stable(tmp
     ):
         assert [step.axis for step in recognise_through_steps(part)] == [axis]
 
+    assert recognise_through_steps(Rot(90, 0, 0) * base) == [
+        ThroughStep("y", 20.0, (12.5, 0.0, 7.5), ((5.0, 15.0), (5.0, -0.0), (20.0, -0.0)))
+    ]
+    assert recognise_through_steps(Rot(0, 90, 0) * base) == [
+        ThroughStep("x", 20.0, (0.0, 7.5, -12.5), ((0.0, -20.0), (0.0, -5.0), (15.0, -5.0)))
+    ]
+
     for scale in (0.001, 1000.0):
         (step,) = recognise_through_steps(_step(scale))
         assert step.length == pytest.approx(20 * scale, abs=max(0.001, scale * 1e-6))

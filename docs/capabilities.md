@@ -354,7 +354,7 @@ invitation to construct values outside that evidence and call them recognized.
 | --- | --- |
 | `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
 | `PairedRampStep` | One principal-axis mirror-ramp cut; `angle` is the common acute ramp angle, `length` its open-to-terminal run, and `at` the original shared-ridge midpoint. A dimensioning consumer projects `2 × angle` at `at` plus the run `length` along `axis`. |
-| `ThroughStep` | One rectangular open-profile cut; `section` preserves both oriented legs and their concave corner, while `length` and `axis` report the complete run. |
+| `ThroughStep` | One rectangular open-profile cut; `section` preserves both oriented legs and their concave corner using the two non-run coordinates in ascending XYZ order (`yz`, `xz`, or `xy`), while `length` and `axis` report the complete run and `at` is the removed-prism midpoint. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar or conical bevel; `turned` is true only for the conical shaft treatment. |
