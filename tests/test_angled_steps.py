@@ -168,6 +168,7 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
     ("rotation_axis", "degrees", "expected_axis"),
     [
         (Axis.X, 0, "x"),
+        (Axis.Y, 180, "x"),
         (Axis.X, 90, "x"),
         (Axis.Y, 90, "z"),
         (Axis.Y, -90, "z"),
