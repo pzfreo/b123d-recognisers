@@ -49,6 +49,7 @@ from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import FaceLevel, RiserEvidence, recognise_risers, step_level_records
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
+from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
 from b123d_recognisers.passages import (
     Passage,
     SectionPassage,
@@ -692,6 +693,17 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("angled_step"),
         FullyAttributed("every returned angled step claims its defining slant face"),
+    ),
+    PhysicalDefinition(
+        FamilyId.PAIRED_RAMP_STEPS,
+        (PairedRampStep,),
+        "paired_ramp_steps",
+        "recognise_paired_ramp_steps",
+        (),
+        prismatic,
+        _simple(lambda s: list(recognise_paired_ramp_steps(s.context.part, ledger=s.writer))),
+        Counted("paired_ramp_step"),
+        FullyAttributed("every returned paired-ramp step claims its two original ramp faces"),
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,

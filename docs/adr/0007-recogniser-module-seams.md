@@ -385,3 +385,10 @@ evidence, reconciliation, registry or result module. `_correspondence_match` rem
 issuer-validating and policy-bearing entry, combining its singleton hypotheses with partition
 hyperedges in one exact-cover proof. Split and merge remain private geometric-partition labels,
 never causal CAD lineage.
+
+## Amendment (Paired-ramp through-side step, issue #297)
+
+`paired_ramp_steps` is one recogniser module above the neutral graph and shared bevel read. It owns
+the mirror-pair, horizontal-side, terminal-topology and arc-direction gates, publishes the record,
+and writes only its two original ramp faces as defining evidence. `_registry` is its sole aggregate
+caller. No sibling recogniser imports it and no new shared recognition substrate is introduced.

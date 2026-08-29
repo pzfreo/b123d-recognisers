@@ -408,3 +408,8 @@ directions and angles use `4 * DIRECTION_TOL` and `4 * ANGLE_TOL`. Scale identit
 swap-stable inclusive predicate `max(s, 1/s) <= 1 + 4*DESCRIPTOR_REL`; the next representable value
 outside refuses. These are correspondence uncertainty bounds only and never alter recognition or
 public-record tolerances.
+
+Issue #297 adds no size threshold. Mirror and run-direction checks compare unit vectors with the
+existing dimensionless angular policy. An opening coordinate is compared with its exact solid
+envelope using `length_tol(part_scale, rel=1e-9, floor=COORD_FLOOR)`; public angle/length/anchor
+rounding remains serialization only and does not admit a candidate.

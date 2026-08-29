@@ -115,6 +115,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge geom_type validates a split terminal boundary, not a face surface",
     ),
+    "paired_ramp_steps": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "shared edge geom_type validates the original linear ramp intersection",
+    ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
@@ -304,6 +308,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "angled_steps:_effective_linear_sides:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge curve kind, not a face surface",
+    ),
+    "paired_ramp_steps:_candidate:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "shared edge curve kind, not a face surface",
     ),
     "chamfers:recognise_chamfers:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,

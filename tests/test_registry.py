@@ -41,7 +41,7 @@ from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionRes
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
-    assert len(PHYSICAL_DEFINITIONS) == 22
+    assert len(PHYSICAL_DEFINITIONS) == 23
     assert len(DERIVED_DEFINITIONS) == 4
     assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
     assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
@@ -59,6 +59,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.TURNED_STEPS,
         FamilyId.CHAMFERS,
         FamilyId.ANGLED_STEPS,
+        FamilyId.PAIRED_RAMP_STEPS,
         FamilyId.FLATS,
         FamilyId.FILLETS,
         FamilyId.COUNTERSINKS,
@@ -98,6 +99,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.RISERS,
         FamilyId.CHAMFERS,
         FamilyId.ANGLED_STEPS,
+        FamilyId.PAIRED_RAMP_STEPS,
         FamilyId.PASSAGES,
         FamilyId.FILLETS,
         FamilyId.PLATES,

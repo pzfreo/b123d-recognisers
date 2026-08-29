@@ -18,6 +18,7 @@ EXPECTED_CASES = {
     "hexagonal_passage",
     "interrupted_and_cross_bores",
     "open_channels",
+    "paired_ramp_step",
     "plates_pads_levels_and_slanted_steps",
     "polygonal_boss",
     "polygonal_stock",

@@ -924,6 +924,64 @@
       ]
     },
     {
+      "census_name": "paired_ramp_step",
+      "census_output": "RecognitionResult.paired_ramp_steps",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/paired_ramp_step/expected.json"
+      ],
+      "id": "paired-ramp-steps",
+      "introduced_in": "0.5.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_paired_ramp_steps",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.paired_ramp_steps"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "PairedRampStep",
+          "qualified_name": "b123d_recognisers.PairedRampStep",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_paired_ramp_steps.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "passage",
       "census_output": "RecognitionResult.section_passages",
       "documentation": [

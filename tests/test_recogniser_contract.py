@@ -50,6 +50,7 @@ from b123d_recognisers import (
     Groove,
     HoleRecord,
     LinearArray,
+    PairedRampStep,
     Plate,
     Pocket,
     PocketArray,
@@ -78,6 +79,7 @@ from b123d_recognisers import (
     recognise_grooves,
     recognise_hole_patterns,
     recognise_holes,
+    recognise_paired_ramp_steps,
     recognise_passages,
     recognise_plates,
     recognise_pocket_patterns,
@@ -125,6 +127,7 @@ _EXPECTED_RECORD_TYPES = {
     StepShoulder,
     TurnedStep,
     RepeatingRadialProfile,
+    PairedRampStep,
 }
 
 
@@ -221,6 +224,13 @@ def _angled_stepped_box():
     return Box(60, 40, 12) - Pos(-20, 20, 6) * Rot(45, 0, 0) * Box(30, 5.657, 5.657)
 
 
+def _paired_ramp_side_cut():
+    cutter = Pos(20, 20, 0) * extrude(
+        Plane.XZ * Polygon((0, -8), (0, 8), (-10, 0)), 25
+    )
+    return Box(40, 40, 30) - cutter
+
+
 def _chamfered_box():
     box = Box(30, 30, 30)
     edge = box.edges().filter_by(Axis.Z).sort_by(Axis.X)[-1]
@@ -291,6 +301,7 @@ def _records_from_recognisers():
         ("hole_patterns:linear", recognise_hole_patterns(recognise_holes(_linear_array_plate()))),
         ("hole_patterns:grid", recognise_hole_patterns(recognise_holes(_grid_plate()))),
         ("recognise_angled_steps", recognise_angled_steps(_angled_stepped_box())),
+        ("recognise_paired_ramp_steps", recognise_paired_ramp_steps(_paired_ramp_side_cut())),
         ("recognise_passages", recognise_passages(_passaged_block())),
         ("recognise_chamfers", recognise_chamfers(_chamfered_box())),
         ("recognise_channels", recognise_channels(channel)),
@@ -382,6 +393,7 @@ def test_part_based_recognisers_are_keyword_only_after_part():
         recognise_countersinks,
         recognise_double_d_bores,
         recognise_angled_steps,
+        recognise_paired_ramp_steps,
         recognise_passages,
         recognise_chamfers,
         recognise_channels,

@@ -13,7 +13,7 @@
         "6": {"families": ["slots"], "name": "Rectangular through slot", "status": "supported"},
         "7": {"families": ["slots"], "name": "Circular through slot", "status": "supported"},
         "8": {"families": [], "name": "Rectangular through step", "status": "unsupported"},
-        "9": {"families": [], "name": "2-sided through step", "status": "unsupported"},
+        "9": {"families": ["paired-ramp-steps"], "name": "2-sided through step", "status": "supported"},
         "10": {"families": [], "name": "Slanted through step", "status": "unsupported"},
         "11": {"families": ["bosses"], "name": "O-ring", "status": "supported"},
         "12": {"families": ["holes"], "name": "Blind hole", "status": "supported"},

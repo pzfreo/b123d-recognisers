@@ -1,48 +1,19 @@
 {
   "canonicalizer_version": 1,
-  "fixture": "angled_blind_step",
+  "fixture": "paired_ramp_step",
   "provenance": {
     "creator": "Paul Fremantle",
     "license": "Apache-2.0",
-    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "source_path": "tests/test_slanted_blind_step.py",
-    "source_repository": "https://github.com/pzfreo/draftwright.git"
+    "source_path": "tests/test_paired_ramp_steps.py",
+    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
   },
   "recognition": {
     "aggregate": {
       "prismatic": {
         "_type": "RecognitionResult",
-        "angled_steps": [
-          {
-            "_type": "AngledStep",
-            "angle": 33.69,
-            "at": [
-              7.5,
-              6.0,
-              20.0
-            ],
-            "axis": "y",
-            "leg1": 15.0,
-            "leg2": 10.0,
-            "length": 12.0
-          }
-        ],
+        "angled_steps": [],
         "bosses": [],
-        "chamfers": [
-          {
-            "_type": "Chamfer",
-            "angle": 45.0,
-            "at": [
-              25.0,
-              48.5,
-              23.5
-            ],
-            "axis": "x",
-            "leg1": 3.0,
-            "leg2": 3.0,
-            "turned": false
-          }
-        ],
+        "chamfers": [],
         "channels": [],
         "countersinks": [],
         "cylinders": [
@@ -56,7 +27,19 @@
         "hole_patterns": [],
         "holes": [],
         "pads": [],
-        "paired_ramp_steps": [],
+        "paired_ramp_steps": [
+          {
+            "_type": "PairedRampStep",
+            "angle": 51.34,
+            "at": [
+              10.0,
+              7.5,
+              0.0
+            ],
+            "axis": "y",
+            "length": 25.0
+          }
+        ],
         "passages": [],
         "plates": [],
         "pocket_patterns": [],
@@ -69,34 +52,36 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
-            "hi_at_envelope": true,
+            "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
             "other_positions": [
-              12.0
+              -5.0
             ],
             "positions": [
-              15.0
+              10.0
             ],
             "tol": 0.5,
             "vertical": false,
-            "z_hi": 25.0,
-            "z_lo": 15.0
+            "z_hi": 0.0,
+            "z_lo": -8.0
           },
           {
             "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
+            "axis": "x",
+            "hi_at_envelope": false,
             "lo_at_envelope": false,
-            "other_axis": "x",
-            "other_positions": [],
+            "other_axis": "y",
+            "other_positions": [
+              -5.0
+            ],
             "positions": [
-              47.0
+              10.0
             ],
             "tol": 0.5,
             "vertical": false,
-            "z_hi": 25.0,
-            "z_lo": 21.99974593
+            "z_hi": 8.0,
+            "z_lo": 0.0
           }
         ],
         "rotational": false,
@@ -136,34 +121,36 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
-            "hi_at_envelope": true,
+            "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
             "other_positions": [
-              12.0
+              -5.0
             ],
             "positions": [
-              15.0
+              10.0
             ],
             "tol": 0.5,
             "vertical": false,
-            "z_hi": 25.0,
-            "z_lo": 15.0
+            "z_hi": 0.0,
+            "z_lo": -8.0
           },
           {
             "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
+            "axis": "x",
+            "hi_at_envelope": false,
             "lo_at_envelope": false,
-            "other_axis": "x",
-            "other_positions": [],
+            "other_axis": "y",
+            "other_positions": [
+              -5.0
+            ],
             "positions": [
-              47.0
+              10.0
             ],
             "tol": 0.5,
             "vertical": false,
-            "z_hi": 25.0,
-            "z_lo": 21.99974593
+            "z_hi": 8.0,
+            "z_lo": 0.0
           }
         ],
         "rotational": true,
@@ -174,9 +161,9 @@
       }
     },
     "feature_census": {
-      "angled_step": 1,
+      "angled_step": 0,
       "boss": 0,
-      "chamfer": 1,
+      "chamfer": 0,
       "channel": 0,
       "countersink": 0,
       "fillet": 0,
@@ -184,7 +171,7 @@
       "groove": 0,
       "hole": 0,
       "hole_pattern": 0,
-      "paired_ramp_step": 0,
+      "paired_ramp_step": 1,
       "passage": 0,
       "plate": 0,
       "pocket": 0,
@@ -193,50 +180,9 @@
       "step": 0
     },
     "individual": {
-      "recognise_angled_steps": [
-        {
-          "_type": "AngledStep",
-          "angle": 33.69,
-          "at": [
-            7.5,
-            6.0,
-            20.0
-          ],
-          "axis": "y",
-          "leg1": 15.0,
-          "leg2": 10.0,
-          "length": 12.0
-        }
-      ],
+      "recognise_angled_steps": [],
       "recognise_bosses": [],
-      "recognise_chamfers": [
-        {
-          "_type": "Chamfer",
-          "angle": 45.0,
-          "at": [
-            25.0,
-            48.5,
-            23.5
-          ],
-          "axis": "x",
-          "leg1": 3.0,
-          "leg2": 3.0,
-          "turned": false
-        },
-        {
-          "_type": "Chamfer",
-          "angle": 33.69,
-          "at": [
-            7.5,
-            6.0,
-            20.0
-          ],
-          "axis": "y",
-          "leg1": 15.0,
-          "leg2": 10.0,
-          "turned": false
-        }
-      ],
+      "recognise_chamfers": [],
       "recognise_channels": [],
       "recognise_countersinks": [],
       "recognise_double_d_bores": [],
@@ -244,26 +190,26 @@
         {
           "_type": "FaceLevel",
           "x_span": [
-            0.0,
-            50.0
+            -20.0,
+            20.0
           ],
           "y_span": [
-            0.0,
-            50.0
+            -20.0,
+            20.0
           ],
-          "z": 0.0
+          "z": -15.0
         },
         {
           "_type": "FaceLevel",
           "x_span": [
-            0.0,
-            50.0
+            -20.0,
+            20.0
           ],
           "y_span": [
-            0.0,
-            46.99974593
+            -20.0,
+            20.0
           ],
-          "z": 25.0
+          "z": 15.0
         }
       ],
       "recognise_fillets": [],
@@ -271,7 +217,19 @@
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
       "recognise_holes": [],
-      "recognise_paired_ramp_steps": [],
+      "recognise_paired_ramp_steps": [
+        {
+          "_type": "PairedRampStep",
+          "angle": 51.34,
+          "at": [
+            10.0,
+            7.5,
+            0.0
+          ],
+          "axis": "y",
+          "length": 25.0
+        }
+      ],
       "recognise_passages": [],
       "recognise_plates": [],
       "recognise_pocket_patterns": [],
@@ -285,34 +243,36 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
-          "hi_at_envelope": true,
+          "hi_at_envelope": false,
           "lo_at_envelope": false,
           "other_axis": "y",
           "other_positions": [
-            12.0
+            -5.0
           ],
           "positions": [
-            15.0
+            10.0
           ],
           "tol": 0.5,
           "vertical": false,
-          "z_hi": 25.0,
-          "z_lo": 15.0
+          "z_hi": 0.0,
+          "z_lo": -8.0
         },
         {
           "_type": "RiserEvidence",
-          "axis": "y",
-          "hi_at_envelope": true,
+          "axis": "x",
+          "hi_at_envelope": false,
           "lo_at_envelope": false,
-          "other_axis": "x",
-          "other_positions": [],
+          "other_axis": "y",
+          "other_positions": [
+            -5.0
+          ],
           "positions": [
-            47.0
+            10.0
           ],
           "tol": 0.5,
           "vertical": false,
-          "z_hi": 25.0,
-          "z_lo": 21.99974593
+          "z_hi": 8.0,
+          "z_lo": 0.0
         }
       ],
       "recognise_slot_patterns": [],
@@ -333,7 +293,7 @@
     }
   },
   "source": {
-    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "repository": "https://github.com/pzfreo/draftwright.git"
+    "commit": "7cea328f2c9b5fe85f67843da17e24c6247adda6",
+    "repository": "https://github.com/pzfreo/b123d-recognisers.git"
   }
 }

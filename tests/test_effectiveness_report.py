@@ -115,7 +115,11 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
         "name": "Through hole",
         "status": "supported",
     }
-    assert mfcadpp[9]["status"] == "unsupported"
+    assert mfcadpp[9] == {
+        "families": ["paired-ramp-steps"],
+        "name": "2-sided through step",
+        "status": "supported",
+    }
     assert mfcadpp[24] == {"families": [], "name": "Stock", "status": "incomparable"}
     manifest = json.loads(
         (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text()

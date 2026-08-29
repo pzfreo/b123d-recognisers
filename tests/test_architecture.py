@@ -28,6 +28,7 @@ PUBLIC_MODULES = {
     "inspection",
     "levels",
     "pads",
+    "paired_ramp_steps",
     "passages",
     "plates",
     "prismatic_pockets",
@@ -57,6 +58,15 @@ MODULE_SEAM_EDGES = {
     # Three recognisers begin with the same two questions of a face. Naming the layer is
     # what lets this map have an opinion about it -- see the module docstring.
     "_bevel": {"_geometry", "_typing"},
+    "paired_ramp_steps": {
+        "_adjacency",
+        "_bevel",
+        "_candidates",
+        "_claims",
+        "_geometry",
+        "_record",
+        "_typing",
+    },
     "_candidates": {"_adjacency", "_effective_surfaces", "_passage_compat"},
     "_correspondence": {
         "_adjacency",
@@ -187,6 +197,7 @@ MODULE_SEAM_EDGES = {
         "grooves",
         "levels",
         "pads",
+        "paired_ramp_steps",
         "passages",
         "plates",
         "polygonal_bosses",
@@ -245,6 +256,8 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    "src/b123d_recognisers/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/experimental_geometry:arc:arc:1": "facade-projection",
     "src/b123d_recognisers/experimental_geometry:smooth_side:smooth_side:1": "facade-projection",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:1": "legacy-contract",

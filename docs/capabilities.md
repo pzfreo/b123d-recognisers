@@ -75,10 +75,10 @@ valid closed solid.
 
 | Status | Physical families | Reason / next boundary |
 | --- | --- | --- |
-| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
+| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `paired_ramp_steps`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
 | Incomplete | `risers`, `step_levels` | Step Levels can span multiple bodies and Riser value deduplication can collapse distinct faces/SolidRefs; both have reviewed structural exclusions pending occurrence-preserving identity or explicit multi-source ownership. |
 
-The registry is the closed machine-checked authority for these 22 internal dispositions. Per-face
+The registry is the closed machine-checked authority for these 23 internal dispositions. Per-face
 tools consume the completed frozen inventory and report records, Candidates, accepted occurrences,
 attributed occurrences and defining faces separately. Corpus labels are diagnostic comparisons and
 never establish ownership.
@@ -100,6 +100,7 @@ compatibility review, and release notes.
 | `recognise_fillets` | Dimension-worthy external cylindrical edge blends and principal-axis toroidal blends on turned stock. | Compound corner rounds, internal rounds, and radii outside configured gates. | Chamfer/fillet/flat golden, turned-fillet tests, and adjacency bound regression. |
 | `recognise_flats` | Planar truncations of proven round stock, including single-D and opposed flat evidence. | Arbitrary planar faces without a cylindrical-stock substrate. | Chamfer/fillet/flat and double-D evidence. |
 | `recognise_grooves` | External reduced-OD bands between two larger coaxial shaft bands, reached directly or across chamfered or radiused lead-ins; `width` is the flat floor, excluding the lead-ins. | Internal grooves, end reliefs without two larger neighbours, and non-turned recesses. | Turned-step/groove golden; chamfered- and radiused-lead-in tests. |
+| `recognise_paired_ramp_steps` | One horizontal, mirror-symmetric pair of original planar ramp faces meeting concavely along its run, with a convex stock-envelope opening and one concave unsmoothed three- or five-sided terminal in the same valid solid. | Z-running top pockets, asymmetric ramps, seven-sided/subdivided terminals, non-principal runs, and multi-solid or ambiguous ownership. | Authored positive, blind/asymmetric/top-pocket/scale negatives; semantic golden; first-500 MFCAD++ development scan. |
 | `recognise_hole_patterns` | Same-spec hole bolt circles, constant-pitch linear arrays, and complete rectangular grids; greedy largest-first ownership. | Pairs, incomplete lattices as grids, uneven circles/rows, mixed specs, and a hole belonging to multiple returned patterns. | Bolt-circle/grid golden, pattern regressions, and scaling sentinel. |
 | `recognise_holes` | Coaxial internal full-cylinder stacks with through/flat/drill-point/unknown bottoms and injected countersink composition. | Slot end caps, partial cylinders, far-side counterbores, and automatic countersink rediscovery when none is injected. | Hole/counterbore/cross-bore goldens and edge regressions. |
 | `recognise_passages` | Writer-free historical principal-axis Passage finder with unchanged schema-v1 values and order. Aggregate `.passages` is the stable accepted-rich projectable subsequence, so a historical partial-span false positive may remain direct-only rather than acquire counterfeit Candidate authority. | Attributed calls fail loudly from 0.4.0; use `recognise_section_passages(..., ledger=...)`. Oblique and unmatched legacy-only occurrences have no aggregate compatibility value. | Exact legacy semantic goldens, the mixed `10060.step` subsequence/disposition/census regression, plus the 0.4 migration/error boundary tests. |
@@ -303,7 +304,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Round; Circular blind step | Fillet | |
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
-| Rectangular / 2-sided / Slanted through step | — | **unrecognised**; see epic 0002 on through steps |
+| 2-sided through step | PairedRampStep | conservative mirror-symmetric, horizontal, three/five-terminal subset |
+| Rectangular / Slanted through step | — | **unrecognised**; tracked under recognition-effectiveness roadmap |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
@@ -322,6 +324,7 @@ invitation to construct values outside that evidence and call them recognized.
 | Public record | Implemented contract boundary |
 | --- | --- |
 | `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
+| `PairedRampStep` | One horizontal mirror-ramp side cut; `angle` is the common acute ramp angle, `length` its open-to-terminal run, and `at` the original shared-ridge midpoint. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar or conical bevel; `turned` is true only for the conical shaft treatment. |

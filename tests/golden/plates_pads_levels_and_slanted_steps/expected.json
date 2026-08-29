@@ -38,6 +38,7 @@
             "z1": 28.0
           }
         ],
+        "paired_ramp_steps": [],
         "passages": [],
         "plates": [
           {
@@ -217,6 +218,7 @@
             "z1": 28.0
           }
         ],
+        "paired_ramp_steps": [],
         "passages": [],
         "plates": [],
         "pocket_patterns": [],
@@ -363,6 +365,7 @@
       "groove": 0,
       "hole": 0,
       "hole_pattern": 0,
+      "paired_ramp_step": 0,
       "passage": 0,
       "plate": 2,
       "pocket": 2,
@@ -444,6 +447,7 @@
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
       "recognise_holes": [],
+      "recognise_paired_ramp_steps": [],
       "recognise_passages": [],
       "recognise_plates": [
         {

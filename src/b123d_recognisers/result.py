@@ -68,6 +68,7 @@ from b123d_recognisers.levels import (
     bounded_end_margin,
 )
 from b123d_recognisers.pads import RaisedPad
+from b123d_recognisers.paired_ramp_steps import PairedRampStep
 from b123d_recognisers.passages import Passage, SectionPassage
 from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
@@ -300,6 +301,9 @@ class RecognitionResult:
     #: Prismatic-only: an angled blind step is the same planar oblique-bevel read as a
     #: chamfer, while the conical bevel on a rotational part cannot establish one.
     angled_steps: tuple[AngledStep, ...]
+    #: Prismatic-only conservative two-ramp through-side cuts. The supported domain is the
+    #: unfragmented mirror-symmetric terminal topology documented by its recogniser.
+    paired_ramp_steps: tuple[PairedRampStep, ...]
     #: Prismatic voids running through the material, one record per closed ring. Discovery still
     #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
     #: proposals, but this public tuple is then projected as ``()``.
@@ -619,6 +623,9 @@ def _project_result(
         risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
         chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
+        paired_ramp_steps=tuple(
+            _records(accepted, FamilyId.PAIRED_RAMP_STEPS, PairedRampStep)
+        ),
         section_passages=(
             tuple(_records(accepted, FamilyId.PASSAGES, SectionPassage))
             if passage_definition.projected(context)
