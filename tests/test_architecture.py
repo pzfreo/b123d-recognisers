@@ -20,6 +20,7 @@ PUBLIC_MODULES = {
     "chamfers",
     "countersinks",
     "experimental_geometry",
+    "explanations",
     "fillets",
     "flats",
     "frames",

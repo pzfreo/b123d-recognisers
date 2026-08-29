@@ -2,6 +2,13 @@
 
 ## 0.5.0
 
+- **Added bounded aggregate recognition explanations.** `build_recognition_report()` returns the
+  unchanged `RecognitionResult` together with per-family evaluated/not-applicable state,
+  proposed/accepted/rejected counts, closed reconciliation reasons and the existing supported
+  residual diagnostics from exactly one run. The report is explicitly non-exhaustive and exposes
+  no graph, candidate or evidence identity. Existing result and framed-recognition contracts are
+  unchanged.
+
 - **Exposed the exact framed-recognition working shape.** Successful
   `FramedRecognitionResult` values now include `part`, the topology-preserving local shape passed
   to recognition. Consumers can therefore lower geometry and interpret records in one coordinate
