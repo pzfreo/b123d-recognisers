@@ -82,7 +82,7 @@ def _four_principal_runs(wire: Wire, normal_axis: int) -> bool:
 
 
 def _rectangular_region(graph: FaceGraph, nodes: frozenset[FaceNode]) -> bool:
-    if not nodes or any(not graph.face(node).is_valid for node in nodes):
+    if not nodes:
         return False
     seed = min(nodes, key=lambda node: node.index)
     plane = axis_aligned_axis(graph.face(seed).wrapped)
@@ -111,10 +111,14 @@ def _rectangular_region(graph: FaceGraph, nodes: frozenset[FaceNode]) -> bool:
     return face.is_valid and _four_principal_runs(combined[0], plane[0])
 
 
-def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
+def _coplanar_region(
+    graph: FaceGraph,
+    seed: FaceNode,
+    planes: dict[FaceNode, tuple[int, float] | None],
+) -> frozenset[FaceNode]:
     """Return the connected same-principal-plane subset containing ``seed``."""
 
-    plane = axis_aligned_axis(graph.face(seed).wrapped)
+    plane = planes[seed]
     if plane is None:
         return frozenset()
     found = {seed}
@@ -124,7 +128,7 @@ def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
         for neighbour in graph.neighbours(current):
             if neighbour in found:
                 continue
-            other = axis_aligned_axis(graph.face(neighbour).wrapped)
+            other = planes[neighbour]
             if (
                 graph.arc(current, neighbour) == "smooth"
                 and other is not None
@@ -136,16 +140,20 @@ def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
     return frozenset(found)
 
 
-def _regions(graph: FaceGraph, solid_nodes: set[FaceNode]) -> list[_Region]:
+def _regions(
+    graph: FaceGraph,
+    solid_nodes: set[FaceNode],
+    planes: dict[FaceNode, tuple[int, float] | None],
+) -> list[_Region]:
     out: list[_Region] = []
     seen: set[FaceNode] = set()
     for seed in sorted(solid_nodes, key=lambda node: node.index):
         if seed in seen:
             continue
-        plane = axis_aligned_axis(graph.face(seed).wrapped)
+        plane = planes[seed]
         if plane is None:
             continue
-        region = _coplanar_region(graph, seed) & solid_nodes
+        region = _coplanar_region(graph, seed, planes) & solid_nodes
         seen.update(region)
         if not _rectangular_region(graph, region):
             continue
@@ -215,6 +223,7 @@ def _common_terminal(
     run: int,
     station: float,
     spans: dict[str, tuple[float, float]],
+    planes: dict[FaceNode, tuple[int, float] | None],
 ) -> bool:
     left_neighbours = {node for source in left.nodes for node in graph.neighbours(source)}
     right_neighbours = {node for source in right.nodes for node in graph.neighbours(source)}
@@ -222,9 +231,9 @@ def _common_terminal(
     for seed in sorted(left_neighbours | right_neighbours, key=lambda node: node.index):
         if seed in seen:
             continue
-        region = _coplanar_region(graph, seed)
+        region = _coplanar_region(graph, seed, planes)
         seen.update(region)
-        plane = axis_aligned_axis(graph.face(seed).wrapped)
+        plane = planes[seed]
         if plane is None or plane[0] != run or abs(plane[1] - station) > SPAN_EPS:
             continue
         if not (region & left_neighbours and region & right_neighbours):
@@ -295,9 +304,13 @@ def _section_and_spans(
     return canonical, spans
 
 
-def _recognise_one(solid: Any, graph: FaceGraph) -> list[tuple[ThroughStep, tuple[FaceNode, ...]]]:
+def _recognise_one(
+    solid: Any,
+    graph: FaceGraph,
+    planes: dict[FaceNode, tuple[int, float] | None],
+) -> list[tuple[ThroughStep, tuple[FaceNode, ...]]]:
     solid_nodes = {graph.require_node(face) for face in solid.faces()}
-    regions = _regions(graph, solid_nodes)
+    regions = _regions(graph, solid_nodes, planes)
     bounds = solid.bounding_box()
     solid_bounds = (
         (bounds.min.X, bounds.max.X),
@@ -308,22 +321,27 @@ def _recognise_one(solid: Any, graph: FaceGraph) -> list[tuple[ThroughStep, tupl
     claimed: set[frozenset[FaceNode]] = set()
     for index, left in enumerate(regions):
         for right in regions[index + 1 :]:
-            if left.normal_axis == right.normal_axis or _relation(graph, left, right) != "concave":
+            if left.normal_axis == right.normal_axis:
                 continue
             run = 3 - left.normal_axis - right.normal_axis
             low, high = left.bounds[run]
-            measured = _section_and_spans(left, right, run, solid_bounds)
-            if measured is None:
-                continue
-            section, spans = measured
+            # Reject non-spanning pairs on cached bounds before asking the graph for arc geometry.
             if (
                 abs(low - right.bounds[run][0]) > SPAN_EPS
                 or abs(high - right.bounds[run][1]) > SPAN_EPS
                 or abs(low - solid_bounds[run][0]) > SPAN_EPS
                 or abs(high - solid_bounds[run][1]) > SPAN_EPS
-                or not _shared_run_is_complete(graph, left, right, run, low, high)
-                or not _common_terminal(graph, left, right, run, low, spans)
-                or not _common_terminal(graph, left, right, run, high, spans)
+                or _relation(graph, left, right) != "concave"
+            ):
+                continue
+            measured = _section_and_spans(left, right, run, solid_bounds)
+            if measured is None:
+                continue
+            section, spans = measured
+            if (
+                not _shared_run_is_complete(graph, left, right, run, low, high)
+                or not _common_terminal(graph, left, right, run, low, spans, planes)
+                or not _common_terminal(graph, left, right, run, high, spans, planes)
             ):
                 continue
             if any(
@@ -365,7 +383,10 @@ def recognise_through_steps(
 
     graph = FaceGraph(part) if ledger is None else ledger.graph
     sink: EvidenceSink | None = None if ledger is None else ledger.sink
-    proposals = [proposal for solid in part.solids() for proposal in _recognise_one(solid, graph)]
+    planes = {node: axis_aligned_axis(graph.face(node).wrapped) for node in graph.nodes}
+    proposals = [
+        proposal for solid in part.solids() for proposal in _recognise_one(solid, graph, planes)
+    ]
     proposals.sort(key=lambda proposal: proposal[0])
     if sink is not None:
         # Validate the complete batch before the first append-only issuance. A stale or foreign
