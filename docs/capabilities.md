@@ -214,6 +214,9 @@ Epic 0005 uses a single versioned
 development reports and MFInstSeg transfer baselines. It records exact numerators and denominators,
 accepted physical occurrences, defining-face agreement, instance recall where available,
 reconciliation drops, bounded diagnostics, empty models, runtime, versions and corpus selection.
+The E5b [`bounded rectangular Through Step result`](benchmarks/effectiveness-mfcadpp-500-e5b-through-step.md)
+adds 39 conservative occurrences with 78/78 correct defining faces and records its paired runtime
+sentinel separately.
 The historical measurements below predate that schema and remain evidence for the narrower claims
 they state; they are not silently promoted into the new baseline.
 

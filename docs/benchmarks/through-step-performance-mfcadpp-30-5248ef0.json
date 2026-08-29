@@ -1,0 +1,297 @@
+{
+  "all_pre_existing_outputs_equal": true,
+  "disabled": {
+    "maximum_seconds": 2.03275798400864,
+    "median_seconds": 0.4065945810143603,
+    "total_seconds": 14.929850479995366
+  },
+  "enabled": {
+    "maximum_seconds": 1.66411798298941,
+    "median_seconds": 0.43549615450319834,
+    "total_seconds": 15.341055360011524
+  },
+  "enabled_to_disabled_total_ratio": 1.0275424647130347,
+  "environment": {
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "format": "b123d-recognisers-through-step-paired-benchmark",
+  "format_version": 1,
+  "implementation_commit": "5248ef04988be38e6367c5b4d77d09b658e5f175",
+  "models": [
+    {
+      "disabled_seconds": 2.03275798400864,
+      "enabled_first": true,
+      "enabled_seconds": 1.66411798298941,
+      "id": "1000.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.38292666399502195,
+      "enabled_first": false,
+      "enabled_seconds": 0.35442219098331407,
+      "id": "10000.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.5441532369877677,
+      "enabled_first": true,
+      "enabled_seconds": 0.48107781700673513,
+      "id": "10007.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.2781713040021714,
+      "enabled_first": false,
+      "enabled_seconds": 0.2858553510159254,
+      "id": "10015.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.2798483000078704,
+      "enabled_first": true,
+      "enabled_seconds": 0.3225214199919719,
+      "id": "1002.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 1.0626161429972854,
+      "enabled_first": false,
+      "enabled_seconds": 1.1171917959873099,
+      "id": "10020.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.39297124798758887,
+      "enabled_first": true,
+      "enabled_seconds": 0.47040758200455457,
+      "id": "10027.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.3313348149822559,
+      "enabled_first": false,
+      "enabled_seconds": 0.3052727850154042,
+      "id": "10033.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.8186921689775772,
+      "enabled_first": true,
+      "enabled_seconds": 0.871669905987801,
+      "id": "10038.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 1
+    },
+    {
+      "disabled_seconds": 0.4097978270146996,
+      "enabled_first": false,
+      "enabled_seconds": 0.4352839280036278,
+      "id": "1004.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.3053454529726878,
+      "enabled_first": true,
+      "enabled_seconds": 0.3473294120049104,
+      "id": "10044.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.437132439983543,
+      "enabled_first": false,
+      "enabled_seconds": 0.5414578820054885,
+      "id": "10046.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.5041293399990536,
+      "enabled_first": true,
+      "enabled_seconds": 0.6024184609996155,
+      "id": "10047.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.49589652600116096,
+      "enabled_first": false,
+      "enabled_seconds": 0.5719494859804399,
+      "id": "10049.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.428595410019625,
+      "enabled_first": true,
+      "enabled_seconds": 0.4705050089978613,
+      "id": "10060.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.6153619220131077,
+      "enabled_first": false,
+      "enabled_seconds": 0.6729519270011224,
+      "id": "10063.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.2815865959855728,
+      "enabled_first": true,
+      "enabled_seconds": 0.32561960897874087,
+      "id": "1007.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.6619545790017582,
+      "enabled_first": false,
+      "enabled_seconds": 0.647368786012521,
+      "id": "10070.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 1
+    },
+    {
+      "disabled_seconds": 0.29367286499473266,
+      "enabled_first": true,
+      "enabled_seconds": 0.30483695401926525,
+      "id": "10077.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.1835682280070614,
+      "enabled_first": false,
+      "enabled_seconds": 0.20195502301794477,
+      "id": "1008.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.403391335014021,
+      "enabled_first": true,
+      "enabled_seconds": 0.49317183200037107,
+      "id": "10092.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.38479227499919944,
+      "enabled_first": false,
+      "enabled_seconds": 0.3861081929935608,
+      "id": "10096.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.45339683900238015,
+      "enabled_first": true,
+      "enabled_seconds": 0.4357083810027689,
+      "id": "10098.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.451868235017173,
+      "enabled_first": false,
+      "enabled_seconds": 0.43510574600077234,
+      "id": "10101.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.6130683849914931,
+      "enabled_first": true,
+      "enabled_seconds": 0.7088137819955591,
+      "id": "10103.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.31676453401451,
+      "enabled_first": false,
+      "enabled_seconds": 0.3077366899815388,
+      "id": "10116.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 1
+    },
+    {
+      "disabled_seconds": 0.35340370002086274,
+      "enabled_first": true,
+      "enabled_seconds": 0.34453634900273755,
+      "id": "10118.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.31162739399587736,
+      "enabled_first": false,
+      "enabled_seconds": 0.3102240310108755,
+      "id": "10119.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.3742457199841738,
+      "enabled_first": true,
+      "enabled_seconds": 0.41870374101563357,
+      "id": "10127.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    },
+    {
+      "disabled_seconds": 0.526779013016494,
+      "enabled_first": false,
+      "enabled_seconds": 0.5067333070037421,
+      "id": "1013.step",
+      "pre_existing_outputs_equal": true,
+      "through_steps": 0
+    }
+  ],
+  "paired_median_delta_seconds": 0.021936447999905795,
+  "selection": [
+    "1000.step",
+    "10000.step",
+    "10007.step",
+    "10015.step",
+    "1002.step",
+    "10020.step",
+    "10027.step",
+    "10033.step",
+    "10038.step",
+    "1004.step",
+    "10044.step",
+    "10046.step",
+    "10047.step",
+    "10049.step",
+    "10060.step",
+    "10063.step",
+    "1007.step",
+    "10070.step",
+    "10077.step",
+    "1008.step",
+    "10092.step",
+    "10096.step",
+    "10098.step",
+    "10101.step",
+    "10103.step",
+    "10116.step",
+    "10118.step",
+    "10119.step",
+    "10127.step",
+    "1013.step"
+  ],
+  "through_steps": 3
+}
