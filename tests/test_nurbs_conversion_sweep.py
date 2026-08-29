@@ -40,8 +40,8 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "effective_primitive_parameter": 1e-8,
     }
     assert report["totals"] == {
-        "fixtures": 21,
-        "faces": 328,
+        "fixtures": 22,
+        "faces": 336,
         "native_occurrences": 1,
         "converted_occurrences": 1,
         "same_family": 1,
@@ -49,7 +49,7 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "changed_record": 0,
         "absent": 0,
         "introduced": 0,
-        "recovered_by_primitive": {"cone": 1, "cylinder": 34, "plane": 293},
+        "recovered_by_primitive": {"cone": 1, "cylinder": 34, "plane": 301},
         "refused_by_reason": {},
     }
     assert all(
