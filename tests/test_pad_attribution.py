@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import copy
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -23,6 +23,7 @@ from build123d import (
     SlotOverall,
     export_step,
     extrude,
+    fillet,
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -37,6 +38,7 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._effective_surfaces import (
     AnalyticSurfaceFact,
+    EffectiveSurfaceIndex,
     MaterialSideRefusalReason,
     RefusedSurfaceFact,
     SurfaceKind,
@@ -45,6 +47,7 @@ from b123d_recognisers._effective_surfaces import (
     SurfaceUseRefusal,
     effective_faces_for_graph,
 )
+from b123d_recognisers.experimental_geometry import GeometryGraph, GeometryProvenance
 from b123d_recognisers.pads import (
     RaisedPad,
     _discover_rectangular_pads,
@@ -78,6 +81,12 @@ def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
 
 def _pad():
     return Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4)
+
+
+def _blended_pad(radius: float = 1.0, *, corners: int = 4):
+    island = Box(30, 20, 4)
+    vertical = tuple(edge for edge in island.edges() if abs(float(edge.tangent_at().Z)) > 0.99)
+    return Box(80, 60, 10) + Pos(0, 0, 7) * fillet(vertical[:corners], radius)
 
 
 def _as_nurbs(part) -> Part:
@@ -562,9 +571,7 @@ def test_pad_surface_refusal_during_evidence_issuance_is_atomic() -> None:
             if material_side:
                 material_calls[node] = material_calls.get(node, 0) + 1
                 if material_calls[node] > 1:
-                    return SurfaceUseRefusal(
-                        node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE
-                    )
+                    return SurfaceUseRefusal(node, MaterialSideRefusalReason.SURFACE_UNAVAILABLE)
             return delegate.use(face, material_side=material_side)
 
     with pytest.raises(ValueError, match="provenance became unavailable"):
@@ -921,7 +928,7 @@ def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> 
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
-def test_private_core_has_one_production_writer_caller_and_two_record_paths() -> None:
+def test_private_core_has_one_production_writer_caller_and_three_record_paths() -> None:
     core_sites: list[tuple[str, ast.Call]] = []
     constructors: list[tuple[str, ast.Call]] = []
     for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
@@ -943,6 +950,7 @@ def test_private_core_has_one_production_writer_caller_and_two_record_paths() ->
     assert [(path, len(call.args)) for path, call in constructors] == [
         ("pads.py", 6),
         ("pads.py", 6),
+        ("pads.py", 6),
     ]
 
 
@@ -952,6 +960,102 @@ def test_terminal_inventory_retains_nonempty_pad_identity() -> None:
     assert len(candidates) == len(product.result.pads) == 1
     assert candidates[0].record is product.result.pads[0]
     assert len(product.evidence.defining_of(candidates[0])) == 5
+
+
+@pytest.mark.parametrize("radius", [0.5, 1.0, 2.0])
+def test_complete_corner_blend_cycle_preserves_exact_pad_and_evidence(radius) -> None:
+    sharp = recognise_rectangular_pads(_pad())
+    part = _blended_pad(radius)
+
+    assert [record.to_dict() for record in recognise_rectangular_pads(part)] == [
+        record.to_dict() for record in sharp
+    ]
+    product = _take_inventory(part)
+    assert [record.to_dict() for record in product.result.pads] == [
+        record.to_dict() for record in sharp
+    ]
+    (candidate,) = product.physical.candidate_set(FamilyId.PADS).candidates
+    defining = product.evidence.defining_of(candidate)
+    assert len(defining) == 5
+    assert all(product.context.graph.is_planar(node) for node in defining)
+    assert all(product.context.surfaces.fact(node).kind is SurfaceKind.PLANE for node in defining)
+
+
+def test_partial_corner_blend_cycle_does_not_select_a_subset() -> None:
+    assert recognise_rectangular_pads(_blended_pad(corners=3)) == []
+
+
+def test_duplicate_corner_chain_refuses_ambiguous_cycle(monkeypatch) -> None:
+    part = _blended_pad()
+    graph = FaceGraph(part)
+    surfaces = EffectiveSurfaceIndex(graph)
+    query = effective_faces_for_graph(graph, surfaces)
+    geometry = GeometryGraph._from_graph(graph, surfaces)
+    original = GeometryGraph.blend_facts
+
+    def duplicated(self):
+        chains = original(self)
+        return (*chains, chains[0])
+
+    monkeypatch.setattr(GeometryGraph, "blend_facts", duplicated)
+    assert _discover_rectangular_pads(part, face_surfaces=query, geometry=geometry) == []
+
+
+def test_non_cylindrical_corner_chain_is_not_selected(monkeypatch) -> None:
+    part = _blended_pad()
+    graph = FaceGraph(part)
+    surfaces = EffectiveSurfaceIndex(graph)
+    query = effective_faces_for_graph(graph, surfaces)
+    geometry = GeometryGraph._from_graph(graph, surfaces)
+    target = next(iter(geometry.blend_facts()[0].blend_faces))
+    original = GeometryGraph.surface_fact
+
+    def planar(self, ref):
+        fact = original(self, ref)
+        return replace(fact, kind=SurfaceKind.PLANE) if ref is target else fact
+
+    monkeypatch.setattr(GeometryGraph, "surface_fact", planar)
+    assert _discover_rectangular_pads(part, face_surfaces=query, geometry=geometry) == []
+
+
+def test_corrupted_pad_blend_expansion_refuses_before_publication(monkeypatch) -> None:
+    part = _blended_pad()
+    ledger = ClaimLedger(FaceGraph(part))
+    surfaces = EffectiveSurfaceIndex(ledger.graph)
+    query = effective_faces_for_graph(ledger.graph, surfaces)
+    geometry = GeometryGraph._from_graph(ledger.graph, surfaces)
+    original = GeometryGraph.collapsed_bridges
+
+    def corrupted(self, selected):
+        bridges = original(self, selected)
+        first = bridges[0]
+        return (
+            replace(first, provenance=GeometryProvenance(frozenset(), first.provenance.boundary)),
+            *bridges[1:],
+        )
+
+    monkeypatch.setattr(GeometryGraph, "collapsed_bridges", corrupted)
+    with pytest.raises(ValueError, match="lost original provenance"):
+        _discover_rectangular_pads(
+            part,
+            writer=ledger.writer,
+            face_surfaces=query,
+            geometry=geometry,
+        )
+    assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+def test_rounded_perforated_top_cannot_borrow_corner_cycle() -> None:
+    assert recognise_rectangular_pads(_blended_pad() - Cylinder(2, 30)) == []
+
+
+def test_blended_pad_survives_step_roundtrip(tmp_path) -> None:
+    path = tmp_path / "blended-pad.step"
+    export_step(_blended_pad(), path)
+    imported = import_step(path)
+    assert [record.to_dict() for record in recognise_rectangular_pads(imported)] == [
+        record.to_dict() for record in recognise_rectangular_pads(_pad())
+    ]
 
 
 def test_nurbs_conversion_recovers_pad_standalone_and_aggregate() -> None:
@@ -1045,11 +1149,7 @@ def test_refused_lower_tier_cannot_introduce_the_upper_pad(monkeypatch) -> None:
         return original(self, node, surface)
 
     monkeypatch.setattr(surfaces._EffectiveFaceSurfaces, "_certify_plane", refuse_lower)
-    part = (
-        Box(80, 60, 10)
-        + Pos(0, 0, 7) * Box(30, 20, 4)
-        + Pos(0, 0, 11) * Box(1, 1, 4)
-    )
+    part = Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4) + Pos(0, 0, 11) * Box(1, 1, 4)
 
     assert recognise_rectangular_pads(part) == []
     assert _take_inventory(part).result.pads == ()

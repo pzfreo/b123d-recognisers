@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import math
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
@@ -25,6 +27,13 @@ from b123d_recognisers._effective_surfaces import (
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, AXIS_ZERO_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
+from b123d_recognisers.experimental_geometry import (
+    AnalyticSurface,
+    BlendFact,
+    FaceRef,
+    GeometryGraph,
+)
+from b123d_recognisers.experimental_geometry import SurfaceKind as InspectionSurfaceKind
 
 #: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
 #: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
@@ -196,14 +205,170 @@ def _recognise_rectangular_pads_one(
     # without belonging to that stack; comparing every different Z discarded the
     # real upper pad.  Disjoint pads may legitimately have any number of heights.
     raw_regions = [
-        RaisedPad(x0, x1, y0, y1, z1, z1)
-        for x0, x1, y0, y1, z1, _face in suppression_tops
+        RaisedPad(x0, x1, y0, y1, z1, z1) for x0, x1, y0, y1, z1, _face in suppression_tops
     ]
     return [
         proposal
         for proposal in proposals
         if not any(_tier_suppresses(proposal.record, other, tol=tol) for other in raw_regions)
     ]
+
+
+def _surface_area(face: FaceLike) -> float:
+    properties = GProp_GProps()
+    BRepGProp.SurfaceProperties_s(face.wrapped, properties)
+    return float(properties.Mass())
+
+
+def _recognise_blended_rectangular_pads_one(
+    part,
+    *,
+    tol: float | None,
+    face_surfaces: EffectiveFaceSurfaceQuery,
+    geometry: GeometryGraph,
+) -> list[_PadProposal]:
+    """Recognise one complete four-corner convex blend cycle around a rectangular pad."""
+
+    tol = _TOL if tol is None else tol
+    bb = part.bounding_box()
+    faces = tuple(part.faces())
+    refs = {geometry.ref(face): face for face in faces}
+    local_refs = set(refs)
+
+    vertical: dict[FaceRef, tuple[FaceLike, Any, tuple[float, float, float]]] = {}
+    for ref, face in refs.items():
+        fact = face_surfaces.fact(face)
+        normal = geometry.normal(ref)
+        if (
+            isinstance(fact, AnalyticSurfaceFact)
+            and fact.kind is SurfaceKind.PLANE
+            and normal is not None
+            and abs(normal[2]) <= AXIS_ZERO_COS
+        ):
+            vertical[ref] = (face, face.bounding_box(), normal)
+
+    eligible_chains: list[BlendFact] = []
+    for chain in geometry.blend_facts():
+        if (
+            chain.side != "convex"
+            or len(chain.blend_faces) != 1
+            or any(len(support) != 1 for support in chain.supports)
+        ):
+            continue
+        left = next(iter(chain.supports[0]))
+        right = next(iter(chain.supports[1]))
+        if left not in vertical or right not in vertical:
+            continue
+        if not chain.blend_faces <= local_refs:
+            continue
+        blend_fact = geometry.surface_fact(next(iter(chain.blend_faces)))
+        if (
+            not isinstance(blend_fact, AnalyticSurface)
+            or blend_fact.kind is not InspectionSurfaceKind.CYLINDER
+        ):
+            continue
+        left_span = geometry.bounds(left)[2]
+        right_span = geometry.bounds(right)[2]
+        if abs(left_span[1] - right_span[1]) > tol:
+            continue
+        eligible_chains.append(chain)
+
+    proposals: list[_PadProposal] = []
+    for top_ref, top_face in refs.items():
+        fact = face_surfaces.fact(top_face)
+        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
+            continue
+        top_use = face_surfaces.use(top_face, material_side=True)
+        if isinstance(top_use, SurfaceUseRefusal) or top_use.material_side is None:
+            continue
+        if top_use.material_side.outward[2] < AXIS_ALIGNED_COS:
+            continue
+        top_bounds = top_face.bounding_box()
+        z1 = round(top_bounds.max.Z, 3)
+        if bb.min.Z + tol >= z1:
+            continue
+
+        adjacent_vertical = set(geometry.neighbours(top_ref)) & set(vertical)
+        roles: dict[str, FaceRef] = {}
+        for ref in adjacent_vertical:
+            _face, bounds, normal = vertical[ref]
+            if abs(bounds.max.Z - z1) > tol:
+                continue
+            if abs(normal[0]) >= AXIS_ALIGNED_COS and abs(normal[1]) <= AXIS_ZERO_COS:
+                role = "x1" if normal[0] > 0 else "x0"
+            elif abs(normal[1]) >= AXIS_ALIGNED_COS and abs(normal[0]) <= AXIS_ZERO_COS:
+                role = "y1" if normal[1] > 0 else "y0"
+            else:
+                continue
+            if role in roles:
+                roles = {}
+                break
+            roles[role] = ref
+        if set(roles) != {"x0", "x1", "y0", "y1"}:
+            continue
+
+        ordered_refs = tuple(roles[name] for name in ("x0", "x1", "y0", "y1"))
+        x0 = round(sum(geometry.bounds(roles["x0"])[0]) / 2, 3)
+        x1 = round(sum(geometry.bounds(roles["x1"])[0]) / 2, 3)
+        y0 = round(sum(geometry.bounds(roles["y0"])[1]) / 2, 3)
+        y1 = round(sum(geometry.bounds(roles["y1"])[1]) / 2, 3)
+        if x1 - x0 <= tol or y1 - y0 <= tol:
+            continue
+
+        expected_pairs = (
+            frozenset((roles["x0"], roles["y0"])),
+            frozenset((roles["x0"], roles["y1"])),
+            frozenset((roles["x1"], roles["y0"])),
+            frozenset((roles["x1"], roles["y1"])),
+        )
+        expected_pair_set = set(expected_pairs)
+        by_pair: dict[frozenset[FaceRef], list[BlendFact]] = {}
+        for chain in eligible_chains:
+            pair = frozenset((next(iter(chain.supports[0])), next(iter(chain.supports[1]))))
+            if pair in expected_pair_set:
+                by_pair.setdefault(pair, []).append(chain)
+        if set(by_pair) != expected_pair_set or any(
+            len(chains) != 1 for chains in by_pair.values()
+        ):
+            continue
+        selected = tuple(by_pair[pair][0] for pair in expected_pairs)
+
+        spans = [geometry.bounds(ref)[2] for ref in ordered_refs]
+        if any(abs(span[1] - z1) > tol for span in spans):
+            continue
+        z0 = round(max(span[0] for span in spans), 3)
+        if z1 - z0 <= tol:
+            continue
+
+        # Four quarter-circle removals explain the rounded top exactly; another trim or hole
+        # cannot borrow the blend cycle's permission to become a Pad.
+        removed = math.fsum((1.0 - math.pi / 4.0) * chain.radius**2 for chain in selected)
+        expected_area = (x1 - x0) * (y1 - y0) - removed
+        if abs(_surface_area(top_face) - expected_area) > max(tol * tol, 0.005 * expected_area):
+            continue
+
+        bridges = geometry.collapsed_bridges(tuple(chain.ref for chain in selected))
+        if len(bridges) != 4:
+            raise ValueError("selected Pad blend cycle has no unique logical bridges")
+        for chain in selected:
+            pair = frozenset((next(iter(chain.supports[0])), next(iter(chain.supports[1]))))
+            matching = [bridge for bridge in bridges if frozenset(bridge.supports) == pair]
+            if len(matching) != 1:
+                raise ValueError("selected Pad blend chain has no unique logical bridge")
+            expected_faces = frozenset((*chain.blend_faces, *chain.supports[0], *chain.supports[1]))
+            if matching[0].provenance.faces != expected_faces or Counter(
+                matching[0].provenance.boundary
+            ) != Counter(chain.boundary):
+                raise ValueError("selected Pad blend bridge lost original provenance")
+
+        proposals.append(
+            _PadProposal(
+                RaisedPad(x0, x1, y0, y1, z0, z1),
+                top_face,
+                tuple((vertical[ref][0],) for ref in ordered_refs),
+            )
+        )
+    return proposals
 
 
 def recognise_rectangular_pads(part: Part, *, tol: float | None = None) -> list[RaisedPad]:
@@ -226,6 +391,7 @@ def _discover_rectangular_pads(
     tol: float | None = None,
     writer: EvidenceWriter | None = None,
     face_surfaces: EffectiveFaceSurfaceQuery | None = None,
+    geometry: GeometryGraph | None = None,
 ) -> list[RaisedPad]:
     """Shared rectangular-pad discovery with optional aggregate evidence issuance."""
 
@@ -237,15 +403,25 @@ def _discover_rectangular_pads(
         )
     elif writer is not None and face_surfaces.run_token is not writer.graph.run_token:
         raise ValueError("Pad surface facts and evidence writer belong to different runs")
+    if geometry is None:
+        geometry = (
+            GeometryGraph._from_graph(writer.graph) if writer is not None else GeometryGraph(part)
+        )
+    elif writer is not None and not geometry._uses_graph(writer.graph):
+        raise ValueError("Pad geometry and evidence writer belong to different runs")
 
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
     occurrences: list[tuple[RaisedPad, tuple[_PadProposal, ...]]] = []
     for solid in sources:
         by_record: dict[RaisedPad, list[_PadProposal]] = {}
-        for proposal in _recognise_rectangular_pads_one(
-            solid, tol=tol, face_surfaces=face_surfaces
-        ):
+        proposals = _recognise_rectangular_pads_one(solid, tol=tol, face_surfaces=face_surfaces)
+        proposals.extend(
+            _recognise_blended_rectangular_pads_one(
+                solid, tol=tol, face_surfaces=face_surfaces, geometry=geometry
+            )
+        )
+        for proposal in proposals:
             by_record.setdefault(proposal.record, []).append(proposal)
         occurrences.extend((record, tuple(group)) for record, group in by_record.items())
     occurrences.sort(key=lambda item: item[0])

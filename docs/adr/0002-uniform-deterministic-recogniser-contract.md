@@ -248,3 +248,14 @@ Z-based `open_sign`; this attribution amendment does not generalize it to arbitr
 An original face may define multiple unequal Pocket records on the same graph-issued solid (nested
 depth readings in established geometry). Equal records collapse only when their complete bound role
 sets are identical; competing assignments refuse before publication.
+
+## Amendment (Rectangular Pad blend-view consumer, issue #277)
+
+`recognise_rectangular_pads` remains the public writer-free facade over the same optional-writer
+core and retains its signature, `RaisedPad` schema, ordering and sharp/native behavior. A second
+proposal route may restore a rectangular Pad interrupted by one complete selected four-corner
+convex blend cycle. It reconstructs the existing x/y wall planes and highest-perimeter-wall base;
+the four authored radii explain the rounded top's exact missing area and are never recognition
+tolerances. Direct and aggregate calls use the same route and return the exact sharp-control
+record. Aggregate defining evidence remains exactly the original rounded top and four planar wall
+roles. Logical nodes and hidden blend faces never enter records or evidence.

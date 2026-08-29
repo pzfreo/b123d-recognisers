@@ -129,3 +129,12 @@ Stock and all other consumers remain base-graph-only.
 Issue #297 adds no shared filter. `FaceGraph` still exposes every face and the shared bevel reader
 still returns every supported single-axis oblique plane. `recognise_paired_ramp_steps` alone applies
 the visible mirror-pair, principal-run, arc, exterior-opening and terminal gates.
+
+## Amendment (Rectangular Pad blend-cycle gate, issue #277)
+
+Issue #277 adds no shared filter. The neutral facade continues to expose every supported blend
+fact or closed refusal. Rectangular Pad alone requires four uniquely oriented planar wall roles,
+one complete four-edge convex singleton cycle, a certified outward planar top whose missing area is
+fully explained by those corner radii, and the existing bounded-island, local-base, tier and
+one-solid rules. Partial, duplicate, competing, concave, multi-node, perforated-top or corrupted
+cycles are declined locally without changing the neutral view or any sibling family.

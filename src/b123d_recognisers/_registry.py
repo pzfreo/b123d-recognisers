@@ -594,6 +594,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                     s.context.part,
                     writer=s.writer,
                     face_surfaces=s.context.face_surfaces,
+                    geometry=s.context.geometry,
                 )
             )
         ),
