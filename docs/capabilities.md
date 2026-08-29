@@ -118,6 +118,14 @@ compatibility review, and release notes.
 | `recognise_slots` | Enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. | Floored pockets, open-ended channels, merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Straight/obround-slot golden, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, and recess-reconciliation regressions. |
 | `recognise_turned_steps` | Two or more contiguous coaxial external cylindrical segments forming a stepped shaft on one axis. | Plain cylinders, non-turned parts, disconnected/mixed-axis segments, and drafting interpretation beyond the geometry profile. | Turned-step/groove golden and turned-step tests. |
 
+The [authored boundary-blend sweep](benchmarks/blend-boundary-sweep.md) holds each feature body
+fixed while filleting only the boundary used by its named recogniser. Across fifteen valid blended
+variants, Polygonal Boss preserves its exact records through its existing selected blend view;
+Hole and Groove remain present with legitimately changed dimensions; Pocket consistently
+reclassifies to Prismatic Pocket; and Rectangular Pad disappears. This is prioritisation evidence
+for a later Pad consumer, not a support claim or a change to the closed registry. Any such consumer
+still requires its own provenance, refusal, aggregate, corpus and runtime evidence.
+
 ## Surface-representation support is family-specific
 
 Most recognisers above still classify faces by their native surface type. A face is a hole wall

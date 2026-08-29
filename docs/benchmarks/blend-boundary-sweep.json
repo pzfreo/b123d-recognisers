@@ -1,0 +1,1493 @@
+{
+  "baseline_commit": "5569f1405c87be8156e20726152d481623fee6c0",
+  "cases": {
+    "blind-pocket-floor-perimeter": {
+      "blend_kind": "cylindrical fillet",
+      "boundary": "complete floor perimeter",
+      "expected_family": "pockets",
+      "plain_records": {
+        "fillets": [],
+        "grooves": [],
+        "holes": [],
+        "pads": [],
+        "pockets": [
+          {
+            "body_key": [
+              -40.0,
+              -30.0,
+              -10.0,
+              40.0,
+              30.0,
+              10.0,
+              90600.0,
+              16099.999999999996
+            ],
+            "d_hi": 10.0,
+            "d_lo": 1.0,
+            "depth": 9.0,
+            "edge_anchored": false,
+            "hi": 15.0,
+            "length": 30.0,
+            "lo": -15.0,
+            "long_axis": "x",
+            "open_sign": 1,
+            "w_center": 0.0,
+            "width": 20.0,
+            "width_axis": "y"
+          }
+        ],
+        "polygonal_bosses": [],
+        "prismatic_pockets": []
+      },
+      "variants": [
+        {
+          "expected_records": [],
+          "introduced_families": [
+            "prismatic_pockets"
+          ],
+          "outcome": "reclassified",
+          "radius_model_units": 0.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  5.75
+                ],
+                "axis": "z",
+                "depth": 8.5,
+                "open_sign": 1,
+                "section": [
+                  [
+                    -15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    10.0
+                  ],
+                  [
+                    -15.0,
+                    10.0
+                  ]
+                ],
+                "sides": 4
+              }
+            ]
+          },
+          "removed_families": [
+            "pockets"
+          ]
+        },
+        {
+          "expected_records": [],
+          "introduced_families": [
+            "prismatic_pockets"
+          ],
+          "outcome": "reclassified",
+          "radius_model_units": 1.0,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  6.0
+                ],
+                "axis": "z",
+                "depth": 8.0,
+                "open_sign": 1,
+                "section": [
+                  [
+                    -15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    10.0
+                  ],
+                  [
+                    -15.0,
+                    10.0
+                  ]
+                ],
+                "sides": 4
+              }
+            ]
+          },
+          "removed_families": [
+            "pockets"
+          ]
+        },
+        {
+          "expected_records": [],
+          "introduced_families": [
+            "prismatic_pockets"
+          ],
+          "outcome": "reclassified",
+          "radius_model_units": 1.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  6.25
+                ],
+                "axis": "z",
+                "depth": 7.5,
+                "open_sign": 1,
+                "section": [
+                  [
+                    -15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    -10.0
+                  ],
+                  [
+                    15.0,
+                    10.0
+                  ],
+                  [
+                    -15.0,
+                    10.0
+                  ]
+                ],
+                "sides": 4
+              }
+            ]
+          },
+          "removed_families": [
+            "pockets"
+          ]
+        }
+      ]
+    },
+    "polygonal-boss-side-boundary": {
+      "blend_kind": "cylindrical fillet",
+      "boundary": "all six vertical side intersections",
+      "expected_family": "polygonal_bosses",
+      "plain_records": {
+        "fillets": [],
+        "grooves": [],
+        "holes": [],
+        "pads": [],
+        "pockets": [],
+        "polygonal_bosses": [
+          {
+            "across_flats": 34.641,
+            "axis": "z",
+            "base": 5.0,
+            "center": [
+              -0.0,
+              -0.0,
+              20.0
+            ],
+            "flat_centres": [
+              [
+                -15.0,
+                -8.66,
+                20.0
+              ],
+              [
+                -0.0,
+                -17.321,
+                20.0
+              ],
+              [
+                15.0,
+                -8.66,
+                20.0
+              ],
+              [
+                15.0,
+                8.66,
+                20.0
+              ],
+              [
+                0.0,
+                17.321,
+                20.0
+              ],
+              [
+                -15.0,
+                8.66,
+                20.0
+              ]
+            ],
+            "flat_directions": [
+              [
+                -0.866,
+                -0.5,
+                0.0
+              ],
+              [
+                -0.0,
+                -1.0,
+                0.0
+              ],
+              [
+                0.866,
+                -0.5,
+                0.0
+              ],
+              [
+                0.866,
+                0.5,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                -0.866,
+                0.5,
+                0.0
+              ]
+            ],
+            "side_count": 6,
+            "top": 35.0
+          }
+        ],
+        "prismatic_pockets": []
+      },
+      "variants": [
+        {
+          "expected_records": [
+            {
+              "across_flats": 34.641,
+              "axis": "z",
+              "base": 5.0,
+              "center": [
+                0.0,
+                0.0,
+                20.0
+              ],
+              "flat_centres": [
+                [
+                  -15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  -17.321,
+                  20.0
+                ],
+                [
+                  15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  15.0,
+                  8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  17.321,
+                  20.0
+                ],
+                [
+                  -15.0,
+                  8.66,
+                  20.0
+                ]
+              ],
+              "flat_directions": [
+                [
+                  -0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  -0.0,
+                  -1.0,
+                  0.0
+                ],
+                [
+                  0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  0.866,
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  -0.866,
+                  0.5,
+                  0.0
+                ]
+              ],
+              "side_count": 6,
+              "top": 35.0
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "same-family",
+          "radius_model_units": 0.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [
+              {
+                "across_flats": 34.641,
+                "axis": "z",
+                "base": 5.0,
+                "center": [
+                  0.0,
+                  0.0,
+                  20.0
+                ],
+                "flat_centres": [
+                  [
+                    -15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    -17.321,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    17.321,
+                    20.0
+                  ],
+                  [
+                    -15.0,
+                    8.66,
+                    20.0
+                  ]
+                ],
+                "flat_directions": [
+                  [
+                    -0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    -0.0,
+                    -1.0,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    -0.866,
+                    0.5,
+                    0.0
+                  ]
+                ],
+                "side_count": 6,
+                "top": 35.0
+              }
+            ],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "across_flats": 34.641,
+              "axis": "z",
+              "base": 5.0,
+              "center": [
+                0.0,
+                0.0,
+                20.0
+              ],
+              "flat_centres": [
+                [
+                  -15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  -17.321,
+                  20.0
+                ],
+                [
+                  15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  15.0,
+                  8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  17.321,
+                  20.0
+                ],
+                [
+                  -15.0,
+                  8.66,
+                  20.0
+                ]
+              ],
+              "flat_directions": [
+                [
+                  -0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  -0.0,
+                  -1.0,
+                  0.0
+                ],
+                [
+                  0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  0.866,
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  -0.866,
+                  0.5,
+                  0.0
+                ]
+              ],
+              "side_count": 6,
+              "top": 35.0
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "same-family",
+          "radius_model_units": 1.0,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [
+              {
+                "across_flats": 34.641,
+                "axis": "z",
+                "base": 5.0,
+                "center": [
+                  0.0,
+                  0.0,
+                  20.0
+                ],
+                "flat_centres": [
+                  [
+                    -15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    -17.321,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    17.321,
+                    20.0
+                  ],
+                  [
+                    -15.0,
+                    8.66,
+                    20.0
+                  ]
+                ],
+                "flat_directions": [
+                  [
+                    -0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    -0.0,
+                    -1.0,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    -0.866,
+                    0.5,
+                    0.0
+                  ]
+                ],
+                "side_count": 6,
+                "top": 35.0
+              }
+            ],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "across_flats": 34.641,
+              "axis": "z",
+              "base": 5.0,
+              "center": [
+                0.0,
+                0.0,
+                20.0
+              ],
+              "flat_centres": [
+                [
+                  -15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  -17.321,
+                  20.0
+                ],
+                [
+                  15.0,
+                  -8.66,
+                  20.0
+                ],
+                [
+                  15.0,
+                  8.66,
+                  20.0
+                ],
+                [
+                  -0.0,
+                  17.321,
+                  20.0
+                ],
+                [
+                  -15.0,
+                  8.66,
+                  20.0
+                ]
+              ],
+              "flat_directions": [
+                [
+                  -0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  -0.0,
+                  -1.0,
+                  0.0
+                ],
+                [
+                  0.866,
+                  -0.5,
+                  0.0
+                ],
+                [
+                  0.866,
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                [
+                  -0.866,
+                  0.5,
+                  0.0
+                ]
+              ],
+              "side_count": 6,
+              "top": 35.0
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "same-family",
+          "radius_model_units": 2.0,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [
+              {
+                "across_flats": 34.641,
+                "axis": "z",
+                "base": 5.0,
+                "center": [
+                  0.0,
+                  0.0,
+                  20.0
+                ],
+                "flat_centres": [
+                  [
+                    -15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    -17.321,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    -8.66,
+                    20.0
+                  ],
+                  [
+                    15.0,
+                    8.66,
+                    20.0
+                  ],
+                  [
+                    -0.0,
+                    17.321,
+                    20.0
+                  ],
+                  [
+                    -15.0,
+                    8.66,
+                    20.0
+                  ]
+                ],
+                "flat_directions": [
+                  [
+                    -0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    -0.0,
+                    -1.0,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    -0.5,
+                    0.0
+                  ],
+                  [
+                    0.866,
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    -0.866,
+                    0.5,
+                    0.0
+                  ]
+                ],
+                "side_count": 6,
+                "top": 35.0
+              }
+            ],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        }
+      ]
+    },
+    "rectangular-pad-side-boundary": {
+      "blend_kind": "cylindrical fillet",
+      "boundary": "all four vertical side intersections",
+      "expected_family": "pads",
+      "plain_records": {
+        "fillets": [],
+        "grooves": [],
+        "holes": [],
+        "pads": [
+          {
+            "x0": 10.0,
+            "x1": 30.0,
+            "y0": 10.0,
+            "y1": 25.0,
+            "z0": 4.0,
+            "z1": 13.0
+          }
+        ],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "prismatic_pockets": []
+      },
+      "variants": [
+        {
+          "expected_records": [],
+          "introduced_families": [],
+          "outcome": "absent",
+          "radius_model_units": 0.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": [
+            "pads"
+          ]
+        },
+        {
+          "expected_records": [],
+          "introduced_families": [
+            "fillets"
+          ],
+          "outcome": "absent",
+          "radius_model_units": 1.0,
+          "records": {
+            "fillets": [
+              {
+                "at": [
+                  10.293,
+                  10.293,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  10.293,
+                  24.707,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  29.707,
+                  10.293,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  29.707,
+                  24.707,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": false
+              }
+            ],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": [
+            "pads"
+          ]
+        },
+        {
+          "expected_records": [],
+          "introduced_families": [
+            "fillets"
+          ],
+          "outcome": "absent",
+          "radius_model_units": 2.0,
+          "records": {
+            "fillets": [
+              {
+                "at": [
+                  10.586,
+                  10.586,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 2.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  10.586,
+                  24.414,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 2.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  29.414,
+                  10.586,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 2.0,
+                "turned": false
+              },
+              {
+                "at": [
+                  29.414,
+                  24.414,
+                  8.5
+                ],
+                "axis": "z",
+                "radius": 2.0,
+                "turned": false
+              }
+            ],
+            "grooves": [],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": [
+            "pads"
+          ]
+        }
+      ]
+    },
+    "ring-groove-lead-ins": {
+      "blend_kind": "toroidal fillet",
+      "boundary": "both groove-floor rims",
+      "expected_family": "grooves",
+      "plain_records": {
+        "fillets": [],
+        "grooves": [
+          {
+            "at": [
+              0.0,
+              0.0,
+              11.25
+            ],
+            "axis": "z",
+            "diameter": 24.0,
+            "width": 2.5
+          }
+        ],
+        "holes": [],
+        "pads": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "prismatic_pockets": []
+      },
+      "variants": [
+        {
+          "expected_records": [
+            {
+              "at": [
+                0.0,
+                0.0,
+                11.5
+              ],
+              "axis": "z",
+              "diameter": 24.0,
+              "width": 2.0
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "changed-record",
+          "radius_model_units": 0.5,
+          "records": {
+            "fillets": [],
+            "grooves": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  11.5
+                ],
+                "axis": "z",
+                "diameter": 24.0,
+                "width": 2.0
+              }
+            ],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "at": [
+                0.0,
+                0.0,
+                11.625
+              ],
+              "axis": "z",
+              "diameter": 24.0,
+              "width": 1.75
+            }
+          ],
+          "introduced_families": [
+            "fillets"
+          ],
+          "outcome": "changed-record",
+          "radius_model_units": 0.75,
+          "records": {
+            "fillets": [
+              {
+                "at": [
+                  -14.78,
+                  0.0,
+                  9.78
+                ],
+                "axis": "z",
+                "radius": 0.75,
+                "turned": true
+              },
+              {
+                "at": [
+                  -12.22,
+                  0.0,
+                  10.22
+                ],
+                "axis": "z",
+                "radius": 0.75,
+                "turned": true
+              }
+            ],
+            "grooves": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  11.625
+                ],
+                "axis": "z",
+                "diameter": 24.0,
+                "width": 1.75
+              }
+            ],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "at": [
+                0.0,
+                0.0,
+                11.75
+              ],
+              "axis": "z",
+              "diameter": 24.0,
+              "width": 1.5
+            }
+          ],
+          "introduced_families": [
+            "fillets"
+          ],
+          "outcome": "changed-record",
+          "radius_model_units": 1.0,
+          "records": {
+            "fillets": [
+              {
+                "at": [
+                  -14.707,
+                  0.0,
+                  9.707
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": true
+              },
+              {
+                "at": [
+                  -12.293,
+                  0.0,
+                  10.293
+                ],
+                "axis": "z",
+                "radius": 1.0,
+                "turned": true
+              }
+            ],
+            "grooves": [
+              {
+                "at": [
+                  0.0,
+                  0.0,
+                  11.75
+                ],
+                "axis": "z",
+                "diameter": 24.0,
+                "width": 1.5
+              }
+            ],
+            "holes": [],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        }
+      ]
+    },
+    "through-hole-rims": {
+      "blend_kind": "toroidal fillet",
+      "boundary": "both rims of both through bores",
+      "expected_family": "holes",
+      "plain_records": {
+        "fillets": [],
+        "grooves": [],
+        "holes": [
+          {
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 20.0,
+            "diameter": 8.0,
+            "location": [
+              -18.0,
+              0.0,
+              10.0
+            ],
+            "spotface": null
+          },
+          {
+            "axis": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "bottom": "through",
+            "cbore": null,
+            "csink": null,
+            "depth": 20.0,
+            "diameter": 8.0,
+            "location": [
+              18.0,
+              0.0,
+              10.0
+            ],
+            "spotface": null
+          }
+        ],
+        "pads": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "prismatic_pockets": []
+      },
+      "variants": [
+        {
+          "expected_records": [
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 19.0,
+              "diameter": 8.0,
+              "location": [
+                -18.0,
+                0.0,
+                9.5
+              ],
+              "spotface": null
+            },
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 19.0,
+              "diameter": 8.0,
+              "location": [
+                18.0,
+                0.0,
+                9.5
+              ],
+              "spotface": null
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "changed-record",
+          "radius_model_units": 0.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 19.0,
+                "diameter": 8.0,
+                "location": [
+                  -18.0,
+                  0.0,
+                  9.5
+                ],
+                "spotface": null
+              },
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 19.0,
+                "diameter": 8.0,
+                "location": [
+                  18.0,
+                  0.0,
+                  9.5
+                ],
+                "spotface": null
+              }
+            ],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 18.0,
+              "diameter": 8.0,
+              "location": [
+                -18.0,
+                0.0,
+                9.0
+              ],
+              "spotface": null
+            },
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 18.0,
+              "diameter": 8.0,
+              "location": [
+                18.0,
+                0.0,
+                9.0
+              ],
+              "spotface": null
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "changed-record",
+          "radius_model_units": 1.0,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 18.0,
+                "diameter": 8.0,
+                "location": [
+                  -18.0,
+                  0.0,
+                  9.0
+                ],
+                "spotface": null
+              },
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 18.0,
+                "diameter": 8.0,
+                "location": [
+                  18.0,
+                  0.0,
+                  9.0
+                ],
+                "spotface": null
+              }
+            ],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        },
+        {
+          "expected_records": [
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 17.0,
+              "diameter": 8.0,
+              "location": [
+                -18.0,
+                0.0,
+                8.5
+              ],
+              "spotface": null
+            },
+            {
+              "axis": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "bottom": "through",
+              "cbore": null,
+              "csink": null,
+              "depth": 17.0,
+              "diameter": 8.0,
+              "location": [
+                18.0,
+                0.0,
+                8.5
+              ],
+              "spotface": null
+            }
+          ],
+          "introduced_families": [],
+          "outcome": "changed-record",
+          "radius_model_units": 1.5,
+          "records": {
+            "fillets": [],
+            "grooves": [],
+            "holes": [
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 17.0,
+                "diameter": 8.0,
+                "location": [
+                  -18.0,
+                  0.0,
+                  8.5
+                ],
+                "spotface": null
+              },
+              {
+                "axis": [
+                  0.0,
+                  0.0,
+                  -1.0
+                ],
+                "bottom": "through",
+                "cbore": null,
+                "csink": null,
+                "depth": 17.0,
+                "diameter": 8.0,
+                "location": [
+                  18.0,
+                  0.0,
+                  8.5
+                ],
+                "spotface": null
+              }
+            ],
+            "pads": [],
+            "pockets": [],
+            "polygonal_bosses": [],
+            "prismatic_pockets": []
+          },
+          "removed_families": []
+        }
+      ]
+    }
+  },
+  "performance_budget_seconds": 30.0,
+  "performance_measurement": {
+    "environment": "Python 3.12.14, Linux, shared development host",
+    "measured_at": "2026-08-29",
+    "median_seconds": 11.518,
+    "repeat": 3,
+    "workload": "five plain controls plus fifteen blended aggregate inventories"
+  },
+  "radii_role": "authored input geometry, not recognition thresholds",
+  "schema": 1,
+  "selection": "authored cases; only each named recogniser boundary is blended",
+  "totals": {
+    "absent": 3,
+    "cases": 5,
+    "changed-record": 6,
+    "reclassified": 3,
+    "same-family": 3,
+    "variants": 15
+  }
+}
