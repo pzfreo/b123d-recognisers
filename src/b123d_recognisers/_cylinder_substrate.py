@@ -36,7 +36,12 @@ _STACK_GAP_FRAC = 0.0125
 def analyse_cylinders(
     part: Part, *, face_surfaces: EffectiveFaceSurfaceQuery | None = None
 ) -> CylinderInventory:
-    """Return (z_cyls, cross_cyls) from OCP cylindrical face analysis.
+    """Return ``(z_cyls, cross_cyls)`` from native or certified effective cylinders.
+
+    Native cylinders retain the historical adaptor path. Non-native faces are admitted only when
+    the run-owned effective query recovers a cylinder and independently certifies its radial
+    material side. When *face_surfaces* is omitted that query is created lazily, so native-only
+    callers pay no extra graph/recovery cost.
 
     Each entry is a dict with keys: diameter, axis (dominant axis letter),
     u_extent (the face's angular span in radians — partial spans are fillets),

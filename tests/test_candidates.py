@@ -10,7 +10,7 @@ from math import sqrt
 from types import SimpleNamespace
 
 import pytest
-from build123d import Box, Face, Plane, Pos, Rot
+from build123d import Box, Cylinder, Face, Plane, Pos, Rot
 
 from b123d_recognisers import recognise_angled_steps
 from b123d_recognisers._adjacency import FaceGraph
@@ -113,7 +113,7 @@ def test_physical_evidence_requires_one_valid_solid_but_legacy_remains_compatibl
     assert open_ledger.defining_of(open_legacy) == frozenset(open_ledger.graph.nodes)
 
 
-def test_surface_evidence_is_pad_only_complete_unique_and_material_sided() -> None:
+def test_surface_evidence_is_migrated_family_only_complete_unique_and_material_sided() -> None:
     part = Box(10, 10, 10)
     graph = FaceGraph(part)
     query = effective_faces_for_graph(graph)
@@ -160,6 +160,37 @@ def test_surface_evidence_is_pad_only_complete_unique_and_material_sided() -> No
         )
     with pytest.raises(ValueError, match="require effective-surface evidence"):
         ClaimLedger(graph).sink.propose(FamilyId.PADS, Record(5), defining=[first])
+
+    plane_with_side = query.use(first_face, material_side=True)
+    assert isinstance(plane_with_side, SurfaceUse)
+    with pytest.raises(ValueError, match="incompatible material side"):
+        ClaimLedger(graph).sink.propose(
+            FamilyId.HOLES,
+            Record(6),
+            defining=[first],
+            surfaces=[plane_with_side],
+        )
+
+    cylinder = Cylinder(4, 10)
+    cylinder_graph = FaceGraph(cylinder)
+    cylinder_query = effective_faces_for_graph(cylinder_graph)
+    curved = max(cylinder.faces(), key=lambda face: face.area)
+    external_use = cylinder_query.use(curved, material_side=True)
+    assert isinstance(external_use, SurfaceUse)
+    curved_node = cylinder_graph.require_node(curved)
+    with pytest.raises(ValueError, match="incompatible material side"):
+        ClaimLedger(cylinder_graph).sink.propose(
+            FamilyId.HOLES,
+            Record(7),
+            defining=[curved_node],
+            surfaces=[external_use],
+        )
+    with pytest.raises(ValueError, match="require effective-surface evidence"):
+        ClaimLedger(cylinder_graph).sink.propose(
+            FamilyId.BOSSES,
+            Record(8),
+            defining=[curved_node],
+        )
 
 
 def test_observations_freeze_without_becoming_candidates_or_claims() -> None:

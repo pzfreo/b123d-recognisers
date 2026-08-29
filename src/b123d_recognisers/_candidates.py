@@ -23,7 +23,12 @@ from types import MappingProxyType
 from typing import Generic, TypeVar, cast
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
-from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceUse, _validate_surface_use
+from b123d_recognisers._effective_surfaces import (
+    SurfaceKind,
+    SurfaceProvenance,
+    SurfaceUse,
+    _validate_surface_use,
+)
 from b123d_recognisers._passage_compat import CompatibilitySnapshot, PassageCompatibilityView
 
 RecordT = TypeVar("RecordT")
@@ -555,9 +560,14 @@ class _CandidateIssuer:
                 raise ValueError("Pad evidence requires exactly one material-side certificate")
             if family in (FamilyId.HOLES, FamilyId.BOSSES):
                 expected_sign = -1 if family is FamilyId.HOLES else 1
+                recovered = tuple(
+                    snapshot
+                    for snapshot in snapshots
+                    if snapshot.surface.provenance is SurfaceProvenance.RECOVERED
+                )
                 if (
                     any(snapshot.surface.kind is not SurfaceKind.CYLINDER for snapshot in snapshots)
-                    or len(material) != len(snapshots)
+                    or any(snapshot.material_side is None for snapshot in recovered)
                     or any(
                         certificate.candidate_outward_sign != expected_sign
                         for certificate in material
@@ -566,8 +576,8 @@ class _CandidateIssuer:
                     raise ValueError(
                         f"{family.value} cylinder evidence has incompatible material side"
                     )
-        elif family is FamilyId.PADS and nodes:
-            raise ValueError("Pad candidates require effective-surface evidence")
+        elif family in (FamilyId.PADS, FamilyId.HOLES, FamilyId.BOSSES) and nodes:
+            raise ValueError(f"{family.value} candidates require effective-surface evidence")
         if family is FamilyId.PASSAGES:
             if not isinstance(compatibility, PassageCompatibilityView):
                 raise ValueError("passage candidates require a compatibility fact")

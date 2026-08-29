@@ -233,7 +233,9 @@ enter `analyse_cylinders` only through the restricted effective-face query and o
 fact plus material-side certificate has been issued. Aggregate orchestration supplies its existing
 run-owned query, so graph, recovery and material-side authority are derived once. Hole and Boss
 Candidates retain one cylinder `SurfaceUse` for every defining original face; the issuer requires
-complete one-to-one coverage, cylinder kind, and respectively negative or positive radial polarity.
+complete one-to-one coverage and cylinder kind. Recovered dependencies additionally require the
+respectively negative or positive radial certificate; native facts retain their established
+oriented-cylinder compatibility contract without paying for a duplicate solid-probe proof.
 Standalone record-only calls remain geometry facades and do not expose these run-local handles.
 
 This amendment changes no Hole, Boss or Flat feature predicate. Exact OCCT-converted cylinders are
