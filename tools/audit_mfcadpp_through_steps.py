@@ -41,6 +41,9 @@ from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
 _AXES = "xyz"
+_PUBLISHED_VERSION = (
+    "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
+)
 _GATE_NAMES = (
     "no_orthogonal_rectangular_pair",
     "not_full_run",
@@ -387,6 +390,7 @@ def main() -> int:
     parser.add_argument("root", type=Path)
     parser.add_argument("--class-id", type=int, default=8)
     parser.add_argument("--limit", type=int, default=500)
+    parser.add_argument("--dataset-version", default=_PUBLISHED_VERSION)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -441,6 +445,12 @@ def main() -> int:
         "format": "b123d-recognisers-mfcadpp-through-step-miss-audit",
         "format_version": 1,
         "implementation_commit": _commit(),
+        "dataset": {
+            "name": "MFCAD++",
+            "version": args.dataset_version,
+            "partition": "test",
+            "root": str(args.root.resolve()),
+        },
         "class_id": args.class_id,
         "component_derivation": (
             "connected components of same-class original faces under shared-edge adjacency"
