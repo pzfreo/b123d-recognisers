@@ -2,6 +2,31 @@
 
 ## 0.5.0
 
+- **Connected canonical cylinder recovery to Hole and Boss recognition.** Exact cylinders
+  represented by eligible B-spline or Bezier faces can now participate through the same aggregate
+  records and original-face evidence as native cylinders, after a version-pinned OCCT recovery
+  certificate and an independent material-side proof. Unsupported OCCT versions, marginal trim
+  coverage, ambiguous ownership and unproved orientation continue to fail closed; native-cylinder
+  behavior remains on its compatibility path.
+
+- **Recognised rounded rectangular pads through complete corner-blend evidence.** A rectangular
+  pad whose four vertical corners are replaced by one complete convex blend cycle now produces the
+  same `RaisedPad` record as its sharp control. The route requires four unique wall roles, an
+  outward planar top, exact missing-area explanation and complete original-face provenance;
+  partial, competing, concave, perforated or ambiguous cycles remain excluded.
+
+- **Added circular blind-step recognition.** `recognise_circular_blind_steps()` reports inward
+  quarter-cylindrical principal-axis corner cuts with one concave planar terminal, an opening at
+  the opposite stock-envelope end, two convex transverse joins and an empty terminal-sector sweep.
+  Full bores, through or doubly capped grooves, external/oblique/tapered walls, obstructed sectors
+  and cross-solid evidence are rejected. The aggregate and capability manifest expose the new
+  immutable `CircularBlindStep` family.
+
+- **Preserved principal-axis polygonal stock through framed recognition.** `PolygonalStock` now
+  accepts a valid regular-prism extrusion along local X, Y or Z and records that choice in its
+  existing `axis` field. Existing direct Z records remain unchanged; this does not generalise
+  attached `PolygonalBoss` recognition or arbitrary caller-space axes.
+
 - **Added conservative rectangular through-step recognition.**
   `recognise_through_steps()` returns immutable `ThroughStep` records for exactly two
   principal-plane wall regions joined by one complete concave seam and open across both ends of a
