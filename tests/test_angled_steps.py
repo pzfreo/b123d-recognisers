@@ -17,6 +17,7 @@ two on size, the equal-legs assertions here would keep passing and
 
 from __future__ import annotations
 
+import pytest
 from attribution_audit import attributed_run, unattributed_run
 from build123d import (
     Align,
@@ -33,7 +34,9 @@ from build123d import (
     Vector,
     Wire,
     chamfer,
+    export_step,
     extrude,
+    import_step,
 )
 
 from b123d_recognisers import (
@@ -159,6 +162,60 @@ def test_a_wedge_stopped_inside_the_part_is_an_angled_step():
     assert step.angle == 45.0
     # The cutter spans x = -35..-5 and the block stops at -30, so 25 mm of it is inside.
     assert step.length == 25.0
+
+
+@pytest.mark.parametrize(
+    ("rotation_axis", "degrees", "expected_axis"),
+    [
+        (Axis.X, 0, "x"),
+        (Axis.Y, 180, "x"),
+        (Axis.X, 90, "x"),
+        (Axis.Y, 90, "z"),
+        (Axis.Y, -90, "z"),
+        (Axis.Z, 90, "y"),
+        (Axis.Z, -90, "y"),
+    ],
+)
+def test_angled_step_is_covariant_across_principal_axes_and_signs(
+    rotation_axis: Axis,
+    degrees: float,
+    expected_axis: str,
+) -> None:
+    """A signed axis permutation changes coordinates, never physical eligibility."""
+
+    part = Pos(17, -11, 9) * _blind().rotate(rotation_axis, degrees)
+
+    steps = recognise_angled_steps(part)
+    result = build_recognition_result(part)
+
+    assert len(steps) == 1
+    assert steps[0].axis == expected_axis
+    assert (steps[0].leg1, steps[0].leg2, steps[0].angle, steps[0].length) == (
+        4.0,
+        4.0,
+        45.0,
+        25.0,
+    )
+    assert result.angled_steps == tuple(steps)
+    assert result.chamfers == ()
+
+
+def test_principal_y_angled_step_survives_step_round_trip(tmp_path) -> None:
+    part = Pos(17, -11, 9) * _blind().rotate(Axis.Z, 90)
+    path = tmp_path / "principal-y-angled-step.step"
+
+    assert export_step(part, path)
+    imported = import_step(path)
+
+    steps = recognise_angled_steps(imported)
+    assert len(steps) == 1
+    assert steps[0].axis == "y"
+    assert (steps[0].leg1, steps[0].leg2, steps[0].angle, steps[0].length) == (
+        4.0,
+        4.0,
+        45.0,
+        25.0,
+    )
 
 
 def test_successful_step_owns_only_the_slant() -> None:

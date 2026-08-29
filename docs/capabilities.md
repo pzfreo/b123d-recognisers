@@ -215,6 +215,9 @@ Epic 0005 uses a single versioned
 development reports and MFInstSeg transfer baselines. It records exact numerators and denominators,
 accepted physical occurrences, defining-face agreement, instance recall where available,
 reconciliation drops, bounded diagnostics, empty models, runtime, versions and corpus selection.
+The E2 [`Angled Step frame-axis audit`](benchmarks/e2-angled-step-axis-audit.md) proves authored
+signed X/Y/Z covariance and classifies the four historical framed losses as internally oblique
+geometry in two models, with no production relaxation.
 The E5b [`bounded rectangular Through Step result`](benchmarks/effectiveness-mfcadpp-500-e5b-through-step.md)
 added 39 conservative occurrences with 78/78 correct defining faces. The E5d
 [`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
