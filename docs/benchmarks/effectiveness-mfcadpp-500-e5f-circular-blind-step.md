@@ -32,7 +32,9 @@ All 118 raw proposals survive. Reconciliation removes exactly 114 Fillets whose 
 wall is contained in a surviving Circular Blind Step's two-face evidence. Fillets therefore move
 from 170 to 56; Plates remain 234. Every other pre-existing physical-family count is unchanged.
 The paired enabled/disabled run independently confirms that every output other than the new tuple
-and this named Fillet reconciliation is identical on all 500 models.
+and this named Fillet reconciliation is identical on all 500 models. Its strengthened exact check
+also proves the enabled Fillet tuple equals the disabled tuple minus precisely the candidates with
+the named Circular Blind Step disposition.
 
 The taxonomy transition makes cross-version aggregate mapped-class and mismatch totals
 non-comparable for classes 21 and 23: v1 treated class-21 faces as Fillet evidence, while v2 treats
@@ -55,18 +57,20 @@ and enclosed lookalikes, invalid shells, foreign evidence and cross-solid compos
 
 ## Runtime result
 
-The paired MFCAD++-500 sentinel finds 118 raw and accepted occurrences, reconciles 114 Fillets and
-preserves every other output. Enabled time is 260.180 seconds versus 252.830 disabled: ratio
-1.0291, with a paired median delta of 0.0106 seconds.
+The paired MFCAD++-500 sentinel at review-fix commit `df4e4c1` finds 118 raw and accepted
+occurrences, reconciles exactly 114 Fillets and preserves every other output. Enabled time is
+232.800 seconds versus 226.653 disabled: ratio 1.0271, with a paired median delta of 0.0087
+seconds.
 
 The complete 13-part NIST/Gramel census finds no Circular Blind Steps and preserves every
-pre-existing output. Enabled time is 213.330 seconds versus 205.907 disabled: ratio 1.0360, with a
-paired median delta of 0.1150 seconds. Both workloads remain below the 1.10 gate.
+pre-existing output. Enabled time is 189.311 seconds versus 191.522 disabled: ratio 0.9885, with a
+paired median delta of -0.1106 seconds. Both workloads remain below the 1.10 gate, and both report
+`all_fillet_reconciliations_exact=true`.
 
 Detailed artifacts:
 
-- [`MFCAD++ paired performance`](circular-blind-step-performance-mfcadpp-500-6946256.json)
-- [`NIST/Gramel paired performance`](circular-blind-step-performance-census-6946256.json)
+- [`MFCAD++ paired performance`](circular-blind-step-performance-mfcadpp-500-df4e4c1.json)
+- [`NIST/Gramel paired performance`](circular-blind-step-performance-census-df4e4c1.json)
 
 ## Reproduction and transfer status
 
@@ -82,10 +86,10 @@ uv run python tools/run_effectiveness_baseline.py \
 uv run python tools/benchmark_circular_blind_steps.py mfcadpp \
   --root /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
   --limit 500 \
-  --output docs/benchmarks/circular-blind-step-performance-mfcadpp-500-6946256.json
+  --output docs/benchmarks/circular-blind-step-performance-mfcadpp-500-df4e4c1.json
 
 uv run python tools/benchmark_circular_blind_steps.py census \
-  --output docs/benchmarks/circular-blind-step-performance-census-6946256.json
+  --output docs/benchmarks/circular-blind-step-performance-census-df4e4c1.json
 ```
 
 MFInstSeg was not inspected or used for development. At validation time both requested candidate
