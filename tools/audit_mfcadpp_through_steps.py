@@ -30,6 +30,8 @@ from b123d_recognisers.result import _take_inventory  # noqa: E402
 from b123d_recognisers.through_steps import (  # noqa: E402
     SPAN_EPS,
     _common_terminal,
+    _four_principal_runs,
+    _Region,
     _regions,
     _relation,
     _section_and_spans,
@@ -60,6 +62,9 @@ class ComponentAnatomy:
     surface_counts: tuple[tuple[str, int], ...]
     principal_plane_axes: tuple[tuple[str, int], ...]
     nonprincipal_planar_faces: int
+    rectangular_outer_faces: int
+    faces_with_inner_wires: int
+    faces_with_curved_edges: int
     internal_arc_counts: tuple[tuple[str, int], ...]
     boundary_arc_counts: tuple[tuple[str, int], ...]
     inferred_run_axis: str | None
@@ -82,6 +87,9 @@ class ComponentAnatomy:
                 count for _axis, count in self.principal_plane_axes
             ),
             "nonprincipal_planar_faces": self.nonprincipal_planar_faces,
+            "rectangular_outer_faces": self.rectangular_outer_faces,
+            "faces_with_inner_wires": self.faces_with_inner_wires,
+            "faces_with_curved_edges": self.faces_with_curved_edges,
             "internal_arc_counts": self.internal_arc_counts,
             "has_inferred_run_axis": self.inferred_run_axis is not None,
             "full_run_faces": self.full_run_faces,
@@ -190,6 +198,16 @@ def describe_component(graph: FaceGraph, nodes: tuple[FaceNode, ...]) -> Compone
     surface_counts = _counts([graph.face(node).geom_type.name for node in ordered])
     principal = _counts([_AXES[plane[0]] for node in ordered if (plane := planes[node])])
     nonprincipal = sum(graph.is_planar(node) and planes[node] is None for node in ordered)
+    rectangular_outer = sum(
+        plane is not None
+        and _four_principal_runs(graph.face(node).outer_wire(), plane[0])
+        for node in ordered
+        if (plane := planes[node]) is not None
+    )
+    faces_with_inner_wires = sum(len(graph.face(node).wires()) > 1 for node in ordered)
+    faces_with_curved_edges = sum(
+        any(edge.geom_type.name != "LINE" for edge in graph.edges(node)) for node in ordered
+    )
     internal = _counts(
         [
             str(graph.arc(left, right))
@@ -221,6 +239,21 @@ def describe_component(graph: FaceGraph, nodes: tuple[FaceNode, ...]) -> Compone
     )
     if best is not None:
         inferred_run = best.run
+    diagnostic = best
+    if best is None and len(ordered) == 2 and len(component_plane_axes) == 2:
+        raw_regions = []
+        for node in ordered:
+            plane = planes[node]
+            assert plane is not None
+            raw_regions.append(_Region((node,), plane[0], plane[1], graph.bounds(node)))
+        diagnostic = _probe_pair(
+            graph,
+            solid,
+            raw_regions[0],
+            raw_regions[1],
+            regions,
+            planes,
+        )
     bounds = _solid_bounds(solid)
     full_run_faces = (
         None
@@ -254,9 +287,12 @@ def describe_component(graph: FaceGraph, nodes: tuple[FaceNode, ...]) -> Compone
         internal_arc_counts=internal,
         boundary_arc_counts=boundary,
         inferred_run_axis=None if inferred_run is None else _AXES[inferred_run],
-        full_run_faces=full_run_faces if best is None else best.full_run_faces,
-        terminal_count=terminal_count if best is None else best.terminal_count,
-        exact_empty_prism=None if best is None else best.exact_empty_prism,
+        rectangular_outer_faces=rectangular_outer,
+        faces_with_inner_wires=faces_with_inner_wires,
+        faces_with_curved_edges=faces_with_curved_edges,
+        full_run_faces=full_run_faces if diagnostic is None else diagnostic.full_run_faces,
+        terminal_count=terminal_count if diagnostic is None else diagnostic.terminal_count,
+        exact_empty_prism=None if diagnostic is None else diagnostic.exact_empty_prism,
         first_failed_gate=failure,
     )
 
