@@ -7,7 +7,7 @@ prioritisation evidence and was not promoted to a correctness claim.
 
 ## Reproduction
 
-The canonical report was produced from implementation commit `3a202ac` on Linux, Python 3.12.14,
+The canonical report was produced from implementation commit `9b44cf0` on Linux, Python 3.12.14,
 build123d 0.11.1 and OCP/OCCT 7.9.3.1:
 
 ```bash
@@ -16,7 +16,7 @@ uv run python tools/run_effectiveness_baseline.py \
   --limit 500 \
   --dataset-version \
   'MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823' \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-e3-cylinders-3a202ac.json
+  --output docs/benchmarks/effectiveness-mfcadpp-500-e3-cylinders-9b44cf0.json
 ```
 
 Selection remains the first 500 unique lexical model IDs with selection hash
@@ -33,23 +33,26 @@ preserve their records while moving only the recovered-input boundary.
 
 | runtime | E5a baseline | recovered-cylinder head | change |
 | --- | ---: | ---: | ---: |
-| median/model | 0.4070 s | 0.4223 s | +3.75% |
-| p95/model | 0.8077 s | 0.7941 s | -1.69% |
-| total/500 | 223.50 s | 220.90 s | -1.16% |
-| maximum | 1.2514 s | 1.4787 s | +18.16% |
+| median/model | 0.4070 s | 0.3642 s | -10.53% |
+| p95/model | 0.8077 s | 0.7229 s | -10.51% |
+| total/500 | 223.50 s | 196.43 s | -12.11% |
+| maximum | 1.2514 s | 1.2293 s | -1.77% |
 
-The distribution does not show a package-level regression: total and p95 improve while median and
-one noisy maximum move in opposite directions. An earlier implementation accidentally sent every
-native plane through effective recovery and took 414.31 seconds; it was rejected before review.
-The final scan enters recovery only for B-spline/Bezier faces, and a contract test proves a supplied
-effective query is untouched for native analytic input.
+Two pre-final diagnostic runs measured 252.53 and 227.28 seconds total while producing the same
+summary hash; late implementation runs measured 193.30 and 196.43 seconds. That spread demonstrates
+substantial host/cache variance, so this increment makes no performance-improvement claim despite
+the favorable canonical sample. An earlier implementation accidentally sent every native plane
+through effective recovery and took 414.31 seconds; it was rejected before review. The final scan
+enters recovery only for B-spline/Bezier faces. Contract tests prove the effective query is untouched
+for native analytic input and standalone native Hole/Boss calls never build the lazy recovery graph.
 
 ## Corpus-independent and converted-input evidence
 
 - Exact OCCT-converted internal and external cylinders retain diameter, axis, span and radial role.
 - A converted external cylinder reaches the existing Boss consumer with the exact native
-  `BossRecord`; a converted bore reaches Hole discovery. Hole end classification remains a named
-  downstream native-surface boundary and is not claimed as generally representation-transparent.
+  `BossRecord`; a converted bore reaches Hole discovery. A paired certified recovered-plane query
+  gives exact converted through Holes exact native record parity, including non-principal rotation,
+  through standalone and aggregate routes. Other recovered end primitives remain out of scope.
 - Hole and Boss aggregate Candidates retain the exact original recovered cylindrical faces plus
   their recovery and radial material-side certificates. The issuer rejects wrong primitive kind,
   missing dependency coverage and the wrong internal/external sign.
