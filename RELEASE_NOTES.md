@@ -2,6 +2,13 @@
 
 ## 0.5.0
 
+- **Added conservative paired-ramp step recognition.** `recognise_paired_ramp_steps()` returns
+  immutable `PairedRampStep` records for principal-axis, mirror-symmetric two-ramp cuts with one
+  proved exterior opening and closing terminal in a valid solid. The aggregate exposes them as
+  `RecognitionResult.paired_ramp_steps`, and the census key is `paired_ramp_step`. The first
+  supported domain deliberately excludes asymmetric, non-principal and fragmented occurrences.
+  Each record carries the common ramp angle, run axis/length and shared-ridge callout anchor.
+
 - **Added bounded aggregate recognition explanations.** `build_recognition_report()` returns the
   unchanged `RecognitionResult` together with per-family evaluated/not-applicable state,
   proposed/accepted/rejected counts, closed reconciliation reasons and the existing supported

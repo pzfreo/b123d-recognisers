@@ -703,7 +703,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         prismatic,
         _simple(lambda s: list(recognise_paired_ramp_steps(s.context.part, ledger=s.writer))),
         Counted("paired_ramp_step"),
-        FullyAttributed("every returned paired-ramp step claims its two original ramp faces"),
+        FullyAttributed(
+            "every returned paired-ramp step claims both original ramps and its closing terminal"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,

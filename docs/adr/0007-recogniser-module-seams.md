@@ -389,6 +389,7 @@ never causal CAD lineage.
 ## Amendment (Paired-ramp through-side step, issue #297)
 
 `paired_ramp_steps` is one recogniser module above the neutral graph and shared bevel read. It owns
-the mirror-pair, horizontal-side, terminal-topology and arc-direction gates, publishes the record,
-and writes only its two original ramp faces as defining evidence. `_registry` is its sole aggregate
-caller. No sibling recogniser imports it and no new shared recognition substrate is introduced.
+the mirror-pair, principal-run, terminal-topology and arc-direction gates, publishes the record,
+and writes its two original ramp faces plus the required closing terminal as defining evidence.
+`_registry` is its sole aggregate caller. No sibling recogniser imports it and no new shared
+recognition substrate is introduced.

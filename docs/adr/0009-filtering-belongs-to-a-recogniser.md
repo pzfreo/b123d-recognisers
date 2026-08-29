@@ -128,4 +128,4 @@ Stock and all other consumers remain base-graph-only.
 
 Issue #297 adds no shared filter. `FaceGraph` still exposes every face and the shared bevel reader
 still returns every supported single-axis oblique plane. `recognise_paired_ramp_steps` alone applies
-the visible mirror-pair, horizontal-side, arc, exterior-opening and terminal gates.
+the visible mirror-pair, principal-run, arc, exterior-opening and terminal gates.

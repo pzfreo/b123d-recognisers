@@ -66,12 +66,12 @@ def _candidate(
     right: FaceNode,
     left_read: tuple,
     right_read: tuple,
-) -> PairedRampStep | None:
+) -> tuple[PairedRampStep, FaceNode] | None:
     axis, left_normal, left_span, _left_hi, _left_lo = left_read
     right_axis, right_normal, right_span, _right_hi, _right_lo = right_read
-    # This is a side cut in the package's established prismatic Z frame. A Z-running mirror
-    # pair is a top-opening triangular pocket, which has identical local adjacency.
-    if right_axis != axis or axis == 2:
+    # No world-axis semantic gate belongs here: the same physical boundary remains the same
+    # occurrence under a rigid principal-axis permutation (ADR 0011).
+    if right_axis != axis:
         return None
     cross = tuple(index for index in (0, 1, 2) if index != axis)
     opposed = tuple(index for index in cross if left_normal[index] * right_normal[index] < 0.0)
@@ -88,6 +88,8 @@ def _candidate(
 
     shared = graph.shared_edges(left, right)
     if len(shared) != 1 or shared[0].geom_type != GeomType.LINE:
+        return None
+    if len(graph.edges(left)) != 4 or len(graph.edges(right)) != 4:
         return None
     try:
         tangent = shared[0].tangent_at()
@@ -150,17 +152,29 @@ def _candidate(
         (edge_box.min.Y, edge_box.max.Y),
         (edge_box.min.Z, edge_box.max.Z),
     )
+    run_tolerance = length_tol(
+        max(
+            left_span[axis][1] - left_span[axis][0],
+            right_span[axis][1] - right_span[axis][0],
+        ),
+        rel=1e-9,
+        floor=1e-6,
+    )
+    shared_run = edge_bounds[axis]
+    if any(
+        abs(face_run[end] - shared_run[end]) > run_tolerance
+        for face_run in (left_span[axis], right_span[axis])
+        for end in (0, 1)
+    ):
+        return None
     at = (
         round(0.5 * sum(edge_bounds[0]), 3),
         round(0.5 * sum(edge_bounds[1]), 3),
         round(0.5 * sum(edge_bounds[2]), 3),
     )
-    length = min(
-        left_span[axis][1] - left_span[axis][0],
-        right_span[axis][1] - right_span[axis][0],
-    )
+    length = shared_run[1] - shared_run[0]
     angle = math.degrees(math.atan2(abs(left_normal[opposed[0]]), abs(left_normal[same[0]])))
-    return PairedRampStep("xyz"[axis], round(angle, 2), round(length, 3), at)
+    return PairedRampStep("xyz"[axis], round(angle, 2), round(length, 3), at), internal[0]
 
 
 def recognise_paired_ramp_steps(
@@ -177,7 +191,7 @@ def recognise_paired_ramp_steps(
         except BevelReject:
             continue
 
-    found: list[tuple[PairedRampStep, FaceNode, FaceNode]] = []
+    found: list[tuple[PairedRampStep, FaceNode, FaceNode, FaceNode]] = []
     for left in graph.nodes:
         left_read = bevels.get(left)
         if left_read is None:
@@ -185,11 +199,16 @@ def recognise_paired_ramp_steps(
         for right in graph.neighbours(left):
             if right.index <= left.index or right not in bevels:
                 continue
-            record = _candidate(graph, left, right, left_read, bevels[right])
-            if record is not None:
-                found.append((record, left, right))
+            candidate = _candidate(graph, left, right, left_read, bevels[right])
+            if candidate is not None:
+                record, terminal = candidate
+                found.append((record, left, right, terminal))
     found.sort(key=lambda item: item[0])
     if sink is not None:
-        for record, left, right in found:
-            sink.propose(FamilyId.PAIRED_RAMP_STEPS, record, defining=(left, right))
-    return [record for record, _left, _right in found]
+        for record, left, right, terminal in found:
+            sink.propose(
+                FamilyId.PAIRED_RAMP_STEPS,
+                record,
+                defining=(left, right, terminal),
+            )
+    return [record for record, _left, _right, _terminal in found]
