@@ -479,13 +479,30 @@ def test_step_and_reversed_traversal_keep_identity(monkeypatch, tmp_path: Path) 
     _claim(part)
 
 
+@pytest.mark.parametrize("rotation", [Rot(0, 90, 0), Rot(90, 0, 0)])
+def test_principal_axis_step_round_trip_preserves_record_and_complete_evidence(
+    rotation, tmp_path: Path
+) -> None:
+    part = rotation * build_fixture()
+    expected = recognise_polygonal_stock(part)
+    path = tmp_path / "principal-stock.step"
+    assert export_step(part, path)
+
+    imported = import_step(path)
+    product = _take_inventory(imported)
+
+    assert list(product.result.polygonal_stock) == expected
+    candidates = product.physical.candidate_set(FamilyId.POLYGONAL_STOCK).candidates
+    assert len(candidates) == 1
+    assert set(product.evidence.defining_of(candidates[0])) == set(product.context.graph.nodes)
+
+
 @pytest.mark.parametrize(
     "part",
     [
         Box(20, 20, 20),
         extrude(RegularPolygon(20, 5), 30),
         extrude(RegularPolygon(20, 8), 30),
-        Rot(0, 90, 0) * build_fixture(),
         Compound([build_fixture(), Pos(100, 0, 0) * build_fixture()]),
         Shell(build_fixture().faces()),
     ],
@@ -495,6 +512,33 @@ def test_excluded_shapes_issue_no_stock_candidate(part) -> None:
     assert recognise_polygonal_stock(part) == []
     assert _discover_polygonal_stock(part, writer=ledger.writer) == []
     assert ledger.candidate_set(FamilyId.POLYGONAL_STOCK).candidates == ()
+
+
+@pytest.mark.parametrize(
+    ("axis", "part"),
+    [
+        ("x", Rot(0, 90, 0) * build_fixture()),
+        ("y", Rot(90, 0, 0) * build_fixture()),
+    ],
+)
+def test_principal_axis_stock_retains_complete_boundary(axis, part) -> None:
+    public = recognise_polygonal_stock(part)
+    aggregate = _take_inventory(part)
+
+    assert len(public) == len(aggregate.result.polygonal_stock) == 1
+    assert public == list(aggregate.result.polygonal_stock)
+    record = public[0]
+    assert record.axis == axis
+    assert record.side_count == 6
+    axis_index = {"x": 0, "y": 1}[axis]
+    assert record.top - record.base == pytest.approx(30.0)
+    assert all(direction[axis_index] == 0.0 for direction in record.flat_directions)
+    candidates = aggregate.physical.candidate_set(FamilyId.POLYGONAL_STOCK).candidates
+    assert len(candidates) == 1
+    assert candidates[0].record is aggregate.result.polygonal_stock[0]
+    defining = aggregate.evidence.defining_of(candidates[0])
+    assert len(defining) == 8
+    assert set(defining) == set(aggregate.context.graph.nodes)
 
 
 def test_wrong_graph_writer_inventory_and_body_fail_before_issue(monkeypatch) -> None:

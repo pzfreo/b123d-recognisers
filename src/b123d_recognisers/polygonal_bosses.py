@@ -13,7 +13,7 @@ import math
 from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
@@ -75,7 +75,7 @@ class PolygonalBoss(Record):
 class PolygonalStock(Record):
     """A whole solid proved to be a regular hexagonal prism.
 
-    The current recogniser emits exactly ``axis="z"`` and ``side_count=6``.
+    The recogniser emits one principal ``axis`` and exactly ``side_count=6``.
     This is deliberately distinct from :class:`PolygonalBoss`: its two caps terminate the
     complete solid, rather than one cap being an attachment to supporting material.
     """
@@ -107,7 +107,34 @@ class _CapSelection:
     """One unique terminal cap retained with the coordinate it establishes."""
 
     node: FaceRef
-    z: float
+    coordinate: float
+
+    @property
+    def z(self) -> float:
+        """Legacy private spelling retained for the Z-axis helper contract."""
+        return self.coordinate
+
+
+_AXIS_INDEX = {"x": 0, "y": 1, "z": 2}
+_TRANSVERSE_INDICES = {"x": (1, 2), "y": (0, 2), "z": (0, 1)}
+
+
+def _point_coordinate(point: Any, index: int) -> float:
+    return float((point.X, point.Y, point.Z)[index])
+
+
+def _rounded(value: float, digits: int) -> float:
+    rounded = round(value, digits)
+    return 0.0 if rounded == 0.0 else rounded
+
+
+def _flat_direction(
+    heading: tuple[float, float, float], transverse_indices: tuple[int, int]
+) -> tuple[float, float, float]:
+    values = [0.0, 0.0, 0.0]
+    values[transverse_indices[0]] = _rounded(heading[0], 3)
+    values[transverse_indices[1]] = _rounded(heading[1], 3)
+    return (values[0], values[1], values[2])
 
 
 def _connected_components(
@@ -142,6 +169,42 @@ def _heading(graph: GeometryGraph, node: FaceRef) -> tuple[float, float, float]:
     return cast("tuple[float, float, float]", graph.normal(node))
 
 
+def _cap_coordinate(
+    graph: GeometryGraph,
+    node: FaceRef,
+    tol: float,
+    *,
+    axis_index: int,
+    positive: bool,
+    lower_than: float | None,
+    higher_than: float | None,
+) -> float | None:
+    """The axial coordinate of *face* if it can serve as a terminal cap, else ``None``.
+
+    A cap is planar, faces squarely along the selected principal axis in the required direction,
+    sits at one axial coordinate, and lies on the correct side of the wall it terminates.
+    """
+
+    if not graph.is_planar(node):
+        return None
+    normal = graph.normal(node)
+    if normal is None or (
+        normal[axis_index] < AXIS_ALIGNED_COS
+        if positive
+        else normal[axis_index] > -AXIS_ALIGNED_COS
+    ):
+        return None
+    coordinate_lo, coordinate_hi = graph.bounds(node)[axis_index]
+    if coordinate_hi - coordinate_lo > tol:
+        return None
+    coordinate = (coordinate_lo + coordinate_hi) / 2
+    if lower_than is not None and coordinate > lower_than + tol:
+        return None
+    if higher_than is not None and coordinate < higher_than - tol:
+        return None
+    return coordinate
+
+
 def _cap_z(
     graph: GeometryGraph,
     node: FaceRef,
@@ -151,28 +214,16 @@ def _cap_z(
     lower_than: float | None,
     higher_than: float | None,
 ) -> float | None:
-    """The Z of *face* if it can serve as a terminal cap, else ``None``.
-
-    A cap is planar, faces squarely along Z in the required direction, sits at a single Z rather
-    than spanning a range, and lies on the correct side of the wall it terminates.
-    """
-
-    if not graph.is_planar(node):
-        return None
-    normal = graph.normal(node)
-    if normal is None or (
-        normal[2] < AXIS_ALIGNED_COS if positive else normal[2] > -AXIS_ALIGNED_COS
-    ):
-        return None
-    z_lo, z_hi = graph.bounds(node)[2]
-    if z_hi - z_lo > tol:
-        return None
-    z = (z_lo + z_hi) / 2
-    if lower_than is not None and z > lower_than + tol:
-        return None
-    if higher_than is not None and z < higher_than - tol:
-        return None
-    return z
+    """Compatibility spelling for the Z-axis unit contract."""
+    return _cap_coordinate(
+        graph,
+        node,
+        tol,
+        axis_index=2,
+        positive=positive,
+        lower_than=lower_than,
+        higher_than=higher_than,
+    )
 
 
 def _common_cap(
@@ -181,6 +232,7 @@ def _common_cap(
     adjacent_to: Callable[[FaceRef], set[FaceRef]],
     tol: float,
     *,
+    axis_index: int = 2,
     upper: bool,
     positive: bool,
     wall_lo: float,
@@ -199,8 +251,12 @@ def _common_cap(
     for side in component:
         choices = []
         for other in adjacent_to(side) - component_set:
-            z_lo, z_hi = graph.bounds(other)[2]
-            reaches_end = abs(z_lo - wall_hi) <= tol if upper else abs(z_hi - wall_lo) <= tol
+            coordinate_lo, coordinate_hi = graph.bounds(other)[axis_index]
+            reaches_end = (
+                abs(coordinate_lo - wall_hi) <= tol
+                if upper
+                else abs(coordinate_hi - wall_lo) <= tol
+            )
             if reaches_end:
                 choices.append(other)
         if len(choices) != 1:
@@ -217,10 +273,11 @@ def _common_cap(
         _CapSelection(node, cap)
         for node in candidates
         if (
-            cap := _cap_z(
+            cap := _cap_coordinate(
                 graph,
                 node,
                 tol,
+                axis_index=axis_index,
                 positive=positive,
                 lower_than=None if upper else wall_lo,
                 higher_than=wall_hi if upper else None,
@@ -232,12 +289,14 @@ def _common_cap(
 
 
 def _side_rings(
-    vertical: list[FaceRef],
+    sides: list[FaceRef],
     graph: GeometryGraph,
     tol: float,
     shares_edge: Callable[[FaceRef, FaceRef], bool],
+    *,
+    axis_index: int = 2,
 ) -> list[tuple[FaceRef, ...]]:
-    """Group side faces into rings: connected, and spanning the same Z range.
+    """Group side faces into rings: connected, and spanning the same axial range.
 
     Both conditions are needed. Sharing an edge alone would chain a boss into the plate it
     stands on; sharing a Z span alone would merge two separate bosses of equal height into one
@@ -245,15 +304,17 @@ def _side_rings(
     """
 
     def same_span(i: FaceRef, j: FaceRef) -> bool:
-        lo_i, hi_i = graph.bounds(i)[2]
-        lo_j, hi_j = graph.bounds(j)[2]
+        lo_i, hi_i = graph.bounds(i)[axis_index]
+        lo_j, hi_j = graph.bounds(j)[axis_index]
         return abs(lo_i - lo_j) <= tol and abs(hi_i - hi_j) <= tol
 
-    return _connected_components(vertical, lambda i, j: same_span(i, j) and shares_edge(i, j))
+    return _connected_components(sides, lambda i, j: same_span(i, j) and shares_edge(i, j))
 
 
-def _vertical_side_faces(graph: GeometryGraph, tol: float) -> list[FaceRef]:
-    """The planar faces that could be prism sides: vertical, and tall enough to be walls.
+def _principal_side_faces(
+    graph: GeometryGraph, tol: float, *, axis_index: int
+) -> list[FaceRef]:
+    """Planar faces perpendicular to the profile plane and long enough to be walls.
 
     Only the selection is this recogniser's; the normal and the bounding box it selects on come
     from the graph, which memoises them per face. Deriving them here meant a second copy of both
@@ -261,18 +322,23 @@ def _vertical_side_faces(graph: GeometryGraph, tol: float) -> list[FaceRef]:
     package now has one of.
     """
 
-    vertical: list[FaceRef] = []
+    sides: list[FaceRef] = []
     for node in graph.faces:
         if not graph.is_planar(node):
             continue
         normal = graph.normal(node)
-        if normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS:
+        if normal is None or abs(normal[axis_index]) > _SIDE_VERTICAL_COS:
             continue
-        z_lo, z_hi = graph.bounds(node)[2]
-        if z_hi - z_lo <= tol:
+        coordinate_lo, coordinate_hi = graph.bounds(node)[axis_index]
+        if coordinate_hi - coordinate_lo <= tol:
             continue
-        vertical.append(node)
-    return vertical
+        sides.append(node)
+    return sides
+
+
+def _vertical_side_faces(graph: GeometryGraph, tol: float) -> list[FaceRef]:
+    """Compatibility spelling for Z-axis side selection."""
+    return _principal_side_faces(graph, tol, axis_index=2)
 
 
 def _six_support_cycle_indices(
@@ -438,6 +504,8 @@ def _ring_profile(
     headings: Mapping[_K, tuple[float, float, float]],
     centres: list,
     tol: float,
+    *,
+    transverse_indices: tuple[int, int] = (0, 1),
 ) -> tuple[float, float, float] | None:
     """The ring's axis ``(x, y)`` and across-flats, or ``None`` if it is not one prism.
 
@@ -453,7 +521,8 @@ def _ring_profile(
     side_count = len(ordered)
     opposite = side_count // 2
     plane_offsets = [
-        headings[index][0] * float(point.X) + headings[index][1] * float(point.Y)
+        headings[index][0] * _point_coordinate(point, transverse_indices[0])
+        + headings[index][1] * _point_coordinate(point, transverse_indices[1])
         for index, point in zip(ordered, centres, strict=True)
     ]
     midplanes = [
@@ -495,9 +564,12 @@ def _recognise_one(
     tol: float | None,
     angle_tol: float,
     whole_stock: bool = False,
+    axis: str = "z",
     graph: GeometryGraph | None = None,
 ) -> list[_PolygonalProposal]:
     tol = _TOL if tol is None else tol
+    axis_index = _AXIS_INDEX[axis]
+    transverse_indices = _TRANSVERSE_INDICES[axis]
     # The graph holds the face inventory, the adjacency and the per-face attributes this
     # module used to keep three private maps for. Its accessors memoise on first ask, which is
     # the property the hand-rolled cache here existed for: only the vertical sides and the few
@@ -517,19 +589,21 @@ def _recognise_one(
         if len(resolved) != len(faces) or len(resolved) != len(graph):
             raise ValueError("supplied Polygonal Boss graph does not exactly match the part")
 
-    vertical = _vertical_side_faces(graph, tol)
-    if len(vertical) < 6:
+    sides = _principal_side_faces(graph, tol, axis_index=axis_index)
+    if len(sides) < 6:
         return []
     blend_bridges = (
         frozenset()
         if whole_stock
-        else _polygonal_boss_blend_bridges(graph, vertical, tol)
+        else _polygonal_boss_blend_bridges(graph, sides, tol)
     )
 
     def shares_edge(i: FaceRef, j: FaceRef) -> bool:
         return j in graph.neighbours(i) or frozenset((i, j)) in blend_bridges
 
-    components = _side_rings(vertical, graph, tol, shares_edge)
+    components = _side_rings(
+        sides, graph, tol, shares_edge, axis_index=axis_index
+    )
 
     def adjacent_to(node: FaceRef) -> set[FaceRef]:
         # A fresh set each time: `_common_cap` subtracts from what it gets back, and the graph
@@ -559,23 +633,37 @@ def _recognise_one(
         # Sourced from the graph's memo, not re-derived -- but handed on as a plain mapping,
         # because these two are pure geometry over headings and have their own unit tests.
         # Making them take the graph would have coupled a polygon calculation to a B-Rep.
-        headings = {node: _heading(graph, node) for node in component}
+        headings = {
+            node: (
+                _heading(graph, node)[transverse_indices[0]],
+                _heading(graph, node)[transverse_indices[1]],
+                0.0,
+            )
+            for node in component
+        }
         ordered = _regular_ring_order(component, headings, angle_tol)
         if ordered is None:
             continue
         centres = [graph.face(i).center() for i in ordered]
-        profile = _ring_profile(ordered, headings, centres, tol)
+        profile = _ring_profile(
+            ordered,
+            headings,
+            centres,
+            tol,
+            transverse_indices=transverse_indices,
+        )
         if profile is None:
             continue
         cx, cy, across = profile
 
-        wall_lo = sum(graph.bounds(i)[2][0] for i in component) / side_count
-        wall_hi = sum(graph.bounds(i)[2][1] for i in component) / side_count
+        wall_lo = sum(graph.bounds(i)[axis_index][0] for i in component) / side_count
+        wall_hi = sum(graph.bounds(i)[axis_index][1] for i in component) / side_count
         base = _common_cap(
             component,
             graph,
             adjacent_to,
             tol,
+            axis_index=axis_index,
             upper=False,
             positive=not whole_stock,
             wall_lo=wall_lo,
@@ -586,30 +674,48 @@ def _recognise_one(
             graph,
             adjacent_to,
             tol,
+            axis_index=axis_index,
             upper=True,
             positive=True,
             wall_lo=wall_lo,
             wall_hi=wall_hi,
         )
-        if base is None or top is None or top.z - base.z <= tol:
+        if base is None or top is None or top.coordinate - base.coordinate <= tol:
             continue
-        if whole_stock and (abs(base.z - wall_lo) > tol or abs(top.z - wall_hi) > tol):
+        if whole_stock and (
+            abs(base.coordinate - wall_lo) > tol
+            or abs(top.coordinate - wall_hi) > tol
+        ):
             continue
         flat_centres = tuple(
-            (round(float(point.X), 3), round(float(point.Y), 3), round(float(point.Z), 3))
+            (
+                _rounded(float(point.X), 3),
+                _rounded(float(point.Y), 3),
+                _rounded(float(point.Z), 3),
+            )
             for point in centres
         )
         flat_directions = tuple(
-            (round(headings[index][0], 3), round(headings[index][1], 3), 0.0) for index in ordered
+            _flat_direction(headings[index], transverse_indices)
+            for index in ordered
         )
+        center = [0.0, 0.0, 0.0]
+        center[transverse_indices[0]] = cx
+        center[transverse_indices[1]] = cy
+        center[axis_index] = (base.coordinate + top.coordinate) / 2
         record_type = PolygonalStock if whole_stock else PolygonalBoss
+        record_center = (center[0], center[1], center[2])
         record = record_type(
-            axis="z",
-            center=(round(cx, 4), round(cy, 4), round((base.z + top.z) / 2, 4)),
+            axis=axis,
+            center=(
+                _rounded(record_center[0], 4),
+                _rounded(record_center[1], 4),
+                _rounded(record_center[2], 4),
+            ),
             side_count=side_count,
-            across_flats=round(across, 4),
-            base=round(base.z, 4),
-            top=round(top.z, 4),
+            across_flats=_rounded(across, 4),
+            base=_rounded(base.coordinate, 4),
+            top=_rounded(top.coordinate, 4),
             flat_directions=flat_directions,
             flat_centres=flat_centres,
         )
@@ -727,16 +833,26 @@ def _discover_polygonal_stock(
         return []
     bridge = GeometryEvidenceBridge(writer, graph) if writer is not None else None
     owner = bridge.geometry if bridge is not None else graph
-    proposals = sorted(
-        (
+    proposals: list[_PolygonalProposal] = []
+    # Z first preserves the established direct-path work and byte-level record behavior. An
+    # exact eight-face prism can establish only one cap axis; stop at the first supported axis
+    # rather than scanning unrelated orientations after the complete boundary is proved.
+    for axis in ("z", "x", "y"):
+        proposals = [
             proposal
             for proposal in _recognise_one(
-                part, tol=tol, angle_tol=angle_tol, whole_stock=True, graph=owner
+                part,
+                tol=tol,
+                angle_tol=angle_tol,
+                whole_stock=True,
+                axis=axis,
+                graph=owner,
             )
             if isinstance(proposal.record, PolygonalStock)
-        ),
-        key=lambda proposal: proposal.record,
-    )
+        ]
+        if proposals:
+            break
+    proposals.sort(key=lambda proposal: proposal.record)
     records = [cast("PolygonalStock", proposal.record) for proposal in proposals]
     if writer is None:
         return records

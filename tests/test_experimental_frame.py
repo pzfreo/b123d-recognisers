@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from build123d import Axis, Box, Cylinder, Pos, Shape, Sphere, Vector
+from build123d import Axis, Box, Cylinder, Pos, RegularPolygon, Shape, Sphere, Vector, extrude
 
 import b123d_recognisers.frames as frames
 from b123d_recognisers._typing import Part
@@ -91,6 +91,46 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
     assert len(framed.result.slots) == len(legacy_before.slots) == 5
     assert framed.result.section_passages == ()
     assert build_recognition_result(part) == legacy_before
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        extrude(RegularPolygon(20, 6), 30),
+        Pos(9, -13, 7) * extrude(RegularPolygon(20, 6), 30).rotate(Axis.X, 30),
+        Pos(-4, 8, 11)
+        * extrude(RegularPolygon(20, 6), 30).rotate(Axis((0, 0, 0), (1, 1, 0)), 37),
+    ],
+)
+def test_framed_polygonal_stock_survives_rigid_presentation(part) -> None:
+    framed = build_framed_recognition_result(part)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    assert framed.frame.gauge is FrameGauge.ORTHOGONAL
+    assert len(framed.result.polygonal_stock) == 1
+    record = framed.result.polygonal_stock[0]
+    assert record.side_count == 6
+    assert record.axis in {"x", "y", "z"}
+    assert record.length == pytest.approx(30.0)
+
+
+def test_framed_polygonal_stock_record_is_exactly_rigid_motion_invariant() -> None:
+    source = extrude(RegularPolygon(20, 6), 30)
+    presentations = (
+        source,
+        source.rotate(Axis.Z, 17),
+        Pos(9, -13, 7) * source.rotate(Axis.X, 30),
+        Pos(-4, 8, 11) * source.rotate(Axis((0, 0, 0), (1, 1, 0)), 37),
+    )
+
+    framed = [build_framed_recognition_result(part) for part in presentations]
+
+    assert all(isinstance(result, FramedRecognitionResult) for result in framed)
+    records = [
+        cast(FramedRecognitionResult, result).result.polygonal_stock[0].to_dict()
+        for result in framed
+    ]
+    assert records == [records[0]] * len(records)
 
 
 def test_framed_result_exposes_the_exact_shape_recognised(monkeypatch) -> None:
