@@ -215,8 +215,10 @@ development reports and MFInstSeg transfer baselines. It records exact numerator
 accepted physical occurrences, defining-face agreement, instance recall where available,
 reconciliation drops, bounded diagnostics, empty models, runtime, versions and corpus selection.
 The E5b [`bounded rectangular Through Step result`](benchmarks/effectiveness-mfcadpp-500-e5b-through-step.md)
-adds 39 conservative occurrences with 78/78 correct defining faces and records its paired runtime
-sentinel separately.
+added 39 conservative occurrences with 78/78 correct defining faces. The E5d
+[`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
+100% defining-face precision while expanding to 92 occurrences and 184/415 defining-face recall;
+both increments record paired runtime sentinels separately.
 The historical measurements below predate that schema and remain evidence for the narrower claims
 they state; they are not silently promoted into the new baseline.
 
@@ -334,7 +336,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | 2-sided through step | PairedRampStep | conservative mirror-symmetric, horizontal, three/five-terminal subset |
-| Rectangular / Slanted through step | — | **unrecognised**; tracked under recognition-effectiveness roadmap |
+| Rectangular through step | ThroughStep | principal two-wall subset; independent boundary interruptions are allowed only with complete seam, terminal, envelope and empty-prism proofs |
+| Slanted through step | — | **unrecognised**; tracked under recognition-effectiveness roadmap |
 | — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and

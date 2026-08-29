@@ -3,12 +3,15 @@
 ## 0.5.0
 
 - **Added conservative rectangular through-step recognition.**
-  `recognise_through_steps()` returns immutable `ThroughStep` records for exactly two rectangular
+  `recognise_through_steps()` returns immutable `ThroughStep` records for exactly two
   principal-plane wall regions joined by one complete concave seam and open across both ends of a
-  valid source solid. The additive public schema includes oriented `section`, run `axis`/`length`,
-  and removed-prism midpoint `at`; the aggregate adds required
+  valid source solid. Independent holes, notches and curved boundary interruptions may cut a wall
+  only while the complete seam, envelope, terminals and exactly empty removed prism remain proved.
+  The additive public schema includes oriented `section`, run `axis`/`length`, and removed-prism
+  midpoint `at`; the aggregate adds required
   `RecognitionResult.through_steps`, and the census adds `through_step`. Channels, pockets, slots,
-  capped or partial runs, interrupted/tapered/curved walls and non-principal runs remain excluded.
+  capped or partial runs, seam interruptions, tapered/non-principal walls and ambiguous sections
+  remain excluded.
 
 - **Added conservative paired-ramp step recognition.** `recognise_paired_ramp_steps()` returns
   immutable `PairedRampStep` records for principal-axis, mirror-symmetric two-ramp cuts with one
