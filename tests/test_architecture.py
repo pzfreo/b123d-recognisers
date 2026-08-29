@@ -316,6 +316,9 @@ ARC_READER_SITES = {
     "src/b123d_recognisers/_blend_view:_classify:arc:2": "legacy-contract",
     "src/b123d_recognisers/_blend_view:__init__:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_through_steps:_arc_name:arc:1": "legacy-contract",
+    "tools/audit_mfcadpp_circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_circular_blind_steps:_arc_name:arc:1": "legacy-contract",
 }
 
 # Tests are part of the reviewed reader surface: an assertion may intentionally pin the legacy
