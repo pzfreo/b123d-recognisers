@@ -41,11 +41,17 @@ FAMILIES = {
         "introduced": "0.5.0",
         "tests": ["tests/test_paired_ramp_steps.py"],
     },
+    "through-steps": {
+        "recognisers": [("recognise_through_steps", "part")],
+        "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],
+        "census": "through_step",
+        "goldens": ["rectangular_through_step"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_through_steps.py"],
+    },
     "prismatic-pockets": {
         "recognisers": [("recognise_prismatic_pockets", "part")],
-        "records": [
-            ("PrismaticPocket", "output", ["RecognitionResult.prismatic_pockets"])
-        ],
+        "records": [("PrismaticPocket", "output", ["RecognitionResult.prismatic_pockets"])],
         "census": "prismatic_pocket",
         "goldens": ["triangular_and_hex_pockets"],
         "introduced": "0.2.6",
@@ -266,9 +272,7 @@ NO_MEMBERSHIP_RATIONALE = {
 
 
 def _union_type(args: tuple[object, ...]) -> str:
-    rendered = sorted(
-        {_type_name(arg) for arg in args}, key=lambda value: (value == "null", value)
-    )
+    rendered = sorted({_type_name(arg) for arg in args}, key=lambda value: (value == "null", value))
     return "|".join(rendered)
 
 
@@ -391,9 +395,7 @@ def build_manifest() -> dict[str, object]:
                         {
                             "ledger_state": "unavailable",
                             "remove_in": "1.0.0",
-                            "replacement": (
-                                "b123d_recognisers.recognise_section_passages"
-                            ),
+                            "replacement": ("b123d_recognisers.recognise_section_passages"),
                         }
                         if role == "compatibility"
                         else {}

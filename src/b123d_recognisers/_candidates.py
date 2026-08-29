@@ -65,6 +65,7 @@ class FamilyId(Enum):
     RISERS = "risers"
     SLOTS = "slots"
     STEP_LEVELS = "step_levels"
+    THROUGH_STEPS = "through_steps"
     TURNED_STEPS = "turned_steps"
 
 

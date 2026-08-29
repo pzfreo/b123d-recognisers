@@ -188,6 +188,32 @@
             "z": 28.0
           }
         ],
+        "through_steps": [
+          {
+            "_type": "ThroughStep",
+            "at": [
+              -57.5,
+              0.0,
+              20.0
+            ],
+            "axis": "y",
+            "length": 70.0,
+            "section": [
+              [
+                -60.0,
+                4.0
+              ],
+              [
+                -55.0,
+                4.0
+              ],
+              [
+                -55.0,
+                36.0
+              ]
+            ]
+          }
+        ],
         "turned_steps": []
       },
       "rotational": {
@@ -351,6 +377,7 @@
             "z": 28.0
           }
         ],
+        "through_steps": [],
         "turned_steps": []
       }
     },
@@ -371,7 +398,8 @@
       "pocket": 2,
       "prismatic_pocket": 0,
       "slot": 0,
-      "step": 0
+      "step": 0,
+      "through_step": 1
     },
     "individual": {
       "recognise_angled_steps": [],
@@ -569,6 +597,32 @@
       ],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
+      "recognise_through_steps": [
+        {
+          "_type": "ThroughStep",
+          "at": [
+            -57.5,
+            0.0,
+            20.0
+          ],
+          "axis": "y",
+          "length": 70.0,
+          "section": [
+            [
+              -60.0,
+              4.0
+            ],
+            [
+              -55.0,
+              4.0
+            ],
+            [
+              -55.0,
+              36.0
+            ]
+          ]
+        }
+      ],
       "recognise_turned_steps": []
     },
     "substrates": {

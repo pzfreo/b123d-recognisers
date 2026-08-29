@@ -167,6 +167,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "recognise_paired_ramp_steps",
         counted("paired_ramp_steps", []),
     )
+    monkeypatch.setattr(
+        registry_module,
+        "recognise_through_steps",
+        counted("through_steps", []),
+    )
 
     # All four recess families are proposed before one reconciler decides among them. Passage
     # discovery is a counted family call of its own; the reconciler receives completed records
@@ -220,6 +225,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     expected = {
         "angled_steps",
         "paired_ramp_steps",
+        "through_steps",
         "passages",
         "reconcile_recesses",
         "reconcile_bevels",

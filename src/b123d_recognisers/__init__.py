@@ -176,6 +176,7 @@ from b123d_recognisers.slots import (
     recognise_slot_patterns,
     recognise_slots,
 )
+from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
 
 try:
@@ -278,6 +279,8 @@ __all__ = [
     "validate_capability_manifest",
     "recognise_angled_steps",
     "recognise_paired_ramp_steps",
+    "ThroughStep",
+    "recognise_through_steps",
     "PrismaticPocket",
     "recognise_passages",
     "recognise_section_passages",

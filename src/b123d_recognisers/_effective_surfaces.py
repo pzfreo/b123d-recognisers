@@ -116,6 +116,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "shared edge geom_type validates the original linear ramp intersection",
     ),
+    "through_steps": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge geom_type validates rectangular boundaries and their complete linear seam",
+    ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -309,6 +313,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
     "paired_ramp_steps:_candidate:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "shared edge curve kind, not a face surface",
+    ),
+    "through_steps:_four_principal_runs:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind validates a rectangular boundary",
+    ),
+    "through_steps:_shared_run_is_complete:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "edge curve kind validates a complete linear defining seam",
     ),
     "chamfers:recognise_chamfers:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,

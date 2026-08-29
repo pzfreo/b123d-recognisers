@@ -87,6 +87,7 @@ from b123d_recognisers.slots import (
     SlotArray,
     SlotGrid,
 )
+from b123d_recognisers.through_steps import ThroughStep
 from b123d_recognisers.turned import TurnedProfile, TurnedStep
 
 #: The families this aggregate runs, exactly once, per orchestration.
@@ -304,6 +305,8 @@ class RecognitionResult:
     #: Prismatic-only conservative two-ramp through-side cuts. The supported domain is the
     #: unfragmented mirror-symmetric terminal topology documented by its recogniser.
     paired_ramp_steps: tuple[PairedRampStep, ...]
+    #: Prismatic-only rectangular open-profile steps spanning a source solid.
+    through_steps: tuple[ThroughStep, ...]
     #: Prismatic voids running through the material, one record per closed ring. Discovery still
     #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
     #: proposals, but this public tuple is then projected as ``()``.
@@ -623,9 +626,8 @@ def _project_result(
         risers=tuple(_records(accepted, FamilyId.RISERS, RiserEvidence)),
         chamfers=tuple(_records(accepted, FamilyId.CHAMFERS, Chamfer)),
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
-        paired_ramp_steps=tuple(
-            _records(accepted, FamilyId.PAIRED_RAMP_STEPS, PairedRampStep)
-        ),
+        paired_ramp_steps=tuple(_records(accepted, FamilyId.PAIRED_RAMP_STEPS, PairedRampStep)),
+        through_steps=tuple(_records(accepted, FamilyId.THROUGH_STEPS, ThroughStep)),
         section_passages=(
             tuple(_records(accepted, FamilyId.PASSAGES, SectionPassage))
             if passage_definition.projected(context)

@@ -89,7 +89,7 @@ def test_shape_equality_and_is_same_agree_across_the_whole_corpus():
         assert _partition_by_equality(faces) == _partition_by_is_same(faces), f"faces of {name}"
         checked += 1
 
-    assert checked == 21, "the corpus moved; this test must still sweep all of it"
+    assert checked == 22, "the corpus moved; this test must still sweep all of it"
 
 
 def test_a_manifold_edge_maps_to_the_two_faces_that_meet_along_it():
@@ -218,9 +218,7 @@ def test_nearest_axis_aligned_planes_keeps_the_closer_of_two_walls():
     edge_faces = edge_face_map(part.faces())
 
     # Bias the centre toward +Y so the +5 wall is unambiguously nearer than the -5 one.
-    biased = nearest_axis_aligned_planes(
-        face, edge_faces, {0: 5.0, 1: 4.0, 2: 0.0}, exclude_axis=0
-    )
+    biased = nearest_axis_aligned_planes(face, edge_faces, {0: 5.0, 1: 4.0, 2: 0.0}, exclude_axis=0)
 
     assert biased[1] == 5.0
     assert biased[2] == -5.0  # still tied on Z, so still the lower coordinate
@@ -321,9 +319,7 @@ def test_connected_components_groups_transitively_not_pairwise():
 def test_connected_components_keeps_unrelated_items_apart():
     """Two rings on one part stay two rings, and a lone face stays alone."""
 
-    parts = connected_components(
-        [0, 1, 10, 11, 99], lambda i, j: abs(i - j) == 1
-    )
+    parts = connected_components([0, 1, 10, 11, 99], lambda i, j: abs(i - j) == 1)
 
     assert sorted(sorted(p) for p in parts) == [[0, 1], [10, 11], [99]]
     assert connected_components([], lambda i, j: True) == []
