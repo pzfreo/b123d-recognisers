@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from build123d import Box, Pos, Rot
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
-from tools.audit_mfcadpp_through_steps import describe_component
+from tools.audit_mfcadpp_through_steps import _rank_clusters, describe_component
 
 
 def _step():
@@ -82,3 +84,32 @@ def test_single_authored_face_has_no_inferred_rectangular_pair() -> None:
     assert anatomy.first_failed_gate == "no_orthogonal_rectangular_pair"
     assert anatomy.inferred_run_axis is None
     assert anatomy.exact_empty_prism is None
+
+
+def test_cluster_ranking_and_samples_ignore_input_traversal_order() -> None:
+    product = _take_inventory(_step())
+    disposition = next(
+        item
+        for item in product.reconciliation.for_family(FamilyId.THROUGH_STEPS)
+        if item.outcome is Outcome.ACCEPTED
+    )
+    anatomy = describe_component(
+        product.context.graph,
+        tuple(product.evidence.defining_of(disposition.candidate)),
+    )
+    rows = [
+        {
+            "model_id": model_id,
+            "face_indices": indices,
+            "face_count": 2,
+            "anatomy_key": anatomy.key(),
+            "anatomy": asdict(anatomy),
+        }
+        for model_id, indices in (("b", [8, 9]), ("a", [4, 7]), ("c", [1, 2]))
+    ]
+
+    assert _rank_clusters(rows) == _rank_clusters(list(reversed(rows)))
+    assert _rank_clusters(rows)[0]["sample_components"][0] == {
+        "model_id": "a",
+        "face_indices": [4, 7],
+    }

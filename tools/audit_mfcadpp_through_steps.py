@@ -299,7 +299,7 @@ def describe_component(graph: FaceGraph, nodes: tuple[FaceNode, ...]) -> Compone
 
 def _rank_clusters(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
-    for item in items:
+    for item in sorted(items, key=lambda row: (row["model_id"], row["face_indices"])):
         key = item["anatomy_key"]
         group = grouped.setdefault(
             key,
