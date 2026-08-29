@@ -172,6 +172,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "recognise_through_steps",
         counted("through_steps", []),
     )
+    monkeypatch.setattr(
+        registry_module,
+        "_discover_circular_blind_steps",
+        counted("circular_blind_steps", []),
+    )
 
     # All four recess families are proposed before one reconciler decides among them. Passage
     # discovery is a counted family call of its own; the reconciler receives completed records
@@ -196,6 +201,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(result_module, "reconcile_recess_candidates", fake_recesses)
     monkeypatch.setattr(
         result_module, "reconcile_bevel_candidates", fake_policy("reconcile_bevels")
+    )
+    monkeypatch.setattr(
+        result_module,
+        "reconcile_circular_step_fillets",
+        fake_policy("reconcile_circular_step_fillets"),
     )
     monkeypatch.setattr(
         result_module,
@@ -226,9 +236,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "angled_steps",
         "paired_ramp_steps",
         "through_steps",
+        "circular_blind_steps",
         "passages",
         "reconcile_recesses",
         "reconcile_bevels",
+        "reconcile_circular_step_fillets",
         "reconcile_step_grooves",
         "diagnose_residuals",
         "cylinders",

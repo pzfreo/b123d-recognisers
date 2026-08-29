@@ -47,6 +47,7 @@ class FamilyId(Enum):
     BOSSES = "bosses"
     CHAMFERS = "chamfers"
     CHANNELS = "channels"
+    CIRCULAR_BLIND_STEPS = "circular_blind_steps"
     COUNTERSINKS = "countersinks"
     DOUBLE_D_BORES = "double_d_bores"
     FILLETS = "fillets"
@@ -543,7 +544,12 @@ class _CandidateIssuer:
         ):
             raise ValueError("physical defining evidence must belong to one valid closed solid")
         if surface_uses:
-            migrated_surface_families = (FamilyId.PADS, FamilyId.HOLES, FamilyId.BOSSES)
+            migrated_surface_families = (
+                FamilyId.PADS,
+                FamilyId.HOLES,
+                FamilyId.BOSSES,
+                FamilyId.CIRCULAR_BLIND_STEPS,
+            )
             if family not in migrated_surface_families:
                 raise ValueError("only explicitly migrated families may carry surface evidence")
             snapshots = tuple(_validate_surface_use(use, self._graph) for use in surface_uses)

@@ -43,6 +43,10 @@ from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
+from b123d_recognisers.circular_blind_steps import (
+    CircularBlindStep,
+    _discover_circular_blind_steps,
+)
 from b123d_recognisers.countersinks import CounterSink, _discover_countersinks
 from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
@@ -721,6 +725,29 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         _simple(lambda s: list(recognise_through_steps(s.context.part, ledger=s.writer))),
         Counted("through_step"),
         FullyAttributed("every returned through step claims both rectangular wall regions"),
+    ),
+    PhysicalDefinition(
+        FamilyId.CIRCULAR_BLIND_STEPS,
+        (CircularBlindStep,),
+        "circular_blind_steps",
+        "recognise_circular_blind_steps",
+        (),
+        prismatic,
+        _simple(
+            lambda s: list(
+                _discover_circular_blind_steps(
+                    s.context.part,
+                    graph=s.context.graph,
+                    cylinders=s.cylinders,
+                    effective=s.context.face_surfaces,
+                    sink=s.writer.sink,
+                )
+            )
+        ),
+        Counted("circular_blind_step"),
+        FullyAttributed(
+            "every returned circular blind step claims its cylindrical wall and terminal"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.PASSAGES,

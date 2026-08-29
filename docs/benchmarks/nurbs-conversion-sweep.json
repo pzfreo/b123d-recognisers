@@ -1,5 +1,8 @@
 {
   "baseline_commit": "4b21f79d8a1a96f9970cbf160e3277be0e2289ca",
+  "excluded_fixtures": {
+    "circular_blind_step": "whole-solid conversion changes the quarter-cylinder edge signature"
+  },
   "face_correspondence": "OCCT BRepBuilderAPI_NurbsConvert.ModifiedShape one-to-one history",
   "fixtures": {
     "angled_blind_step": {

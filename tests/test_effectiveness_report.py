@@ -33,6 +33,7 @@ from tools.run_effectiveness_baseline import (
 
 ROOT = Path(__file__).parents[1]
 TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
+TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -126,6 +127,18 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
     )
     public_families = {family["id"] for family in manifest["families"]}
     assert {family for row in mfcadpp.values() for family in row["families"]} <= public_families
+
+
+def test_taxonomy_v2_moves_only_circular_blind_step_to_its_physical_family() -> None:
+    historical = load_taxonomy(TAXONOMY, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V2, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 21} == {
+        key: value for key, value in historical.items() if key != 21
+    }
+    assert historical[21]["families"] == ["fillets"]
+    assert current[21]["families"] == ["circular-blind-steps"]
+    assert load_taxonomy(TAXONOMY_V2, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(

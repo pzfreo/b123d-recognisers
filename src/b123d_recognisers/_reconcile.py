@@ -195,6 +195,33 @@ def reconcile_bevel_candidates(
     return tuple(decisions)
 
 
+def reconcile_circular_step_fillets(
+    fillets: CandidateSet[object],
+    circular_steps: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Reject a fillet only when a surviving circular step claims its curved wall."""
+
+    decisions = []
+    for fillet in fillets.candidates:
+        fillet_faces = evidence.defining_of(fillet)
+        winners = tuple(
+            step
+            for step in circular_steps.candidates
+            if fillet_faces and fillet_faces <= evidence.defining_of(step)
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    fillet,
+                    Outcome.REJECTED,
+                    ReasonCode.FILLET_SUPERSEDED_BY_CIRCULAR_BLIND_STEP,
+                    winners,
+                )
+            )
+    return tuple(decisions)
+
+
 def reconcile_step_groove_candidates(
     steps: CandidateSet[object],
     grooves: CandidateSet[object],

@@ -37,6 +37,7 @@ from b123d_recognisers._features import (
 )
 from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
+    reconcile_circular_step_fillets,
     reconcile_recess_candidates,
     reconcile_step_groove_candidates,
 )
@@ -58,6 +59,7 @@ from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.chamfers import Chamfer
+from b123d_recognisers.circular_blind_steps import CircularBlindStep
 from b123d_recognisers.countersinks import CounterSink
 from b123d_recognisers.fillets import Fillet
 from b123d_recognisers.flats import Flat
@@ -307,6 +309,8 @@ class RecognitionResult:
     paired_ramp_steps: tuple[PairedRampStep, ...]
     #: Prismatic-only rectangular open-profile steps spanning a source solid.
     through_steps: tuple[ThroughStep, ...]
+    #: Prismatic-only quarter-cylindrical corner cuts with one interior blind terminal.
+    circular_blind_steps: tuple[CircularBlindStep, ...]
     #: Prismatic voids running through the material, one record per closed ring. Discovery still
     #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
     #: proposals, but this public tuple is then projected as ``()``.
@@ -534,6 +538,11 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.ANGLED_STEPS),
         evidence,
     )
+    decisions += reconcile_circular_step_fillets(
+        physical.candidate_set(FamilyId.FILLETS),
+        physical.candidate_set(FamilyId.CIRCULAR_BLIND_STEPS),
+        evidence,
+    )
     decisions += reconcile_step_groove_candidates(
         physical.candidate_set(FamilyId.TURNED_STEPS),
         physical.candidate_set(FamilyId.GROOVES),
@@ -628,6 +637,9 @@ def _project_result(
         angled_steps=tuple(_records(accepted, FamilyId.ANGLED_STEPS, AngledStep)),
         paired_ramp_steps=tuple(_records(accepted, FamilyId.PAIRED_RAMP_STEPS, PairedRampStep)),
         through_steps=tuple(_records(accepted, FamilyId.THROUGH_STEPS, ThroughStep)),
+        circular_blind_steps=tuple(
+            _records(accepted, FamilyId.CIRCULAR_BLIND_STEPS, CircularBlindStep)
+        ),
         section_passages=(
             tuple(_records(accepted, FamilyId.PASSAGES, SectionPassage))
             if passage_definition.projected(context)

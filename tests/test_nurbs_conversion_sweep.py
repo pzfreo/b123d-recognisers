@@ -8,6 +8,7 @@ import pytest
 
 from b123d_recognisers._analytic_surfaces import SurfaceKind
 from tools.nurbs_conversion_sweep import (
+    EXCLUDED_FIXTURES,
     JSON_REPORT,
     MARKDOWN_REPORT,
     PERFORMANCE_BUDGET_SECONDS,
@@ -38,6 +39,11 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
         "absolute_face_area_square_units": 25.0,
         "relative_face_area": 0.004,
         "effective_primitive_parameter": 1e-8,
+    }
+    assert report["excluded_fixtures"] == EXCLUDED_FIXTURES == {
+        "circular_blind_step": (
+            "whole-solid conversion changes the quarter-cylinder edge signature"
+        )
     }
     assert report["totals"] == {
         "fixtures": 22,

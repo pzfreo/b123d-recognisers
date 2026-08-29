@@ -600,8 +600,9 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
         "chamfer": 0,
         "angled_step": 0,
         "paired_ramp_step": 1,
-        "through_step": 0,
-        "fillet": 0,
+            "through_step": 0,
+            "circular_blind_step": 0,
+            "fillet": 0,
         "countersink": 0,
         "plate": 1,
     }

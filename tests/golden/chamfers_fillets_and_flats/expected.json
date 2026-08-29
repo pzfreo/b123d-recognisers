@@ -85,6 +85,7 @@
           }
         ],
         "channels": [],
+        "circular_blind_steps": [],
         "countersinks": [],
         "cylinders": [
           [
@@ -321,6 +322,7 @@
         ],
         "chamfers": [],
         "channels": [],
+        "circular_blind_steps": [],
         "countersinks": [],
         "cylinders": [
           [
@@ -496,6 +498,7 @@
       "boss": 1,
       "chamfer": 4,
       "channel": 0,
+      "circular_blind_step": 0,
       "countersink": 0,
       "fillet": 4,
       "flat": 1,
@@ -585,6 +588,7 @@
         }
       ],
       "recognise_channels": [],
+      "recognise_circular_blind_steps": [],
       "recognise_countersinks": [],
       "recognise_double_d_bores": [],
       "recognise_face_levels": [

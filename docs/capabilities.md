@@ -75,10 +75,10 @@ valid closed solid.
 
 | Status | Physical families | Reason / next boundary |
 | --- | --- | --- |
-| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `paired_ramp_steps`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
+| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `circular_blind_steps`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `paired_ramp_steps`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `slots`, `through_steps`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. |
 | Incomplete | `risers`, `step_levels` | Step Levels can span multiple bodies and Riser value deduplication can collapse distinct faces/SolidRefs; both have reviewed structural exclusions pending occurrence-preserving identity or explicit multi-source ownership. |
 
-The registry is the closed machine-checked authority for these 23 internal dispositions. Per-face
+The registry is the closed machine-checked authority for these 25 internal dispositions. Per-face
 tools consume the completed frozen inventory and report records, Candidates, accepted occurrences,
 attributed occurrences and defining faces separately. Corpus labels are diagnostic comparisons and
 never establish ownership.
@@ -94,6 +94,7 @@ compatibility review, and release notes.
 | `recognise_bosses` | External full cylindrical segments on principal or slanted axes, independently per solid; includes turned ODs. | Partial cylinders, internal bores, and caller-specific “local boss” filtering. | Contract suite; simple-hole and turned-step goldens. |
 | `recognise_chamfers` | Dimension-worthy external planar bevels and principal-axis conical bevels on turned stock. Called through `build_recognition_result` or `feature_census`, a planar slant with a triangular blind end is excluded — an angled step, dropped by `_reconcile.chamfers_that_are_not_angled_steps` from the claims both families write. Called directly, that planar slant is proposed, because on the face alone it is a bevel. | Compound three-axis corner bevels, internal cones such as countersinks, and faces outside leg/size gates. | Chamfer/fillet/flat golden, turned-chamfer tests, negative bevel tests, bevel-claim reconciliation tests, and 40 labelled MFCAD++ models. |
 | `recognise_channels` | Floored rectangular channels spanning both longitudinal ends of one solid; after graph-proved curved end interruptions are trimmed, a paired-wall candidate's unrounded rectangular prism must be materially empty within that solid. | Bounded blind pockets, through slots, same-solid internal islands/bridges that the simple record cannot express, and cross-solid face combinations. | Open-channel golden, per-solid regressions, and H/U/rib adversaries. |
+| `recognise_circular_blind_steps` | Inward quarter-cylindrical principal-axis corner cuts with one concave interior planar terminal, an opening at the opposite same-solid envelope end, two convex transverse side joins, and an empty exact terminal-sector sweep. | Full bores, through or capped grooves, non-quarter, external, tapered or oblique walls, obstructed sectors, invalid bodies, and cross-solid evidence. | Authored positive, negative, tolerance-boundary, transformation, STEP, provenance, reconciliation and MFCAD++ development evidence. |
 | `recognise_countersinks` | Conical hole-mouth seats with a proven circular major rim, bore rim, and included angle. | General conical faces, decorative bevels, and unmatched cones. | Counterbore/countersink golden and cone rejection tests. |
 | `recognise_double_d_bores` | Constant, principal-axis, through double-D voids with two opposed common-circle profiles and a material-free connecting prism. | Blind recesses, obrounds, lenses, arbitrary line/arc loops, non-principal axes, mismatched ends, and cross-solid pairing. | Double-D golden plus capability-negative tests. |
 | `recognise_face_levels` | Horizontal planar face levels, optionally area-filtered, with XY support spans. | Slanted/curved faces and semantic decisions about which levels form dimensions. | Plate/level and slanted-step goldens. |
@@ -219,6 +220,9 @@ added 39 conservative occurrences with 78/78 correct defining faces. The E5d
 [`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
 100% defining-face precision while expanding to 92 occurrences and 184/415 defining-face recall;
 both increments record paired runtime sentinels separately.
+The E5f [`Circular Blind Step result`](benchmarks/effectiveness-mfcadpp-500-e5f-circular-blind-step.md)
+adds 118 accepted occurrences with 236/236 defining-face precision and reconciles exactly 114
+overlapping Fillets; its MFCAD++ and real-part paired runtime ratios remain below 1.04.
 The historical measurements below predate that schema and remain evidence for the narrower claims
 they state; they are not silently promoted into the new baseline.
 
@@ -332,7 +336,8 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
 | Triangular blind step | AngledStep | |
 | Chamfer | Chamfer | |
-| Round; Circular blind step | Fillet | |
+| Round | Fillet | |
+| Circular blind step | CircularBlindStep | one physical occurrence owns its cylindrical wall and blind terminal; an overlapping Fillet is reconciled away |
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | 2-sided through step | PairedRampStep | conservative mirror-symmetric, horizontal, three/five-terminal subset |
@@ -358,6 +363,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `AngledStep` | One convex oblique slant closed by a triangular blind end; `length` is how far it runs before that end. |
 | `PairedRampStep` | One principal-axis mirror-ramp cut; `angle` is the common acute ramp angle, `length` its open-to-terminal run, and `at` the original shared-ridge midpoint. A dimensioning consumer projects `2 × angle` at `at` plus the run `length` along `axis`. |
 | `ThroughStep` | One rectangular open-profile cut; `section` preserves both oriented legs and their concave corner using the two non-run coordinates in ascending XYZ order (`yz`, `xz`, or `xy`), while `length` and `axis` report the complete run and `at` is the removed-prism midpoint. |
+| `CircularBlindStep` | One quarter-cylindrical corner cut; `centreline` runs from the interior terminal to the envelope opening, and `section` locates both arc endpoints and the cylinder centre in the canonical transverse coordinate pair. |
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar or conical bevel; `turned` is true only for the conical shaft treatment. |
