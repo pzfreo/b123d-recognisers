@@ -395,13 +395,13 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "plate normal/offset read",
     ),
-    "polygonal_bosses:_cap_z:is_planar:1": (
+    "polygonal_bosses:_cap_coordinate:is_planar:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
-        "planar cap gate",
+        "principal-axis planar cap gate",
     ),
-    "polygonal_bosses:_vertical_side_faces:is_planar:1": (
+    "polygonal_bosses:_principal_side_faces:is_planar:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
-        "planar side gate",
+        "principal-axis planar side gate",
     ),
     "profiled_bores:principal_boundary_plane:geom_type:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
