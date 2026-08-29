@@ -218,6 +218,9 @@ reconciliation drops, bounded diagnostics, empty models, runtime, versions and c
 The E2 [`Angled Step frame-axis audit`](benchmarks/e2-angled-step-axis-audit.md) proves authored
 signed X/Y/Z covariance and classifies the four historical framed losses as internally oblique
 geometry in two models, with no production relaxation.
+The E2 [`Prismatic Pocket frame-axis audit`](benchmarks/e2-prismatic-pocket-axis-audit.md) proves
+signed X/Y/Z ring covariance and classifies all six historical losses at their defining-wall
+discovery boundary, with rectangular Pocket precedence unchanged.
 The E5b [`bounded rectangular Through Step result`](benchmarks/effectiveness-mfcadpp-500-e5b-through-step.md)
 added 39 conservative occurrences with 78/78 correct defining faces. The E5d
 [`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
