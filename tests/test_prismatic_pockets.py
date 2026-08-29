@@ -16,6 +16,7 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -265,17 +266,26 @@ def test_principal_ring_contract_survives_arbitrary_rigid_presentation_in_framed
     sides: int,
     rectangular: bool,
 ) -> None:
+    baseline = build_framed_recognition_result(fixture())
     presented = Pos(-31, 17, 23) * fixture().rotate(
         Axis((0, 0, 0), (1, 1, 0)), 37
     )
 
     framed = build_framed_recognition_result(presented)
 
+    assert isinstance(baseline, FramedRecognitionResult)
     assert isinstance(framed, FramedRecognitionResult)
     if rectangular:
-        assert framed.result.prismatic_pockets == ()
-        assert len(framed.result.pockets) == 1
+        assert baseline.result.prismatic_pockets == framed.result.prismatic_pockets == ()
+        (baseline_pocket,) = baseline.result.pockets
+        (presented_pocket,) = framed.result.pockets
+        assert presented_pocket.body_key == pytest.approx(
+            baseline_pocket.body_key, abs=1e-9
+        )
+        assert replace(presented_pocket, body_key=baseline_pocket.body_key) == baseline_pocket
     else:
+        assert framed.result.prismatic_pockets == baseline.result.prismatic_pockets
+        assert baseline.result.pockets == framed.result.pockets == ()
         (pocket,) = framed.result.prismatic_pockets
         assert (pocket.sides, pocket.depth) == (sides, 8.0)
 
