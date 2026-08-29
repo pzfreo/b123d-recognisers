@@ -169,6 +169,12 @@ def main() -> int:
     )
     parser.add_argument("--partition-root", type=Path)
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--recognition-frame",
+        choices=("raw", "framed"),
+        default="raw",
+        help="score caller-space recognition or the inferred local framed route",
+    )
     parser.add_argument("--allow-invalid", action="store_true")
     args = parser.parse_args()
     if args.limit is not None and args.limit <= 0:
@@ -189,6 +195,7 @@ def main() -> int:
     from build123d import import_step
 
     from b123d_recognisers import __version__
+    from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
 
     rows: list[dict[str, Any]] = []
@@ -198,9 +205,15 @@ def main() -> int:
             truth = loader(model_id)
             part = import_step(truth.step_path)
             started = time.perf_counter()
-            product = _take_inventory(part)
+            working_part = part
+            if args.recognition_frame == "framed":
+                frame = infer_part_frame(part)
+                if isinstance(frame, RefusedPartFrame):
+                    raise EffectivenessDataError(f"frame refused: {frame.reason.value}")
+                working_part = _normalize_part(part, frame)
+            product = _take_inventory(working_part)
             seconds = time.perf_counter() - started
-            row = score_inventory(truth, part, product, taxonomy, seconds)
+            row = score_inventory(truth, working_part, product, taxonomy, seconds)
             row["status"] = "evaluated"
         except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
             invalid += 1
@@ -216,6 +229,7 @@ def main() -> int:
         "selection": {
             "rule": "unique model ID, lexical ascending",
             "limit": args.limit,
+            "recognition_frame": args.recognition_frame,
             "selected_ids_sha256": _selection_hash(ids),
             **selection_extra,
         },
