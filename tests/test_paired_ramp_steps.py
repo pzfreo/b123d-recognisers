@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+from contextlib import suppress
+
 from build123d import (
     Axis,
     Box,
@@ -21,7 +23,9 @@ from b123d_recognisers import (
     feature_census,
     recognise_paired_ramp_steps,
 )
+from b123d_recognisers import paired_ramp_steps as paired_ramp_module
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._bevel import BevelReject, classify_bevel
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._dispositions import Outcome
@@ -44,6 +48,27 @@ def _side_cut(
     opening_y = 15 * scale if blind else 20 * scale
     cutter = Pos(20 * scale, opening_y, 0) * extrude(Plane.XZ * profile, 25 * scale)
     return stock - cutter
+
+
+def _proved_pair():
+    graph = FaceGraph(_side_cut())
+    bevels = {}
+    for node in graph.nodes:
+        with suppress(BevelReject):
+            bevels[node] = classify_bevel(graph.face(node))
+    for left in graph.nodes:
+        for right in graph.neighbours(left):
+            if (
+                right.index > left.index
+                and left in bevels
+                and right in bevels
+                and paired_ramp_module._candidate(
+                    graph, left, right, bevels[left], bevels[right]
+                )
+                is not None
+            ):
+                return graph, left, right, bevels[left], bevels[right]
+    raise AssertionError("authored side cut did not supply its proved ramp pair")
 
 
 def test_a_mirror_ramp_pair_open_to_the_stock_side_is_one_physical_cut() -> None:
@@ -82,6 +107,30 @@ def test_a_blind_v_recess_is_not_a_through_side_step() -> None:
 
 def test_a_top_opening_triangular_pocket_is_not_a_side_step() -> None:
     assert recognise_paired_ramp_steps(pocket_fixture()) == []
+
+
+def test_candidate_refuses_incomplete_direction_terminal_arc_and_span_proofs(monkeypatch) -> None:
+    graph, left, right, left_read, right_read = _proved_pair()
+
+    with monkeypatch.context() as patch:
+        patch.setattr(paired_ramp_module, "_RUN_DIRECTION_COS", 1.1)
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "neighbours", lambda _node: ())
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+    with monkeypatch.context() as patch:
+        patch.setattr(paired_ramp_module, "_is_convex", lambda *_args: False)
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+
+    axis, normal, spans, hi, lo = left_read
+    mismatched = dict(spans)
+    mismatched[axis] = (spans[axis][0] + 1.0, spans[axis][1])
+    assert (
+        paired_ramp_module._candidate(
+            graph, left, right, (axis, normal, mismatched, hi, lo), right_read
+        )
+        is None
+    )
 
 
 def test_an_asymmetric_v_is_outside_the_first_supported_domain() -> None:
