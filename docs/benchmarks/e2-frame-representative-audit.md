@@ -22,6 +22,10 @@ removed with the experiment because they describe a convention that is not shipp
 Both arms use the same first 100 lexical MFCAD++ test-split models and the same four-way comparison:
 raw baseline, raw X30-plus-translation, independently framed baseline, and independently framed
 presentation. Every model inferred a `FULL` frame and neither arm refused.
+The published split is identified by DOI
+[`10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823`](https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823),
+and both reports pin the selected model IDs with SHA-256
+`022710da0895a7d56ba1e6bf42d02729461079f90ee0db3250163b3a53653241`.
 
 | Result | Released X-primary representative | Experimental Z-primary representative |
 | --- | ---: | ---: |

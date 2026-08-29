@@ -8,6 +8,7 @@ written to stderr so stdout remains one machine-readable JSON document.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import subprocess
@@ -30,6 +31,16 @@ from b123d_recognisers.frames import (  # noqa: E402
     infer_part_frame,
 )
 from tools.rigid_motion_sweep import Occurrence, _match, _occurrences  # noqa: E402
+
+MFCADPP_TEST_SPLIT = (
+    "MFCAD++ published test split; "
+    "DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
+)
+
+
+def _selected_ids_sha256(paths: list[Path]) -> str:
+    selected_ids = "".join(f"{path.stem}\n" for path in paths)
+    return hashlib.sha256(selected_ids.encode()).hexdigest()
 
 
 def _commit() -> str:
@@ -184,7 +195,9 @@ def evaluate(root: Path, *, limit: int = 500, progress_every: int = 25) -> dict[
             "platform": platform.platform(),
         },
         "dataset": "MFCAD++ test split (development evidence)",
+        "dataset_version": MFCADPP_TEST_SPLIT,
         "selection": f"first {limit} STEP filenames, lexical ascending",
+        "selected_ids_sha256": _selected_ids_sha256(paths),
         "presentation": "X30 then translation (173, -91, 42)",
         "requested_models": limit,
         "completed_models": completed,

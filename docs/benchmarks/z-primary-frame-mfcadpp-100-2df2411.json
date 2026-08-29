@@ -1,6 +1,7 @@
 {
   "completed_models": 100,
   "dataset": "MFCAD++ test split (development evidence)",
+  "dataset_version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
   "environment": {
     "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.41",
     "python": "3.12.14"
@@ -537,6 +538,7 @@
   "requested_models": 100,
   "schema": 1,
   "selection": "first 100 STEP filenames, lexical ascending",
+  "selected_ids_sha256": "022710da0895a7d56ba1e6bf42d02729461079f90ee0db3250163b3a53653241",
   "timings": {
     "frame_inference_seconds": 2.536148,
     "framed_recognition_seconds": 99.029185,
