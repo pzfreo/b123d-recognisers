@@ -264,14 +264,10 @@ def infer_part_frame(part: Part) -> FrameInference:
             second, second_signed = second_class.oriented()
             if abs(_dot(first, second)) > _ORTHOGONAL_COS:
                 continue
-            # The strongest established direction is the most useful representative for local Z:
-            # the mature prismatic and turned grammars deliberately treat Z as their supported
-            # feature axis. This remains a gauge convention, not material-axis evidence. The
-            # second direction establishes X and Y is derived to keep X × Y = Z.
-            x = _unit(tuple(second[i] - _dot(first, second) * first[i] for i in range(3)))
-            z = _clean(first)
-            x = _clean(x)
-            y = _clean(_unit(_cross(z, x)))
+            y = _unit(tuple(second[i] - _dot(first, second) * first[i] for i in range(3)))
+            x = _clean(first)
+            y = _clean(y)
+            z = _clean(_unit(_cross(x, y)))
             # Any equal-ranked direction class leaves a possible axis interchange. Be
             # conservative even when the tied class was not selected for this representative:
             # FULL promises that the complete ordered basis, not merely its first axis, is
@@ -286,14 +282,14 @@ def infer_part_frame(part: Part) -> FrameInference:
     if ranked:
         # One axis leaves roll unconstrained. World XYZ selects a deterministic *representative*
         # of the explicitly published AXIAL gauge; it does not claim a semantic material axis.
-        z, _ = ranked[0].oriented()
+        x, _ = ranked[0].oriented()
         seed = min(
             ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
-            key=lambda candidate: abs(_dot(z, candidate)),
+            key=lambda candidate: abs(_dot(x, candidate)),
         )
-        x = _unit(tuple(seed[i] - _dot(z, seed) * z[i] for i in range(3)))
-        z, x = _clean(z), _clean(x)
-        y = _clean(_unit(_cross(z, x)))
+        y = _unit(tuple(seed[i] - _dot(x, seed) * x[i] for i in range(3)))
+        x, y = _clean(x), _clean(y)
+        z = _clean(_unit(_cross(x, y)))
         return PartFrame(origin, x, y, z, FrameGauge.AXIAL)
     return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 

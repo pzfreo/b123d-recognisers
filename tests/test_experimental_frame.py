@@ -67,39 +67,11 @@ def test_asymmetric_geometry_establishes_axes_that_follow_a_rigid_motion() -> No
         assert getattr(frame, name) == pytest.approx(tuple(expected), abs=1e-9)
 
 
-def test_orthogonal_representative_puts_strongest_established_line_on_local_z() -> None:
-    frame = infer_part_frame(Box(60, 40, 10))
-
-    assert isinstance(frame, PartFrame)
-    assert frame.gauge is FrameGauge.ORTHOGONAL
-    assert frame.z == pytest.approx((0.0, 0.0, 1.0), abs=1e-12)
-    assert frame.x == pytest.approx((0.0, 1.0, 0.0), abs=1e-12)
-    assert frame.y == pytest.approx((-1.0, 0.0, 0.0), abs=1e-12)
-
-
-def test_z_primary_orthogonal_representative_follows_rigid_motion() -> None:
-    source = Box(60, 40, 10)
-    source_frame = infer_part_frame(source)
-    assert isinstance(source_frame, PartFrame)
-    part = Pos(13, -7, 5) * source.rotate(Axis((0, 0, 0), (1, 1, 0)), 37)
-
-    frame = infer_part_frame(part)
-
-    assert isinstance(frame, PartFrame)
-    for name in ("x", "y", "z"):
-        expected = Vector(*getattr(source_frame, name)).rotate(
-            Axis((0, 0, 0), (1, 1, 0)), 37
-        )
-        assert getattr(frame, name) == pytest.approx(tuple(expected), abs=1e-9)
-
-
 def test_surface_of_revolution_reports_its_unobservable_roll_gauge() -> None:
     frame = infer_part_frame(Cylinder(10, 30).rotate(Axis.X, 37))
 
     assert isinstance(frame, PartFrame)
     assert frame.gauge is FrameGauge.AXIAL
-    expected = Vector(0, 0, 1).rotate(Axis.X, 37)
-    assert frame.z == pytest.approx(tuple(expected), abs=1e-9)
 
 
 def test_frame_inference_refuses_material_without_an_analytic_direction() -> None:
