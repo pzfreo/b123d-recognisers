@@ -9,9 +9,9 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 
 | rotation | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Z30 | 77 | 34 | 14 | 29 | 0 |
-| X30 | 77 | 29 | 7 | 41 | 0 |
-| X90 | 77 | 77 | 0 | 0 | 0 |
+| Z30 | 76 | 34 | 14 | 28 | 0 |
+| X30 | 76 | 29 | 7 | 40 | 0 |
+| X90 | 76 | 76 | 0 | 0 | 0 |
 
 ## Affected fixtures
 
@@ -25,7 +25,7 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 - **slanted_steps** — Z30: 0 reclassified, 2 absent; absent pocket ×2; X30: 0 reclassified, 2 absent; absent pocket ×2
 - **straight_and_obround_slots** — Z30: 4 reclassified, 1 absent; transitions slot->passage ×4; absent slot ×1; X30: 4 reclassified, 1 absent; transitions slot->passage ×4; absent slot ×1
 - **traversal_order** — Z30: 3 reclassified, 6 absent; transitions slot->passage ×3; absent plate ×6; X30: 3 reclassified, 6 absent; transitions slot->passage ×3; absent plate ×6
-- **triangular_and_hex_pockets** — Z30: 1 reclassified, 1 absent; transitions pocket->prismatic_pocket ×1; absent paired_ramp_step ×1; X30: 0 reclassified, 4 absent; absent paired_ramp_step ×1, pocket ×1, prismatic_pocket ×2
+- **triangular_and_hex_pockets** — Z30: 1 reclassified, 0 absent; transitions pocket->prismatic_pocket ×1; X30: 0 reclassified, 3 absent; absent pocket ×1, prismatic_pocket ×2
 - **turned_steps_and_grooves** — X30: 0 reclassified, 2 absent; absent step ×2
 
 ## Interpretation boundary
