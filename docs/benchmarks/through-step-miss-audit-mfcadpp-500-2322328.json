@@ -3345,9 +3345,15 @@
     }
   ],
   "component_derivation": "connected components of same-class original faces under shared-edge adjacency",
+  "dataset": {
+    "name": "MFCAD++",
+    "partition": "test",
+    "root": "/app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test",
+    "version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
+  },
   "format": "b123d-recognisers-mfcadpp-through-step-miss-audit",
   "format_version": 1,
-  "implementation_commit": "746d2ff59d02b69996ef42c7fe844480e42ee129",
+  "implementation_commit": "2322328be2064447749375d56328c4a5766d1bb2",
   "native_instance_labels": false,
   "ranked_broad_motifs": [
     {

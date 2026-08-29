@@ -2,8 +2,10 @@
 
 **Issue:** #306  
 **Production baseline:** `04d6e9d`  
-**Audit implementation:** `746d2ff`  
+**Audit implementation:** `2322328be2064447749375d56328c4a5766d1bb2`
 **Dataset role:** open development evidence  
+**Corpus version:** MFCAD++ published test split; DOI
+`10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823`
 **MFInstSeg:** not used or inspected
 
 ## Result
@@ -43,7 +45,7 @@ connected component of same-class original faces under shared-edge adjacency. Th
 promote that proxy to native instance recall.
 
 The machine artifact is
-[`through-step-miss-audit-mfcadpp-500-746d2ff.json`](through-step-miss-audit-mfcadpp-500-746d2ff.json).
+[`through-step-miss-audit-mfcadpp-500-2322328.json`](through-step-miss-audit-mfcadpp-500-2322328.json).
 It records all 142 unrecalled components, 55 exact descriptor clusters, the broader explicit motif,
 and deterministic samples from each cluster. Its selection hash
 `323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df` matches the E5b
@@ -69,7 +71,7 @@ complexity rather than the feature motif. The broader boundary-interruption moti
 explicit conjunction of recorded descriptors; it is not a fitted cluster or learned similarity.
 
 Two identical canonical runs of the final tool produced byte-identical JSON with SHA-256
-`af4ec003c861c1bcc0b78f7f4ee98fcc21ea2eb1af765f5ba039b5b772ad1c24`.
+`5819b5e196bc8f895248c983f35cdf60691bb950afa428f37d30c7e520eb8ec1`.
 
 ## Bounded manual validation
 
@@ -113,7 +115,7 @@ production dependency, recogniser threshold, frame policy, or candidate/evidence
 uv run python tools/audit_mfcadpp_through_steps.py \
   /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
   --limit 500 \
-  --output docs/benchmarks/through-step-miss-audit-mfcadpp-500-746d2ff.json
+  --output docs/benchmarks/through-step-miss-audit-mfcadpp-500-2322328.json
 ```
 
 The path is environmental; the lexical selection rule and selected-ID hash are recorded in the
