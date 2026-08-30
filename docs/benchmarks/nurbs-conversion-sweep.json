@@ -393,6 +393,8 @@
         ],
         "converted_records": [
           {
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,
@@ -405,6 +407,8 @@
         "native_occurrences": 1,
         "native_records": [
           {
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,

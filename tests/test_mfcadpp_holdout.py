@@ -20,8 +20,9 @@ no part in the fix.
 
 **The measurement, over 33 models and 1,037 labelled faces.** Angled steps: 8 records, every one
 on a face MFCAD++ labels a triangular blind step. Of 226 Stock-labelled faces, 14 are complete
-Plate boundary evidence and none is claimed by another family; each such Plate also owns its
-opposed non-Stock boundary. This is single-label taxonomy overlap, not a machined-stock feature.
+Plate boundary evidence and 6 are defining faces of complete principal-axis rectangular residual
+islands; each Plate also owns its opposed non-Stock boundary and each Pad owns its exact terminal
+plus four walls. This is single-label taxonomy overlap, not a machined-stock feature.
 Chamfers: 2 records, both on faces labelled *triangular through slot* — a V-notch across a
 convex corner, which is a chamfer by this package's definition and a slot by MFCAD++'s. That
 is a taxonomy difference and was deliberately not "fixed"; changing a predicate to satisfy it
@@ -30,8 +31,9 @@ would have spent this draw the way the first one was spent.
 The per-label shares are recorded in ``corpus/mfcadpp_holdout/MANIFEST.json``'s sibling
 tooling rather than asserted here: recall against MFCAD++'s taxonomy is bounded by which
 families claim at all, so a share is a statement about the ledger as much as the recogniser.
-What is asserted is the family-aware boundary: only truthful Plate low/high material roles may
-overlap Stock, and a step on a recess wall remains the defect the held-out draw exists to catch.
+What is asserted is the family-aware boundary: only truthful Plate low/high material roles and
+complete Pad terminal/perimeter roles may overlap Stock, and a step on a recess wall remains the
+defect the held-out draw exists to catch.
 """
 
 from __future__ import annotations
@@ -84,12 +86,14 @@ def test_every_vendored_model_is_scored(scored, manifest):
     assert scored["models"] == len(manifest["models"])
 
 
-def test_only_plate_boundary_roles_claim_stock_labelled_faces(scored):
-    """The family-aware negative control after complete Plate attribution.
+def test_only_plate_and_pad_boundary_roles_claim_stock_labelled_faces(scored):
+    """The family-aware negative control after complete Plate and Pad attribution.
 
     MFCAD++ gives each face one label. A Plate is a material slab established by both bounding
     face groups, so its defining boundary may truthfully be labelled Stock while the opposed
-    boundary carries a subtractive-feature label. No other family may claim Stock here.
+    boundary carries a subtractive-feature label. A principal-axis Pad may similarly own a
+    Stock-labelled terminal/exterior wall while its other walls carry intersecting-feature labels.
+    No other family may claim Stock here.
     """
 
     stock = next(k for k, v in LABELS.items() if v == STOCK)
@@ -98,8 +102,8 @@ def test_only_plate_boundary_roles_claim_stock_labelled_faces(scored):
         for family, counts in scored["claimed"].items()
         if counts.get(str(stock), counts.get(stock, 0))
     }
-    assert on_stock == {"Plate": 14}
-    assert scored["faces_covered"].get(stock, 0) == 14
+    assert on_stock == {"Plate": 14, "RaisedPad": 6}
+    assert scored["faces_covered"].get(stock, 0) == 20
     assert scored["faces_per_label"][stock] > 0, "a control that is empty proves nothing"
 
 

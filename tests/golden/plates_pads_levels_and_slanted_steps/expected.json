@@ -36,7 +36,9 @@
             "y0": -9.0,
             "y1": 9.0,
             "z0": 12.0,
-            "z1": 28.0
+            "z1": 28.0,
+            "axis": "z",
+            "direction": 1
           }
         ],
         "paired_ramp_steps": [],
@@ -243,7 +245,9 @@
             "y0": -9.0,
             "y1": 9.0,
             "z0": 12.0,
-            "z1": 28.0
+            "z1": 28.0,
+            "axis": "z",
+            "direction": 1
           }
         ],
         "paired_ramp_steps": [],
@@ -563,7 +567,9 @@
           "y0": -9.0,
           "y1": 9.0,
           "z0": 12.0,
-          "z1": 28.0
+          "z1": 28.0,
+          "axis": "z",
+          "direction": 1
         }
       ],
       "recognise_repeating_radial_profiles": [],

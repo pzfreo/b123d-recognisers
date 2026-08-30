@@ -493,7 +493,7 @@ def _per_face(corpus):
     return totals
 
 
-def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
+def test_only_plate_and_pad_boundary_roles_land_on_stock_faces(corpus):
     """A bounded taxonomy-overlap detector, not a universal no-stock invariant.
 
     Plate attribution truthfully owns both material-side slab boundaries. MFCAD++ labels one of
@@ -509,15 +509,22 @@ def test_only_plate_boundary_roles_land_on_stock_faces(corpus):
     *Chamfer* and one bounded by raw billet is labelled *Stock*. ``Stock`` means "assigned to
     no feature", which is weaker and corpus-specific.
 
-    All other families remain the negative control. A change is a prompt to inspect exact roles,
-    not a reason to fit production recognition to this corpus's single-label assignment.
+    Principal-axis Pad covariance adds nine equally truthful Stock-labelled roles. Inspection of
+    the complete five-face occurrences found a material-outward rectangular terminal plus four
+    perimeter walls; MFCAD++ labels the residual island's terminal/exterior sides Stock and its
+    other sides by the intersecting subtractive features. That is the same single-label overlap,
+    not permission for an incomplete face projection. All other families remain the negative
+    control. A change is a prompt to inspect exact roles, not a reason to fit production
+    recognition to this corpus's single-label assignment.
     """
 
     claimed = _per_face(corpus)
     on_stock = {
         family: counts[STOCK] for family, counts in claimed.items() if counts.get(STOCK)
     }
-    assert on_stock == {"Plate": 13}, f"unexpected claims on stock-labelled faces: {on_stock}"
+    assert on_stock == {"Plate": 13, "RaisedPad": 9}, (
+        f"unexpected claims on stock-labelled faces: {on_stock}"
+    )
 
 
 def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narrowing(
