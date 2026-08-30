@@ -31,6 +31,8 @@
         "pads": [
           {
             "_type": "RaisedPad",
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,
@@ -238,6 +240,8 @@
         "pads": [
           {
             "_type": "RaisedPad",
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,
@@ -558,6 +562,8 @@
       "recognise_rectangular_pads": [
         {
           "_type": "RaisedPad",
+          "axis": "z",
+          "direction": 1,
           "x0": 18.0,
           "x1": 42.0,
           "y0": -9.0,

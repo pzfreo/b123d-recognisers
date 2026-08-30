@@ -259,3 +259,20 @@ the four authored radii explain the rounded top's exact missing area and are nev
 tolerances. Direct and aggregate calls use the same route and return the exact sharp-control
 record. Aggregate defining evidence remains exactly the original rounded top and four planar wall
 roles. Logical nodes and hidden blend faces never enter records or evidence.
+
+## Amendment (principal-axis Rectangular Pads, issue #331)
+
+`recognise_rectangular_pads` evaluates all six signed principal directions in the supplied
+recognition frame using one run-owned effective-surface query and geometry graph. `RaisedPad`
+schema version 2 adds `axis` and `direction`; its sorted XYZ bounds still locate the exact local
+island, while those fields identify the attachment-to-terminal coordinate and outward sign.
+Defaults of `axis="z"` and `direction=1` preserve positional construction and values for legacy
++Z records.
+
+A rectilinear union can expose overlapping five-face readings on more than one axis. Boundary-
+disjoint occurrences remain independent; overlapping readings select the unique orientation with
+the shortest attachment span. A minimum tied within the existing absolute recognition tolerance
+is refused rather than resolved by XYZ iteration order. Competing values or roles within the
+selected orientation still reach the normal identity and one-solid validation and cannot be
+silently arbitrated away. Sharp and complete four-corner convex-blend routes retain exactly one
+top and four original wall roles as defining evidence.

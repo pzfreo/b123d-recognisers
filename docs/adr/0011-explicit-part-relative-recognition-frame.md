@@ -153,3 +153,14 @@ geometry, but does not change the record schema, tolerance policy, defining-face
 reconciliation authority. Internally oblique features in an otherwise established part frame
 remain outside the principal-axis contract. The exact authored and MFCAD++ evidence is recorded in
 the [rectangular recess frame-axis audit](../benchmarks/e2-rectangular-recess-axis-audit.md).
+
+## Amendment (principal-axis rectangular pads, issue #331)
+
+The framed aggregate may map a physical rectangular island's attachment direction to any signed
+local principal axis. Pad discovery therefore evaluates those directions on the exact normalized
+working shape and returns the orientation in `RaisedPad.axis` and `RaisedPad.direction`; the
+framing policy does not reorder the representative for this family and consumers must not probe
+alternate rotations. The record's XYZ bounds, orientation, aggregate evidence and paired
+`FramedRecognitionResult.part` share one local coordinate system. Internally oblique islands remain
+outside this principal-axis contract. The exact authored and MFCAD++ evidence is recorded in the
+[rectangular-pad axis validation](../benchmarks/e2-rectangular-pad-axis-validation.md).

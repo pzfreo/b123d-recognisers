@@ -265,6 +265,7 @@ FAMILIES = {
 RECORD_SCHEMA_VERSIONS = {
     "Chamfer": 2,
     "Fillet": 2,
+    "RaisedPad": 2,
 }
 
 NO_MEMBERSHIP_RATIONALE = {
@@ -314,13 +315,14 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         return "deg"
     if name in {
         "axis_direction",
-        "direction",
         "flat_direction",
         "flat_directions",
         "run",
         "u",
         "v",
     }:
+        return "unit-vector"
+    if name == "direction" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"
     if name == "axis" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"

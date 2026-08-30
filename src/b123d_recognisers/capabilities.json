@@ -1744,6 +1744,16 @@
             "RecognitionResult.pads"
           ],
           "fields": {
+            "axis": {
+              "required": false,
+              "type": "str",
+              "units": "none"
+            },
+            "direction": {
+              "required": false,
+              "type": "int",
+              "units": "none"
+            },
             "x0": {
               "required": true,
               "type": "float",
@@ -1778,7 +1788,7 @@
           "name": "RaisedPad",
           "qualified_name": "b123d_recognisers.RaisedPad",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",

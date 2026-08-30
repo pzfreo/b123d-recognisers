@@ -12,6 +12,7 @@ from b123d_recognisers import (
     HoleRecord,
     PairedRampStep,
     PreparedFramedPart,
+    RaisedPad,
     RecognitionReport,
     RecognitionResult,
     build_framed_recognition_result,
@@ -57,6 +58,10 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
     assert_type(result.paired_ramp_steps, tuple[PairedRampStep, ...])
+    assert_type(result.pads, tuple[RaisedPad, ...])
+    for pad in result.pads:
+        assert_type(pad.axis, str)
+        assert_type(pad.direction, int)
     framed = build_framed_recognition_result(part)
     if isinstance(framed, FramedRecognitionResult):
         assert_type(framed.part, Shape[TopoDS_Shape])

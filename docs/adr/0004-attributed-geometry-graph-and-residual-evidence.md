@@ -259,3 +259,18 @@ classify an end as open or flat. Refusal remains `unknown`; cones, tori, spheres
 their existing native-only end rules. Exact converted through-hole records now match native records
 through standalone and aggregate routes. No Boss or Flat feature predicate changes, and this is not
 permission to reinterpret every B-spline face.
+
+## Amendment (bounded rectangular-pad query reuse, issue #331)
+
+Principal-axis Pad discovery evaluates twelve sharp/blended signed-direction routes over one
+solid. Those routes share one run-local immutable projection of the solid's planar face facts,
+part bounds, blend facts and material-side certificate results. The cache is an execution detail
+owned by the existing discovery call: it does not survive the run, cross solids, create topology,
+or become a second geometry authority.
+
+Query order may defer an expensive material-side certificate until the candidate has satisfied
+the cheaper structural wall, chain, area and provenance predicates. Deferral is not acceptance:
+the existing effective-surface query remains the sole certificate issuer, every accepted Pad still
+requires the same exact top-face certificate and five original defining faces, and any refusal is
+preserved. The paired census and MFCAD++-500 gates require identical non-Pad output, retention of
+every legacy Pad, and an enabled/legacy total-time ratio no greater than 1.10.
