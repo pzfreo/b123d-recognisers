@@ -387,13 +387,13 @@ validate_result_fields(
 )
 
 
-def build_recognition_result(
+def build_raw_recognition_result(
     part: Part,
     *,
     cylinders: CylinderInventory | None = None,
     rotational: bool = False,
 ) -> RecognitionResult:
-    """Run the shared recognition inventory exactly once for *part*.
+    """Run the shared recognition inventory once in the caller's coordinate frame.
 
     Dependencies are computed by this orchestration layer and injected downstream: holes
     reuse both the cylinder substrate and countersinks, while patterns reuse their accepted
@@ -416,6 +416,27 @@ def build_recognition_result(
     """
 
     return _take_inventory(part, cylinders=cylinders, rotational=rotational).result
+
+
+def build_recognition_result(
+    part: Part,
+    *,
+    cylinders: CylinderInventory | None = None,
+    rotational: bool = False,
+) -> RecognitionResult:
+    """Compatibility name for caller-coordinate recognition.
+
+    New integrations should ordinarily use ``build_framed_recognition_result`` and retain its
+    frame and working part.  Use ``build_raw_recognition_result`` when caller/world coordinates
+    are deliberately required.  This name retains its raw semantics throughout the 0.4 release
+    line and is scheduled for removal in 0.5.0; it will not silently change return type.
+    """
+
+    return build_raw_recognition_result(
+        part,
+        cylinders=cylinders,
+        rotational=rotational,
+    )
 
 
 def _take_inventory(

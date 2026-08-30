@@ -119,4 +119,4 @@ def test_readme_shows_the_step_entry_point_the_package_is_for() -> None:
     readme = README.read_text(encoding="utf-8")
 
     assert re.search(r"import_step\(", readme)
-    assert re.search(r"build_recognition_result\(\s*part\s*\)", readme)
+    assert re.search(r"build_framed_recognition_result\(\s*part\s*\)", readme)

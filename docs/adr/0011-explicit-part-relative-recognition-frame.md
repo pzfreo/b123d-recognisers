@@ -4,7 +4,7 @@
 - **Date:** 2026-08-27
 - **Decider:** Paul Fremantle
 - **Evidence:** [frame-handling evaluation](../benchmarks/frame-handling-prototype.md), issue #272,
-  spike #274, shipped framed route 0.4.3, working-shape contract #282
+  spike #274, shipped framed route 0.4.3, working-shape contract #282, Epic 0005 issue #317
 
 ## Context
 
@@ -85,6 +85,25 @@ The sealed MFTRCAD holdout is not required for this architecture decision and re
   event; callers constructing `FramedRecognitionResult` directly must add the working shape.
 - The topology-preserving placement route is release quality as an explicit opt-in API.
 - Making it the default recogniser path remains deferred to a separate compatibility decision.
+
+## Amendment (ordinary aggregate route, issue #317)
+
+The explicit framed boundary is the ordinary aggregate route for new integrations from 0.4.8.
+This changes guidance, not the return type of an existing function. Successful calls still own one
+`PartFrame`, the exact locally placed working shape, and the result of one aggregate run. Typed
+frame refusal remains explicit and never triggers raw recognition.
+
+Caller-coordinate operation is now named directly by `build_raw_recognition_result`. The
+historical `build_recognition_result` remains a raw compatibility alias throughout 0.4.x and is
+removed in 0.5.0; it will not silently change to a framed union return. This gives callers a staged
+pre-1.0 migration while avoiding two implicit defaults indefinitely. Examples, capability guidance
+and the named Draftwright integration use the framed lifecycle; code that intentionally needs
+caller/world coordinates uses the explicit raw name.
+
+The paired bounded-report route follows the same authority: `FramedRecognitionReport` owns the
+same frame and exact working shape beside one local `RecognitionReport`. Preparation exposes
+`recognise_report()` for consumers whose classification depends on the normalized shape and
+precomputed cylinder substrate. Neither result nor report path repeats aggregate recognition.
 
 ## Amendment (principal-axis Polygonal Stock, issue #311)
 

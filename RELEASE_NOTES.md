@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.4.8 (unreleased)
+
+- **Made framed recognition the ordinary route for new integrations.** Successful framed result
+  and bounded-report calls pair one inferred frame, the exact local working shape, and one
+  aggregate result/report. `build_raw_recognition_result()` and `build_raw_recognition_report()`
+  now name deliberate caller-coordinate operation. The historical ambiguous names remain raw
+  compatibility aliases throughout 0.4.x and are scheduled for removal in 0.5.0; typed frame
+  refusal never falls back automatically.
+
 ## 0.4.7
 
 - **Let consumers classify the exact framed working shape before recognition.**

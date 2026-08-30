@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Opt-in part-relative recognition with an explicit caller-space frame.
+"""Part-relative recognition with an explicit caller-space frame.
 
 Existing recognition entry points remain caller-space and byte compatible. Framed recognition
 pairs the unchanged local-frame ``RecognitionResult`` and exact working shape with the frame
@@ -24,7 +24,8 @@ from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
 from b123d_recognisers._typing import FrozenCylinderInventory, Part, Vector3
-from b123d_recognisers.result import RecognitionResult, build_recognition_result
+from b123d_recognisers.explanations import RecognitionReport, build_raw_recognition_report
+from b123d_recognisers.result import RecognitionResult, build_raw_recognition_result
 
 _PARALLEL_COS = 0.999
 _ORTHOGONAL_COS = 1.0 - _PARALLEL_COS
@@ -116,6 +117,15 @@ class FramedRecognitionResult:
 
 
 @dataclass(frozen=True, slots=True)
+class FramedRecognitionReport:
+    """The exact local working shape and report expressed in its accompanying frame."""
+
+    frame: PartFrame
+    part: Shape[TopoDS_Shape]
+    report: RecognitionReport
+
+
+@dataclass(frozen=True, slots=True)
 class PreparedFramedPart:
     """One normalized part and its reusable cylinder substrate, ready for one aggregate run.
 
@@ -137,7 +147,21 @@ class PreparedFramedPart:
         return FramedRecognitionResult(
             self.frame,
             self.part,
-            build_recognition_result(
+            build_raw_recognition_result(
+                self.part,
+                cylinders=cylinders,
+                rotational=rotational,
+            ),
+        )
+
+    def recognise_report(self, *, rotational: bool = False) -> FramedRecognitionReport:
+        """Run the aggregate once and return its bounded report in this local frame."""
+
+        cylinders = (list(self.cylinders[0]), list(self.cylinders[1]))
+        return FramedRecognitionReport(
+            self.frame,
+            self.part,
+            build_raw_recognition_report(
                 self.part,
                 cylinders=cylinders,
                 rotational=rotational,
@@ -148,6 +172,7 @@ class PreparedFramedPart:
 FrameInference = PartFrame | RefusedPartFrame
 FramedPreparation = PreparedFramedPart | RefusedPartFrame
 FramedRecognition = FramedRecognitionResult | RefusedPartFrame
+FramedReport = FramedRecognitionReport | RefusedPartFrame
 
 
 @dataclass(slots=True)
@@ -234,6 +259,8 @@ def _clean(vector: Vector3) -> Vector3:
 
 
 def _material_origin(part: Part) -> Vector3 | RefusedPartFrame:
+    if not part.solids():
+        return RefusedPartFrame(FrameRefusalReason.NO_MATERIAL)
     props = GProp_GProps()
     BRepGProp.VolumeProperties_s(part.wrapped, props)
     mass = float(props.Mass())
@@ -364,6 +391,15 @@ def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> 
     return prepared.recognise(rotational=rotational)
 
 
+def build_framed_recognition_report(part: Part, *, rotational: bool = False) -> FramedReport:
+    """Recognise once in an inferred local frame with bounded explanations."""
+
+    prepared = prepare_framed_part(part)
+    if isinstance(prepared, RefusedPartFrame):
+        return prepared
+    return prepared.recognise_report(rotational=rotational)
+
+
 def prepare_framed_part(part: Part) -> FramedPreparation:
     """Normalize *part* and derive the cylinder substrate before caller classification."""
 
@@ -386,10 +422,13 @@ __all__ = [
     "FramedPreparation",
     "FramedRecognition",
     "FramedRecognitionResult",
+    "FramedRecognitionReport",
+    "FramedReport",
     "PartFrame",
     "PreparedFramedPart",
     "RefusedPartFrame",
     "build_framed_recognition_result",
+    "build_framed_recognition_report",
     "infer_part_frame",
     "prepare_framed_part",
 ]

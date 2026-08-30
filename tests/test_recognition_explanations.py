@@ -114,6 +114,12 @@ def test_report_preserves_result_and_closed_family_roster() -> None:
     assert report.diagnostics == ()
 
 
+def test_legacy_raw_report_name_is_an_exact_compatibility_alias() -> None:
+    part = Box(10, 10, 10)
+
+    assert r.build_recognition_report(part) == r.build_raw_recognition_report(part)
+
+
 def test_reconciliation_loss_is_counted_without_identity_leakage() -> None:
     report = r.build_recognition_report(_u_passage())
 

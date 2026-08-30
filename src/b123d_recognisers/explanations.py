@@ -175,13 +175,13 @@ def _project_report(product: InventoryProduct) -> RecognitionReport:
     )
 
 
-def build_recognition_report(
+def build_raw_recognition_report(
     part: Part,
     *,
     cylinders: CylinderInventory | None = None,
     rotational: bool = False,
 ) -> RecognitionReport:
-    """Recognise once and return bounded lifecycle explanations beside the unchanged result.
+    """Recognise once in caller coordinates and return bounded lifecycle explanations.
 
     An absent diagnostic is not proof that the part contains no unsupported geometry. Families
     marked ``evaluated`` completed their current recogniser and may still exclude geometry outside
@@ -189,6 +189,25 @@ def build_recognition_report(
     """
 
     return _project_report(_take_inventory(part, cylinders=cylinders, rotational=rotational))
+
+
+def build_recognition_report(
+    part: Part,
+    *,
+    cylinders: CylinderInventory | None = None,
+    rotational: bool = False,
+) -> RecognitionReport:
+    """Compatibility name for a caller-coordinate bounded report.
+
+    New integrations should ordinarily use ``build_framed_recognition_report``.  Use
+    ``build_raw_recognition_report`` when caller/world coordinates are deliberate.
+    """
+
+    return build_raw_recognition_report(
+        part,
+        cylinders=cylinders,
+        rotational=rotational,
+    )
 
 
 __all__ = [
@@ -202,5 +221,6 @@ __all__ = [
     "RecognitionOutcome",
     "RecognitionReport",
     "ReconciliationReason",
+    "build_raw_recognition_report",
     "build_recognition_report",
 ]

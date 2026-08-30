@@ -42,21 +42,23 @@ consistent feature inventory:
 
 ```python
 from build123d import import_step
-from b123d_recognisers import build_recognition_result
+from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
 
 part = import_step("gearbox-housing.step")
-result = build_recognition_result(part)
+framed = build_framed_recognition_result(part)
 
-for hole in result.holes:
-    print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
+if isinstance(framed, FramedRecognitionResult):
+    for hole in framed.result.holes:
+        print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
 ```
 
-`build_recognition_result()` shares intermediate geometric analysis across recognisers and is the
-usual entry point for a CAD application. Its frozen result can be inspected directly or projected
-to JSON-compatible dictionaries for storage, indexing, comparison, or an editing pipeline.
+`build_framed_recognition_result()` shares intermediate geometric analysis across recognisers and
+is the ordinary entry point for a CAD application. Retain its frame and exact local working shape
+while consuming its frozen result; the records can also be projected to JSON-compatible
+dictionaries for storage, indexing, comparison, or an editing pipeline.
 
 For bounded lifecycle explanations from the same single run, use
-`build_recognition_report()`. Its immutable report distinguishes evaluated-empty families,
+`build_framed_recognition_report()`. Its immutable report distinguishes evaluated-empty families,
 classification-gated families, accepted/rejected candidates and supported residual diagnostics.
 It is deliberately not an exhaustive explanation of unsupported geometry; a missing diagnostic
 does not prove that no unsupported feature is present.
@@ -132,7 +134,23 @@ discrete sign or axis interchange, and `AXIAL` exposes unobservable roll. The ax
 gauged frame are deterministic representatives and must not be treated as semantic material
 directions. Geometry without an analytic direction returns a typed `RefusedPartFrame`.
 
-This route does not change `build_recognition_result()` or the caller-space meaning of its records.
+This is the ordinary aggregate route for new integrations. If caller/world-coordinate records are
+deliberately required, use the explicit `build_raw_recognition_result(part)` route. The historical
+`build_recognition_result(part)` name remains a raw compatibility alias throughout 0.4.x and is
+scheduled for removal in 0.5.0; it will not silently acquire a different return type.
+
+Bounded explanations have the same paired lifecycle:
+
+```python
+from b123d_recognisers import FramedRecognitionReport, build_framed_recognition_report
+
+framed_report = build_framed_recognition_report(part)
+if isinstance(framed_report, FramedRecognitionReport):
+    print(framed_report.report.families)
+```
+
+Use `build_raw_recognition_report(part)` only when the report and records intentionally remain in
+caller coordinates. A typed frame refusal never falls back to either raw route automatically.
 
 When classification itself depends on the normalized solid, prepare first and run the aggregate
 once after making that local decision:

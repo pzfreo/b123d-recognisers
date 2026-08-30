@@ -79,6 +79,18 @@ generated into exports.
   cost is new and is paid only by callers of the new route.
 - Framed explanations, surface-read summaries and serialized schemas remain explicit future work.
 
+## Amendment (paired framed report, issue #317)
+
+`build_framed_recognition_report` now supplies the previously deferred paired lifecycle. A
+successful `FramedRecognitionReport` owns one `PartFrame`, the exact topology-preserving local
+working shape, and the `RecognitionReport` produced by one aggregate run on that shape. Its records,
+diagnostics and evaluated topology therefore share local coordinates and identity authority.
+
+`PreparedFramedPart.recognise_report()` reuses the prepared cylinder substrate after a consumer's
+local classification decision. A `RefusedPartFrame` remains the complete refusal result; there is
+no automatic raw fallback. `build_raw_recognition_report` names intentional caller-coordinate
+reporting, while `build_recognition_report` remains its 0.4.x compatibility alias.
+
 ## Rejected alternatives
 
 - **Add diagnostics to `RecognitionResult`:** changes its central construction/equality contract
