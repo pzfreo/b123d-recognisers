@@ -334,12 +334,14 @@ it carries exact low/high wall nodes but reads no evidence, inventory, sibling o
 
 For Plate attribution, `plates._discover_plates` is the sole private writer-enabled core and
 `_registry._plates` its sole production writer caller. The registry reads restricted completed
-TURNED_STEPS records once for the unchanged global veto, then passes only `writer=services.writer`.
-The core carries exact original low/high face clusters and reads no Candidate set, evidence index,
-inventory, disposition, reconciliation output, sibling recogniser or predecessor occurrence.
-Issue #334 keeps per-solid proposal generation inside that same core. It does not add a registry
-loop or a second family invocation: one aggregate call enumerates solid scopes, stages the complete
-proposal roster, validates every role through the shared graph and only then publishes atomically.
+TURNED_STEPS occurrences once, projects only their revalidated SolidRefs, and passes that closed
+exclusion set beside `writer=services.writer`. The core carries exact original low/high face
+clusters and applies the veto only to proposals on those same solids; it reads no Candidate set,
+evidence index, inventory, disposition, reconciliation output, sibling recogniser or predecessor
+record value. Issues #334 and #337 keep per-solid proposal generation inside that same core. They
+do not add a registry loop, cylinder rescan or second family invocation: one aggregate call
+enumerates solid scopes, stages the complete proposal roster, validates every role through the
+shared graph and only then publishes atomically.
 Issue #329 keeps its intrinsic cross-envelope read inside `_plate_proposals`; it introduces no
 shared geometry substrate, registry loop, sibling dependency or second Plate scan.
 

@@ -16,7 +16,9 @@ from b123d_recognisers import (
     build_recognition_result,
     recognise_turned_steps,
 )
+from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.result import _take_inventory
 
 
@@ -63,6 +65,27 @@ def test_aggregate_matches_body_local_profile_roster() -> None:
 
     assert result.turned_steps == public
     assert len(TurnedProfile.grouped_from_steps(result.turned_steps)) == 2
+
+
+def test_all_turned_evidence_validates_before_any_candidate_is_published(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    part = Compound(children=[_shaft(y=-30), _shaft(y=30)])
+    ledger = ClaimLedger(FaceGraph(part))
+    original = FaceGraph.common_valid_solid
+    calls = 0
+
+    def fail_later_proposal(graph: FaceGraph, nodes):
+        nonlocal calls
+        calls += 1
+        return None if calls == 2 else original(graph, nodes)
+
+    monkeypatch.setattr(FaceGraph, "common_valid_solid", fail_later_proposal)
+
+    with pytest.raises(ValueError, match="no common valid solid"):
+        recognise_turned_steps(part, ledger=ledger)
+    assert calls == 2
+    assert ledger.claims == ()
 
 
 def test_coaxial_disjoint_profiles_and_child_order_retain_membership() -> None:
