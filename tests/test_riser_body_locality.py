@@ -6,6 +6,8 @@ import pytest
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
 from b123d_recognisers import (
+    FramedRecognitionResult,
+    RiserEvidence,
     build_framed_recognition_result,
     build_recognition_result,
     project_step_shoulders,
@@ -54,6 +56,26 @@ def test_unequal_body_level_projection_cannot_borrow_the_other_solids_level() ->
     assert [item.position for item in project_step_shoulders(risers, levels=[15.0])] == [30.0]
 
 
+def test_recognised_and_legacy_riser_records_remain_totally_ordered() -> None:
+    (recognised,) = recognise_risers(_stepped(dy=0))
+    legacy = RiserEvidence(
+        vertical=recognised.vertical,
+        axis=recognised.axis,
+        positions=recognised.positions,
+        other_axis=recognised.other_axis,
+        other_positions=recognised.other_positions,
+        z_lo=recognised.z_lo,
+        z_hi=recognised.z_hi,
+        lo_at_envelope=recognised.lo_at_envelope,
+        hi_at_envelope=recognised.hi_at_envelope,
+        tol=recognised.tol,
+    )
+
+    assert legacy != recognised
+    assert sorted((recognised, legacy)) == [legacy, recognised]
+    assert project_step_shoulders([legacy], levels=[10.0])
+
+
 def test_aggregate_riser_occurrences_have_distinct_defining_solid_authority() -> None:
     part = Compound(children=[_stepped(dy=-50), _stepped(dy=50)])
     product = _take_inventory(part)
@@ -89,8 +111,12 @@ def test_nested_compound_and_child_order_preserve_riser_occurrences() -> None:
 
 def test_framed_rigid_motion_preserves_body_local_riser_occurrences() -> None:
     part = Compound(children=[_stepped(dy=-50, dx=-30), _stepped(dy=50, dx=30)])
-    baseline = build_framed_recognition_result(part).result.risers
-    moved = build_framed_recognition_result(Pos(13, -7, 5) * part.rotate(Axis.X, 30)).result.risers
+    baseline_result = build_framed_recognition_result(part)
+    moved_result = build_framed_recognition_result(Pos(13, -7, 5) * part.rotate(Axis.X, 30))
+    assert isinstance(baseline_result, FramedRecognitionResult)
+    assert isinstance(moved_result, FramedRecognitionResult)
+    baseline = baseline_result.result.risers
+    moved = moved_result.result.risers
 
     assert len(moved) == len(baseline)
     for actual, expected in zip(moved, baseline, strict=True):

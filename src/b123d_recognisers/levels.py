@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import total_ordering
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
@@ -65,7 +66,8 @@ class StepShoulder(Record):
     position: float
 
 
-@dataclass(frozen=True, order=True)
+@total_ordering
+@dataclass(frozen=True)
 class RiserEvidence(Record):
     """One candidate step riser, recognised WITHOUT reference to any level set.
 
@@ -81,7 +83,9 @@ class RiserEvidence(Record):
     oblique tie-test that does NOT depend on levels — whether that end sits on the part's top
     or bottom — so the projection needs the levels and nothing else about the solid.
 
-    ``order=True`` for a deterministic recogniser return, per package ADR 0002.
+    The explicit total ordering keeps pre-0.4.9 hand-built records (whose body authority is
+    ``None``) sortable alongside recogniser-produced records while retaining that authority in
+    record equality.  Dataclass-generated ordering cannot compare ``None`` with a tuple.
     """
 
     vertical: bool
@@ -110,6 +114,27 @@ class RiserEvidence(Record):
     #: recogniser-produced record carries a tuple (possibly empty), so projection cannot borrow a
     #: matching level from another solid in a compound.
     body_level_zs: tuple[float, ...] | None = None
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, RiserEvidence):
+            return NotImplemented
+        return self._order_key() < other._order_key()
+
+    def _order_key(self) -> tuple[object, ...]:
+        return (
+            self.vertical,
+            self.axis,
+            self.positions,
+            self.other_axis,
+            self.other_positions,
+            self.z_lo,
+            self.z_hi,
+            self.lo_at_envelope,
+            self.hi_at_envelope,
+            self.tol,
+            self.body_level_zs is not None,
+            self.body_level_zs or (),
+        )
 
 
 @dataclass(frozen=True, slots=True)
