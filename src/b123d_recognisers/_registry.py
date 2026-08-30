@@ -352,6 +352,8 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
         for occurrence in inputs.occurrences(FamilyId.TURNED_STEPS, TurnedStep)
         if (solid := occurrence.solid()) is not None
     )
+    if services.context.rotational and not turned_solids:
+        return []
     return list(
         _discover_plates(
             services.context.part,

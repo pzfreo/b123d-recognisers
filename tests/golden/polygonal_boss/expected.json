@@ -167,16 +167,7 @@
         "pads": [],
         "paired_ramp_steps": [],
         "passages": [],
-        "plates": [
-          {
-            "_type": "Plate",
-            "axis": "z",
-            "hi": 5.0,
-            "lo": -5.0,
-            "u": 0.0,
-            "v": 0.0
-          }
-        ],
+        "plates": [],
         "pocket_patterns": [],
         "pockets": [],
         "polygonal_bosses": [

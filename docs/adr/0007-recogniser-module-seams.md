@@ -338,7 +338,9 @@ TURNED_STEPS occurrences once, projects only their revalidated SolidRefs, and pa
 exclusion set beside `writer=services.writer`. The core carries exact original low/high face
 clusters and applies the veto only to proposals on those same solids; it reads no Candidate set,
 evidence index, inventory, disposition, reconciliation output, sibling recogniser or predecessor
-record value. Issues #334 and #337 keep per-solid proposal generation inside that same core. They
+record value. A rotational-classified run with no completed TurnedStep occurrence retains the
+historical empty Plate inventory; the body-local exception is entered only when there is an
+established solid to exclude. Issues #334 and #337 keep per-solid proposal generation inside that same core. They
 do not add a registry loop, cylinder rescan or second family invocation: one aggregate call
 enumerates solid scopes, stages the complete proposal roster, validates every role through the
 shared graph and only then publishes atomically.

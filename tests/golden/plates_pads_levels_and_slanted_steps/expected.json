@@ -328,24 +328,7 @@
         ],
         "paired_ramp_steps": [],
         "passages": [],
-        "plates": [
-          {
-            "_type": "Plate",
-            "axis": "x",
-            "hi": -45.0,
-            "lo": -55.0,
-            "u": 0.0,
-            "v": 20.0
-          },
-          {
-            "_type": "Plate",
-            "axis": "z",
-            "hi": 4.0,
-            "lo": -4.0,
-            "u": 0.90252708,
-            "v": 0.0
-          }
-        ],
+        "plates": [],
         "pocket_patterns": [],
         "pockets": [
           {

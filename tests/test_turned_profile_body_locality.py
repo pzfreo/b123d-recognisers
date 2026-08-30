@@ -182,3 +182,7 @@ def test_turned_profile_suppresses_plate_only_on_its_own_solid() -> None:
     }
     assert None not in step_solids | plate_solids
     assert step_solids.isdisjoint(plate_solids)
+
+
+def test_rotational_classification_without_a_turned_body_does_not_admit_plates() -> None:
+    assert build_recognition_result(Box(80, 60, 10), rotational=True).plates == ()

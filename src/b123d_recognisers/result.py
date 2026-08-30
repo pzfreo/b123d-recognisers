@@ -287,7 +287,8 @@ class RecognitionResult:
     #: values through :meth:`step_ladder_for_z_span`.
     step_levels: tuple[FaceLevel, ...]
     #: Whether the part classified as ROTATIONAL, carried so consumers can distinguish the
-    #: context used by classification-gated families. Plate discovery still runs over compounds:
+    #: context used by classification-gated families. Plate discovery remains absent for a
+    #: rotational-classified shape with no established turned profile. In a mixed compound,
     #: completed TurnedStep ownership suppresses only the same solid, leaving independent
     #: prismatic bodies eligible.
     rotational: bool
