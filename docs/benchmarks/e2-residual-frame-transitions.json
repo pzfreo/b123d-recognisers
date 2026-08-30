@@ -1,0 +1,491 @@
+{
+  "dataset": "MFCAD++ published test split (development evidence)",
+  "face_identity": "zero-based build123d face order, validated across normalization",
+  "fillet_disposition": "false positives removed by refusing distinct equidistant planes",
+  "fillet_models": [
+    {
+      "correspondence": {
+        "center_error": 0.0,
+        "local_normal": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "normal_error": 0.0,
+        "raw_normal": [
+          0.0,
+          -0.0,
+          -1.0
+        ],
+        "validated": true
+      },
+      "file": "1129.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 0.0,
+        "origin": [
+          9.600460655904,
+          17.141193296253,
+          6.676133081332
+        ],
+        "signed_principal_permutation": true,
+        "x": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "y": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "z": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "local": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": false,
+              "nearest_distance": 0.345355571138,
+              "tied_coordinates": [
+                -1.957287461073
+              ]
+            },
+            {
+              "axis": "y",
+              "distinct_equidistant": true,
+              "nearest_distance": 1.0,
+              "tied_coordinates": [
+                -6.696066495099,
+                -4.696066495099
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": false,
+            "coordinates": {
+              "x": -1.957287461073,
+              "y": -6.696066495099
+            }
+          },
+          "run_axis": "z",
+          "unambiguous_choice": {
+            "coordinates": {
+              "x": -1.957287461073
+            },
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "mfcadpp_class": 16,
+      "raw": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": true,
+              "nearest_distance": 1.0,
+              "tied_coordinates": [
+                2.904394160805,
+                4.904394160805
+              ]
+            },
+            {
+              "axis": "z",
+              "distinct_equidistant": false,
+              "nearest_distance": 0.345355571138,
+              "tied_coordinates": [
+                8.633420542405
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": true,
+            "coordinates": {
+              "x": 4.904394160805,
+              "z": 8.633420542405
+            }
+          },
+          "run_axis": "y",
+          "unambiguous_choice": {
+            "coordinates": {
+              "z": 8.633420542405
+            },
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "step_sha256": "1c409219ba907e0a6293b1c80ed2e4dbb88a7988d8dcb9da57728fad77c0071e",
+      "target_face_index": 11
+    },
+    {
+      "correspondence": {
+        "center_error": 0.0,
+        "local_normal": [
+          0.707106781187,
+          0.707106781187,
+          -0.0
+        ],
+        "normal_error": 0.0,
+        "raw_normal": [
+          -0.707106781187,
+          -0.0,
+          0.707106781187
+        ],
+        "validated": true
+      },
+      "file": "1149.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 0.0,
+        "origin": [
+          22.406631461541,
+          15.673443732516,
+          6.542516303546
+        ],
+        "signed_principal_permutation": true,
+        "x": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "y": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "z": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "local": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": true,
+              "nearest_distance": 2.810887301525,
+              "tied_coordinates": [
+                1.37244138043,
+                6.99421598348
+              ]
+            },
+            {
+              "axis": "y",
+              "distinct_equidistant": true,
+              "nearest_distance": 2.810887301526,
+              "tied_coordinates": [
+                16.78485685849,
+                22.406631461541
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": false,
+            "coordinates": {
+              "x": 1.37244138043,
+              "y": 16.78485685849
+            }
+          },
+          "run_axis": "z",
+          "unambiguous_choice": {
+            "coordinates": {},
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "mfcadpp_class": 21,
+      "raw": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": true,
+              "nearest_distance": 2.810887301525,
+              "tied_coordinates": [
+                0.0,
+                5.621774603051
+              ]
+            },
+            {
+              "axis": "z",
+              "distinct_equidistant": true,
+              "nearest_distance": 2.810887301525,
+              "tied_coordinates": [
+                7.914957683976,
+                13.536732287026
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": true,
+            "coordinates": {
+              "x": 0.0,
+              "z": 7.914957683976
+            }
+          },
+          "run_axis": "y",
+          "unambiguous_choice": {
+            "coordinates": {},
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "step_sha256": "368d58ade89657130a3d60b368b0fe56cae2a06b5bbeda2c18c6f0b91c4c29fc",
+      "target_face_index": 3
+    },
+    {
+      "correspondence": {
+        "center_error": 0.0,
+        "local_normal": [
+          -0.0,
+          -1.0,
+          0.0
+        ],
+        "normal_error": 0.0,
+        "raw_normal": [
+          0.0,
+          -0.0,
+          -1.0
+        ],
+        "validated": true
+      },
+      "file": "11257.step",
+      "frame": {
+        "gauge": "full",
+        "largest_basis_line_deviation_from_world_degrees": 0.0,
+        "origin": [
+          6.001505559788,
+          10.509965306805,
+          7.015378918973
+        ],
+        "signed_principal_permutation": true,
+        "x": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "y": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "z": [
+          0.0,
+          1.0,
+          0.0
+        ]
+      },
+      "local": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": true,
+              "nearest_distance": 1.0,
+              "tied_coordinates": [
+                -2.140952246455,
+                -0.140952246455
+              ]
+            },
+            {
+              "axis": "y",
+              "distinct_equidistant": false,
+              "nearest_distance": 0.109045821428,
+              "tied_coordinates": [
+                -2.984794259917
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": true,
+            "coordinates": {
+              "x": -2.140952246455,
+              "y": -2.984794259917
+            }
+          },
+          "run_axis": "z",
+          "unambiguous_choice": {
+            "coordinates": {
+              "y": -2.984794259917
+            },
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "mfcadpp_class": 16,
+      "raw": {
+        "accepted_target_fillet": false,
+        "plane_read": {
+          "axes": [
+            {
+              "axis": "x",
+              "distinct_equidistant": true,
+              "nearest_distance": 1.0,
+              "tied_coordinates": [
+                6.142457806243,
+                8.142457806243
+              ]
+            },
+            {
+              "axis": "z",
+              "distinct_equidistant": false,
+              "nearest_distance": 0.109045821428,
+              "tied_coordinates": [
+                4.030584659056
+              ]
+            }
+          ],
+          "legacy_lower_coordinate_choice": {
+            "convex": false,
+            "coordinates": {
+              "x": 6.142457806243,
+              "z": 4.030584659056
+            }
+          },
+          "run_axis": "y",
+          "unambiguous_choice": {
+            "coordinates": {
+              "z": 4.030584659056
+            },
+            "has_both_required_planes": false
+          }
+        }
+      },
+      "step_sha256": "54b704ccd9461e438f39becc40d43c9817198cecb9a453b65b30a3e3158e8c2b",
+      "target_face_index": 16
+    }
+  ],
+  "plate_disposition": "true covariance defect in the bbox-based area denominator; no Plate semantics changed by this Fillet increment",
+  "plate_model": {
+    "file": "10649.step",
+    "first_boundary": "bbox-cross-area-threshold-changes-under-in-plane-roll",
+    "frame": {
+      "gauge": "full",
+      "largest_basis_line_deviation_from_world_degrees": 17.439432789,
+      "origin": [
+        8.202665904057,
+        14.809762940534,
+        16.491184116546
+      ],
+      "signed_principal_permutation": false,
+      "x": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "y": [
+        0.954034293093,
+        -0.299697460121,
+        0.0
+      ],
+      "z": [
+        0.299697460121,
+        0.954034293093,
+        0.0
+      ]
+    },
+    "local_aggregate_plates": 0,
+    "occurrences": [
+      {
+        "all_defining_faces_locally_principal": true,
+        "correspondence": [
+          {
+            "center_error": 0.0,
+            "local_normal": [
+              1.0,
+              0.0,
+              -0.0
+            ],
+            "normal_error": 0.0,
+            "raw_normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "validated": true
+          },
+          {
+            "center_error": 6e-15,
+            "local_normal": [
+              -1.0,
+              -0.0,
+              0.0
+            ],
+            "normal_error": 0.0,
+            "raw_normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "validated": true
+          },
+          {
+            "center_error": 0.0,
+            "local_normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "normal_error": 0.0,
+            "raw_normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "validated": true
+          }
+        ],
+        "defining_face_indices": [
+          4,
+          9,
+          20
+        ],
+        "local_absolute_max_normal_components": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "local_area_gate": {
+          "axis": "x",
+          "bbox_cross_area": 970.260548690797,
+          "both_groups_clear": false,
+          "minimum_group_area": 388.104219476319,
+          "negative_group_area": 565.865609208969,
+          "positive_group_area": 261.266959806918
+        },
+        "mfcadpp_classes": [
+          20,
+          24,
+          10
+        ],
+        "plate_axis_alignment_threshold": 0.99,
+        "raw_area_gate": {
+          "axis": "z",
+          "bbox_cross_area": 615.112346599967,
+          "both_groups_clear": true,
+          "minimum_group_area": 246.044938639987,
+          "negative_group_area": 565.865609208969,
+          "positive_group_area": 261.266959806918
+        },
+        "raw_record": "Plate(axis='z', lo=0.0, hi=4.913, u=13.430979981518746, v=12.675810446670166)"
+      }
+    ],
+    "raw_aggregate_plates": 1,
+    "step_sha256": "0f6c9e2681bdceda2af648304f00760ea02f4dd99f7b24c48c52a4ce284eb31f"
+  },
+  "schema": 1,
+  "selection": "the three Fillet and one Plate transitions in issue #323"
+}

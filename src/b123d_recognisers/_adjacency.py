@@ -50,7 +50,7 @@ from b123d_recognisers._body_geometry import (
     describe_solid,
     matching_boundary_for_solid,
 )
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP
+from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP, length_tol
 from b123d_recognisers._typing import EdgeLike, FaceLike
 
 _T = TypeVar("_T")
@@ -1323,6 +1323,7 @@ def nearest_axis_aligned_planes(
     centre: dict[int, float],
     *,
     exclude_axis: int,
+    refuse_equidistant: bool = False,
     face_edges: FaceEdges | None = None,
 ) -> dict[int, float]:
     """Per axis, the coordinate of *face*'s nearest axis-aligned neighbour plane.
@@ -1337,19 +1338,42 @@ def nearest_axis_aligned_planes(
     *exclude_axis* is the axis the feature runs **along**; a plane facing that way is an end
     cap, not one of the two walls the feature bridges.
 
-    The nearest plane per axis is the one forming this local corner. Ties break on the
-    coordinate itself rather than on arrival, so the pick cannot depend on the order the
-    kernel yields neighbours in — ``slanted_steps`` has a chamfer equidistant from two
-    distinct Z planes, where the strict ``<`` this replaces kept whichever came first.
+    The nearest plane per axis is the one forming this local corner. Ties normally resolve to the
+    lower coordinate so existing Chamfer and Angled Step behaviour remains stable and independent
+    of kernel traversal order. A consumer whose acceptance cannot disambiguate the physical plane
+    may set *refuse_equidistant*: two distinct planes at the same nearest distance then omit that
+    axis, avoiding a choice that changes under an axis-sign inversion. Split coplanar neighbours
+    remain one plane and retain their midpoint coordinate.
     """
 
-    best: dict[int, tuple[float, float]] = {}  # axis -> (distance, coordinate)
+    candidates: dict[int, list[float]] = {}
     for other in neighbours(face, edge_faces, face_edges=face_edges):
         aligned = axis_aligned_axis(other.wrapped)
         if aligned is None or aligned[0] == exclude_axis:
             continue
         ax, coord = aligned
-        key = (abs(coord - centre[ax]), coord)
-        if ax not in best or key < best[ax]:
-            best[ax] = key
-    return {ax: coord for ax, (_, coord) in best.items()}
+        candidates.setdefault(ax, []).append(coord)
+
+    selected: dict[int, float] = {}
+    for axis, coordinates in candidates.items():
+        if not refuse_equidistant:
+            selected[axis] = min(
+                coordinates,
+                key=lambda coordinate: (abs(coordinate - centre[axis]), coordinate),
+            )
+            continue
+        distances = [abs(coordinate - centre[axis]) for coordinate in coordinates]
+        nearest = min(distances)
+        tied = [
+            coordinate
+            for coordinate, distance in zip(coordinates, distances, strict=True)
+            if abs(distance - nearest)
+            <= length_tol(max(distance, nearest), rel=1e-9)
+        ]
+        plane_tol = length_tol(
+            max(abs(coordinate - centre[axis]) for coordinate in tied), rel=1e-9
+        )
+        if max(tied) - min(tied) > plane_tol:
+            continue
+        selected[axis] = 0.5 * (min(tied) + max(tied))
+    return selected

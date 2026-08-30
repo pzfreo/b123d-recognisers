@@ -14,6 +14,7 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Cylinder,
+    Edge,
     GeomType,
     Pos,
     Rot,
@@ -26,11 +27,20 @@ from build123d import (
     import_step,
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Torus
 
 import b123d_recognisers.fillets as fillets_module
 from b123d_recognisers import recognise_fillets
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map, neighbours
+from b123d_recognisers._adjacency import (
+    FaceEdges,
+    FaceGraph,
+    axis_aligned_axis,
+    edge_face_map,
+    nearest_axis_aligned_planes,
+    neighbours,
+)
+from b123d_recognisers._bevel import convex_bevel
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._features import analyse_cylinders
@@ -69,6 +79,50 @@ def _through_slot():
             SlotOverall(30, 10)
         extrude(amount=20, both=True)
     return Box(50, 40, 20) - slot_part.part
+
+
+def _interrupted_corner_round():
+    """A round touching an extra, opposite support plane over part of its run."""
+
+    return _prismatic() + Pos(-19, -16, -5) * Box(2, 2, 10)
+
+
+def _split_coplanar_fillet_support():
+    """Split one support of a genuine edge Fillet without changing its geometry."""
+
+    part = _prismatic()
+    faces = list(part.faces())
+    edge_faces = edge_face_map(faces)
+    curved = next(
+        face
+        for face in faces
+        if BRepAdaptor_Surface(face.wrapped).GetType() == GeomAbs_Cylinder
+    )
+    support = next(
+        face
+        for face in neighbours(curved, edge_faces)
+        if (axis_aligned_axis(face.wrapped) or (-1, 0.0))[0] in (0, 1)
+    )
+    axis = axis_aligned_axis(support.wrapped)
+    assert axis is not None
+    bounds = support.bounding_box()
+    if axis[0] == 0:
+        seam = Edge.make_line(
+            (bounds.min.X, bounds.min.Y, 0.0),
+            (bounds.min.X, bounds.max.Y, 0.0),
+        )
+    else:
+        seam = Edge.make_line(
+            (bounds.min.X, bounds.min.Y, 0.0),
+            (bounds.max.X, bounds.min.Y, 0.0),
+        )
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam.wrapped, support.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+    assert split.is_valid
+    return split
 
 
 def _claimed(part, **kwargs):
@@ -518,7 +572,10 @@ def test_reversed_face_traversal_preserves_occurrence_roles(monkeypatch) -> None
         Cylinder(10, 20),
         Box(30, 30, 20) - Cylinder(5, 20),
         _internal_pocket_round(),
+        Rot(0, 90, 0) * _internal_pocket_round(),
         _through_slot(),
+        Rot(90, 0, 0) * _through_slot(),
+        _through_slot().mirror(),
     ],
 )
 def test_rejected_round_context_issues_no_fillet_candidate(part) -> None:
@@ -536,6 +593,121 @@ def test_rejected_round_context_issues_no_fillet_candidate(part) -> None:
         == []
     )
     assert ledger.candidate_set(FamilyId.FILLETS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        _interrupted_corner_round(),
+        Rot(90, 0, 0) * _interrupted_corner_round(),
+        _interrupted_corner_round().mirror(),
+    ],
+)
+def test_distinct_equidistant_support_refuses_only_the_ambiguous_fillet(part) -> None:
+    faces = list(part.faces())
+    edge_faces = edge_face_map(faces)
+    ambiguous = None
+    for face in faces:
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if surface.GetType() != GeomAbs_Cylinder:
+            continue
+        direction = surface.Cylinder().Axis().Direction()
+        components = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+        run_axis = max(range(3), key=lambda axis: components[axis])
+        bounds = face.bounding_box()
+        spans = (
+            (bounds.min.X, bounds.max.X),
+            (bounds.min.Y, bounds.max.Y),
+            (bounds.min.Z, bounds.max.Z),
+        )
+        centre = {axis: 0.5 * sum(spans[axis]) for axis in range(3)}
+        compatibility = nearest_axis_aligned_planes(
+            face, edge_faces, centre, exclude_axis=run_axis
+        )
+        unambiguous = nearest_axis_aligned_planes(
+            face,
+            edge_faces,
+            centre,
+            exclude_axis=run_axis,
+            refuse_equidistant=True,
+        )
+        required = {axis for axis in range(3) if axis != run_axis}
+        if (
+            required <= compatibility.keys()
+            and not required <= unambiguous.keys()
+            and convex_bevel(part, centre, run_axis, compatibility)
+        ):
+            assert ambiguous is None
+            ambiguous = face
+    assert ambiguous is not None
+
+    ledger, measured = _claimed(part)
+    candidates = ledger.candidate_set(FamilyId.FILLETS).candidates
+    assert len(measured) == len(candidates) == 3
+    assert tuple(candidate.record for candidate in candidates) == tuple(measured)
+    ambiguous_node = ledger.graph.require_node(ambiguous)
+    defining_sets = tuple(ledger.defining_of(candidate) for candidate in candidates)
+    assert all(len(defining) == 1 for defining in defining_sets)
+    assert all(ambiguous_node not in defining for defining in defining_sets)
+    assert _take_inventory(part).result.fillets == tuple(measured)
+
+
+def test_split_coplanar_support_preserves_fillet_and_exact_defining_faces() -> None:
+    part = _split_coplanar_fillet_support()
+    expected = recognise_fillets(_prismatic())
+    faces = list(part.faces())
+    edge_faces = edge_face_map(faces)
+    split_supported = set()
+    for face in faces:
+        surface = BRepAdaptor_Surface(face.wrapped)
+        if surface.GetType() != GeomAbs_Cylinder:
+            continue
+        direction = surface.Cylinder().Axis().Direction()
+        components = (abs(direction.X()), abs(direction.Y()), abs(direction.Z()))
+        run_axis = max(range(3), key=lambda axis: components[axis])
+        plane_coordinates: dict[int, list[float]] = {}
+        for other in neighbours(face, edge_faces):
+            aligned = axis_aligned_axis(other.wrapped)
+            if aligned is not None and aligned[0] != run_axis:
+                plane_coordinates.setdefault(aligned[0], []).append(aligned[1])
+        if not any(
+            len(coordinates) > 1 and max(coordinates) - min(coordinates) <= 1e-12
+            for coordinates in plane_coordinates.values()
+        ):
+            continue
+        bounds = face.bounding_box()
+        spans = (
+            (bounds.min.X, bounds.max.X),
+            (bounds.min.Y, bounds.max.Y),
+            (bounds.min.Z, bounds.max.Z),
+        )
+        centre = {axis: 0.5 * sum(spans[axis]) for axis in range(3)}
+        selected = nearest_axis_aligned_planes(
+            face,
+            edge_faces,
+            centre,
+            exclude_axis=run_axis,
+            refuse_equidistant=True,
+        )
+        assert {axis for axis in range(3) if axis != run_axis} <= selected.keys()
+        split_supported.add(face)
+    assert split_supported
+
+    ledger, measured = _claimed(part)
+    candidates = ledger.candidate_set(FamilyId.FILLETS).candidates
+
+    assert measured == expected
+    assert tuple(candidate.record for candidate in candidates) == tuple(measured)
+    defining_sets = tuple(ledger.defining_of(candidate) for candidate in candidates)
+    assert all(len(defining) == 1 for defining in defining_sets)
+    defining_faces = {ledger.graph.face(next(iter(defining))) for defining in defining_sets}
+    assert all(
+        BRepAdaptor_Surface(face.wrapped).GetType() == GeomAbs_Cylinder
+        for face in defining_faces
+    )
+    assert len(defining_faces) == 4
+    assert split_supported <= defining_faces
+    assert _take_inventory(part).result.fillets == tuple(measured)
 
 
 @pytest.mark.parametrize(

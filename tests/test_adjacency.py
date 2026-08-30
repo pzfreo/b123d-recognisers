@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
 from build123d import Axis, Box, Cylinder, Pos, Rot, SortBy, chamfer, fillet
 
 from b123d_recognisers import (
@@ -160,13 +161,13 @@ def test_axis_aligned_axis_rejects_an_oblique_plane_and_a_curved_face():
     assert axis_aligned_axis(Cylinder(5, 20).faces().sort_by(SortBy.AREA)[-1].wrapped) is None
 
 
-def test_nearest_axis_aligned_planes_breaks_a_tie_on_the_coordinate_not_arrival():
+def test_nearest_axis_aligned_planes_breaks_a_tie_on_coordinate_not_arrival():
     """A cube's side face is equidistant from all four faces around it — a real tie.
 
     This is the order-dependence that was live in ``recognise_chamfers`` before the shared
     query: with a strict ``<`` the winner was whichever face the kernel happened to yield
     first, so the reconstructed corner — and with it the convex test — depended on traversal
-    order. Ties now resolve to the lower coordinate, which is a property of the geometry.
+    order. The compatibility behavior resolves to the lower coordinate.
     """
 
     part = Box(10, 10, 10)
@@ -188,6 +189,24 @@ def test_nearest_axis_aligned_planes_breaks_a_tie_on_the_coordinate_not_arrival(
         1: -5.0,
         2: -5.0,
     }
+
+
+@pytest.mark.parametrize("face_axis", range(3))
+def test_nearest_axis_aligned_planes_can_refuse_distinct_equidistant_planes(
+    face_axis: int,
+):
+    part = Box(10, 10, 10)
+    face = next(f for f in part.faces() if tuple(f.normal_at())[face_axis] > 0.9)
+    edge_faces = edge_face_map(part.faces())
+    centre = {axis: 5.0 if axis == face_axis else 0.0 for axis in range(3)}
+
+    assert nearest_axis_aligned_planes(
+        face,
+        edge_faces,
+        centre,
+        exclude_axis=face_axis,
+        refuse_equidistant=True,
+    ) == {}
 
 
 def test_nearest_axis_aligned_planes_drops_the_axis_the_feature_runs_along():
@@ -221,7 +240,39 @@ def test_nearest_axis_aligned_planes_keeps_the_closer_of_two_walls():
     biased = nearest_axis_aligned_planes(face, edge_faces, {0: 5.0, 1: 4.0, 2: 0.0}, exclude_axis=0)
 
     assert biased[1] == 5.0
-    assert biased[2] == -5.0  # still tied on Z, so still the lower coordinate
+    assert biased[2] == -5.0  # still tied on Z, so compatibility chooses the lower plane
+
+
+def test_nearest_axis_aligned_planes_tie_boundary_is_scale_aware_and_fail_closed():
+    part = Box(10, 10, 10)
+    face = next(f for f in part.faces() if f.normal_at().X > 0.9)
+    edge_faces = edge_face_map(part.faces())
+
+    within_noise = nearest_axis_aligned_planes(
+        face,
+        edge_faces,
+        {0: 5.0, 1: 4e-7, 2: 0.0},
+        exclude_axis=0,
+        refuse_equidistant=True,
+    )
+    outside_noise = nearest_axis_aligned_planes(
+        face,
+        edge_faces,
+        {0: 5.0, 1: 1e-5, 2: 0.0},
+        exclude_axis=0,
+        refuse_equidistant=True,
+    )
+    outside_noise_reversed = nearest_axis_aligned_planes(
+        face,
+        edge_faces,
+        {0: 5.0, 1: -1e-5, 2: 0.0},
+        exclude_axis=0,
+        refuse_equidistant=True,
+    )
+
+    assert 1 not in within_noise
+    assert outside_noise[1] == 5.0
+    assert outside_noise_reversed[1] == -5.0
 
 
 def test_face_edges_reuses_one_list_across_separate_face_wrappers():

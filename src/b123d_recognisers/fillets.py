@@ -184,7 +184,12 @@ def _discover_fillets(
         # Must bridge two axis-aligned faces on distinct in-plane axes (rounds a 90° edge).
         # Each neighbour plane's coordinate lets the convex test rebuild the virtual corner.
         neigh_coord = nearest_axis_aligned_planes(
-            f, edge_faces, fc, exclude_axis=edge_i, face_edges=face_edges
+            f,
+            edge_faces,
+            fc,
+            exclude_axis=edge_i,
+            refuse_equidistant=True,
+            face_edges=face_edges,
         )
         if oi[0] not in neigh_coord or oi[1] not in neigh_coord:
             continue
