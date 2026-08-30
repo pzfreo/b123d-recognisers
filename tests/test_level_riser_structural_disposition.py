@@ -61,6 +61,9 @@ def test_riser_equal_value_can_mean_two_faces_on_one_solid_without_a_winner() ->
     )
     assert len(matching) == 2
     assert graph.common_valid_solid(matching) is not None
+    product = _take_inventory(_equal_same_solid_ramps())
+    (candidate,) = product.physical.candidate_set(FamilyId.RISERS).candidates
+    assert len(product.evidence.defining_of(candidate)) == 2
 
 
 def test_riser_equal_value_across_solids_has_no_common_owner() -> None:
