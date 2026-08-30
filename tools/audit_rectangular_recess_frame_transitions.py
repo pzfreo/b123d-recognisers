@@ -59,9 +59,7 @@ def _principal_axes(graph: FaceGraph, indices: frozenset[int]) -> list[str | Non
         axis = None
         if normal is not None:
             components = tuple(abs(component) for component in normal)
-            for index, (candidate, component) in enumerate(
-                zip("xyz", components, strict=True)
-            ):
+            for index, (candidate, component) in enumerate(zip("xyz", components, strict=True)):
                 if abs(component - 1.0) <= _AXIS_TOL and all(
                     other <= _AXIS_TOL
                     for other_index, other in enumerate(components)
@@ -84,16 +82,18 @@ def _record_bounds(record: Slot | Pocket) -> dict[str, tuple[float, float]]:
     }
 
 
-def _containing_blind_pocket(
-    record: object, records: tuple[object, ...]
-) -> Pocket | None:
-    if not isinstance(record, Slot):
+def _containing_blind_pocket(record: object, records: tuple[object, ...]) -> Pocket | None:
+    if not isinstance(record, Slot) or record.body_key is None:
         return None
     centre = _region_center(record)
     slot_bounds = _record_bounds(record)
     matches = []
     for other in records:
-        if not isinstance(other, Pocket) or other.body_key != record.body_key:
+        if (
+            not isinstance(other, Pocket)
+            or other.body_key is None
+            or other.body_key != record.body_key
+        ):
             continue
         pocket_bounds = _record_bounds(other)
         same_centre = (
@@ -133,8 +133,10 @@ def _detail(
     related_pocket = _containing_blind_pocket(source_record, source_records)
     if related_pocket is not None:
         reason = "contained_projection_of_blind_pocket"
-    elif source_axes and all(axis is not None for axis in source_axes) and any(
-        axis is None for axis in other_axes
+    elif (
+        source_axes
+        and all(axis is not None for axis in source_axes)
+        and any(axis is None for axis in other_axes)
     ):
         reason = "principal_only_in_accepting_presentation"
     elif any(axis is None for axis in source_axes):
