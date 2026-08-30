@@ -122,3 +122,18 @@ reconciliation. It does not transfer classification, view, or drawing policy ups
 existing explicit-boolean framed function delegates through the prepared lifecycle and remains
 source-compatible; typed frame refusal still occurs before any aggregate and permits an explicit
 legacy fallback. FULL, ORTHOGONAL and AXIAL gauges all preserve the caller's local classification.
+
+## Amendment (principal-axis rectangular recesses, issue #320)
+
+An `ORTHOGONAL` frame may assign any equivalent physical direction to local X, Y or Z. Existing
+principal-axis `Pocket` and `Slot` semantics therefore cannot use world Z or XYZ iteration order to
+choose a floor, opening or depth. Corner interruptions use the uniquely shallowest complete
+physical leg as depth. Opposed-wall floored recesses evaluate both perpendicular interpretations
+and accept exactly one. A tied corner leg or multiple valid floored interpretation remains an
+explicit refusal under the existing coordinate floor.
+
+This changes record values where the legacy result encoded presentation rather than physical
+geometry, but does not change the record schema, tolerance policy, defining-face ownership or
+reconciliation authority. Internally oblique features in an otherwise established part frame
+remain outside the principal-axis contract. The exact authored and MFCAD++ evidence is recorded in
+the [rectangular recess frame-axis audit](../benchmarks/e2-rectangular-recess-axis-audit.md).

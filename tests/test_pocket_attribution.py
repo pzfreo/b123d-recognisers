@@ -31,7 +31,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import recognise_pockets
+from b123d_recognisers import build_framed_recognition_result, recognise_pockets
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -73,6 +73,7 @@ from b123d_recognisers._recess_reduce import (
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
+from b123d_recognisers.frames import FramedRecognitionResult
 from b123d_recognisers.result import _discover_all
 
 ROOT = Path(__file__).parents[1]
@@ -180,14 +181,19 @@ def _fresh_occurrences(part):
                     )
                     nodes = frozenset((ln, rn))
                     records.append((rec, nodes))
-        # Corner route: three mutually perpendicular inward faces, represented by a bounded floor.
+        # Corner route: independently enumerate all three possible depth faces, then select the
+        # uniquely shallowest physical leg without consulting axis letters or production helpers.
+        corner_records = []
         for floor, di, fs, fb in planes:
-            if di != 2:  # Frozen public corner grammar; axis redesign is under review.
-                continue
             envelope = ((box.min.X, box.max.X), (box.min.Y, box.max.Y), (box.min.Z, box.max.Z))
             if min(abs(sum(fb[di]) / 2 - end) for end in envelope[di]) <= 1e-6:
                 continue
             footprint = [axis for axis in range(3) if axis != di]
+            if any(
+                fb[axis][1] - fb[axis][0] >= 0.9 * extent[axis]
+                for axis in footprint
+            ):
+                continue
             if not all(
                 abs(fb[axis][0] - envelope[axis][0]) <= 1e-6
                 or abs(fb[axis][1] - envelope[axis][1]) <= 1e-6
@@ -210,6 +216,9 @@ def _fresh_occurrences(part):
                     ]
                 )
             if any(len(group) != 1 for group in wall_groups):
+                continue
+            depth_ranges = [group[0][1][di] for group in wall_groups]
+            if depth_ranges[0] != pytest.approx(depth_ranges[1], abs=1e-6):
                 continue
             first, second = footprint
             sizes = {axis: fb[axis][1] - fb[axis][0] for axis in footprint}
@@ -234,7 +243,29 @@ def _fresh_occurrences(part):
                 True,
                 raw_key if body_keys.count(raw_key) == 1 else None,
             )
-            records.append((rec, frozenset((floor, *(group[0][0] for group in wall_groups)))))
+            corner_records.append(
+                (rec, frozenset((floor, *(group[0][0] for group in wall_groups))))
+            )
+        corner_groups = []
+        for item in corner_records:
+            record = item[0]
+            centre = record.location
+            group = next(
+                (
+                    existing
+                    for existing in corner_groups
+                    if math.dist(centre, existing[0][0].location) <= 1e-6
+                ),
+                None,
+            )
+            if group is None:
+                corner_groups.append([item])
+            else:
+                group.append(item)
+        for group in corner_groups:
+            ordered = sorted(group, key=lambda item: item[0].depth)
+            if len(ordered) == 1 or ordered[1][0].depth - ordered[0][0].depth > 1e-6:
+                records.append(ordered[0])
         # Blind obrounds are established by two equal cylindrical endpoint regions.
         for i, left in enumerate(cylinders):
             for right in cylinders[i + 1 :]:
@@ -518,6 +549,22 @@ def test_axis_transform_mirror_and_scale_keep_writer_parity(part) -> None:
 
 
 @pytest.mark.parametrize(
+    "rotation",
+    [Rot(0, 0, 0), Rot(90, 0, 0), Rot(-90, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0)],
+)
+def test_floored_pocket_dimensions_are_covariant_under_principal_permutations(rotation) -> None:
+    """A rejected first depth interpretation must not hide the valid physical one."""
+
+    source = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+
+    (pocket,) = recognise_pockets(rotation * source)
+
+    assert not pocket.edge_anchored
+    assert sorted((pocket.width, pocket.length)) == [12, 20]
+    assert pocket.depth == 6
+
+
+@pytest.mark.parametrize(
     "part",
     [
         Box(60, 40, 12) - Box(20, 12, 12),  # through Slot: zero floors
@@ -558,19 +605,67 @@ def test_open_sign_deep_and_all_corner_routes_publish_complete_occurrences(part,
         assert all(any(face.is_same(expected_face) for face in actual) for expected_face in want)
 
 
-@pytest.mark.parametrize("rotation", [Rot(90, 0, 0), Rot(0, 90, 0)])
-def test_rotated_corner_preserves_legacy_world_z_interpretation(rotation) -> None:
+@pytest.mark.parametrize(
+    "rotation",
+    [Rot(0, 0, 0), Rot(90, 0, 0), Rot(-90, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0)],
+)
+def test_corner_depth_is_the_unique_shallow_leg_under_principal_permutations(rotation) -> None:
     source = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
     part = rotation * source
     fresh_graph, expected = _fresh_occurrences(part)
-    assert len(expected) == 1 and expected[0][0].depth_axis == "z"
+    assert len(expected) == 1
     ledger = ClaimLedger(FaceGraph(part))
     records = _discover_pockets(part, writer=ledger.writer)
     assert records == [expected[0][0]]
+    assert records[0].depth == 6
+    assert sorted((records[0].width, records[0].length, records[0].depth)) == [6, 15, 15]
     candidate = ledger.candidate_set(FamilyId.POCKETS).candidates[0]
     actual = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
     wanted = [fresh_graph.face(node) for node in expected[0][1]]
     assert all(any(face.is_same(want) for face in actual) for want in wanted)
+
+
+def test_corner_depth_survives_arbitrary_rigid_motion_through_the_framed_aggregate() -> None:
+    source = Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8)
+    moved = Pos(17, -23, 9) * Rot(31, 47, 13) * source
+
+    framed = build_framed_recognition_result(moved, rotational=False)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    corners = [pocket for pocket in framed.result.pockets if pocket.edge_anchored]
+    assert len(corners) == 1
+    assert corners[0].depth == 6
+    assert sorted((corners[0].width, corners[0].length, corners[0].depth)) == [6, 15, 15]
+
+
+@pytest.mark.parametrize(
+    ("depth_delta", "accepted"),
+    [(0.5 * COORD_FLOOR, False), (2 * COORD_FLOOR, True)],
+)
+def test_corner_depth_tie_uses_only_the_kernel_coordinate_floor(
+    depth_delta: float, accepted: bool
+) -> None:
+    # The removed X and Z legs are equal at delta=0. Geometry within the existing kernel floor
+    # cannot establish which is depth; immediately beyond that floor the shallower Z leg wins.
+    part = Box(60, 40, 12) - Pos(30, 15, 4) * Box(12 + 2 * depth_delta, 20, 8)
+
+    corners = [pocket for pocket in recognise_pockets(part) if pocket.edge_anchored]
+
+    assert bool(corners) is accepted
+    if accepted:
+        assert len(corners) == 1
+        assert corners[0].depth_axis == "z"
+
+
+def test_principal_corner_step_round_trip_preserves_the_canonical_depth(tmp_path: Path) -> None:
+    source = Rot(90, 0, 0) * (Box(60, 40, 12) - Pos(25, 15, 4) * Box(20, 20, 8))
+    path = tmp_path / "principal-corner.step"
+    assert export_step(source, path)
+
+    corners = [pocket for pocket in recognise_pockets(import_step(path)) if pocket.edge_anchored]
+
+    assert len(corners) == 1
+    assert corners[0].depth == 6
 
 
 def test_supplied_face_edges_and_generic_step_keep_exact_writer_projection(tmp_path: Path) -> None:

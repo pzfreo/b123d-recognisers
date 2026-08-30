@@ -716,9 +716,14 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     # #236 publishes the complete route-selected role set rather than the earlier planar-only
     # compatibility projection. Distinct nested records may therefore share one original wall;
     # per-face totals count every Candidate/face attribution occurrence, not unique topology.
-    assert sum(pockets.values()) == 129
+    # Principal-axis corner interruptions now choose their uniquely shallowest leg as depth
+    # instead of treating world Z as manufacturing intent. Opposed-wall pockets also evaluate
+    # both physical depth interpretations instead of letting a rejected first XYZ interpretation
+    # hide a valid second one. MFCAD++'s single face label cannot make an axis choice authoritative.
+    assert sum(pockets.values()) == 126
     assert pockets[16] == 54, "most Pocket evidence is labelled Circular end pocket"
-    assert pockets[14] == 38, "rectangular ownership remains the next largest population"
+    assert pockets[14] == 42, "rectangular ownership remains the next largest population"
+    assert pockets[22] == 18, "corner depth no longer follows the dataset's world-Z presentation"
     assert pockets[3] == 2, "complete passage rings remove the old pocket fragments"
 
 

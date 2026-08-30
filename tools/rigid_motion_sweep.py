@@ -45,6 +45,7 @@ class Rotation:
 class Occurrence:
     family: str
     defining_faces: frozenset[int]
+    record: object | None = None
 
 
 ROTATIONS = (
@@ -105,7 +106,7 @@ def _occurrences(part) -> tuple[Occurrence, ...]:
                 raise RuntimeError(
                     f"{census_family} occurrence has no defining evidence; cannot match it"
                 )
-            occurrences.append(Occurrence(census_family, evidence))
+            occurrences.append(Occurrence(census_family, evidence, record))
     return tuple(occurrences)
 
 

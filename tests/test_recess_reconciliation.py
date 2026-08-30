@@ -150,10 +150,10 @@ def test_empty_evidence_obround_pocket_survives_an_unrelated_passage():
 
 
 def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():
-    """The floor and complete ring describe one U pocket; three rectangles do not."""
+    """The floor and complete ring describe one U pocket; paired rectangles do not."""
 
     part = _u_void(blind=True)
-    assert len(r.recognise_pockets(part)) == 3, "the pair recogniser proposes fragments"
+    assert r.recognise_pockets(part), "the pair recogniser must exercise fragment reconciliation"
     assert [pocket.sides for pocket in r.recognise_prismatic_pockets(part)] == [8]
 
     result = r.build_recognition_result(part)
