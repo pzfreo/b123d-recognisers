@@ -84,12 +84,25 @@ _SUPPORTED_RECESS_CORRECTIONS = {
     "nist_ftc_10": {"pockets": -1, "slots": -1},
 }
 
+# Issue #320 removes XYZ-iteration dependence from floored rectangular recesses. These additions
+# already satisfy the same graph coherence, one-floor and exact empty-prism predicates as every
+# existing Pocket; only the valid physical depth interpretation had previously been skipped after
+# an earlier axis interpretation failed. Keep the reviewed real-part movement separate from both
+# the historical report and the issue #142 false-positive corrections.
+_SUPPORTED_RECESS_AXIS_COVARIANCE = {
+    "nist_ctc_03": {"pockets": 4},
+    "nist_ctc_04": {"pockets": 1},
+    "nist_ftc_06": {"pockets": 5},
+    "nist_ftc_09": {"pockets": 1},
+}
+
 
 def _expected_after_supported_changes(stem: str, baseline: dict[str, int]) -> dict[str, int]:
     expected = dict(baseline)
     for changes in (
         _SUPPORTED_ADDITIONS.get(stem, {}),
         _SUPPORTED_RECESS_CORRECTIONS.get(stem, {}),
+        _SUPPORTED_RECESS_AXIS_COVARIANCE.get(stem, {}),
     ):
         for family, change in changes.items():
             expected[family] += change

@@ -79,6 +79,12 @@ normalization are 15.69 seconds, while framed recognition is 447.39 seconds vers
 raw. No MFInstSeg tree is available under the checked workspace dataset paths, so this child does
 not inspect transfer models; MFInstSeg remains the Epic #290 milestone baseline.
 
+The vendored NIST real-part regression suite gains 13 Pockets across four parts (`ctc_03` +4,
+`ctc_04` +1, `ftc_06` +5 and `ftc_09` +1). These are recorded as an issue-#320 additive layer,
+separate from both the historical downstream baseline and the issue-#142 removals of material-filled
+false candidates. All recovered records pass the unchanged same-body graph, one-floor and exact
+empty-prism predicates; the focused MFCAD/NIST corpus run passes 11/11 tests.
+
 ## ADR conformance
 
 - ADR 0002: values and ordering derive from physical spans, never axis-letter/traversal order.
