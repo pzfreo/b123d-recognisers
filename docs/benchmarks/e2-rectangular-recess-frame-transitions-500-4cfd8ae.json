@@ -1,0 +1,149 @@
+{
+  "axis_alignment_tolerance": 0.001,
+  "counts": {
+    "absent:pocket:internally_oblique_defining_evidence": 3,
+    "absent:pocket:principal_only_in_accepting_presentation": 1,
+    "absent:slot:alternate_projection_of_blind_pocket": 3
+  },
+  "dataset": "MFCAD++ published test split (development evidence)",
+  "implementation_commit": "4cfd8ae53b47610a88d7f16a1f05c7d0bfcdf35a",
+  "matching": "one-to-one defining-face containment after topology-preserving normalization",
+  "refused": [],
+  "schema": 1,
+  "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+  "selection": "first 500 STEP filenames, lexical ascending",
+  "transitions": [
+    {
+      "defining_face_indices": [
+        28,
+        30
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "10098.step",
+      "framed_principal_axes": [
+        "z",
+        "z"
+      ],
+      "raw_principal_axes": [
+        "x",
+        "x"
+      ],
+      "reason": "alternate_projection_of_blind_pocket"
+    },
+    {
+      "defining_face_indices": [
+        24,
+        26
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10103.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        null
+      ],
+      "reason": "internally_oblique_defining_evidence"
+    },
+    {
+      "defining_face_indices": [
+        24,
+        26
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "10761.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        "x",
+        "x"
+      ],
+      "reason": "alternate_projection_of_blind_pocket"
+    },
+    {
+      "defining_face_indices": [
+        23,
+        25
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10761.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        null
+      ],
+      "reason": "internally_oblique_defining_evidence"
+    },
+    {
+      "defining_face_indices": [
+        20,
+        23
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10805.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        "y",
+        "y"
+      ],
+      "reason": "principal_only_in_accepting_presentation"
+    },
+    {
+      "defining_face_indices": [
+        26,
+        27,
+        28,
+        29
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "11203.step",
+      "framed_principal_axes": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        "y",
+        null,
+        "y"
+      ],
+      "reason": "internally_oblique_defining_evidence"
+    },
+    {
+      "defining_face_indices": [
+        28,
+        30
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "12736.step",
+      "framed_principal_axes": [
+        "x",
+        "x"
+      ],
+      "raw_principal_axes": [
+        "y",
+        "y"
+      ],
+      "reason": "alternate_projection_of_blind_pocket"
+    }
+  ]
+}
