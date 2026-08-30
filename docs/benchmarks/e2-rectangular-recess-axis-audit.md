@@ -53,9 +53,12 @@ Every residual transition has a geometry-derived classification:
 | --- | ---: | --- |
 | Pocket absent | 3 | Defining evidence is internally oblique in the inferred stock frame. |
 | Pocket absent | 1 | Principal only in the accepting raw presentation; framed walls are tilted about 1.9°. |
-| Slot absent | 3 | An alternate projection of a coincident blind Pocket, not an enclosed through-slot. |
+| Slot absent | 3 | A centred, same-body projection contained by one blind Pocket's bounded region, not an independent enclosed through-slot. |
 
-The classifier requires both the dominant normal component to be near one and every transverse
+For this last classification the artifact serializes both records and both axis-ordered bounds;
+the Slot and Pocket must have the same non-null body key, coincident centres, containment on all
+three axes and exactly one qualifying Pocket. Centre coincidence alone is insufficient. The axis
+classifier requires both the dominant normal component to be near one and every transverse
 component to be near zero; it does not mistake a 0.9994 component for an exact principal face.
 There are zero unclassified residuals and zero frame refusals. Framed rigid-motion recognition
 retains 2,878/2,878 baseline occurrences; the previously documented extra Slot sentinel remains.
@@ -85,4 +88,3 @@ not inspect transfer models; MFInstSeg remains the Epic #290 milestone baseline.
 - ADR 0008: only existing coordinate/tolerance constants are used; no corpus-derived threshold.
 - ADR 0011: records remain local to the explicit selected frame; internally oblique features stay
   outside this principal-axis child and are tracked separately by #310.
-

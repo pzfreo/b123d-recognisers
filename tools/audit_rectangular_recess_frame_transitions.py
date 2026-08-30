@@ -34,6 +34,7 @@ from tools.rigid_motion_sweep import _match, _occurrences  # noqa: E402
 
 _TARGETS = frozenset(("pocket", "slot"))
 _AXIS_TOL = 1e-3
+_REGION_TOL = 1e-3
 
 
 def _commit() -> str:
@@ -72,20 +73,45 @@ def _principal_axes(graph: FaceGraph, indices: frozenset[int]) -> list[str | Non
     return axes
 
 
-def _same_region_pocket(record: object, records: tuple[object, ...]) -> bool:
+def _record_bounds(record: Slot | Pocket) -> dict[str, tuple[float, float]]:
+    return {
+        record.width_axis: (
+            record.w_center - record.width / 2,
+            record.w_center + record.width / 2,
+        ),
+        record.long_axis: (record.lo, record.hi),
+        record.depth_axis: (record.d_lo, record.d_hi),
+    }
+
+
+def _containing_blind_pocket(
+    record: object, records: tuple[object, ...]
+) -> Pocket | None:
     if not isinstance(record, Slot):
-        return False
+        return None
     centre = _region_center(record)
-    return any(
-        isinstance(other, Pocket)
-        and sum(
-            (left - right) ** 2
-            for left, right in zip(centre, _region_center(other), strict=True)
+    slot_bounds = _record_bounds(record)
+    matches = []
+    for other in records:
+        if not isinstance(other, Pocket) or other.body_key != record.body_key:
+            continue
+        pocket_bounds = _record_bounds(other)
+        same_centre = (
+            sum(
+                (left - right) ** 2
+                for left, right in zip(centre, _region_center(other), strict=True)
+            )
+            ** 0.5
+            <= _REGION_TOL
         )
-        ** 0.5
-        <= 1e-3
-        for other in records
-    )
+        contained = all(
+            slot_bounds[axis][0] >= pocket_bounds[axis][0] - _REGION_TOL
+            and slot_bounds[axis][1] <= pocket_bounds[axis][1] + _REGION_TOL
+            for axis in "xyz"
+        )
+        if same_centre and contained:
+            matches.append(other)
+    return matches[0] if len(matches) == 1 else None
 
 
 def _detail(
@@ -104,8 +130,9 @@ def _detail(
     source_axes, other_axes = (
         (raw_axes, framed_axes) if direction == "absent" else (framed_axes, raw_axes)
     )
-    if _same_region_pocket(source_record, source_records):
-        reason = "alternate_projection_of_blind_pocket"
+    related_pocket = _containing_blind_pocket(source_record, source_records)
+    if related_pocket is not None:
+        reason = "contained_projection_of_blind_pocket"
     elif source_axes and all(axis is not None for axis in source_axes) and any(
         axis is None for axis in other_axes
     ):
@@ -122,6 +149,18 @@ def _detail(
         "raw_principal_axes": raw_axes,
         "framed_principal_axes": framed_axes,
         "reason": reason,
+        "source_record": source_record.to_dict()
+        if isinstance(source_record, (Slot, Pocket))
+        else None,
+        "source_bounds": _record_bounds(source_record)
+        if isinstance(source_record, (Slot, Pocket))
+        else None,
+        "related_blind_pocket_record": related_pocket.to_dict()
+        if related_pocket is not None
+        else None,
+        "related_blind_pocket_bounds": _record_bounds(related_pocket)
+        if related_pocket is not None
+        else None,
     }
 
 
@@ -181,6 +220,7 @@ def audit(root: Path, *, limit: int = 500) -> dict[str, Any]:
         "selection": f"first {limit} STEP filenames, lexical ascending",
         "selected_ids_sha256": _selection_hash(paths),
         "axis_alignment_tolerance": _AXIS_TOL,
+        "region_containment_tolerance": _REGION_TOL,
         "matching": "one-to-one defining-face containment after topology-preserving normalization",
         "counts": dict(sorted(counts.items())),
         "transitions": details,
