@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.4.9 (unreleased)
+## 0.4.9
 
 - **Kept FaceLevel occurrences body-local in compounds.** Equal-height faces on separate solids
   remain separate records with their own transverse support bounds; recognition no longer creates
