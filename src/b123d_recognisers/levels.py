@@ -546,17 +546,20 @@ def _discover_risers(
 def project_step_shoulders(
     risers: Sequence[RiserEvidence],
     *,
-    levels: Sequence[float | FaceLevel],
+    levels: Sequence[float | FaceLevel] = (),
+    levels_by_riser: Sequence[Sequence[float | FaceLevel]] | None = None,
     tol: float | None = None,
 ) -> list[StepShoulder]:
     """Project :func:`recognise_risers` evidence onto *levels* — the pure half.
 
     A candidate riser counts as a step shoulder only if it rises from a level the caller
     recognises: a vertical riser's foot must sit on one, and an oblique ramp's two ends must
-    each sit on one or on the part envelope. Pass full :class:`FaceLevel` occurrences when an
-    ownership filter must select one of several equal-Z body-local levels; numeric values retain
-    the historical value-selection behavior. That is the whole level dependency, and it is the
-    whole reason the old ``recognise_step_shoulders`` could not be hoisted into the shared
+    each sit on one or on the part envelope. Pass full :class:`FaceLevel` occurrences when their
+    body-local supports distinguish equal-Z levels. For value-identical body occurrences, pass
+    ``levels_by_riser`` aligned with the supplied riser occurrence roster; this is an explicit
+    serializable occurrence association without a public topology/body handle. Numeric values
+    retain the historical value-selection behavior. That is the whole level dependency, and it
+    is the whole reason the old ``recognise_step_shoulders`` could not be hoisted into the shared
     aggregate — its answer depends on who is asking.
 
     Model construction passes levels filtered by plate and pocket ownership; critique passes
@@ -572,10 +575,15 @@ def project_step_shoulders(
     equivalent to the old single-stage one at ANY tolerance, not just the default. Pass it
     explicitly only to project more or less tightly than the scan deliberately.
     """
-    if not levels:
-        return []
     risers = list(risers)
     if not risers:
+        return []
+    if levels_by_riser is not None:
+        if levels:
+            raise ValueError("pass levels or levels_by_riser, not both")
+        if len(levels_by_riser) != len(risers):
+            raise ValueError("levels_by_riser must align one-for-one with risers")
+    elif not levels:
         return []
     if tol is None:
         tol = risers[0].tol
@@ -587,9 +595,10 @@ def project_step_shoulders(
         return at_envelope or any(abs(z - level.z) < tol for level in candidate_levels)
 
     out: list[StepShoulder] = []
-    for r in risers:
+    for ordinal, r in enumerate(risers):
+        selections = levels if levels_by_riser is None else levels_by_riser[ordinal]
         if r.body_levels is None:
-            body_levels = tuple(FaceLevel(selected_z(level)) for level in levels)
+            body_levels = tuple(FaceLevel(selected_z(level)) for level in selections)
         else:
             body_levels = tuple(
                 owned
@@ -602,7 +611,7 @@ def project_step_shoulders(
                     )
                     if isinstance(selection, FaceLevel)
                     else abs(selection - owned.z) < tol
-                    for selection in levels
+                    for selection in selections
                 )
             )
 

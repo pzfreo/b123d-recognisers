@@ -66,8 +66,10 @@ sorts the occurrence list without set-deduplicating across solids. Each recognis
 `RiserEvidence` carries the eligible `body_levels` derived from that same solid. The pure
 `project_step_shoulders` operation intersects caller-selected FaceLevel occurrences with this
 authority before testing the riser endpoints and preserves equal projected occurrences across
-bodies. Numeric levels remain compatibility value selectors; callers that need to distinguish
-equal-Z occurrences pass the full FaceLevel records and their body-local support spans.
+bodies. Numeric levels remain compatibility value selectors. Full FaceLevel records distinguish
+equal-Z occurrences with different body-local supports; value-identical occurrences use the
+explicit `levels_by_riser` input aligned with the deterministic riser occurrence roster. This
+avoids publishing a topology-derived body identifier that could not remain stable across runs.
 
 `body_levels=None` is compatibility for manually constructed pre-0.4.9 evidence only; it retains
 the historical value-only projection. Production discovery never emits `None`. The serialized

@@ -2,6 +2,8 @@
 # Copyright 2024-2026 Paul Fremantle
 """Body-local discovery, attribution and level projection for RiserEvidence."""
 
+from copy import deepcopy
+
 import pytest
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
@@ -70,6 +72,29 @@ def test_equal_z_projection_can_select_one_body_local_level_occurrence() -> None
     assert levels[0].z == levels[1].z == 10.0
     assert project_step_shoulders(risers, levels=[levels[0]]) == [StepShoulder("x", 0.0)]
     assert len(project_step_shoulders(risers, levels=[10.0])) == 2
+
+
+def test_value_identical_bodies_can_be_selected_by_riser_occurrence() -> None:
+    first = _stepped(dy=0)
+    part = Compound(children=[first, deepcopy(first)])
+    risers = recognise_risers(part)
+
+    assert len(risers) == 2
+    assert risers[0] == risers[1]
+    assert risers[0].body_levels == risers[1].body_levels
+    assert project_step_shoulders(
+        risers,
+        levels_by_riser=((risers[0].body_levels or ()), ()),
+    ) == [StepShoulder("x", 0.0)]
+
+
+def test_occurrence_aligned_projection_rejects_misaligned_or_ambiguous_inputs() -> None:
+    risers = recognise_risers(_stepped(dy=0))
+
+    with pytest.raises(ValueError, match="one-for-one"):
+        project_step_shoulders(risers, levels_by_riser=())
+    with pytest.raises(ValueError, match="not both"):
+        project_step_shoulders(risers, levels=[10.0], levels_by_riser=((10.0,),))
 
 
 def test_non_default_tolerance_is_shared_with_body_level_authority() -> None:
