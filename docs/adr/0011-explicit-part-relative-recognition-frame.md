@@ -164,3 +164,12 @@ alternate rotations. The record's XYZ bounds, orientation, aggregate evidence an
 `FramedRecognitionResult.part` share one local coordinate system. Internally oblique islands remain
 outside this principal-axis contract. The exact authored and MFCAD++ evidence is recorded in the
 [rectangular-pad axis validation](../benchmarks/e2-rectangular-pad-axis-validation.md).
+
+## Amendment (body-local Plate occurrences, issue #334)
+
+A framed working shape may contain multiple valid solids. Plate recognition therefore derives its
+area denominator, thickness envelope, coplanar groups, adjacent events and value deduplication per
+solid in that exact local shape. It then orders all physical occurrences geometrically. Equal
+records on separate bodies remain multiplicity-distinct; their `u`/`v` witnesses, defining faces
+and `SolidRef` ownership never cross a body boundary. This changes compound output only: the Plate
+schema, principal-normal scope, thresholds and framing representative remain unchanged.

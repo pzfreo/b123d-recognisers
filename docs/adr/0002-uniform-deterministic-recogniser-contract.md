@@ -194,12 +194,17 @@ rematched from the rounded record.
 An aggregate Plate owns the complete original low-negative and high-positive planar face clusters
 whose adjacent events establish its record. Every cluster member remains defining because its area
 and centroid contribute to admission or the weighted `u`/`v` projection. Other groups, bbox facts
-and TURNED_STEPS records remain consulted. Whole-part grouping that mixes bodies raises the private
-`_PlateAttributionError` before issuance or family completion; public geometry-only output remains
-unchanged for that bounded unsupported case. Geometry-key dedup remains the public contract, but an
-aggregate resolves every staged low/high face through the run graph before deciding ambiguity:
-wrapper- or traversal-duplicate role pairs collapse by graph-issued node identity, while two
-distinct bound role pairs competing for one key refuse atomically.
+and TURNED_STEPS records remain consulted.
+
+Issue #334 supersedes the earlier bounded compound refusal. Face grouping, bounding-box area and
+thickness denominators, adjacent events and geometry-key deduplication are all scoped to one valid
+source solid before global ordering. Equal-valued records on separate solids retain multiplicity;
+their `u`/`v` witnesses remain body-local and no face pair or area sum crosses a solid boundary.
+The aggregate resolves every staged low/high face through the one run graph before deciding
+ambiguity: wrapper- or traversal-duplicate role pairs collapse by graph-issued node identity,
+while two distinct bound role pairs competing for one key on the same `SolidRef` refuse atomically.
+An open-shell writer-free call retains its legacy geometry projection, but aggregate publication
+still requires one valid solid.
 
 ## Amendment (neutral recess provenance, issue #234)
 
