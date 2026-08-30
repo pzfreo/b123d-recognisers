@@ -286,20 +286,20 @@ class RecognitionResult:
     #: assembly can preserve level-to-face correspondence; sizing and critique project the Z
     #: values through :meth:`step_ladder_for_z_span`.
     step_levels: tuple[FaceLevel, ...]
-    #: Whether the part classified as ROTATIONAL, carried so consumers can tell a gated-away
-    #: inventory from an empty one. ``plates`` are ``()`` on a rotational part because they
-    #: were not run, not because the part has none — the same
-    #: empty-vs-not-run distinction consumers must preserve for declared inputs.
+    #: Whether the part classified as ROTATIONAL, carried so consumers can distinguish the
+    #: context used by classification-gated families. Plate discovery remains absent for a
+    #: rotational-classified shape with no established turned profile. In a mixed compound,
+    #: completed TurnedStep ownership suppresses only the same solid, leaving independent
+    #: prismatic bodies eligible.
     rotational: bool
     #: Candidate step risers, scanned once and projected per consumer. NOT shoulders:
     #: which risers count depends on the level set the asker holds, and that is the whole
     #: reason this family could not be hoisted until the scan and the filter were separated.
     risers: tuple[RiserEvidence, ...]
     #: Chamfers and fillets are recognised on every part: planar/cylindrical on a prismatic
-    #: part and conical/toroidal on a turned part. Plates additionally require no turned
-    #: profile. The gate lives HERE, in the one orchestration, rather than at each call site —
-    #: which is the distinction that let these migrate at all: owning a family and always
-    #: running it are different things.
+    #: part and conical/toroidal on a turned part. Plate discovery consumes completed turned-step
+    #: occurrences and excludes only their owning solids. The dependency lives in the one
+    #: orchestration rather than at each call site.
     chamfers: tuple[Chamfer, ...]
     #: Prismatic-only: an angled blind step is the same planar oblique-bevel read as a
     #: chamfer, while the conical bevel on a rotational part cannot establish one.
@@ -318,6 +318,12 @@ class RecognitionResult:
     passages: tuple[Passage, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
+
+    @property
+    def turned_profiles(self) -> tuple[TurnedProfile, ...]:
+        """Body-local physical profile groups derived from the turned-step occurrence roster."""
+
+        return TurnedProfile.grouped_from_steps(self.turned_steps)
 
     def step_ladder_for_z_span(
         self,
@@ -358,7 +364,8 @@ class RecognitionResult:
             boundary_margin = bounded_end_margin(z_max - z_min)
         if not math.isfinite(boundary_margin) or boundary_margin < 0.0:
             raise ValueError("boundary_margin must be finite and non-negative")
-        prof = TurnedProfile.from_steps(list(self.turned_steps))
+        profiles = self.turned_profiles
+        prof = profiles[0] if len(profiles) == 1 else None
         if prof is not None and prof.axis == "z":
             return [
                 float(z)

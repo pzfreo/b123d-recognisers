@@ -192,7 +192,12 @@ from b123d_recognisers.slots import (
     recognise_slots,
 )
 from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
-from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
+from b123d_recognisers.turned import (
+    TurnedProfile,
+    TurnedProfileKey,
+    TurnedStep,
+    recognise_turned_steps,
+)
 
 try:
     __version__ = version("b123d-recognisers")
@@ -275,6 +280,7 @@ __all__ = [
     "RiserEvidence",
     "StepShoulder",
     "TurnedProfile",
+    "TurnedProfileKey",
     "TurnedStep",
     "RecognitionResult",
     "RefusedPartFrame",

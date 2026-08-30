@@ -81,6 +81,20 @@ _SQUARENESS_TOL = 0.15
 _OD_FILL_MIN = 0.6
 
 
+@dataclass(frozen=True, order=True)
+class TurnedProfileKey(Record):
+    """Serializable body-local membership for one turned profile.
+
+    ``axis_origin`` is the canonical closest point on the principal axis line with its axial
+    component set to zero. ``body_bounds`` distinguishes coaxial-disjoint bodies without exposing
+    graph or topology identity.
+    """
+
+    axis: str
+    axis_origin: tuple[float, float, float]
+    body_bounds: tuple[float, float, float, float, float, float]
+
+
 @dataclass(frozen=True)
 class TurnedStep(Record):
     """One axial segment of a stepped shaft, between two shoulders (or ends). ``axis`` is
@@ -92,6 +106,7 @@ class TurnedStep(Record):
     lo: float
     hi: float
     diameter: float  # the external OD over this segment
+    profile: TurnedProfileKey | None = None
 
     @property
     def length(self) -> float:
@@ -108,6 +123,7 @@ class TurnedProfile(Record):
 
     axis: str  # "x" / "y" / "z"
     steps: tuple[TurnedStep, ...]
+    profile: TurnedProfileKey | None = None
 
     @classmethod
     def from_steps(cls, steps: Iterable[TurnedStep]) -> TurnedProfile | None:
@@ -123,7 +139,39 @@ class TurnedProfile(Record):
         axes = {s.axis for s in steps}
         if len(axes) != 1:
             raise ValueError(f"turned steps are not coaxial: got axes {sorted(axes)}")
-        return cls(axis=next(iter(axes)), steps=tuple(sorted(steps, key=lambda s: s.lo)))
+        memberships = {step.profile for step in steps}
+        if len(memberships) != 1:
+            raise ValueError("turned steps belong to multiple physical profiles")
+        return cls(
+            axis=next(iter(axes)),
+            steps=tuple(sorted(steps, key=lambda s: s.lo)),
+            profile=next(iter(memberships)),
+        )
+
+    @classmethod
+    def grouped_from_steps(cls, steps: Iterable[TurnedStep]) -> tuple[TurnedProfile, ...]:
+        """Group a deterministic occurrence roster into physical turned profiles.
+
+        Recogniser-produced records group by their serializable :class:`TurnedProfileKey`.
+        Hand-built legacy records have no membership key and retain their historical one-profile-
+        per-axis interpretation.
+        """
+
+        groups: dict[tuple[str, TurnedProfileKey | None], list[TurnedStep]] = {}
+        for step in steps:
+            groups.setdefault((step.axis, step.profile), []).append(step)
+        profiles = [
+            cls.from_steps(group)
+            for _key, group in sorted(
+                groups.items(),
+                key=lambda item: (
+                    item[0][0],
+                    item[0][1] is not None,
+                    item[0][1],
+                ),
+            )
+        ]
+        return tuple(profile for profile in profiles if profile is not None)
 
     @property
     def shoulders(self) -> tuple[float, ...]:
@@ -137,6 +185,31 @@ class TurnedProfile(Record):
         if not self.steps:
             return ()
         return tuple(sorted({p for s in self.steps for p in (s.lo, s.hi)}))
+
+
+def _profile_key(part: Part, axis: str, bands: list[CylinderEvidence]) -> TurnedProfileKey:
+    idx = "xyz".index(axis)
+
+    def axis_origin(band: CylinderEvidence) -> tuple[float, float, float]:
+        point = band["axis_xyz"]
+        values = tuple(
+            0.0 if coordinate_idx == idx else round(float(value), 8)
+            for coordinate_idx, value in enumerate(point)
+        )
+        return values[0], values[1], values[2]
+
+    origins = Counter(axis_origin(band) for band in bands)
+    origin = min(origins, key=lambda value: (-origins[value], value))
+    bounds = part.bounding_box()
+    body_bounds = (
+        round(float(bounds.min.X), 8),
+        round(float(bounds.max.X), 8),
+        round(float(bounds.min.Y), 8),
+        round(float(bounds.max.Y), 8),
+        round(float(bounds.min.Z), 8),
+        round(float(bounds.max.Z), 8),
+    )
+    return TurnedProfileKey(axis, origin, body_bounds)
 
 
 def recognise_turned_steps(
@@ -163,7 +236,58 @@ def recognise_turned_steps(
     A rung whose band is also a groove is not dropped -- the ladder is a profile, and a profile
     with a hole in it describes a different shaft. See :mod:`b123d_recognisers._reconcile`.
     """
-    z_cyls, cross_cyls = cyls if cyls is not None else analyse_cylinders(part)
+    inventory = cyls if cyls is not None else analyse_cylinders(part)
+    scopes = list(part.solids()) or [part]
+    proposals: list[tuple[TurnedStep, list[CylinderEvidence]]] = []
+    for solid_idx, scope in enumerate(scopes):
+        scoped = (
+            [item for item in inventory[0] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
+            [item for item in inventory[1] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
+        )
+        proposals.extend(_turned_step_proposals_one(scope, cyls=scoped))
+    if ledger is not None:
+        # Bind and validate the complete family before publishing any occurrence. A malformed
+        # cylinder inventory must not leave a partial candidate prefix in the aggregate run.
+        pending = [
+            (
+                step,
+                tuple(ledger.graph.require_node(c["face"]) for c in over),
+            )
+            for step, over in proposals
+        ]
+        profile_owners: dict[TurnedProfileKey, object] = {}
+        for step, nodes in pending:
+            owner = ledger.graph.common_valid_solid(nodes)
+            if owner is None:
+                raise ValueError("turned step evidence has no common valid solid")
+            assert step.profile is not None
+            previous = profile_owners.setdefault(step.profile, owner)
+            if previous != owner:
+                raise ValueError("turned profile key identifies multiple valid solids")
+        for step, nodes in pending:
+            ledger.add_defining(step, nodes, family=FamilyId.TURNED_STEPS)
+    found = [step for step, _over in proposals]
+    return sorted(
+        found,
+        key=lambda step: (
+            step.profile is not None,
+            step.profile,
+            step.axis,
+            step.lo,
+            step.hi,
+            step.diameter,
+        ),
+    )
+
+
+def _turned_step_proposals_one(
+    part: Part,
+    *,
+    cyls: CylinderInventory,
+) -> list[tuple[TurnedStep, list[CylinderEvidence]]]:
+    """Propose one valid-solid turned profile from prepartitioned cylinder evidence."""
+
+    z_cyls, cross_cyls = cyls
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
     if not ext:
         return []
@@ -188,6 +312,8 @@ def recognise_turned_steps(
         or abs(perp[0] - perp[1]) > _SQUARENESS_TOL * cross
     ):
         return []
+
+    profile = _profile_key(part, axis, bands)
 
     def bands_over(pos: float) -> list[CylinderEvidence]:
         """The widest external bands covering *pos* -- what sets the OD there, and therefore
@@ -256,16 +382,10 @@ def recognise_turned_steps(
             lo=planes[i],
             hi=planes[i + 1],
             diameter=over[0]["diameter"] if over else 0.0,
+            profile=profile,
         )
         if step.diameter > 0:
             found.append((step, over))
     if len(found) < 2:  # fewer than two real steps → nothing to dimension axially
         return []
-    if ledger is not None:
-        for step, over in found:
-            ledger.add_defining(
-                step,
-                [ledger.graph.require_node(c["face"]) for c in over],
-                family=FamilyId.TURNED_STEPS,
-            )
-    return [step for step, _ in found]
+    return found

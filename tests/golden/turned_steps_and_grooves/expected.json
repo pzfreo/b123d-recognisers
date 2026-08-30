@@ -188,21 +188,72 @@
             "axis": "z",
             "diameter": 30.0,
             "hi": 15.5,
-            "lo": -35.0
+            "lo": -35.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           },
           {
             "_type": "TurnedStep",
             "axis": "z",
             "diameter": 24.0,
             "hi": 20.5,
-            "lo": 15.5
+            "lo": 15.5,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           },
           {
             "_type": "TurnedStep",
             "axis": "z",
             "diameter": 30.0,
             "hi": 35.0,
-            "lo": 20.5
+            "lo": 20.5,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           }
         ]
       },
@@ -384,21 +435,72 @@
             "axis": "z",
             "diameter": 30.0,
             "hi": 15.5,
-            "lo": -35.0
+            "lo": -35.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           },
           {
             "_type": "TurnedStep",
             "axis": "z",
             "diameter": 24.0,
             "hi": 20.5,
-            "lo": 15.5
+            "lo": 15.5,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           },
           {
             "_type": "TurnedStep",
             "axis": "z",
             "diameter": 30.0,
             "hi": 35.0,
-            "lo": 20.5
+            "lo": 20.5,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            }
           }
         ]
       }
@@ -565,21 +667,72 @@
           "axis": "z",
           "diameter": 30.0,
           "hi": 15.5,
-          "lo": -35.0
+          "lo": -35.0,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0,
+              15.0,
+              -15.0,
+              15.0,
+              -35.0,
+              35.0
+            ]
+          }
         },
         {
           "_type": "TurnedStep",
           "axis": "z",
           "diameter": 24.0,
           "hi": 20.5,
-          "lo": 15.5
+          "lo": 15.5,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0,
+              15.0,
+              -15.0,
+              15.0,
+              -35.0,
+              35.0
+            ]
+          }
         },
         {
           "_type": "TurnedStep",
           "axis": "z",
           "diameter": 30.0,
           "hi": 35.0,
-          "lo": 20.5
+          "lo": 20.5,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0,
+              15.0,
+              -15.0,
+              15.0,
+              -35.0,
+              35.0
+            ]
+          }
         }
       ]
     },

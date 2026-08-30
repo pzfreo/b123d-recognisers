@@ -89,7 +89,7 @@ from b123d_recognisers.slots import (
     recognise_slot_patterns,
 )
 from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
-from b123d_recognisers.turned import TurnedProfile, TurnedStep, recognise_turned_steps
+from b123d_recognisers.turned import TurnedStep, recognise_turned_steps
 
 
 @dataclass(frozen=True, slots=True)
@@ -347,10 +347,20 @@ def _holes(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]
 
 
 def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
-    steps = list(inputs.records(FamilyId.TURNED_STEPS, TurnedStep))
-    if TurnedProfile.from_steps(steps) is not None:
+    turned_solids = frozenset(
+        solid
+        for occurrence in inputs.occurrences(FamilyId.TURNED_STEPS, TurnedStep)
+        if (solid := occurrence.solid()) is not None
+    )
+    if services.context.rotational and not turned_solids:
         return []
-    return list(_discover_plates(services.context.part, writer=services.writer))
+    return list(
+        _discover_plates(
+            services.context.part,
+            writer=services.writer,
+            excluded_solids=turned_solids,
+        )
+    )
 
 
 def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
@@ -813,7 +823,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "plates",
         "recognise_plates",
         (FamilyId.TURNED_STEPS,),
-        prismatic,
+        always,
         _plates,
         Counted("plate"),
         FullyAttributed("every returned Plate claims its complete low/high planar face groups"),
