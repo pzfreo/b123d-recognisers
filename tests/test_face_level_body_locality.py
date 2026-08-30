@@ -2,16 +2,22 @@
 # Copyright 2024-2026 Paul Fremantle
 """Body-local occurrence and support contracts for FaceLevel."""
 
+from typing import cast
+
 import pytest
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
 from b123d_recognisers import (
+    FaceLevel,
     FramedRecognitionResult,
     build_framed_recognition_result,
     build_recognition_result,
     step_level_records,
 )
+from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
+from b123d_recognisers.levels import _discover_step_levels, recognise_face_levels
 from b123d_recognisers.result import _take_inventory
 
 _MINIMUM_Z = (Align.CENTER, Align.CENTER, Align.MIN)
@@ -68,9 +74,7 @@ def test_framed_rigid_motion_preserves_body_local_level_occurrences() -> None:
     assert isinstance(baseline, FramedRecognitionResult)
     assert isinstance(moved, FramedRecognitionResult)
     assert len(moved.result.step_levels) == len(baseline.result.step_levels)
-    for actual, expected in zip(
-        moved.result.step_levels, baseline.result.step_levels, strict=True
-    ):
+    for actual, expected in zip(moved.result.step_levels, baseline.result.step_levels, strict=True):
         assert actual.z == pytest.approx(expected.z, abs=1e-9)
         assert actual.x_span == pytest.approx(expected.x_span, abs=1e-9)
         assert actual.y_span == pytest.approx(expected.y_span, abs=1e-9)
@@ -87,9 +91,7 @@ def test_nested_compounds_retain_the_flat_body_occurrence_roster() -> None:
     right = _stepped(70)
     nested = Compound(children=[Compound(children=[left]), Compound(children=[right])])
 
-    assert step_level_records(nested) == step_level_records(
-        Compound(children=[left, right])
-    )
+    assert step_level_records(nested) == step_level_records(Compound(children=[left, right]))
 
 
 def test_large_foreign_body_does_not_raise_a_small_bodys_area_threshold() -> None:
@@ -107,3 +109,29 @@ def test_step_round_trip_preserves_body_local_occurrences(tmp_path) -> None:
     imported = import_step(path)
 
     assert step_level_records(imported) == step_level_records(part)
+
+
+def test_writer_refuses_a_level_when_same_solid_authority_is_missing() -> None:
+    face = Box(20, 10, 2).faces().sort_by(Axis.Z)[-1]
+    part = Compound(children=[Pos(0, 0, z) * face for z in (-1, 4, 9)])
+    graph = FaceGraph(part)
+
+    class _UnusedSink:
+        @staticmethod
+        def propose(*args, **kwargs):
+            raise AssertionError("validation must finish before publication")
+
+    writer = cast(EvidenceWriter, type("Writer", (), {"graph": graph, "sink": _UnusedSink()})())
+
+    assert step_level_records(part) == [FaceLevel(5.0, (-10.0, 10.0), (-5.0, 5.0))]
+    with pytest.raises(ValueError, match="no unambiguous valid solid"):
+        _discover_step_levels(part, writer=writer)
+
+
+def test_writer_free_open_face_uses_the_non_solid_compatibility_scope() -> None:
+    face = Box(20, 10, 2).faces().sort_by(Axis.Z)[-1]
+
+    levels = recognise_face_levels(face)
+
+    assert len(levels) == 1
+    assert levels[0].z == pytest.approx(1.0)
