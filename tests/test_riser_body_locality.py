@@ -8,6 +8,7 @@ import pytest
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
 from b123d_recognisers import (
+    FaceLevel,
     FramedRecognitionResult,
     RiserEvidence,
     StepShoulder,
@@ -125,6 +126,26 @@ def test_recognised_and_legacy_riser_records_remain_totally_ordered() -> None:
     assert legacy != recognised
     assert sorted((recognised, legacy)) == [legacy, recognised]
     assert project_step_shoulders([legacy], levels=[10.0])
+    assert RiserEvidence.__lt__(legacy, object()) is NotImplemented
+
+
+def test_projection_empty_and_untied_boundaries_fail_closed() -> None:
+    assert project_step_shoulders([], levels=[1.0]) == []
+    untied = RiserEvidence(
+        vertical=False,
+        axis="x",
+        positions=(4.0,),
+        other_axis="y",
+        other_positions=(),
+        z_lo=2.0,
+        z_hi=3.0,
+        lo_at_envelope=False,
+        hi_at_envelope=False,
+        body_levels=(FaceLevel(1.0),),
+    )
+
+    assert project_step_shoulders([untied], levels=[]) == []
+    assert project_step_shoulders([untied], levels=[1.0]) == []
 
 
 def test_aggregate_riser_occurrences_have_distinct_defining_solid_authority() -> None:

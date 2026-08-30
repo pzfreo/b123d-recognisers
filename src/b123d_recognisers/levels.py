@@ -436,7 +436,7 @@ def _riser_proposals_one(
             continue
         try:
             nv = f.normal_at()
-        except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
+        except Exception:  # pragma: no cover - OCCT defensive boundary
             continue
         classified = _riser_orientation(nv)
         if classified is None:
@@ -530,7 +530,7 @@ def _discover_risers(
         ):
             nodes = tuple(writer.graph.require_node(face) for face in proposal.faces)
             solid = writer.graph.common_valid_solid(nodes)
-            if solid is None:
+            if solid is None:  # pragma: no cover - graph-bound nodes retain one valid owner
                 raise ValueError("Riser defining faces have no unambiguous valid solid")
             record = replace(
                 proposal.record,

@@ -357,7 +357,7 @@ def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
     body_levels: dict[object, list[FaceLevel]] = {}
     for occurrence in inputs.occurrences(FamilyId.STEP_LEVELS, FaceLevel):
         solid = occurrence.solid()
-        if solid is None:
+        if solid is None:  # pragma: no cover - completed occurrences revalidate this invariant
             raise ValueError("completed FaceLevel occurrence has no valid solid")
         body_levels.setdefault(solid, []).append(occurrence.record(FaceLevel))
     return list(
