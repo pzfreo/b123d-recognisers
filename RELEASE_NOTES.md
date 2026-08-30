@@ -1,5 +1,24 @@
 # Release notes
 
+## 0.4.7
+
+- **Let consumers classify the exact framed working shape before recognition.**
+  `prepare_framed_part()` returns the inferred `LocalFrame`, topology-preserving local `part`, and
+  one reusable cylinder inventory. Consumers can inspect that same local geometry, choose their
+  own deterministic policy, and then call `recognise()` without a second cylinder scan or a second
+  aggregate pass. Typed frame refusals support an explicit legacy fallback; the existing direct
+  aggregate and framed-recognition APIs remain compatible.
+
+- **Removed sign-dependent Fillet attribution at ambiguous support-plane ties.** Fillet recognition
+  now refuses a candidate when equally valid neighbouring support planes disagree only because of
+  axis sign. This removes eight false Fillet records and all observed Fillet frame transitions in
+  the fixed 500-part MFCAD++ audit while preserving the other family counts.
+
+- **Proved principal-axis covariance for angled steps and prismatic pockets.** Fixed corpus slices
+  and rigid-motion controls now exercise X-, Y-, and Z-primary forms and distinguish recogniser
+  defects from axis-sensitive golden serialization. The evidence introduces no learned policy and
+  leaves existing result schemas unchanged.
+
 ## 0.4.6
 
 - **Connected canonical cylinder recovery to Hole and Boss recognition.** Exact cylinders
