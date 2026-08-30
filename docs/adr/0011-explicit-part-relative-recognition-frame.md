@@ -173,3 +173,12 @@ solid in that exact local shape. It then orders all physical occurrences geometr
 records on separate bodies remain multiplicity-distinct; their `u`/`v` witnesses, defining faces
 and `SolidRef` ownership never cross a body boundary. This changes compound output only: the Plate
 schema, principal-normal scope, thresholds and framing representative remain unchanged.
+
+## Amendment (Plate in-plane roll covariance, issue #329)
+
+An `AXIAL` or otherwise geometry-established frame may choose a different gauge about a physical
+Plate normal. Plate large-area eligibility therefore uses a body-intrinsic oriented transverse
+envelope rather than the local coordinate-aligned bounding rectangle. The authority is derived in
+the exact framed working solid and rotates with that solid; the frame representative is not
+reordered or probed again. Axis, bounds, witnesses and original defining faces remain expressed in
+the one supplied local frame, and internally oblique Plate normals remain unsupported.

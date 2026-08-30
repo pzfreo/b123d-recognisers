@@ -34,10 +34,11 @@ Bottom of the recognition DAG: depends only on build123d/OCP.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from build123d import Face
+from build123d import Axis, Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
@@ -60,6 +61,12 @@ from b123d_recognisers._typing import Part
 #: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
 #: Also the slab-thickness minimum, which is why it cannot follow the part.
 _TOL = 0.5
+
+# Imported coplanar faces can return normals that differ only in the final floating-point bits.
+# Treating those as distinct directions repeats the same whole-shape rotation without adding a
+# geometric candidate. Nine decimal places in degrees is about 1.7e-11 radians: far below the
+# package's directional predicates, but above the observed kernel representation noise.
+_ORIENTED_ANGLE_DIGITS = 9
 
 
 @dataclass(frozen=True)
@@ -99,6 +106,73 @@ class _PlateGroup:
     faces: tuple[Face, ...]
 
 
+def _oriented_cross_area(
+    part: Part,
+    faces: Sequence[Face],
+    axis_index: int,
+    extents: tuple[float, float, float],
+) -> float:
+    """Smallest body cross-envelope in directions established by its planar faces.
+
+    A world-axis bounding rectangle changes area when the recognition frame rolls around the
+    Plate normal.  For a prismatic body, the minimum enclosing rectangle is attained with one
+    side parallel to a boundary direction.  Rotate each eligible intrinsic planar normal onto a
+    transverse coordinate axis and retain the smallest exact bounding-box cross area. A body with
+    no transverse planar direction retains the legacy coordinate envelope for compatibility; that
+    case is outside the documented prismatic Plate domain and carries no roll-covariance claim.
+    """
+
+    other = [index for index in range(3) if index != axis_index]
+    angles: set[float] = set()
+    vertices = tuple(tuple(vertex) for vertex in part.vertices())
+    support_eps = max(max(extents), 1.0) * 1e-9
+    for face in faces:
+        try:
+            normal = tuple(face.normal_at())
+        except Exception:  # noqa: BLE001 -- a degenerate plane establishes no direction
+            continue
+        if abs(normal[axis_index]) > 1.0 - AXIS_ALIGNED_COS:
+            continue
+        projected = math.hypot(normal[other[0]], normal[other[1]])
+        if projected < AXIS_ALIGNED_COS:
+            continue
+        location = BRepAdaptor_Surface(face.wrapped).Plane().Location()
+        plane = (location.X(), location.Y(), location.Z())
+        plane_projection = sum(
+            value * direction for value, direction in zip(plane, normal, strict=True)
+        )
+        if vertices and max(
+            sum(
+                value * direction
+                for value, direction in zip(vertex, normal, strict=True)
+            )
+            for vertex in vertices
+        ) > plane_projection + support_eps:
+            # A concave/internal planar wall does not establish a body-envelope direction.
+            continue
+        angle = math.degrees(math.atan2(normal[other[1]], normal[other[0]])) % 90.0
+        # Apply modulo again so a value numerically just below 90 canonicalises with 0.
+        angles.add(round(angle, _ORIENTED_ANGLE_DIGITS) % 90.0)
+
+    if not angles:
+        return extents[other[0]] * extents[other[1]]
+
+    rotation_axis = (Axis.X, Axis.Y, Axis.Z)[axis_index]
+    sign = 1.0 if axis_index == 1 else -1.0
+    cross_areas: list[float] = []
+    for angle in angles:
+        size = (
+            extents
+            if angle == 0.0
+            else tuple(
+                float(component)
+                for component in part.rotate(rotation_axis, sign * angle).bounding_box().size
+            )
+        )
+        cross_areas.append(size[other[0]] * size[other[1]])
+    return min(cross_areas)
+
+
 def has_multi_axis_plates(plates: Sequence[Plate]) -> bool:
     """Whether plate evidence proves a base/wall structure rather than one slab axis."""
     return len({plate.axis for plate in plates}) >= 2
@@ -136,18 +210,13 @@ def _plate_proposals(
     """Discover one body's Plate proposals without publishing evidence."""
 
     bb = part.bounding_box()
-    ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
+    extents = (bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
+    ext = dict(zip("xyz", extents, strict=True))
     axidx = {"x": 0, "y": 1, "z": 2}
     faces = [f for f in part.faces() if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Plane]
 
     out: list[_PlateProposal] = []
     for axis, i in axidx.items():
-        cross = 1.0
-        for other_axis in axidx:
-            if other_axis != axis:
-                cross *= ext[other_axis]
-        if cross <= 0:
-            continue
         sides: tuple[list[tuple[float, float, float, float, Face]], ...] = ([], [])
         oi = [j for j in (0, 1, 2) if j != i]
         for face in faces:
@@ -189,8 +258,19 @@ def _plate_proposals(
             grouped.append(groups)
         negative, positive = grouped
 
-        threshold = min_area_frac * cross
         maximum_thickness = max_thick_frac * ext[axis]
+        # The area authority cannot make an axis eligible unless it already contains at least one
+        # correctly ordered, geometrically thin opposed span. Avoid constructing oriented
+        # envelopes for axes that are incapable of publishing a Plate under any area threshold.
+        if not any(
+            tol < high - low < maximum_thickness for low in negative for high in positive
+        ):
+            continue
+
+        cross = _oriented_cross_area(part, faces, i, extents)
+        if cross <= 0:
+            continue
+        threshold = min_area_frac * cross
         events = [
             (coordinate, -1, group)
             for coordinate, group in negative.items()

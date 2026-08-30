@@ -46,16 +46,16 @@ def test_rigid_motion_baseline_separates_absence_from_reclassification(report) -
     assert report["totals"] == {
         "Z30": {
             "baseline_records": 79,
-            "retained_same_family": 34,
+            "retained_same_family": 36,
             "reclassified": 14,
-            "absent": 31,
+            "absent": 29,
             "introduced": 0,
         },
         "X30": {
             "baseline_records": 79,
-            "retained_same_family": 29,
+            "retained_same_family": 30,
             "reclassified": 7,
-            "absent": 43,
+            "absent": 42,
             "introduced": 0,
         },
         "X90": {
