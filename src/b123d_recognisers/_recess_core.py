@@ -22,6 +22,7 @@ share nothing above them.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import cast
 
@@ -55,6 +56,7 @@ from b123d_recognisers._recess_reduce import (
     _merge_proposals,
     _prism_is_empty,
     _RecessProposal,
+    _region_center,
 )
 from b123d_recognisers._typing import Part
 
@@ -600,15 +602,15 @@ def _channel_proposals_one(
 
 
 def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Pocket]]:
-    """Recognise an axis-aligned rectangular blind interruption open at two
-    adjacent envelope edges.
+    """Recognise a principal-axis rectangular blind corner interruption.
 
-    A conventional pocket has opposed wall pairs.  A corner notch deliberately
-    has only one X wall and one Y wall, so the pair-based pocket recogniser
-    cannot see it.  Its three interior faces still form an unambiguous box:
-    an X wall, a Y wall, and a horizontal floor.  Reuse ``Pocket`` as the
-    rectangular-recess record so the existing W×L×D callout/coverage pipeline
-    owns the dimensions; edge contact makes its X/Y location implicit.
+    A conventional pocket has opposed wall pairs. A corner interruption has only one wall on
+    each of two axes, so its three mutually perpendicular interior faces establish one removed
+    box instead. No principal axis is intrinsically "up": enumerate each valid interpretation
+    and use the uniquely shallowest removed leg as depth. That geometric convention is invariant
+    to principal-axis permutation and sign, unlike the historical world-Z floor rule. A tied
+    shallowest leg has no unique ``Pocket.depth_axis`` and is refused rather than broken by an
+    axis-letter or traversal-order preference.
     """
     tol = _MERGE_TOL
 
@@ -616,84 +618,136 @@ def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Poc
         c = "XYZ"[_AXES[axis]]
         return getattr(bb.min, c), getattr(bb.max, c)
 
-    out: list[_RecessProposal[Pocket]] = []
-    bx = (pbb.min.X, pbb.max.X)
-    by = (pbb.min.Y, pbb.max.Y)
-    bz = (pbb.min.Z, pbb.max.Z)
-    for floor in (f for f in faces if f.axis == "z" and f.wall):
-        x0, x1 = limits(floor.bb, "x")
-        y0, y1 = limits(floor.bb, "y")
-        z0, z1 = limits(floor.bb, "z")
-        if x1 - x0 <= tol or y1 - y0 <= tol or abs(z1 - z0) > tol:
-            continue
-        if (x1 - x0) >= _SLOT_MAX_SPAN_FRAC * (bx[1] - bx[0]) or (
-            y1 - y0
-        ) >= _SLOT_MAX_SPAN_FRAC * (by[1] - by[0]):
-            continue  # a full-span step floor, not a bounded interruption
-        x_edge = abs(x0 - bx[0]) <= tol or abs(x1 - bx[1]) <= tol
-        y_edge = abs(y0 - by[0]) <= tol or abs(y1 - by[1]) <= tol
-        if not (x_edge and y_edge) or min(abs(z0 - z) for z in bz) <= tol:
-            continue
-        x_inner = x1 if abs(x0 - bx[0]) <= tol else x0
-        y_inner = y1 if abs(y0 - by[0]) <= tol else y0
+    envelope = {axis: limits(pbb, axis) for axis in "xyz"}
+    candidates: list[tuple[float, _RecessProposal[Pocket]]] = []
+    for depth_axis in "xyz":
+        footprint_axes = [axis for axis in "xyz" if axis != depth_axis]
+        first_axis, second_axis = footprint_axes
+        di = _AXES[depth_axis]
+        for floor in (face for face in faces if face.axis == depth_axis and face.wall):
+            first_lo, first_hi = limits(floor.bb, first_axis)
+            second_lo, second_hi = limits(floor.bb, second_axis)
+            depth_lo, depth_hi = limits(floor.bb, depth_axis)
+            first_span = first_hi - first_lo
+            second_span = second_hi - second_lo
+            if first_span <= tol or second_span <= tol or abs(depth_hi - depth_lo) > tol:
+                continue
+            if (
+                first_span
+                >= _SLOT_MAX_SPAN_FRAC
+                * (envelope[first_axis][1] - envelope[first_axis][0])
+                or second_span
+                >= _SLOT_MAX_SPAN_FRAC
+                * (envelope[second_axis][1] - envelope[second_axis][0])
+            ):
+                continue  # a full-span step face, not a bounded interruption
+            first_at_low = abs(first_lo - envelope[first_axis][0]) <= tol
+            first_at_high = abs(first_hi - envelope[first_axis][1]) <= tol
+            second_at_low = abs(second_lo - envelope[second_axis][0]) <= tol
+            second_at_high = abs(second_hi - envelope[second_axis][1]) <= tol
+            if not (
+                (first_at_low or first_at_high)
+                and (second_at_low or second_at_high)
+            ) or min(abs(depth_lo - end) for end in envelope[depth_axis]) <= tol:
+                continue
+            first_inner = first_hi if first_at_low else first_lo
+            second_inner = second_hi if second_at_low else second_lo
 
-        xwall = next(
-            (
-                f
-                for f in faces
-                if f.axis == "x"
-                and abs(_center(f.bb, _AXES["x"]) - x_inner) <= tol
-                and _overlap_len(f.bb, floor.bb, "y") >= y1 - y0 - tol
-            ),
-            None,
-        )
-        ywall = next(
-            (
-                f
-                for f in faces
-                if f.axis == "y"
-                and abs(_center(f.bb, _AXES["y"]) - y_inner) <= tol
-                and _overlap_len(f.bb, floor.bb, "x") >= x1 - x0 - tol
-            ),
-            None,
-        )
-        if xwall is None or ywall is None:
-            continue
-        wz0, wz1 = limits(xwall.bb, "z")
-        vz0, vz1 = limits(ywall.bb, "z")
-        d_lo, d_hi = max(wz0, vz0), min(wz1, vz1)
-        if d_hi - d_lo <= tol or not (d_lo - tol <= z0 <= d_hi + tol):
-            continue
+            first_wall = next(
+                (
+                    face
+                    for face in faces
+                    if face.axis == first_axis
+                    and abs(_center(face.bb, _AXES[first_axis]) - first_inner) <= tol
+                    and _overlap_len(face.bb, floor.bb, second_axis) >= second_span - tol
+                ),
+                None,
+            )
+            second_wall = next(
+                (
+                    face
+                    for face in faces
+                    if face.axis == second_axis
+                    and abs(_center(face.bb, _AXES[second_axis]) - second_inner) <= tol
+                    and _overlap_len(face.bb, floor.bb, first_axis) >= first_span - tol
+                ),
+                None,
+            )
+            if first_wall is None or second_wall is None:
+                continue
+            first_depth = limits(first_wall.bb, depth_axis)
+            second_depth = limits(second_wall.bb, depth_axis)
+            if any(
+                abs(first - second) > tol
+                for first, second in zip(first_depth, second_depth, strict=True)
+            ):
+                continue  # a split/interrupted side cannot define the complete removed box
+            d_lo = max(first_depth[0], second_depth[0])
+            d_hi = min(first_depth[1], second_depth[1])
+            if d_hi - d_lo <= tol or not (
+                d_lo - tol <= depth_lo <= d_hi + tol
+            ):
+                continue
 
-        sx, sy = x1 - x0, y1 - y0
-        if sx <= sy:
-            width_axis, long_axis = "x", "y"
-            width, length, w_center, lo, hi = sx, sy, (x0 + x1) / 2, y0, y1
-        else:
-            width_axis, long_axis = "y", "x"
-            width, length, w_center, lo, hi = sy, sx, (y0 + y1) / 2, x0, x1
-        record = Pocket(
-            width_axis=width_axis,
-            long_axis=long_axis,
-            width=round(width, 2),
-            length=round(length, 2),
-            depth=round(d_hi - d_lo, 2),
-            w_center=round(w_center, 2),
-            lo=round(lo, 2),
-            hi=round(hi, 2),
-            d_lo=round(d_lo, 2),
-            d_hi=round(d_hi, 2),
-            open_sign=1 if floor.normal[2] > 0 else -1,
-            edge_anchored=True,
-        )
-        out.append(
-            _RecessProposal(
-                record,
-                frozenset(
-                    node for node in (floor.node, xwall.node, ywall.node) if node is not None
+            if first_span <= second_span:
+                width_axis, long_axis = first_axis, second_axis
+                width, length = first_span, second_span
+                w_center, lo, hi = (first_lo + first_hi) / 2, second_lo, second_hi
+            else:
+                width_axis, long_axis = second_axis, first_axis
+                width, length = second_span, first_span
+                w_center, lo, hi = (second_lo + second_hi) / 2, first_lo, first_hi
+            record = Pocket(
+                width_axis=width_axis,
+                long_axis=long_axis,
+                width=round(width, 2),
+                length=round(length, 2),
+                depth=round(d_hi - d_lo, 2),
+                w_center=round(w_center, 2),
+                lo=round(lo, 2),
+                hi=round(hi, 2),
+                d_lo=round(d_lo, 2),
+                d_hi=round(d_hi, 2),
+                open_sign=1 if floor.normal[di] > 0 else -1,
+                edge_anchored=True,
+            )
+            candidates.append(
+                (
+                    d_hi - d_lo,
+                    _RecessProposal(
+                        record,
+                        frozenset(
+                            node
+                            for node in (floor.node, first_wall.node, second_wall.node)
+                            if node is not None
+                        ),
+                    ),
                 ),
             )
+
+    # Interpretations of the same removed box have the same centre. Preserve distinct physical
+    # corners, then select depth only when geometry establishes a unique shallowest leg.
+    groups: list[list[tuple[float, _RecessProposal[Pocket]]]] = []
+    for candidate in candidates:
+        centre = _region_center(candidate[1].record)
+        group = next(
+            (
+                existing
+                for existing in groups
+                if math.dist(centre, _region_center(existing[0][1].record)) <= tol
+            ),
+            None,
         )
+        if group is None:
+            groups.append([candidate])
+        else:
+            group.append(candidate)
+    out: list[_RecessProposal[Pocket]] = []
+    for group in groups:
+        ordered = sorted(group, key=lambda item: item[0])
+        if len(ordered) > 1 and ordered[1][0] - ordered[0][0] <= COORD_FLOOR:
+            continue
+        out.append(ordered[0][1])
     return out
 
 
