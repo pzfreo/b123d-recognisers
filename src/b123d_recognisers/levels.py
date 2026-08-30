@@ -30,7 +30,7 @@ from b123d_recognisers._geometry import (
     cluster_coordinates,
 )
 from b123d_recognisers._record import Record
-from b123d_recognisers._typing import Part
+from b123d_recognisers._typing import FaceLike, Part
 
 
 @dataclass(frozen=True, order=True)
@@ -52,7 +52,7 @@ class FaceLevel(Record):
 @dataclass(frozen=True, slots=True)
 class _FaceLevelProposal:
     record: FaceLevel
-    faces: tuple[object, ...]
+    faces: tuple[FaceLike, ...]
 
 
 @dataclass(frozen=True, order=True)
@@ -143,7 +143,7 @@ def _face_level_proposals_one(
 
     zs: list[float] = []
     face_bounds: list[tuple[float, float, float, float]] = []
-    faces: list[object] = []
+    faces: list[FaceLike] = []
     face_areas: list[float] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
