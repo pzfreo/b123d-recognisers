@@ -221,6 +221,10 @@ geometry in two models, with no production relaxation.
 The E2 [`Prismatic Pocket frame-axis audit`](benchmarks/e2-prismatic-pocket-axis-audit.md) proves
 signed X/Y/Z ring covariance and classifies all six historical losses at their defining-wall
 discovery boundary, with rectangular Pocket precedence unchanged.
+The E2 [`residual Fillet and Plate audit`](benchmarks/e2-residual-frame-axis-audit.md) removes eight
+false cylindrical Fillets by refusing sign-dependent equidistant supporting-plane choices while
+preserving every other family count. It separately traces one Plate transition to the
+rotation-dependent bbox cross-area gate tracked in issue #329; Plate behavior is unchanged here.
 The E5b [`bounded rectangular Through Step result`](benchmarks/effectiveness-mfcadpp-500-e5b-through-step.md)
 added 39 conservative occurrences with 78/78 correct defining faces. The E5d
 [`interruption-tolerant result`](benchmarks/effectiveness-mfcadpp-500-e5d-through-step.md) preserves
@@ -381,7 +385,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `CounterSink` | One proved conical seat at a matching cylindrical bore mouth. |
 | `DoubleDBore` | One constant principal-axis through double-D void; recogniser output always has `through=True`. |
 | `FaceLevel` | One horizontal Z level plus optional XY support spans; it does not claim a dimension requirement. |
-| `Fillet` | One qualifying external, single-principal-axis cylindrical or toroidal edge blend; `turned` is true only for the toroidal shaft treatment. |
+| `Fillet` | One qualifying external, single-principal-axis cylindrical or toroidal edge blend; a cylindrical blend requires one unambiguous nearest supporting plane on each transverse axis, and `turned` is true only for the toroidal shaft treatment. |
 | `Flat` | One planar truncation corresponding to a proved cylindrical-stock substrate. |
 | `Groove` | One external reduced-OD band between larger coaxial neighbours. |
 | `HoleRecord` | One internal full-cylinder stack with optional near-side hole treatments and one classified bottom. |
