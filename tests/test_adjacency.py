@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
 from build123d import Axis, Box, Cylinder, Pos, Rot, SortBy, chamfer, fillet
 
 from b123d_recognisers import (
@@ -190,17 +191,20 @@ def test_nearest_axis_aligned_planes_breaks_a_tie_on_coordinate_not_arrival():
     }
 
 
-def test_nearest_axis_aligned_planes_can_refuse_distinct_equidistant_planes():
+@pytest.mark.parametrize("face_axis", range(3))
+def test_nearest_axis_aligned_planes_can_refuse_distinct_equidistant_planes(
+    face_axis: int,
+):
     part = Box(10, 10, 10)
-    face = next(f for f in part.faces() if f.normal_at().X > 0.9)
+    face = next(f for f in part.faces() if f.normal_at().to_tuple()[face_axis] > 0.9)
     edge_faces = edge_face_map(part.faces())
-    centre = {0: 5.0, 1: 0.0, 2: 0.0}
+    centre = {axis: 5.0 if axis == face_axis else 0.0 for axis in range(3)}
 
     assert nearest_axis_aligned_planes(
         face,
         edge_faces,
         centre,
-        exclude_axis=0,
+        exclude_axis=face_axis,
         refuse_equidistant=True,
     ) == {}
 

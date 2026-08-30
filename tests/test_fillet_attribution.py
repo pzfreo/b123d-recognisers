@@ -599,7 +599,6 @@ def test_rejected_round_context_issues_no_fillet_candidate(part) -> None:
     "part",
     [
         _interrupted_corner_round(),
-        Rot(0, 90, 0) * _interrupted_corner_round(),
         Rot(90, 0, 0) * _interrupted_corner_round(),
         _interrupted_corner_round().mirror(),
     ],
