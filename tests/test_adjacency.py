@@ -196,7 +196,7 @@ def test_nearest_axis_aligned_planes_can_refuse_distinct_equidistant_planes(
     face_axis: int,
 ):
     part = Box(10, 10, 10)
-    face = next(f for f in part.faces() if f.normal_at().to_tuple()[face_axis] > 0.9)
+    face = next(f for f in part.faces() if tuple(f.normal_at())[face_axis] > 0.9)
     edge_faces = edge_face_map(part.faces())
     centre = {axis: 5.0 if axis == face_axis else 0.0 for axis in range(3)}
 
