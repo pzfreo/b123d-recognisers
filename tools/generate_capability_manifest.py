@@ -277,7 +277,9 @@ NO_MEMBERSHIP_RATIONALE = {
     ),
     "StepShoulder": "Pure consumer projection from RiserEvidence plus a caller-supplied level set.",
     "TurnedProfile": "Consumer aggregate built on demand from RecognitionResult.turned_steps.",
-    "TurnedProfileKey": "Nested physical-profile membership retained by TurnedStep and TurnedProfile.",
+    "TurnedProfileKey": (
+        "Nested physical-profile membership retained by TurnedStep and TurnedProfile."
+    ),
     "PassageEnds": "Nested only in SectionPassage; retained to preserve explicit end topology.",
     "PassageFrame": "Nested only in SectionPassage.",
     "PassageSection": "Nested only in SectionPassage.",
