@@ -41,10 +41,11 @@ def test_a_close_pair_is_never_split_while_a_distant_pair_merges():
 
     zs = [level.z for level in recognise_face_levels(part, tol=TOL)]
 
-    # 1.24 and 1.26 are 0.02 apart, so no grouping may separate them...
+    # 1.24 and 1.26 belong to the same upper body and are 0.02 apart, so no grouping may
+    # separate them...
     assert not (any(abs(z - 1.24) < 1e-9 for z in zs) and any(abs(z - 1.26) < 1e-9 for z in zs))
-    # ...while 1.00 and 1.24, 0.24 apart, are within tol and are one level.
-    assert zs == [-1.0, 1.0]
+    # ...but the 0.24 air gap between separate bodies is not permission to merge their levels.
+    assert zs == [-1.0, 1.0, 1.24]
 
 
 @pytest.mark.parametrize("offset", [0.0, 0.13, 0.24, 0.26, 0.37, 0.49])

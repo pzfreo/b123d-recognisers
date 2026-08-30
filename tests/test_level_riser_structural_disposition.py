@@ -9,7 +9,12 @@ from build123d import Box, Compound, Pos
 from b123d_recognisers import recognise_risers
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, IncompleteAttribution, NotCounted
+from b123d_recognisers._registry import (
+    PHYSICAL_DEFINITIONS,
+    FullyAttributed,
+    IncompleteAttribution,
+    NotCounted,
+)
 from b123d_recognisers.levels import step_level_records
 from b123d_recognisers.result import _take_inventory
 
@@ -22,20 +27,18 @@ def _equal_same_solid_ramps():
     return Box(60, 40, 20) - Pos(0, 0, 5) * Box(0.0008, 40, 10)
 
 
-def test_step_level_whole_part_cluster_has_no_single_solid_owner() -> None:
+def test_step_level_compound_occurrences_each_have_one_solid_owner() -> None:
     part = Compound([_step(), Pos(100, 0, 0) * _step()])
-    records = step_level_records(part)
-    assert records
-    graph = FaceGraph(part)
-    record = records[0]
-    nodes = frozenset(
-        node
-        for node in graph.nodes
-        if graph.is_planar(node) and abs(sum(graph.bounds(node)[2]) / 2 - record.z) <= 0.5
-    )
-    owners = {graph.common_valid_solid((node,)) for node in nodes}
-    assert len(owners - {None}) == 2
-    assert graph.common_valid_solid(nodes) is None
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.STEP_LEVELS).candidates
+
+    assert len(candidates) == 2
+    owners = {
+        product.context.graph.common_valid_solid(product.evidence.defining_of(candidate))
+        for candidate in candidates
+    }
+    assert None not in owners
+    assert len(owners) == 2
 
 
 def test_riser_equal_value_can_mean_two_faces_on_one_solid_without_a_winner() -> None:
@@ -83,19 +86,22 @@ def test_aggregate_remains_writer_free_complete_and_result_exact() -> None:
     product = _take_inventory(part)
     assert product.result.risers == public_risers
     assert product.result.step_levels == public_levels
-    for family in (FamilyId.STEP_LEVELS, FamilyId.RISERS):
-        candidates = product.physical.candidate_set(family).candidates
-        assert candidates
-        assert all(
-            product.evidence.defining_of(candidate) == frozenset() for candidate in candidates
-        )
+    level_candidates = product.physical.candidate_set(FamilyId.STEP_LEVELS).candidates
+    assert level_candidates
+    assert all(product.evidence.defining_of(candidate) for candidate in level_candidates)
+    riser_candidates = product.physical.candidate_set(FamilyId.RISERS).candidates
+    assert riser_candidates
+    assert all(
+        product.evidence.defining_of(candidate) == frozenset() for candidate in riser_candidates
+    )
     assert product.diagnostics == ()
 
 
 def test_dispositions_and_census_reasons_are_exact() -> None:
     definitions = {item.family: item for item in PHYSICAL_DEFINITIONS}
+    assert isinstance(definitions[FamilyId.STEP_LEVELS].attribution, FullyAttributed)
+    assert isinstance(definitions[FamilyId.RISERS].attribution, IncompleteAttribution)
     for family in (FamilyId.STEP_LEVELS, FamilyId.RISERS):
-        assert isinstance(definitions[family].attribution, IncompleteAttribution)
         assert isinstance(definitions[family].census, NotCounted)
-    assert "multiple SolidRefs" in definitions[FamilyId.STEP_LEVELS].attribution.reason
+    assert "body-local" in definitions[FamilyId.STEP_LEVELS].attribution.proof_contract
     assert "deduplication" in definitions[FamilyId.RISERS].attribution.reason
