@@ -16,6 +16,10 @@ aggregate family invocation.
   `cbc2512595bd47171945da5b88057dbba108e578191082fbacc1b1f60399bfe3`.
 - [NIST/Gramel census paired report](plate-body-locality-performance-census-23fde59.json), SHA-256
   `7fe1ea2c43202b828d04951b872699d9ce7f4144a4ddc1d837cfa6992f76edd2`.
+- [Final framed effectiveness report](effectiveness-mfcadpp-500-plate-body-local-908c6e5.json),
+  SHA-256 `444b802d75719bc04074e2efb2d4cde4ddf9afabdfac7e75e6e675e0e5eae49d`;
+  [E2 comparator](effectiveness-mfcadpp-500-e2-pad-axis-4792250.json), SHA-256
+  `05b4e3aabeb33a003a936bcd120721c30058a4a26c8e145e9dae95768355459f`.
 
 MFCAD++ is direct development evidence. No MFInstSeg tree exists at the supplied
 `/app/workspaces-codex/datasets/mfinstseg` path or the other checked `/app` dataset mounts in this
@@ -43,6 +47,12 @@ mapping v1: 500 evaluated, zero invalid or empty. A full model-by-model comparis
 runtime metadata was identical to the prior E2 report. The reconciled physical output contains 233
 Plates; the paired aggregate benchmark measures 234 raw aggregate Plate records before corpus
 reconciliation. These are intentionally distinct metrics, not a count discrepancy.
+
+For the identity check, both canonical JSON objects were key-sorted after deleting top-level
+`runtime`, `package.commit` and each model's `seconds`. Both normalized streams have SHA-256
+`9c5d72f969b0007166521b704652886982f0d86214fce19f003de14345186d2d`. Selection identity is
+`323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`; taxonomy mapping v1 is
+`9c08c0b7e98dc6af28462bc363e1d19c68e2d701d16b6b3e72d23382faf3499a`.
 
 | Workload | Models | Legacy raw Plates | Body-local raw Plates | Added | Other outputs equal | Legacy retained | Body-local/legacy total |
 | --- | ---: | ---: | ---: | ---: | --- | --- | ---: |
