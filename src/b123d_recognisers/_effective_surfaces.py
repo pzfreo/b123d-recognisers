@@ -395,6 +395,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "plate normal/offset read",
     ),
+    "plates:_oriented_cross_area:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "original planar support location establishes a body-envelope direction",
+    ),
     "polygonal_bosses:_cap_coordinate:is_planar:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "principal-axis planar cap gate",
