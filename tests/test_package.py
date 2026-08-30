@@ -199,6 +199,7 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import b123d_recognisers.inspection as i; "
                 "import hashlib; "
                 "assert r.__version__; assert r.recognise_holes; "
+                "assert r.PreparedFramedPart; assert r.prepare_framed_part; "
                 "actual = hashlib.sha256(r.capability_manifest_json().encode()).hexdigest(); "
                 f"assert actual == {manifest_digest!r}; "
                 "inspection = hashlib.sha256("

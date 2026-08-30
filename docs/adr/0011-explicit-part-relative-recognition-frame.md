@@ -101,3 +101,24 @@ still issues exactly one Candidate owning the complete eight-face boundary of on
 Generic caller-space axes remain unsupported by the raw route and become principal only through the
 existing explicit framed boundary. The framed result continues to pair the exact working shape,
 local records and frame; no consumer may infer or substitute a different representative.
+
+## Amendment (prepared consumer classification, issue #328)
+
+Some consumers own a rotational/prismatic classification that is itself defined from the local
+working shape and cylinder substrate. Requiring that boolean before normalization makes the
+framed call placement-dependent; defaulting it and filtering later cannot repair family
+applicability or reconciliation decisions already made inside the aggregate.
+
+`prepare_framed_part()` therefore publishes one additional lifecycle boundary. It performs frame
+inference, exact topology-preserving normalization, and the already-public cylinder analysis once,
+then returns a `PreparedFramedPart` pairing those three facts. The consumer derives its policy from
+that exact local value and calls `prepared.recognise(rotational=...)`. That method injects the
+prepared cylinder inventory into the existing aggregate, which still executes once through the
+registry and reconciliation stack, and returns a `FramedRecognitionResult` with the same frame and
+working shape.
+
+This does not publish `RecognitionContext`, graph identity, Candidates, evidence, registry, or
+reconciliation. It does not transfer classification, view, or drawing policy upstream. The
+existing explicit-boolean framed function delegates through the prepared lifecycle and remains
+source-compatible; typed frame refusal still occurs before any aggregate and permits an explicit
+legacy fallback. FULL, ORTHOGONAL and AXIAL gauges all preserve the caller's local classification.

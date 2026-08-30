@@ -420,6 +420,15 @@ subclass. It owns every public recogniser family, preserves classification-gated
 empty inventories explicitly, and makes no claim that every geometry fact has
 Draftwright IR, DSL, code-generation, drawing, or completeness semantics.
 
+The opt-in framing lifecycle has two supported entry points. `build_framed_recognition_result()`
+retains its explicit caller-supplied classification. `prepare_framed_part()` returns either a
+typed frame refusal or a `PreparedFramedPart` pairing the exact normalized working shape, frame,
+and precomputed cylinder substrate. A consumer may inspect those local facts, then call
+`prepared.recognise(rotational=...)`; the existing aggregate runs once with that classification
+and without repeating cylinder analysis. This lifecycle does not expose the private graph,
+Candidates, evidence, registry, or reconciliation state, and does not move downstream view or
+drawing policy into this package.
+
 `build_recognition_report()` pairs that unchanged inventory with bounded lifecycle explanations
 from the same run. It records whether each physical family ran, candidate and final disposition
 counts, and only the residual diagnostic codes established by frozen evidence. It does not scan

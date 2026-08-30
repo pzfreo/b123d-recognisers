@@ -114,15 +114,18 @@ from b123d_recognisers.explanations import (
 from b123d_recognisers.fillets import Fillet, fillet_anchor, recognise_fillets
 from b123d_recognisers.flats import Flat, recognise_flats
 from b123d_recognisers.frames import (
+    FramedPreparation,
     FramedRecognition,
     FramedRecognitionResult,
     FrameGauge,
     FrameInference,
     FrameRefusalReason,
     PartFrame,
+    PreparedFramedPart,
     RefusedPartFrame,
     build_framed_recognition_result,
     infer_part_frame,
+    prepare_framed_part,
 )
 from b123d_recognisers.grooves import Groove, floor_face_anchor, recognise_grooves
 from b123d_recognisers.levels import (
@@ -224,6 +227,7 @@ __all__ = [
     "FrameRefusalReason",
     "FramedRecognition",
     "FramedRecognitionResult",
+    "FramedPreparation",
     "DispositionExplanation",
     "ExplanationCoverage",
     "FamilyEvaluation",
@@ -246,6 +250,7 @@ __all__ = [
     "LinearArray",
     "Plate",
     "PartFrame",
+    "PreparedFramedPart",
     "Pocket",
     "PocketArray",
     "PocketGrid",
@@ -316,4 +321,5 @@ __all__ = [
     "build_recognition_report",
     "full_cylinders",
     "infer_part_frame",
+    "prepare_framed_part",
 ]
