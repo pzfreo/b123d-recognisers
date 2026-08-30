@@ -10,6 +10,7 @@ from typing import cast
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, RegularPolygon, Shape, Sphere, Vector, extrude
 
+import b123d_recognisers._run as run_module
 import b123d_recognisers.frames as frames
 from b123d_recognisers._typing import CylinderInventory, Part
 from b123d_recognisers.frames import (
@@ -216,6 +217,25 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
 
     prepared: FramedPreparation = prepare_framed_part(cast(Part, moved))
     assert isinstance(prepared, PreparedFramedPart)
+
+    def forbidden_rescan(*_args, **_kwargs):
+        raise AssertionError("prepared aggregate must not rescan cylinders")
+
+    aggregate = frames.build_recognition_result
+    aggregate_calls: list[tuple[Part, CylinderInventory, bool]] = []
+
+    def counted_aggregate(
+        part: Part,
+        *,
+        cylinders: CylinderInventory | None = None,
+        rotational: bool = False,
+    ) -> RecognitionResult:
+        assert cylinders is not None
+        aggregate_calls.append((part, cylinders, rotational))
+        return aggregate(part, cylinders=cylinders, rotational=rotational)
+
+    monkeypatch.setattr(run_module, "analyse_cylinders", forbidden_rescan)
+    monkeypatch.setattr(frames, "build_recognition_result", counted_aggregate)
     # A consumer can inspect the exact local substrate before choosing its own policy.
     rotational = any(
         evidence["external"]
@@ -225,6 +245,22 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
     framed = prepared.recognise(rotational=rotational)
 
     assert calls == [prepared.part]
+    assert len(aggregate_calls) == 1
+    aggregate_part, aggregate_cylinders, aggregate_rotational = aggregate_calls[0]
+    assert aggregate_part is prepared.part
+    assert all(
+        actual is expected
+        for actual, expected in zip(
+            aggregate_cylinders[0], prepared.cylinders[0], strict=True
+        )
+    )
+    assert all(
+        actual is expected
+        for actual, expected in zip(
+            aggregate_cylinders[1], prepared.cylinders[1], strict=True
+        )
+    )
+    assert aggregate_rotational is True
     assert framed.result.rotational is True
     assert framed.result.cylinders == prepared.cylinders
 
