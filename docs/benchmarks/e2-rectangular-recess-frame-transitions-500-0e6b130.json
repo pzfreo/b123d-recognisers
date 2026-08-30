@@ -6,7 +6,7 @@
     "absent:slot:contained_projection_of_blind_pocket": 3
   },
   "dataset": "MFCAD++ published test split (development evidence)",
-  "implementation_commit": "c7138ce10210ea84d6a3233cc906a627a0fccfee",
+  "implementation_commit": "0e6b1300c2809330f0056c66382a62709647d74c",
   "matching": "one-to-one defining-face containment after topology-preserving normalization",
   "refused": [],
   "region_containment_tolerance": 0.001,
