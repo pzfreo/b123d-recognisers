@@ -41,9 +41,21 @@ not to any physical body.
 
 The isolated final framed run evaluated 500/500 models with zero invalid or empty models. Every
 accepted physical-family count is unchanged from the provider comparator, including 1,408
-FaceLevels. After removing runtime and environment metadata plus only the newly exposed unmapped
-FaceLevel attribution fields, both full model-by-model reports have normalized SHA-256
-`2a8b243ef8110ddf0bd0f77fe68106c10e929e23125a52d165094bba34fe402a`.
+FaceLevels. After removing package, runtime and environment metadata plus only the newly exposed
+unmapped FaceLevel attribution fields, both full model-by-model reports have normalized SHA-256
+`2a8b243ef8110ddf0bd0f77fe68106c10e929e23125a52d165094bba34fe402a`. The exact normalization
+applied independently to each report is:
+
+```bash
+jq -S \
+  'del(.package,.environment,.runtime,
+       .summary.taxonomy_mismatch_defining_faces,
+       .summary.mapped_dataset_class_records.unmapped)
+   | .models |= map(del(.seconds,
+                        .taxonomy_mismatch_defining_faces,
+                        .mapped_dataset_class_records.unmapped))' \
+  REPORT.json | sha256sum
+```
 
 Publishing exact FaceLevel evidence intentionally changes two attribution diagnostics. Unmapped
 record projections rise from 793 to 2,201: exactly the 1,408 structural FaceLevel occurrences,
