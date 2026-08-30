@@ -63,11 +63,13 @@ too small for a list must receive a self-contained record, not a special return 
 
 `recognise_risers` reduces equal face-derived values only within one valid solid, then globally
 sorts the occurrence list without set-deduplicating across solids. Each recogniser-produced
-`RiserEvidence` carries the eligible `body_level_zs` derived from that same solid. The pure
-`project_step_shoulders` operation intersects caller-selected levels with this authority before
-testing the riser endpoints and preserves equal projected occurrences across bodies.
+`RiserEvidence` carries the eligible `body_levels` derived from that same solid. The pure
+`project_step_shoulders` operation intersects caller-selected FaceLevel occurrences with this
+authority before testing the riser endpoints and preserves equal projected occurrences across
+bodies. Numeric levels remain compatibility value selectors; callers that need to distinguish
+equal-Z occurrences pass the full FaceLevel records and their body-local support spans.
 
-`body_level_zs=None` is compatibility for manually constructed pre-0.4.9 evidence only; it retains
+`body_levels=None` is compatibility for manually constructed pre-0.4.9 evidence only; it retains
 the historical value-only projection. Production discovery never emits `None`. The serialized
 field addition advances `RiserEvidence` schema version to 2 without publishing `SolidRef`, graph
 handles or a second recognition site.

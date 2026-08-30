@@ -536,5 +536,5 @@ def test_riser_evidence_is_constructible_without_a_scan_tolerance():
     )
 
     assert riser.tol == 0.5
-    assert riser.body_level_zs is None
+    assert riser.body_levels is None
     assert project_step_shoulders([riser], levels=[5.0]) == [StepShoulder("x", 10.0)]

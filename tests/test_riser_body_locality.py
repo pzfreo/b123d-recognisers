@@ -8,10 +8,12 @@ from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 from b123d_recognisers import (
     FramedRecognitionResult,
     RiserEvidence,
+    StepShoulder,
     build_framed_recognition_result,
     build_recognition_result,
     project_step_shoulders,
     recognise_risers,
+    step_level_records,
 )
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers.result import _take_inventory
@@ -26,7 +28,10 @@ def _stepped(*, dy: float, dx: float = 0.0, level: float = 10.0):
 
 
 def _signature(part):
-    return [(riser.axis, riser.positions, riser.body_level_zs) for riser in recognise_risers(part)]
+    return [
+        (riser.axis, riser.positions, tuple(level.z for level in riser.body_levels or ()))
+        for riser in recognise_risers(part)
+    ]
 
 
 def test_separated_equal_steps_retain_two_real_risers_and_no_compound_envelope_faces() -> None:
@@ -48,12 +53,33 @@ def test_unequal_body_level_projection_cannot_borrow_the_other_solids_level() ->
     high = _stepped(dy=50, dx=30, level=15)
     risers = recognise_risers(Compound(children=[low, high]))
 
-    assert [(r.positions, r.body_level_zs) for r in risers] == [
+    assert [(r.positions, tuple(level.z for level in r.body_levels or ())) for r in risers] == [
         ((-30.0,), (10.0,)),
         ((30.0,), (15.0,)),
     ]
     assert [item.position for item in project_step_shoulders(risers, levels=[10.0])] == [-30.0]
     assert [item.position for item in project_step_shoulders(risers, levels=[15.0])] == [30.0]
+
+
+def test_equal_z_projection_can_select_one_body_local_level_occurrence() -> None:
+    part = Compound(children=[_stepped(dy=-50), _stepped(dy=50)])
+    risers = recognise_risers(part)
+    levels = step_level_records(part)
+
+    assert len(levels) == 2
+    assert levels[0].z == levels[1].z == 10.0
+    assert project_step_shoulders(risers, levels=[levels[0]]) == [StepShoulder("x", 0.0)]
+    assert len(project_step_shoulders(risers, levels=[10.0])) == 2
+
+
+def test_non_default_tolerance_is_shared_with_body_level_authority() -> None:
+    part = _stepped(dy=0, level=0.55)
+    levels = step_level_records(part, tol=0.1)
+    risers = recognise_risers(part, tol=0.1)
+
+    assert [level.z for level in levels] == [0.55]
+    assert tuple(level.z for level in risers[0].body_levels or ()) == (0.55,)
+    assert project_step_shoulders(risers, levels=levels) == [StepShoulder("x", 0.0)]
 
 
 def test_recognised_and_legacy_riser_records_remain_totally_ordered() -> None:
@@ -122,7 +148,11 @@ def test_framed_rigid_motion_preserves_body_local_riser_occurrences() -> None:
     for actual, expected in zip(moved, baseline, strict=True):
         assert actual.axis == expected.axis
         assert actual.positions == pytest.approx(expected.positions, abs=1e-9)
-        assert actual.body_level_zs == pytest.approx(expected.body_level_zs, abs=1e-9)
+        assert actual.body_levels is not None
+        assert expected.body_levels is not None
+        assert [level.z for level in actual.body_levels] == pytest.approx(
+            [level.z for level in expected.body_levels], abs=1e-9
+        )
 
 
 def test_step_round_trip_preserves_body_local_risers(tmp_path) -> None:

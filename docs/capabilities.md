@@ -410,7 +410,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `RaisedPad` | One bounded rectangular principal-axis island. XYZ bounds locate the exact local occurrence; `axis` identifies its attachment-to-terminal coordinate and `direction` is `1` or `-1` for the material-outward terminal side. Overlapping axis readings select the unique shortest attachment span; a tied minimum is refused without a world-axis preference. |
 | `RectGrid` | A complete rectangular lattice of same-spec holes with the documented row/column basis convention. |
 | `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, defined by its two original opposed extremal planar source faces; not gear semantics. |
-| `RiserEvidence` | One body-local full-span candidate riser before consumer-specific projection; `body_level_zs` is the same-solid level authority (`null` only for hand-built legacy records). |
+| `RiserEvidence` | One body-local full-span candidate riser before consumer-specific projection; `body_levels` retains the complete same-solid FaceLevel occurrences (`null` only for hand-built legacy records), allowing occurrence-specific selection when equal Z values exist on separate bodies. |
 | `SectionPassage` | The sole attributed PASSAGES output: canonical frame, run interval, intrinsic section and explicit open ends. |
 | `Slot` | One enclosed through-slot; no floor and no open longitudinal end. |
 | `SlotArray` | At least three identical compatible through-slots on one constant-pitch line. |

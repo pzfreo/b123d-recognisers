@@ -437,6 +437,6 @@ enter one tolerance cluster even when their Z values are equal.
 
 Issue #336 changes scope, not thresholds. Full-span, interior-position, cross-area and envelope-end
 gates use the candidate face's valid-solid bounds; another solid cannot enlarge those denominators
-or make an exterior face appear interior. `body_level_zs` uses the existing body-local FaceLevel
+or make an exterior face appear interior. `body_levels` uses the existing body-local FaceLevel
 clustering and end filtering. Projection uses `RiserEvidence.tol` for both the caller-level/body-
 level intersection and the endpoint tie. No corpus-derived tolerance is introduced.

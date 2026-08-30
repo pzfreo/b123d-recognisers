@@ -110,11 +110,12 @@ class RiserEvidence(Record):
     #: :func:`recognise_risers` always passes the value it resolved for that part — and a record
     #: built by hand was never scanned, so no value would be more truthful than another.
     tol: float = 0.5
-    #: Interior FaceLevel Z values proved on the same valid solid as this riser occurrence.
+    #: Interior FaceLevel occurrences proved on the same valid solid as this riser occurrence.
     #: ``None`` is retained only for compatibility with hand-built pre-0.4.9 records; every
     #: recogniser-produced record carries a tuple (possibly empty), so projection cannot borrow a
-    #: matching level from another solid in a compound.
-    body_level_zs: tuple[float, ...] | None = None
+    #: matching occurrence from another solid in a compound. Keeping the full record, rather than
+    #: only Z, lets a caller select one of two equal-Z levels by its body-local support evidence.
+    body_levels: tuple[FaceLevel, ...] | None = None
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, RiserEvidence):
@@ -133,8 +134,8 @@ class RiserEvidence(Record):
             self.lo_at_envelope,
             self.hi_at_envelope,
             self.tol,
-            self.body_level_zs is not None,
-            self.body_level_zs or (),
+            self.body_levels is not None,
+            self.body_levels or (),
         )
 
 
@@ -409,7 +410,7 @@ def recognise_risers(
             scope,
             min_area_frac=min_area_frac,
             tol=tol,
-            body_level_zs=tuple(level.z for level in step_level_records(scope)),
+            body_levels=tuple(step_level_records(scope, tol=tol)),
         )
     ]
     return sorted(proposal.record for proposal in proposals)
@@ -420,7 +421,7 @@ def _riser_proposals_one(
     *,
     min_area_frac: float,
     tol: float,
-    body_level_zs: tuple[float, ...],
+    body_levels: tuple[FaceLevel, ...],
 ) -> list[_RiserProposal]:
     """Discover and reduce riser occurrences within one valid-solid authority."""
 
@@ -505,7 +506,7 @@ def _riser_proposals_one(
             lo_at_envelope=abs(fb.min.Z - bb.min.Z) < tol or abs(fb.min.Z - bb.max.Z) < tol,
             hi_at_envelope=abs(fb.max.Z - bb.min.Z) < tol or abs(fb.max.Z - bb.max.Z) < tol,
             tol=tol,
-            body_level_zs=body_level_zs,
+            body_levels=body_levels,
         )
         found.setdefault(record, []).append(f)
     return [
@@ -518,14 +519,14 @@ def _discover_risers(
     part: Part,
     *,
     writer: EvidenceWriter,
-    body_levels: Mapping[SolidRef, Sequence[float]],
+    body_levels: Mapping[SolidRef, Sequence[FaceLevel]],
 ) -> list[RiserEvidence]:
     """Return body-local risers using completed FaceLevel authority from this run."""
 
     pending: list[tuple[RiserEvidence, tuple[FaceNode, ...]]] = []
     for scope in list(part.solids()) or [part]:
         for proposal in _riser_proposals_one(
-            scope, min_area_frac=0.15, tol=_TOL, body_level_zs=()
+            scope, min_area_frac=0.15, tol=_TOL, body_levels=()
         ):
             nodes = tuple(writer.graph.require_node(face) for face in proposal.faces)
             solid = writer.graph.common_valid_solid(nodes)
@@ -533,7 +534,7 @@ def _discover_risers(
                 raise ValueError("Riser defining faces have no unambiguous valid solid")
             record = replace(
                 proposal.record,
-                body_level_zs=tuple(sorted(body_levels.get(solid, ()))),
+                body_levels=tuple(sorted(body_levels.get(solid, ()))),
             )
             pending.append((record, nodes))
     pending.sort(key=lambda item: item[0])
@@ -545,16 +546,18 @@ def _discover_risers(
 def project_step_shoulders(
     risers: Sequence[RiserEvidence],
     *,
-    levels: Sequence[float],
+    levels: Sequence[float | FaceLevel],
     tol: float | None = None,
 ) -> list[StepShoulder]:
     """Project :func:`recognise_risers` evidence onto *levels* — the pure half.
 
     A candidate riser counts as a step shoulder only if it rises from a level the caller
     recognises: a vertical riser's foot must sit on one, and an oblique ramp's two ends must
-    each sit on one or on the part envelope. That is the whole level dependency, and it is
-    the whole reason the old ``recognise_step_shoulders`` could not be hoisted into the
-    shared aggregate — its answer depends on who is asking.
+    each sit on one or on the part envelope. Pass full :class:`FaceLevel` occurrences when an
+    ownership filter must select one of several equal-Z body-local levels; numeric values retain
+    the historical value-selection behavior. That is the whole level dependency, and it is the
+    whole reason the old ``recognise_step_shoulders`` could not be hoisted into the shared
+    aggregate — its answer depends on who is asking.
 
     Model construction passes levels filtered by plate and pocket ownership; critique passes
     the unfiltered geometry ladder, because the independent-evidence rule forbids lint taking
@@ -577,23 +580,34 @@ def project_step_shoulders(
     if tol is None:
         tol = risers[0].tol
 
-    def tied(z: float, at_envelope: bool, candidate_levels: Sequence[float]) -> bool:
-        return at_envelope or any(abs(z - level) < tol for level in candidate_levels)
+    def selected_z(selection: float | FaceLevel) -> float:
+        return selection.z if isinstance(selection, FaceLevel) else selection
+
+    def tied(z: float, at_envelope: bool, candidate_levels: Sequence[FaceLevel]) -> bool:
+        return at_envelope or any(abs(z - level.z) < tol for level in candidate_levels)
 
     out: list[StepShoulder] = []
     for r in risers:
-        body_levels = (
-            levels
-            if r.body_level_zs is None
-            else [
-                level
-                for level in levels
-                if any(abs(level - owned) < tol for owned in r.body_level_zs)
-            ]
-        )
+        if r.body_levels is None:
+            body_levels = tuple(FaceLevel(selected_z(level)) for level in levels)
+        else:
+            body_levels = tuple(
+                owned
+                for owned in r.body_levels
+                if any(
+                    (
+                        abs(selection.z - owned.z) < tol
+                        and selection.x_span == owned.x_span
+                        and selection.y_span == owned.y_span
+                    )
+                    if isinstance(selection, FaceLevel)
+                    else abs(selection - owned.z) < tol
+                    for selection in levels
+                )
+            )
 
         if r.vertical:
-            if not any(abs(r.z_lo - level) < tol for level in body_levels):
+            if not any(abs(r.z_lo - level.z) < tol for level in body_levels):
                 continue  # rises from a step level (not a through slot's wall)
         elif not (
             tied(r.z_lo, r.lo_at_envelope, body_levels)

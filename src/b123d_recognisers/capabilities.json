@@ -1900,10 +1900,10 @@
               "type": "str",
               "units": "none"
             },
-            "body_level_zs": {
+            "body_levels": {
               "required": false,
-              "type": "list[float]|null",
-              "units": "mm"
+              "type": "list[record:FaceLevel]|null",
+              "units": "none"
             },
             "hi_at_envelope": {
               "required": true,

@@ -355,12 +355,12 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
 
 
 def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
-    body_levels: dict[SolidRef, list[float]] = {}
+    body_levels: dict[SolidRef, list[FaceLevel]] = {}
     for occurrence in inputs.occurrences(FamilyId.STEP_LEVELS, FaceLevel):
         solid = occurrence.solid()
         if solid is None:
             raise ValueError("completed FaceLevel occurrence has no valid solid")
-        body_levels.setdefault(solid, []).append(occurrence.record(FaceLevel).z)
+        body_levels.setdefault(solid, []).append(occurrence.record(FaceLevel))
     return list(
         _discover_risers(
             services.context.part,
