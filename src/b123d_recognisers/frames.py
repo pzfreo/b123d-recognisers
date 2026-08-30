@@ -22,7 +22,8 @@ from OCP.gp import gp_Trsf
 from OCP.GProp import GProp_GProps
 from OCP.TopoDS import TopoDS_Shape
 
-from b123d_recognisers._typing import Part, Vector3
+from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._typing import FrozenCylinderInventory, Part, Vector3
 from b123d_recognisers.result import RecognitionResult, build_recognition_result
 
 _PARALLEL_COS = 0.999
@@ -114,7 +115,38 @@ class FramedRecognitionResult:
     result: RecognitionResult
 
 
+@dataclass(frozen=True, slots=True)
+class PreparedFramedPart:
+    """One normalized part and its reusable cylinder substrate, ready for one aggregate run.
+
+    Consumers may derive their caller-owned classification from ``part`` and ``cylinders`` before
+    calling :meth:`recognise`.  That method keeps the exact frame, working part and precomputed
+    substrate paired; callers do not need a private normalization helper or a second scan.
+    """
+
+    frame: PartFrame
+    part: Shape[TopoDS_Shape]
+    cylinders: FrozenCylinderInventory
+
+    def recognise(self, *, rotational: bool = False) -> FramedRecognitionResult:
+        """Run the aggregate once using the supplied local-frame classification."""
+
+        # `build_recognition_result` accepts the historical mutable outer lists. Copying the two
+        # tiny containers does not repeat cylinder analysis or duplicate the evidence objects.
+        cylinders = (list(self.cylinders[0]), list(self.cylinders[1]))
+        return FramedRecognitionResult(
+            self.frame,
+            self.part,
+            build_recognition_result(
+                self.part,
+                cylinders=cylinders,
+                rotational=rotational,
+            ),
+        )
+
+
 FrameInference = PartFrame | RefusedPartFrame
+FramedPreparation = PreparedFramedPart | RefusedPartFrame
 FramedRecognition = FramedRecognitionResult | RefusedPartFrame
 
 
@@ -326,14 +358,24 @@ def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
 def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> FramedRecognition:
     """Recognise once in an inferred local frame, or return a closed frame refusal."""
 
+    prepared = prepare_framed_part(part)
+    if isinstance(prepared, RefusedPartFrame):
+        return prepared
+    return prepared.recognise(rotational=rotational)
+
+
+def prepare_framed_part(part: Part) -> FramedPreparation:
+    """Normalize *part* and derive the cylinder substrate before caller classification."""
+
     frame = infer_part_frame(part)
     if isinstance(frame, RefusedPartFrame):
         return frame
     normalized = _normalize_part(part, frame)
-    return FramedRecognitionResult(
+    cylinders = analyse_cylinders(normalized)
+    return PreparedFramedPart(
         frame,
         normalized,
-        build_recognition_result(normalized, rotational=rotational),
+        (tuple(cylinders[0]), tuple(cylinders[1])),
     )
 
 
@@ -341,10 +383,13 @@ __all__ = [
     "FrameGauge",
     "FrameInference",
     "FrameRefusalReason",
+    "FramedPreparation",
     "FramedRecognition",
     "FramedRecognitionResult",
     "PartFrame",
+    "PreparedFramedPart",
     "RefusedPartFrame",
     "build_framed_recognition_result",
     "infer_part_frame",
+    "prepare_framed_part",
 ]

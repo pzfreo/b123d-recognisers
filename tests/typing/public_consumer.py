@@ -11,6 +11,7 @@ from b123d_recognisers import (
     FramedRecognitionResult,
     HoleRecord,
     PairedRampStep,
+    PreparedFramedPart,
     RecognitionReport,
     RecognitionResult,
     build_framed_recognition_result,
@@ -18,6 +19,7 @@ from b123d_recognisers import (
     build_recognition_result,
     classify_bevel,
     feature_census,
+    prepare_framed_part,
     recognise_bosses,
     recognise_holes,
     recognise_paired_ramp_steps,
@@ -58,6 +60,10 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     framed = build_framed_recognition_result(part)
     if isinstance(framed, FramedRecognitionResult):
         assert_type(framed.part, Shape[TopoDS_Shape])
+    prepared = prepare_framed_part(part)
+    if isinstance(prepared, PreparedFramedPart):
+        assert_type(prepared.part, Shape[TopoDS_Shape])
+        assert_type(prepared.recognise(rotational=True), FramedRecognitionResult)
     assert_type(result.step_ladder_for_z_span(0.0, 10.0), list[float])
     assert_type(result.step_ladder(bounds), list[float])
     assert_type(feature_census(part), dict[str, int])

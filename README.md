@@ -134,6 +134,23 @@ directions. Geometry without an analytic direction returns a typed `RefusedPartF
 
 This route does not change `build_recognition_result()` or the caller-space meaning of its records.
 
+When classification itself depends on the normalized solid, prepare first and run the aggregate
+once after making that local decision:
+
+```python
+from b123d_recognisers import PreparedFramedPart, prepare_framed_part
+
+prepared = prepare_framed_part(part)
+if isinstance(prepared, PreparedFramedPart):
+    rotational = classify_local_part(prepared.part, prepared.cylinders)
+    framed = prepared.recognise(rotational=rotational)
+```
+
+`PreparedFramedPart` owns the exact frame, local working shape, and one precomputed cylinder
+inventory. Its `recognise()` method injects that inventory into the existing aggregate and pairs
+the result with the same frame and shape. A `RefusedPartFrame` remains explicit, so callers may
+choose one deliberate legacy fallback rather than silently guessing in caller coordinates.
+
 Every `recognise_*` function returns a deterministic list of frozen dataclass records. Records
 provide `to_dict()` projections containing only JSON-serialisable geometry values. The installed
 package also exposes a versioned capability manifest so larger CAD systems can validate which
