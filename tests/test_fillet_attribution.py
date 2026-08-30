@@ -633,8 +633,11 @@ def test_distinct_equidistant_support_refuses_only_the_ambiguous_fillet(part) ->
             refuse_equidistant=True,
         )
         required = {axis for axis in range(3) if axis != run_axis}
-        if required <= compatibility.keys() and not required <= unambiguous.keys():
-            assert convex_bevel(part, centre, run_axis, compatibility)
+        if (
+            required <= compatibility.keys()
+            and not required <= unambiguous.keys()
+            and convex_bevel(part, centre, run_axis, compatibility)
+        ):
             assert ambiguous is None
             ambiguous = face
     assert ambiguous is not None
