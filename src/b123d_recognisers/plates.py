@@ -34,10 +34,11 @@ Bottom of the recognition DAG: depends only on build123d/OCP.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from build123d import Face
+from build123d import Axis, Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
@@ -99,6 +100,55 @@ class _PlateGroup:
     faces: tuple[Face, ...]
 
 
+def _oriented_cross_area(
+    part: Part,
+    faces: Sequence[Face],
+    axis_index: int,
+    extents: tuple[float, float, float],
+) -> float:
+    """Smallest body cross-envelope in directions established by its planar faces.
+
+    A world-axis bounding rectangle changes area when the recognition frame rolls around the
+    Plate normal.  For a prismatic body, the minimum enclosing rectangle is attained with one
+    side parallel to a boundary direction.  Rotate each eligible intrinsic planar normal onto a
+    transverse coordinate axis and retain the smallest exact bounding-box cross area. A body with
+    no transverse planar direction retains the legacy coordinate envelope for compatibility; that
+    case is outside the documented prismatic Plate domain and carries no roll-covariance claim.
+    """
+
+    other = [index for index in range(3) if index != axis_index]
+    angles: set[float] = set()
+    for face in faces:
+        try:
+            normal = tuple(face.normal_at())
+        except Exception:  # noqa: BLE001 -- a degenerate plane establishes no direction
+            continue
+        if abs(normal[axis_index]) > 1.0 - AXIS_ALIGNED_COS:
+            continue
+        projected = math.hypot(normal[other[0]], normal[other[1]])
+        if projected < AXIS_ALIGNED_COS:
+            continue
+        angles.add(math.degrees(math.atan2(normal[other[1]], normal[other[0]])) % 90.0)
+
+    if not angles:
+        return extents[other[0]] * extents[other[1]]
+
+    rotation_axis = (Axis.X, Axis.Y, Axis.Z)[axis_index]
+    sign = 1.0 if axis_index == 1 else -1.0
+    cross_areas: list[float] = []
+    for angle in angles:
+        size = (
+            extents
+            if angle == 0.0
+            else tuple(
+                float(component)
+                for component in part.rotate(rotation_axis, sign * angle).bounding_box().size
+            )
+        )
+        cross_areas.append(size[other[0]] * size[other[1]])
+    return min(cross_areas)
+
+
 def has_multi_axis_plates(plates: Sequence[Plate]) -> bool:
     """Whether plate evidence proves a base/wall structure rather than one slab axis."""
     return len({plate.axis for plate in plates}) >= 2
@@ -136,16 +186,14 @@ def _plate_proposals(
     """Discover one body's Plate proposals without publishing evidence."""
 
     bb = part.bounding_box()
-    ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
+    extents = (bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
+    ext = dict(zip("xyz", extents, strict=True))
     axidx = {"x": 0, "y": 1, "z": 2}
     faces = [f for f in part.faces() if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Plane]
 
     out: list[_PlateProposal] = []
     for axis, i in axidx.items():
-        cross = 1.0
-        for other_axis in axidx:
-            if other_axis != axis:
-                cross *= ext[other_axis]
+        cross = _oriented_cross_area(part, faces, i, extents)
         if cross <= 0:
             continue
         sides: tuple[list[tuple[float, float, float, float, Face]], ...] = ([], [])

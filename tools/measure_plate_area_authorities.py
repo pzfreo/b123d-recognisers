@@ -229,13 +229,14 @@ def _evaluate(model_id: str, path: Path) -> dict[str, Any]:
     part = _normalize_part(raw, frame)
     production = recognise_plates(part)
     variants = {name: _recognise(part, name) for name in AUTHORITIES}
-    if variants["bbox_envelope"] != production:
-        raise RuntimeError(f"{model_id}: measurement bbox arm diverged from production")
     return {
         "id": model_id,
         "status": "evaluated",
         "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "production": _records(production),
+        "production_matches": {
+            name: records == production for name, records in variants.items()
+        },
         "authorities": {name: _records(records) for name, records in variants.items()},
     }
 
@@ -270,6 +271,7 @@ def main() -> int:
                 max(0, len(model["production"]) - len(model["authorities"][name]))
                 for model in changed
             ),
+            "production_matches": sum(model["production_matches"][name] for model in evaluated),
         }
     report = {
         "format": "b123d-recognisers-plate-area-authority-measurement",

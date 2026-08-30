@@ -9,7 +9,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Face, Plane, Pos, Rot, Shell, Vector, export_step, import_step
+from build123d import (
+    Align,
+    Axis,
+    Box,
+    Compound,
+    Face,
+    Plane,
+    Pos,
+    Rot,
+    Shell,
+    Vector,
+    export_step,
+    import_step,
+)
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
@@ -423,6 +436,58 @@ def test_plate_area_and_coordinate_cluster_boundaries_are_strict() -> None:
     assert cluster_coordinates([1.5, 1.0, 2.0001], tol=0.5) == [[1, 0], [2]]
 
 
+def _roll_sensitive_plate():
+    align = (Align.CENTER, Align.CENTER, Align.MIN)
+    base = Box(40, 10, 4, align=align)
+    narrow_post = Pos(0, 7, 4) * Box(1, 14, 20, align=align)
+    return base + narrow_post
+
+
+@pytest.mark.parametrize(
+    ("axis", "principal", "rotation"),
+    [
+        ("z", _roll_sensitive_plate(), Axis.Z),
+        ("x", Rot(0, 90, 0) * _roll_sensitive_plate(), Axis.X),
+        ("y", Rot(90, 0, 0) * _roll_sensitive_plate(), Axis.Y),
+    ],
+)
+@pytest.mark.parametrize("angle", [17.0, 37.0, 73.0])
+def test_plate_area_authority_is_covariant_to_in_plane_roll(
+    axis, principal, rotation, angle
+) -> None:
+    baseline = next(record for record in recognise_plates(principal) if record.axis == axis)
+    rolled = next(
+        record
+        for record in recognise_plates(principal.rotate(rotation, angle))
+        if record.axis == axis
+    )
+    assert rolled.thickness == pytest.approx(baseline.thickness, abs=1e-3)
+
+
+@pytest.mark.parametrize("angle", [0.0, 37.0])
+def test_oriented_plate_area_boundary_is_strict_on_both_sides(angle) -> None:
+    part = _roll_sensitive_plate().rotate(Axis.Z, angle)
+    boundary = 395.0 / (40.0 * 19.0)
+    below = recognise_plates(part, min_area_frac=boundary - 1e-6)
+    tied = recognise_plates(part, min_area_frac=boundary)
+    above = recognise_plates(part, min_area_frac=boundary + 1e-6)
+    assert any(record.axis == "z" for record in below)
+    assert all(record.axis != "z" for record in tied)
+    assert all(record.axis != "z" for record in above)
+
+
+def test_rolled_plate_area_authority_survives_step_and_arbitrary_framing(tmp_path) -> None:
+    rolled = _roll_sensitive_plate().rotate(Axis.Z, 37)
+    target = tmp_path / "rolled-plate.step"
+    assert export_step(rolled, target)
+    assert any(record.axis == "z" for record in recognise_plates(import_step(target)))
+
+    presented = Pos(17, -23, 9) * Rot(31, 47, 13) * rolled
+    framed = build_framed_recognition_result(presented, rotational=False)
+    assert isinstance(framed, FramedRecognitionResult)
+    assert len(framed.result.plates) == 2
+
+
 @pytest.mark.parametrize(("delta", "z_nodes"), [(0.4999, 3), (0.5, 3), (0.5001, 2)])
 def test_real_face_coordinate_clusters_include_exact_tolerance_only(delta, z_nodes) -> None:
     part = (Pos(-10, 0, 0) * Box(20, 20, 8)) + (
@@ -695,10 +760,17 @@ def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
     writer = next(keyword.value for keyword in registry_call.keywords if keyword.arg == "writer")
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
     assert isinstance(writer.value, ast.Name) and writer.value.id == "services"
+    public = next(
+        node
+        for node in plate_tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "recognise_plates"
+    )
     public_call = next(
         call
-        for path, call in core_sites
-        if path == "plates.py" and call.lineno < 140
+        for call in ast.walk(public)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == "_discover_plates"
     )
     assert all(keyword.arg != "writer" for keyword in public_call.keywords)
     assert [(path, len(call.args)) for path, call in constructors] == [("plates.py", 0)]

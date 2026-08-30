@@ -413,3 +413,13 @@ Issue #297 adds no size threshold. Mirror and run-direction checks compare unit 
 existing dimensionless angular policy. An opening coordinate is compared with its exact solid
 envelope using `length_tol(part_scale, rel=1e-9, floor=COORD_FLOOR)`; public angle/length/anchor
 rounding remains serialization only and does not admit a candidate.
+
+## Amendment (Plate cross-area authority, issue #329)
+
+`Plate.min_area_frac` remains the existing dimensionless minimum-evidence fraction. Issue #329
+changes its area denominator, not its value or boundary rule: the denominator is the minimum
+rectangular cross-envelope over transverse planar directions established by the same body. The
+existing `AXIS_ALIGNED_COS` decides whether a planar normal belongs to the supported principal or
+transverse grammar; no corpus-derived angle, length or area tolerance is added. Direction angles
+are used at full precision and never enter public records. `clears_threshold` retains the exact-tie
+refusal, now tested before, at and after the same physical boundary under in-plane roll.

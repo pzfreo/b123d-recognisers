@@ -206,6 +206,15 @@ while two distinct bound role pairs competing for one key on the same `SolidRef`
 An open-shell writer-free call retains its legacy geometry projection, but aggregate publication
 still requires one valid solid.
 
+Issue #329 replaces only the coordinate-aligned cross-area denominator. For each principal Plate
+normal, the recogniser uses the smallest rectangular cross-envelope obtained by aligning the
+body's own eligible transverse planar directions with the two transverse coordinates. The
+orientation is intrinsic to that body and therefore rotates with it; frame roll cannot inflate the
+denominator. `min_area_frac`, the low/high groups, adjacency, thickness gate, record values,
+defining faces and per-solid issuance remain unchanged. Where no transverse planar direction
+exists, the record-only compatibility path retains its existing coordinate envelope; curved and
+non-prismatic bodies remain outside the documented Plate domain.
+
 ## Amendment (neutral recess provenance, issue #234)
 
 Slot and Pocket reduction carries immutable occurrence objects rather than using serialized record
