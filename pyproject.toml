@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "b123d-recognisers"
-version = "0.4.9.dev0"
+version = "0.4.10.dev0"
 description = "Deterministic, geometry-only feature recognition for build123d solids"
 readme = "README.md"
 license = "Apache-2.0"
