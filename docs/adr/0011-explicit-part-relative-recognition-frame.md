@@ -162,4 +162,5 @@ working shape and returns the orientation in `RaisedPad.axis` and `RaisedPad.dir
 framing policy does not reorder the representative for this family and consumers must not probe
 alternate rotations. The record's XYZ bounds, orientation, aggregate evidence and paired
 `FramedRecognitionResult.part` share one local coordinate system. Internally oblique islands remain
-outside this principal-axis contract.
+outside this principal-axis contract. The exact authored and MFCAD++ evidence is recorded in the
+[rectangular-pad axis validation](../benchmarks/e2-rectangular-pad-axis-validation.md).
