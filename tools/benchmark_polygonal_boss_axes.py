@@ -39,7 +39,8 @@ def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
     original = polygonal._recognise_one
 
     def z_only(*args: Any, **kwargs: Any) -> Any:
-        return [] if kwargs.get("axis", "z") != "z" else original(*args, **kwargs)
+        boss_on_other_axis = not kwargs.get("whole_stock", False) and kwargs.get("axis", "z") != "z"
+        return [] if boss_on_other_axis else original(*args, **kwargs)
 
     if not enabled:
         polygonal._recognise_one = z_only

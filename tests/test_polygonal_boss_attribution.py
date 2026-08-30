@@ -800,6 +800,7 @@ def test_two_disjoint_blend_cycles_and_reversed_presentation_are_order_neutral()
     [
         Pos(17, -11, 0),
         Rot(0, 0, 37),
+        Rot(180, 0, 0),
         Rot(90, 0, 0),
         Rot(-90, 0, 0),
         Rot(0, 90, 0),
@@ -859,6 +860,7 @@ def test_supported_rigid_transforms_keep_exact_side_roles(transform) -> None:
     ("rotation", "axis"),
     [
         (Rot(0, 0, 0), "z"),
+        (Rot(180, 0, 0), "z"),
         (Rot(90, 0, 0), "y"),
         (Rot(-90, 0, 0), "y"),
         (Rot(0, 90, 0), "x"),
@@ -926,6 +928,9 @@ def test_polygonal_boss_survives_arbitrary_rigid_motion_through_framed_aggregate
     assert record.side_count == 6
     assert record.across_flats == pytest.approx(20 * math.sqrt(3), abs=1e-3)
     assert record.height == 30
+    direct, candidates, ledger = _claim(framed.part)
+    assert direct == [record]
+    _assert_record_matches_original_side_evidence(record, candidates[0], ledger)
 
 
 @pytest.mark.parametrize("plane", [Plane.YZ, Plane.XZ])
