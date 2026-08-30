@@ -26,7 +26,13 @@ from build123d import (
 )
 
 import b123d_recognisers.polygonal_bosses as polygonal_module
-from b123d_recognisers import PolygonalBoss, recognise_fillets, recognise_polygonal_bosses
+from b123d_recognisers import (
+    FramedRecognitionResult,
+    PolygonalBoss,
+    build_framed_recognition_result,
+    recognise_fillets,
+    recognise_polygonal_bosses,
+)
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._blend_view import (
     BlendCollapseIndex,
@@ -309,6 +315,36 @@ def _assert_six_side_role(part, occurrence_index, record, candidate, ledger, **k
     assert all(abs(ledger.graph.normal(node)[2]) < 0.02 for node in defining)
 
 
+def _assert_record_matches_original_side_evidence(
+    record, candidate, evidence, *, graph=None
+) -> None:
+    """Check the public 3-D evidence against original faces without reusing discovery."""
+
+    axis_index = "xyz".index(record.axis)
+    graph = evidence.graph if graph is None else graph
+    defining = evidence.defining_of(candidate)
+    assert len(defining) == 6
+    assert graph.common_valid_solid(defining) is not None
+    expected = {
+        (
+            tuple(round(value, 3) for value in graph.normal(node)),
+            (
+                round(float((centre := graph.face(node).center()).X), 3),
+                round(float(centre.Y), 3),
+                round(float(centre.Z), 3),
+            ),
+        )
+        for node in defining
+    }
+    published = set(zip(record.flat_directions, record.flat_centres, strict=True))
+    assert published == expected
+    assert all(abs(direction[axis_index]) == 0 for direction in record.flat_directions)
+    assert all(
+        centre[axis_index] == pytest.approx(record.center[axis_index], abs=1e-3)
+        for centre in record.flat_centres
+    )
+
+
 def test_attached_hexagon_issues_only_its_six_original_side_faces() -> None:
     part = _attached()
     (record,), (candidate,), ledger = _claim(part)
@@ -412,6 +448,8 @@ def test_late_side_binding_and_deep_clone_fail_without_prefix(monkeypatch) -> No
 
     def cloned(*args, **kwargs):
         proposals = original_recognise(*args, **kwargs)
+        if not proposals:
+            return []
         proposal = proposals[0]
         faces = (copy.deepcopy(proposal.side_faces[0]), *proposal.side_faces[1:])
         return [replace(proposal, side_faces=faces)]
@@ -428,6 +466,8 @@ def test_repeated_side_snapshot_refuses_atomically(monkeypatch) -> None:
 
     def repeated(*args, **kwargs):
         proposals = original_recognise(*args, **kwargs)
+        if not proposals:
+            return []
         proposal = proposals[0]
         faces = (proposal.side_faces[0], proposal.side_faces[0], *proposal.side_faces[2:])
         return [replace(proposal, side_faces=faces)]
@@ -462,7 +502,10 @@ def test_translated_stale_side_snapshot_refuses_without_prefix(monkeypatch) -> N
     original_recognise = polygonal_module._recognise_one
 
     def stale(*args, **kwargs):
-        proposal = original_recognise(*args, **kwargs)[0]
+        proposals = original_recognise(*args, **kwargs)
+        if not proposals:
+            return []
+        proposal = proposals[0]
         translated = Pos(1, 0, 0) * copy.deepcopy(proposal.side_faces[0])
         return [replace(proposal, side_faces=(translated, *proposal.side_faces[1:]))]
 
@@ -484,6 +527,8 @@ def test_mixed_or_cross_occurrence_side_snapshots_refuse_atomically(
     def corrupted(*args, **kwargs):
         nonlocal first_faces
         proposals = original_recognise(*args, **kwargs)
+        if not proposals:
+            return []
         if first_faces is None:
             first_faces = proposals[0].side_faces
             return proposals if publish_first else []
@@ -583,17 +628,16 @@ def test_six_cycle_reducer_refuses_partial_chord_and_duplicate_components() -> N
 
     def cycle(offset: int) -> tuple[frozenset, ...]:
         return tuple(
-            frozenset((nodes[offset + at], nodes[offset + ((at + 1) % 6)]))
-            for at in range(6)
+            frozenset((nodes[offset + at], nodes[offset + ((at + 1) % 6)])) for at in range(6)
         )
 
     first = cycle(0)
     second = cycle(6)
     assert polygonal_module._six_support_cycle_indices(first[:5]) == ()
     assert polygonal_module._six_support_cycle_indices((*first, first[0])) == ()
-    assert polygonal_module._six_support_cycle_indices(
-        (*first, frozenset((nodes[0], nodes[3])))
-    ) == ()
+    assert (
+        polygonal_module._six_support_cycle_indices((*first, frozenset((nodes[0], nodes[3])))) == ()
+    )
     assert polygonal_module._six_support_cycle_indices((*first, *second)) == tuple(range(12))
 
 
@@ -751,7 +795,17 @@ def test_two_disjoint_blend_cycles_and_reversed_presentation_are_order_neutral()
     ]
 
 
-@pytest.mark.parametrize("transform", [Pos(17, -11, 0), Rot(0, 0, 37)])
+@pytest.mark.parametrize(
+    "transform",
+    [
+        Pos(17, -11, 0),
+        Rot(0, 0, 37),
+        Rot(90, 0, 0),
+        Rot(-90, 0, 0),
+        Rot(0, 90, 0),
+        Rot(0, -90, 0),
+    ],
+)
 def test_blend_cycle_rigid_transforms_match_their_sharp_controls(transform) -> None:
     rounded = transform * _blend_interrupted_attached()
     sharp = transform * _attached()
@@ -801,6 +855,79 @@ def test_supported_rigid_transforms_keep_exact_side_roles(transform) -> None:
     _assert_six_side_role(part, 0, records[0], candidates[0], ledger)
 
 
+@pytest.mark.parametrize(
+    ("rotation", "axis"),
+    [
+        (Rot(0, 0, 0), "z"),
+        (Rot(90, 0, 0), "y"),
+        (Rot(-90, 0, 0), "y"),
+        (Rot(0, 90, 0), "x"),
+        (Rot(0, -90, 0), "x"),
+    ],
+)
+def test_principal_axis_bosses_preserve_physical_parameters(rotation, axis) -> None:
+    (baseline,) = recognise_polygonal_bosses(_attached())
+
+    records, candidates, ledger = _claim(rotation * _attached())
+    (record,) = records
+
+    assert record.axis == axis
+    assert record.side_count == 6
+    assert record.across_flats == baseline.across_flats
+    assert record.height == baseline.height
+    assert all(abs(direction["xyz".index(axis)]) == 0 for direction in record.flat_directions)
+    _assert_record_matches_original_side_evidence(record, candidates[0], ledger)
+
+
+def test_equal_body_local_bosses_on_distinct_principal_axes_remain_distinct() -> None:
+    part = Compound(
+        [
+            Pos(-120, 0, 0) * _attached(),
+            Pos(120, 0, 0) * Rot(90, 0, 0) * _attached(),
+        ]
+    )
+
+    records, candidates, ledger = _claim(part)
+
+    assert len(records) == len(candidates) == 2
+    assert {record.axis for record in records} == {"y", "z"}
+    assert len({record.center for record in records}) == 2
+    assert all(
+        record.across_flats == pytest.approx(20 * math.sqrt(3), abs=1e-3) for record in records
+    )
+    for record, candidate in zip(records, candidates, strict=True):
+        _assert_record_matches_original_side_evidence(record, candidate, ledger)
+
+
+def test_principal_axis_aggregate_reconciles_one_physical_boss_once() -> None:
+    part = Rot(0, -90, 0) * _attached()
+
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates
+
+    assert len(product.result.polygonal_bosses) == len(candidates) == 1
+    assert candidates[0].record is product.result.polygonal_bosses[0]
+    _assert_record_matches_original_side_evidence(
+        product.result.polygonal_bosses[0],
+        candidates[0],
+        product.evidence,
+        graph=product.context.graph,
+    )
+
+
+def test_polygonal_boss_survives_arbitrary_rigid_motion_through_framed_aggregate() -> None:
+    moved = Pos(17, -23, 9) * Rot(31, 47, 13) * _attached()
+
+    framed = build_framed_recognition_result(moved, rotational=False)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    (record,) = framed.result.polygonal_bosses
+    assert record.axis in "xyz"
+    assert record.side_count == 6
+    assert record.across_flats == pytest.approx(20 * math.sqrt(3), abs=1e-3)
+    assert record.height == 30
+
+
 @pytest.mark.parametrize("plane", [Plane.YZ, Plane.XZ])
 def test_principal_xy_mirrors_keep_exact_side_roles(plane) -> None:
     part = _attached().mirror(plane)
@@ -833,8 +960,9 @@ def test_minimum_height_just_above_tolerance_has_full_lifecycle() -> None:
     _assert_six_side_role(part, 0, records[0], candidates[0], ledger, tol=0.2)
 
 
-def test_step_round_trip_preserves_record_and_side_role_geometry(tmp_path: Path) -> None:
-    source = _attached()
+@pytest.mark.parametrize("rotation", [Rot(0, 0, 0), Rot(90, 0, 0), Rot(0, -90, 0)])
+def test_step_round_trip_preserves_record_and_side_role_geometry(tmp_path: Path, rotation) -> None:
+    source = rotation * _attached()
     path = tmp_path / "polygonal-boss.step"
     export_step(source, path)
     imported = import_step(path)
@@ -844,8 +972,12 @@ def test_step_round_trip_preserves_record_and_side_role_geometry(tmp_path: Path)
     assert [item.to_dict() for item in source_records] == [
         item.to_dict() for item in imported_records
     ]
-    _assert_six_side_role(source, 0, source_records[0], source_candidates[0], source_ledger)
-    _assert_six_side_role(imported, 0, imported_records[0], imported_candidates[0], imported_ledger)
+    _assert_record_matches_original_side_evidence(
+        source_records[0], source_candidates[0], source_ledger
+    )
+    _assert_record_matches_original_side_evidence(
+        imported_records[0], imported_candidates[0], imported_ledger
+    )
 
 
 def test_reversed_face_traversal_preserves_record_to_side_occurrence(monkeypatch) -> None:
@@ -927,7 +1059,6 @@ def test_supplied_single_graph_and_multi_solid_local_graph_routes() -> None:
         Box(30, 30, 30),
         Box(100, 80, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(20, 4), 30),
         Box(100, 80, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(20, 8), 30),
-        Rot(0, 90, 0) * _attached(),
         Box(100, 80, 10)
         + Pos(0, 0, 5) * (extrude(RegularPolygon(20, 6), 30) + Pos(0, 0, 32) * Cylinder(25, 4)),
         Box(100, 80, 10) + Pos(0, 0, 25) * extrude(RegularPolygon(20, 6), 30),

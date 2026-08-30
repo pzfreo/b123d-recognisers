@@ -4,17 +4,14 @@
 """What ``recognise_polygonal_bosses`` and ``recognise_polygonal_stock`` refuse.
 
 Epic 0001 finding 4. ``docs/capabilities.md`` promises a narrow boss class — an *attached regular
-hexagonal Z-axis boss* with six outward side faces, one across-flats value, a support cap and a
-top cap — and excludes other side counts, X/Y axes, whole-stock prisms, inward recesses,
-incomplete rings and cross-solid assemblies.
+hexagonal principal-axis boss* with six outward side faces, one across-flats value, a support cap
+and a top cap — and excludes other side counts, whole-stock prisms, inward recesses, incomplete
+rings and cross-solid assemblies.
 
-Whole Polygonal Stock is separately principal-axis covariant; that widening does not alter the
-attached-boss exclusions below.
-
-Side count and axis are already covered by ``test_capability_claims``. What was not covered is
-the evidence *within* a six-sided Z-axis candidate: whether the ring is complete, whether the
-polygon is regular, and whether the caps are the flat, correctly-placed faces a boss needs. Those
-gates are the difference between "six planar faces" and "a hexagonal boss", and each one below is
+Side count and principal-axis coverage are also covered by ``test_capability_claims``. What was
+not covered is the evidence *within* a six-sided candidate: whether the ring is complete, whether
+the polygon is regular, and whether the caps are the flat, correctly-placed faces a boss needs.
+Those gates are the difference between "six planar faces" and "a hexagonal boss", and each one is
 a shape that has the former without the latter.
 """
 
@@ -22,6 +19,7 @@ from __future__ import annotations
 
 import math
 
+import pytest
 from build123d import Box, Cylinder, Polygon, Pos, RegularPolygon, Rot, extrude
 
 from b123d_recognisers import recognise_polygonal_bosses, recognise_polygonal_stock
@@ -136,3 +134,15 @@ def test_a_boss_and_its_plate_in_separate_bodies_are_not_one_boss():
     floating = _BASE + Pos(0, 0, 25) * extrude(RegularPolygon(20, 6), 30)
 
     assert recognise_polygonal_bosses(floating) == []
+
+
+@pytest.mark.parametrize("rotation", [Rot(90, 0, 0), Rot(0, -90, 0)])
+def test_principal_axis_widening_preserves_negative_owner_controls(rotation):
+    stock = extrude(RegularPolygon(20, 6), 30)
+    recess = Box(100, 80, 30) - Pos(0, 0, 20) * extrude(RegularPolygon(20, 6), 20)
+    detached = _BASE + Pos(0, 0, 25) * stock
+    octagonal = _attached(extrude(RegularPolygon(20, 8), 30))
+    circular = _attached(Cylinder(20, 30))
+
+    for control in (stock, recess, detached, octagonal, circular):
+        assert recognise_polygonal_bosses(rotation * control) == []

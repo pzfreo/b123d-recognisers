@@ -68,7 +68,7 @@ def test_polygonal_records_are_hexagonal_with_stock_on_any_principal_axis() -> N
 
     x_axis_prism = Rot(0, 90, 0) * _polygonal_prism(6)
     x_axis_boss = Box(10, 100, 80) + Pos(5, 0, 0) * x_axis_prism
-    assert recognise_polygonal_bosses(x_axis_boss) == []
+    assert [record.axis for record in recognise_polygonal_bosses(x_axis_boss)] == ["x"]
     assert [record.axis for record in recognise_polygonal_stock(x_axis_prism)] == ["x"]
 
 

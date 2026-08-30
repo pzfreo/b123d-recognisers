@@ -38,9 +38,7 @@ def test_every_copy_of_the_version_agrees() -> None:
     )
     assert manifest["package"]["version"] == version
     inspection = json.loads(
-        (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(
-            encoding="utf-8"
-        )
+        (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(encoding="utf-8")
     )
     assert inspection["package"]["version"] == version
 
@@ -89,9 +87,7 @@ def test_wheel_contains_runtime_modules_typing_marker_and_licence_files(tmp_path
     entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
     with zipfile.ZipFile(wheels[0]) as archive:
         scripts = archive.read(entry_points).decode("utf-8")
-    assert (
-        "b123d-recognisers-capabilities = b123d_recognisers.capabilities:main" in scripts
-    )
+    assert "b123d-recognisers-capabilities = b123d_recognisers.capabilities:main" in scripts
     assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     assert any(name.endswith(".dist-info/licenses/NOTICE") for name in names)
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md") for name in names)
@@ -138,14 +134,15 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     probes = ["tests/corpus/nist/nist_ctc_01_asme1_rd.stp", "tests/corpus/mfcadpp/1000.step"]
     attrs = subprocess.run(
         ["git", "check-attr", "text", "--", *probes],
-        cwd=ROOT, capture_output=True, text=True, check=True,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     for line in attrs.splitlines():
         assert line.endswith(": text: unset"), f"line endings are not pinned: {line}"
     manifest = json.loads(
-        (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(
-            encoding="utf-8"
-        )
+        (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(encoding="utf-8")
     )
     references = {
         reference.split("#", 1)[0]
@@ -178,13 +175,13 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
     )
     # Text mode normalises a checkout's platform newline convention. The public exporter is
     # deliberately canonical JSON with LF newlines on every platform.
-    source_manifest = (
-        ROOT / "src" / "b123d_recognisers" / "capabilities.json"
-    ).read_text(encoding="utf-8")
+    source_manifest = (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text(
+        encoding="utf-8"
+    )
     manifest_digest = hashlib.sha256(source_manifest.encode()).hexdigest()
-    inspection_manifest = (
-        ROOT / "src" / "b123d_recognisers" / "inspection_api.json"
-    ).read_text(encoding="utf-8")
+    inspection_manifest = (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(
+        encoding="utf-8"
+    )
     inspection_digest = hashlib.sha256(inspection_manifest.encode()).hexdigest()
     completed = subprocess.run(
         [
@@ -197,6 +194,7 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import b123d_recognisers as r; "
                 "import b123d_recognisers.experimental_geometry as e; "
                 "import b123d_recognisers.inspection as i; "
+                "from build123d import Box, Pos, RegularPolygon, Rot, extrude; "
                 "import hashlib; "
                 "assert r.__version__; assert r.recognise_holes; "
                 "assert r.PreparedFramedPart; assert r.prepare_framed_part; "
@@ -219,7 +217,11 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "[None, 'model-length', 'model-length', 'model-length', "
                 "'model-length', 'unitless']; "
                 "assert e.inspect_face is i.inspect_face; "
-                "assert r.classify_bevel is i.classify_bevel"
+                "assert r.classify_bevel is i.classify_bevel; "
+                "boss = Box(10, 100, 80) + Pos(5, 0, 0) * Rot(0, 90, 0) * "
+                "extrude(RegularPolygon(20, 6), 30); "
+                "found = r.recognise_polygonal_bosses(boss); "
+                "assert len(found) == 1 and found[0].axis == 'x' and found[0].height == 30"
             ),
         ],
         cwd=tmp_path,
