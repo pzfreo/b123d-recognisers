@@ -190,7 +190,32 @@
         "pads": [],
         "paired_ramp_steps": [],
         "passages": [],
-        "plates": [],
+        "plates": [
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": -15.0,
+            "lo": -25.0,
+            "u": 0.0,
+            "v": 9.9047619
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 25.0,
+            "lo": 15.0,
+            "u": 0.0,
+            "v": 9.9047619
+          },
+          {
+            "_type": "Plate",
+            "axis": "z",
+            "hi": 5.0,
+            "lo": -5.0,
+            "u": 0.0,
+            "v": 0.0
+          }
+        ],
         "pocket_patterns": [],
         "pockets": [],
         "polygonal_bosses": [],

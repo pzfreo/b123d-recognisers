@@ -328,6 +328,7 @@ def _discover_plates(
     max_thick_frac: float = 0.5,
     tol: float | None = None,
     writer: EvidenceWriter | None = None,
+    excluded_solids: frozenset[SolidRef] = frozenset(),
 ) -> list[Plate]:
     """Discover Plates and optionally issue complete low/high planar groups atomically."""
 
@@ -397,6 +398,8 @@ def _discover_plates(
                         "Plate role groups do not identify one common solid"
                     )
                 solid = next(iter(shared_solids))
+                if solid in excluded_solids:
+                    continue
                 low = frozenset(low_by_solid[solid])
                 high = frozenset(high_by_solid[solid])
                 bound_key = (proposal.record.axis, proposal.record.lo, proposal.record.hi, solid)

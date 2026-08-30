@@ -2255,6 +2255,11 @@
               "type": "str",
               "units": "none"
             },
+            "profile": {
+              "required": false,
+              "type": "record:TurnedProfileKey|null",
+              "units": "none"
+            },
             "steps": {
               "required": true,
               "type": "list[record:TurnedStep]",
@@ -2264,6 +2269,31 @@
           "name": "TurnedProfile",
           "qualified_name": "b123d_recognisers.TurnedProfile",
           "role": "aggregate",
+          "schema_version": 2
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested physical-profile membership retained by TurnedStep and TurnedProfile.",
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "axis_origin": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "body_bounds": {
+              "required": true,
+              "type": "tuple[float,6]",
+              "units": "mm"
+            }
+          },
+          "name": "TurnedProfileKey",
+          "qualified_name": "b123d_recognisers.TurnedProfileKey",
+          "role": "nested",
           "schema_version": 1
         },
         {
@@ -2290,12 +2320,17 @@
               "required": true,
               "type": "float",
               "units": "mm"
+            },
+            "profile": {
+              "required": false,
+              "type": "record:TurnedProfileKey|null",
+              "units": "none"
             }
           },
           "name": "TurnedStep",
           "qualified_name": "b123d_recognisers.TurnedStep",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",

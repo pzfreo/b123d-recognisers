@@ -682,21 +682,11 @@ def test_terminal_plate_identity_and_evidence() -> None:
     assert all(product.evidence.defining_of(candidate) for candidate in candidates)
 
 
-def test_completed_turned_profile_remains_record_only_global_veto(monkeypatch) -> None:
-    from b123d_recognisers.turned import TurnedProfile
-
-    calls = 0
-
-    def veto(_steps):
-        nonlocal calls
-        calls += 1
-        return object()
-
-    monkeypatch.setattr(TurnedProfile, "from_steps", staticmethod(veto))
+def test_empty_completed_turned_roster_does_not_veto_plate_solids() -> None:
     product = _take_inventory(build_fixture())
-    assert calls == 1
-    assert product.physical.candidate_set(FamilyId.PLATES).candidates == ()
-    assert product.result.plates == ()
+    assert product.physical.candidate_set(FamilyId.TURNED_STEPS).candidates == ()
+    assert product.physical.candidate_set(FamilyId.PLATES).candidates
+    assert product.result.plates
 
 
 def test_plate_private_core_and_registry_route_are_closed() -> None:
@@ -713,13 +703,8 @@ def test_plate_private_core_and_registry_route_are_closed() -> None:
     )
     writer = {keyword.arg: keyword.value for keyword in discover.keywords}["writer"]
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
-    assert (
-        sum(
-            isinstance(call.func, ast.Attribute) and call.func.attr == "from_steps"
-            for call in calls
-        )
-        == 1
-    )
+    keywords = {keyword.arg: keyword.value for keyword in discover.keywords}
+    assert "excluded_solids" in keywords
 
 
 def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
@@ -802,7 +787,7 @@ def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
     ) == 1
 
 
-def test_registry_uses_restricted_turned_records_once_and_never_occurrences() -> None:
+def test_registry_uses_restricted_turned_occurrences_for_body_local_plate_veto() -> None:
     tree = ast.parse(
         (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
     )
@@ -811,11 +796,12 @@ def test_registry_uses_restricted_turned_records_once_and_never_occurrences() ->
     )
     assert not any(isinstance(node, ast.Try) for node in ast.walk(function))
     calls = _qualified_calls(function)
-    assert sum(name.endswith(".records") for name, _call in calls) == 1
-    assert not any(name.endswith(".occurrences") for name, _call in calls)
-    assert sum(name.endswith(".from_steps") for name, _call in calls) == 1
+    assert not any(name.endswith(".records") for name, _call in calls)
+    assert sum(name.endswith(".occurrences") for name, _call in calls) == 1
+    assert not any(name.endswith(".from_steps") for name, _call in calls)
     discover = next(call for name, call in calls if name.endswith("_discover_plates"))
     keywords = {keyword.arg: keyword.value for keyword in discover.keywords}
     writer = keywords["writer"]
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
     assert isinstance(writer.value, ast.Name) and writer.value.id == "services"
+    assert "excluded_solids" in keywords

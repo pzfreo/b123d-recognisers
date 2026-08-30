@@ -183,7 +183,56 @@
         "pads": [],
         "paired_ramp_steps": [],
         "passages": [],
-        "plates": [],
+        "plates": [
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": -4.0,
+            "lo": -15.0,
+            "u": 0.0,
+            "v": 0.0
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 15.0,
+            "lo": 4.0,
+            "u": 0.0,
+            "v": 0.0
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 56.0,
+            "lo": 45.0,
+            "u": 0.0,
+            "v": 0.0
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 75.0,
+            "lo": 64.0,
+            "u": 0.0,
+            "v": 0.0
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 116.0,
+            "lo": 105.0,
+            "u": 0.0,
+            "v": 0.0
+          },
+          {
+            "_type": "Plate",
+            "axis": "y",
+            "hi": 135.0,
+            "lo": 124.0,
+            "u": 0.0,
+            "v": 0.0
+          }
+        ],
         "pocket_patterns": [],
         "pockets": [],
         "polygonal_bosses": [],

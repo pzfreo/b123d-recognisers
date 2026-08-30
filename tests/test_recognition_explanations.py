@@ -144,7 +144,9 @@ def test_reconciliation_loss_is_counted_without_identity_leakage() -> None:
 def test_classification_distinguishes_not_applicable_from_evaluated_empty() -> None:
     report = r.build_recognition_report(Box(10, 10, 10), rotational=True)
 
-    assert _family(report, "plates").evaluation is r.FamilyEvaluation.NOT_APPLICABLE
+    # Plates evaluate per body so a rotational compound cannot hide an independent prismatic
+    # member merely because another member established a turned profile.
+    assert _family(report, "plates").evaluation is r.FamilyEvaluation.EVALUATED
     assert _family(report, "angled_steps").evaluation is r.FamilyEvaluation.NOT_APPLICABLE
     assert _family(report, "holes").evaluation is r.FamilyEvaluation.EVALUATED
     assert _family(report, "holes").proposed == 0
