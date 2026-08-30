@@ -7,7 +7,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from build123d import Vector
 from OCP.BRepGProp import BRepGProp
@@ -82,7 +82,7 @@ def _component(value: Any, axis: str) -> float:
 
 def _span(bounds: Any, axis: str) -> tuple[float, float]:
     if isinstance(bounds, tuple):
-        return bounds[_AXIS_INDEX[axis]]
+        return cast(tuple[float, float], bounds[_AXIS_INDEX[axis]])
     return _component(bounds.min, axis), _component(bounds.max, axis)
 
 
