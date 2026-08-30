@@ -221,7 +221,12 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "boss = Box(10, 100, 80) + Pos(5, 0, 0) * Rot(0, 90, 0) * "
                 "extrude(RegularPolygon(20, 6), 30); "
                 "found = r.recognise_polygonal_bosses(boss); "
-                "assert len(found) == 1 and found[0].axis == 'x' and found[0].height == 30"
+                "assert len(found) == 1 and found[0].axis == 'x' and found[0].height == 30; "
+                "pad = Rot(0, -90, 0) * (Box(80, 60, 10) + Pos(0, 0, 7) * "
+                "Box(30, 20, 4)); "
+                "raised = r.recognise_rectangular_pads(pad); "
+                "assert len(raised) == 1 and raised[0].axis == 'x' and "
+                "raised[0].direction == -1"
             ),
         ],
         cwd=tmp_path,

@@ -18,6 +18,7 @@ from build123d import (
     Part,
     Plane,
     Pos,
+    RegularPolygon,
     Rot,
     Shell,
     SlotOverall,
@@ -32,7 +33,11 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers import recognise_rectangular_pads
+from b123d_recognisers import (
+    FramedRecognitionResult,
+    build_framed_recognition_result,
+    recognise_rectangular_pads,
+)
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -46,11 +51,16 @@ from b123d_recognisers._effective_surfaces import (
     SurfaceRefusalReason,
     SurfaceUseRefusal,
     effective_faces_for_graph,
+    effective_faces_for_part,
 )
 from b123d_recognisers.experimental_geometry import GeometryGraph, GeometryProvenance
 from b123d_recognisers.pads import (
+    _AXIS_INDEX,
     RaisedPad,
+    _axial_extent,
     _discover_rectangular_pads,
+    _recognise_rectangular_pads_one,
+    _record_bounds,
     _tier_suppresses,
     _wall_role,
 )
@@ -81,6 +91,73 @@ def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
 
 def _pad():
     return Box(80, 60, 10) + Pos(0, 0, 7) * Box(30, 20, 4)
+
+
+def _oriented_pad(rotation):
+    stock = rotation * Box(80, 60, 10)
+    island = rotation * (Pos(0, 0, 7) * Box(30, 20, 4))
+    return stock + island, island
+
+
+def _assert_record_matches_authored_island(
+    record: RaisedPad, island, *, axis: str, direction: int
+) -> None:
+    bounds = island.bounding_box()
+    assert record == RaisedPad(
+        round(float(bounds.min.X), 3),
+        round(float(bounds.max.X), 3),
+        round(float(bounds.min.Y), 3),
+        round(float(bounds.max.Y), 3),
+        round(float(bounds.min.Z), 3),
+        round(float(bounds.max.Z), 3),
+        axis,
+        direction,
+    )
+
+
+def _assert_signed_five_face_evidence(
+    product, record: RaisedPad, *, corner_blended: bool = False
+) -> None:
+    """Prove the Candidate owns the authored terminal and four perimeter planes."""
+
+    (candidate,) = product.physical.candidate_set(FamilyId.PADS).candidates
+    nodes = product.evidence.defining_of(candidate)
+    assert len(nodes) == 5
+    axis_index = _AXIS_INDEX[record.axis]
+    record_bounds = _record_bounds(record)
+    terminal = record_bounds[axis_index][1 if record.direction > 0 else 0]
+    base = record_bounds[axis_index][0 if record.direction > 0 else 1]
+    top_nodes = [
+        node
+        for node in nodes
+        if abs(product.context.graph.normal(node)[axis_index]) >= 0.99
+    ]
+    assert len(top_nodes) == 1
+    top = top_nodes[0]
+    assert product.context.graph.normal(top)[axis_index] * record.direction >= 0.99
+    assert product.context.graph.bounds(top)[axis_index] == pytest.approx((terminal, terminal))
+
+    walls = [node for node in nodes if node is not top]
+    assert len(walls) == 4
+    transverse = [index for index in range(3) if index != axis_index]
+    observed_roles = []
+    for wall in walls:
+        normal = product.context.graph.normal(wall)
+        wall_axis = next(index for index in transverse if abs(normal[index]) >= 0.99)
+        cross_axis = next(index for index in transverse if index != wall_axis)
+        bounds = product.context.graph.bounds(wall)
+        observed_roles.append((wall_axis, round(bounds[wall_axis][0], 3)))
+        assert bounds[wall_axis][0] == pytest.approx(bounds[wall_axis][1])
+        if corner_blended:
+            assert record_bounds[cross_axis][0] < bounds[cross_axis][0]
+            assert bounds[cross_axis][1] < record_bounds[cross_axis][1]
+        else:
+            assert bounds[cross_axis] == pytest.approx(record_bounds[cross_axis])
+        assert bounds[axis_index] == pytest.approx(tuple(sorted((base, terminal))))
+    expected_roles = [
+        (index, round(position, 3)) for index in transverse for position in record_bounds[index]
+    ]
+    assert sorted(observed_roles) == sorted(expected_roles)
 
 
 def _blended_pad(radius: float = 1.0, *, corners: int = 4):
@@ -419,8 +496,11 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
     ledger = ClaimLedger(FaceGraph(part))
     original = module._recognise_rectangular_pads_one
 
-    def permuted(source, *, tol, face_surfaces):
-        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+    def permuted(source, *, tol, face_surfaces, **orientation):
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
+        if orientation != {"axis": "z", "axis_sign": 1}:
+            return proposals
+        (proposal,) = proposals
         roles = proposal.wall_roles
         return [
             proposal,
@@ -444,8 +524,11 @@ def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
     ledger = ClaimLedger(FaceGraph(part))
     original = module._recognise_rectangular_pads_one
 
-    def reused_top(source, *, tol, face_surfaces):
-        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+    def reused_top(source, *, tol, face_surfaces, **orientation):
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
+        if orientation != {"axis": "z", "axis_sign": 1}:
+            return proposals
+        (proposal,) = proposals
         record = proposal.record
         return [
             proposal,
@@ -475,8 +558,11 @@ def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -
     part = _pad()
     original = module._recognise_rectangular_pads_one
 
-    def repeated(source, *, tol, face_surfaces):
-        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+    def repeated(source, *, tol, face_surfaces, **orientation):
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
+        if orientation != {"axis": "z", "axis_sign": 1}:
+            return proposals
+        (proposal,) = proposals
         wrapped = module._PadProposal(
             proposal.record,
             copy.copy(proposal.top_face),
@@ -785,6 +871,24 @@ def test_full_span_margin_boundary_is_inclusive(width: float, accepted: bool, ax
         assert ledger.candidate_set(FamilyId.PADS).candidates == ()
 
 
+def test_tied_signed_axis_readings_refuse_without_iteration_order_preference() -> None:
+    part = Box(20, 20, 2) + Pos(0, 0, 2) * Box(19.6, 2, 2)
+    surfaces = effective_faces_for_part(part)
+    positive = _recognise_rectangular_pads_one(
+        part, tol=None, face_surfaces=surfaces, axis="x", axis_sign=1
+    )
+    negative = _recognise_rectangular_pads_one(
+        part, tol=None, face_surfaces=surfaces, axis="x", axis_sign=-1
+    )
+
+    assert len(positive) == len(negative) == 1
+    assert positive[0].record.direction == 1
+    assert negative[0].record.direction == -1
+    assert _record_bounds(positive[0].record) == _record_bounds(negative[0].record)
+    assert recognise_rectangular_pads(part) == []
+    assert recognise_rectangular_pads(Rot(0, 90, 0) * part) == []
+
+
 @pytest.mark.parametrize(
     ("changes", "accepted"),
     [
@@ -896,8 +1000,11 @@ def test_invalid_role_snapshots_refuse_before_publication(monkeypatch, mode: str
     ledger = ClaimLedger(FaceGraph(part))
     original = module._recognise_rectangular_pads_one
 
-    def changed(source, *, tol, face_surfaces):
-        (proposal,) = original(source, tol=tol, face_surfaces=face_surfaces)
+    def changed(source, *, tol, face_surfaces, **orientation):
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
+        if orientation != {"axis": "z", "axis_sign": 1}:
+            return proposals
+        (proposal,) = proposals
         roles = proposal.wall_roles
         if mode == "role_alias":
             roles = (roles[0], roles[0], roles[2], roles[3])
@@ -924,9 +1031,11 @@ def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> 
     original = module._recognise_rectangular_pads_one
     first_roles = None
 
-    def reused(source, *, tol, face_surfaces):
+    def reused(source, *, tol, face_surfaces, **orientation):
         nonlocal first_roles
-        proposals = original(source, tol=tol, face_surfaces=face_surfaces)
+        proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
+        if orientation != {"axis": "z", "axis_sign": 1}:
+            return proposals
         if first_roles is None:
             first_roles = proposals[0].wall_roles
             return proposals
@@ -937,6 +1046,97 @@ def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> 
     with pytest.raises(ValueError):
         _discover_rectangular_pads(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.PADS).candidates == ()
+
+
+@pytest.mark.parametrize(
+    ("rotation", "axis", "direction"),
+    [
+        (Rot(0, 0, 0), "z", 1),
+        (Rot(180, 0, 0), "z", -1),
+        (Rot(0, 90, 0), "x", 1),
+        (Rot(0, -90, 0), "x", -1),
+        (Rot(-90, 0, 0), "y", 1),
+        (Rot(90, 0, 0), "y", -1),
+    ],
+)
+def test_signed_principal_pads_preserve_authored_parameter_fidelity(
+    rotation, axis: str, direction: int
+) -> None:
+    part, island = _oriented_pad(rotation)
+
+    (record,) = recognise_rectangular_pads(part)
+
+    _assert_record_matches_authored_island(record, island, axis=axis, direction=direction)
+    product = _take_inventory(part)
+    assert product.result.pads == (record,)
+    _assert_signed_five_face_evidence(product, record)
+
+
+@pytest.mark.parametrize(
+    "rotation",
+    [Rot(180, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0), Rot(-90, 0, 0), Rot(90, 0, 0)],
+)
+def test_signed_principal_pad_aggregate_has_one_owner(rotation) -> None:
+    part, _island = _oriented_pad(rotation)
+
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.PADS).candidates
+
+    assert len(product.result.pads) == len(candidates) == 1
+    assert candidates[0].record is product.result.pads[0]
+    assert len(product.evidence.defining_of(candidates[0])) == 5
+
+
+def test_equal_oriented_pads_remain_distinct_and_body_local() -> None:
+    left, _ = _oriented_pad(Rot(0, 90, 0))
+    right = Pos(0, 100, 0) * left
+    part = Compound([left, right])
+
+    records = recognise_rectangular_pads(part)
+
+    assert len(records) == 2
+    assert {record.axis for record in records} == {"x"}
+    assert {record.direction for record in records} == {1}
+    assert records[0].y1 < records[1].y0
+
+
+def test_pad_survives_arbitrary_rigid_motion_through_framed_aggregate() -> None:
+    minimum_z = (Align.CENTER, Align.CENTER, Align.MIN)
+    source = Box(100, 70, 12, align=minimum_z)
+    source += Pos(18, -10, 12) * Box(28, 16, 8, align=minimum_z)
+    moved = Pos(17, -23, 9) * Rot(31, 47, 13) * source
+
+    framed = build_framed_recognition_result(moved, rotational=False)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    (record,) = framed.result.pads
+    assert record.axis in "xyz"
+    assert record.direction in {-1, 1}
+    axial = _record_bounds(record)[_AXIS_INDEX[record.axis]]
+    transverse = [
+        span
+        for index, span in enumerate(_record_bounds(record))
+        if index != _AXIS_INDEX[record.axis]
+    ]
+    assert axial[1] - axial[0] == pytest.approx(8, abs=1e-3)
+    assert sorted(hi - lo for lo, hi in transverse) == pytest.approx([16, 28], abs=1e-3)
+    ledger = ClaimLedger(FaceGraph(framed.part))
+    direct = recognise_rectangular_pads(framed.part)
+    attributed = _discover_rectangular_pads(framed.part, writer=ledger.writer)
+    candidates = ledger.candidate_set(FamilyId.PADS).candidates
+    assert direct == attributed == [record]
+    assert len(candidates) == 1
+    assert len(ledger.defining_of(candidates[0])) == 5
+
+
+def test_signed_principal_pad_step_round_trip_preserves_record(tmp_path: Path) -> None:
+    part, _island = _oriented_pad(Rot(0, -90, 0))
+    path = tmp_path / "negative-x-pad.step"
+    export_step(part, path)
+
+    imported = import_step(path)
+
+    assert recognise_rectangular_pads(imported) == recognise_rectangular_pads(part)
 
 
 def test_private_core_has_one_production_writer_caller_and_three_record_paths() -> None:
@@ -958,11 +1158,7 @@ def test_private_core_has_one_production_writer_caller_and_three_record_paths() 
     writer = keywords["writer"]
     assert isinstance(writer, ast.Attribute) and writer.attr == "writer"
     assert isinstance(writer.value, ast.Name) and writer.value.id == "s"
-    assert [(path, len(call.args)) for path, call in constructors] == [
-        ("pads.py", 6),
-        ("pads.py", 6),
-        ("pads.py", 6),
-    ]
+    assert [(path, len(call.args)) for path, call in constructors] == [("pads.py", 0)]
 
 
 def test_terminal_inventory_retains_nonempty_pad_identity() -> None:
@@ -990,6 +1186,49 @@ def test_complete_corner_blend_cycle_preserves_exact_pad_and_evidence(radius) ->
     assert len(defining) == 5
     assert all(product.context.graph.is_planar(node) for node in defining)
     assert all(product.context.surfaces.fact(node).kind is SurfaceKind.PLANE for node in defining)
+
+
+@pytest.mark.parametrize(
+    "rotation",
+    [Rot(180, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0), Rot(-90, 0, 0), Rot(90, 0, 0)],
+)
+def test_complete_corner_blend_cycle_is_signed_principal_axis_covariant(rotation) -> None:
+    sharp, _island = _oriented_pad(rotation)
+    rounded = rotation * _blended_pad()
+
+    assert recognise_rectangular_pads(rounded) == recognise_rectangular_pads(sharp)
+    product = _take_inventory(rounded)
+    assert product.result.pads == tuple(recognise_rectangular_pads(sharp))
+    _assert_signed_five_face_evidence(product, product.result.pads[0], corner_blended=True)
+
+
+@pytest.mark.parametrize(
+    "rotation",
+    [Rot(0, 0, 0), Rot(180, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0), Rot(90, 0, 0)],
+)
+def test_full_span_step_remains_negative_across_signed_principal_axes(rotation) -> None:
+    full_span = Box(80, 60, 10) + Pos(0, 0, 7) * Box(80, 20, 4)
+
+    assert recognise_rectangular_pads(rotation * full_span) == []
+
+
+@pytest.mark.parametrize("rotation", [Rot(0, 90, 0), Rot(90, 0, 0)])
+def test_rotated_non_pad_controls_remain_negative_or_independently_owned(rotation) -> None:
+    pocket = Box(80, 60, 10) - Pos(0, 0, 3) * Box(30, 20, 4)
+    polygonal = Box(80, 60, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(10, 6), 4)
+    detached = Compound([Box(80, 60, 10), Pos(0, 0, 20) * Box(30, 20, 4)])
+    staircase = (
+        Box(80, 60, 10)
+        + Pos(0, 0, 7) * Box(30, 20, 4)
+        + Pos(0, 0, 11) * Box(10, 8, 4)
+    )
+
+    assert recognise_rectangular_pads(rotation * pocket) == []
+    assert recognise_rectangular_pads(rotation * polygonal) == []
+    assert recognise_rectangular_pads(rotation * detached) == []
+    records = recognise_rectangular_pads(rotation * staircase)
+    assert len(records) == 1
+    assert _axial_extent(records[0]) == pytest.approx(4)
 
 
 def test_partial_corner_blend_cycle_does_not_select_a_subset() -> None:
