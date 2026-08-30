@@ -8,7 +8,18 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from build123d import Axis, Box, Cylinder, Pos, RegularPolygon, Shape, Sphere, Vector, extrude
+from build123d import (
+    Axis,
+    Box,
+    Compound,
+    Cylinder,
+    Pos,
+    RegularPolygon,
+    Shape,
+    Sphere,
+    Vector,
+    extrude,
+)
 
 import b123d_recognisers._run as run_module
 import b123d_recognisers.frames as frames
@@ -90,6 +101,26 @@ def test_frame_inference_refuses_material_without_an_analytic_direction() -> Non
     assert refusal == RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 
 
+def test_empty_shape_returns_the_typed_no_material_refusal() -> None:
+    part = Compound(children=[])
+    expected = RefusedPartFrame(FrameRefusalReason.NO_MATERIAL)
+
+    assert infer_part_frame(part) == expected
+    assert build_framed_recognition_result(part) == expected
+    assert build_framed_recognition_report(part) == expected
+
+
+@pytest.mark.parametrize(
+    "build",
+    [build_framed_recognition_result, build_framed_recognition_report],
+)
+def test_framed_routes_preserve_nonfinite_inference_refusal(monkeypatch, build) -> None:
+    expected = RefusedPartFrame(FrameRefusalReason.NONFINITE_GEOMETRY)
+    monkeypatch.setattr(frames, "infer_part_frame", lambda _part: expected)
+
+    assert build(Box(10, 10, 10)) == expected
+
+
 def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> None:
     fixture = load_fixture(Path("tests/golden/straight_and_obround_slots/fixture.py"))
     part = fixture.build_fixture()
@@ -108,8 +139,7 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
     [
         extrude(RegularPolygon(20, 6), 30),
         Pos(9, -13, 7) * extrude(RegularPolygon(20, 6), 30).rotate(Axis.X, 30),
-        Pos(-4, 8, 11)
-        * extrude(RegularPolygon(20, 6), 30).rotate(Axis((0, 0, 0), (1, 1, 0)), 37),
+        Pos(-4, 8, 11) * extrude(RegularPolygon(20, 6), 30).rotate(Axis((0, 0, 0), (1, 1, 0)), 37),
     ],
 )
 def test_framed_polygonal_stock_survives_rigid_presentation(part) -> None:
@@ -177,9 +207,7 @@ def _stepped_shaft() -> Shape:
     ("source", "gauge"),
     [
         (
-            Box(10, 20, 30)
-            + Pos(9, 18, 28) * Box(2, 3, 4)
-            - Pos(3, 4, 0) * Cylinder(1, 30),
+            Box(10, 20, 30) + Pos(9, 18, 28) * Box(2, 3, 4) - Pos(3, 4, 0) * Cylinder(1, 30),
             FrameGauge.FULL,
         ),
         (Box(10, 20, 30), FrameGauge.ORTHOGONAL),
@@ -243,11 +271,7 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
     monkeypatch.setattr(run_module, "analyse_cylinders", forbidden_rescan)
     monkeypatch.setattr(frames, "build_raw_recognition_result", counted_aggregate)
     # A consumer can inspect the exact local substrate before choosing its own policy.
-    rotational = any(
-        evidence["external"]
-        for group in prepared.cylinders
-        for evidence in group
-    )
+    rotational = any(evidence["external"] for group in prepared.cylinders for evidence in group)
     framed = prepared.recognise(rotational=rotational)
 
     assert calls == [prepared.part]
@@ -256,15 +280,11 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
     assert aggregate_part is prepared.part
     assert all(
         actual is expected
-        for actual, expected in zip(
-            aggregate_cylinders[0], prepared.cylinders[0], strict=True
-        )
+        for actual, expected in zip(aggregate_cylinders[0], prepared.cylinders[0], strict=True)
     )
     assert all(
         actual is expected
-        for actual, expected in zip(
-            aggregate_cylinders[1], prepared.cylinders[1], strict=True
-        )
+        for actual, expected in zip(aggregate_cylinders[1], prepared.cylinders[1], strict=True)
     )
     assert aggregate_rotational is True
     assert framed.result.rotational is True
@@ -306,9 +326,7 @@ def test_framed_report_preserves_typed_frame_refusal() -> None:
     ("source", "gauge", "topology_expected"),
     [
         (
-            Box(10, 20, 30)
-            + Pos(9, 18, 28) * Box(2, 3, 4)
-            - Pos(3, 4, 0) * Cylinder(1, 30),
+            Box(10, 20, 30) + Pos(9, 18, 28) * Box(2, 3, 4) - Pos(3, 4, 0) * Cylinder(1, 30),
             FrameGauge.FULL,
             True,
         ),

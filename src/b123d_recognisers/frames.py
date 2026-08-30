@@ -259,6 +259,8 @@ def _clean(vector: Vector3) -> Vector3:
 
 
 def _material_origin(part: Part) -> Vector3 | RefusedPartFrame:
+    if not part.solids():
+        return RefusedPartFrame(FrameRefusalReason.NO_MATERIAL)
     props = GProp_GProps()
     BRepGProp.VolumeProperties_s(part.wrapped, props)
     mass = float(props.Mass())
