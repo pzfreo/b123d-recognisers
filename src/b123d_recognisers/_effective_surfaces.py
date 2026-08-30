@@ -383,7 +383,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar face-level gate",
     ),
-    "levels:recognise_risers:adaptor:1": (
+    "levels:_riser_proposals_one:adaptor:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar riser gate",
     ),

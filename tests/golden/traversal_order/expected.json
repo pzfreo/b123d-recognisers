@@ -87,68 +87,7 @@
         "polygonal_stock": [],
         "prismatic_pockets": [],
         "repeating_radial_profiles": [],
-        "risers": [
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              15.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              45.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              75.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              105.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          }
-        ],
+        "risers": [],
         "rotational": false,
         "slot_patterns": [],
         "slots": [
@@ -251,68 +190,7 @@
         "polygonal_stock": [],
         "prismatic_pockets": [],
         "repeating_radial_profiles": [],
-        "risers": [
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              15.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              45.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              75.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          },
-          {
-            "_type": "RiserEvidence",
-            "axis": "y",
-            "hi_at_envelope": true,
-            "lo_at_envelope": true,
-            "other_axis": "x",
-            "other_positions": [],
-            "positions": [
-              105.0
-            ],
-            "tol": 0.5,
-            "vertical": true,
-            "z_hi": 5.0,
-            "z_lo": -5.0
-          }
-        ],
+        "risers": [],
         "rotational": true,
         "slot_patterns": [],
         "slots": [
@@ -643,68 +521,7 @@
       "recognise_prismatic_pockets": [],
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
-      "recognise_risers": [
-        {
-          "_type": "RiserEvidence",
-          "axis": "y",
-          "hi_at_envelope": true,
-          "lo_at_envelope": true,
-          "other_axis": "x",
-          "other_positions": [],
-          "positions": [
-            15.0
-          ],
-          "tol": 0.5,
-          "vertical": true,
-          "z_hi": 5.0,
-          "z_lo": -5.0
-        },
-        {
-          "_type": "RiserEvidence",
-          "axis": "y",
-          "hi_at_envelope": true,
-          "lo_at_envelope": true,
-          "other_axis": "x",
-          "other_positions": [],
-          "positions": [
-            45.0
-          ],
-          "tol": 0.5,
-          "vertical": true,
-          "z_hi": 5.0,
-          "z_lo": -5.0
-        },
-        {
-          "_type": "RiserEvidence",
-          "axis": "y",
-          "hi_at_envelope": true,
-          "lo_at_envelope": true,
-          "other_axis": "x",
-          "other_positions": [],
-          "positions": [
-            75.0
-          ],
-          "tol": 0.5,
-          "vertical": true,
-          "z_hi": 5.0,
-          "z_lo": -5.0
-        },
-        {
-          "_type": "RiserEvidence",
-          "axis": "y",
-          "hi_at_envelope": true,
-          "lo_at_envelope": true,
-          "other_axis": "x",
-          "other_positions": [],
-          "positions": [
-            105.0
-          ],
-          "tol": 0.5,
-          "vertical": true,
-          "z_hi": 5.0,
-          "z_lo": -5.0
-        }
-      ],
+      "recognise_risers": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [
         {

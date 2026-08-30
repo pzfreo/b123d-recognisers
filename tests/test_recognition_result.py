@@ -163,7 +163,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(
         registry_module, "_discover_step_levels", counted("step_levels", levels)
     )
-    monkeypatch.setattr(registry_module, "recognise_risers", counted("risers", []))
+    monkeypatch.setattr(registry_module, "_discover_risers", counted("risers", []))
     monkeypatch.setattr(registry_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(registry_module, "recognise_angled_steps", counted("angled_steps", []))
     monkeypatch.setattr(

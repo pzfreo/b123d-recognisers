@@ -25,7 +25,11 @@ from b123d_recognisers.result import _take_inventory
 
 
 def _diagnostic_run(
-    *, contested: bool = False, duplicate: bool = False, reverse: bool = False
+    *,
+    contested: bool = False,
+    structural_owner: bool = False,
+    duplicate: bool = False,
+    reverse: bool = False,
 ):
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
     subject, terminal = ledger.graph.nodes[:2]
@@ -36,6 +40,9 @@ def _diagnostic_run(
         pocket = object()
         ledger.propose(FamilyId.POCKETS, pocket, [subject, ledger.graph.nodes[2]])
         physical.append(ledger.candidate_set(FamilyId.POCKETS))
+    if structural_owner:
+        ledger.propose(FamilyId.RISERS, object(), [subject])
+        physical.append(ledger.candidate_set(FamilyId.RISERS))
     raw_counts = ([4, 5] if reverse else [5, 4]) if duplicate else [5]
     for raw_count in raw_counts:
         ledger.sink.observe(
@@ -66,6 +73,10 @@ def test_split_terminal_observation_projects_one_private_json_diagnostic() -> No
 
 def test_known_non_chamfer_owner_suppresses_the_residual_diagnostic() -> None:
     assert _diagnostic_run(contested=True) == ()
+
+
+def test_neutral_structural_owner_does_not_suppress_feature_gap_diagnostic() -> None:
+    assert len(_diagnostic_run(structural_owner=True)) == 1
 
 
 def test_multiple_terminal_observations_emit_one_diagnostic_per_slant() -> None:

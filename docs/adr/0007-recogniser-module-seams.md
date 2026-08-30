@@ -426,3 +426,14 @@ The public `recognise_face_levels` and `step_level_records` facades reuse the sa
 core without a writer. They do not construct a graph, read Candidates/evidence/reconciliation, or
 invoke a sibling recogniser. Equal-valued records on different bodies remain separate occurrences;
 the run-owned graph supplies their distinct SolidRef authority without adding a public body ID.
+
+## Amendment (body-local Riser occurrences, issue #336)
+
+`levels._discover_risers` is the sole writer-enabled aggregate adapter over the shared per-solid
+Riser proposal core. Each proposal completes same-body bounds, level authority, value reduction,
+original-face resolution and common-solid validation before any Candidate is published. The public
+`recognise_risers` facade remains writer-free, and `project_step_shoulders` remains a pure record
+projection with no Part, graph, Candidate or evidence access. The registry declares STEP_LEVELS as
+RISERS' completed predecessor and the adapter groups those already-issued FaceLevel occurrences by
+their opaque SolidRef; aggregate discovery therefore does not rescan horizontal faces or infer
+ownership from equal Z values.

@@ -47,6 +47,13 @@ aggregate field executable when an old public API remains as a projection. Consu
 only format 1 must reject format 2. Existing family `introduced_in` values remain unchanged; new
 record publication is recorded by package release notes and each record's schema version.
 
+Issue #336 advances `RiserEvidence` from schema 1 to schema 2 by adding optional serialized
+`body_levels`. Recogniser-produced records always provide the complete same-solid FaceLevel
+occurrence authority;
+`null` exists only so hand-built schema-1-style records remain constructible and project with their
+historical value-only semantics. Consumers that persist or declare RiserEvidence must explicitly
+accept schema 2 before enabling compound-safe projection.
+
 ### Stable family identifiers
 
 A family identifier is a lower-case segmented token matching

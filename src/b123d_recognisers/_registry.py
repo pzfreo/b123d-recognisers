@@ -54,8 +54,8 @@ from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import (
     FaceLevel,
     RiserEvidence,
+    _discover_risers,
     _discover_step_levels,
-    recognise_risers,
 )
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
@@ -351,6 +351,22 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
     if TurnedProfile.from_steps(steps) is not None:
         return []
     return list(_discover_plates(services.context.part, writer=services.writer))
+
+
+def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
+    body_levels: dict[object, list[FaceLevel]] = {}
+    for occurrence in inputs.occurrences(FamilyId.STEP_LEVELS, FaceLevel):
+        solid = occurrence.solid()
+        if solid is None:  # pragma: no cover - completed occurrences revalidate this invariant
+            raise ValueError("completed FaceLevel occurrence has no valid solid")
+        body_levels.setdefault(solid, []).append(occurrence.record(FaceLevel))
+    return list(
+        _discover_risers(
+            services.context.part,
+            writer=services.writer,
+            body_levels=body_levels,
+        )
+    )
 
 
 def _hole_patterns(inputs: AcceptedInputs) -> list[object]:
@@ -659,14 +675,11 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         (RiserEvidence,),
         "risers",
         "recognise_risers",
-        (),
+        (FamilyId.STEP_LEVELS,),
         always,
-        _simple(lambda s: list(recognise_risers(s.context.part))),
+        _risers,
         NotCounted("riser evidence is not a distinct feature"),
-        IncompleteAttribution(
-            "public value deduplication collapses distinct Riser faces and SolidRefs",
-            "requires occurrence-preserving identity or explicit multi-source ownership",
-        ),
+        FullyAttributed("every returned RiserEvidence owns all producing faces on one valid solid"),
     ),
     PhysicalDefinition(
         FamilyId.CHAMFERS,

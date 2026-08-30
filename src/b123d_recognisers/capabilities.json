@@ -1900,6 +1900,11 @@
               "type": "str",
               "units": "none"
             },
+            "body_levels": {
+              "required": false,
+              "type": "list[record:FaceLevel]|null",
+              "units": "none"
+            },
             "hi_at_envelope": {
               "required": true,
               "type": "bool",
@@ -1949,7 +1954,7 @@
           "name": "RiserEvidence",
           "qualified_name": "b123d_recognisers.RiserEvidence",
           "role": "evidence",
-          "schema_version": 1
+          "schema_version": 2
         },
         {
           "aggregate_membership": [],

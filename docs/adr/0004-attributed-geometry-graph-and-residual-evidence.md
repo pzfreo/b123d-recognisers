@@ -109,6 +109,11 @@ The private residual reducer is a bounded identity join over those observations 
 candidates, not a residual graph scan or a second recogniser. Broader residual classification,
 other consulted roles and public diagnostic schemas remain future work.
 
+Neutral structural candidates such as FaceLevel and Riser may own the same original face after
+their attribution becomes complete, but that ownership is not a manufacturing-feature explanation
+and does not suppress an independently issued unsupported-family observation. Only an accepted
+non-structural feature owner resolves the bounded residual in this reducer.
+
 ## Amendment (geometry foundation, issue #180)
 
 Epic 0004 F1 adds one private lazy `EffectiveSurfaceIndex` above `FaceGraph`. It is keyed only by

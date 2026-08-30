@@ -103,6 +103,7 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [],
             "hi_at_envelope": false,
             "lo_at_envelope": true,
             "other_axis": "y",
@@ -220,6 +221,7 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [],
             "hi_at_envelope": false,
             "lo_at_envelope": true,
             "other_axis": "y",
@@ -343,6 +345,7 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_levels": [],
           "hi_at_envelope": false,
           "lo_at_envelope": true,
           "other_axis": "y",

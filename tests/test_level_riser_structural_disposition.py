@@ -12,7 +12,6 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._registry import (
     PHYSICAL_DEFINITIONS,
     FullyAttributed,
-    IncompleteAttribution,
     NotCounted,
 )
 from b123d_recognisers.levels import step_level_records
@@ -62,21 +61,24 @@ def test_riser_equal_value_can_mean_two_faces_on_one_solid_without_a_winner() ->
     )
     assert len(matching) == 2
     assert graph.common_valid_solid(matching) is not None
+    product = _take_inventory(_equal_same_solid_ramps())
+    (candidate,) = product.physical.candidate_set(FamilyId.RISERS).candidates
+    assert len(product.evidence.defining_of(candidate)) == 2
 
 
 def test_riser_equal_value_across_solids_has_no_common_owner() -> None:
     first = _step()
     part = Compound([first, deepcopy(first)])
-    assert len(recognise_risers(part)) == 1
-    graph = FaceGraph(part)
-    nodes = frozenset(
-        node
-        for node in graph.nodes
-        if graph.is_planar(node) and graph.bounds(node)[0][0] == graph.bounds(node)[0][1] == 0.0
-    )
-    assert len(nodes) == 2
-    assert all(graph.common_valid_solid((node,)) is not None for node in nodes)
-    assert graph.common_valid_solid(nodes) is None
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.RISERS).candidates
+
+    assert len(recognise_risers(part)) == len(candidates) == 2
+    owners = {
+        product.context.graph.common_valid_solid(product.evidence.defining_of(candidate))
+        for candidate in candidates
+    }
+    assert None not in owners
+    assert len(owners) == 2
 
 
 def test_aggregate_remains_writer_free_complete_and_result_exact() -> None:
@@ -91,17 +93,15 @@ def test_aggregate_remains_writer_free_complete_and_result_exact() -> None:
     assert all(product.evidence.defining_of(candidate) for candidate in level_candidates)
     riser_candidates = product.physical.candidate_set(FamilyId.RISERS).candidates
     assert riser_candidates
-    assert all(
-        product.evidence.defining_of(candidate) == frozenset() for candidate in riser_candidates
-    )
+    assert all(product.evidence.defining_of(candidate) for candidate in riser_candidates)
     assert product.diagnostics == ()
 
 
 def test_dispositions_and_census_reasons_are_exact() -> None:
     definitions = {item.family: item for item in PHYSICAL_DEFINITIONS}
     assert isinstance(definitions[FamilyId.STEP_LEVELS].attribution, FullyAttributed)
-    assert isinstance(definitions[FamilyId.RISERS].attribution, IncompleteAttribution)
+    assert isinstance(definitions[FamilyId.RISERS].attribution, FullyAttributed)
     for family in (FamilyId.STEP_LEVELS, FamilyId.RISERS):
         assert isinstance(definitions[family].census, NotCounted)
     assert "body-local" in definitions[FamilyId.STEP_LEVELS].attribution.proof_contract
-    assert "deduplication" in definitions[FamilyId.RISERS].attribution.reason
+    assert "producing faces" in definitions[FamilyId.RISERS].attribution.proof_contract

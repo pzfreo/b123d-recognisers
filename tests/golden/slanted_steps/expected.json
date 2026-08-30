@@ -93,6 +93,56 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -50.0,
+                  -38.0
+                ],
+                "z": 5.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  40.0,
+                  50.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 14.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  32.0,
+                  40.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 19.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -12.0,
+                  0.0
+                ],
+                "z": 20.0
+              }
+            ],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -109,6 +159,56 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -50.0,
+                  -38.0
+                ],
+                "z": 5.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  40.0,
+                  50.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 14.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  32.0,
+                  40.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 19.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -12.0,
+                  0.0
+                ],
+                "z": 20.0
+              }
+            ],
             "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -261,6 +361,56 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -50.0,
+                  -38.0
+                ],
+                "z": 5.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  40.0,
+                  50.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 14.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  32.0,
+                  40.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 19.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -12.0,
+                  0.0
+                ],
+                "z": 20.0
+              }
+            ],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -277,6 +427,56 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_levels": [
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -50.0,
+                  -38.0
+                ],
+                "z": 5.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  40.0,
+                  50.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 14.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  32.0,
+                  40.0
+                ],
+                "y_span": [
+                  -50.0,
+                  0.0
+                ],
+                "z": 19.0
+              },
+              {
+                "_type": "FaceLevel",
+                "x_span": [
+                  0.0,
+                  8.0
+                ],
+                "y_span": [
+                  -12.0,
+                  0.0
+                ],
+                "z": 20.0
+              }
+            ],
             "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -520,6 +720,56 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_levels": [
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                0.0,
+                8.0
+              ],
+              "y_span": [
+                -50.0,
+                -38.0
+              ],
+              "z": 5.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                40.0,
+                50.0
+              ],
+              "y_span": [
+                -50.0,
+                0.0
+              ],
+              "z": 14.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                32.0,
+                40.0
+              ],
+              "y_span": [
+                -50.0,
+                0.0
+              ],
+              "z": 19.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                0.0,
+                8.0
+              ],
+              "y_span": [
+                -12.0,
+                0.0
+              ],
+              "z": 20.0
+            }
+          ],
           "hi_at_envelope": true,
           "lo_at_envelope": false,
           "other_axis": "y",
@@ -536,6 +786,56 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_levels": [
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                0.0,
+                8.0
+              ],
+              "y_span": [
+                -50.0,
+                -38.0
+              ],
+              "z": 5.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                40.0,
+                50.0
+              ],
+              "y_span": [
+                -50.0,
+                0.0
+              ],
+              "z": 14.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                32.0,
+                40.0
+              ],
+              "y_span": [
+                -50.0,
+                0.0
+              ],
+              "z": 19.0
+            },
+            {
+              "_type": "FaceLevel",
+              "x_span": [
+                0.0,
+                8.0
+              ],
+              "y_span": [
+                -12.0,
+                0.0
+              ],
+              "z": 20.0
+            }
+          ],
           "hi_at_envelope": false,
           "lo_at_envelope": false,
           "other_axis": "y",

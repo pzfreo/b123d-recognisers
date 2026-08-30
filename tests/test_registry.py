@@ -75,9 +75,10 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.PLATES,
         FamilyId.REPEATING_RADIAL_PROFILES,
         FamilyId.SLOTS,
-        FamilyId.POCKETS,
-        FamilyId.STEP_LEVELS,
-    }
+            FamilyId.POCKETS,
+            FamilyId.STEP_LEVELS,
+            FamilyId.RISERS,
+        }
     assert all(
         isinstance(item.attribution, FullyAttributed | IncompleteAttribution)
         for item in PHYSICAL_DEFINITIONS
@@ -167,6 +168,7 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
     assert dependencies == {
         FamilyId.HOLES: (FamilyId.COUNTERSINKS,),
         FamilyId.PLATES: (FamilyId.TURNED_STEPS,),
+        FamilyId.RISERS: (FamilyId.STEP_LEVELS,),
     }
     sources = {item.identifier: item.sources for item in DERIVED_DEFINITIONS}
     assert sources == {
