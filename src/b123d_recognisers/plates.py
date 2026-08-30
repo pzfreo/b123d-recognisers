@@ -62,6 +62,12 @@ from b123d_recognisers._typing import Part
 #: Also the slab-thickness minimum, which is why it cannot follow the part.
 _TOL = 0.5
 
+# Imported coplanar faces can return normals that differ only in the final floating-point bits.
+# Treating those as distinct directions repeats the same whole-shape rotation without adding a
+# geometric candidate. Nine decimal places in degrees is about 1.7e-11 radians: far below the
+# package's directional predicates, but above the observed kernel representation noise.
+_ORIENTED_ANGLE_DIGITS = 9
+
 
 @dataclass(frozen=True)
 class Plate(Record):
@@ -118,6 +124,8 @@ def _oriented_cross_area(
 
     other = [index for index in range(3) if index != axis_index]
     angles: set[float] = set()
+    vertices = tuple(tuple(vertex) for vertex in part.vertices())
+    support_eps = max(max(extents), 1.0) * 1e-9
     for face in faces:
         try:
             normal = tuple(face.normal_at())
@@ -128,7 +136,23 @@ def _oriented_cross_area(
         projected = math.hypot(normal[other[0]], normal[other[1]])
         if projected < AXIS_ALIGNED_COS:
             continue
-        angles.add(math.degrees(math.atan2(normal[other[1]], normal[other[0]])) % 90.0)
+        location = BRepAdaptor_Surface(face.wrapped).Plane().Location()
+        plane = (location.X(), location.Y(), location.Z())
+        plane_projection = sum(
+            value * direction for value, direction in zip(plane, normal, strict=True)
+        )
+        if vertices and max(
+            sum(
+                value * direction
+                for value, direction in zip(vertex, normal, strict=True)
+            )
+            for vertex in vertices
+        ) > plane_projection + support_eps:
+            # A concave/internal planar wall does not establish a body-envelope direction.
+            continue
+        angle = math.degrees(math.atan2(normal[other[1]], normal[other[0]])) % 90.0
+        # Apply modulo again so a value numerically just below 90 canonicalises with 0.
+        angles.add(round(angle, _ORIENTED_ANGLE_DIGITS) % 90.0)
 
     if not angles:
         return extents[other[0]] * extents[other[1]]
@@ -193,9 +217,6 @@ def _plate_proposals(
 
     out: list[_PlateProposal] = []
     for axis, i in axidx.items():
-        cross = _oriented_cross_area(part, faces, i, extents)
-        if cross <= 0:
-            continue
         sides: tuple[list[tuple[float, float, float, float, Face]], ...] = ([], [])
         oi = [j for j in (0, 1, 2) if j != i]
         for face in faces:
@@ -237,8 +258,19 @@ def _plate_proposals(
             grouped.append(groups)
         negative, positive = grouped
 
-        threshold = min_area_frac * cross
         maximum_thickness = max_thick_frac * ext[axis]
+        # The area authority cannot make an axis eligible unless it already contains at least one
+        # correctly ordered, geometrically thin opposed span. Avoid constructing oriented
+        # envelopes for axes that are incapable of publishing a Plate under any area threshold.
+        if not any(
+            tol < high - low < maximum_thickness for low in negative for high in positive
+        ):
+            continue
+
+        cross = _oriented_cross_area(part, faces, i, extents)
+        if cross <= 0:
+            continue
+        threshold = min_area_frac * cross
         events = [
             (coordinate, -1, group)
             for coordinate, group in negative.items()
