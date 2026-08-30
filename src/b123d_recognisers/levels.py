@@ -21,6 +21,8 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
     AXIS_ALIGNED_COS,
     AXIS_ZERO_COS,
@@ -45,6 +47,12 @@ class FaceLevel(Record):
     z: float
     x_span: tuple[float, float] | None = None
     y_span: tuple[float, float] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _FaceLevelProposal:
+    record: FaceLevel
+    faces: tuple[object, ...]
 
 
 @dataclass(frozen=True, order=True)
@@ -118,8 +126,24 @@ def recognise_face_levels(
     dimensioned as phantom shoulders.
     """
     tol = _TOL if tol is None else tol
+    scopes = list(part.solids()) or [part]
+    return sorted(
+        proposal.record
+        for scope in scopes
+        for proposal in _face_level_proposals_one(
+            scope, tol=tol, min_area_frac=min_area_frac
+        )
+    )
+
+
+def _face_level_proposals_one(
+    part: Part, *, tol: float, min_area_frac: float
+) -> list[_FaceLevelProposal]:
+    """Recognise levels within one valid body so support never bridges another solid."""
+
     zs: list[float] = []
     face_bounds: list[tuple[float, float, float, float]] = []
+    faces: list[object] = []
     face_areas: list[float] = []
     for face in part.faces():
         surf = BRepAdaptor_Surface(face.wrapped)
@@ -127,6 +151,7 @@ def recognise_face_levels(
             ax = surf.Plane().Axis().Direction()
             if abs(ax.Z()) > AXIS_ALIGNED_COS:
                 zs.append(surf.Plane().Location().Z())
+                faces.append(face)
                 bb = face.bounding_box()
                 face_bounds.append((bb.min.X, bb.min.Y, bb.max.X, bb.max.Y))
                 if min_area_frac > 0.0:
@@ -139,7 +164,7 @@ def recognise_face_levels(
         bb = part.bounding_box()
         threshold = min_area_frac * (bb.max.X - bb.min.X) * (bb.max.Y - bb.min.Y)
 
-    levels = []
+    levels: list[_FaceLevelProposal] = []
     for cluster in cluster_coordinates(zs, tol=tol):
         if min_area_frac > 0.0 and not clears_threshold(
             sum(face_areas[i] for i in cluster), threshold
@@ -147,13 +172,16 @@ def recognise_face_levels(
             continue
         spans = [face_bounds[i] for i in cluster]
         levels.append(
-            FaceLevel(
-                min(zs[i] for i in cluster),
-                (min(s[0] for s in spans), max(s[2] for s in spans)),
-                (min(s[1] for s in spans), max(s[3] for s in spans)),
+            _FaceLevelProposal(
+                FaceLevel(
+                    min(zs[i] for i in cluster),
+                    (min(s[0] for s in spans), max(s[2] for s in spans)),
+                    (min(s[1] for s in spans), max(s[3] for s in spans)),
+                ),
+                tuple(faces[i] for i in cluster),
             )
         )
-    return sorted(levels)
+    return levels
 
 
 #: Band within which two horizontal faces are one level. **Absolute, per ADR 0008.** Scaling it
@@ -194,13 +222,47 @@ def bounded_end_margin(span: float) -> float:
 
 def step_level_records(part: Part, *, tol: float | None = None) -> list[FaceLevel]:
     """Area-filtered interior face-level records, retaining their support bounds."""
-    bb = part.bounding_box()
-    tol = bounded_end_margin(bb.max.Z - bb.min.Z) if tol is None else tol
-    return [
-        fl
-        for fl in recognise_face_levels(part, min_area_frac=_STEP_MIN_AREA_FRAC)
-        if bb.min.Z + tol < fl.z < bb.max.Z - tol
-    ]
+    records: list[FaceLevel] = []
+    for scope in list(part.solids()) or [part]:
+        bb = scope.bounding_box()
+        scope_tol = bounded_end_margin(bb.max.Z - bb.min.Z) if tol is None else tol
+        records.extend(
+            proposal.record
+            for proposal in _face_level_proposals_one(
+                scope, tol=_TOL, min_area_frac=_STEP_MIN_AREA_FRAC
+            )
+            if bb.min.Z + scope_tol < proposal.record.z < bb.max.Z - scope_tol
+        )
+    return sorted(records)
+
+
+def _discover_step_levels(part: Part, *, writer: EvidenceWriter) -> list[FaceLevel]:
+    """Return aggregate levels and publish their exact body-local horizontal faces."""
+
+    accepted: list[_FaceLevelProposal] = []
+    for scope in list(part.solids()) or [part]:
+        bb = scope.bounding_box()
+        scope_tol = bounded_end_margin(bb.max.Z - bb.min.Z)
+        accepted.extend(
+            proposal
+            for proposal in _face_level_proposals_one(
+                scope, tol=_TOL, min_area_frac=_STEP_MIN_AREA_FRAC
+            )
+            if bb.min.Z + scope_tol < proposal.record.z < bb.max.Z - scope_tol
+        )
+    accepted.sort(key=lambda proposal: proposal.record)
+    pending = tuple(
+        (
+            proposal.record,
+            tuple(writer.graph.require_node(face) for face in proposal.faces),
+        )
+        for proposal in accepted
+    )
+    if any(writer.graph.common_valid_solid(nodes) is None for _record, nodes in pending):
+        raise ValueError("FaceLevel defining faces have no unambiguous valid solid")
+    for record, nodes in pending:
+        writer.sink.propose(FamilyId.STEP_LEVELS, record, defining=nodes)
+    return [proposal.record for proposal in accepted]
 
 
 def step_level_zs(part: Part, *, tol: float | None = None) -> list[float]:

@@ -379,7 +379,7 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.TORUS_DEFERRED,
         "torus family applicability gate",
     ),
-    "levels:recognise_face_levels:adaptor:1": (
+    "levels:_face_level_proposals_one:adaptor:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar face-level gate",
     ),
