@@ -31,14 +31,14 @@
         "pads": [
           {
             "_type": "RaisedPad",
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,
             "y1": 9.0,
             "z0": 12.0,
-            "z1": 28.0,
-            "axis": "z",
-            "direction": 1
+            "z1": 28.0
           }
         ],
         "paired_ramp_steps": [],
@@ -240,14 +240,14 @@
         "pads": [
           {
             "_type": "RaisedPad",
+            "axis": "z",
+            "direction": 1,
             "x0": 18.0,
             "x1": 42.0,
             "y0": -9.0,
             "y1": 9.0,
             "z0": 12.0,
-            "z1": 28.0,
-            "axis": "z",
-            "direction": 1
+            "z1": 28.0
           }
         ],
         "paired_ramp_steps": [],
@@ -562,14 +562,14 @@
       "recognise_rectangular_pads": [
         {
           "_type": "RaisedPad",
+          "axis": "z",
+          "direction": 1,
           "x0": 18.0,
           "x1": 42.0,
           "y0": -9.0,
           "y1": 9.0,
           "z0": 12.0,
-          "z1": 28.0,
-          "axis": "z",
-          "direction": 1
+          "z1": 28.0
         }
       ],
       "recognise_repeating_radial_profiles": [],
