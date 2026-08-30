@@ -15,7 +15,12 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers import recognise_plates
+from b123d_recognisers import (
+    FramedRecognitionResult,
+    build_framed_recognition_result,
+    build_recognition_result,
+    recognise_plates,
+)
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -69,6 +74,29 @@ def _clusters(values: list[float], tolerance: float) -> list[list[int]]:
 
 
 def _fresh_expected(part, graph: FaceGraph, *, min_area=0.4, max_thick=0.5, tol=0.5):
+    solids = list(part.solids())
+    if len(solids) > 1:
+        expected = [
+            item
+            for solid in solids
+            for item in _fresh_expected(
+                solid,
+                graph,
+                min_area=min_area,
+                max_thick=max_thick,
+                tol=tol,
+            )
+        ]
+        return sorted(
+            expected,
+            key=lambda item: (
+                item.record.axis,
+                item.record.lo,
+                item.record.hi,
+                item.record.u,
+                item.record.v,
+            ),
+        )
     bb = part.bounding_box()
     ext = (bb.max.X - bb.min.X, bb.max.Y - bb.min.Y, bb.max.Z - bb.min.Z)
     facts = []
@@ -221,7 +249,7 @@ def test_u_structure_retains_two_unequal_location_occurrences() -> None:
 def test_separated_valid_bodies_retain_distinct_occurrence_identity() -> None:
     part = Compound([build_fixture(), Pos(200, 200, 200) * build_fixture()])
     records, candidates, ledger = _claimed(part, min_area_frac=0.01)
-    assert len(records) == len(candidates) == 6
+    assert len(records) == len(candidates) == 8
     solids = [
         ledger.graph.common_valid_solid(ledger.defining_of(candidate))
         for candidate in candidates
@@ -230,6 +258,63 @@ def test_separated_valid_bodies_retain_distinct_occurrence_identity() -> None:
     for left, right in zip(candidates, candidates[1:], strict=False):
         assert left.record is not right.record
         assert ledger.defining_of(left).isdisjoint(ledger.defining_of(right))
+
+
+def test_two_body_t_brackets_preserve_four_local_plate_occurrences() -> None:
+    def bracket():
+        base = Pos(0, 0, 5) * Box(80, 60, 10)
+        wall = Pos(0, 0, 35) * Box(80, 10, 50)
+        return base + wall
+
+    left = Pos(-70, 0, 0) * bracket()
+    right = Pos(70, 0, 0) * bracket()
+    part = Compound(children=[left, right])
+
+    public = recognise_plates(part)
+    aggregate = list(build_recognition_result(part, rotational=False).plates)
+    assert aggregate == public
+    assert [(plate.axis, plate.u) for plate in aggregate] == [
+        ("y", -70.0),
+        ("y", 70.0),
+        ("z", -70.0),
+        ("z", 70.0),
+    ]
+
+
+def test_two_body_plates_survive_nested_compounds_and_arbitrary_framed_motion() -> None:
+    def bracket():
+        return (Pos(0, 0, 5) * Box(80, 60, 10)) + (Pos(0, 0, 35) * Box(80, 10, 50))
+
+    nested = Compound(
+        children=[
+            Compound(children=[Pos(-70, 0, 0) * bracket()]),
+            Compound(children=[Pos(70, 0, 0) * bracket()]),
+        ]
+    )
+    moved = Pos(17, -23, 9) * Rot(31, 47, 13) * nested
+
+    framed = build_framed_recognition_result(moved, rotational=False)
+
+    assert isinstance(framed, FramedRecognitionResult)
+    assert len(framed.result.plates) == 4
+    assert list(framed.result.plates) == recognise_plates(framed.part)
+    product = _take_inventory(framed.part)
+    candidates = product.physical.candidate_set(FamilyId.PLATES).candidates
+    assert len(candidates) == 4
+    owners = [
+        product.context.graph.common_valid_solid(product.evidence.defining_of(candidate))
+        for candidate in candidates
+    ]
+    assert len(set(owners)) == 2 and None not in owners
+
+
+def test_compound_plate_order_is_geometry_deterministic() -> None:
+    left = Pos(-100, 0, 0) * build_fixture()
+    right = Pos(100, 0, 0) * build_fixture()
+    forward = recognise_plates(Compound(children=[left, right]))
+    reverse = recognise_plates(Compound(children=[right, left]))
+
+    assert [record.to_dict() for record in forward] == [record.to_dict() for record in reverse]
 
 
 def test_coincident_planes_from_other_solids_do_not_contaminate_plate_roles() -> None:
@@ -244,11 +329,9 @@ def test_coincident_planes_from_other_solids_do_not_contaminate_plate_roles() ->
     records = _discover_plates(part, writer=ledger.writer)
     candidates = ledger.candidate_set(FamilyId.PLATES).candidates
 
-    assert [(record.axis, record.lo, record.hi) for record in records] == [
-        ("y", -30.0, -20.0),
-        ("y", 20.0, 30.0),
-        ("z", -5.0, 5.0),
-    ]
+    # Each disconnected member is one flat envelope plate, deliberately excluded. Whole-part
+    # grouping used to combine their planes into three fictitious multi-slab occurrences.
+    assert records == []
     assert records == public
     assert len(candidates) == len(records)
     assert all(
@@ -258,13 +341,12 @@ def test_coincident_planes_from_other_solids_do_not_contaminate_plate_roles() ->
 
 
 @pytest.mark.parametrize("offset", [(0, 0, 0), (0.2, 0.2, 0.2)])
-def test_coincident_and_near_interleaved_bodies_refuse(offset) -> None:
+def test_coincident_and_near_interleaved_bodies_retain_multiplicity(offset) -> None:
     part = Compound([build_fixture(), Pos(*offset) * copy.deepcopy(build_fixture())])
-    ledger = ClaimLedger(FaceGraph(part))
-    assert recognise_plates(part)
-    with pytest.raises(_PlateAttributionError):
-        _discover_plates(part, writer=ledger.writer)
-    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
+    records, candidates, ledger = _claimed(part)
+    assert len(records) == len(candidates) == 4
+    owners = [ledger.graph.common_valid_solid(ledger.defining_of(item)) for item in candidates]
+    assert len(set(owners)) == 2 and None not in owners
 
 
 def test_fragmented_groups_keep_every_original_patch() -> None:
@@ -401,15 +483,15 @@ def test_record_projection_order_and_weighted_centroid_are_not_evidence_rematche
     assert z_plate.u != round(z_plate.u, 3)
 
 
-def test_compound_mixed_provenance_refuses_without_prefix() -> None:
+def test_compound_mixed_provenance_is_bound_per_solid() -> None:
     part = Compound([build_fixture(), copy.deepcopy(build_fixture())])
-    assert recognise_plates(part)
-    ledger = ClaimLedger(FaceGraph(part))
-    with pytest.raises(_PlateAttributionError):
-        _discover_plates(part, writer=ledger.writer)
-    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
-    with pytest.raises(_PlateAttributionError):
-        _take_inventory(part)
+    records, candidates, ledger = _claimed(part)
+    product = _take_inventory(part)
+    assert len(records) == len(candidates) == len(product.result.plates) == 4
+    assert all(
+        ledger.graph.common_valid_solid(ledger.defining_of(candidate)) is not None
+        for candidate in candidates
+    )
 
 
 @pytest.mark.parametrize(
@@ -516,15 +598,15 @@ def test_late_second_body_failure_leaves_no_candidate_prefix(monkeypatch) -> Non
     assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
 
 
-def test_attribution_error_precedes_family_completion_and_occurrence_capability() -> None:
+def test_equal_body_occurrences_complete_with_distinct_capabilities() -> None:
     part = Compound([build_fixture(), copy.deepcopy(build_fixture())])
     context = start(part)
     ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
-    with pytest.raises(_PlateAttributionError):
-        _discover_all(context, ledger)
-    assert ledger.candidate_set(FamilyId.PLATES).candidates == ()
-    assert FamilyId.PLATES not in ledger._issuer._completed
-    assert FamilyId.PLATES not in ledger._issuer._completed_occurrences
+    _discover_all(context, ledger)
+    candidates = ledger.candidate_set(FamilyId.PLATES).candidates
+    assert len(candidates) == 4
+    assert FamilyId.PLATES in ledger._issuer._completed
+    assert len(ledger._issuer._completed_occurrences[FamilyId.PLATES]) == 4
 
 
 def test_terminal_plate_identity_and_evidence() -> None:
@@ -627,14 +709,25 @@ def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
         for node in plate_tree.body
         if isinstance(node, ast.FunctionDef) and node.name == "_discover_plates"
     )
+    proposal_builder = next(
+        node
+        for node in plate_tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_plate_proposals"
+    )
     face_scans = [
         call
-        for call in ast.walk(discover)
+        for call in ast.walk(proposal_builder)
         if isinstance(call, ast.Call)
         and isinstance(call.func, ast.Attribute)
         and call.func.attr == "faces"
     ]
     assert len(face_scans) == 1
+    assert sum(
+        isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == "_plate_proposals"
+        for call in ast.walk(discover)
+    ) == 1
 
 
 def test_registry_uses_restricted_turned_records_once_and_never_occurrences() -> None:

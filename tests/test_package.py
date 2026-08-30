@@ -194,7 +194,7 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import b123d_recognisers as r; "
                 "import b123d_recognisers.experimental_geometry as e; "
                 "import b123d_recognisers.inspection as i; "
-                "from build123d import Box, Pos, RegularPolygon, Rot, extrude; "
+                "from build123d import Box, Compound, Pos, RegularPolygon, Rot, extrude; "
                 "import hashlib; "
                 "assert r.__version__; assert r.recognise_holes; "
                 "assert r.PreparedFramedPart; assert r.prepare_framed_part; "
@@ -226,7 +226,14 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "Box(30, 20, 4)); "
                 "raised = r.recognise_rectangular_pads(pad); "
                 "assert len(raised) == 1 and raised[0].axis == 'x' and "
-                "raised[0].direction == -1"
+                "raised[0].direction == -1; "
+                "bracket = Pos(0, 0, 5) * Box(80, 60, 10) + "
+                "Pos(0, 0, 35) * Box(80, 10, 50); "
+                "assembly = Compound(children=[Pos(-70, 0, 0) * bracket, "
+                "Pos(70, 0, 0) * bracket]); "
+                "plates = r.build_recognition_result(assembly, rotational=False).plates; "
+                "assert len(plates) == 4 and sorted(p.u for p in plates) == "
+                "[-70.0, -70.0, 70.0, 70.0]"
             ),
         ],
         cwd=tmp_path,

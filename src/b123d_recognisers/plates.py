@@ -113,9 +113,10 @@ def recognise_plates(
 ) -> list[Plate]:
     """Recognise the plate/wall thicknesses of a prismatic *part* (see module docstring).
 
-    Returns one :class:`Plate` per recognised slab, deduplicated by (axis, lo, hi).
-    Deterministic: sorted by (axis, lo, hi). Empty for a single flat plate (its
-    thickness is the envelope) or a part with no thin slabs.
+    Returns one :class:`Plate` per recognised body-local slab, deduplicated by
+    (axis, lo, hi) only within one solid. Equal-valued slabs on separate solids retain
+    their physical multiplicity. Deterministic: sorted by geometry. Empty for a single
+    flat plate (its thickness is the envelope) or a part with no thin slabs.
     """
     return _discover_plates(
         part,
@@ -125,57 +126,55 @@ def recognise_plates(
     )
 
 
-def _discover_plates(
+def _plate_proposals(
     part: Part,
     *,
-    min_area_frac: float = 0.4,
-    max_thick_frac: float = 0.5,
-    tol: float | None = None,
-    writer: EvidenceWriter | None = None,
-) -> list[Plate]:
-    """Discover Plates and optionally issue complete low/high planar groups atomically."""
+    min_area_frac: float,
+    max_thick_frac: float,
+    tol: float,
+) -> list[_PlateProposal]:
+    """Discover one body's Plate proposals without publishing evidence."""
 
     bb = part.bounding_box()
-    tol = _TOL if tol is None else tol
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     axidx = {"x": 0, "y": 1, "z": 2}
-
-    # Collect, per axis, the large planar faces perpendicular to it — bucketed by
-    # coord and split by OUTWARD-normal sign. `.normal_at()` respects face
-    # orientation (the raw OCC plane axis is always +, useless for inside/outside).
     faces = [f for f in part.faces() if BRepAdaptor_Surface(f.wrapped).GetType() == GeomAbs_Plane]
 
     out: list[_PlateProposal] = []
     for axis, i in axidx.items():
         cross = 1.0
-        for o in axidx:
-            if o != axis:
-                cross *= ext[o]
+        for other_axis in axidx:
+            if other_axis != axis:
+                cross *= ext[other_axis]
         if cross <= 0:
             continue
-        # Coplanar faces are gathered per outward-normal sign, then grouped by how far apart
-        # their planes are rather than by which tol-wide grid cell they round into. The group's
-        # coordinate is its lowest member's *actual* plane location: rounding to the grid put a
-        # multiple of tol into Plate.lo/hi, so a slab's reported thickness was quantised to half
-        # a millimetre by default.
         sides: tuple[list[tuple[float, float, float, float, Face]], ...] = ([], [])
-        oi = [j for j in (0, 1, 2) if j != i]  # the two in-plane axis indices
-        for f in faces:
-            s = BRepAdaptor_Surface(f.wrapped)
+        oi = [j for j in (0, 1, 2) if j != i]
+        for face in faces:
+            surface = BRepAdaptor_Surface(face.wrapped)
             try:
-                nv = f.normal_at()
+                normal = face.normal_at()
             except Exception:  # noqa: BLE001 — a degenerate face has no clean normal
                 continue
-            comp = (nv.X, nv.Y, nv.Z)[i]
-            if abs(comp) < AXIS_ALIGNED_COS:
+            component = (normal.X, normal.Y, normal.Z)[i]
+            if abs(component) < AXIS_ALIGNED_COS:
                 continue
-            props = GProp_GProps()
-            BRepGProp.SurfaceProperties_s(f.wrapped, props)
-            area = props.Mass()
-            c = props.CentreOfMass()
-            cp = (c.X(), c.Y(), c.Z())
-            loc = (s.Plane().Location().X(), s.Plane().Location().Y(), s.Plane().Location().Z())[i]
-            sides[comp > 0].append((loc, area, cp[oi[0]] * area, cp[oi[1]] * area, f))
+            properties = GProp_GProps()
+            BRepGProp.SurfaceProperties_s(face.wrapped, properties)
+            area = properties.Mass()
+            centre = properties.CentreOfMass()
+            centre_point = (centre.X(), centre.Y(), centre.Z())
+            plane_location = surface.Plane().Location()
+            location = (plane_location.X(), plane_location.Y(), plane_location.Z())[i]
+            sides[component > 0].append(
+                (
+                    location,
+                    area,
+                    centre_point[oi[0]] * area,
+                    centre_point[oi[1]] * area,
+                    face,
+                )
+            )
 
         grouped: list[dict[float, _PlateGroup]] = []
         for side in sides:
@@ -188,54 +187,111 @@ def _discover_plates(
                     tuple(side[index][4] for index in cluster),
                 )
             grouped.append(groups)
-        neg, pos = grouped
+        negative, positive = grouped
 
-        thresh = min_area_frac * cross
-        max_t = max_thick_frac * ext[axis]
-        # A slab is a −a face IMMEDIATELY below a +a face with nothing between — solid
-        # fills the gap. Sort all large faces along the axis and pair only *adjacent*
-        # (−a, +a) neighbours: a −a low / +a high pairing that skips an intervening face
-        # crosses an air gap (two stacked plates on a common post) and must not be read
-        # as one plate. Same-coord ties order −a first so a degenerate pair is t≈0.
+        threshold = min_area_frac * cross
+        maximum_thickness = max_thick_frac * ext[axis]
         events = [
-            (c, -1, group) for c, group in neg.items() if clears_threshold(group.area, thresh)
+            (coordinate, -1, group)
+            for coordinate, group in negative.items()
+            if clears_threshold(group.area, threshold)
         ]
         events += [
-            (c, 1, group) for c, group in pos.items() if clears_threshold(group.area, thresh)
+            (coordinate, 1, group)
+            for coordinate, group in positive.items()
+            if clears_threshold(group.area, threshold)
         ]
-        events.sort(key=lambda e: (e[0], e[1]))
-        for (c0, s0, group0), (c1, s1, group1) in zip(events, events[1:], strict=False):
-            if s0 != -1 or s1 != 1:
+        events.sort(key=lambda event: (event[0], event[1]))
+        for (low, low_sign, low_group), (high, high_sign, high_group) in zip(
+            events, events[1:], strict=False
+        ):
+            if low_sign != -1 or high_sign != 1:
                 continue
-            t = c1 - c0
-            if t <= tol or t >= max_t:
+            thickness = high - low
+            if thickness <= tol or thickness >= maximum_thickness:
                 continue
-            # Slab centre on the two in-plane axes — area-weighted over both faces.
-            aw = group0.area + group1.area
-            u = (group0.u_sum + group1.u_sum) / aw
-            v = (group0.v_sum + group1.v_sum) / aw
+            combined_area = low_group.area + high_group.area
             out.append(
                 _PlateProposal(
-                    Plate(axis=axis, lo=round(c0, 3), hi=round(c1, 3), u=u, v=v),
-                    group0.faces,
-                    group1.faces,
+                    Plate(
+                        axis=axis,
+                        lo=round(low, 3),
+                        hi=round(high, 3),
+                        u=(low_group.u_sum + high_group.u_sum) / combined_area,
+                        v=(low_group.v_sum + high_group.v_sum) / combined_area,
+                    ),
+                    low_group.faces,
+                    high_group.faces,
                 )
             )
+    return sorted(
+        out,
+        key=lambda proposal: (
+            proposal.record.axis,
+            proposal.record.lo,
+            proposal.record.hi,
+        ),
+    )
 
-    ordered = sorted(out, key=lambda p: (p.record.axis, p.record.lo, p.record.hi))
+
+def _plate_scopes(part: Part) -> list[Part]:
+    """Return independent solid scopes, retaining record-only open-shell compatibility."""
+
+    solids = list(part.solids())
+    return solids if solids else [part]
+
+
+def _discover_plates(
+    part: Part,
+    *,
+    min_area_frac: float = 0.4,
+    max_thick_frac: float = 0.5,
+    tol: float | None = None,
+    writer: EvidenceWriter | None = None,
+) -> list[Plate]:
+    """Discover Plates and optionally issue complete low/high planar groups atomically."""
+
+    tol = _TOL if tol is None else tol
+    proposal_groups = [
+        _plate_proposals(
+            scope,
+            min_area_frac=min_area_frac,
+            max_thick_frac=max_thick_frac,
+            tol=tol,
+        )
+        for scope in _plate_scopes(part)
+    ]
+    ordered = sorted(
+        (proposal for proposals in proposal_groups for proposal in proposals),
+        key=lambda proposal: (
+            proposal.record.axis,
+            proposal.record.lo,
+            proposal.record.hi,
+            proposal.record.u,
+            proposal.record.v,
+        ),
+    )
     if writer is None:
-        # Public geometry-only compatibility remains value-deduplicated.  Attribution cannot
-        # make that choice until the graph has resolved wrappers to original topology identity.
-        seen: set[tuple[str, float, float]] = set()
         uniq = []
-        for proposal in ordered:
-            key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
-            if key not in seen:
-                seen.add(key)
-                uniq.append(proposal)
+        for proposals in proposal_groups:
+            seen: set[tuple[str, float, float]] = set()
+            for proposal in proposals:
+                key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
+                if key not in seen:
+                    seen.add(key)
+                    uniq.append(proposal)
+        uniq.sort(
+            key=lambda proposal: (
+                proposal.record.axis,
+                proposal.record.lo,
+                proposal.record.hi,
+                proposal.record.u,
+                proposal.record.v,
+            )
+        )
     else:
         bound: dict[
-            tuple[str, float, float],
+            tuple[str, float, float, SolidRef],
             dict[tuple[frozenset[FaceNode], frozenset[FaceNode]], _PlateProposal],
         ] = {}
         used: set[FaceNode] = set()
@@ -263,8 +319,8 @@ def _discover_plates(
                 solid = next(iter(shared_solids))
                 low = frozenset(low_by_solid[solid])
                 high = frozenset(high_by_solid[solid])
-                key = (proposal.record.axis, proposal.record.lo, proposal.record.hi)
-                bound.setdefault(key, {}).setdefault((low, high), proposal)
+                bound_key = (proposal.record.axis, proposal.record.lo, proposal.record.hi, solid)
+                bound.setdefault(bound_key, {}).setdefault((low, high), proposal)
             if any(len(role_pairs) > 1 for role_pairs in bound.values()):
                 raise _PlateAttributionError("Plate key has competing defining groups")
 

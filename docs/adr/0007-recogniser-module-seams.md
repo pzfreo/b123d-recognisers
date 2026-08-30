@@ -337,6 +337,9 @@ For Plate attribution, `plates._discover_plates` is the sole private writer-enab
 TURNED_STEPS records once for the unchanged global veto, then passes only `writer=services.writer`.
 The core carries exact original low/high face clusters and reads no Candidate set, evidence index,
 inventory, disposition, reconciliation output, sibling recogniser or predecessor occurrence.
+Issue #334 keeps per-solid proposal generation inside that same core. It does not add a registry
+loop or a second family invocation: one aggregate call enumerates solid scopes, stages the complete
+proposal roster, validates every role through the shared graph and only then publishes atomically.
 
 Issue #234 keeps recess provenance inside the existing lower stack. `_recess_faces` issues raw
 planar/cylindrical topology facts, `_recess_obround` groups exact cap patches, `_recess_reduce`

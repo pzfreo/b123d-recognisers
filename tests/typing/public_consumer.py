@@ -11,6 +11,7 @@ from b123d_recognisers import (
     FramedRecognitionResult,
     HoleRecord,
     PairedRampStep,
+    Plate,
     PreparedFramedPart,
     RaisedPad,
     RecognitionReport,
@@ -24,6 +25,7 @@ from b123d_recognisers import (
     recognise_bosses,
     recognise_holes,
     recognise_paired_ramp_steps,
+    recognise_plates,
 )
 from b123d_recognisers.inspection import (
     BevelReject,
@@ -46,18 +48,21 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     holes = recognise_holes(part)
     bosses = recognise_bosses(part)
     paired_ramp_steps = recognise_paired_ramp_steps(part)
+    plates = recognise_plates(part)
     result = build_recognition_result(part)
     report = build_recognition_report(part)
 
     assert_type(holes, list[HoleRecord])
     assert_type(bosses, list[BossRecord])
     assert_type(paired_ramp_steps, list[PairedRampStep])
+    assert_type(plates, list[Plate])
     assert_type(result, RecognitionResult)
     assert_type(report, RecognitionReport)
     assert_type(report.result, RecognitionResult)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
     assert_type(result.paired_ramp_steps, tuple[PairedRampStep, ...])
+    assert_type(result.plates, tuple[Plate, ...])
     assert_type(result.pads, tuple[RaisedPad, ...])
     for pad in result.pads:
         assert_type(pad.axis, str)
