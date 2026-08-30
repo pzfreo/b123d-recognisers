@@ -1,0 +1,529 @@
+{
+  "axis_alignment_tolerance": 0.001,
+  "counts": {
+    "absent:pocket:internally_oblique_defining_evidence": 3,
+    "absent:pocket:principal_only_in_accepting_presentation": 1,
+    "absent:slot:contained_projection_of_blind_pocket": 3
+  },
+  "dataset": "MFCAD++ published test split (development evidence)",
+  "implementation_commit": "c7138ce10210ea84d6a3233cc906a627a0fccfee",
+  "matching": "one-to-one defining-face containment after topology-preserving normalization",
+  "refused": [],
+  "region_containment_tolerance": 0.001,
+  "schema": 1,
+  "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+  "selection": "first 500 STEP filenames, lexical ascending",
+  "transitions": [
+    {
+      "defining_face_indices": [
+        28,
+        30
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "10098.step",
+      "framed_principal_axes": [
+        "z",
+        "z"
+      ],
+      "raw_principal_axes": [
+        "x",
+        "x"
+      ],
+      "reason": "contained_projection_of_blind_pocket",
+      "related_blind_pocket_bounds": {
+        "x": [
+          11.27,
+          12.27
+        ],
+        "y": [
+          16.35,
+          41.29
+        ],
+        "z": [
+          1.03,
+          3.03
+        ]
+      },
+      "related_blind_pocket_record": {
+        "body_key": [
+          -5.364597654988756e-13,
+          -3.552713678801e-15,
+          0.0,
+          35.47459818605829,
+          41.29319847658101,
+          25.089405441884,
+          19407.642373734674,
+          6841.753880786906
+        ],
+        "d_hi": 41.29,
+        "d_lo": 16.35,
+        "depth": 24.94,
+        "edge_anchored": false,
+        "hi": 3.03,
+        "length": 2.0,
+        "lo": 1.03,
+        "long_axis": "z",
+        "open_sign": 1,
+        "w_center": 11.77,
+        "width": 1.0,
+        "width_axis": "x"
+      },
+      "source_bounds": {
+        "x": [
+          11.27,
+          12.27
+        ],
+        "y": [
+          16.35,
+          41.29
+        ],
+        "z": [
+          1.53,
+          2.53
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          -5.364597654988756e-13,
+          -3.552713678801e-15,
+          0.0,
+          35.47459818605829,
+          41.29319847658101,
+          25.089405441884,
+          19407.642373734674,
+          6841.753880786906
+        ],
+        "d_hi": 2.53,
+        "d_lo": 1.53,
+        "hi": 41.29,
+        "length": 24.94,
+        "lo": 16.35,
+        "long_axis": "y",
+        "w_center": 11.77,
+        "width": 1.0,
+        "width_axis": "x"
+      }
+    },
+    {
+      "defining_face_indices": [
+        24,
+        26
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10103.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        null
+      ],
+      "reason": "internally_oblique_defining_evidence",
+      "related_blind_pocket_bounds": null,
+      "related_blind_pocket_record": null,
+      "source_bounds": {
+        "x": [
+          9.98,
+          14.68
+        ],
+        "y": [
+          11.8,
+          21.25
+        ],
+        "z": [
+          7.93,
+          10.22
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          0.0,
+          0.0,
+          -8.881784197001e-16,
+          31.37994453287,
+          22.832076374209,
+          10.21829601946,
+          5747.332556569825,
+          2993.44074456712
+        ],
+        "d_hi": 10.22,
+        "d_lo": 7.93,
+        "depth": 2.29,
+        "edge_anchored": false,
+        "hi": 21.25,
+        "length": 9.45,
+        "lo": 11.8,
+        "long_axis": "y",
+        "open_sign": 1,
+        "w_center": 12.33,
+        "width": 4.7,
+        "width_axis": "x"
+      }
+    },
+    {
+      "defining_face_indices": [
+        24,
+        26
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "10761.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        "x",
+        "x"
+      ],
+      "reason": "contained_projection_of_blind_pocket",
+      "related_blind_pocket_bounds": {
+        "x": [
+          7.02,
+          12.2
+        ],
+        "y": [
+          7.13,
+          15.71
+        ],
+        "z": [
+          27.56,
+          33.78
+        ]
+      },
+      "related_blind_pocket_record": {
+        "body_key": [
+          0.0,
+          -1.4210854715202004e-14,
+          -1.2045919817182948e-13,
+          16.291576177574,
+          27.830557747509,
+          33.776795662233,
+          9854.259827099891,
+          3935.974242008853
+        ],
+        "d_hi": 33.78,
+        "d_lo": 27.56,
+        "depth": 6.22,
+        "edge_anchored": false,
+        "hi": 15.71,
+        "length": 8.58,
+        "lo": 7.13,
+        "long_axis": "y",
+        "open_sign": 1,
+        "w_center": 9.61,
+        "width": 5.18,
+        "width_axis": "x"
+      },
+      "source_bounds": {
+        "x": [
+          7.0249999999999995,
+          12.195
+        ],
+        "y": [
+          9.72,
+          13.12
+        ],
+        "z": [
+          27.56,
+          33.78
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          0.0,
+          -1.4210854715202004e-14,
+          -1.2045919817182948e-13,
+          16.291576177574,
+          27.830557747509,
+          33.776795662233,
+          9854.259827099891,
+          3935.974242008853
+        ],
+        "d_hi": 13.12,
+        "d_lo": 9.72,
+        "hi": 33.78,
+        "length": 6.22,
+        "lo": 27.56,
+        "long_axis": "z",
+        "w_center": 9.61,
+        "width": 5.17,
+        "width_axis": "x"
+      }
+    },
+    {
+      "defining_face_indices": [
+        23,
+        25
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10761.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        null
+      ],
+      "reason": "internally_oblique_defining_evidence",
+      "related_blind_pocket_bounds": null,
+      "related_blind_pocket_record": null,
+      "source_bounds": {
+        "x": [
+          7.02,
+          12.2
+        ],
+        "y": [
+          7.13,
+          15.71
+        ],
+        "z": [
+          27.56,
+          33.78
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          0.0,
+          -1.4210854715202004e-14,
+          -1.2045919817182948e-13,
+          16.291576177574,
+          27.830557747509,
+          33.776795662233,
+          9854.259827099891,
+          3935.974242008853
+        ],
+        "d_hi": 33.78,
+        "d_lo": 27.56,
+        "depth": 6.22,
+        "edge_anchored": false,
+        "hi": 15.71,
+        "length": 8.58,
+        "lo": 7.13,
+        "long_axis": "y",
+        "open_sign": 1,
+        "w_center": 9.61,
+        "width": 5.18,
+        "width_axis": "x"
+      }
+    },
+    {
+      "defining_face_indices": [
+        20,
+        23
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "10805.step",
+      "framed_principal_axes": [
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        "y",
+        "y"
+      ],
+      "reason": "principal_only_in_accepting_presentation",
+      "related_blind_pocket_bounds": null,
+      "related_blind_pocket_record": null,
+      "source_bounds": {
+        "x": [
+          1.93,
+          2.23
+        ],
+        "y": [
+          2.68,
+          4.68
+        ],
+        "z": [
+          0.0,
+          12.65
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          0.0,
+          0.0,
+          0.0,
+          43.12346928979827,
+          47.261055353957,
+          42.548557974,
+          38734.187183716895,
+          12382.54520854344
+        ],
+        "d_hi": 2.23,
+        "d_lo": 1.93,
+        "depth": 0.3,
+        "edge_anchored": false,
+        "hi": 12.65,
+        "length": 12.65,
+        "lo": 0.0,
+        "long_axis": "z",
+        "open_sign": 1,
+        "w_center": 3.68,
+        "width": 2.0,
+        "width_axis": "y"
+      }
+    },
+    {
+      "defining_face_indices": [
+        26,
+        27,
+        28,
+        29
+      ],
+      "direction": "absent",
+      "family": "pocket",
+      "file": "11203.step",
+      "framed_principal_axes": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "raw_principal_axes": [
+        null,
+        "y",
+        null,
+        "y"
+      ],
+      "reason": "internally_oblique_defining_evidence",
+      "related_blind_pocket_bounds": null,
+      "related_blind_pocket_record": null,
+      "source_bounds": {
+        "x": [
+          19.9,
+          27.01
+        ],
+        "y": [
+          12.45,
+          15.23
+        ],
+        "z": [
+          37.76,
+          41.62
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          0.0,
+          0.0,
+          -1.1590728377086634e-12,
+          42.051123312079,
+          19.871403893493,
+          41.615043587298,
+          31969.351357049494,
+          7333.2078929060435
+        ],
+        "d_hi": 41.62,
+        "d_lo": 37.76,
+        "depth": 3.86,
+        "edge_anchored": false,
+        "hi": 27.01,
+        "length": 7.11,
+        "lo": 19.9,
+        "long_axis": "x",
+        "open_sign": 1,
+        "w_center": 13.84,
+        "width": 2.78,
+        "width_axis": "y"
+      }
+    },
+    {
+      "defining_face_indices": [
+        28,
+        30
+      ],
+      "direction": "absent",
+      "family": "slot",
+      "file": "12736.step",
+      "framed_principal_axes": [
+        "x",
+        "x"
+      ],
+      "raw_principal_axes": [
+        "y",
+        "y"
+      ],
+      "reason": "contained_projection_of_blind_pocket",
+      "related_blind_pocket_bounds": {
+        "x": [
+          6.89,
+          12.75
+        ],
+        "y": [
+          17.38,
+          18.38
+        ],
+        "z": [
+          1.11,
+          3.11
+        ]
+      },
+      "related_blind_pocket_record": {
+        "body_key": [
+          -4.600764214046649e-12,
+          0.0,
+          -1.071143174158351e-12,
+          21.386621656166,
+          20.998049141856,
+          36.48995144803,
+          13777.470638394097,
+          4341.209789754617
+        ],
+        "d_hi": 12.75,
+        "d_lo": 6.89,
+        "depth": 5.86,
+        "edge_anchored": false,
+        "hi": 3.11,
+        "length": 2.0,
+        "lo": 1.11,
+        "long_axis": "z",
+        "open_sign": 1,
+        "w_center": 17.88,
+        "width": 1.0,
+        "width_axis": "y"
+      },
+      "source_bounds": {
+        "x": [
+          6.89,
+          12.75
+        ],
+        "y": [
+          17.38,
+          18.38
+        ],
+        "z": [
+          1.61,
+          2.61
+        ]
+      },
+      "source_record": {
+        "body_key": [
+          -4.600764214046649e-12,
+          0.0,
+          -1.071143174158351e-12,
+          21.386621656166,
+          20.998049141856,
+          36.48995144803,
+          13777.470638394097,
+          4341.209789754617
+        ],
+        "d_hi": 2.61,
+        "d_lo": 1.61,
+        "hi": 12.75,
+        "length": 5.86,
+        "lo": 6.89,
+        "long_axis": "x",
+        "w_center": 17.88,
+        "width": 1.0,
+        "width_axis": "y"
+      }
+    }
+  ]
+}

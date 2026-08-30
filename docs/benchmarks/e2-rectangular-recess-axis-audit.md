@@ -12,12 +12,12 @@ the first rejected XYZ interpretation suppress a later valid one. Ambiguous geom
   [`10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823`](https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823).
 - Selection: first 500 STEP model IDs, lexical ascending; selected-ID SHA-256
   `323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`.
-- Final behavior commit: `c4c0fa1f9f537adafa9737536828c0130b32e1a4`; measurement-tool commit:
-  `4cfd8ae53b47610a88d7f16a1f05c7d0bfcdf35a`.
+- Final behavior commit: `c4c0fa1f9f537adafa9737536828c0130b32e1a4`; final transition-audit commit:
+  `c7138ce10210ea84d6a3233cc906a627a0fccfee`.
 - Final [frame report](e2-rectangular-recess-frame-corpus-500-4cfd8ae.json), SHA-256
   `26a3f3869242727fffe0c4d9e9fdd41ffe586b0f88f82276afc4d3676f2e6d1d`.
-- Defining-face [transition audit](e2-rectangular-recess-frame-transitions-500-4cfd8ae.json),
-  SHA-256 `6e1f6ccf18d43c39332f03930035d6e9ba57ed42db7aa16c86b85d2331b61269`.
+- Defining-face [transition audit](e2-rectangular-recess-frame-transitions-500-c7138ce.json),
+  SHA-256 `1b4f140677e908d1d7463d82a2e4735d3fe7166b0585ba47fba31ae5561b82b9`.
 - Taxonomy-v2 effectiveness: [raw](effectiveness-mfcadpp-500-e2-rectangular-raw-4cfd8ae.json)
   (`d5751c1643cebf06ca35e782550cddac372a4064d89368433cd836411a6a080d`) and
   [framed](effectiveness-mfcadpp-500-e2-rectangular-framed-4cfd8ae.json)
