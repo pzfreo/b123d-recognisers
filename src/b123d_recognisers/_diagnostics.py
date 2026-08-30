@@ -76,6 +76,10 @@ def diagnose_residuals(
             candidate
             for candidate in accepted
             if observation.subject in evidence.defining_of(candidate)
+            # FaceLevel and Riser candidates are neutral profile substrate, not accepted
+            # manufacturing-feature explanations. Their newly complete attribution must not
+            # erase an independently observed unsupported AngledStep terminal.
+            and candidate.family not in {FamilyId.STEP_LEVELS, FamilyId.RISERS}
         )
         if any(candidate.family is not FamilyId.CHAMFERS for candidate in owners):
             continue

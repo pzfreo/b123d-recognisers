@@ -22,7 +22,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers._adjacency import FaceNode, SolidRef
+from b123d_recognisers._adjacency import FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
@@ -519,7 +519,7 @@ def _discover_risers(
     part: Part,
     *,
     writer: EvidenceWriter,
-    body_levels: Mapping[SolidRef, Sequence[FaceLevel]],
+    body_levels: Mapping[object, Sequence[FaceLevel]],
 ) -> list[RiserEvidence]:
     """Return body-local risers using completed FaceLevel authority from this run."""
 

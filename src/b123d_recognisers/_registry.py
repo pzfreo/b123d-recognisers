@@ -16,7 +16,6 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Protocol, TypeAlias, TypeVar, cast
 
-from b123d_recognisers._adjacency import SolidRef
 from b123d_recognisers._candidates import (
     Candidate,
     CandidateSet,
@@ -355,7 +354,7 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
 
 
 def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
-    body_levels: dict[SolidRef, list[FaceLevel]] = {}
+    body_levels: dict[object, list[FaceLevel]] = {}
     for occurrence in inputs.occurrences(FamilyId.STEP_LEVELS, FaceLevel):
         solid = occurrence.solid()
         if solid is None:
