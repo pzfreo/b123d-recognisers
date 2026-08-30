@@ -51,9 +51,7 @@ FAMILIES = {
     },
     "circular-blind-steps": {
         "recognisers": [("recognise_circular_blind_steps", "part")],
-        "records": [
-            ("CircularBlindStep", "output", ["RecognitionResult.circular_blind_steps"])
-        ],
+        "records": [("CircularBlindStep", "output", ["RecognitionResult.circular_blind_steps"])],
         "census": "circular_blind_step",
         "goldens": ["circular_blind_step"],
         "introduced": "0.4.6",
@@ -266,6 +264,7 @@ RECORD_SCHEMA_VERSIONS = {
     "Chamfer": 2,
     "Fillet": 2,
     "RaisedPad": 2,
+    "RiserEvidence": 2,
 }
 
 NO_MEMBERSHIP_RATIONALE = {

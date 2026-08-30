@@ -105,6 +105,17 @@ class RiserEvidence(Record):
     #: :func:`recognise_risers` always passes the value it resolved for that part — and a record
     #: built by hand was never scanned, so no value would be more truthful than another.
     tol: float = 0.5
+    #: Interior FaceLevel Z values proved on the same valid solid as this riser occurrence.
+    #: ``None`` is retained only for compatibility with hand-built pre-0.4.9 records; every
+    #: recogniser-produced record carries a tuple (possibly empty), so projection cannot borrow a
+    #: matching level from another solid in a compound.
+    body_level_zs: tuple[float, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _RiserProposal:
+    record: RiserEvidence
+    faces: tuple[FaceLike, ...]
 
 
 def recognise_face_levels(
@@ -130,9 +141,7 @@ def recognise_face_levels(
     return sorted(
         proposal.record
         for scope in scopes
-        for proposal in _face_level_proposals_one(
-            scope, tol=tol, min_area_frac=min_area_frac
-        )
+        for proposal in _face_level_proposals_one(scope, tol=tol, min_area_frac=min_area_frac)
     )
 
 
@@ -347,7 +356,8 @@ def recognise_risers(
     level; that is :func:`project_step_shoulders`, because the answer differs per consumer
     and re-scanning per consumer is the cost the aggregate single-scan design exists to remove.
 
-    See :class:`RiserEvidence`. Returns a sorted, deduplicated list.
+    See :class:`RiserEvidence`. Values are deduplicated within one valid solid, then occurrences
+    are globally sorted without collapsing equal records from separate solids.
 
     ``recognise_face_levels`` recovers the step *heights* (Z); the projection over this
     evidence recovers *where along the part* each shoulder sits, so a stepped block is fully
@@ -356,7 +366,7 @@ def recognise_risers(
     two stations, together with the adjacent height levels, define the ramp without
     a redundant angle dimension.
 
-    The riser must also span the WHOLE part edge-to-edge on its perpendicular in-plane
+    The riser must also span its WHOLE valid solid edge-to-edge on its perpendicular in-plane
     axis (reach both envelope edges within *tol*); this is what separates a step/rebate
     from a raised pad/island or a blind pocket, whose walls rise from a level but are
     bounded. The conservative side of that cut: a partial *corner notch* (a step reaching
@@ -365,12 +375,34 @@ def recognise_risers(
     re-admits pads/pockets, so the full-span sharp-edged step is the recognised class
     (partial/filleted-end steps are a future refinement).
     """
-    bb = part.bounding_box()
     tol = _TOL if tol is None else tol
+    proposals = [
+        proposal
+        for scope in list(part.solids()) or [part]
+        for proposal in _riser_proposals_one(
+            scope,
+            min_area_frac=min_area_frac,
+            tol=tol,
+            body_level_zs=tuple(level.z for level in step_level_records(scope)),
+        )
+    ]
+    return sorted(proposal.record for proposal in proposals)
+
+
+def _riser_proposals_one(
+    part: Part,
+    *,
+    min_area_frac: float,
+    tol: float,
+    body_level_zs: tuple[float, ...],
+) -> list[_RiserProposal]:
+    """Discover and reduce riser occurrences within one valid-solid authority."""
+
+    bb = part.bounding_box()
     ext = {"x": bb.max.X - bb.min.X, "y": bb.max.Y - bb.min.Y, "z": bb.max.Z - bb.min.Z}
     lo = {"x": bb.min.X, "y": bb.min.Y}
     hi = {"x": bb.max.X, "y": bb.max.Y}
-    out: list[RiserEvidence] = []
+    found: dict[RiserEvidence, list[FaceLike]] = {}
     for f in part.faces():
         s = BRepAdaptor_Surface(f.wrapped)
         if s.GetType() != GeomAbs_Plane:
@@ -416,9 +448,7 @@ def recognise_risers(
             # test is the only live half of what used to be a two-part guard.
             if tol >= fb.max.Z - fb.min.Z:
                 continue
-            ramp = _ramp_positions(
-                fb, axis, other, ext, full_span=full_span, flo=flo, fhi=fhi
-            )
+            ramp = _ramp_positions(fb, axis, other, ext, full_span=full_span, flo=flo, fhi=fhi)
             if ramp is None:
                 continue
             positions, other_positions = ramp
@@ -432,29 +462,58 @@ def recognise_risers(
         )
         if cross <= 0 or props.Mass() < area_floor:
             continue  # a large riser, not an incidental feature face
-        out.append(
-            RiserEvidence(
-                vertical=vertical,
-                axis=axis,
-                positions=tuple(
-                    round(pos, 3) for pos in positions if lo[axis] + tol < pos < hi[axis] - tol
-                ),
-                other_axis=other,
-                other_positions=tuple(
-                    round(pos, 3)
-                    for pos in other_positions
-                    if lo[other] + tol < pos < hi[other] - tol
-                ),
-                z_lo=fb.min.Z,
-                z_hi=fb.max.Z,
-                # The level-independent half of the oblique tie-test: an end sitting on the
-                # part's top or bottom is structural whatever the level set says.
-                lo_at_envelope=abs(fb.min.Z - bb.min.Z) < tol or abs(fb.min.Z - bb.max.Z) < tol,
-                hi_at_envelope=abs(fb.max.Z - bb.min.Z) < tol or abs(fb.max.Z - bb.max.Z) < tol,
-                tol=tol,
-            )
+        record = RiserEvidence(
+            vertical=vertical,
+            axis=axis,
+            positions=tuple(
+                round(pos, 3) for pos in positions if lo[axis] + tol < pos < hi[axis] - tol
+            ),
+            other_axis=other,
+            other_positions=tuple(
+                round(pos, 3) for pos in other_positions if lo[other] + tol < pos < hi[other] - tol
+            ),
+            z_lo=fb.min.Z,
+            z_hi=fb.max.Z,
+            # The level-independent half of the oblique tie-test: an end sitting on the
+            # part's top or bottom is structural whatever the level set says.
+            lo_at_envelope=abs(fb.min.Z - bb.min.Z) < tol or abs(fb.min.Z - bb.max.Z) < tol,
+            hi_at_envelope=abs(fb.max.Z - bb.min.Z) < tol or abs(fb.max.Z - bb.max.Z) < tol,
+            tol=tol,
+            body_level_zs=body_level_zs,
         )
-    return sorted(set(out))
+        found.setdefault(record, []).append(f)
+    return [
+        _RiserProposal(record, tuple(faces))
+        for record, faces in sorted(found.items(), key=lambda item: item[0])
+    ]
+
+
+def _discover_risers(part: Part, *, writer: EvidenceWriter) -> list[RiserEvidence]:
+    """Return body-local risers and publish every exact same-solid producing face."""
+
+    proposals = [
+        proposal
+        for scope in list(part.solids()) or [part]
+        for proposal in _riser_proposals_one(
+            scope,
+            min_area_frac=0.15,
+            tol=_TOL,
+            body_level_zs=tuple(level.z for level in step_level_records(scope)),
+        )
+    ]
+    proposals.sort(key=lambda proposal: proposal.record)
+    pending = tuple(
+        (
+            proposal.record,
+            tuple(writer.graph.require_node(face) for face in proposal.faces),
+        )
+        for proposal in proposals
+    )
+    if any(writer.graph.common_valid_solid(nodes) is None for _record, nodes in pending):
+        raise ValueError("Riser defining faces have no unambiguous valid solid")
+    for record, nodes in pending:
+        writer.sink.propose(FamilyId.RISERS, record, defining=nodes)
+    return [proposal.record for proposal in proposals]
 
 
 def project_step_shoulders(
@@ -476,8 +535,9 @@ def project_step_shoulders(
     its inventory from the model. Both project the same evidence; neither rescans the solid.
 
     No *part* argument, by construction: this cannot look at geometry, so it cannot become a
-    second recognition site. Returns a sorted, deduplicated list; empty when *levels* is empty
-    (a part with no recognised step has no shoulders to locate).
+    second recognition site. Returns a sorted occurrence list, retaining equal projections from
+    separate body-local risers; empty when *levels* is empty (a part with no recognised step has no
+    shoulders to locate).
 
     *tol* defaults to the tolerance the evidence was scanned with, so a two-stage call is
     equivalent to the old single-stage one at ANY tolerance, not just the default. Pass it
@@ -491,16 +551,29 @@ def project_step_shoulders(
     if tol is None:
         tol = risers[0].tol
 
-    def tied(z: float, at_envelope: bool) -> bool:
-        return at_envelope or any(abs(z - level) < tol for level in levels)
+    def tied(z: float, at_envelope: bool, candidate_levels: Sequence[float]) -> bool:
+        return at_envelope or any(abs(z - level) < tol for level in candidate_levels)
 
     out: list[StepShoulder] = []
     for r in risers:
+        body_levels = (
+            levels
+            if r.body_level_zs is None
+            else [
+                level
+                for level in levels
+                if any(abs(level - owned) < tol for owned in r.body_level_zs)
+            ]
+        )
+
         if r.vertical:
-            if not any(abs(r.z_lo - level) < tol for level in levels):
+            if not any(abs(r.z_lo - level) < tol for level in body_levels):
                 continue  # rises from a step level (not a through slot's wall)
-        elif not (tied(r.z_lo, r.lo_at_envelope) and tied(r.z_hi, r.hi_at_envelope)):
+        elif not (
+            tied(r.z_lo, r.lo_at_envelope, body_levels)
+            and tied(r.z_hi, r.hi_at_envelope, body_levels)
+        ):
             continue  # drafted/incidental face not tied to recognised profile levels
         out.extend(StepShoulder(r.axis, pos) for pos in r.positions)
         out.extend(StepShoulder(r.other_axis, pos) for pos in r.other_positions)
-    return sorted(set(out))
+    return sorted(out)

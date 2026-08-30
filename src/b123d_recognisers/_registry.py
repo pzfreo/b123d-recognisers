@@ -54,8 +54,8 @@ from b123d_recognisers.grooves import Groove, recognise_grooves
 from b123d_recognisers.levels import (
     FaceLevel,
     RiserEvidence,
+    _discover_risers,
     _discover_step_levels,
-    recognise_risers,
 )
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
@@ -661,12 +661,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_risers",
         (),
         always,
-        _simple(lambda s: list(recognise_risers(s.context.part))),
+        _simple(lambda s: list(_discover_risers(s.context.part, writer=s.writer))),
         NotCounted("riser evidence is not a distinct feature"),
-        IncompleteAttribution(
-            "public value deduplication collapses distinct Riser faces and SolidRefs",
-            "requires occurrence-preserving identity or explicit multi-source ownership",
-        ),
+        FullyAttributed("every returned RiserEvidence owns all producing faces on one valid solid"),
     ),
     PhysicalDefinition(
         FamilyId.CHAMFERS,

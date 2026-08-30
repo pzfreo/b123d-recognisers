@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+"""Body-local discovery, attribution and level projection for RiserEvidence."""
+
+import pytest
+from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
+
+from b123d_recognisers import (
+    build_framed_recognition_result,
+    build_recognition_result,
+    project_step_shoulders,
+    recognise_risers,
+)
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers.result import _take_inventory
+
+_MINIMUM_Z = (Align.CENTER, Align.CENTER, Align.MIN)
+
+
+def _stepped(*, dy: float, dx: float = 0.0, level: float = 10.0):
+    base = Box(80, 40, level, align=_MINIMUM_Z)
+    upper = Pos(20, 0, level) * Box(40, 40, 10, align=_MINIMUM_Z)
+    return Pos(dx, dy, 0) * (base + upper)
+
+
+def _signature(part):
+    return [(riser.axis, riser.positions, riser.body_level_zs) for riser in recognise_risers(part)]
+
+
+def test_separated_equal_steps_retain_two_real_risers_and_no_compound_envelope_faces() -> None:
+    part = Compound(children=[_stepped(dy=-50), _stepped(dy=50)])
+
+    assert _signature(part) == [
+        ("x", (0.0,), (10.0,)),
+        ("x", (0.0,), (10.0,)),
+    ]
+    shoulders = project_step_shoulders(recognise_risers(part), levels=[10.0])
+    assert [(item.axis, item.position) for item in shoulders] == [
+        ("x", 0.0),
+        ("x", 0.0),
+    ]
+
+
+def test_unequal_body_level_projection_cannot_borrow_the_other_solids_level() -> None:
+    low = _stepped(dy=-50, dx=-30, level=10)
+    high = _stepped(dy=50, dx=30, level=15)
+    risers = recognise_risers(Compound(children=[low, high]))
+
+    assert [(r.positions, r.body_level_zs) for r in risers] == [
+        ((-30.0,), (10.0,)),
+        ((30.0,), (15.0,)),
+    ]
+    assert [item.position for item in project_step_shoulders(risers, levels=[10.0])] == [-30.0]
+    assert [item.position for item in project_step_shoulders(risers, levels=[15.0])] == [30.0]
+
+
+def test_aggregate_riser_occurrences_have_distinct_defining_solid_authority() -> None:
+    part = Compound(children=[_stepped(dy=-50), _stepped(dy=50)])
+    product = _take_inventory(part)
+    candidates = product.physical.candidate_set(FamilyId.RISERS).candidates
+
+    assert len(candidates) == 2
+    defining = [product.evidence.defining_of(candidate) for candidate in candidates]
+    assert all(nodes for nodes in defining)
+    owners = [product.context.graph.common_valid_solid(nodes) for nodes in defining]
+    assert all(owner is not None for owner in owners)
+    assert owners[0] != owners[1]
+    assert product.result.risers == tuple(recognise_risers(part))
+
+
+def test_translating_one_child_changes_only_its_body_local_riser() -> None:
+    fixed = _stepped(dy=-50, dx=-30)
+    baseline = _signature(Compound(children=[fixed, _stepped(dy=50, dx=30)]))
+    moved = _signature(Compound(children=[fixed, _stepped(dy=50, dx=45)]))
+
+    assert baseline == [("x", (-30.0,), (10.0,)), ("x", (30.0,), (10.0,))]
+    assert moved == [("x", (-30.0,), (10.0,)), ("x", (45.0,), (10.0,))]
+
+
+def test_nested_compound_and_child_order_preserve_riser_occurrences() -> None:
+    left = _stepped(dy=-50, dx=-30)
+    right = _stepped(dy=50, dx=30)
+    flat = Compound(children=[left, right])
+    baseline = _signature(flat)
+    reversed_nested = Compound(children=[Compound(children=[right]), Compound(children=[left])])
+
+    assert _signature(reversed_nested) == baseline
+
+
+def test_framed_rigid_motion_preserves_body_local_riser_occurrences() -> None:
+    part = Compound(children=[_stepped(dy=-50, dx=-30), _stepped(dy=50, dx=30)])
+    baseline = build_framed_recognition_result(part).result.risers
+    moved = build_framed_recognition_result(Pos(13, -7, 5) * part.rotate(Axis.X, 30)).result.risers
+
+    assert len(moved) == len(baseline)
+    for actual, expected in zip(moved, baseline, strict=True):
+        assert actual.axis == expected.axis
+        assert actual.positions == pytest.approx(expected.positions, abs=1e-9)
+        assert actual.body_level_zs == pytest.approx(expected.body_level_zs, abs=1e-9)
+
+
+def test_step_round_trip_preserves_body_local_risers(tmp_path) -> None:
+    part = Compound(children=[_stepped(dy=-50, dx=-30), _stepped(dy=50, dx=30)])
+    path = tmp_path / "separate-stepped-risers.step"
+    export_step(part, path)
+
+    imported = import_step(path)
+
+    assert _signature(imported) == _signature(part)
+    assert build_recognition_result(imported).risers == tuple(recognise_risers(imported))

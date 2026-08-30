@@ -93,6 +93,12 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_level_zs": [
+              5.0,
+              14.0,
+              19.0,
+              20.0
+            ],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -109,6 +115,12 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_level_zs": [
+              5.0,
+              14.0,
+              19.0,
+              20.0
+            ],
             "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -261,6 +273,12 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_level_zs": [
+              5.0,
+              14.0,
+              19.0,
+              20.0
+            ],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -277,6 +295,12 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_level_zs": [
+              5.0,
+              14.0,
+              19.0,
+              20.0
+            ],
             "hi_at_envelope": false,
             "lo_at_envelope": false,
             "other_axis": "y",
@@ -520,6 +544,12 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_level_zs": [
+            5.0,
+            14.0,
+            19.0,
+            20.0
+          ],
           "hi_at_envelope": true,
           "lo_at_envelope": false,
           "other_axis": "y",
@@ -536,6 +566,12 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_level_zs": [
+            5.0,
+            14.0,
+            19.0,
+            20.0
+          ],
           "hi_at_envelope": false,
           "lo_at_envelope": false,
           "other_axis": "y",

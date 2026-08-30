@@ -75,9 +75,10 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.PLATES,
         FamilyId.REPEATING_RADIAL_PROFILES,
         FamilyId.SLOTS,
-        FamilyId.POCKETS,
-        FamilyId.STEP_LEVELS,
-    }
+            FamilyId.POCKETS,
+            FamilyId.STEP_LEVELS,
+            FamilyId.RISERS,
+        }
     assert all(
         isinstance(item.attribution, FullyAttributed | IncompleteAttribution)
         for item in PHYSICAL_DEFINITIONS

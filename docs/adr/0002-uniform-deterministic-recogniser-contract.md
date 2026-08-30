@@ -4,10 +4,9 @@
 - **Date:** 2026-08-15
 - **Decider:** Paul Fremantle
 
-Step Level and Riser determinism is value-level, not occurrence identity. Their legacy whole-part
-clustering and `sorted(set(...))` projection can collapse sources across bodies. Deterministic value
-order must not be misrepresented as authority to choose one defining face; both remain record-only
-until an occurrence-preserving schema exists.
+Step Level and Riser determinism was originally value-level rather than occurrence-preserving. The
+body-local amendments for issues #335 and #336 below supersede that structural exclusion: both
+families now retain equal-valued occurrences across solids and bind their exact same-solid faces.
 
 ## Context
 
@@ -59,6 +58,19 @@ break removes the otherwise unavoidable second Passage evidence authority.
 
 The contract favours predictable composition over one-off convenience. An aggregate that appears
 too small for a list must receive a self-contained record, not a special return shape.
+
+## Amendment (body-local Riser evidence and projection, issue #336)
+
+`recognise_risers` reduces equal face-derived values only within one valid solid, then globally
+sorts the occurrence list without set-deduplicating across solids. Each recogniser-produced
+`RiserEvidence` carries the eligible `body_level_zs` derived from that same solid. The pure
+`project_step_shoulders` operation intersects caller-selected levels with this authority before
+testing the riser endpoints and preserves equal projected occurrences across bodies.
+
+`body_level_zs=None` is compatibility for manually constructed pre-0.4.9 evidence only; it retains
+the historical value-only projection. Production discovery never emits `None`. The serialized
+field addition advances `RiserEvidence` schema version to 2 without publishing `SolidRef`, graph
+handles or a second recognition site.
 
 ## Amendment (0.2.6, epic 0002)
 
