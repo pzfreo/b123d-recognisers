@@ -13,8 +13,8 @@ recognition DAG: depends only on build123d/OCP.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
 from functools import total_ordering
 
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -22,6 +22,7 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
+from b123d_recognisers._adjacency import FaceNode, SolidRef
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
@@ -513,32 +514,32 @@ def _riser_proposals_one(
     ]
 
 
-def _discover_risers(part: Part, *, writer: EvidenceWriter) -> list[RiserEvidence]:
-    """Return body-local risers and publish every exact same-solid producing face."""
+def _discover_risers(
+    part: Part,
+    *,
+    writer: EvidenceWriter,
+    body_levels: Mapping[SolidRef, Sequence[float]],
+) -> list[RiserEvidence]:
+    """Return body-local risers using completed FaceLevel authority from this run."""
 
-    proposals = [
-        proposal
-        for scope in list(part.solids()) or [part]
+    pending: list[tuple[RiserEvidence, tuple[FaceNode, ...]]] = []
+    for scope in list(part.solids()) or [part]:
         for proposal in _riser_proposals_one(
-            scope,
-            min_area_frac=0.15,
-            tol=_TOL,
-            body_level_zs=tuple(level.z for level in step_level_records(scope)),
-        )
-    ]
-    proposals.sort(key=lambda proposal: proposal.record)
-    pending = tuple(
-        (
-            proposal.record,
-            tuple(writer.graph.require_node(face) for face in proposal.faces),
-        )
-        for proposal in proposals
-    )
-    if any(writer.graph.common_valid_solid(nodes) is None for _record, nodes in pending):
-        raise ValueError("Riser defining faces have no unambiguous valid solid")
+            scope, min_area_frac=0.15, tol=_TOL, body_level_zs=()
+        ):
+            nodes = tuple(writer.graph.require_node(face) for face in proposal.faces)
+            solid = writer.graph.common_valid_solid(nodes)
+            if solid is None:
+                raise ValueError("Riser defining faces have no unambiguous valid solid")
+            record = replace(
+                proposal.record,
+                body_level_zs=tuple(sorted(body_levels.get(solid, ()))),
+            )
+            pending.append((record, nodes))
+    pending.sort(key=lambda item: item[0])
     for record, nodes in pending:
         writer.sink.propose(FamilyId.RISERS, record, defining=nodes)
-    return [proposal.record for proposal in proposals]
+    return [record for record, _nodes in pending]
 
 
 def project_step_shoulders(

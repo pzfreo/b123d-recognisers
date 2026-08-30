@@ -16,6 +16,7 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Protocol, TypeAlias, TypeVar, cast
 
+from b123d_recognisers._adjacency import SolidRef
 from b123d_recognisers._candidates import (
     Candidate,
     CandidateSet,
@@ -353,6 +354,22 @@ def _plates(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
     return list(_discover_plates(services.context.part, writer=services.writer))
 
 
+def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
+    body_levels: dict[SolidRef, list[float]] = {}
+    for occurrence in inputs.occurrences(FamilyId.STEP_LEVELS, FaceLevel):
+        solid = occurrence.solid()
+        if solid is None:
+            raise ValueError("completed FaceLevel occurrence has no valid solid")
+        body_levels.setdefault(solid, []).append(occurrence.record(FaceLevel).z)
+    return list(
+        _discover_risers(
+            services.context.part,
+            writer=services.writer,
+            body_levels=body_levels,
+        )
+    )
+
+
 def _hole_patterns(inputs: AcceptedInputs) -> list[object]:
     return list(recognise_hole_patterns(inputs.records(FamilyId.HOLES, HoleRecord)))
 
@@ -659,9 +676,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         (RiserEvidence,),
         "risers",
         "recognise_risers",
-        (),
+        (FamilyId.STEP_LEVELS,),
         always,
-        _simple(lambda s: list(_discover_risers(s.context.part, writer=s.writer))),
+        _risers,
         NotCounted("riser evidence is not a distinct feature"),
         FullyAttributed("every returned RiserEvidence owns all producing faces on one valid solid"),
     ),

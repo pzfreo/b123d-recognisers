@@ -433,4 +433,7 @@ the run-owned graph supplies their distinct SolidRef authority without adding a 
 Riser proposal core. Each proposal completes same-body bounds, level authority, value reduction,
 original-face resolution and common-solid validation before any Candidate is published. The public
 `recognise_risers` facade remains writer-free, and `project_step_shoulders` remains a pure record
-projection with no Part, graph, Candidate or evidence access.
+projection with no Part, graph, Candidate or evidence access. The registry declares STEP_LEVELS as
+RISERS' completed predecessor and the adapter groups those already-issued FaceLevel occurrences by
+their opaque SolidRef; aggregate discovery therefore does not rescan horizontal faces or infer
+ownership from equal Z values.
