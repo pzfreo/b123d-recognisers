@@ -27,15 +27,34 @@ def test_disabled_arm_recreates_only_the_whole_compound_plate_projection(monkeyp
 def test_paired_measurement_preserves_non_plate_outputs_and_legacy_records() -> None:
     report = benchmark._measure([("single", _bracket())])
 
-    assert report["all_other_outputs_equal"] is True
-    assert report["all_legacy_records_retained"] is True
+    assert report["all_transitions_valid"] is True
+    assert report["all_comparable_other_outputs_equal"] is True
+    assert report["all_successful_legacy_records_retained"] is True
     assert report["legacy_plates"] == report["body_local_plates"] == 2
+
+
+def test_paired_measurement_records_the_exact_legacy_error_to_success_transition() -> None:
+    part = Compound(children=[Pos(-70, 0, 0) * _bracket(), Pos(70, 0, 0) * _bracket()])
+
+    report = benchmark._measure([("compound", part)])
+
+    assert report["all_transitions_valid"] is True
+    assert report["resolved_legacy_attribution_errors"] == 1
+    assert report["comparable_models"] == 0
+    assert report["body_local_plates"] == report["introduced_plates"] == 4
+    row = report["models"][0]
+    assert row["legacy_status"] == "plate_attribution_error"
+    assert row["body_local_status"] == "success"
+    assert row["other_outputs_equal"] is None
+    assert row["legacy_records_retained"] is None
 
 
 def test_acceptance_requires_parity_retention_and_bounded_runtime() -> None:
     report = {
-        "all_other_outputs_equal": True,
-        "all_legacy_records_retained": True,
+        "all_transitions_valid": True,
+        "comparable_models": 1,
+        "all_comparable_other_outputs_equal": True,
+        "all_successful_legacy_records_retained": True,
         "body_local_to_legacy_total_ratio": 1.10,
     }
     assert benchmark._acceptable(report)
