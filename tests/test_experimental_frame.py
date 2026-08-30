@@ -15,17 +15,23 @@ import b123d_recognisers.frames as frames
 from b123d_recognisers._typing import CylinderInventory, Part
 from b123d_recognisers.frames import (
     FramedPreparation,
+    FramedRecognitionReport,
     FramedRecognitionResult,
     FrameGauge,
     FrameRefusalReason,
     PartFrame,
     PreparedFramedPart,
     RefusedPartFrame,
+    build_framed_recognition_report,
     build_framed_recognition_result,
     infer_part_frame,
     prepare_framed_part,
 )
-from b123d_recognisers.result import RecognitionResult, build_recognition_result
+from b123d_recognisers.result import (
+    RecognitionResult,
+    build_raw_recognition_result,
+    build_recognition_result,
+)
 from tests.golden._common import load_fixture
 from tools.frame_handling_prototype import evaluate_goldens, evaluate_translated_goldens
 
@@ -140,7 +146,7 @@ def test_framed_polygonal_stock_record_is_exactly_rigid_motion_invariant() -> No
 def test_framed_result_exposes_the_exact_shape_recognised(monkeypatch) -> None:
     part = Pos(13, -7, 5) * Box(10, 20, 30).rotate(Axis.X, 30)
     recognised_parts: list[Shape] = []
-    original = frames.build_recognition_result
+    original = frames.build_raw_recognition_result
 
     def capture(
         working_part: Shape,
@@ -155,7 +161,7 @@ def test_framed_result_exposes_the_exact_shape_recognised(monkeypatch) -> None:
             rotational=rotational,
         )
 
-    monkeypatch.setattr(frames, "build_recognition_result", capture)
+    monkeypatch.setattr(frames, "build_raw_recognition_result", capture)
 
     framed = build_framed_recognition_result(part)
 
@@ -221,7 +227,7 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
     def forbidden_rescan(*_args, **_kwargs):
         raise AssertionError("prepared aggregate must not rescan cylinders")
 
-    aggregate = frames.build_recognition_result
+    aggregate = frames.build_raw_recognition_result
     aggregate_calls: list[tuple[Part, CylinderInventory, bool]] = []
 
     def counted_aggregate(
@@ -235,7 +241,7 @@ def test_preparation_scans_cylinders_once_before_the_single_aggregate(monkeypatc
         return aggregate(part, cylinders=cylinders, rotational=rotational)
 
     monkeypatch.setattr(run_module, "analyse_cylinders", forbidden_rescan)
-    monkeypatch.setattr(frames, "build_recognition_result", counted_aggregate)
+    monkeypatch.setattr(frames, "build_raw_recognition_result", counted_aggregate)
     # A consumer can inspect the exact local substrate before choosing its own policy.
     rotational = any(
         evidence["external"]
@@ -272,6 +278,28 @@ def test_preparation_refusal_allows_an_explicit_legacy_fallback() -> None:
 
     assert prepared == RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
     assert isinstance(build_recognition_result(part), RecognitionResult)
+    assert build_raw_recognition_result(part) == build_recognition_result(part)
+
+
+def test_framed_report_pairs_one_local_run_with_the_exact_working_shape() -> None:
+    part = Pos(13, -7, 5) * _stepped_shaft().rotate(Axis.X, 37)
+
+    framed = build_framed_recognition_report(cast(Part, part), rotational=True)
+
+    assert isinstance(framed, FramedRecognitionReport)
+    assert framed.report.result.rotational is True
+    assert framed.report.result.cylinders
+    assert all(
+        evidence["face"] in framed.part.faces()
+        for group in framed.report.result.cylinders
+        for evidence in group
+    )
+
+
+def test_framed_report_preserves_typed_frame_refusal() -> None:
+    assert build_framed_recognition_report(Sphere(10)) == RefusedPartFrame(
+        FrameRefusalReason.NO_ANALYTIC_DIRECTION
+    )
 
 
 @pytest.mark.parametrize(

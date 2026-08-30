@@ -424,8 +424,9 @@ subclass. It owns every public recogniser family, preserves classification-gated
 empty inventories explicitly, and makes no claim that every geometry fact has
 Draftwright IR, DSL, code-generation, drawing, or completeness semantics.
 
-The opt-in framing lifecycle has two supported entry points. `build_framed_recognition_result()`
-retains its explicit caller-supplied classification. `prepare_framed_part()` returns either a
+The framing lifecycle is the ordinary aggregate route for new integrations.
+`build_framed_recognition_result()` retains its explicit caller-supplied classification.
+`prepare_framed_part()` returns either a
 typed frame refusal or a `PreparedFramedPart` pairing the exact normalized working shape, frame,
 and precomputed cylinder substrate. A consumer may inspect those local facts, then call
 `prepared.recognise(rotational=...)`; the existing aggregate runs once with that classification
@@ -433,12 +434,18 @@ and without repeating cylinder analysis. This lifecycle does not expose the priv
 Candidates, evidence, registry, or reconciliation state, and does not move downstream view or
 drawing policy into this package.
 
-`build_recognition_report()` pairs that unchanged inventory with bounded lifecycle explanations
-from the same run. It records whether each physical family ran, candidate and final disposition
+`build_raw_recognition_result()` is the explicit caller/world-coordinate route. The historical
+`build_recognition_result()` name remains its compatibility alias through 0.4.x and is removed in
+0.5.0 rather than silently changing return type. Typed frame refusal never selects that raw route.
+
+`build_framed_recognition_report()` pairs the exact local working shape and frame with bounded
+lifecycle explanations from the same run. It records whether each physical family ran, candidate and final disposition
 counts, and only the residual diagnostic codes established by frozen evidence. It does not scan
 unclaimed geometry or imply that an evaluated-empty family has no unsupported related geometry.
-ADR 0012 defines this compatibility boundary; framed explanations and surface-cache summaries are
-not shipped. The [E1 validation](benchmarks/e1-bounded-explanations-validation.md) records exact
+`PreparedFramedPart.recognise_report()` supports classification from the local part without a
+second cylinder scan. `build_raw_recognition_report()` is the explicit caller-coordinate report;
+`build_recognition_report()` remains its 0.4.x compatibility alias. ADR 0012 defines this
+compatibility boundary; surface-cache summaries are not shipped. The [E1 validation](benchmarks/e1-bounded-explanations-validation.md) records exact
 MFCAD++ parity and the separately measured projection cost.
 
 Every public `recognise_*` export must appear exactly once in the recogniser table above. CI derives
