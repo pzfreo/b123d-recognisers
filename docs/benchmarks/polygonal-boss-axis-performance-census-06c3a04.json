@@ -1,0 +1,187 @@
+{
+  "all_legacy_records_retained": true,
+  "all_other_outputs_equal": true,
+  "disabled": {
+    "maximum_seconds": 61.1336956419982,
+    "median_seconds": 7.969594690017402,
+    "total_seconds": 178.268124932074
+  },
+  "enabled": {
+    "maximum_seconds": 64.93336015800014,
+    "median_seconds": 7.718449309992138,
+    "total_seconds": 185.48507585504558
+  },
+  "enabled_to_disabled_total_ratio": 1.0404836867259444,
+  "environment": {
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "format": "b123d-recognisers-polygonal-boss-axis-paired-benchmark",
+  "format_version": 1,
+  "implementation_commit": "b78d28c3b15513550d64f126d3ab5c7b7f517659",
+  "introduced_bosses": 0,
+  "legacy_z_bosses": 1,
+  "models": [
+    {
+      "disabled_seconds": 0.09987845196155831,
+      "enabled_first": false,
+      "enabled_seconds": 0.09885619301348925,
+      "id": "GRM-03_thumbwheel_drive_screw.step",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 0.05558753001969308,
+      "enabled_first": true,
+      "enabled_seconds": 0.05881889199372381,
+      "id": "GRM-05_depth_lock_bolt.step",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 1.260067907976918,
+      "enabled_first": false,
+      "enabled_seconds": 1.3371543739922345,
+      "id": "string_post.step",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 6.094099270994775,
+      "enabled_first": true,
+      "enabled_seconds": 7.5239483040058985,
+      "id": "nist_ctc_01_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 1,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 1
+    },
+    {
+      "disabled_seconds": 61.1336956419982,
+      "enabled_first": false,
+      "enabled_seconds": 64.93336015800014,
+      "id": "nist_ctc_02_asme1_rc.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 5.689791702025104,
+      "enabled_first": true,
+      "enabled_seconds": 6.746061167970765,
+      "id": "nist_ctc_03_asme1_rc.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 29.719502680003643,
+      "enabled_first": false,
+      "enabled_seconds": 29.77796538901748,
+      "id": "nist_ctc_04_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 9.27072351903189,
+      "enabled_first": true,
+      "enabled_seconds": 9.35111633501947,
+      "id": "nist_ctc_05_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 7.969594690017402,
+      "enabled_first": false,
+      "enabled_seconds": 7.718449309992138,
+      "id": "nist_ftc_06_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 17.60649600002216,
+      "enabled_first": true,
+      "enabled_seconds": 17.911211844999343,
+      "id": "nist_ftc_07_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 12.565984576998744,
+      "enabled_first": false,
+      "enabled_seconds": 13.008007603988517,
+      "id": "nist_ftc_08_asme1_rc.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 5.377624567016028,
+      "enabled_first": true,
+      "enabled_seconds": 5.963994331017602,
+      "id": "nist_ftc_09_asme1_rd.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    },
+    {
+      "disabled_seconds": 21.42507839400787,
+      "enabled_first": false,
+      "enabled_seconds": 21.056131952034775,
+      "id": "nist_ftc_10_asme1_rb.stp",
+      "introduced": [],
+      "legacy_records_retained": true,
+      "legacy_z_bosses": 0,
+      "other_outputs_equal": true,
+      "principal_axis_bosses": 0
+    }
+  ],
+  "paired_median_delta_seconds": 0.08039281598757952,
+  "principal_axis_bosses": 1,
+  "selection": [
+    "GRM-03_thumbwheel_drive_screw.step",
+    "GRM-05_depth_lock_bolt.step",
+    "string_post.step",
+    "nist_ctc_01_asme1_rd.stp",
+    "nist_ctc_02_asme1_rc.stp",
+    "nist_ctc_03_asme1_rc.stp",
+    "nist_ctc_04_asme1_rd.stp",
+    "nist_ctc_05_asme1_rd.stp",
+    "nist_ftc_06_asme1_rd.stp",
+    "nist_ftc_07_asme1_rd.stp",
+    "nist_ftc_08_asme1_rc.stp",
+    "nist_ftc_09_asme1_rd.stp",
+    "nist_ftc_10_asme1_rb.stp"
+  ],
+  "workload": "census"
+}

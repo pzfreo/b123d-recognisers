@@ -102,6 +102,22 @@ Generic caller-space axes remain unsupported by the raw route and become princip
 existing explicit framed boundary. The framed result continues to pair the exact working shape,
 local records and frame; no consumer may infer or substitute a different representative.
 
+## Amendment (principal-axis Polygonal Boss, issue #332)
+
+Attached `PolygonalBoss` discovery now accepts X, Y or Z in the supplied recognition frame. Its
+existing orientation-bearing schema is sufficient: `axis` identifies the axial coordinate,
+`center`, flat directions and flat centres remain full local 3-D evidence, and `base < top` retains
+an ordered coordinate interval. Attachment direction is not inferred from that ordering. Instead,
+both terminal boundaries must have normals agreeing on one signed principal direction; trying the
+positive and negative interpretations independently keeps ambiguous or inconsistent caps closed.
+
+The provider checks all three principal axes against the same run-owned graph and issues one
+candidate owning exactly the six original side faces. Complete convex corner-blend cycles use the
+same selected axial coordinate rather than a hidden Z assumption. Whole stock, inward recesses,
+other side counts, detached bodies and cross-solid assemblies remain separate or refused classes.
+The explicit framed result continues to pair these local values and anchors with the exact working
+shape. This is an additive pre-1.0 value expansion, not a schema or framing-default change.
+
 ## Amendment (prepared consumer classification, issue #328)
 
 Some consumers own a rotational/prismatic classification that is itself defined from the local

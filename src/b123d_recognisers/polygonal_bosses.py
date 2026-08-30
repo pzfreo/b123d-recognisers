@@ -2,9 +2,9 @@
 # Copyright 2024-2026 Paul Fremantle
 """Recognition of bounded regular hexagonal bosses and whole-stock prisms.
 
-The proven capability is intentionally narrow: Z-axis hexagons with six planar side faces,
-opposed equal support planes, and unambiguous terminal caps. Other axes or polygon classes fail
-closed until independent corpus evidence establishes their geometry contract.
+The proven capability is intentionally narrow: principal-axis hexagons with six planar side
+faces, opposed equal support planes, and unambiguous terminal caps. Other axes or polygon classes
+fail closed until independent corpus evidence establishes their geometry contract.
 """
 
 from __future__ import annotations
@@ -48,13 +48,14 @@ _SIDE_VERTICAL_COS = 0.02
 
 @dataclass(frozen=True, order=True)
 class PolygonalBoss(Record):
-    """A regular hexagonal Z-axis prism attached to a support face.
+    """A regular hexagonal principal-axis prism attached to a support face.
 
-    The current recogniser emits exactly ``axis="z"`` and ``side_count=6``. Other
-    axes and polygon classes require their own evidence before they become package
-    capability. ``flat_directions`` preserve the ordered outward evidence that
-    established the hexagon. ``flat_centres`` are real points on the defining side
-    faces, so rendering can anchor a leader without reconstructing it from A/F.
+    The recogniser emits ``axis`` as ``"x"``, ``"y"`` or ``"z"`` and exactly
+    ``side_count=6``. Other polygon classes require their own evidence before they
+    become package capability. ``flat_directions`` preserve the ordered outward
+    evidence that established the hexagon. ``flat_centres`` are real points on the
+    defining side faces, so rendering can anchor a leader without reconstructing it
+    from A/F.
     """
 
     axis: str
@@ -311,9 +312,7 @@ def _side_rings(
     return _connected_components(sides, lambda i, j: same_span(i, j) and shares_edge(i, j))
 
 
-def _principal_side_faces(
-    graph: GeometryGraph, tol: float, *, axis_index: int
-) -> list[FaceRef]:
+def _principal_side_faces(graph: GeometryGraph, tol: float, *, axis_index: int) -> list[FaceRef]:
     """Planar faces perpendicular to the profile plane and long enough to be walls.
 
     Only the selection is this recogniser's; the normal and the bounding box it selects on come
@@ -373,22 +372,30 @@ def _six_support_cycle_indices(
 
 
 def _polygonal_boss_blend_bridges(
-    graph: GeometryGraph, vertical: list[FaceRef], tol: float
+    graph: GeometryGraph,
+    side_faces: list[FaceRef],
+    tol: float,
+    *,
+    axis_index: int = 2,
 ) -> frozenset[frozenset[FaceRef]]:
     """Return only provenance-complete bridges for unambiguous six-support blend cycles."""
 
-    vertical_set = set(vertical)
+    side_set = set(side_faces)
     possible: list[tuple[FaceRef, frozenset[FaceRef]]] = []
     for node in graph.faces:
-        if node in vertical_set:
+        if node in side_set:
             continue
-        supports = vertical_set.intersection(graph.neighbours(node))
+        supports = side_set.intersection(graph.neighbours(node))
         if len(supports) != 2:
             continue
         left, right = tuple(supports)
         if any(
             abs(a - b) > tol
-            for a, b in zip(graph.bounds(left)[2], graph.bounds(right)[2], strict=True)
+            for a, b in zip(
+                graph.bounds(left)[axis_index],
+                graph.bounds(right)[axis_index],
+                strict=True,
+            )
         ):
             continue
         possible.append((node, frozenset(supports)))
@@ -396,8 +403,7 @@ def _polygonal_boss_blend_bridges(
     def contains_six_cycle(pairs: list[frozenset[FaceRef]]) -> bool:
         possible_supports = set().union(*pairs) if pairs else set()
         return len(pairs) >= 6 and any(
-            len(component) == 6
-            and sum(pair <= set(component) for pair in pairs) >= 6
+            len(component) == 6 and sum(pair <= set(component) for pair in pairs) >= 6
             for component in _connected_components(
                 possible_supports,
                 lambda left, right: frozenset((left, right)) in pairs,
@@ -431,10 +437,12 @@ def _polygonal_boss_blend_bridges(
         ):
             continue
         normals = (graph.normal(left), graph.normal(right))
-        if any(normal is None or abs(normal[2]) > _SIDE_VERTICAL_COS for normal in normals):
+        if any(
+            normal is None or abs(normal[axis_index]) > _SIDE_VERTICAL_COS for normal in normals
+        ):
             continue
-        left_span = graph.bounds(left)[2]
-        right_span = graph.bounds(right)[2]
+        left_span = graph.bounds(left)[axis_index]
+        right_span = graph.bounds(right)[axis_index]
         if any(abs(a - b) > tol for a, b in zip(left_span, right_span, strict=True)):
             continue
         eligible.append((chain, left, right))
@@ -450,9 +458,7 @@ def _polygonal_boss_blend_bridges(
     for chain, pair in zip(selected, selected_pairs, strict=True):
         left, right = tuple(pair)
         support_refs = frozenset((left, right))
-        arcs = tuple(
-            bridge for bridge in bridges if frozenset(bridge.supports) == support_refs
-        )
+        arcs = tuple(bridge for bridge in bridges if frozenset(bridge.supports) == support_refs)
         if len(arcs) != 1:
             raise ValueError("selected Polygonal Boss blend chain has no unique logical bridge")
         provenance = arcs[0].provenance
@@ -595,15 +601,13 @@ def _recognise_one(
     blend_bridges = (
         frozenset()
         if whole_stock
-        else _polygonal_boss_blend_bridges(graph, sides, tol)
+        else _polygonal_boss_blend_bridges(graph, sides, tol, axis_index=axis_index)
     )
 
     def shares_edge(i: FaceRef, j: FaceRef) -> bool:
         return j in graph.neighbours(i) or frozenset((i, j)) in blend_bridges
 
-    components = _side_rings(
-        sides, graph, tol, shares_edge, axis_index=axis_index
-    )
+    components = _side_rings(sides, graph, tol, shares_edge, axis_index=axis_index)
 
     def adjacent_to(node: FaceRef) -> set[FaceRef]:
         # A fresh set each time: `_common_cap` subtracts from what it gets back, and the graph
@@ -658,33 +662,40 @@ def _recognise_one(
 
         wall_lo = sum(graph.bounds(i)[axis_index][0] for i in component) / side_count
         wall_hi = sum(graph.bounds(i)[axis_index][1] for i in component) / side_count
-        base = _common_cap(
-            component,
-            graph,
-            adjacent_to,
-            tol,
-            axis_index=axis_index,
-            upper=False,
-            positive=not whole_stock,
-            wall_lo=wall_lo,
-            wall_hi=wall_hi,
-        )
-        top = _common_cap(
-            component,
-            graph,
-            adjacent_to,
-            tol,
-            axis_index=axis_index,
-            upper=True,
-            positive=True,
-            wall_lo=wall_lo,
-            wall_hi=wall_hi,
-        )
+        cap_directions = (True,) if whole_stock else (True, False)
+        cap_pairs = []
+        for positive in cap_directions:
+            base = _common_cap(
+                component,
+                graph,
+                adjacent_to,
+                tol,
+                axis_index=axis_index,
+                upper=False,
+                positive=False if whole_stock else positive,
+                wall_lo=wall_lo,
+                wall_hi=wall_hi,
+            )
+            top = _common_cap(
+                component,
+                graph,
+                adjacent_to,
+                tol,
+                axis_index=axis_index,
+                upper=True,
+                positive=True if whole_stock else positive,
+                wall_lo=wall_lo,
+                wall_hi=wall_hi,
+            )
+            if base is not None and top is not None:
+                cap_pairs.append((base, top))
+        if len(cap_pairs) != 1:
+            continue
+        base, top = cap_pairs[0]
         if base is None or top is None or top.coordinate - base.coordinate <= tol:
             continue
         if whole_stock and (
-            abs(base.coordinate - wall_lo) > tol
-            or abs(top.coordinate - wall_hi) > tol
+            abs(base.coordinate - wall_lo) > tol or abs(top.coordinate - wall_hi) > tol
         ):
             continue
         flat_centres = tuple(
@@ -696,8 +707,7 @@ def _recognise_one(
             for point in centres
         )
         flat_directions = tuple(
-            _flat_direction(headings[index], transverse_indices)
-            for index in ordered
+            _flat_direction(headings[index], transverse_indices) for index in ordered
         )
         center = [0.0, 0.0, 0.0]
         center[transverse_indices[0]] = cx
@@ -737,7 +747,7 @@ def recognise_polygonal_bosses(
     angle_tol: float = math.radians(2),
     graph: GeometryGraph | None = None,
 ) -> list[PolygonalBoss]:
-    """Return regular hexagonal Z-axis bosses independently per physical solid.
+    """Return regular hexagonal principal-axis bosses independently per physical solid.
 
     A candidate is accepted from a closed ring of outward planar side faces, opposed
     support planes with one A/F value, and common attached support/top caps. A whole prism,
@@ -764,15 +774,22 @@ def _discover_polygonal_bosses(
     solids = list(part.solids())
     sources = solids if len(solids) > 1 else [part]
     shared = graph if len(sources) == 1 else None
-    proposals = sorted(
-        (
-            proposal
-            for solid in sources
-            for proposal in _recognise_one(solid, tol=tol, angle_tol=angle_tol, graph=shared)
-            if isinstance(proposal.record, PolygonalBoss)
-        ),
-        key=lambda proposal: proposal.record,
-    )
+    proposals: list[_PolygonalProposal] = []
+    for solid in sources:
+        owner = shared if shared is not None else GeometryGraph(solid)
+        for axis in ("z", "x", "y"):
+            proposals.extend(
+                proposal
+                for proposal in _recognise_one(
+                    solid,
+                    tol=tol,
+                    angle_tol=angle_tol,
+                    axis=axis,
+                    graph=owner,
+                )
+                if isinstance(proposal.record, PolygonalBoss)
+            )
+    proposals.sort(key=lambda proposal: proposal.record)
     records = [cast("PolygonalBoss", proposal.record) for proposal in proposals]
     if writer is None:
         return records
