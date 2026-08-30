@@ -1,6 +1,26 @@
 # Release notes
 
-## 0.4.8 (unreleased)
+## 0.4.9 (unreleased)
+
+- **Kept FaceLevel occurrences body-local in compounds.** Equal-height faces on separate solids
+  remain separate records with their own transverse support bounds; recognition no longer creates
+  a synthetic support span across empty space.
+
+- **Recognised and projected risers per solid.** Compound-global bounds no longer discard real
+  body-local risers or introduce transitions belonging to another component. Face-level and
+  shoulder projections consume the same per-solid evidence.
+
+- **Kept turned profiles body-local.** Parallel, coaxial, disjoint, and mixed-axis shafts retain
+  distinct axis lines, profile membership, and solid ownership. Aggregate publication is atomic:
+  ambiguous or inconsistent evidence cannot leak a valid-looking prefix. Plate projection excludes
+  only the solid owned by a completed turned profile, preserving prismatic siblings.
+
+Together these changes close the remaining body-local provider defects blocking Draftwright's
+framed-coordinate adapter. They are deterministic geometry fixes; no learned policy or
+corpus-specific feedback enters recognition. MFCAD++-500 development evidence is recorded for all
+three changes, while MFInstSeg remains a downstream transfer baseline.
+
+## 0.4.8
 
 - **Made framed recognition the ordinary route for new integrations.** Successful framed result
   and bounded-report calls pair one inferred frame, the exact local working shape, and one
