@@ -498,7 +498,7 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
 
     def permuted(source, *, tol, face_surfaces, **orientation):
         proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
-        if orientation != {"axis": "z", "axis_sign": 1}:
+        if orientation.get("axis") != "z" or orientation.get("axis_sign") != 1:
             return proposals
         (proposal,) = proposals
         roles = proposal.wall_roles
@@ -526,7 +526,7 @@ def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
 
     def reused_top(source, *, tol, face_surfaces, **orientation):
         proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
-        if orientation != {"axis": "z", "axis_sign": 1}:
+        if orientation.get("axis") != "z" or orientation.get("axis_sign") != 1:
             return proposals
         (proposal,) = proposals
         record = proposal.record
@@ -560,7 +560,7 @@ def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -
 
     def repeated(source, *, tol, face_surfaces, **orientation):
         proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
-        if orientation != {"axis": "z", "axis_sign": 1}:
+        if orientation.get("axis") != "z" or orientation.get("axis_sign") != 1:
             return proposals
         (proposal,) = proposals
         wrapped = module._PadProposal(
@@ -1002,7 +1002,7 @@ def test_invalid_role_snapshots_refuse_before_publication(monkeypatch, mode: str
 
     def changed(source, *, tol, face_surfaces, **orientation):
         proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
-        if orientation != {"axis": "z", "axis_sign": 1}:
+        if orientation.get("axis") != "z" or orientation.get("axis_sign") != 1:
             return proposals
         (proposal,) = proposals
         roles = proposal.wall_roles
@@ -1034,7 +1034,7 @@ def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> 
     def reused(source, *, tol, face_surfaces, **orientation):
         nonlocal first_roles
         proposals = original(source, tol=tol, face_surfaces=face_surfaces, **orientation)
-        if orientation != {"axis": "z", "axis_sign": 1}:
+        if orientation.get("axis") != "z" or orientation.get("axis_sign") != 1:
             return proposals
         if first_roles is None:
             first_roles = proposals[0].wall_roles

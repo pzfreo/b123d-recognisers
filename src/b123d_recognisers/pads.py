@@ -64,6 +64,14 @@ class _PadProposal:
     wall_roles: tuple[tuple[FaceLike, ...], ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _PlanarFace:
+    face: FaceLike
+    bounds: Any
+    normal: tuple[float, float, float]
+    area: float
+
+
 _AXIS_INDEX = {"x": 0, "y": 1, "z": 2}
 _TRANSVERSE_AXES = {"x": ("y", "z"), "y": ("x", "z"), "z": ("x", "y")}
 
@@ -73,7 +81,46 @@ def _component(value: Any, axis: str) -> float:
 
 
 def _span(bounds: Any, axis: str) -> tuple[float, float]:
+    if isinstance(bounds, tuple):
+        return bounds[_AXIS_INDEX[axis]]
     return _component(bounds.min, axis), _component(bounds.max, axis)
+
+
+def _surface_area(face: FaceLike) -> float:
+    properties = GProp_GProps()
+    BRepGProp.SurfaceProperties_s(face.wrapped, properties)
+    return float(properties.Mass())
+
+
+def _face_vertex_bounds(face: FaceLike) -> tuple[tuple[float, float], ...]:
+    """Return exact coordinate spans from a planar candidate's boundary vertices."""
+
+    vertices = tuple(tuple(vertex) for vertex in face.vertices())
+    return tuple((min(values), max(values)) for values in zip(*vertices, strict=True))
+
+
+def _planar_faces(
+    part: Part,
+    face_surfaces: EffectiveFaceSurfaceQuery,
+) -> tuple[_PlanarFace, ...]:
+    """Resolve run-owned planar facts and bounds once for all six orientations."""
+
+    resolved = []
+    for face in part.faces():
+        fact = face_surfaces.fact(face)
+        if isinstance(fact, AnalyticSurfaceFact) and fact.kind is SurfaceKind.PLANE:
+            normal = fact.parameters
+            if max(abs(normal[0]), abs(normal[1]), abs(normal[2])) < AXIS_ALIGNED_COS:
+                continue
+            resolved.append(
+                _PlanarFace(
+                    face,
+                    _face_vertex_bounds(face),
+                    (normal[0], normal[1], normal[2]),
+                    _surface_area(face),
+                )
+            )
+    return tuple(resolved)
 
 
 def _record_bounds(record: RaisedPad) -> tuple[tuple[float, float], ...]:
@@ -245,22 +292,21 @@ def _recognise_rectangular_pads_one(
     face_surfaces: EffectiveFaceSurfaceQuery,
     axis: str = "z",
     axis_sign: int = 1,
+    planar_faces: tuple[_PlanarFace, ...] | None = None,
+    material_side_cache: dict[int, SurfaceUse | SurfaceUseRefusal] | None = None,
+    part_bounds: Any | None = None,
 ) -> list[_PadProposal]:
     """Recognise pads using one solid's faces and bounds."""
-    bb = part.bounding_box()
+    bb = part.bounding_box() if part_bounds is None else part_bounds
     tol = _TOL if tol is None else tol
     axis_index = _AXIS_INDEX[axis]
     u_axis, v_axis = _TRANSVERSE_AXES[axis]
-    suppression_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
-    certified_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
-    for face in part.faces():
-        fact = face_surfaces.fact(face)
-        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
-            continue
-        normal = fact.parameters[:3]
+    geometric_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
+    planar_faces = _planar_faces(part, face_surfaces) if planar_faces is None else planar_faces
+    for planar in planar_faces:
+        face, fb, normal = planar.face, planar.bounds, planar.normal
         if abs(normal[axis_index]) < AXIS_ALIGNED_COS:
             continue
-        fb = face.bounding_box()
         u0, u1 = _span(fb, u_axis)
         v0, v1 = _span(fb, v_axis)
         top_lo, top_hi = _span(fb, axis)
@@ -272,10 +318,8 @@ def _recognise_rectangular_pads_one(
             or axis_sign * (top_coordinate - (bb_lo if axis_sign > 0 else bb_hi)) <= tol
         ):
             continue
-        props = GProp_GProps()
-        BRepGProp.SurfaceProperties_s(face.wrapped, props)
         rectangle_area = (u1 - u0) * (v1 - v0)
-        if abs(props.Mass() - rectangle_area) > max(tol * tol, 0.005 * rectangle_area):
+        if abs(planar.area - rectangle_area) > max(tol * tol, 0.005 * rectangle_area):
             continue
         bb_u0, bb_u1 = _span(bb, u_axis)
         bb_v0, bb_v1 = _span(bb, v_axis)
@@ -291,38 +335,20 @@ def _recognise_rectangular_pads_one(
             round(top_coordinate, 3),
             face,
         )
-        top_surface = face_surfaces.use(face, material_side=True)
-        if isinstance(top_surface, SurfaceUseRefusal):
-            # Tier suppression is conservative context, not a feature claim.
-            # Keep unverified geometric ledges in that context; refusing a ledge
-            # must never introduce a Pad claim on the tier above it.
-            suppression_tops.append(top_entry)
-            continue
-        certificate = top_surface.material_side
-        if certificate is None:
-            suppression_tops.append(top_entry)
-            continue
-        if certificate.outward[axis_index] * axis_sign < AXIS_ALIGNED_COS:
-            continue
-        suppression_tops.append(top_entry)
-        certified_tops.append(top_entry)
+        geometric_tops.append(top_entry)
 
     # Recover each pad's base from its own four downward perimeter walls. A
     # part-global "highest horizontal level below the top" is wrong when another
     # feature has an unrelated intervening Z level.
     vertical_faces = []
-    for face in part.faces():
-        fact = face_surfaces.fact(face)
-        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
-            continue
-        normal = fact.parameters[:3]
+    for planar in planar_faces:
+        face, fb, normal = planar.face, planar.bounds, planar.normal
         if abs(normal[axis_index]) > AXIS_ZERO_COS:
             continue
-        fb = face.bounding_box()
         vertical_faces.append((face, fb, Vector(*normal)))
 
     proposals: list[_PadProposal] = []
-    for u0, u1, v0, v1, top_coordinate, top_face in certified_tops:
+    for u0, u1, v0, v1, top_coordinate, top_face in geometric_tops:
         roles = (
             _wall_role(
                 vertical_faces,
@@ -396,10 +422,9 @@ def _recognise_rectangular_pads_one(
             )
         )
 
-    # A tiered/staircase tower has rectangular ledges touching the candidate at its
-    # recovered local base.  Lower ledges on a sloped support can touch the pad in plan
-    # without belonging to that stack; comparing every different Z discarded the
-    # real upper pad.  Disjoint pads may legitimately have any number of heights.
+    if not proposals:
+        return []
+
     raw_regions = [
         _pad_record(
             axis=axis,
@@ -413,19 +438,64 @@ def _recognise_rectangular_pads_one(
             base=top,
             top=top,
         )
-        for u0, u1, v0, v1, top, _face in suppression_tops
+        for u0, u1, v0, v1, top, _face in geometric_tops
+    ]
+    needed_top_ids = {id(proposal.top_face) for proposal in proposals}
+    suppression_needed_ids = {
+        id(top_entry[-1])
+        for top_entry, region in zip(geometric_tops, raw_regions, strict=True)
+        if any(_tier_suppresses(proposal.record, region, tol=tol) for proposal in proposals)
+    }
+    needed_top_ids.update(suppression_needed_ids)
+
+    # Material certification is the expensive exact-solid query.  Establish the
+    # complete rectangular terminal/wall grammar first; parts with no structural
+    # proposal never mesh irrelevant planar faces merely to reject them. Tops
+    # unable to define or suppress a structural proposal are equally irrelevant.
+    suppression_tops: list[tuple[float, float, float, float, float, FaceLike]] = []
+    certified_top_ids: set[int] = set()
+    for top_entry in geometric_tops:
+        face = top_entry[-1]
+        cache_key = id(face)
+        if cache_key not in needed_top_ids:
+            continue
+        top_surface = (
+            material_side_cache.get(cache_key) if material_side_cache is not None else None
+        )
+        if top_surface is None:
+            top_surface = face_surfaces.use(face, material_side=True)
+            if material_side_cache is not None:
+                material_side_cache[cache_key] = top_surface
+        if isinstance(top_surface, SurfaceUseRefusal) or top_surface.material_side is None:
+            # Tier suppression is conservative context, not a feature claim.
+            # Keep unverified geometric ledges in that context; refusing a ledge
+            # must never introduce a Pad claim on the tier above it.
+            suppression_tops.append(top_entry)
+            continue
+        if top_surface.material_side.outward[axis_index] * axis_sign < AXIS_ALIGNED_COS:
+            continue
+        suppression_tops.append(top_entry)
+        certified_top_ids.add(cache_key)
+
+    proposals = [proposal for proposal in proposals if id(proposal.top_face) in certified_top_ids]
+
+    # A tiered/staircase tower has rectangular ledges touching the candidate at its
+    # recovered local base.  Lower ledges on a sloped support can touch the pad in plan
+    # without belonging to that stack; comparing every different Z discarded the
+    # real upper pad.  Disjoint pads may legitimately have any number of heights.
+    suppression_ids = {id(top_entry[-1]) for top_entry in suppression_tops}
+    suppression_regions = [
+        region
+        for top_entry, region in zip(geometric_tops, raw_regions, strict=True)
+        if id(top_entry[-1]) in suppression_ids
     ]
     return [
         proposal
         for proposal in proposals
-        if not any(_tier_suppresses(proposal.record, other, tol=tol) for other in raw_regions)
+        if not any(
+            _tier_suppresses(proposal.record, other, tol=tol) for other in suppression_regions
+        )
     ]
-
-
-def _surface_area(face: FaceLike) -> float:
-    properties = GProp_GProps()
-    BRepGProp.SurfaceProperties_s(face.wrapped, properties)
-    return float(properties.Mass())
 
 
 def _recognise_blended_rectangular_pads_one(
@@ -436,6 +506,10 @@ def _recognise_blended_rectangular_pads_one(
     geometry: GeometryGraph,
     axis: str = "z",
     axis_sign: int = 1,
+    blend_facts_cache: list[tuple[BlendFact, ...]] | None = None,
+    planar_faces: tuple[_PlanarFace, ...] | None = None,
+    material_side_cache: dict[int, SurfaceUse | SurfaceUseRefusal] | None = None,
+    part_bounds: Any | None = None,
 ) -> list[_PadProposal]:
     """Recognise one complete four-corner convex blend cycle around a rectangular pad."""
 
@@ -443,31 +517,29 @@ def _recognise_blended_rectangular_pads_one(
     axis_index = _AXIS_INDEX[axis]
     u_axis, v_axis = _TRANSVERSE_AXES[axis]
     u_index, v_index = _AXIS_INDEX[u_axis], _AXIS_INDEX[v_axis]
-    bb = part.bounding_box()
+    bb = part.bounding_box() if part_bounds is None else part_bounds
     faces = tuple(part.faces())
     refs = {geometry.ref(face): face for face in faces}
     local_refs = set(refs)
+    planar_faces = _planar_faces(part, face_surfaces) if planar_faces is None else planar_faces
 
     vertical: dict[FaceRef, tuple[FaceLike, Any, tuple[float, float, float]]] = {}
-    for ref, face in refs.items():
-        fact = face_surfaces.fact(face)
+    for planar in planar_faces:
+        face = planar.face
+        ref = geometry.ref(face)
         normal = geometry.normal(ref)
         if (
-            isinstance(fact, AnalyticSurfaceFact)
-            and fact.kind is SurfaceKind.PLANE
-            and normal is not None
+            normal is not None
             and abs(normal[axis_index]) <= AXIS_ZERO_COS
         ):
-            vertical[ref] = (face, face.bounding_box(), normal)
+            vertical[ref] = (face, planar.bounds, normal)
 
     eligible_chains: list[BlendFact] | None = None
 
     proposals: list[_PadProposal] = []
-    for top_ref, top_face in refs.items():
-        fact = face_surfaces.fact(top_face)
-        if not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE:
-            continue
-        top_bounds = top_face.bounding_box()
+    for planar in planar_faces:
+        top_face, top_bounds = planar.face, planar.bounds
+        top_ref = geometry.ref(top_face)
         top_lo, top_hi = _span(top_bounds, axis)
         top = round((top_lo + top_hi) / 2, 3)
         bb_lo, bb_hi = _span(bb, axis)
@@ -521,15 +593,15 @@ def _recognise_blended_rectangular_pads_one(
         ):
             continue  # the unchanged sharp path owns uninterrupted wall roles
 
-        top_use = face_surfaces.use(top_face, material_side=True)
-        if isinstance(top_use, SurfaceUseRefusal) or top_use.material_side is None:
-            continue
-        if top_use.material_side.outward[axis_index] * axis_sign < AXIS_ALIGNED_COS:
-            continue
-
         if eligible_chains is None:  # pragma: no branch - cached after the first eligible top
             eligible_chains = []
-            for chain in geometry.blend_facts():
+            if blend_facts_cache is None:
+                all_chains = geometry.blend_facts()
+            else:
+                if not blend_facts_cache:
+                    blend_facts_cache.append(tuple(geometry.blend_facts()))
+                all_chains = blend_facts_cache[0]
+            for chain in all_chains:
                 if (
                     chain.side != "convex"
                     or len(chain.blend_faces) != 1
@@ -588,7 +660,7 @@ def _recognise_blended_rectangular_pads_one(
             continue
         removed = math.fsum((1.0 - math.pi / 4.0) * chain.radius**2 for chain in selected)
         expected_area = (u1 - u0) * (v1 - v0) - removed
-        if abs(_surface_area(top_face) - expected_area) > max(tol * tol, 0.005 * expected_area):
+        if abs(planar.area - expected_area) > max(tol * tol, 0.005 * expected_area):
             continue
 
         bridges = geometry.collapsed_bridges(tuple(chain.ref for chain in selected))
@@ -604,6 +676,17 @@ def _recognise_blended_rectangular_pads_one(
                 matching[0].provenance.boundary
             ) != Counter(chain.boundary):
                 raise ValueError("selected Pad blend bridge lost original provenance")
+
+        cache_key = id(top_face)
+        top_use = material_side_cache.get(cache_key) if material_side_cache is not None else None
+        if top_use is None:
+            top_use = face_surfaces.use(top_face, material_side=True)
+            if material_side_cache is not None:
+                material_side_cache[cache_key] = top_use
+        if isinstance(top_use, SurfaceUseRefusal) or top_use.material_side is None:
+            continue
+        if top_use.material_side.outward[axis_index] * axis_sign < AXIS_ALIGNED_COS:
+            continue
 
         proposals.append(
             _PadProposal(
@@ -671,6 +754,10 @@ def _discover_rectangular_pads(
     for solid in sources:
         by_record: dict[RaisedPad, list[_PadProposal]] = {}
         proposals: list[_PadProposal] = []
+        blend_facts_cache: list[tuple[BlendFact, ...]] = []
+        planar_faces = _planar_faces(solid, face_surfaces)
+        material_side_cache: dict[int, SurfaceUse | SurfaceUseRefusal] = {}
+        part_bounds = solid.bounding_box()
         for axis in ("z", "x", "y"):
             for axis_sign in (1, -1):
                 proposals.extend(
@@ -680,6 +767,9 @@ def _discover_rectangular_pads(
                         face_surfaces=face_surfaces,
                         axis=axis,
                         axis_sign=axis_sign,
+                        planar_faces=planar_faces,
+                        material_side_cache=material_side_cache,
+                        part_bounds=part_bounds,
                     )
                 )
                 proposals.extend(
@@ -690,6 +780,10 @@ def _discover_rectangular_pads(
                         geometry=geometry,
                         axis=axis,
                         axis_sign=axis_sign,
+                        blend_facts_cache=blend_facts_cache,
+                        planar_faces=planar_faces,
+                        material_side_cache=material_side_cache,
+                        part_bounds=part_bounds,
                     )
                 )
         proposals = _resolve_axis_ambiguity(
