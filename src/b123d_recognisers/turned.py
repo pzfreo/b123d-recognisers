@@ -238,13 +238,35 @@ def recognise_turned_steps(
     """
     inventory = cyls if cyls is not None else analyse_cylinders(part)
     scopes = list(part.solids()) or [part]
-    found: list[TurnedStep] = []
+    proposals: list[tuple[TurnedStep, list[CylinderEvidence]]] = []
     for solid_idx, scope in enumerate(scopes):
         scoped = (
             [item for item in inventory[0] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
             [item for item in inventory[1] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
         )
-        found.extend(_recognise_turned_steps_one(scope, cyls=scoped, ledger=ledger))
+        proposals.extend(_turned_step_proposals_one(scope, cyls=scoped))
+    if ledger is not None:
+        # Bind and validate the complete family before publishing any occurrence. A malformed
+        # cylinder inventory must not leave a partial candidate prefix in the aggregate run.
+        pending = [
+            (
+                step,
+                tuple(ledger.graph.require_node(c["face"]) for c in over),
+            )
+            for step, over in proposals
+        ]
+        profile_owners: dict[TurnedProfileKey, object] = {}
+        for step, nodes in pending:
+            owner = ledger.graph.common_valid_solid(nodes)
+            if owner is None:
+                raise ValueError("turned step evidence has no common valid solid")
+            assert step.profile is not None
+            previous = profile_owners.setdefault(step.profile, owner)
+            if previous != owner:
+                raise ValueError("turned profile key identifies multiple valid solids")
+        for step, nodes in pending:
+            ledger.add_defining(step, nodes, family=FamilyId.TURNED_STEPS)
+    found = [step for step, _over in proposals]
     return sorted(
         found,
         key=lambda step: (
@@ -258,13 +280,12 @@ def recognise_turned_steps(
     )
 
 
-def _recognise_turned_steps_one(
+def _turned_step_proposals_one(
     part: Part,
     *,
     cyls: CylinderInventory,
-    ledger: ClaimLedger | EvidenceWriter | None,
-) -> list[TurnedStep]:
-    """Recognise one valid-solid turned profile from its prepartitioned cylinder evidence."""
+) -> list[tuple[TurnedStep, list[CylinderEvidence]]]:
+    """Propose one valid-solid turned profile from prepartitioned cylinder evidence."""
 
     z_cyls, cross_cyls = cyls
     ext = [c for c in (*z_cyls, *cross_cyls) if c.get("external")]
@@ -367,19 +388,4 @@ def _recognise_turned_steps_one(
             found.append((step, over))
     if len(found) < 2:  # fewer than two real steps → nothing to dimension axially
         return []
-    if ledger is not None:
-        # Bind and validate the complete profile before publishing any occurrence.  A malformed
-        # cylinder inventory must not leave a partially attributed physical family in the run.
-        pending = [
-            (
-                step,
-                tuple(ledger.graph.require_node(c["face"]) for c in over),
-            )
-            for step, over in found
-        ]
-        owners = [ledger.graph.common_valid_solid(nodes) for _step, nodes in pending]
-        if any(owner is None for owner in owners) or len(set(owners)) != 1:
-            raise ValueError("turned profile evidence does not identify one common valid solid")
-        for step, nodes in pending:
-            ledger.add_defining(step, nodes, family=FamilyId.TURNED_STEPS)
-    return [step for step, _ in found]
+    return found
