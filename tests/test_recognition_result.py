@@ -157,8 +157,12 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         registry_module, "_discover_repeating_radial_profiles", counted("radial_profiles", [])
     )
     monkeypatch.setattr(registry_module, "recognise_turned_steps", cyl_consumer("turned_steps", []))
-    levels = [FaceLevel(4.0, (0.0, 8.0), (0.0, 6.0)), FaceLevel(9.0)]
-    monkeypatch.setattr(registry_module, "step_level_records", counted("step_levels", levels))
+    # Fully-attributed FaceLevels cannot be fabricated without original horizontal-face evidence.
+    # This test owns dependency injection, so keep the family empty but still invoked and bound.
+    levels: list[FaceLevel] = []
+    monkeypatch.setattr(
+        registry_module, "_discover_step_levels", counted("step_levels", levels)
+    )
     monkeypatch.setattr(registry_module, "recognise_risers", counted("risers", []))
     monkeypatch.setattr(registry_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(registry_module, "recognise_angled_steps", counted("angled_steps", []))
@@ -216,7 +220,9 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     def fake_diagnostics(reconciliation, evidence):
         calls["diagnose_residuals"] = calls.get("diagnose_residuals", 0) + 1
         assert isinstance(evidence, EvidenceIndex)
-        assert reconciliation.dispositions
+        # Every fabricated physical family is empty because fully-attributed records require real
+        # topology. The lifecycle tests own nonempty dispositions; this test owns single injection.
+        assert reconciliation.dispositions == ()
         return ()
 
     monkeypatch.setattr(result_module, "diagnose_residuals", fake_diagnostics)
@@ -271,7 +277,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     assert set(calls.values()) == {1}
     assert built.holes == tuple(holes)
     assert built.step_levels == tuple(levels)
-    assert built.step_ladder_for_z_span(0.0, 10.0) == [4.0, 9.0]
+    assert built.step_ladder_for_z_span(0.0, 10.0) == []
 
 
 def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):

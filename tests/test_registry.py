@@ -76,6 +76,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.REPEATING_RADIAL_PROFILES,
         FamilyId.SLOTS,
         FamilyId.POCKETS,
+        FamilyId.STEP_LEVELS,
     }
     assert all(
         isinstance(item.attribution, FullyAttributed | IncompleteAttribution)
@@ -127,23 +128,17 @@ def test_registry_rejects_empty_attribution_contracts(attribution) -> None:
         validate_definitions(changed, DERIVED_DEFINITIONS)
 
 
-def test_terminal_validator_enforces_fully_attributed_all_occurrence_promise(
-    monkeypatch,
-) -> None:
-    product = _take_inventory(Box(60, 60, 10) + Pos(0, 0, 10) * Box(20, 20, 5))
-    assert product.physical.candidate_set(FamilyId.STEP_LEVELS).candidates
-    definitions = tuple(
-        replace(
-            item,
-            attribution=FullyAttributed("adversarially false completeness declaration"),
-        )
-        if item.family is FamilyId.STEP_LEVELS
-        else item
-        for item in PHYSICAL_DEFINITIONS
+def test_step_levels_fulfil_their_body_local_attribution_promise() -> None:
+    product = _take_inventory(Box(60, 60, 10) + Pos(20, 0, 7.5) * Box(20, 20, 5))
+    candidates = product.physical.candidate_set(FamilyId.STEP_LEVELS).candidates
+
+    assert candidates
+    assert all(product.evidence.defining_of(candidate) for candidate in candidates)
+    assert all(
+        product.context.graph.common_valid_solid(product.evidence.defining_of(candidate))
+        is not None
+        for candidate in candidates
     )
-    monkeypatch.setattr(result_module, "PHYSICAL_DEFINITIONS", definitions)
-    with pytest.raises(ValueError, match="step_levels promises complete"):
-        result_module._validate_attribution(product.context, product.physical, product.evidence)
 
 
 def test_terminal_validator_rechecks_partial_family_body_provenance(monkeypatch) -> None:

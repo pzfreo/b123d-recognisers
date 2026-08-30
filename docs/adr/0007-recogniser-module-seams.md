@@ -416,3 +416,13 @@ the complete issuer-owned face and boundary-occurrence provenance before proposa
 rounded planar top and four original planar walls remain the complete defining evidence; blend
 faces are consulted only. Partial, duplicate, competing, non-singleton or corrupted cycles fail
 closed without changing the neutral graph or another family.
+
+## Amendment (body-local FaceLevel occurrences, issue #335)
+
+`levels._discover_step_levels` is the sole writer-enabled aggregate adapter. It enumerates valid
+solid scopes within one family invocation, clusters eligible horizontal faces only within each
+scope, and issues each returned `FaceLevel` against its complete original horizontal face cluster.
+The public `recognise_face_levels` and `step_level_records` facades reuse the same neutral proposal
+core without a writer. They do not construct a graph, read Candidates/evidence/reconciliation, or
+invoke a sibling recogniser. Equal-valued records on different bodies remain separate occurrences;
+the run-owned graph supplies their distinct SolidRef authority without adding a public body ID.

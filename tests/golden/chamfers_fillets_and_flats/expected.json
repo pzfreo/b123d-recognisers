@@ -271,32 +271,7 @@
         "rotational": false,
         "slot_patterns": [],
         "slots": [],
-        "step_levels": [
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -90.0,
-              20.0
-            ],
-            "y_span": [
-              -15.0,
-              15.0
-            ],
-            "z": -10.0
-          },
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -90.0,
-              20.0
-            ],
-            "y_span": [
-              -15.0,
-              15.0
-            ],
-            "z": 10.0
-          }
-        ],
+        "step_levels": [],
         "through_steps": [],
         "turned_steps": []
       },
@@ -463,32 +438,7 @@
         "rotational": true,
         "slot_patterns": [],
         "slots": [],
-        "step_levels": [
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -90.0,
-              20.0
-            ],
-            "y_span": [
-              -15.0,
-              15.0
-            ],
-            "z": -10.0
-          },
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -90.0,
-              20.0
-            ],
-            "y_span": [
-              -15.0,
-              15.0
-            ],
-            "z": 10.0
-          }
-        ],
+        "step_levels": [],
         "through_steps": [],
         "turned_steps": []
       }
@@ -608,6 +558,18 @@
           "_type": "FaceLevel",
           "x_span": [
             -90.0,
+            -50.0
+          ],
+          "y_span": [
+            -15.0,
+            15.0
+          ],
+          "z": -10.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -20.0,
             20.0
           ],
           "y_span": [
@@ -620,6 +582,18 @@
           "_type": "FaceLevel",
           "x_span": [
             -90.0,
+            -50.0
+          ],
+          "y_span": [
+            -15.0,
+            15.0
+          ],
+          "z": 10.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -20.0,
             20.0
           ],
           "y_span": [
@@ -853,32 +827,7 @@
         ],
         []
       ],
-      "step_level_records": [
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -90.0,
-            20.0
-          ],
-          "y_span": [
-            -15.0,
-            15.0
-          ],
-          "z": -10.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -90.0,
-            20.0
-          ],
-          "y_span": [
-            -15.0,
-            15.0
-          ],
-          "z": 10.0
-        }
-      ]
+      "step_level_records": []
     }
   },
   "source": {

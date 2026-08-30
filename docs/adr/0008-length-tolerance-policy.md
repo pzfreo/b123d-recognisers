@@ -423,3 +423,12 @@ existing `AXIS_ALIGNED_COS` decides whether a planar normal belongs to the suppo
 transverse grammar; no corpus-derived angle, length or area tolerance is added. Direction angles
 are used at full precision and never enter public records. `clears_threshold` retains the exact-tie
 refusal, now tested before, at and after the same physical boundary under in-plane roll.
+
+## Amendment (body-local FaceLevel area authority, issue #335)
+
+`recognise_face_levels.min_area_frac` remains dimensionless and its strict boundary is unchanged.
+For a compound, its footprint denominator is now each candidate face cluster's owning solid plan
+footprint rather than the compound-global XY envelope. A foreign large or distant body therefore
+cannot suppress a real level or make its support span bridge air. Coordinate clustering retains the
+existing absolute `_TOL` independently within each solid; faces from different SolidRefs never
+enter one tolerance cluster even when their Z values are equal.
