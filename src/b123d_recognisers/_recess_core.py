@@ -370,6 +370,7 @@ def _floored_candidate(
         ranges[a] = (lo, hi)
     w_range = (c_a + c_b) / 2 - width / 2, (c_a + c_b) / 2 + width / 2
     # The depth axis is the non-width axis capped on exactly one end (floor + opening).
+    candidates: list[Pocket | Channel] = []
     for depth_axis in others:
         (long_axis,) = [a for a in others if a != depth_axis]
         d_lo, d_hi = ranges[depth_axis]
@@ -382,23 +383,44 @@ def _floored_candidate(
             continue  # 0 = through on this axis; 2 = an enclosed end-cap pair, not a floor
         length = l_hi - l_lo
         if width > length and channel_bounds is None:
-            return None  # width is the smaller footprint dim (the wrong wall pair)
+            continue  # width is the smaller footprint dim (the wrong interpretation)
         if channel_bounds is None:
             if length >= _SLOT_MAX_SPAN_FRAC * part_ext[long_axis]:
-                return None  # footprint spans the part — an open feature, not a pocket
+                continue  # footprint spans the part — an open feature, not a pocket
             spans = {
                 axis: tuple(sorted((c_a, c_b))),
                 long_axis: (l_lo, l_hi),
                 depth_axis: (d_lo, d_hi),
             }
             if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
-                return None
-            return Pocket(
+                continue
+            candidates.append(
+                Pocket(
+                    width_axis=axis,
+                    long_axis=long_axis,
+                    width=round(width, 2),
+                    length=round(length, 2),
+                    depth=round(d_hi - d_lo, 2),
+                    w_center=round((c_a + c_b) / 2, 2),
+                    lo=round(l_lo, 2),
+                    hi=round(l_hi, 2),
+                    d_lo=round(d_lo, 2),
+                    d_hi=round(d_hi, 2),
+                    open_sign=1 if cap_lo else -1,
+                )
+            )
+            continue
+        part_lo, part_hi = channel_bounds[long_axis]
+        if abs(l_lo - part_lo) > _FLOOR_TOL or abs(l_hi - part_hi) > _FLOOR_TOL:
+            continue  # not open at both longitudinal envelope ends
+        spans = {axis: tuple(sorted((c_a, c_b))), long_axis: (l_lo, l_hi), depth_axis: (d_lo, d_hi)}
+        if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
+            continue
+        candidates.append(
+            Channel(
                 width_axis=axis,
                 long_axis=long_axis,
                 width=round(width, 2),
-                length=round(length, 2),
-                depth=round(d_hi - d_lo, 2),
                 w_center=round((c_a + c_b) / 2, 2),
                 lo=round(l_lo, 2),
                 hi=round(l_hi, 2),
@@ -406,24 +428,12 @@ def _floored_candidate(
                 d_hi=round(d_hi, 2),
                 open_sign=1 if cap_lo else -1,
             )
-        part_lo, part_hi = channel_bounds[long_axis]
-        if abs(l_lo - part_lo) > _FLOOR_TOL or abs(l_hi - part_hi) > _FLOOR_TOL:
-            continue  # not open at both longitudinal envelope ends
-        spans = {axis: tuple(sorted((c_a, c_b))), long_axis: (l_lo, l_hi), depth_axis: (d_lo, d_hi)}
-        if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
-            return None
-        return Channel(
-            width_axis=axis,
-            long_axis=long_axis,
-            width=round(width, 2),
-            w_center=round((c_a + c_b) / 2, 2),
-            lo=round(l_lo, 2),
-            hi=round(l_hi, 2),
-            d_lo=round(d_lo, 2),
-            d_hi=round(d_hi, 2),
-            open_sign=1 if cap_lo else -1,
         )
-    return None
+    if len(candidates) != 1:
+        # Two valid depth axes describe an opening-corner ambiguity, not one rectangular recess.
+        # Refuse rather than selecting whichever axis happens to appear first in ``"xyz"``.
+        return None
+    return candidates[0]
 
 
 def _pocket_candidate(

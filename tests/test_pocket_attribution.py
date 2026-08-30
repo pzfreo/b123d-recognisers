@@ -549,6 +549,22 @@ def test_axis_transform_mirror_and_scale_keep_writer_parity(part) -> None:
 
 
 @pytest.mark.parametrize(
+    "rotation",
+    [Rot(0, 0, 0), Rot(90, 0, 0), Rot(-90, 0, 0), Rot(0, 90, 0), Rot(0, -90, 0)],
+)
+def test_floored_pocket_dimensions_are_covariant_under_principal_permutations(rotation) -> None:
+    """A rejected first depth interpretation must not hide the valid physical one."""
+
+    source = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+
+    (pocket,) = recognise_pockets(rotation * source)
+
+    assert not pocket.edge_anchored
+    assert sorted((pocket.width, pocket.length)) == [12, 20]
+    assert pocket.depth == 6
+
+
+@pytest.mark.parametrize(
     "part",
     [
         Box(60, 40, 12) - Box(20, 12, 12),  # through Slot: zero floors
