@@ -290,7 +290,7 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
     assert row["no_physical_records"] is False
 
 
-def test_face_coverage_counts_any_accepted_claim_and_retains_unclaimed_faces() -> None:
+def test_face_coverage_counts_constituents_without_changing_defining_semantics() -> None:
     part = Box(1, 1, 1)
     faces = tuple(part.faces())
     candidate = SimpleNamespace(family=FamilyId.STEP_LEVELS)
@@ -301,6 +301,7 @@ def test_face_coverage_counts_any_accepted_claim_and_retains_unclaimed_faces() -
         ),
         evidence=SimpleNamespace(
             defining_of=lambda _candidate: (0,),
+            constituent_of=lambda _candidate: (0, 1),
             observations=lambda *_args: (),
         ),
         diagnostics=(),
@@ -308,7 +309,7 @@ def test_face_coverage_counts_any_accepted_claim_and_retains_unclaimed_faces() -
     truth = DatasetTruth(
         "coverage",
         Path("coverage.step"),
-        (1, 1, *(24 for _face in faces[2:])),
+        (1, 1, 1, *(24 for _face in faces[3:])),
         (),
         None,
         "0" * 64,
@@ -326,17 +327,17 @@ def test_face_coverage_counts_any_accepted_claim_and_retains_unclaimed_faces() -
 
     assert row["classes"]["1"] == {
         "status": "supported",
-        "labelled_faces": 2,
+        "labelled_faces": 3,
         "matched_defining_faces": 0,
-        "covered_faces": 1,
+        "covered_faces": 2,
         "mapped_defining_faces": 0,
         "truth_instances": 0,
         "recalled_instances": 0,
     }
     assert summary["classes"]["1"]["face_coverage"] == {
-        "numerator": 1,
-        "denominator": 2,
-        "value": 0.5,
+        "numerator": 2,
+        "denominator": 3,
+        "value": 2 / 3,
     }
     assert summary["classes"]["0"]["face_coverage"] == {
         "numerator": 0,
@@ -420,7 +421,7 @@ def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> Non
 def _report() -> dict[str, Any]:
     return {
         "format": "b123d-recognisers-effectiveness",
-        "format_version": 2,
+        "format_version": 3,
         "dataset": {"name": "fixture", "version": "1"},
         "package": {"name": "b123d-recognisers", "version": "1", "commit": "abc"},
         "environment": {"python": "3", "build123d": "1", "ocp": "1", "os": "test"},

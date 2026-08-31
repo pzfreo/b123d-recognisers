@@ -49,12 +49,13 @@ denominator is zero.
   `unmapped`. This is a comparison projection and does not rename the package record.
 - **Defining-face recall** is supported-class labelled faces claimed by a mapped accepted family
   divided by all faces carrying that class label.
-- **Face coverage** is class-labelled faces present in the defining evidence of any accepted
+- **Face coverage** is class-labelled faces present in the constituent evidence of any accepted
   physical candidate, regardless of which family owns that candidate, divided by all faces
-  carrying the class label. It reports whether accepted recognition touches a labelled face; it
-  does not transfer ownership to the labelled class. Coverage must be read beside defining-face
-  precision and recall: claiming every face would maximize coverage without producing truthful
-  recognition.
+  carrying the class label. Constituent evidence is exact physical membership retained by the
+  accepted recogniser proof; it is not inferred from labels or adjacency and does not transfer
+  ownership to the labelled class. Unmigrated families default exactly to defining evidence.
+  Coverage must be read beside defining-face precision and recall: inventing broad membership
+  would maximize coverage without producing truthful recognition.
 - **Defining-face precision** uses the same matched faces over every defining face claimed by a
   family mapped to that class. A family mapped to several corpus classes therefore has a separate
   one-vs-class denominator for each; it is not a composite accuracy score.
@@ -75,10 +76,8 @@ Defining-face recall has a structural ceiling below 1.0 for classes whose annota
 faces that the package deliberately does not consume as defining evidence. For example, opposed-
 wall recess recognition defines an occurrence by its walls rather than claiming its floor, and
 the class-11 O-ring audit in #360 found labelled geometry truthfully owned by Fillet. Face coverage
-exposes accepted cross-family claims in this gap; it does not replace defining-face recall or
-erase genuinely untouched faces. Constituent evidence, where a record can publish non-defining
-members without claiming ownership, is a separate contract tracked by #368 and is not inferred by
-this scorer.
+exposes exact accepted physical membership and accepted cross-family evidence in this gap; it does
+not replace defining-face recall or erase genuinely untouched faces.
 
 ## Dataset adapters
 
@@ -148,8 +147,10 @@ runtime, or a malformed taxonomy fail closed. By default, any invalid selected m
 output file. `--allow-invalid` exists only when a written benchmark policy names the expected
 invalid cases; the report then preserves each invalid model and reason.
 
-Effectiveness report format version 2 adds per-class `covered_faces` evidence and the derived
-`face_coverage` ratio. Historical version-1 reports remain immutable rather than being rewritten.
+Effectiveness report format version 2 added per-class `covered_faces` evidence and the derived
+`face_coverage` ratio over defining evidence. Version 3 changes that numerator to exact accepted
+constituent evidence after #368; defining-face fields and their semantics are unchanged. Historical
+reports remain immutable rather than being rewritten.
 Reports are canonical JSON with sorted model IDs, exact package commit/version, runtime
 environment, selection hash, taxonomy hash, per-model source hash, exact counts, and runtime
 distribution. Never rewrite a historical report after changing scorer logic. Produce a new report
