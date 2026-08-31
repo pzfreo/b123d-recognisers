@@ -22,7 +22,7 @@ from b123d_recognisers._candidates import FamilyId, PredicateId
 from b123d_recognisers._dispositions import Outcome
 
 REPORT_FORMAT = "b123d-recognisers-effectiveness"
-REPORT_FORMAT_VERSION = 2
+REPORT_FORMAT_VERSION = 3
 _MFCAD_LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 _CLASS_STATUSES = frozenset({"supported", "partial", "unsupported", "incomparable"})
 _MAPPED_CLASS_STATUSES = frozenset({"supported", "partial"})
@@ -239,6 +239,7 @@ def score_inventory(
     )
     records: dict[str, int] = {}
     claims: list[tuple[str, frozenset[int]]] = []
+    constituents: list[frozenset[int]] = []
     for candidate in accepted:
         family = _public_family_id(candidate.family.value)
         records[family] = records.get(family, 0) + 1
@@ -248,9 +249,15 @@ def score_inventory(
         )
         if indices:
             claims.append((family, indices))
+        constituents.append(
+            frozenset(
+                face_index[graph.face(node)]
+                for node in product.evidence.constituent_of(candidate)  # type: ignore[attr-defined]
+            )
+        )
 
-    accepted_defining_faces = (
-        set().union(*(indices for _family, indices in claims)) if claims else set()
+    accepted_constituent_faces = (
+        set().union(*constituents) if constituents else set()
     )
     per_class: dict[str, dict[str, int | str]] = {}
     for class_id, mapping in taxonomy.items():
@@ -262,7 +269,7 @@ def score_inventory(
             for index in indices
             if index in labelled
         }
-        covered = labelled.intersection(accepted_defining_faces)
+        covered = labelled.intersection(accepted_constituent_faces)
         claimed = {
             index
             for family, indices in claims
