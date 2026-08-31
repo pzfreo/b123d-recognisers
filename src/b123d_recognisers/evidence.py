@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import json
 from importlib.resources import files
-from typing import Never, Protocol, SupportsIndex, cast
+from typing import NoReturn, Protocol, SupportsIndex, cast
 
 from b123d_recognisers import __version__
 from b123d_recognisers._adjacency import FaceNode
@@ -43,7 +43,7 @@ class FaceRef:
     def __init__(self) -> None:
         raise TypeError("face references are issued by build_recognition_evidence")
 
-    def __reduce_ex__(self, protocol: SupportsIndex) -> Never:
+    def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
         del protocol
         raise TypeError("face references are run-local and cannot be serialized")
 
@@ -57,7 +57,7 @@ class FeatureRef:
     def __init__(self) -> None:
         raise TypeError("feature references are issued by build_recognition_evidence")
 
-    def __reduce_ex__(self, protocol: SupportsIndex) -> Never:
+    def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
         del protocol
         raise TypeError("feature references are run-local and cannot be serialized")
 
