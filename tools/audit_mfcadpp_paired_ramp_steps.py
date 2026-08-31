@@ -333,6 +333,8 @@ def _probe_pair(
 def _ramp_boundary_bypass_pairs(
     graph: FaceGraph,
     nodes: tuple[FaceNode, ...],
+    other_claims: dict[FaceNode, set[str]] | None = None,
+    accepted_claims: tuple[tuple[str, frozenset[FaceNode]], ...] = (),
 ) -> tuple[dict[str, Any], ...]:
     """Continue only boundary-gated pairs through every otherwise unchanged gate."""
 
@@ -357,15 +359,32 @@ def _ramp_boundary_bypass_pairs(
                 bevels[right],
                 bypass_ramp_boundary=True,
             )
-            defining = [left.index, right.index]
+            defining: list[int] = []
             if bypass.first_failed_gate == "recognisable":
                 assert bypass.internal_terminal_index is not None
-                defining.append(bypass.internal_terminal_index)
+                defining = [left.index, right.index, bypass.internal_terminal_index]
+            nodes_by_index = {node.index: node for node in graph.nodes}
+            projected_nodes = {nodes_by_index[index] for index in defining}
             rows.append(
                 {
                     "left_index": left.index,
                     "right_index": right.index,
                     "projected_defining_indices": sorted(defining),
+                    "projected_defining_claims": _counts(
+                        [
+                            family
+                            for node in projected_nodes
+                            for family in sorted((other_claims or {}).get(node, set()))
+                        ]
+                    ),
+                    "projected_record_overlaps": _counts(
+                        [
+                            family
+                            for family, claim in accepted_claims
+                            if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
+                            and bool(projected_nodes.intersection(claim))
+                        ]
+                    ),
                     "result": asdict(bypass),
                 }
             )
@@ -527,7 +546,12 @@ def main() -> int:
                 family_claims,
                 tuple(accepted_claims),
             )
-            bypass_pairs = _ramp_boundary_bypass_pairs(graph, tuple(component))
+            bypass_pairs = _ramp_boundary_bypass_pairs(
+                graph,
+                tuple(component),
+                family_claims,
+                tuple(accepted_claims),
+            )
             items.append(
                 {
                     "model_id": path.stem,
