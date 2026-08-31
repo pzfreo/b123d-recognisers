@@ -1,0 +1,7891 @@
+{
+  "class_id": 17,
+  "components": [
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        1,
+        4,
+        9,
+        10
+      ],
+      "faces": [
+        {
+          "area": 42.24739660024633,
+          "bounds": [
+            [
+              14.049676595512,
+              16.883271975478
+            ],
+            [
+              6.494305812799,
+              6.494305812799
+            ],
+            [
+              0.0,
+              20.949977985748
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 1,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 9
+            },
+            {
+              "kind": "concave",
+              "to": 10
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 6.494305812799
+          }
+        },
+        {
+          "area": 42.247396600246326,
+          "bounds": [
+            [
+              14.049676595512,
+              16.883271975478
+            ],
+            [
+              17.249227548384,
+              17.249227548384
+            ],
+            [
+              0.0,
+              20.949977985748
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 9
+            },
+            {
+              "kind": "concave",
+              "to": 10
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 17.249227548384
+          }
+        },
+        {
+          "area": 216.35012052826883,
+          "bounds": [
+            [
+              14.883271975478,
+              14.883271975478
+            ],
+            [
+              6.494305812799,
+              17.249227548384
+            ],
+            [
+              0.833595379966,
+              20.949977985748
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 9,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 10
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 14.883271975478
+          }
+        },
+        {
+          "area": 21.509843471169997,
+          "bounds": [
+            [
+              14.883271975478,
+              16.883271975478
+            ],
+            [
+              6.494305812799,
+              17.249227548384
+            ],
+            [
+              20.949977985748,
+              20.949977985748
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 10,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 20.949977985748
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10226",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        7,
+        9,
+        11,
+        18
+      ],
+      "faces": [
+        {
+          "area": 18.746740067060564,
+          "bounds": [
+            [
+              0.0,
+              9.149891794961
+            ],
+            [
+              37.149401030616,
+              39.1982493107
+            ],
+            [
+              35.573990656381,
+              35.573990656381
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 7,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 9
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 35.573990656381
+          }
+        },
+        {
+          "area": 30.594215836254737,
+          "bounds": [
+            [
+              0.0,
+              9.149891794961
+            ],
+            [
+              37.149401030616,
+              37.149401030616
+            ],
+            [
+              32.23032096915,
+              35.573990656381
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 9,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 11
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 37.149401030616
+          }
+        },
+        {
+          "area": 18.746740067060564,
+          "bounds": [
+            [
+              0.0,
+              9.149891794961
+            ],
+            [
+              37.149401030616,
+              39.1982493107
+            ],
+            [
+              32.23032096915,
+              32.23032096915
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 11,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 32.23032096915
+          }
+        },
+        {
+          "area": 6.850671887852245,
+          "bounds": [
+            [
+              9.149891794961,
+              9.149891794961
+            ],
+            [
+              37.149401030616,
+              39.1982493107
+            ],
+            [
+              32.23032096915,
+              35.573990656381
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 18,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 9.149891794961
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10245",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        27
+      ],
+      "faces": [
+        {
+          "area": 8.07987893178156,
+          "bounds": [
+            [
+              12.202844943795,
+              16.197423909927
+            ],
+            [
+              24.067463443756,
+              24.067463443756
+            ],
+            [
+              7.909329921649,
+              9.932040950843
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 24.067463443756
+          }
+        },
+        {
+          "area": 11.991804691277594,
+          "bounds": [
+            [
+              12.202844943795,
+              12.202844943795
+            ],
+            [
+              24.067463443756,
+              29.996043709646
+            ],
+            [
+              7.909329921649,
+              9.932040950843
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 12.202844943795
+          }
+        },
+        {
+          "area": 8.07987893178156,
+          "bounds": [
+            [
+              12.202844943795,
+              16.197423909927
+            ],
+            [
+              29.996043709646,
+              29.996043709646
+            ],
+            [
+              7.909329921649,
+              9.932040950843
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 29.996043709646
+          }
+        },
+        {
+          "area": 23.682182029149445,
+          "bounds": [
+            [
+              12.202844943795,
+              16.197423909927
+            ],
+            [
+              24.067463443756,
+              29.996043709646
+            ],
+            [
+              9.932040950843,
+              9.932040950843
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 27,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 9.932040950843
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10350",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 5,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 5
+        },
+        "defining": {
+          "covered_faces": 5,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 5
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        11,
+        14,
+        15,
+        16,
+        28
+      ],
+      "faces": [
+        {
+          "area": 394.4660684431614,
+          "bounds": [
+            [
+              20.670992243254,
+              33.893995940437
+            ],
+            [
+              0.0,
+              29.831805047986
+            ],
+            [
+              3.626237599852,
+              3.626237599852
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 11,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 3.626237599852
+          }
+        },
+        {
+          "area": 267.44848744648675,
+          "bounds": [
+            [
+              10.145927338453,
+              19.111140372538
+            ],
+            [
+              0.0,
+              29.831805047986
+            ],
+            [
+              3.626237599852,
+              3.626237599852
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 16
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 3.626237599852
+          }
+        },
+        {
+          "area": 708.4477528005841,
+          "bounds": [
+            [
+              10.145927338453,
+              33.893995940437
+            ],
+            [
+              0.0,
+              29.831805047986
+            ],
+            [
+              5.626237599852,
+              5.626237599852
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 16
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 5.626237599852
+          }
+        },
+        {
+          "area": 59.663610095972,
+          "bounds": [
+            [
+              10.145927338453,
+              10.145927338453
+            ],
+            [
+              0.0,
+              29.831805047986
+            ],
+            [
+              3.626237599852,
+              5.626237599852
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 10.145927338453
+          }
+        },
+        {
+          "area": 47.411214893158046,
+          "bounds": [
+            [
+              10.145927338453,
+              33.893995940437
+            ],
+            [
+              29.831805047986,
+              29.831805047986
+            ],
+            [
+              3.6262375998516863,
+              5.626237599852
+            ]
+          ],
+          "external_neighbours": 4,
+          "index": 28,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 29.831805047986
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10387",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 3
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        5,
+        6,
+        8,
+        17
+      ],
+      "faces": [
+        {
+          "area": 87.11111648069213,
+          "bounds": [
+            [
+              5.969567064734,
+              5.969567064734
+            ],
+            [
+              0.0,
+              4.529903472631
+            ],
+            [
+              0.0,
+              19.230236804604
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 5,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 5.969567064734
+          }
+        },
+        {
+          "area": 20.65562905815021,
+          "bounds": [
+            [
+              5.969567064734,
+              10.52940574186
+            ],
+            [
+              0.0,
+              4.529903472631
+            ],
+            [
+              19.230236804604,
+              19.230236804604
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 8
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 19.230236804604
+          }
+        },
+        {
+          "area": 87.11111648069213,
+          "bounds": [
+            [
+              10.52940574186,
+              10.52940574186
+            ],
+            [
+              0.0,
+              4.529903472631
+            ],
+            [
+              0.0,
+              19.230236804604
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 8,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 10.52940574186
+          }
+        },
+        {
+          "area": 87.68677755192522,
+          "bounds": [
+            [
+              5.969567064734,
+              10.52940574186
+            ],
+            [
+              4.529903472631,
+              4.529903472631
+            ],
+            [
+              0.0,
+              19.230236804604
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 4.529903472631
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10400",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        21,
+        22,
+        23,
+        27
+      ],
+      "faces": [
+        {
+          "area": 137.53767128758764,
+          "bounds": [
+            [
+              2.28935841182,
+              14.37339530479
+            ],
+            [
+              22.106505131496,
+              22.106505131496
+            ],
+            [
+              0.0,
+              11.381765258231
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 21,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 22.106505131496
+          }
+        },
+        {
+          "area": 22.763530516462005,
+          "bounds": [
+            [
+              2.28935841182,
+              2.28935841182
+            ],
+            [
+              20.106505131496,
+              22.106505131496
+            ],
+            [
+              0.0,
+              11.381765258231
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 23
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 2.28935841182
+          }
+        },
+        {
+          "area": 137.53767128758764,
+          "bounds": [
+            [
+              2.28935841182,
+              14.37339530479
+            ],
+            [
+              20.106505131496,
+              20.106505131496
+            ],
+            [
+              0.0,
+              11.381765258231
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 20.106505131496
+          }
+        },
+        {
+          "area": 24.16807378594,
+          "bounds": [
+            [
+              2.28935841182,
+              14.37339530479
+            ],
+            [
+              20.106505131496,
+              22.106505131496
+            ],
+            [
+              11.381765258231,
+              11.381765258231
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 27,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 11.381765258231
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10550",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        16,
+        17,
+        21,
+        22,
+        28
+      ],
+      "faces": [
+        {
+          "area": 49.61572956228116,
+          "bounds": [
+            [
+              1.543844016395,
+              2.2160055108895462
+            ],
+            [
+              7.177711855403,
+              16.03856011305
+            ],
+            [
+              26.42142887036957,
+              31.980372400371245
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 1.543844016395
+          }
+        },
+        {
+          "area": 38.815775862904346,
+          "bounds": [
+            [
+              1.5438440163948952,
+              3.52938189024
+            ],
+            [
+              7.177711855403,
+              26.58559978685
+            ],
+            [
+              26.181346902015,
+              26.42142887037
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 26.181346902015
+          }
+        },
+        {
+          "area": 38.81577586288509,
+          "bounds": [
+            [
+              2.216005510888,
+              4.201543384732119
+            ],
+            [
+              7.177711855403,
+              26.58559978685
+            ],
+            [
+              31.740290432016,
+              31.980372400371
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 21,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 31.980372400371
+          }
+        },
+        {
+          "area": 108.67317563537893,
+          "bounds": [
+            [
+              3.52938189024,
+              4.201543384732
+            ],
+            [
+              7.177711855403,
+              26.58559978685
+            ],
+            [
+              26.181346902014877,
+              31.740290432016
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 4.201543384732
+          }
+        },
+        {
+          "area": 11.198866772029424,
+          "bounds": [
+            [
+              1.5438440163948952,
+              4.201543384732119
+            ],
+            [
+              7.177711855403,
+              7.177711855403
+            ],
+            [
+              26.181346902014877,
+              31.980372400371245
+            ]
+          ],
+          "external_neighbours": 0,
+          "index": 28,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 7.177711855403
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10649",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 2,
+      "face_count": 4,
+      "face_indices": [
+        23,
+        24,
+        25,
+        26
+      ],
+      "faces": [
+        {
+          "area": 57.647814328376064,
+          "bounds": [
+            [
+              7.75348658571,
+              7.75348658571
+            ],
+            [
+              24.403306528035,
+              26.58559978685
+            ],
+            [
+              0.0,
+              26.416162949465
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 7.75348658571
+          }
+        },
+        {
+          "area": 4.364586517630002,
+          "bounds": [
+            [
+              7.75348658571,
+              9.75348658571
+            ],
+            [
+              24.403306528035,
+              26.58559978685
+            ],
+            [
+              26.416162949465,
+              26.416162949465
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 26.416162949465
+          }
+        },
+        {
+          "area": 57.647814328376064,
+          "bounds": [
+            [
+              9.75348658571,
+              9.75348658571
+            ],
+            [
+              24.403306528035,
+              26.58559978685
+            ],
+            [
+              0.0,
+              26.416162949465
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 25,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 9.75348658571
+          }
+        },
+        {
+          "area": 52.83232589893,
+          "bounds": [
+            [
+              7.75348658571,
+              9.75348658571
+            ],
+            [
+              24.403306528035,
+              24.403306528035
+            ],
+            [
+              0.0,
+              26.416162949465
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 26,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 24.403306528035
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10649",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        23,
+        24,
+        25,
+        28
+      ],
+      "faces": [
+        {
+          "area": 163.9785460617009,
+          "bounds": [
+            [
+              17.063739582535,
+              27.476405204181
+            ],
+            [
+              0.0,
+              15.747989229657
+            ],
+            [
+              12.003443396817,
+              12.003443396817
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 12.003443396817
+          }
+        },
+        {
+          "area": 223.10389085332176,
+          "bounds": [
+            [
+              17.063739582535,
+              17.063739582535
+            ],
+            [
+              0.0,
+              15.747989229657
+            ],
+            [
+              12.003443396817,
+              26.252643350166
+            ]
+          ],
+          "external_neighbours": 4,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 17.063739582535
+          }
+        },
+        {
+          "area": 163.9785460617009,
+          "bounds": [
+            [
+              17.063739582535,
+              27.476405204181
+            ],
+            [
+              0.0,
+              15.747989229657
+            ],
+            [
+              26.252643350166,
+              26.252643350166
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 25,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 26.252643350166
+          }
+        },
+        {
+          "area": 148.37215449019692,
+          "bounds": [
+            [
+              17.063739582535,
+              27.476405204181
+            ],
+            [
+              15.747989229657,
+              15.747989229657
+            ],
+            [
+              12.003443396817,
+              26.252643350166
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 28,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 15.747989229657
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10650",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        6,
+        7,
+        8,
+        19
+      ],
+      "faces": [
+        {
+          "area": 32.55154228643126,
+          "bounds": [
+            [
+              0.0,
+              4.497835270519
+            ],
+            [
+              10.104320703693,
+              10.104320703693
+            ],
+            [
+              8.696150363369,
+              15.933307868845
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 8
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 10.104320703693
+          }
+        },
+        {
+          "area": 32.55154228643126,
+          "bounds": [
+            [
+              0.0,
+              4.497835270519
+            ],
+            [
+              4.490649167166,
+              4.490649167166
+            ],
+            [
+              8.696150363369,
+              15.933307868845
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 7,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 8
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 4.490649167166
+          }
+        },
+        {
+          "area": 40.627025093853376,
+          "bounds": [
+            [
+              4.497835270519,
+              4.497835270519
+            ],
+            [
+              4.490649167166,
+              10.104320703693
+            ],
+            [
+              8.696150363369,
+              15.933307868845
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 8,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 4.497835270519
+          }
+        },
+        {
+          "area": 22.65129362274891,
+          "bounds": [
+            [
+              0.0,
+              4.497835270519
+            ],
+            [
+              4.490649167166,
+              10.104320703693
+            ],
+            [
+              8.696150363369,
+              8.696150363369
+            ]
+          ],
+          "external_neighbours": 7,
+          "index": 19,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 8.696150363369
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10733",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        11,
+        12,
+        13,
+        15
+      ],
+      "faces": [
+        {
+          "area": 21.739765284531998,
+          "bounds": [
+            [
+              23.022098651823,
+              23.022098651823
+            ],
+            [
+              35.757550735661,
+              46.627433377927
+            ],
+            [
+              2.141010615925,
+              4.141010615925
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 11,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 12
+            },
+            {
+              "kind": "concave",
+              "to": 15
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 23.022098651823
+          }
+        },
+        {
+          "area": 7.9147799329499975,
+          "bounds": [
+            [
+              23.022098651823,
+              26.979488618298
+            ],
+            [
+              35.757550735661,
+              35.757550735661
+            ],
+            [
+              2.141010615925,
+              4.141010615925
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 12,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 13
+            },
+            {
+              "kind": "concave",
+              "to": 15
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 35.757550735661
+          }
+        },
+        {
+          "area": 21.739765284531998,
+          "bounds": [
+            [
+              26.979488618298,
+              26.979488618298
+            ],
+            [
+              35.757550735661,
+              46.627433377927
+            ],
+            [
+              2.141010615925,
+              4.141010615925
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 26.979488618298
+          }
+        },
+        {
+          "area": 43.016364505264214,
+          "bounds": [
+            [
+              23.022098651823,
+              26.979488618298
+            ],
+            [
+              35.757550735661,
+              46.627433377927
+            ],
+            [
+              2.141010615925,
+              2.141010615925
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 15,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 2.141010615925
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10849",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 2,
+      "face_count": 4,
+      "face_indices": [
+        16,
+        17,
+        18,
+        19
+      ],
+      "faces": [
+        {
+          "area": 61.237603083851475,
+          "bounds": [
+            [
+              29.082668769219,
+              29.082668769219
+            ],
+            [
+              22.824697219676,
+              46.627433377927
+            ],
+            [
+              0.0,
+              2.572712761958
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 29.082668769219
+          }
+        },
+        {
+          "area": 47.605472316501995,
+          "bounds": [
+            [
+              29.082668769219,
+              31.082668769219
+            ],
+            [
+              22.824697219676,
+              46.627433377927
+            ],
+            [
+              2.572712761958,
+              2.572712761958
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 2.572712761958
+          }
+        },
+        {
+          "area": 61.237603083851475,
+          "bounds": [
+            [
+              31.082668769219,
+              31.082668769219
+            ],
+            [
+              22.824697219676,
+              46.627433377927
+            ],
+            [
+              0.0,
+              2.572712761958
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 31.082668769219
+          }
+        },
+        {
+          "area": 5.145425523916,
+          "bounds": [
+            [
+              29.082668769219,
+              31.082668769219
+            ],
+            [
+              22.824697219676,
+              22.824697219676
+            ],
+            [
+              0.0,
+              2.572712761958
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 22.824697219676
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10849",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        5,
+        6,
+        7,
+        24,
+        29
+      ],
+      "faces": [
+        {
+          "area": 279.6499497383001,
+          "bounds": [
+            [
+              0.0,
+              14.124504607842
+            ],
+            [
+              19.671603791123,
+              19.671603791123
+            ],
+            [
+              0.0,
+              20.128196493706
+            ]
+          ],
+          "external_neighbours": 5,
+          "index": 5,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 7
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 19.671603791123
+          }
+        },
+        {
+          "area": 279.64994973830017,
+          "bounds": [
+            [
+              0.0,
+              14.124504607842
+            ],
+            [
+              17.405931036967,
+              17.405931036967
+            ],
+            [
+              0.0,
+              20.128196493706
+            ]
+          ],
+          "external_neighbours": 5,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 7
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 17.405931036967
+          }
+        },
+        {
+          "area": 5.954065411828425,
+          "bounds": [
+            [
+              0.0,
+              2.627945894175
+            ],
+            [
+              17.405931036967,
+              19.671603791123
+            ],
+            [
+              20.128196493706,
+              20.128196493706
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 7,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 20.128196493706
+          }
+        },
+        {
+          "area": 45.60390638608801,
+          "bounds": [
+            [
+              14.124504607842,
+              14.124504607842
+            ],
+            [
+              17.405931036967,
+              19.671603791123
+            ],
+            [
+              0.0,
+              20.128196493706
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 14.124504607842
+          }
+        },
+        {
+          "area": 19.85863805872727,
+          "bounds": [
+            [
+              5.359497383255,
+              14.124504607842
+            ],
+            [
+              17.405931036967,
+              19.671603791123
+            ],
+            [
+              20.128196493706,
+              20.128196493706
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 29,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 20.128196493706
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10851",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        11,
+        12,
+        13,
+        25,
+        26
+      ],
+      "faces": [
+        {
+          "area": 109.83403225780566,
+          "bounds": [
+            [
+              21.886162608051,
+              49.91012589185
+            ],
+            [
+              0.0,
+              4.290650525319125
+            ],
+            [
+              28.431119134727,
+              28.431119134727
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 11,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 12
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 28.431119134727
+          }
+        },
+        {
+          "area": 21.176703789062014,
+          "bounds": [
+            [
+              21.886162608051,
+              21.886162608051
+            ],
+            [
+              0.0,
+              4.290650525319
+            ],
+            [
+              28.431119134727,
+              33.366665309858
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 12,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 13
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 21.886162608051
+          }
+        },
+        {
+          "area": 109.83403225780563,
+          "bounds": [
+            [
+              21.886162608051,
+              49.91012589185
+            ],
+            [
+              0.0,
+              4.290650525319125
+            ],
+            [
+              33.366665309858,
+              33.366665309858
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 33.366665309858
+          }
+        },
+        {
+          "area": 90.23523296275599,
+          "bounds": [
+            [
+              31.627400989502,
+              49.91012589185
+            ],
+            [
+              4.290650525319,
+              4.290650525319
+            ],
+            [
+              28.431119134727,
+              33.366665309858
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 25,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 4.290650525319
+          }
+        },
+        {
+          "area": 31.025508500727913,
+          "bounds": [
+            [
+              21.886162608051,
+              28.17229739432
+            ],
+            [
+              4.290650525319,
+              4.290650525319
+            ],
+            [
+              28.431119134727,
+              33.366665309858
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 26,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 4.290650525319
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "10923",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "faces": [
+        {
+          "area": 125.25094003581894,
+          "bounds": [
+            [
+              2.487840067696,
+              21.043831269233
+            ],
+            [
+              0.0,
+              6.749892187136
+            ],
+            [
+              3.748682889108,
+              3.748682889108
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 3.748682889108
+          }
+        },
+        {
+          "area": 21.35507532603592,
+          "bounds": [
+            [
+              2.487840067696,
+              2.487840067696
+            ],
+            [
+              0.0,
+              6.749892187136
+            ],
+            [
+              3.748682889108,
+              6.912448284759
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 16
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 2.487840067696
+          }
+        },
+        {
+          "area": 125.25094003581894,
+          "bounds": [
+            [
+              2.487840067696,
+              21.043831269233
+            ],
+            [
+              0.0,
+              6.749892187136
+            ],
+            [
+              6.912448284759,
+              6.912448284759
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 6.912448284759
+          }
+        },
+        {
+          "area": 58.70680284542717,
+          "bounds": [
+            [
+              2.487840067696,
+              21.043831269233
+            ],
+            [
+              6.749892187136,
+              6.749892187136
+            ],
+            [
+              3.748682889108,
+              6.912448284759
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 6.749892187136
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "1113",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        0,
+        1,
+        4,
+        6
+      ],
+      "faces": [
+        {
+          "area": 326.02065345475444,
+          "bounds": [
+            [
+              23.211470459802,
+              44.098369973712
+            ],
+            [
+              9.4552397958,
+              25.070828730155
+            ],
+            [
+              32.568711950101,
+              32.568711950101
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 0,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 1
+            },
+            {
+              "kind": "concave",
+              "to": 4
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 32.568711950101
+          }
+        },
+        {
+          "area": 46.601594118690485,
+          "bounds": [
+            [
+              23.741722225746,
+              44.098369973712
+            ],
+            [
+              9.4552397958,
+              9.4552397958
+            ],
+            [
+              30.279455158135,
+              32.568711950101
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 1,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 9.4552397958
+          }
+        },
+        {
+          "area": 34.53421057188198,
+          "bounds": [
+            [
+              23.211470459802,
+              23.211470459802
+            ],
+            [
+              9.985491561744,
+              25.070828730155
+            ],
+            [
+              30.279455158135,
+              32.568711950101
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 23.211470459802
+          }
+        },
+        {
+          "area": 326.02065345475444,
+          "bounds": [
+            [
+              23.211470459802,
+              44.098369973712
+            ],
+            [
+              9.4552397958,
+              25.070828730155
+            ],
+            [
+              30.279455158135,
+              30.279455158135
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 6,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 30.279455158135
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "1118",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        21,
+        22,
+        23,
+        25
+      ],
+      "faces": [
+        {
+          "area": 127.48486768844192,
+          "bounds": [
+            [
+              0.0,
+              21.96487751385
+            ],
+            [
+              6.492026371645,
+              6.492026371645
+            ],
+            [
+              18.576723779687,
+              24.380756495465
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 21,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 6.492026371645
+          }
+        },
+        {
+          "area": 38.41829744680532,
+          "bounds": [
+            [
+              21.96487751385,
+              21.96487751385
+            ],
+            [
+              6.492026371645,
+              13.111268427667
+            ],
+            [
+              18.576723779687,
+              24.380756495465
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 23
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 21.96487751385
+          }
+        },
+        {
+          "area": 127.48486768844192,
+          "bounds": [
+            [
+              0.0,
+              21.96487751385
+            ],
+            [
+              13.111268427667,
+              13.111268427667
+            ],
+            [
+              18.576723779687,
+              24.380756495465
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 13.111268427667
+          }
+        },
+        {
+          "area": 145.39084099504785,
+          "bounds": [
+            [
+              0.0,
+              21.96487751385
+            ],
+            [
+              6.492026371645,
+              13.111268427667
+            ],
+            [
+              18.576723779687,
+              18.576723779687
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 25,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 18.576723779687
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11189",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "faces": [
+        {
+          "area": 23.027013322163825,
+          "bounds": [
+            [
+              40.0169352951415,
+              44.092805134868
+            ],
+            [
+              29.485384611289,
+              35.1993636880895
+            ],
+            [
+              11.745772928065,
+              11.745772928065
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 1,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 3
+            },
+            {
+              "kind": "concave",
+              "to": 6
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 11.745772928065
+          }
+        },
+        {
+          "area": 9.340109030766413,
+          "bounds": [
+            [
+              40.741396007384,
+              44.092805134868
+            ],
+            [
+              35.199363688089,
+              35.199363688089
+            ],
+            [
+              11.745772928065,
+              14.532692899778
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 3,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 35.199363688089
+          }
+        },
+        {
+          "area": 6.497293775883025,
+          "bounds": [
+            [
+              38.905432478369,
+              38.905432478369
+            ],
+            [
+              29.485384611289,
+              33.363400159074
+            ],
+            [
+              12.857275744838,
+              14.532692899778
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 38.905432478369
+          }
+        },
+        {
+          "area": 13.83907320126784,
+          "bounds": [
+            [
+              38.905432478369,
+              44.092805134868
+            ],
+            [
+              29.485384611289,
+              29.485384611289
+            ],
+            [
+              11.745772928065,
+              14.532692899778
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 6,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 29.485384611289
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11272",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        13,
+        14,
+        15,
+        24
+      ],
+      "faces": [
+        {
+          "area": 67.69056168487636,
+          "bounds": [
+            [
+              15.443944280442,
+              20.458788291626
+            ],
+            [
+              45.85727115285,
+              45.85727115285
+            ],
+            [
+              0.0,
+              13.498039327627
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 14
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 45.85727115285
+          }
+        },
+        {
+          "area": 39.33182522855271,
+          "bounds": [
+            [
+              15.443944280442,
+              15.443944280442
+            ],
+            [
+              42.943379418363,
+              45.85727115285
+            ],
+            [
+              0.0,
+              13.498039327627
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 15.443944280442
+          }
+        },
+        {
+          "area": 67.69056168487636,
+          "bounds": [
+            [
+              15.443944280442,
+              20.458788291626
+            ],
+            [
+              42.943379418363,
+              42.943379418363
+            ],
+            [
+              0.0,
+              13.498039327627
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 42.943379418363
+          }
+        },
+        {
+          "area": 14.612712513930665,
+          "bounds": [
+            [
+              15.443944280442,
+              20.458788291626
+            ],
+            [
+              42.943379418363,
+              45.85727115285
+            ],
+            [
+              13.498039327627,
+              13.498039327627
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 24,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 13.498039327627
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11428",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        29
+      ],
+      "faces": [
+        {
+          "area": 77.90059865643875,
+          "bounds": [
+            [
+              15.295401971547,
+              15.295401971547
+            ],
+            [
+              16.320723388903,
+              27.992631384756
+            ],
+            [
+              8.189143528267,
+              14.863339271081
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            },
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 15.295401971547
+          }
+        },
+        {
+          "area": 77.90059865643875,
+          "bounds": [
+            [
+              12.837401302257,
+              12.837401302257
+            ],
+            [
+              16.320723388903,
+              27.992631384756
+            ],
+            [
+              8.189143528267,
+              14.863339271081
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 19,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            },
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 12.837401302257
+          }
+        },
+        {
+          "area": 16.405177602809278,
+          "bounds": [
+            [
+              12.837401302257,
+              15.295401971547
+            ],
+            [
+              16.320723388903,
+              16.320723388903
+            ],
+            [
+              8.189143528267,
+              14.863339271081
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 29
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 16.320723388903
+          }
+        },
+        {
+          "area": 28.68955766569796,
+          "bounds": [
+            [
+              12.837401302257,
+              15.295401971547
+            ],
+            [
+              16.320723388903,
+              27.992631384756
+            ],
+            [
+              8.189143528267,
+              8.189143528267
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 29,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 8.189143528267
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11512",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        14,
+        15,
+        16,
+        18
+      ],
+      "faces": [
+        {
+          "area": 36.40579557336117,
+          "bounds": [
+            [
+              1.340505827197,
+              1.340505827197
+            ],
+            [
+              21.4205368874,
+              23.87635502613
+            ],
+            [
+              0.0,
+              14.824304373038
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 1.340505827197
+          }
+        },
+        {
+          "area": 107.02769079128181,
+          "bounds": [
+            [
+              1.340505827197,
+              8.856507158689
+            ],
+            [
+              21.4205368874,
+              21.4205368874
+            ],
+            [
+              0.0,
+              14.824304373038
+            ]
+          ],
+          "external_neighbours": 5,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 16
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 21.4205368874
+          }
+        },
+        {
+          "area": 36.40579557336117,
+          "bounds": [
+            [
+              8.856507158689,
+              8.856507158689
+            ],
+            [
+              21.4205368874,
+              23.87635502613
+            ],
+            [
+              0.0,
+              14.824304373038
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 8.856507158689
+          }
+        },
+        {
+          "area": 18.457932400596878,
+          "bounds": [
+            [
+              1.340505827197,
+              8.856507158689
+            ],
+            [
+              21.4205368874,
+              23.87635502613
+            ],
+            [
+              14.824304373038,
+              14.824304373038
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 18,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 14.824304373038
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11525",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 4
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 4
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        4,
+        6,
+        7,
+        19
+      ],
+      "faces": [
+        {
+          "area": 546.1566107349556,
+          "bounds": [
+            [
+              0.0,
+              20.797477762239
+            ],
+            [
+              3.60468196549,
+              29.865395739474003
+            ],
+            [
+              31.043851645962,
+              31.043851645962
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 31.043851645962
+          }
+        },
+        {
+          "area": 61.28437367777146,
+          "bounds": [
+            [
+              0.0,
+              20.797477762239
+            ],
+            [
+              3.60468196549,
+              3.60468196549
+            ],
+            [
+              28.09713020318,
+              31.043851645962
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 7
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 3.60468196549
+          }
+        },
+        {
+          "area": 546.1566107349556,
+          "bounds": [
+            [
+              0.0,
+              20.797477762239
+            ],
+            [
+              3.6046819654899984,
+              29.865395739474
+            ],
+            [
+              28.09713020318,
+              28.09713020318
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 7,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 28.09713020318
+          }
+        },
+        {
+          "area": 77.38300838055926,
+          "bounds": [
+            [
+              20.797477762239,
+              20.797477762239
+            ],
+            [
+              3.6046819654899984,
+              29.865395739474003
+            ],
+            [
+              28.09713020318,
+              31.043851645962
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 20.797477762239
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11534",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        21,
+        22,
+        23,
+        25
+      ],
+      "faces": [
+        {
+          "area": 36.864874043458485,
+          "bounds": [
+            [
+              11.223450907213,
+              11.223450907213
+            ],
+            [
+              11.399881128239,
+              13.856689964022
+            ],
+            [
+              11.515585503468,
+              26.520771705393
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 21,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 11.223450907213
+          }
+        },
+        {
+          "area": 25.855653123849418,
+          "bounds": [
+            [
+              11.223450907213,
+              21.74753106651
+            ],
+            [
+              11.399881128239,
+              13.856689964022
+            ],
+            [
+              26.520771705393,
+              26.520771705393
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 23
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 26.520771705393
+          }
+        },
+        {
+          "area": 36.864874043458485,
+          "bounds": [
+            [
+              21.74753106651,
+              21.74753106651
+            ],
+            [
+              11.399881128239,
+              13.856689964022
+            ],
+            [
+              11.515585503468,
+              26.520771705393
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 21.74753106651
+          }
+        },
+        {
+          "area": 157.91578239423598,
+          "bounds": [
+            [
+              11.223450907213,
+              21.74753106651
+            ],
+            [
+              11.399881128239,
+              11.399881128239
+            ],
+            [
+              11.515585503468,
+              26.520771705393
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 25,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 11.399881128239
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11660",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 3,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        15,
+        16,
+        17,
+        26
+      ],
+      "faces": [
+        {
+          "area": 52.245576491022916,
+          "bounds": [
+            [
+              9.488881960093,
+              9.488881960093
+            ],
+            [
+              18.960629954005,
+              26.673476557702
+            ],
+            [
+              10.946942265198,
+              17.720780664367
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 9.488881960093
+          }
+        },
+        {
+          "area": 52.245576491022916,
+          "bounds": [
+            [
+              16.984908784659,
+              16.984908784659
+            ],
+            [
+              18.960629954005,
+              26.673476557702
+            ],
+            [
+              10.946942265198,
+              17.720780664367
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 16.984908784659
+          }
+        },
+        {
+          "area": 57.81570503507548,
+          "bounds": [
+            [
+              9.488881960093,
+              16.984908784659
+            ],
+            [
+              18.960629954005,
+              26.673476557702
+            ],
+            [
+              10.946942265198,
+              10.946942265198
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 10.946942265198
+          }
+        },
+        {
+          "area": 50.776874345446025,
+          "bounds": [
+            [
+              9.488881960093,
+              16.984908784659
+            ],
+            [
+              18.960629954005,
+              18.960629954005
+            ],
+            [
+              10.946942265198,
+              17.720780664367
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 26,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 18.960629954005
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11687",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        12,
+        13,
+        14,
+        18
+      ],
+      "faces": [
+        {
+          "area": 185.85478407975643,
+          "bounds": [
+            [
+              26.693293782903,
+              26.693293782903
+            ],
+            [
+              32.6173111931,
+              45.615798234859
+            ],
+            [
+              0.0,
+              14.298185895226
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 12,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 13
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 26.693293782903
+          }
+        },
+        {
+          "area": 41.19183565982542,
+          "bounds": [
+            [
+              26.693293782903,
+              29.574207205184
+            ],
+            [
+              32.6173111931,
+              32.6173111931
+            ],
+            [
+              0.0,
+              14.298185895226
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 14
+            },
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 32.6173111931
+          }
+        },
+        {
+          "area": 185.85478407975643,
+          "bounds": [
+            [
+              29.574207205184,
+              29.574207205184
+            ],
+            [
+              32.6173111931,
+              45.615798234859
+            ],
+            [
+              0.0,
+              14.298185895226
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 29.574207205184
+          }
+        },
+        {
+          "area": 37.447515787949115,
+          "bounds": [
+            [
+              26.693293782903,
+              29.574207205184
+            ],
+            [
+              32.6173111931,
+              45.615798234859
+            ],
+            [
+              14.298185895226,
+              14.298185895226
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 18,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 14.298185895226
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11822",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        16,
+        17,
+        18,
+        24
+      ],
+      "faces": [
+        {
+          "area": 18.919236093766237,
+          "bounds": [
+            [
+              26.883579533268,
+              30.020408994141
+            ],
+            [
+              9.374355057713,
+              9.374355057713
+            ],
+            [
+              7.786039428303,
+              13.817363837154
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 9.374355057713
+          }
+        },
+        {
+          "area": 18.919236093766237,
+          "bounds": [
+            [
+              26.883579533268,
+              30.020408994141
+            ],
+            [
+              24.549305679021,
+              24.549305679021
+            ],
+            [
+              7.786039428303,
+              13.817363837154
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 24.549305679021
+          }
+        },
+        {
+          "area": 91.52505008540356,
+          "bounds": [
+            [
+              26.883579533268,
+              26.883579533268
+            ],
+            [
+              9.374355057713,
+              24.549305679021
+            ],
+            [
+              7.786039428303,
+              13.817363837154
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 26.883579533268
+          }
+        },
+        {
+          "area": 47.60123217621195,
+          "bounds": [
+            [
+              26.883579533268,
+              30.020408994141
+            ],
+            [
+              9.374355057713,
+              24.549305679021
+            ],
+            [
+              7.786039428303,
+              7.786039428303
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 24,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 7.786039428303
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11966",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        12,
+        13,
+        14,
+        22
+      ],
+      "faces": [
+        {
+          "area": 36.113915464546245,
+          "bounds": [
+            [
+              21.75563702568,
+              21.75563702568
+            ],
+            [
+              8.856210772137,
+              14.170706695676
+            ],
+            [
+              6.238454385193,
+              13.033814845362
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 12,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 13
+            },
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 21.75563702568
+          }
+        },
+        {
+          "area": 14.230238312866986,
+          "bounds": [
+            [
+              19.661526139837,
+              21.75563702568
+            ],
+            [
+              8.856210772137,
+              8.856210772137
+            ],
+            [
+              6.238454385193,
+              13.033814845362
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 14
+            },
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 8.856210772137
+          }
+        },
+        {
+          "area": 36.113915464546245,
+          "bounds": [
+            [
+              19.661526139837,
+              19.661526139837
+            ],
+            [
+              8.856210772137,
+              14.170706695676
+            ],
+            [
+              6.238454385193,
+              13.033814845362
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 19.661526139837
+          }
+        },
+        {
+          "area": 11.129143766251254,
+          "bounds": [
+            [
+              19.661526139837,
+              21.75563702568
+            ],
+            [
+              8.856210772137,
+              14.170706695676
+            ],
+            [
+              6.238454385193,
+              6.238454385193
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 6.238454385193
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "11994",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": false,
+          "touching_families": [
+            "pockets",
+            "slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        7,
+        9,
+        11,
+        24,
+        25
+      ],
+      "faces": [
+        {
+          "area": 202.37752660446222,
+          "bounds": [
+            [
+              0.0,
+              16.721921674607
+            ],
+            [
+              15.0,
+              15.0
+            ],
+            [
+              34.08646494619,
+              46.188993025351
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 7,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 9
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 15.0
+          }
+        },
+        {
+          "area": 31.39698053029414,
+          "bounds": [
+            [
+              0.0,
+              16.721921674607
+            ],
+            [
+              13.0,
+              15.0
+            ],
+            [
+              34.08646494619,
+              34.08646494619
+            ]
+          ],
+          "external_neighbours": 4,
+          "index": 9,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 11
+            },
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 34.08646494619
+          }
+        },
+        {
+          "area": 24.067748376512085,
+          "bounds": [
+            [
+              0.0,
+              1.988654619852
+            ],
+            [
+              13.0,
+              13.0
+            ],
+            [
+              34.08646494619,
+              46.188993025351
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 11,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 13.0
+          }
+        },
+        {
+          "area": 130.889117389571,
+          "bounds": [
+            [
+              5.906898851818,
+              16.721921674607
+            ],
+            [
+              13.0,
+              13.0
+            ],
+            [
+              34.08646494619,
+              46.188993025351
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 13.0
+          }
+        },
+        {
+          "area": 24.20505615832201,
+          "bounds": [
+            [
+              16.721921674607,
+              16.721921674607
+            ],
+            [
+              13.0,
+              15.0
+            ],
+            [
+              34.08646494619,
+              46.188993025351
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 25,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 16.721921674607
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "1203",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 3,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        12,
+        13,
+        14,
+        22
+      ],
+      "faces": [
+        {
+          "area": 7.950748060403032,
+          "bounds": [
+            [
+              19.127876394528,
+              22.04577192812
+            ],
+            [
+              33.947450613833,
+              36.672273339277
+            ],
+            [
+              14.19866896836,
+              14.19866896836
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 12,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 14
+            },
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 14.19866896836
+          }
+        },
+        {
+          "area": 7.950748060403032,
+          "bounds": [
+            [
+              19.127876394528,
+              22.04577192812
+            ],
+            [
+              33.947450613833,
+              36.672273339277
+            ],
+            [
+              21.330535509401,
+              21.330535509401
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 14
+            },
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 21.330535509401
+          }
+        },
+        {
+          "area": 19.433072025862206,
+          "bounds": [
+            [
+              22.04577192812,
+              22.04577192812
+            ],
+            [
+              33.947450613833,
+              36.672273339277
+            ],
+            [
+              14.19866896836,
+              21.330535509401
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 22.04577192812
+          }
+        },
+        {
+          "area": 20.81004152627777,
+          "bounds": [
+            [
+              19.127876394528,
+              22.04577192812
+            ],
+            [
+              33.947450613833,
+              33.947450613833
+            ],
+            [
+              14.19866896836,
+              21.330535509401
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 22,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 33.947450613833
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12120",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        22,
+        23,
+        24,
+        34
+      ],
+      "faces": [
+        {
+          "area": 74.68045531011342,
+          "bounds": [
+            [
+              28.835036220479,
+              28.835036220479
+            ],
+            [
+              17.424632636331,
+              30.144025053902
+            ],
+            [
+              10.970845384072,
+              16.842230813375
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 23
+            },
+            {
+              "kind": "concave",
+              "to": 34
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 28.835036220479
+          }
+        },
+        {
+          "area": 45.81753546234773,
+          "bounds": [
+            [
+              28.835036220479,
+              36.638566752418
+            ],
+            [
+              17.424632636331,
+              17.424632636331
+            ],
+            [
+              10.970845384072,
+              16.842230813375
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 34
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 17.424632636331
+          }
+        },
+        {
+          "area": 74.68045531011342,
+          "bounds": [
+            [
+              36.638566752418,
+              36.638566752418
+            ],
+            [
+              17.424632636331,
+              30.144025053902
+            ],
+            [
+              10.970845384072,
+              16.842230813375
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 34
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 36.638566752418
+          }
+        },
+        {
+          "area": 99.25616707822867,
+          "bounds": [
+            [
+              28.835036220479,
+              36.638566752418
+            ],
+            [
+              17.424632636331,
+              30.144025053902
+            ],
+            [
+              10.970845384072,
+              10.970845384072
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 34,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 10.970845384072
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12211",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        30
+      ],
+      "faces": [
+        {
+          "area": 100.37607772150324,
+          "bounds": [
+            [
+              5.013099773238,
+              10.25812528142
+            ],
+            [
+              39.834223534581,
+              39.834223534581
+            ],
+            [
+              0.0,
+              19.513685960095
+            ]
+          ],
+          "external_neighbours": 4,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            },
+            {
+              "kind": "concave",
+              "to": 30
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 39.834223534581
+          }
+        },
+        {
+          "area": 36.602770611674,
+          "bounds": [
+            [
+              5.013099773238,
+              5.013099773238
+            ],
+            [
+              37.834223534581,
+              39.834223534581
+            ],
+            [
+              0.0,
+              18.301385305837
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 19,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 5.013099773238
+          }
+        },
+        {
+          "area": 100.37607772150324,
+          "bounds": [
+            [
+              5.013099773238,
+              10.25812528142
+            ],
+            [
+              37.834223534581,
+              37.834223534581
+            ],
+            [
+              0.0,
+              19.513685960095
+            ]
+          ],
+          "external_neighbours": 4,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 30
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 37.834223534581
+          }
+        },
+        {
+          "area": 7.233923271294,
+          "bounds": [
+            [
+              6.641163645773,
+              10.25812528142
+            ],
+            [
+              37.834223534581,
+              39.834223534581
+            ],
+            [
+              19.513685960095,
+              19.513685960095
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 30,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 19.513685960095
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12275",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 1,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        20,
+        21,
+        22,
+        28
+      ],
+      "faces": [
+        {
+          "area": 105.46186893410452,
+          "bounds": [
+            [
+              0.0,
+              6.768397088363
+            ],
+            [
+              1.927836372661,
+              1.927836372661
+            ],
+            [
+              0.0,
+              15.581513253031
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 21
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 1.927836372661
+          }
+        },
+        {
+          "area": 357.98515012769224,
+          "bounds": [
+            [
+              6.768397088363,
+              6.768397088363
+            ],
+            [
+              1.927836372661,
+              24.902828872703
+            ],
+            [
+              0.0,
+              15.581513253031
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 21,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 22
+            },
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 6.768397088363
+          }
+        },
+        {
+          "area": 105.46186893410452,
+          "bounds": [
+            [
+              0.0,
+              6.768397088363
+            ],
+            [
+              24.902828872703,
+              24.902828872703
+            ],
+            [
+              0.0,
+              15.581513253031
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 28
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 24.902828872703
+          }
+        },
+        {
+          "area": 155.50387234244602,
+          "bounds": [
+            [
+              0.0,
+              6.768397088363
+            ],
+            [
+              1.927836372661,
+              24.902828872703
+            ],
+            [
+              15.581513253031,
+              15.581513253031
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 28,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 15.581513253031
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12375",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        21
+      ],
+      "faces": [
+        {
+          "area": 52.95863626585026,
+          "bounds": [
+            [
+              19.343027048912,
+              19.343027048912
+            ],
+            [
+              30.689881904288,
+              32.773248757433
+            ],
+            [
+              4.473951986143,
+              29.893688402658
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 19.343027048912
+          }
+        },
+        {
+          "area": 7.273823704450446,
+          "bounds": [
+            [
+              15.851647845355,
+              19.343027048912
+            ],
+            [
+              30.689881904288,
+              32.773248757433
+            ],
+            [
+              4.473951986143,
+              4.473951986143
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 4.473951986143
+          }
+        },
+        {
+          "area": 52.95863626585026,
+          "bounds": [
+            [
+              15.851647845355,
+              15.851647845355
+            ],
+            [
+              30.689881904288,
+              32.773248757433
+            ],
+            [
+              4.473951986143,
+              29.893688402658
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 15.851647845355
+          }
+        },
+        {
+          "area": 88.74993908452099,
+          "bounds": [
+            [
+              15.851647845355,
+              19.343027048912
+            ],
+            [
+              30.689881904288,
+              30.689881904288
+            ],
+            [
+              4.473951986143,
+              29.893688402658
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 21,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 30.689881904288
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12380",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "plates",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "plates",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        15,
+        17,
+        18,
+        26
+      ],
+      "faces": [
+        {
+          "area": 336.2127046937489,
+          "bounds": [
+            [
+              15.613242038191,
+              37.34984704768
+            ],
+            [
+              12.898314353012,
+              12.898314353012
+            ],
+            [
+              0.0,
+              16.275035991144
+            ]
+          ],
+          "external_neighbours": 8,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 12.898314353012
+          }
+        },
+        {
+          "area": 34.32902465821959,
+          "bounds": [
+            [
+              15.613242038191,
+              15.613242038191
+            ],
+            [
+              10.789008746751,
+              12.898314353012
+            ],
+            [
+              0.0,
+              16.275035991144
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 18
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 15.613242038191
+          }
+        },
+        {
+          "area": 332.94197292567316,
+          "bounds": [
+            [
+              15.613242038191,
+              37.34984704768
+            ],
+            [
+              10.789008746751,
+              10.789008746751
+            ],
+            [
+              0.0,
+              16.275035991144
+            ]
+          ],
+          "external_neighbours": 11,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 10.789008746751
+          }
+        },
+        {
+          "area": 44.065899276676824,
+          "bounds": [
+            [
+              15.613242038191,
+              37.34984704768
+            ],
+            [
+              10.789008746750369,
+              12.898314353012
+            ],
+            [
+              16.275035991144,
+              16.275035991144
+            ]
+          ],
+          "external_neighbours": 3,
+          "index": 26,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 16.275035991144
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12436",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        11,
+        13,
+        15,
+        17
+      ],
+      "faces": [
+        {
+          "area": 84.31193079577108,
+          "bounds": [
+            [
+              22.165517384143,
+              22.165517384143
+            ],
+            [
+              0.0,
+              4.792391772471
+            ],
+            [
+              0.0,
+              17.592871117108
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 11,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 13
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 22.165517384143
+          }
+        },
+        {
+          "area": 15.759415522103735,
+          "bounds": [
+            [
+              22.165517384143,
+              25.453941258967
+            ],
+            [
+              0.0,
+              4.792391772471
+            ],
+            [
+              17.592871117108,
+              17.592871117108
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 13,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            },
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 17.592871117108
+          }
+        },
+        {
+          "area": 84.31193079577108,
+          "bounds": [
+            [
+              25.453941258967,
+              25.453941258967
+            ],
+            [
+              0.0,
+              4.792391772471
+            ],
+            [
+              0.0,
+              17.592871117108
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 25.453941258967
+          }
+        },
+        {
+          "area": 57.85281740819949,
+          "bounds": [
+            [
+              22.165517384143,
+              25.453941258967
+            ],
+            [
+              4.792391772471,
+              4.792391772471
+            ],
+            [
+              0.0,
+              17.592871117108
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 17,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 4.792391772471
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12503",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        22,
+        23,
+        24,
+        32
+      ],
+      "faces": [
+        {
+          "area": 506.7647511425826,
+          "bounds": [
+            [
+              14.067151726230996,
+              48.242703462881
+            ],
+            [
+              0.0,
+              14.828282950561
+            ],
+            [
+              9.9892345221,
+              9.9892345221
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 22,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 23
+            },
+            {
+              "kind": "concave",
+              "to": 32
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 9.9892345221
+          }
+        },
+        {
+          "area": 335.3085590875033,
+          "bounds": [
+            [
+              14.067151726231,
+              14.067151726231
+            ],
+            [
+              0.0,
+              14.828282950561
+            ],
+            [
+              9.989234522099999,
+              32.602005009786
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 23,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 24
+            },
+            {
+              "kind": "concave",
+              "to": 32
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 14.067151726231
+          }
+        },
+        {
+          "area": 506.7647511425826,
+          "bounds": [
+            [
+              14.067151726230996,
+              48.242703462881
+            ],
+            [
+              0.0,
+              14.828282950561
+            ],
+            [
+              32.602005009786,
+              32.602005009786
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 32
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 32.602005009786
+          }
+        },
+        {
+          "area": 772.8039077109053,
+          "bounds": [
+            [
+              14.067151726230996,
+              48.242703462881
+            ],
+            [
+              14.828282950561,
+              14.828282950561
+            ],
+            [
+              9.9892345221,
+              32.602005009786
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 32,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 14.828282950561
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12556",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "plates",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "plates",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 5,
+      "face_indices": [
+        14,
+        15,
+        17,
+        21,
+        27
+      ],
+      "faces": [
+        {
+          "area": 221.2005526001131,
+          "bounds": [
+            [
+              3.37318393464,
+              3.37318393464
+            ],
+            [
+              2.8833673421336186,
+              15.702337991996
+            ],
+            [
+              7.408902538525964,
+              25.276698125917
+            ]
+          ],
+          "external_neighbours": 9,
+          "index": 14,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 15
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 3.37318393464
+          }
+        },
+        {
+          "area": 49.040697397626815,
+          "bounds": [
+            [
+              3.37318393464,
+              8.828011455421
+            ],
+            [
+              2.883367342134,
+              2.883367342134
+            ],
+            [
+              16.286368512231,
+              25.276698125917
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 2.883367342134
+          }
+        },
+        {
+          "area": 221.20055260010213,
+          "bounds": [
+            [
+              8.828011455421,
+              8.828011455421
+            ],
+            [
+              2.8833673421329085,
+              15.702337991996
+            ],
+            [
+              7.408902538525964,
+              25.276698125917
+            ]
+          ],
+          "external_neighbours": 9,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 21
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 8.828011455421
+          }
+        },
+        {
+          "area": 59.817430858231695,
+          "bounds": [
+            [
+              3.37318393464,
+              8.828011455421
+            ],
+            [
+              4.736376074713,
+              15.702337991996
+            ],
+            [
+              7.408902538526,
+              7.408902538526
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 21,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 7.408902538526
+          }
+        },
+        {
+          "area": 37.05596760190178,
+          "bounds": [
+            [
+              3.37318393464,
+              8.828011455421
+            ],
+            [
+              2.883367342134,
+              2.883367342134
+            ],
+            [
+              7.777914186947999,
+              14.571156954154
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 27,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 2.883367342134
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12589",
+      "principal_plane_axes": {
+        "x": 2,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 5
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 2,
+      "face_count": 4,
+      "face_indices": [
+        24,
+        25,
+        26,
+        30
+      ],
+      "faces": [
+        {
+          "area": 48.49207402504852,
+          "bounds": [
+            [
+              10.210932130461998,
+              29.213655241645
+            ],
+            [
+              0.0,
+              2.551848687229
+            ],
+            [
+              18.276698125917,
+              18.276698125917
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 24,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 25
+            },
+            {
+              "kind": "concave",
+              "to": 30
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 18.276698125917
+          }
+        },
+        {
+          "area": 5.103697374458,
+          "bounds": [
+            [
+              10.210932130462,
+              10.210932130462
+            ],
+            [
+              0.0,
+              2.551848687229
+            ],
+            [
+              18.276698125917,
+              20.276698125917
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 25,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 26
+            },
+            {
+              "kind": "concave",
+              "to": 30
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 10.210932130462
+          }
+        },
+        {
+          "area": 48.49207402504852,
+          "bounds": [
+            [
+              10.210932130461998,
+              29.213655241645
+            ],
+            [
+              0.0,
+              2.551848687229
+            ],
+            [
+              20.276698125917,
+              20.276698125917
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 26,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 30
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 20.276698125917
+          }
+        },
+        {
+          "area": 38.005446222366004,
+          "bounds": [
+            [
+              10.210932130461998,
+              29.213655241645
+            ],
+            [
+              2.551848687229,
+              2.551848687229
+            ],
+            [
+              18.276698125917,
+              20.276698125917
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 30,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "y",
+            "coordinate": 2.551848687229
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12589",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 2,
+          "full": false,
+          "touching_families": [
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        4,
+        6,
+        8,
+        27
+      ],
+      "faces": [
+        {
+          "area": 36.382727719923466,
+          "bounds": [
+            [
+              0.0,
+              5.060318880466
+            ],
+            [
+              0.0,
+              7.189809294503
+            ],
+            [
+              29.962773249697,
+              29.962773249697
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 29.962773249697
+          }
+        },
+        {
+          "area": 62.975495721284815,
+          "bounds": [
+            [
+              0.0,
+              5.060318880466
+            ],
+            [
+              7.189809294503,
+              7.189809294503
+            ],
+            [
+              17.517807387094,
+              29.962773249697
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 8
+            },
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 7.189809294503
+          }
+        },
+        {
+          "area": 36.382727719923466,
+          "bounds": [
+            [
+              0.0,
+              5.060318880466
+            ],
+            [
+              0.0,
+              7.189809294503
+            ],
+            [
+              17.517807387094,
+              17.517807387094
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 8,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 27
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 17.517807387094
+          }
+        },
+        {
+          "area": 89.47693122871561,
+          "bounds": [
+            [
+              5.060318880466,
+              5.060318880466
+            ],
+            [
+              0.0,
+              7.189809294503
+            ],
+            [
+              17.517807387094,
+              29.962773249697
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 27,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 5.060318880466
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "defining": {
+          "covered_faces": 0,
+          "full": false,
+          "touching_families": [],
+          "touching_records": 0
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12684",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        21
+      ],
+      "faces": [
+        {
+          "area": 45.55995135729648,
+          "bounds": [
+            [
+              10.165137954134,
+              14.285275699633
+            ],
+            [
+              7.0,
+              7.0
+            ],
+            [
+              0.0,
+              11.057870918774
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 18,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 7.0
+          }
+        },
+        {
+          "area": 8.240275490998002,
+          "bounds": [
+            [
+              10.165137954134,
+              14.285275699633
+            ],
+            [
+              5.0,
+              7.0
+            ],
+            [
+              11.057870918774,
+              11.057870918774
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            },
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 11.057870918774
+          }
+        },
+        {
+          "area": 45.55995135729648,
+          "bounds": [
+            [
+              10.165137954134,
+              14.285275699633
+            ],
+            [
+              5.0,
+              5.0
+            ],
+            [
+              0.0,
+              11.057870918774
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 20,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 21
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 5.0
+          }
+        },
+        {
+          "area": 22.115741837548,
+          "bounds": [
+            [
+              10.165137954134,
+              10.165137954134
+            ],
+            [
+              5.0,
+              7.0
+            ],
+            [
+              0.0,
+              11.057870918774
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 21,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 10.165137954134
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12698",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 2
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        15,
+        16,
+        17,
+        26
+      ],
+      "faces": [
+        {
+          "area": 31.23750232415138,
+          "bounds": [
+            [
+              17.536769656453,
+              21.386621656166
+            ],
+            [
+              12.968262080342,
+              12.968262080342
+            ],
+            [
+              28.376002567273,
+              36.48995144803
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 15,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 16
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 12.968262080342
+          }
+        },
+        {
+          "area": 31.079363532605694,
+          "bounds": [
+            [
+              17.536769656453,
+              17.536769656453
+            ],
+            [
+              9.137899825249,
+              12.968262080342
+            ],
+            [
+              28.376002567273,
+              36.48995144803
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 16,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 17
+            },
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "x",
+            "coordinate": 17.536769656453
+          }
+        },
+        {
+          "area": 31.23750232415138,
+          "bounds": [
+            [
+              17.536769656453,
+              21.386621656166
+            ],
+            [
+              9.137899825249,
+              9.137899825249
+            ],
+            [
+              28.376002567273,
+              36.48995144803
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 17,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 26
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 9.137899825249
+          }
+        },
+        {
+          "area": 14.746327787394982,
+          "bounds": [
+            [
+              17.536769656453,
+              21.386621656166
+            ],
+            [
+              9.137899825249,
+              12.968262080342
+            ],
+            [
+              28.376002567273,
+              28.376002567273
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 26,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "z",
+            "coordinate": 28.376002567273
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12736",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        4,
+        6,
+        8,
+        20
+      ],
+      "faces": [
+        {
+          "area": 225.36798920338325,
+          "bounds": [
+            [
+              0.0,
+              16.5221407677
+            ],
+            [
+              28.231658887446,
+              28.231658887446
+            ],
+            [
+              0.0,
+              13.64036249128
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 4,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 6
+            },
+            {
+              "kind": "concave",
+              "to": 20
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 28.231658887446
+          }
+        },
+        {
+          "area": 33.0442815354,
+          "bounds": [
+            [
+              0.0,
+              16.5221407677
+            ],
+            [
+              28.231658887446,
+              30.231658887446
+            ],
+            [
+              13.64036249128,
+              13.64036249128
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 8
+            },
+            {
+              "kind": "concave",
+              "to": 20
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 13.64036249128
+          }
+        },
+        {
+          "area": 225.36798920338325,
+          "bounds": [
+            [
+              0.0,
+              16.5221407677
+            ],
+            [
+              30.231658887446,
+              30.231658887446
+            ],
+            [
+              0.0,
+              13.64036249128
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 8,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 20
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 30.231658887446
+          }
+        },
+        {
+          "area": 27.28072498256,
+          "bounds": [
+            [
+              16.5221407677,
+              16.5221407677
+            ],
+            [
+              28.231658887446,
+              30.231658887446
+            ],
+            [
+              0.0,
+              13.64036249128
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 20,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 16.5221407677
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12791",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    },
+    {
+      "accepted": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "plates",
+            "rectangular_blind_slots",
+            "step_levels"
+          ],
+          "touching_records": 3
+        }
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        5,
+        6,
+        7,
+        19
+      ],
+      "faces": [
+        {
+          "area": 645.886345821697,
+          "bounds": [
+            [
+              0.0,
+              16.576813368792
+            ],
+            [
+              28.356606702755,
+              28.356606702755
+            ],
+            [
+              0.0,
+              38.963239282024
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 5,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 7
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 28.356606702755
+          }
+        },
+        {
+          "area": 645.886345821697,
+          "bounds": [
+            [
+              0.0,
+              16.576813368792
+            ],
+            [
+              26.288527265025,
+              26.288527265025
+            ],
+            [
+              0.0,
+              38.963239282024
+            ]
+          ],
+          "external_neighbours": 2,
+          "index": 6,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 7
+            },
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "y",
+            "coordinate": 26.288527265025
+          }
+        },
+        {
+          "area": 34.28216687108649,
+          "bounds": [
+            [
+              0.0,
+              16.576813368792
+            ],
+            [
+              26.288527265025,
+              28.356606702755
+            ],
+            [
+              38.963239282024,
+              38.963239282024
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 7,
+          "internal_arcs": [
+            {
+              "kind": "concave",
+              "to": 19
+            }
+          ],
+          "plane": {
+            "axis": "z",
+            "coordinate": 38.963239282024
+          }
+        },
+        {
+          "area": 80.5790739865076,
+          "bounds": [
+            [
+              16.576813368792,
+              16.576813368792
+            ],
+            [
+              26.288527265025,
+              28.356606702755
+            ],
+            [
+              0.0,
+              38.963239282024
+            ]
+          ],
+          "external_neighbours": 1,
+          "index": 19,
+          "internal_arcs": [],
+          "plane": {
+            "axis": "x",
+            "coordinate": 16.576813368792
+          }
+        }
+      ],
+      "mapped": {
+        "constituent": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "defining": {
+          "covered_faces": 4,
+          "full": true,
+          "touching_families": [
+            "rectangular_blind_slots"
+          ],
+          "touching_records": 1
+        },
+        "families": [
+          "rectangular_blind_slots"
+        ]
+      },
+      "model_id": "12816",
+      "principal_plane_axes": {
+        "x": 1,
+        "y": 2,
+        "z": 1
+      },
+      "surface_counts": {
+        "PLANE": 4
+      }
+    }
+  ],
+  "constituent_component_touches_by_family": {
+    "plates": 6,
+    "pockets": 8,
+    "rectangular_blind_slots": 21,
+    "slots": 1,
+    "step_levels": 41
+  },
+  "derivation": "connected components of same-class original faces under shared-edge adjacency",
+  "format": "b123d-recognisers-mfcadpp-component-overlap-audit",
+  "format_version": 1,
+  "implementation_commit": "c6381c6f163e656594a9819af6dea466320efc85",
+  "mapped_families": [
+    "rectangular_blind_slots"
+  ],
+  "models_with_class": 40,
+  "native_instance_labels": false,
+  "selection": {
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df"
+  },
+  "summary": {
+    "components": 43,
+    "constituent_covered_faces": 134,
+    "constituent_full_components": 25,
+    "constituent_touched_components": 42,
+    "defining_covered_faces": 130,
+    "defining_full_components": 22,
+    "defining_touched_components": 42,
+    "faces": 178,
+    "mapped_constituent_covered_faces": 84,
+    "mapped_constituent_full_components": 21,
+    "mapped_constituent_touched_components": 21,
+    "mapped_defining_covered_faces": 84,
+    "mapped_defining_full_components": 21,
+    "mapped_defining_touched_components": 21
+  }
+}
