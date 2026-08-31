@@ -34,6 +34,7 @@ from tools.run_effectiveness_baseline import (
 ROOT = Path(__file__).parents[1]
 TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
 TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
+TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -139,6 +140,26 @@ def test_taxonomy_v2_moves_only_circular_blind_step_to_its_physical_family() -> 
     assert historical[21]["families"] == ["fillets"]
     assert current[21]["families"] == ["circular-blind-steps"]
     assert load_taxonomy(TAXONOMY_V2, "mfinstseg") == current
+
+
+def test_taxonomy_v3_marks_only_circular_through_slot_unsupported() -> None:
+    historical = load_taxonomy(TAXONOMY_V2, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V3, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 7} == {
+        key: value for key, value in historical.items() if key != 7
+    }
+    assert historical[7] == {
+        "families": ["slots"],
+        "name": "Circular through slot",
+        "status": "supported",
+    }
+    assert current[7] == {
+        "families": [],
+        "name": "Circular through slot",
+        "status": "unsupported",
+    }
+    assert load_taxonomy(TAXONOMY_V3, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
