@@ -22,7 +22,11 @@ Historical reports through E5d use
 from the former Fillet proxy to the dedicated Circular Blind Step family. Reports after the
 class-7 scope audit use [`effectiveness-taxonomy-v3.json`](effectiveness-taxonomy-v3.json), which
 marks MFCAD++/MFInstSeg `Circular through slot` unsupported: the audited corpus geometry is an exact
-semicylindrical groove, outside the shipped two-opposed-wall `Slot` contract. Every published class is
+semicylindrical groove, outside the shipped two-opposed-wall `Slot` contract. Reports after the
+rectangular class-6 audit use [`effectiveness-taxonomy-v4.json`](effectiveness-taxonomy-v4.json),
+which also marks `Rectangular through slot` unsupported: the corpus class mixes a dominant
+open-ended three-wall edge slot with closed, free-axis and intersected variants, rather than one
+geometry covered by the enclosed `Slot` record. Every published class is
 `supported`, `unsupported`, or `incomparable`; `Stock` is incomparable. A supported class names all
 package families that can legitimately report that geometry. This is deliberately many-to-many:
 for example, a rectangular ring can be proposed by both Pocket and Prismatic Pocket machinery,

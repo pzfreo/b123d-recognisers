@@ -35,6 +35,7 @@ ROOT = Path(__file__).parents[1]
 TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
 TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
 TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
+TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -160,6 +161,26 @@ def test_taxonomy_v3_marks_only_circular_through_slot_unsupported() -> None:
         "status": "unsupported",
     }
     assert load_taxonomy(TAXONOMY_V3, "mfinstseg") == current
+
+
+def test_taxonomy_v4_marks_only_rectangular_through_slot_unsupported() -> None:
+    historical = load_taxonomy(TAXONOMY_V3, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V4, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 6} == {
+        key: value for key, value in historical.items() if key != 6
+    }
+    assert historical[6] == {
+        "families": ["slots"],
+        "name": "Rectangular through slot",
+        "status": "supported",
+    }
+    assert current[6] == {
+        "families": [],
+        "name": "Rectangular through slot",
+        "status": "unsupported",
+    }
+    assert load_taxonomy(TAXONOMY_V4, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(

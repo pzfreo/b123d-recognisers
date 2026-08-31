@@ -349,7 +349,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
-| Rectangular through slot | Slot | slots are through by definition here; sharp and obround ends share the opposed-wall contract |
+| Rectangular through slot | — | **unsupported as a corpus class**; its dominant three-wall edge-slot motif is open longitudinally, while closed/free-axis variants mix distinct package contracts |
 | Circular through slot | — | **unsupported**; MFCAD++/MFInstSeg use this label for a semicylindrical groove, which the current `Slot` record cannot express |
 | Rectangular pocket | Pocket | blind by definition here |
 | Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |
