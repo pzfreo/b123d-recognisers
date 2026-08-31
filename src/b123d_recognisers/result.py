@@ -79,9 +79,9 @@ from b123d_recognisers.polygonal_bosses import (
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.profiled_bores import DoubleDBore
+from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
-from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
