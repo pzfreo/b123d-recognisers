@@ -108,6 +108,25 @@ def test_mfinstseg_adapter_accepts_a_face_in_no_instance(tmp_path: Path) -> None
     assert truth.instances == (frozenset({0, 1}),)
 
 
+def test_mfinstseg_adapter_drops_a_feature_face_left_out_of_every_instance(
+    tmp_path: Path,
+) -> None:
+    """A feature face with no instance row is dropped, not repaired and not rejected.
+
+    Four models in the published test partition do this, twice while a sibling face of the
+    same class does carry an instance. Pinned because the affected feature silently never
+    reaches ``truth_instances``: face 1 is class 1 here and joins nothing, so only face 0's
+    instance survives.
+    """
+
+    _mfinstseg(tmp_path, inst=[[1, 0, 0], [0, 0, 0], [0, 0, 1]])
+
+    truth = load_mfinstseg_truth(tmp_path, "part")
+
+    assert truth.semantic == (1, 1, 24)
+    assert truth.instances == (frozenset({0}), frozenset({2}))
+
+
 @pytest.mark.parametrize(
     ("inst", "message"),
     [
