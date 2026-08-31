@@ -95,3 +95,37 @@ opaque identities, adjacency, blend collapse, sections, correspondence, evidence
 reconciliation did not. This is the final interpretation of the original `geometry` namespace
 wording above: consumer evidence selected a narrower inspection namespace, while the broader
 facade remains an experiment.
+
+## Amendment (within-run recognition evidence, issue #375)
+
+Issue #368 supplies the consumer evidence the earlier graph-facade spike lacked: a downstream
+consumer must associate one accepted, occurrence-preserving feature with the exact original faces
+that define it and, later, the wider faces that constitute it. Reconstructing that association
+from record coordinates would create a second attribution authority; importing private Candidate,
+EvidenceIndex or FaceNode values would freeze the framework rather than a consumer contract.
+
+Publish a separate narrow `b123d_recognisers.evidence` view over one completed raw recognition
+inventory. It issues opaque `FeatureRef` and `FaceRef` values, exposes the existing immutable
+`RecognitionResult`, maps a feature reference to its exact accepted record and defining face
+references, and resolves a face reference to the borrowed build123d face from the exact caller
+part. Equal-valued feature occurrences retain different references. References are issuer-created,
+compare only by same-view object identity, cannot be serialized, and fail closed when forged,
+copied or supplied to another view.
+
+This is **run-local reference**, not persistent naming. A face reference contains no public index,
+kernel hash, geometry-derived pseudo-identity or cross-run equality. The caller must not mutate the
+part while using the view. Equivalent re-imports and rigid transforms may produce equivalent
+records and face geometry, but never interchangeable references. Symmetric faces may be genuinely
+indistinguishable; any future persistent API must use the separately reviewed correspondence layer
+and represent ambiguity rather than resolve it through traversal order.
+
+The view does not publish adjacency, blend collapse, graph construction, Candidate/evidence
+objects, reconciliation, issuers, run tokens or correspondence. It runs the existing aggregate
+once and projects its accepted inventory; it neither calls recognisers again nor changes
+recognition. Constituent membership is added by #368 only after its defining-subset invariant is
+reviewed. Framed recognition is excluded until it can map evidence back to faces of the caller's
+part; a working-shape face must not silently escape as caller identity.
+
+The new namespace has an independent closed installed API manifest. It does not change inspection
+format 1 or the recognition capability manifest, because neither document describes run-local
+reference operations.

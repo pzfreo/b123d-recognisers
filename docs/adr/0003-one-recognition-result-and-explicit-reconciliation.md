@@ -340,3 +340,16 @@ but separate curved ends connected only through planar walls remain distinct. Co
 caps lie on the long-axis ends; nonsmooth added-material interruptions remain eligible under the
 existing rule. This adds no sibling read or reconciliation policy, changes no public schema, and
 uses `COORD_FLOOR` only to compare coordinates belonging to the same topological boundary.
+
+## Amendment (public within-run evidence projection, issue #375)
+
+The one completed `InventoryProduct` may issue a narrow public, read-only evidence view. Public
+`FeatureRef` values retain exact accepted Candidate occurrence identity and public `FaceRef` values
+retain exact original `FaceNode` identity only inside that view. Neither handle is a record,
+serializable identity, reconciliation input or cross-run correspondence key. The view exposes no
+proposal or rejected Candidate and cannot discover, accept, reject or mutate evidence.
+
+Defining evidence remains the sole ownership relation and the sole face relation reconciliation
+may read. Issue #368 may add constituent membership to the same terminal view only as a second
+non-owning projection with `defining` as a required subset. A consumer cannot construct either
+relationship from adjacency, labels or record values.

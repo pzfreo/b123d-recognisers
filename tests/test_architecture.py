@@ -20,6 +20,7 @@ PUBLIC_MODULES = {
     "chamfers",
     "circular_blind_steps",
     "countersinks",
+    "evidence",
     "experimental_geometry",
     "explanations",
     "fillets",
@@ -276,6 +277,9 @@ MODULE_SEAM_EDGES = {
         "grooves",
         "profiled_bores",
     },
+    # Supported issue-375 projection of one completed accepted inventory. It may translate
+    # private run identity into opaque public references but owns no discovery or policy.
+    "evidence": {"_adjacency", "_candidates", "_registry", "_typing", "result"},
     # The only graph/evidence translation seam. Feature consumers receive facade refs and
     # cannot import the concrete graph or writer themselves.
     "_geometry_evidence": {

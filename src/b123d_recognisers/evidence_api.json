@@ -1,0 +1,28 @@
+{
+  "api": {
+    "major": 1,
+    "namespace": "b123d_recognisers.evidence",
+    "references": {
+      "FaceRef": "opaque identity for one original caller-part face within one view",
+      "FeatureRef": "opaque identity for one accepted physical occurrence within one view"
+    },
+    "symbols": [
+      "EVIDENCE_API_FORMAT",
+      "EVIDENCE_API_FORMAT_VERSION",
+      "EvidenceApiManifestError",
+      "FaceRef",
+      "FeatureRef",
+      "RecognitionEvidence",
+      "RecognitionRecord",
+      "build_recognition_evidence",
+      "evidence_api_manifest",
+      "evidence_api_manifest_json"
+    ]
+  },
+  "format": "b123d-recognisers-evidence-api",
+  "format_version": 1,
+  "package": {
+    "name": "b123d-recognisers",
+    "version": "0.4.10.dev0"
+  }
+}
