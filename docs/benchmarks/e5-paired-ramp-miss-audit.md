@@ -10,7 +10,9 @@ proved single planar terminal and exact arc relations.
 
 The lexical MFCAD++-500 selection contains 592 class-9 faces in 171 non-native shared-edge
 same-label component proxies. Current aggregate output matches 63 defining faces in 21 components,
-leaving 529 faces in 150 components unrecalled.
+leaving 529 unmatched faces. Of those, 514 are in 150 wholly unrecalled components; the remaining
+15 are residual faces inside two partially recalled components. The artifact retains matched and
+unmatched face identities and every pair-gate outcome for all 171 components.
 
 The audit mirrors the production predicate gate by gate and assigns each unrecalled component to
 the furthest explicit gate reached:
@@ -31,7 +33,7 @@ folded into the recommendation.
 
 ## Recommended motif
 
-All 23 terminal-gated components have:
+All 24 components containing a terminal-only proposal have:
 
 - exactly two adjacent mirror-symmetric oblique planar ramps with four edges each;
 - one complete linear concave shared ridge along one principal run;
@@ -40,15 +42,16 @@ All 23 terminal-gated components have:
 - exact full-run agreement between both ramps and the shared ridge.
 
 Only the internal planar terminal's boundary count differs: 6–16 edges rather than the historical
-3 or 5. The 23 components contain 24 independently proved ramp pairs; model `12060` contains two
-pairs in one connected labelled component. Their projected defining sets contain 72 distinct
+3 or 5. The 24 components contain 25 independently proved ramp pairs; model `12060` contains two
+pairs in one connected labelled component, and one additional pair occurs among the residual faces
+of partially recalled model `11014`. Their projected defining sets contain 75 distinct
 class-9 faces. If a production prototype accepts exactly these pairs, the development-selection
 upper bound is therefore:
 
-- 45 records rather than 21;
-- 135/592 defining-face recall rather than 63/592;
+- 46 records rather than 21;
+- 138/592 defining-face recall rather than 63/592;
 - 44/171 component-proxy recall rather than 21/171; and
-- 72/72 newly projected defining-face agreement before whole-corpus candidate discovery.
+- 75/75 newly projected defining-face agreement before whole-corpus candidate discovery.
 
 These are audit projections, not claimed post-implementation precision or native instance recall.
 The implementation must run ordinary label-independent discovery across all 500 models; off-class
@@ -67,6 +70,9 @@ Face indices are zero-based imported-face positions.
 - Model `12060` proves multiplicity: pair 2/14 uses seven-edge terminal 4, while pair 23/24 uses
   eleven-edge two-wire terminal 22. Both retain distinct complete ridges and terminal authorities
   inside one six-face class component, so component identity must not collapse record identity.
+- Model `11014` proves partial-component accounting: one pair is already accepted, while distinct
+  residual faces 10/11/20 form another full-run pair stopped only by its terminal boundary. The
+  artifact retains both rather than treating one touched component as completely recalled.
 
 Across the projected defining faces there are no accepted Chamfer overlaps. Exact overlaps are
 four Pad records on five faces, three Plate records on three faces, 30 Riser records/faces and
@@ -77,15 +83,15 @@ separate reconciliation decision.
 ## Artifact and reproduction
 
 The machine artifact is
-[`paired-ramp-step-miss-audit-mfcadpp-500-51f4400.json`](paired-ramp-step-miss-audit-mfcadpp-500-51f4400.json),
-SHA-256 `617866cbaea1ec28f380f305a31cf620e2d281633e64957545e93ff43c02cf3e`, generated at audit
-commit `51f4400` using:
+[`paired-ramp-step-miss-audit-mfcadpp-500-ddc1ac6.json`](paired-ramp-step-miss-audit-mfcadpp-500-ddc1ac6.json),
+SHA-256 `cad5f9cce995700ad5154bbb0a341d227fa35c75a573fe0475a0f9bfe371f88b`, generated at audit
+commit `ddc1ac6` using:
 
 ```bash
 uv run python tools/audit_mfcadpp_paired_ramp_steps.py \
   /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
   --limit 500 \
-  --output docs/benchmarks/paired-ramp-step-miss-audit-mfcadpp-500-51f4400.json
+  --output docs/benchmarks/paired-ramp-step-miss-audit-mfcadpp-500-ddc1ac6.json
 ```
 
 The artifact records the dataset version, exact lexical selection hash
