@@ -154,11 +154,9 @@ def _candidate(
         and _is_concave(graph, right, internal[0])
     ):
         return None
-    # The supported terminal is one unsmoothed odd-sided cap. Three sides is the clean authored
-    # triangular end; five is the target side-cut's stock-intersection topology. Seven-sided
-    # terminals remain explicit follow-up scope rather than silently absorbing subdivisions.
-    if len(graph.edges(internal[0])) not in (3, 5):
-        return None
+    # One original planar terminal with exact concave arcs to both ramps is the authority. Its
+    # remaining boundary may be subdivided or independently interrupted; edge count is a B-Rep
+    # presentation fact and does not weaken the terminal, material, opening or run proofs.
 
     edge_box = shared[0].bounding_box()
     edge_bounds = (
