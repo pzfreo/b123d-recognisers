@@ -601,6 +601,7 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
         "groove": 0,
         "flat": 0,
             "slot": 0,
+            "rectangular_blind_slot": 0,
             "round_bottom_blind_slot": 0,
         "channel": 0,
         "pocket": 2,
