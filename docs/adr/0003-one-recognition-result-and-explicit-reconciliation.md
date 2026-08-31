@@ -324,3 +324,19 @@ coincident descriptors retain multiplicity. A nonunique body assignment, occurre
 or witness becomes one `AMBIGUOUS` component; no tuple position, object identity, hash, or nearest
 distance establishes correspondence. F6b1 emits no split/merge claim and changes no recognition,
 disposition, result, registry, census, capability, or manifest state.
+
+## Amendment (Slot curved-depth closure, issue #353)
+
+Slot discovery must prove that both ends of its selected depth axis remain open. A deep obround
+blind pocket can otherwise invert the length/depth interpretation: its machining depth is the
+longer wall extent, its real curved footprint ends appear on the proposed through axis, and the
+planar floor is queried on the wrong axis. The resulting paired-wall record describes empty volume
+but is not a through Slot.
+
+The existing immutable AAG is the authority for this distinction. If a connected non-planar region
+joins both proposed walls smoothly and its aggregate boundary closes either selected depth end, the
+Slot predicate refuses before issuance. The region is expanded across smooth patch subdivisions,
+but separate curved ends connected only through planar walls remain distinct. Correct obround Slot
+caps lie on the long-axis ends; nonsmooth added-material interruptions remain eligible under the
+existing rule. This adds no sibling read or reconciliation policy, changes no public schema, and
+uses `COORD_FLOOR` only to compare coordinates belonging to the same topological boundary.

@@ -148,6 +148,61 @@ def _candidate_has_void_evidence(
     return _prism_is_empty(probe, part, inset=COORD_FLOOR)
 
 
+def _has_smooth_depth_closure(
+    fa: _Face,
+    fb: _Face,
+    graph: FaceGraph,
+    depth_axis: str,
+    depth_span: tuple[float, float],
+) -> bool:
+    """Whether a shared curved continuation closes either proposed through end.
+
+    A deep obround pocket can have more wall extent along its machining depth than along its
+    footprint.  Choosing the longer extent as ``Slot.long_axis`` then rotates the interpretation:
+    the pocket's two tangent cylindrical end caps appear at the proposed Slot depth ends, while
+    the real planar floor is sought on the wrong axis and missed.  The topology already says this
+    is not through geometry.  A non-planar region smoothly adjacent to both proposed walls and
+    ending exactly at a proposed depth boundary closes that boundary.
+
+    Correctly oriented obround Slot caps lie at the *long-axis* ends, so they do not satisfy this
+    test.  Added coaxial posts meet the walls nonsmoothly and likewise remain outside it.
+    """
+
+    if fa.node is None or fb.node is None:
+        raise ValueError("recess walls require graph nodes")
+    k = _AXES[depth_axis]
+    lo, hi = depth_span
+    for seed in graph.neighbours(fa.node):
+        if graph.is_planar(seed) or graph.arc(fa.node, seed) != "smooth":
+            continue
+        # Restrict the cached maximal smooth component to its connected non-planar members.
+        # Planar walls can smoothly join both physical end caps, but they must not make those
+        # separate curved closures one region for the boundary-extent test.
+        available = {node for node in graph.smooth_region(seed) if not graph.is_planar(node)}
+        region = {seed}
+        pending = [seed]
+        while pending:
+            current = pending.pop()
+            for neighbour in graph.neighbours(current):
+                if (
+                    neighbour in available
+                    and neighbour not in region
+                    and graph.arc(current, neighbour) == "smooth"
+                ):
+                    region.add(neighbour)
+                    pending.append(neighbour)
+        if not any(
+            fb.node in graph.neighbours(node) and graph.arc(node, fb.node) == "smooth"
+            for node in region
+        ):
+            continue
+        region_lo = min(graph.bounds(node)[k][0] for node in region)
+        region_hi = max(graph.bounds(node)[k][1] for node in region)
+        if abs(region_hi - lo) <= COORD_FLOOR or abs(region_lo - hi) <= COORD_FLOOR:
+            return True
+    return False
+
+
 def _bounds_one_void(fa: _Face, fb: _Face, graph: FaceGraph) -> bool:
     """Whether two opposed walls participate in one coherent recess boundary.
 
@@ -242,6 +297,8 @@ def _candidate(
     dc = "XYZ"[_AXES[depth_axis]]
     d_lo = max(getattr(bb_a.min, dc), getattr(bb_b.min, dc))
     d_hi = min(getattr(bb_a.max, dc), getattr(bb_b.max, dc))
+    if _has_smooth_depth_closure(fa, fb, graph, depth_axis, (d_lo, d_hi)):
+        return None
     spans = {
         axis: tuple(sorted((c_a, c_b))),
         long_axis: (lo, hi),
