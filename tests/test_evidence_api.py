@@ -94,6 +94,8 @@ def test_references_are_exactly_view_local_and_unforgeable() -> None:
         RecognitionEvidence()
     with pytest.raises(TypeError, match="FeatureRef"):
         first.record(face)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="FeatureRef"):
+        first.constituent_faces(face)  # type: ignore[arg-type]
     with pytest.raises(TypeError, match="FaceRef"):
         first.face(feature)  # type: ignore[arg-type]
 
@@ -123,6 +125,15 @@ def test_defining_faces_resolve_to_the_exact_input_part() -> None:
         for reference in view.defining_faces(feature):
             resolved = view.face(reference)
             assert any(resolved.wrapped.IsSame(face.wrapped) for face in part.faces())
+
+
+def test_unmigrated_constituent_projection_defaults_exactly_to_defining() -> None:
+    view = build_recognition_evidence(_two_equal_level_bodies())
+
+    assert view.features
+    for feature in view.features:
+        assert view.constituent_faces(feature) == view.defining_faces(feature)
+        assert view.constituent_faces(feature) <= view.faces
 
 
 def test_projection_preserves_inventory_order_and_transformed_face_binding() -> None:

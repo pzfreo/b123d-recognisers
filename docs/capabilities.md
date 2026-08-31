@@ -73,7 +73,8 @@ from b123d_recognisers.evidence import build_recognition_evidence
 view = build_recognition_evidence(part)
 for feature in view.features:
     record = view.record(feature)
-    faces = [view.face(reference) for reference in view.defining_faces(feature)]
+    proof = [view.face(reference) for reference in view.defining_faces(feature)]
+    members = [view.face(reference) for reference in view.constituent_faces(feature)]
 ```
 
 `FeatureRef` preserves accepted occurrence identity even when two records compare equal;
@@ -82,6 +83,11 @@ issuer-created, non-serializable, and valid only with their originating `Recogni
 view while the caller leaves the part unchanged. Forged, copied, stale and cross-view references
 fail closed. The view runs the aggregate once, exposes its existing `RecognitionResult`, and does
 not discover or reconcile anything itself.
+
+Every constituent set contains its defining set. Defining faces retain their exact ownership and
+reconciliation meaning; the equal or wider constituent set reports physical membership only, may
+overlap another accepted occurrence, and creates no claim or precedence. Families without a
+proved wider set publish constituent equal to defining rather than infer membership by adjacency.
 
 This is deliberately not persistent face naming. References from equivalent imports or rigidly
 transformed parts are not interchangeable, and symmetry is never broken with traversal order.
