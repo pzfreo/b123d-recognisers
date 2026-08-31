@@ -682,7 +682,7 @@ def test_plate_stock_overlap_is_exact_low_high_boundary_evidence(corpus):
 
 
 def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_baseline(corpus):
-    """Per-face attribution for the four families MFCAD++ can see, as a change detector.
+    """Per-face attribution for selected families MFCAD++ can see, as a change detector.
 
     Not a correctness baseline. Two of these are *invariants* and the other two are
     *observations*, and the difference matters when one of them moves:
@@ -720,6 +720,9 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     # rectangular through Slot; this is a change detector, not label authority.
     assert slots == Counter({6: 4})
 
+    rectangular_blind_slots = claimed["RectangularBlindSlot"]
+    assert rectangular_blind_slots == Counter({17: 4})
+
     # Pockets are the blind counterpart and land mostly where the name says. Complete ring
     # containment removes the old passage fragments; partial intersections deliberately remain.
     pockets = claimed["Pocket"]
@@ -730,7 +733,9 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     # instead of treating world Z as manufacturing intent. Opposed-wall pockets also evaluate
     # both physical depth interpretations instead of letting a rejected first XYZ interpretation
     # hide a valid second one. MFCAD++'s single face label cannot make an axis choice authoritative.
-    assert sum(pockets.values()) == 126
+    # The explicit rectangular-blind-slot precedence removes two old Pocket face claims in this
+    # sample; the new family above owns the complete four-face occurrence instead.
+    assert sum(pockets.values()) == 124
     assert pockets[16] == 54, "most Pocket evidence is labelled Circular end pocket"
     assert pockets[14] == 42, "rectangular ownership remains the next largest population"
     assert pockets[22] == 18, "corner depth no longer follows the dataset's world-Z presentation"
