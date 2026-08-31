@@ -118,8 +118,14 @@ def test_constituent_membership_is_wider_non_exclusive_and_proposal_ordered() ->
 
     assert snapshot.constituent_of(first) == frozenset((first_node, shared))
     assert snapshot.constituent_of(second) == frozenset((second_node, shared))
+    assert snapshot.constituent_of(first.record) == frozenset((first_node, shared))
+    assert snapshot.constituent_of(Record(99)) == frozenset()
     assert snapshot.memberships_of(shared) == (first, second)
     assert snapshot.claims_of(shared) == ()
+
+    foreign = FaceGraph(Box(4, 4, 4)).nodes[0]
+    with pytest.raises(ValueError, match="not this graph's node"):
+        snapshot.memberships_of(foreign)
 
 
 def test_constituent_evidence_requires_defining_subset_and_local_nodes() -> None:

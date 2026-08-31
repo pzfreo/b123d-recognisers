@@ -485,6 +485,33 @@ def test_repeated_side_snapshot_refuses_atomically(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
+@pytest.mark.parametrize(
+    ("terminal", "message"),
+    [
+        (lambda proposal: None, "requires one retained terminal cap"),
+        (lambda proposal: proposal.side_faces[0], "terminal cap identity is unavailable"),
+    ],
+)
+def test_missing_or_side_aliased_terminal_cap_refuses_atomically(
+    monkeypatch, terminal, message
+) -> None:
+    part = _attached()
+    original_recognise = polygonal_module._recognise_one
+
+    def corrupted(*args, **kwargs):
+        proposals = original_recognise(*args, **kwargs)
+        return [
+            replace(proposal, terminal_cap=terminal(proposal))
+            for proposal in proposals
+        ]
+
+    ledger = ClaimLedger(FaceGraph(part))
+    monkeypatch.setattr(polygonal_module, "_recognise_one", corrupted)
+    with pytest.raises(ValueError, match=message):
+        _discover_polygonal_bosses(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
 def test_shallow_same_topology_wrappers_resolve_to_the_same_six_nodes(monkeypatch) -> None:
     part = _attached()
     original_recognise = polygonal_module._recognise_one
