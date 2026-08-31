@@ -24,7 +24,8 @@ from b123d_recognisers._dispositions import Outcome
 REPORT_FORMAT = "b123d-recognisers-effectiveness"
 REPORT_FORMAT_VERSION = 1
 _MFCAD_LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
-_CLASS_STATUSES = frozenset({"supported", "unsupported", "incomparable"})
+_CLASS_STATUSES = frozenset({"supported", "partial", "unsupported", "incomparable"})
+_MAPPED_CLASS_STATUSES = frozenset({"supported", "partial"})
 _PUBLIC_FAMILY_EXCEPTIONS = {"pads": "rectangular-pads", "step_levels": "face-levels"}
 
 
@@ -189,7 +190,7 @@ def load_taxonomy(path: Path, dataset: str) -> dict[int, dict[str, Any]]:
             or any(not isinstance(family, str) or not family for family in row["families"])
         ):
             raise EffectivenessDataError(f"invalid taxonomy class {raw_id}")
-        if (row["status"] == "supported") != bool(row["families"]):
+        if (row["status"] in _MAPPED_CLASS_STATUSES) != bool(row["families"]):
             raise EffectivenessDataError(f"taxonomy class {raw_id} has inconsistent support")
         result[int(raw_id)] = row
     return result
@@ -310,7 +311,7 @@ def score_inventory(
         1
         for family, indices in claims
         for index in indices
-        if taxonomy[truth.semantic[index]]["status"] == "supported"
+        if taxonomy[truth.semantic[index]]["status"] in _MAPPED_CLASS_STATUSES
         and family not in taxonomy[truth.semantic[index]]["families"]
     )
     return {

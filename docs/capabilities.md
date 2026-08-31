@@ -241,6 +241,11 @@ The E0 [`circular through-slot scope audit`](benchmarks/e0-circular-through-slot
 checks all 78 class-7 faces in the lexical MFCAD++-500 selection and records that the exact
 semicylindrical groove geometry is unsupported by the two-opposed-wall `Slot` contract; taxonomy
 v3 corrects the scope without changing any physical record or production behavior.
+The follow-on [`rectangular through-slot scope audit`](benchmarks/e0-rectangular-through-slot-scope-audit.md)
+classifies all 67 class-6 components. Forty-five are open-ended three-wall U cuts, while the
+remainder mix closed, free-axis and intersected geometry; taxonomy v4 marks the heterogeneous class
+partially supported so legitimate enclosed `Slot` evidence remains measured without claiming the
+whole denominator as package scope.
 The E2 [`framed Polygonal Stock result`](benchmarks/e2-framed-polygonal-stock.md) makes exact whole
 hexagonal stock principal-axis covariant, restores the downstream framed occurrence under rigid
 presentation, retains exact MFCAD++-500 output parity, and stays below the paired runtime ceiling.
@@ -349,7 +354,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
-| Rectangular through slot | Slot | slots are through by definition here; sharp and obround ends share the opposed-wall contract |
+| Rectangular through slot | Slot (partial) | a small enclosed principal-axis subset matches; the dominant three-wall edge-slot motif is open longitudinally, while free-axis/intersected variants remain outside this contract |
 | Circular through slot | — | **unsupported**; MFCAD++/MFInstSeg use this label for a semicylindrical groove, which the current `Slot` record cannot express |
 | Rectangular pocket | Pocket | blind by definition here |
 | Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |

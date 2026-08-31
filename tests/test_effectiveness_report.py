@@ -35,6 +35,7 @@ ROOT = Path(__file__).parents[1]
 TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
 TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
 TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
+TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -162,6 +163,26 @@ def test_taxonomy_v3_marks_only_circular_through_slot_unsupported() -> None:
     assert load_taxonomy(TAXONOMY_V3, "mfinstseg") == current
 
 
+def test_taxonomy_v4_marks_only_rectangular_through_slot_partially_supported() -> None:
+    historical = load_taxonomy(TAXONOMY_V3, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V4, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 6} == {
+        key: value for key, value in historical.items() if key != 6
+    }
+    assert historical[6] == {
+        "families": ["slots"],
+        "name": "Rectangular through slot",
+        "status": "supported",
+    }
+    assert current[6] == {
+        "families": ["slots"],
+        "name": "Rectangular through slot",
+        "status": "partial",
+    }
+    assert load_taxonomy(TAXONOMY_V4, "mfinstseg") == current
+
+
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
     tmp_path: Path,
 ) -> None:
@@ -224,6 +245,49 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
     }
     assert row["taxonomy_mismatch_defining_faces"] == 0
     assert row["no_physical_records"] is False
+
+
+def test_partial_support_preserves_supported_scorer_semantics() -> None:
+    part = Box(30, 30, 10) - Cylinder(3, 10)
+    faces = tuple(part.faces())
+    cylinder_truth = DatasetTruth(
+        "through-hole",
+        Path("through-hole.step"),
+        tuple(1 if face.geom_type is GeomType.CYLINDER else 24 for face in faces),
+        (),
+        None,
+        "0" * 64,
+    )
+
+    def scored(status: str, families: list[str], truth: DatasetTruth) -> dict:
+        taxonomy = load_taxonomy(TAXONOMY, "mfcadpp")
+        taxonomy[1] = {**taxonomy[1], "families": families, "status": status}
+        return score_inventory(truth, part, _take_inventory(part), taxonomy, 1.25)
+
+    supported = scored("supported", ["holes"], cylinder_truth)
+    partial = scored("partial", ["holes"], cylinder_truth)
+    assert {**partial["classes"]["1"], "status": "supported"} == supported["classes"]["1"]
+    assert partial["mapped_dataset_class_records"] == supported["mapped_dataset_class_records"]
+    assert partial["taxonomy_mismatch_defining_faces"] == 0
+
+    wrong_family_truth = DatasetTruth(
+        "through-hole",
+        Path("through-hole.step"),
+        (1,) * len(faces),
+        (),
+        None,
+        "0" * 64,
+    )
+    supported_mismatch = scored("supported", ["slots"], wrong_family_truth)
+    partial_mismatch = scored("partial", ["slots"], wrong_family_truth)
+    assert partial_mismatch["mapped_dataset_class_records"] == supported_mismatch[
+        "mapped_dataset_class_records"
+    ]
+    assert partial_mismatch["classes"]["1"]["matched_defining_faces"] == 0
+    assert partial_mismatch["taxonomy_mismatch_defining_faces"] == supported_mismatch[
+        "taxonomy_mismatch_defining_faces"
+    ]
+    assert partial_mismatch["taxonomy_mismatch_defining_faces"] > 0
 
 
 def test_scorer_rejects_a_class_outside_the_closed_taxonomy() -> None:
