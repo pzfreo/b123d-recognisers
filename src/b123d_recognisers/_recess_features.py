@@ -249,10 +249,7 @@ def _discover_pockets(
             )
             if not nodes:
                 raise _PocketAttributionError("Pocket occurrence has no defining source faces")
-            if (
-                not proposal.record.edge_anchored
-                and (not proposal.floors or not proposal.floors.isdisjoint(nodes))
-            ):
+            if not proposal.record.edge_anchored and not proposal.floors:
                 raise _PocketAttributionError("Pocket floor identity is unavailable")
             members = nodes | proposal.floors
             for node in members:

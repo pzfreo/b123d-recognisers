@@ -1603,10 +1603,7 @@ def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypat
     assert ledger.defining_of(candidates[0]) == nodes
 
 
-@pytest.mark.parametrize("alias_defining", [False, True])
-def test_missing_or_defining_aliased_floor_refuses_before_publication(
-    monkeypatch, alias_defining
-) -> None:
+def test_missing_floor_refuses_before_publication(monkeypatch) -> None:
     import b123d_recognisers._recess_features as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
@@ -1617,16 +1614,40 @@ def test_missing_or_defining_aliased_floor_refuses_before_publication(
     )
     assert len(proposals) == 1
     proposal = proposals[0]
-    floors = frozenset({next(iter(proposal.planar))}) if alias_defining else frozenset()
     monkeypatch.setattr(
         module,
         "_body_scoped_proposals",
-        lambda *_args, **_kwargs: [replace(proposal, floors=floors)],
+        lambda *_args, **_kwargs: [replace(proposal, floors=frozenset())],
     )
 
     with pytest.raises(_PocketAttributionError, match="floor identity is unavailable"):
         _discover_pockets(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkeypatch) -> None:
+    """One face may prove the floor in one route and a wall in a merged orthogonal route."""
+
+    import b123d_recognisers._recess_features as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    proposal = module._body_scoped_proposals(
+        [part], lambda solid: module._pocket_proposals_one(solid, graph=graph)
+    )[0]
+    shared = next(iter(proposal.planar))
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        lambda *_args, **_kwargs: [replace(proposal, floors=frozenset({shared}))],
+    )
+
+    assert _discover_pockets(part, writer=ledger.writer) == [proposal.record]
+    candidate = ledger.candidate_set(FamilyId.POCKETS).candidates[0]
+    defining = ledger.defining_of(candidate)
+    assert shared in defining
+    assert ledger.snapshot_index().constituent_of(candidate) == defining
 
 
 def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(monkeypatch) -> None:
