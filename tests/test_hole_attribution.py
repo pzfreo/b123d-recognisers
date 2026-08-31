@@ -539,6 +539,39 @@ def test_cached_end_classification_retains_terminal_identity_for_later_projectio
     assert len(terminal) == 1
     assert BRepAdaptor_Surface(terminal[0].wrapped).GetType() == GeomAbs_Plane
 
+    # A later classification-only cache consumer must remain valid and must not require a
+    # destination list merely because identity was retained in the cached proof.
+    assert _classify_end(
+        segment,
+        segment["s_hi"],
+        True,
+        adjacency,
+        cache,
+    ) in {"flat", "open"}
+
+
+def test_uncached_end_classification_optionally_returns_terminal_identity() -> None:
+    part = _blind()
+    z_cyls, cross_cyls = analyse_cylinders(part)
+    internal = [
+        cylinder
+        for cylinder in full_cylinders(z_cyls) + full_cylinders(cross_cyls)
+        if not cylinder["external"]
+    ]
+    (segment,) = _segments(internal)
+    adjacency = edge_face_map(part.faces())
+    retained = []
+
+    state = _classify_end(
+        segment,
+        segment["s_lo"],
+        False,
+        adjacency,
+        terminal_faces=retained,
+    )
+    assert state in {"flat", "open"}
+    assert _classify_end(segment, segment["s_lo"], False, adjacency) == state
+
 
 def test_through_hole_has_no_terminal_constituent_to_infer() -> None:
     (record,), (candidate,), ledger = _claimed(_through())
@@ -1223,6 +1256,41 @@ def test_deep_or_translated_cylindrical_snapshot_refuses_atomically(monkeypatch,
 
     monkeypatch.setattr(module, "_bore_depth", changed)
     with pytest.raises(ValueError):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+
+def test_missing_or_aliased_hole_source_roles_refuse_atomically(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as module
+
+    part = _blind()
+    ledger = ClaimLedger(FaceGraph(part))
+    original_depth = module._bore_depth
+
+    def without_cylinder(*args, **kwargs):
+        return replace(original_depth(*args, **kwargs), faces=())
+
+    monkeypatch.setattr(module, "_bore_depth", without_cylinder)
+    with pytest.raises(ValueError, match="cylindrical evidence"):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    monkeypatch.setattr(module, "_bore_depth", original_depth)
+    original_drilled_from = module._drilled_from
+
+    def alias_terminal(stack, *args, bottom_faces=None, **kwargs):
+        result = original_drilled_from(
+            stack,
+            *args,
+            bottom_faces=bottom_faces,
+            **kwargs,
+        )
+        assert bottom_faces is not None
+        bottom_faces.append(stack[0]["faces"][0])
+        return result
+
+    monkeypatch.setattr(module, "_drilled_from", alias_terminal)
+    with pytest.raises(ValueError, match="terminal identity aliases"):
         _discover_holes(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
 

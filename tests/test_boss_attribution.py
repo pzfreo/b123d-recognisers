@@ -18,6 +18,7 @@ from build123d import (
     Pos,
     Rot,
     Shell,
+    Sphere,
     chamfer,
     export_step,
     fillet,
@@ -36,9 +37,9 @@ from b123d_recognisers._adjacency import (
 )
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from b123d_recognisers._cylinder_substrate import analyse_cylinders, full_cylinders
 from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceProvenance
-from b123d_recognisers._hole_features import _discover_bosses
+from b123d_recognisers._hole_features import _classify_end, _discover_bosses, _segments
 from b123d_recognisers.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
@@ -328,6 +329,34 @@ def test_chamfered_and_filleted_free_ends_keep_owner_and_orientation() -> None:
         )
 
 
+def test_external_spherical_end_retains_exact_classification_face() -> None:
+    part = Box(60, 60, 10) + Pos(0, 0, 9) * Cylinder(5, 8) + Pos(0, 0, 13) * Sphere(5)
+    z_cylinders, cross_cylinders = analyse_cylinders(part)
+    external = [
+        cylinder
+        for cylinder in full_cylinders(z_cylinders) + full_cylinders(cross_cylinders)
+        if cylinder["external"]
+    ]
+    (segment,) = _segments(external)
+    adjacency = edge_face_map(part.faces())
+    retained = []
+
+    assert (
+        _classify_end(
+            segment,
+            segment["s_hi"],
+            True,
+            adjacency,
+            terminal_faces=retained,
+        )
+        == "flat"
+    )
+    assert len(retained) == 1
+    assert (
+        BRepAdaptor_Surface(retained[0].wrapped).GetType() == GeomAbs_Sphere
+    )
+
+
 def test_radial_pipe_boss_and_turned_od_keep_current_roles() -> None:
     pipe = Cylinder(20, 60) - Cylinder(15, 60)
     radial = pipe + Pos(-24, 0, 0) * Cylinder(5, 12, rotation=(0, 90, 0))
@@ -481,6 +510,41 @@ def test_late_binding_refuses_before_publication(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(ledger.graph, "require_node", fail_later)
     with pytest.raises(ValueError, match="later Boss binding failed"):
+        _discover_bosses(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.BOSSES).candidates == ()
+
+
+def test_missing_or_aliased_boss_source_roles_refuse_before_publication(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as module
+
+    part = _bossed_plate()
+    ledger = ClaimLedger(FaceGraph(part))
+    original_segments = module._segments
+
+    def without_segment_faces(cylinders):
+        return [dict(segment, faces=[]) for segment in original_segments(cylinders)]
+
+    monkeypatch.setattr(module, "_segments", without_segment_faces)
+    with pytest.raises(ValueError, match="defining faces"):
+        _discover_bosses(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.BOSSES).candidates == ()
+
+    monkeypatch.setattr(module, "_segments", original_segments)
+    original_classify = module._classify_end
+
+    def alias_terminal(segment, *args, terminal_faces=None, **kwargs):
+        state = original_classify(
+            segment,
+            *args,
+            terminal_faces=terminal_faces,
+            **kwargs,
+        )
+        if state == "open" and terminal_faces is not None:
+            terminal_faces.append(segment["faces"][0])
+        return state
+
+    monkeypatch.setattr(module, "_classify_end", alias_terminal)
+    with pytest.raises(ValueError, match="terminal identity aliases"):
         _discover_bosses(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.BOSSES).candidates == ()
 
