@@ -60,7 +60,7 @@ uv run python tools/run_effectiveness_baseline.py \
 Compared with the v2 Slot-closure report at `1ced915`:
 
 - all physical-family record counts, predicate observations, reconciliation drops, unsupported
-  diagnostics, source hashes and non-mapping per-model fields are exactly equal;
+  diagnostics, source hashes and non-mapping, non-runtime per-model fields are exactly equal;
 - `Slot` remains 45 accepted records, and rectangular class-6 precision remains 31/88 (35.23%)
   with recall 31/237 (13.08%);
 - class 7 changes from incorrectly supported 0/88 precision and 0/78 recall to unsupported;
