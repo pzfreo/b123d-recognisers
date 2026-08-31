@@ -1625,6 +1625,18 @@ def test_missing_floor_refuses_before_publication(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
 
 
+def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monkeypatch) -> None:
+    import b123d_recognisers._recess_core as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    expected = _pocket_proposals_one(part, graph=graph)[0].record
+
+    monkeypatch.setattr(module, "_pocket_candidate", lambda *_args, **_kwargs: expected)
+    with pytest.raises(ValueError, match="floor identity is unavailable"):
+        module._pocket_proposals_one(part, graph=graph)
+
+
 def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkeypatch) -> None:
     """One face may prove the floor in one route and a wall in a merged orthogonal route."""
 

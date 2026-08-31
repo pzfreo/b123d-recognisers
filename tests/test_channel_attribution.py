@@ -767,6 +767,16 @@ def test_proposal_builder_refuses_a_candidate_without_graph_nodes(monkeypatch) -
         core_module._channel_proposals_one(part, graph=graph)
 
 
+def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    expected = recognise_channels(part)[0]
+
+    monkeypatch.setattr(core_module, "_channel_candidate", lambda *_args, **_kwargs: expected)
+    with pytest.raises(ValueError, match="floor identity is unavailable"):
+        core_module._channel_proposals_one(part, graph=graph)
+
+
 def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> None:
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
