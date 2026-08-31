@@ -30,6 +30,7 @@ from b123d_recognisers._adjacency import (
     FaceEdges,
     FaceGraph,
     FaceNode,
+    is_any_smooth,
     is_opposed_nonsmooth,
     same_arc_kind,
 )
@@ -173,7 +174,7 @@ def _has_smooth_depth_closure(
     k = _AXES[depth_axis]
     lo, hi = depth_span
     for seed in graph.neighbours(fa.node):
-        if graph.is_planar(seed) or graph.arc(fa.node, seed) != "smooth":
+        if graph.is_planar(seed) or not is_any_smooth(graph.arc(fa.node, seed)):
             continue
         # Restrict the cached maximal smooth component to its connected non-planar members.
         # Planar walls can smoothly join both physical end caps, but they must not make those
@@ -187,12 +188,12 @@ def _has_smooth_depth_closure(
                 if (
                     neighbour in available
                     and neighbour not in region
-                    and graph.arc(current, neighbour) == "smooth"
+                    and is_any_smooth(graph.arc(current, neighbour))
                 ):
                     region.add(neighbour)
                     pending.append(neighbour)
         if not any(
-            fb.node in graph.neighbours(node) and graph.arc(node, fb.node) == "smooth"
+            fb.node in graph.neighbours(node) and is_any_smooth(graph.arc(node, fb.node))
             for node in region
         ):
             continue
