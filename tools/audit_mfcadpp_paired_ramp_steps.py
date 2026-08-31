@@ -95,6 +95,8 @@ class ComponentAnatomy:
     accepted_other_family_claims: tuple[tuple[str, int], ...]
     accepted_other_family_records: tuple[tuple[str, int], ...]
     terminal_only_pairs: tuple[tuple[int, int, int], ...]
+    terminal_only_defining_claims: tuple[tuple[str, int], ...]
+    terminal_only_record_overlaps: tuple[tuple[str, int], ...]
     best_pair: PairProbe
 
     def key(self) -> str:
@@ -364,6 +366,19 @@ def _describe_component(
         default=_failed(0),
     )
     component = set(ordered)
+    terminal_only_pairs = tuple(
+        sorted(
+            (left.index, right.index, probe.internal_terminal_index)
+            for left, right, probe in probed_pairs
+            if probe.first_failed_gate == "subdivided_internal_terminal"
+            and probe.full_shared_run is True
+            and probe.internal_terminal_index is not None
+        )
+    )
+    nodes_by_index = {node.index: node for node in graph.nodes}
+    projected_nodes = {
+        nodes_by_index[index] for pair in terminal_only_pairs for index in pair
+    }
     return ComponentAnatomy(
         face_count=len(ordered),
         surface_counts=_counts([graph.face(node).geom_type.name for node in ordered]),
@@ -393,14 +408,21 @@ def _describe_component(
                 and bool(component.intersection(claim))
             ]
         ),
-        terminal_only_pairs=tuple(
-            sorted(
-                (left.index, right.index, probe.internal_terminal_index)
-                for left, right, probe in probed_pairs
-                if probe.first_failed_gate == "subdivided_internal_terminal"
-                and probe.full_shared_run is True
-                and probe.internal_terminal_index is not None
-            )
+        terminal_only_pairs=terminal_only_pairs,
+        terminal_only_defining_claims=_counts(
+            [
+                family
+                for node in projected_nodes
+                for family in sorted(other_claims.get(node, set()))
+            ]
+        ),
+        terminal_only_record_overlaps=_counts(
+            [
+                family
+                for family, claim in accepted_claims
+                if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
+                and bool(projected_nodes.intersection(claim))
+            ]
         ),
         best_pair=best,
     )
