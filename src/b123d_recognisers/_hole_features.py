@@ -198,6 +198,7 @@ class _HoleProposal:
 
     record: HoleRecord
     cylindrical_faces: tuple[Face, ...]
+    terminal_faces: tuple[Face, ...]
     matching_csinks: tuple[CounterSink, ...]
 
 
@@ -219,6 +220,7 @@ class BossRecord(Record):
 class _BossProposal:
     record: BossRecord
     segment_faces: tuple[Face, ...]
+    terminal_faces: tuple[Face, ...]
 
 
 def _segments(cyls: list[CylinderEvidence]) -> list[SegmentEvidence]:
@@ -310,18 +312,42 @@ def _classify_end(
     edge_faces: dict,
     cache: dict | None = None,
     face_surfaces: EffectiveFaceSurfaceQuery | None = None,
+    *,
+    terminal_faces: list[Face] | None = None,
 ) -> str:
     """Cached wrapper over :func:`_classify_end_uncached` (see *cache* there)."""
+    retained: list[Face] = []
     if cache is None:
-        return _classify_end_uncached(seg, s_end, hi_end, edge_faces, face_surfaces=face_surfaces)
+        result = _classify_end_uncached(
+            seg,
+            s_end,
+            hi_end,
+            edge_faces,
+            face_surfaces=face_surfaces,
+            terminal_faces=retained,
+        )
+        if terminal_faces is not None:
+            terminal_faces.extend(retained)
+        return result
     key = ("ce", id(seg), round(s_end, 9), hi_end)
     hit = cache.get(key)
     if hit is not None and hit[0] is seg:
+        if terminal_faces is not None:
+            terminal_faces.extend(hit[2])
         return cast(str, hit[1])
     result = _classify_end_uncached(
-        seg, s_end, hi_end, edge_faces, cache, face_surfaces=face_surfaces
+        seg,
+        s_end,
+        hi_end,
+        edge_faces,
+        cache,
+        face_surfaces=face_surfaces,
+        terminal_faces=retained,
     )
-    cache[key] = (seg, result)
+    cached_faces = tuple(retained)
+    cache[key] = (seg, result, cached_faces)
+    if terminal_faces is not None:
+        terminal_faces.extend(cached_faces)
     return result
 
 
@@ -332,6 +358,8 @@ def _classify_end_uncached(
     edge_faces: dict,
     cache: dict | None = None,
     face_surfaces: EffectiveFaceSurfaceQuery | None = None,
+    *,
+    terminal_faces: list[Face] | None = None,
 ) -> str:
     """Classify one axial end of a cylinder segment from the face beyond it.
 
@@ -355,7 +383,12 @@ def _classify_end_uncached(
     """
     dx, dy, dz = seg["dir_xyz"]
     e_sign = 1.0 if hi_end else -1.0
-    weak = None
+    weak: tuple[str, tuple[Face, ...]] | None = None
+
+    def classified(state: str, *faces: Face) -> str:
+        if terminal_faces is not None:
+            terminal_faces.extend(faces)
+        return state
     for partner in _end_partners(seg, s_end, edge_faces, cache):
         surf = BRepAdaptor_Surface(partner.wrapped)
         kind = surf.GetType()
@@ -379,8 +412,8 @@ def _classify_end_uncached(
                                 continue
                             nv = n.normal_at(n.center())
                             if abs(nv.X * dx + nv.Y * dy + nv.Z * dz) > 0.9:
-                                return "flat"
-                    return "drill_point"
+                                return classified("flat", n)
+                    return classified("drill_point", partner)
                 return "open"
             return "open" if outward else "flat"
         if kind == GeomAbs_Torus:
@@ -404,21 +437,21 @@ def _classify_end_uncached(
         if normal is not None:
             dot = _dot(normal, (dx, dy, dz)) * e_sign
             if dot < -0.5:
-                return "flat"
+                return classified("flat", partner)
             if dot > 0.5:
-                return "open"
+                return classified("open", partner)
         if kind == GeomAbs_Sphere:
             # Convex (material inside the sphere): the bore exits through a
             # spherical surface. Concave (a ball-nose cavity): a closed
             # bottom — reported as "flat" (no rounded-bottom category).
             convex = bool(frame_points_outward(partner))
             if not seg["external"]:
-                weak = "open" if convex else "flat"
+                weak = ("open" if convex else "flat", (partner,))
             else:
-                weak = "flat" if convex else "open"
+                weak = ("flat" if convex else "open", (partner,))
         elif kind == GeomAbs_Cylinder:
-            weak = "open" if not seg["external"] else "flat"
-    return weak or "unknown"
+            weak = ("open" if not seg["external"] else "flat", ())
+    return classified(weak[0], *weak[1]) if weak is not None else "unknown"
 
 
 def _shared_transition(
@@ -511,6 +544,8 @@ def _drilled_from(
     edge_faces: dict,
     cache: dict,
     face_surfaces: EffectiveFaceSurfaceQuery | None = None,
+    *,
+    bottom_faces: list[Face] | None = None,
 ) -> tuple[bool, SegmentEvidence, float, str]:
     """Which end of a coaxial stack is the opening, and what closes the other.
 
@@ -525,8 +560,26 @@ def _drilled_from(
 
     lo_seg = min(stack, key=lambda s: s["s_lo"])
     hi_seg = max(stack, key=lambda s: s["s_hi"])
-    lo_state = _classify_end(lo_seg, lo_seg["s_lo"], False, edge_faces, cache, face_surfaces)
-    hi_state = _classify_end(hi_seg, hi_seg["s_hi"], True, edge_faces, cache, face_surfaces)
+    lo_faces: list[Face] = []
+    hi_faces: list[Face] = []
+    lo_state = _classify_end(
+        lo_seg,
+        lo_seg["s_lo"],
+        False,
+        edge_faces,
+        cache,
+        face_surfaces,
+        terminal_faces=lo_faces,
+    )
+    hi_state = _classify_end(
+        hi_seg,
+        hi_seg["s_hi"],
+        True,
+        edge_faces,
+        cache,
+        face_surfaces,
+        terminal_faces=hi_faces,
+    )
 
     if lo_state == "open" and hi_state != "open":
         from_hi = False
@@ -537,6 +590,8 @@ def _drilled_from(
 
     opening_seg, opening_s = (hi_seg, hi_seg["s_hi"]) if from_hi else (lo_seg, lo_seg["s_lo"])
     bottom_state = lo_state if from_hi else hi_state
+    if bottom_faces is not None and bottom_state in ("flat", "drill_point"):
+        bottom_faces.extend(lo_faces if from_hi else hi_faces)
     return from_hi, opening_seg, opening_s, {"open": "through"}.get(bottom_state, bottom_state)
 
 
@@ -683,7 +738,14 @@ def _discover_holes(
     proposals: list[_HoleProposal] = []
     for stack in stacks:
         d = stack[0]["dir_xyz"]
-        from_hi, opening_seg, opening_s, bottom = _drilled_from(stack, edge_faces, cache, effective)
+        terminal_faces: list[Face] = []
+        from_hi, opening_seg, opening_s, bottom = _drilled_from(
+            stack,
+            edge_faces,
+            cache,
+            effective,
+            bottom_faces=terminal_faces,
+        )
 
         # Order segments from the opening inward; the bore is the narrowest
         # (not the farthest — a through hole counterbored from both sides has
@@ -711,7 +773,7 @@ def _discover_holes(
             cbore=near.cbore,
             spotface=near.spotface,
         )
-        proposals.append(_HoleProposal(record, depth.faces + near.faces, ()))
+        proposals.append(_HoleProposal(record, depth.faces + near.faces, tuple(terminal_faces), ()))
     # Compose the injected countersinks: a coaxial cone flaring from the bore is
     # a hole attribute (like a counterbore), so it rides on the HoleRecord — HoleSpec
     # grouping and the callout-width estimate then see it for free. The caller injects the
@@ -731,17 +793,28 @@ def _discover_holes(
             predecessor_record = occurrence.record(CounterSink)
             occurrences_by_record.setdefault(id(predecessor_record), []).append(occurrence)
 
-        pending: list[tuple[HoleRecord, tuple[FaceNode, ...]]] = []
+        pending: list[tuple[HoleRecord, tuple[FaceNode, ...], tuple[FaceNode, ...]]] = []
         used_nodes: set[FaceNode] = set()
         used_predecessors: set[int] = set()
         for proposal in proposals:
             resolved = {writer.graph.require_node(face) for face in proposal.cylindrical_faces}
             nodes = tuple(node for node in writer.graph.nodes if node in resolved)
-            solid = writer.graph.common_valid_solid(nodes)
-            if not nodes or solid is None:
+            if not nodes:
                 raise ValueError("Hole cylindrical evidence does not prove one valid solid")
             if used_nodes & resolved:
                 raise ValueError("Hole occurrences share defining cylindrical faces")
+            terminal_resolved = {
+                writer.graph.require_node(face) for face in proposal.terminal_faces
+            }
+            if resolved & terminal_resolved:
+                raise ValueError("Hole terminal identity aliases cylindrical evidence")
+            terminal_nodes = tuple(
+                node for node in writer.graph.nodes if node in terminal_resolved
+            )
+            members = (*nodes, *terminal_nodes)
+            solid = writer.graph.common_valid_solid(members)
+            if solid is None:
+                raise ValueError("Hole cylindrical evidence does not prove one valid solid")
 
             if proposal.matching_csinks:
                 selected = proposal.matching_csinks[0]
@@ -761,20 +834,28 @@ def _discover_holes(
                 used_predecessors.add(id(occurrence))
 
             used_nodes.update(resolved)
-            pending.append((proposal.record, nodes))
+            pending.append((proposal.record, nodes, members))
 
-        issued_pending: list[tuple[HoleRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
-        for record, nodes in pending:
+        issued_pending: list[
+            tuple[HoleRecord, tuple[FaceNode, ...], tuple[FaceNode, ...], tuple[SurfaceUse, ...]]
+        ] = []
+        for record, nodes, members in pending:
             issued = tuple(
                 cylinder_surface_dependency(effective, writer.graph.face(node)) for node in nodes
             )
             if any(isinstance(use, SurfaceUseRefusal) for use in issued):
                 raise ValueError("Hole cylinder provenance is unavailable")
             uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
-            issued_pending.append((record, nodes, uses))
+            issued_pending.append((record, nodes, members, uses))
 
-        for record, nodes, uses in issued_pending:
-            writer.add_defining(record, nodes, family=FamilyId.HOLES, surfaces=uses)
+        for record, nodes, members, uses in issued_pending:
+            writer.add_defining(
+                record,
+                nodes,
+                family=FamilyId.HOLES,
+                constituent=members,
+                surfaces=uses,
+            )
 
     return [proposal.record for proposal in proposals]
 
@@ -817,8 +898,26 @@ def _discover_bosses(
     proposals: list[_BossProposal] = []
     for seg in _segments(external):
         d = seg["dir_xyz"]
-        lo_state = _classify_end(seg, seg["s_lo"], False, edge_faces, cache, effective)
-        hi_state = _classify_end(seg, seg["s_hi"], True, edge_faces, cache, effective)
+        lo_faces: list[Face] = []
+        hi_faces: list[Face] = []
+        lo_state = _classify_end(
+            seg,
+            seg["s_lo"],
+            False,
+            edge_faces,
+            cache,
+            effective,
+            terminal_faces=lo_faces,
+        )
+        hi_state = _classify_end(
+            seg,
+            seg["s_hi"],
+            True,
+            edge_faces,
+            cache,
+            effective,
+            terminal_faces=hi_faces,
+        )
         # The free end is the open one (its cap faces away from the segment);
         # default to the high end when both or neither are open.
         from_hi = not (lo_state == "open" and hi_state != "open")
@@ -831,29 +930,52 @@ def _discover_bosses(
                     height=round(seg["s_hi"] - seg["s_lo"], 2),
                 ),
                 tuple(seg["faces"]),
+                tuple(hi_faces if from_hi and hi_state == "open" else lo_faces)
+                if (hi_state if from_hi else lo_state) == "open"
+                else (),
             )
         )
 
     if writer is not None:
         assert effective is not None
-        pending: list[tuple[BossRecord, tuple[FaceNode, ...]]] = []
+        pending: list[tuple[BossRecord, tuple[FaceNode, ...], tuple[FaceNode, ...]]] = []
         for proposal in proposals:
             resolved = {writer.graph.require_node(face) for face in proposal.segment_faces}
             nodes = tuple(node for node in writer.graph.nodes if node in resolved)
-            if not nodes or writer.graph.common_valid_solid(nodes) is None:
+            if not nodes:
                 raise ValueError("Boss defining faces do not prove one valid solid")
-            pending.append((proposal.record, nodes))
-        issued_pending: list[tuple[BossRecord, tuple[FaceNode, ...], tuple[SurfaceUse, ...]]] = []
-        for record, nodes in pending:
+            terminal_resolved = {
+                writer.graph.require_node(face) for face in proposal.terminal_faces
+            }
+            if resolved & terminal_resolved:
+                raise ValueError("Boss terminal identity aliases cylindrical evidence")
+            terminal_nodes = tuple(
+                node for node in writer.graph.nodes if node in terminal_resolved
+            )
+            members = (*nodes, *terminal_nodes)
+            solid = writer.graph.common_valid_solid(members)
+            if solid is None:
+                raise ValueError("Boss defining faces do not prove one valid solid")
+            pending.append((proposal.record, nodes, members))
+        issued_pending: list[
+            tuple[BossRecord, tuple[FaceNode, ...], tuple[FaceNode, ...], tuple[SurfaceUse, ...]]
+        ] = []
+        for record, nodes, members in pending:
             issued = tuple(
                 cylinder_surface_dependency(effective, writer.graph.face(node)) for node in nodes
             )
             if any(isinstance(use, SurfaceUseRefusal) for use in issued):
                 raise ValueError("Boss cylinder provenance is unavailable")
             uses = tuple(use for use in issued if isinstance(use, SurfaceUse))
-            issued_pending.append((record, nodes, uses))
-        for record, nodes, uses in issued_pending:
-            writer.add_defining(record, nodes, family=FamilyId.BOSSES, surfaces=uses)
+            issued_pending.append((record, nodes, members, uses))
+        for record, nodes, members, uses in issued_pending:
+            writer.add_defining(
+                record,
+                nodes,
+                family=FamilyId.BOSSES,
+                constituent=members,
+                surfaces=uses,
+            )
 
     return [proposal.record for proposal in proposals]
 
