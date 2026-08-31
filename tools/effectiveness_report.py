@@ -94,6 +94,17 @@ def _instance_components(value: object, count: int) -> tuple[frozenset[int], ...
     while remaining:
         seed = min(remaining)
         component = frozenset(index for index, linked in enumerate(rows[seed]) if linked)
+        if not component:
+            # A face can belong to no feature instance. Almost always that is a Stock face,
+            # whose row the published data leaves entirely zero. It is not only those: four
+            # models in the test partition leave a *feature* face with no instance row, twice
+            # while a sibling face of the same class does have one. That is an annotation
+            # defect in the corpus rather than a format this adapter can repair, and failing
+            # the model would cost the other 9369 under the default fail-closed policy.
+            # Both cases contribute no component, so the affected feature never becomes a
+            # truth instance and is absent from the instance-recall denominator.
+            remaining.discard(seed)
+            continue
         if seed not in component or any(
             frozenset(index for index, linked in enumerate(rows[item]) if linked) != component
             for item in component
