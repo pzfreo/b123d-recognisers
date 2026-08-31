@@ -22,7 +22,7 @@ from b123d_recognisers._candidates import FamilyId, PredicateId
 from b123d_recognisers._dispositions import Outcome
 
 REPORT_FORMAT = "b123d-recognisers-effectiveness"
-REPORT_FORMAT_VERSION = 1
+REPORT_FORMAT_VERSION = 2
 _MFCAD_LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 _CLASS_STATUSES = frozenset({"supported", "partial", "unsupported", "incomparable"})
 _MAPPED_CLASS_STATUSES = frozenset({"supported", "partial"})
@@ -238,6 +238,9 @@ def score_inventory(
         if indices:
             claims.append((family, indices))
 
+    accepted_defining_faces = (
+        set().union(*(indices for _family, indices in claims)) if claims else set()
+    )
     per_class: dict[str, dict[str, int | str]] = {}
     for class_id, mapping in taxonomy.items():
         labelled = {index for index, value in enumerate(truth.semantic) if value == class_id}
@@ -248,6 +251,7 @@ def score_inventory(
             for index in indices
             if index in labelled
         }
+        covered = labelled.intersection(accepted_defining_faces)
         claimed = {
             index
             for family, indices in claims
@@ -270,6 +274,7 @@ def score_inventory(
             "status": mapping["status"],
             "labelled_faces": len(labelled),
             "matched_defining_faces": len(matched),
+            "covered_faces": len(covered),
             "mapped_defining_faces": len(claimed),
             "truth_instances": len(truth_instances),
             "recalled_instances": recalled_instances,
@@ -358,6 +363,7 @@ def summarize_rows(
             for field in (
                 "labelled_faces",
                 "matched_defining_faces",
+                "covered_faces",
                 "mapped_defining_faces",
                 "truth_instances",
                 "recalled_instances",
@@ -381,6 +387,9 @@ def summarize_rows(
             ),
             "defining_face_recall": ratio(
                 aggregate["matched_defining_faces"], aggregate["labelled_faces"]
+            ),
+            "face_coverage": ratio(
+                aggregate["covered_faces"], aggregate["labelled_faces"]
             ),
             "instance_recall": ratio(
                 aggregate["recalled_instances"], aggregate["truth_instances"]

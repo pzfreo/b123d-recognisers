@@ -9,10 +9,13 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from build123d import Box, Cylinder, GeomType
 
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
 from tools.effectiveness_report import (
     DatasetTruth,
@@ -22,6 +25,7 @@ from tools.effectiveness_report import (
     load_mfinstseg_truth,
     load_taxonomy,
     score_inventory,
+    summarize_rows,
     validate_report,
 )
 from tools.run_effectiveness_baseline import (
@@ -239,12 +243,68 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
         "status": "supported",
         "labelled_faces": 1,
         "matched_defining_faces": 1,
+        "covered_faces": 1,
         "mapped_defining_faces": 1,
         "truth_instances": 1,
         "recalled_instances": 1,
     }
     assert row["taxonomy_mismatch_defining_faces"] == 0
     assert row["no_physical_records"] is False
+
+
+def test_face_coverage_counts_any_accepted_claim_and_retains_unclaimed_faces() -> None:
+    part = Box(1, 1, 1)
+    faces = tuple(part.faces())
+    candidate = SimpleNamespace(family=FamilyId.STEP_LEVELS)
+    product = SimpleNamespace(
+        context=SimpleNamespace(graph=SimpleNamespace(face=lambda node: faces[node])),
+        reconciliation=SimpleNamespace(
+            dispositions=(SimpleNamespace(candidate=candidate, outcome=Outcome.ACCEPTED),)
+        ),
+        evidence=SimpleNamespace(
+            defining_of=lambda _candidate: (0,),
+            observations=lambda *_args: (),
+        ),
+        diagnostics=(),
+    )
+    truth = DatasetTruth(
+        "coverage",
+        Path("coverage.step"),
+        (1, 1, *(24 for _face in faces[2:])),
+        (),
+        None,
+        "0" * 64,
+    )
+
+    row = score_inventory(
+        truth,
+        part,
+        product,
+        load_taxonomy(TAXONOMY, "mfcadpp"),
+        0.0,
+    )
+    row["status"] = "evaluated"
+    summary = summarize_rows([row], 1, 0)
+
+    assert row["classes"]["1"] == {
+        "status": "supported",
+        "labelled_faces": 2,
+        "matched_defining_faces": 0,
+        "covered_faces": 1,
+        "mapped_defining_faces": 0,
+        "truth_instances": 0,
+        "recalled_instances": 0,
+    }
+    assert summary["classes"]["1"]["face_coverage"] == {
+        "numerator": 1,
+        "denominator": 2,
+        "value": 0.5,
+    }
+    assert summary["classes"]["0"]["face_coverage"] == {
+        "numerator": 0,
+        "denominator": 0,
+        "value": None,
+    }
 
 
 def test_partial_support_preserves_supported_scorer_semantics() -> None:
@@ -322,7 +382,7 @@ def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> Non
 def _report() -> dict[str, object]:
     return {
         "format": "b123d-recognisers-effectiveness",
-        "format_version": 1,
+        "format_version": 2,
         "dataset": {"name": "fixture", "version": "1"},
         "package": {"name": "b123d-recognisers", "version": "1", "commit": "abc"},
         "environment": {"python": "3", "build123d": "1", "ocp": "1", "os": "test"},
