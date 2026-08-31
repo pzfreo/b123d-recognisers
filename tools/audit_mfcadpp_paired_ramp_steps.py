@@ -76,6 +76,8 @@ class PairProbe:
     internal_terminal_edges: int | None
     exterior_terminal_edges: int | None
     full_shared_run: bool | None
+    internal_terminal_index: int | None
+    exterior_terminal_index: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +98,8 @@ class ComponentAnatomy:
     def key(self) -> str:
         value = asdict(self)
         value["best_pair"].pop("run_axis")
+        value["best_pair"].pop("internal_terminal_index")
+        value["best_pair"].pop("exterior_terminal_index")
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
 
@@ -142,6 +146,8 @@ def _failed(
     internal_edges: int | None = None,
     exterior_edges: int | None = None,
     full_run: bool | None = None,
+    internal_index: int | None = None,
+    exterior_index: int | None = None,
 ) -> PairProbe:
     return PairProbe(
         stage,
@@ -154,6 +160,8 @@ def _failed(
         internal_edges,
         exterior_edges,
         full_run,
+        internal_index,
+        exterior_index,
     )
 
 
@@ -299,6 +307,8 @@ def _probe_pair(
             internal_edges=internal_edges,
             exterior_edges=exterior_edges,
             full_run=full_run,
+            internal_index=internal[0].index,
+            exterior_index=exterior[0].index,
         )
     if not full_run:
         return _failed(
@@ -310,6 +320,8 @@ def _probe_pair(
             internal_edges=internal_edges,
             exterior_edges=exterior_edges,
             full_run=False,
+            internal_index=internal[0].index,
+            exterior_index=exterior[0].index,
         )
     return _failed(
         16,
@@ -321,6 +333,8 @@ def _probe_pair(
         internal_edges=internal_edges,
         exterior_edges=exterior_edges,
         full_run=True,
+        internal_index=internal[0].index,
+        exterior_index=exterior[0].index,
     )
 
 
