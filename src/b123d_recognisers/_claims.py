@@ -95,14 +95,21 @@ class EvidenceWriter:
         nodes: Iterable[FaceNode],
         *,
         family: FamilyId = FamilyId.LEGACY,
+        constituent: Iterable[FaceNode] | None = None,
         surfaces: Iterable[SurfaceUse] = (),
     ) -> Candidate[object]:
-        """Issue defining evidence without exposing any read or freeze operation."""
+        """Issue defining and optional wider constituent evidence without read authority."""
 
         defining = tuple(nodes)
         if not defining:
             raise ValueError(f"{claimant!r} claims no defining face")
-        return self.sink.propose(family, claimant, defining=defining, surfaces=surfaces)
+        return self.sink.propose(
+            family,
+            claimant,
+            defining=defining,
+            constituent=None if constituent is None else tuple(constituent),
+            surfaces=surfaces,
+        )
 
 
 class ClaimLedger:
