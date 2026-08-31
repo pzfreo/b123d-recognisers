@@ -515,6 +515,46 @@ def validate_report(report: object) -> None:
                 or not isinstance(row["no_physical_records"], bool)
             ):
                 raise EffectivenessDataError("evaluated model row has invalid scalar values")
+            classes = row["classes"]
+            if not isinstance(classes, dict) or set(classes) != {
+                str(class_id) for class_id in range(25)
+            }:
+                raise EffectivenessDataError("evaluated model row needs exactly classes 0..24")
+            class_fields = {
+                "status",
+                "labelled_faces",
+                "matched_defining_faces",
+                "covered_faces",
+                "mapped_defining_faces",
+                "truth_instances",
+                "recalled_instances",
+            }
+            for class_row in classes.values():
+                if (
+                    not isinstance(class_row, dict)
+                    or set(class_row) != class_fields
+                    or class_row.get("status") not in _CLASS_STATUSES
+                ):
+                    raise EffectivenessDataError("evaluated class row has invalid fields")
+                counts = {
+                    field: class_row[field]
+                    for field in class_fields
+                    if field != "status"
+                }
+                if any(
+                    not isinstance(value, int) or isinstance(value, bool) or value < 0
+                    for value in counts.values()
+                ):
+                    raise EffectivenessDataError(
+                        "evaluated class counts must be non-negative integers"
+                    )
+                if not (
+                    counts["matched_defining_faces"] <= counts["covered_faces"]
+                    <= counts["labelled_faces"]
+                    and counts["matched_defining_faces"] <= counts["mapped_defining_faces"]
+                    and counts["recalled_instances"] <= counts["truth_instances"]
+                ):
+                    raise EffectivenessDataError("evaluated class denominators are inconsistent")
         else:
             raise EffectivenessDataError("model row status must be evaluated or invalid")
         ids.append(row["model_id"])

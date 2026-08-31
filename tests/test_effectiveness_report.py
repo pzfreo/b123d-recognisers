@@ -10,6 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from build123d import Box, Cylinder, GeomType
@@ -26,6 +27,7 @@ from tools.effectiveness_report import (
     load_taxonomy,
     score_inventory,
     summarize_rows,
+    summarize_runtime,
     validate_report,
 )
 from tools.run_effectiveness_baseline import (
@@ -379,7 +381,7 @@ def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> Non
     assert _display_path(external) == str(external.resolve())
 
 
-def _report() -> dict[str, object]:
+def _report() -> dict[str, Any]:
     return {
         "format": "b123d-recognisers-effectiveness",
         "format_version": 2,
@@ -419,12 +421,76 @@ def _report() -> dict[str, object]:
     }
 
 
+def _evaluated_report() -> dict[str, Any]:
+    report = _report()
+    classes = {
+        str(class_id): {
+            "status": "supported",
+            "labelled_faces": 0,
+            "matched_defining_faces": 0,
+            "covered_faces": 0,
+            "mapped_defining_faces": 0,
+            "truth_instances": 0,
+            "recalled_instances": 0,
+        }
+        for class_id in range(25)
+    }
+    classes["0"] = {
+        **classes["0"],
+        "labelled_faces": 1,
+        "matched_defining_faces": 1,
+        "covered_faces": 1,
+        "mapped_defining_faces": 1,
+    }
+    row = {
+        "model_id": "a",
+        "source_sha256": "0" * 64,
+        "seconds": 0.0,
+        "physical_records": {},
+        "mapped_dataset_class_records": {},
+        "no_physical_records": False,
+        "taxonomy_mismatch_defining_faces": 0,
+        "reconciliation_drops": {},
+        "unsupported_diagnostics": {},
+        "predicate_observations": {},
+        "classes": classes,
+        "status": "evaluated",
+    }
+    report["models"] = [row]
+    report["summary"] = summarize_rows([row], 1, 0)
+    report["runtime"] = summarize_runtime([row])
+    return report
+
+
 def test_report_validation_and_json_are_deterministic() -> None:
     report = _report()
 
     validate_report(report)
 
     assert canonical_json(report) == canonical_json(json.loads(canonical_json(report)))
+
+    validate_report(_evaluated_report())
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ({"covered_faces": 2}, "denominators are inconsistent"),
+        ({"matched_defining_faces": 2}, "denominators are inconsistent"),
+        ({"covered_faces": -1}, "counts must be non-negative integers"),
+        ({"unexpected": 0}, "invalid fields"),
+    ],
+)
+def test_report_validation_rejects_invalid_class_evidence(
+    mutation: dict[str, int], message: str
+) -> None:
+    report = _evaluated_report()
+    class_row = report["models"][0]["classes"]["0"]
+    class_row.update(mutation)
+    report["summary"] = summarize_rows(report["models"], 1, 0)
+
+    with pytest.raises(EffectivenessDataError, match=message):
+        validate_report(report)
 
 
 def test_report_validation_rejects_denominator_drift_and_duplicate_models() -> None:
