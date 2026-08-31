@@ -271,16 +271,6 @@ def _probe_pair(
             internal_edges=internal_edges,
             exterior_edges=exterior_edges,
         )
-    if internal_edges not in (3, 5):
-        return _failed(
-            14,
-            axis=axis,
-            ramp_edges=ramp_edges,
-            shared_edges=1,
-            terminals=2,
-            internal_edges=internal_edges,
-            exterior_edges=exterior_edges,
-        )
     edge_box = shared[0].bounding_box()
     edge_bounds = (
         (edge_box.min.X, edge_box.max.X),
@@ -298,6 +288,18 @@ def _probe_pair(
         for face_run in (left_span[axis], right_span[axis])
         for end in (0, 1)
     )
+    if internal_edges not in (3, 5):
+        return _failed(
+            14,
+            axis=axis,
+            mirror_delta=mirror_delta,
+            ramp_edges=ramp_edges,
+            shared_edges=1,
+            terminals=2,
+            internal_edges=internal_edges,
+            exterior_edges=exterior_edges,
+            full_run=full_run,
+        )
     if not full_run:
         return _failed(
             15,
