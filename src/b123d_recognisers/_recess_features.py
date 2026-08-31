@@ -249,12 +249,18 @@ def _discover_pockets(
             )
             if not nodes:
                 raise _PocketAttributionError("Pocket occurrence has no defining source faces")
-            for node in nodes:
+            if (
+                not proposal.record.edge_anchored
+                and (not proposal.floors or not proposal.floors.isdisjoint(nodes))
+            ):
+                raise _PocketAttributionError("Pocket floor identity is unavailable")
+            members = nodes | proposal.floors
+            for node in members:
                 writer.graph.face(node)
-            solid = writer.graph.common_valid_solid(nodes)
+            solid = writer.graph.common_valid_solid(members)
             if solid is None:
                 raise _PocketAttributionError("Pocket source faces do not prove one valid solid")
-            staged.append((proposal.record, nodes, solid))
+            staged.append((proposal.record, nodes, members, solid))
     except _PocketAttributionError:
         raise
     except (IndexError, KeyError, ValueError) as exc:
@@ -262,21 +268,24 @@ def _discover_pockets(
             raise
         raise _PocketAttributionError("Pocket source identity does not belong to this run") from exc
     pending = []
-    seen: dict[tuple[Pocket, object], frozenset] = {}
-    for record, nodes, solid in staged:
+    seen: dict[tuple[Pocket, object], tuple[frozenset, frozenset]] = {}
+    for record, nodes, members, solid in staged:
         key = (record, solid)
         prior = seen.get(key)
         if prior is not None:
-            if prior != nodes:
-                raise _PocketAttributionError(
-                    "equal Pocket value has competing source assignments"
-                )
+            if prior != (nodes, members):
+                raise _PocketAttributionError("equal Pocket value has competing source assignments")
             continue
-        seen[key] = nodes
-        pending.append((record, nodes))
-    for record, nodes in pending:
-        writer.add_defining(record, nodes, family=FamilyId.POCKETS)
-    return [record for record, _nodes in pending]
+        seen[key] = (nodes, members)
+        pending.append((record, nodes, members))
+    for record, nodes, members in pending:
+        writer.add_defining(
+            record,
+            nodes,
+            family=FamilyId.POCKETS,
+            constituent=members,
+        )
+    return [record for record, _nodes, _members in pending]
 
 
 def recognise_channels(
@@ -340,12 +349,20 @@ def _discover_channels(
             nodes = (proposal.low_wall, proposal.high_wall)
             if nodes[0] == nodes[1]:
                 raise ValueError("Channel side walls must be distinct")
+            if not proposal.floor or not proposal.floor.isdisjoint(nodes):
+                raise ValueError("Channel floor identity is unavailable")
             # Revalidate the graph-issued snapshots immediately before publication.
             writer.graph.face(nodes[0])
             writer.graph.face(nodes[1])
-            if writer.graph.common_valid_solid(nodes) is None:
-                raise ValueError("Channel side walls do not prove one valid solid")
-            pending.append((proposal.record, nodes))
-        for record, nodes in pending:
-            writer.add_defining(record, nodes, family=FamilyId.CHANNELS)
+            members = (*nodes, *proposal.floor)
+            if writer.graph.common_valid_solid(members) is None:
+                raise ValueError("Channel faces do not prove one valid solid")
+            pending.append((proposal.record, nodes, members))
+        for record, nodes, members in pending:
+            writer.add_defining(
+                record,
+                nodes,
+                family=FamilyId.CHANNELS,
+                constituent=members,
+            )
     return [proposal.record for proposal in retained]
