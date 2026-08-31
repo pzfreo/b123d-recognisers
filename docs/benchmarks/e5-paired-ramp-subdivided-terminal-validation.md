@@ -24,9 +24,9 @@ tests remain green.
 ## Exact MFCAD++-500 result
 
 The exact taxonomy-v4 report is
-[`effectiveness-mfcadpp-500-paired-terminal-a808755.json`](effectiveness-mfcadpp-500-paired-terminal-a808755.json),
-SHA-256 `bb23f7a99c048bb2fd23e9aa46c1d5a13c31ff7dc20f79280318653b23ff96d6`, generated at
-implementation commit `a808755` using:
+[`effectiveness-mfcadpp-500-paired-terminal-905ddef.json`](effectiveness-mfcadpp-500-paired-terminal-905ddef.json),
+SHA-256 `3a6703c14e355ab36e61a105244b2623489916b1fe9a400ba118150c4879cc7a`, generated at
+implementation commit `905ddef` using:
 
 ```bash
 uv run python tools/run_effectiveness_baseline.py \
@@ -34,7 +34,7 @@ uv run python tools/run_effectiveness_baseline.py \
   --dataset-version published-test-split \
   --limit 500 \
   --taxonomy docs/benchmarks/effectiveness-taxonomy-v4.json \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-paired-terminal-a808755.json
+  --output docs/benchmarks/effectiveness-mfcadpp-500-paired-terminal-905ddef.json
 ```
 
 Compared with the exact pre-change taxonomy-v4 report:
@@ -48,7 +48,7 @@ Compared with the exact pre-change taxonomy-v4 report:
   two new records in model `12060` and one residual record beside the existing record in `11014`;
 - every other physical-family record count is equal, as are reconciliation drops, diagnostics,
   predicate observations, total taxonomy mismatches and every non-class-9 per-class row;
-- total runtime is 269.117 seconds versus 251.121 seconds (ratio 1.0717), within the 1.10 package
+- total runtime is 261.272 seconds versus 251.121 seconds (ratio 1.0404), within the 1.10 package
   gate. Timing is descriptive because the runs were not interleaved.
 
 No off-class defining face is introduced. Existing Pad, Plate, Riser and FaceLevel records remain
