@@ -18,6 +18,7 @@ from b123d_recognisers.result import _take_inventory
 from tools.audit_mfcadpp_paired_ramp_steps import (
     _describe_component,
     _probe_pair,
+    _ramp_boundary_bypass_pairs,
     _rank,
     _reconciliation,
 )
@@ -82,7 +83,7 @@ def test_cluster_ranking_and_samples_are_deterministic() -> None:
     }
 
 
-def test_drilled_terminal_reaches_only_the_subdivision_gate_with_full_run() -> None:
+def test_drilled_terminal_reaches_the_final_gate_with_full_run() -> None:
     part = _side_cut() - Pos(15, -5, 0) * Rot(90, 0, 0) * Cylinder(1, 6)
     graph = FaceGraph(part)
     bevels = {}
@@ -96,15 +97,48 @@ def test_drilled_terminal_reaches_only_the_subdivision_gate_with_full_run() -> N
         for right in graph.neighbours(left)
         if right.index > left.index and left in bevels and right in bevels
     ]
-    terminal = [
-        probe
-        for probe in probes
-        if probe.first_failed_gate == "subdivided_internal_terminal"
-    ]
+    terminal = [probe for probe in probes if probe.first_failed_gate == "recognisable"]
 
     assert len(terminal) == 1
     assert terminal[0].full_shared_run is True
     assert terminal[0].internal_terminal_edges not in (3, 5)
+
+
+def test_ramp_boundary_bypass_changes_only_the_four_edge_gate(monkeypatch) -> None:
+    graph = FaceGraph(_side_cut())
+    bevels = {}
+    for node in graph.nodes:
+        with suppress(BevelReject):
+            bevels[node] = classify_bevel(graph.face(node))
+    left, right = next(
+        (left, right)
+        for left in graph.nodes
+        for right in graph.neighbours(left)
+        if right.index > left.index and left in bevels and right in bevels
+        and _probe_pair(graph, left, right, bevels[left], bevels[right]).first_failed_gate
+        == "recognisable"
+    )
+    original_edges = graph.edges
+    right_edges = set(original_edges(right))
+    extra = next(edge for edge in original_edges(left) if edge not in right_edges)
+
+    def subdivided_edges(node):
+        edges = original_edges(node)
+        return edges + (extra,) if node == left else edges
+
+    monkeypatch.setattr(graph, "edges", subdivided_edges)
+
+    ordinary = _probe_pair(graph, left, right, bevels[left], bevels[right])
+    bypass = _ramp_boundary_bypass_pairs(
+        graph, tuple(set((left, right, *graph.neighbours(left))))
+    )
+
+    assert ordinary.first_failed_gate == "fragmented_ramp_boundary"
+    assert len(bypass) == 1
+    assert bypass[0]["left_index"] == left.index
+    assert bypass[0]["right_index"] == right.index
+    assert bypass[0]["result"]["first_failed_gate"] == "recognisable"
+    assert len(bypass[0]["projected_defining_indices"]) == 3
 
 
 def test_reconciliation_retains_residual_faces_in_touched_components() -> None:
