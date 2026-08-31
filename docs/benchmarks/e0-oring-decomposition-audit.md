@@ -1,26 +1,15 @@
 # E0 O-ring decomposition audit
 
-Issue [#360](https://github.com/pzfreo/b123d-recognisers/issues/360) audits the historical mapping
-from MFCAD++/MFInstSeg class 11, `O-ring`, to the package `Boss` family. The result is a
-many-to-many evidence correction, not a production change or a new recognition family.
-
-## Geometric contract
-
-The corpus assigns one feature label to an external cylindrical wall, an annular planar face and
-an internal cylindrical wall. The package deliberately decomposes that geometry: `BossRecord`
-owns the external cylinder and `HoleRecord` owns the internal cylinder. The annular plane is
-consulted context for those recognisers but is not a defining face owned by either record. Mapping
-only `bosses` therefore hid legitimate Hole evidence; mapping the plane would instead invent
-ownership that the package does not claim.
-
-This decomposition follows ADR 0005's stable-family boundary: no public family, record schema,
-manifest entry, aggregate field or downstream contract changes. It changes only how the external
-single-label taxonomy is compared with two existing physical families.
+Issue [#360](https://github.com/pzfreo/b123d-recognisers/issues/360) tests whether
+MFCAD++/MFInstSeg class 11, `O-ring`, can be mapped from `bosses` to both `bosses` and `holes`.
+The complete result is negative: the dominant annular motif does decompose that way, but the class
+also contains interrupted cylindrical fragments and one cylindrical Fillet defining face. Taxonomy
+v4 therefore remains authoritative. No production behavior or public ownership changes.
 
 ## Complete lexical-500 audit
 
-The published test archive's exact lexical selection contains 147 models / 669 class-11 faces.
-There are 453 cylindrical and 216 planar labelled faces in 207 exact label-connected components:
+The published test archive's exact lexical selection contains 147 models / 669 class-11 faces:
+453 cylinders and 216 planes in 207 exact label-connected components.
 
 | labelled component geometry | count |
 | --- | ---: |
@@ -32,46 +21,48 @@ There are 453 cylindrical and 216 planar labelled faces in 207 exact label-conne
 | Four cylinders and one plane | 2 |
 | Other intersected variants | 4 |
 
-The aggregate recogniser claims 211 class-11 faces as Boss evidence and 230 as Hole evidence. It
-also claims 21 as structural FaceLevel evidence, one as Fillet evidence and one as Plate evidence;
-those structural/incidental claims are not added to the physical taxonomy mapping. In total, 464
-distinct class-11 faces have some package claim and 205 are unclaimed. MFCAD++ does not provide an
-instance relation, so component counts are descriptive topology evidence rather than instance
-recall. No individual MFInstSeg geometry was inspected.
+Accepted aggregate evidence claims 211 class-11 faces as Boss defining faces and 230 as Hole
+defining faces. It also claims 21 as structural FaceLevel evidence, one as Fillet evidence and one
+as Plate evidence. There are 464 distinct claimed faces and 205 unclaimed faces. MFCAD++ has no
+instance relation, so the component counts are descriptive topology evidence, not instance recall.
+No individual MFInstSeg model was inspected.
 
-## Immutable taxonomy result
+## Representative ownership proof
 
-[`effectiveness-taxonomy-v5.json`](effectiveness-taxonomy-v5.json), SHA-256
-`7eb11e73ef8bd4b754d04339a1d2a71f387b66eab8a8f2a6ad3caf0c8e43b84b`, differs from v4 only by
-mapping class 11 to both `bosses` and `holes` and documenting that decomposition. Earlier mappings
-and reports remain immutable.
+Face indices are zero-based imported-face positions, matching the scorer and lexical STEP labels.
+`FORWARD` cylindrical orientation denotes material outside the analytic cylinder; `REVERSED`
+denotes material inside it. A full native cylinder has a 2π U span.
 
-The exact v5 report is
-[`effectiveness-mfcadpp-500-oring-ec8b003.json`](effectiveness-mfcadpp-500-oring-ec8b003.json),
-SHA-256 `2fa220a8e63f425e9a9aefaf2a5fd6d3f301340c9c98443837f681573f481dc5`, generated at commit
-`ec8b003` using:
+| case | model and labelled faces | observed ownership |
+| --- | --- | --- |
+| Native annulus | `10015`: face 15 REVERSED cylinder, radius 2.551188, U span 6.283185; face 18 plane; face 19 FORWARD cylinder, radius 1.953636, U span 6.283185 | face 15 is Hole defining evidence, face 19 is Boss defining evidence, and face 18 is outside both defining sets |
+| Intersected annulus | `10096`: component faces 31/32 REVERSED cylinders, face 36 plane, face 38 FORWARD cylinder | faces 31/32 are Hole defining evidence and face 36 remains unowned; face 38 has only a 2.267717-radian span and is not accepted as a Boss |
+| Compound labelled component | `10170`: full faces 17/18/19 plus intersecting faces 21/22/23/25 | faces 17 and 19 are respectively Hole and Boss evidence and plane 18 is unowned; interrupted REVERSED face 21 is unclaimed, plane 22 is unowned, and FORWARD faces 23/25 are Boss evidence |
+| Contradictory cylinder | `10684`: REVERSED faces 13/14, FORWARD face 31, plane 32 | faces 13/14 are Hole evidence and plane 32 is unowned, but face 31 is accepted Fillet evidence (radius 0.609760, U span 3.195073), not Boss evidence |
 
-```bash
-uv run python tools/run_effectiveness_baseline.py \
-  mfcadpp /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
-  --dataset-version published-test-split \
-  --limit 500 \
-  --taxonomy docs/benchmarks/effectiveness-taxonomy-v5.json \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-oring-ec8b003.json
-```
+Across the full selection, twelve class-11 cylinders are outside accepted Boss/Hole defining
+ownership. Eleven are unclaimed partial walls in models `10096`, `10155`, `10170`, `11724`,
+`12062`, and `12110`, with U spans from 0.232260 to 3.023651 radians. The twelfth is the
+Fillet-owned face 31 in `10684`, with U span 3.195073 radians. These are not annular caps that can
+remain consulted context: they are cylinders carrying the class label, and assigning them to Boss
+or Hole would require weakening the existing full-cylinder/material ownership contracts.
 
-Compared with the exact v4 report:
+## Decision and measured counterfactual
 
-- all physical records, predicate observations, reconciliation drops, unsupported diagnostics,
-  source hashes and non-mapping, non-runtime per-model evidence are exactly equal;
-- class-11 defining-face agreement changes from Boss-only 211/211 precision and 211/669 recall to
-  the combined decomposition's 441/854 precision and 441/669 recall;
-- mapped class-11 physical records increase from 199 to 400 and total taxonomy mismatches fall
-  from 3,237 to 3,007 because 230 legitimate Hole defining faces are now mapped;
-- total runtime is 232.551 seconds versus 251.121 seconds (ratio 0.9261), descriptive only because
-  production behavior is unchanged.
+The proposed many-to-many mapping is rejected under #360's closure condition. The package does
+legitimately recognise many inner O-ring walls as Holes, but class 11 is not uniformly equivalent
+to the existing Boss/Hole decomposition. Adding `holes` would hide that heterogeneity and make a
+comparison taxonomy claim that the public contracts do not support. Immutable taxonomy v4 and its
+exact report remain unchanged.
 
-The lower combined precision is expected: its denominator now includes every Hole claim in models
-whose single corpus class is O-ring, including Hole faces carrying another label. It must not be
-read as a production precision regression. MFInstSeg inherits the same 25-class mapping and must be
-regenerated from canonical model rows before its O-ring metrics are restated.
+For audit only, an unshipped experimental mapping at commit `ec8b003` was run over the same 500
+models. It changed class-11 agreement from Boss-only 211/211 precision and 211/669 recall to
+441/854 precision and 441/669 recall, mapped class-11 records from 199 to 400, and total mismatches
+from 3,237 to 3,007. All physical records and non-mapping evidence were identical. Those improved
+agreement figures are not adopted because they do not satisfy the geometric contract above; the
+experimental taxonomy and report are deliberately not published as canonical evidence.
+
+MFInstSeg's rounded Boss/Hole face-versus-instance pattern remains useful directional evidence,
+but its O-ring metrics must not be reinterpreted or regenerated with the rejected mapping. A future
+mapping change would require an explicit partial/decomposed-class comparison contract capable of
+representing the interrupted and Fillet-owned variants without asserting false physical ownership.

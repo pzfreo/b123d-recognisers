@@ -365,7 +365,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Chamfer | Chamfer | |
 | Round | Fillet | |
 | Circular blind step | CircularBlindStep | one physical occurrence owns its cylindrical wall and blind terminal; an overlapping Fillet is reconciled away |
-| O-ring | BossRecord + HoleRecord | the dataset's one annular instance combines separately owned external and internal cylinders; its planar annulus remains consulted context |
+| O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | 2-sided through step | PairedRampStep | conservative mirror-symmetric, horizontal, three/five-terminal subset |
 | Rectangular through step | ThroughStep | principal two-wall subset; independent boundary interruptions are allowed only with complete seam, terminal, envelope and empty-prism proofs |
