@@ -80,6 +80,7 @@
       "matched_face_indices": [],
       "model_id": "10033",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d3501c8c991affa2393435a2aecdcae20f151d0b584089bbc25d191a16868bc6",
       "unmatched_face_indices": [
         13,
         14,
@@ -191,6 +192,7 @@
           "right_index": 3
         }
       ],
+      "source_sha256": "9b831e372dbe2890bed04cadd1b2f6ea4f732ddd4a6b7545a410eeab67d9779f",
       "unmatched_face_indices": [
         2,
         3,
@@ -267,6 +269,7 @@
       ],
       "model_id": "10060",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a1b36cacf4225411aac4f190e60ef7e2425c398dea12856b6a546b22d4345f23",
       "unmatched_face_indices": []
     },
     {
@@ -369,6 +372,7 @@
       ],
       "model_id": "10060",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a1b36cacf4225411aac4f190e60ef7e2425c398dea12856b6a546b22d4345f23",
       "unmatched_face_indices": [
         7,
         9,
@@ -461,6 +465,7 @@
       ],
       "model_id": "10092",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b9470b92ad910bc9eb37bea723737cfe29dc29a7d2b90ccf115ed246d499d461",
       "unmatched_face_indices": []
     },
     {
@@ -541,6 +546,7 @@
       "matched_face_indices": [],
       "model_id": "10092",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b9470b92ad910bc9eb37bea723737cfe29dc29a7d2b90ccf115ed246d499d461",
       "unmatched_face_indices": [
         24,
         25,
@@ -599,6 +605,7 @@
       "matched_face_indices": [],
       "model_id": "10096",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0dd4b33b42c69db9442b27ee49f160cbd054dc7ea9fbfdc2024cd14c6907c074",
       "unmatched_face_indices": [
         1,
         2,
@@ -722,6 +729,7 @@
           "right_index": 8
         }
       ],
+      "source_sha256": "0dd4b33b42c69db9442b27ee49f160cbd054dc7ea9fbfdc2024cd14c6907c074",
       "unmatched_face_indices": [
         7,
         8,
@@ -840,6 +848,7 @@
           "right_index": 23
         }
       ],
+      "source_sha256": "4069220db61e503e17d24f045d7f26dd89522be59534f16bd0765a32bd3fc590",
       "unmatched_face_indices": [
         3,
         5,
@@ -924,6 +933,7 @@
       ],
       "model_id": "10167",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "fa26ed75ac96518c1d8964799321270b48b709fbc43afd396452bd9867bd7d89",
       "unmatched_face_indices": []
     },
     {
@@ -978,6 +988,7 @@
       "matched_face_indices": [],
       "model_id": "1017",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "8740d288d9031af4756159d61bb8c179e5be18c07ae07c059205cfb17469202c",
       "unmatched_face_indices": [
         15,
         16,
@@ -1046,6 +1057,7 @@
       "matched_face_indices": [],
       "model_id": "10212",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "20de40173fe108277fcd5c5c4ee4d8486d2470d036aeadd9e4f31aaa8d9ce2ff",
       "unmatched_face_indices": [
         2,
         4,
@@ -1147,6 +1159,7 @@
           "right_index": 1
         }
       ],
+      "source_sha256": "da44c719d3343fb824a2f39af75c794fe4ec4698bc911acd6a1faa1daec198c7",
       "unmatched_face_indices": [
         0,
         1,
@@ -1284,6 +1297,7 @@
           "right_index": 21
         }
       ],
+      "source_sha256": "324d912c89adbe25a94669454d756c8fbbaa0aa37d76b90333d4f9e8e84160d9",
       "unmatched_face_indices": [
         2,
         4,
@@ -1363,6 +1377,7 @@
       "matched_face_indices": [],
       "model_id": "10255",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "324d912c89adbe25a94669454d756c8fbbaa0aa37d76b90333d4f9e8e84160d9",
       "unmatched_face_indices": [
         5,
         7,
@@ -1422,6 +1437,7 @@
       "matched_face_indices": [],
       "model_id": "10255",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "324d912c89adbe25a94669454d756c8fbbaa0aa37d76b90333d4f9e8e84160d9",
       "unmatched_face_indices": [
         42
       ]
@@ -1521,6 +1537,7 @@
           "right_index": 6
         }
       ],
+      "source_sha256": "2e974154e0f285c18c5aeb8761841e025e8c02c4c94eb8bd364398b8f202b777",
       "unmatched_face_indices": [
         0,
         4,
@@ -1638,6 +1655,7 @@
           "right_index": 8
         }
       ],
+      "source_sha256": "40f9241cd3485478c651ce48bb1cfa739b246b0d8a639a49548cdf42dd0f63e2",
       "unmatched_face_indices": [
         2,
         3,
@@ -1707,6 +1725,7 @@
       "matched_face_indices": [],
       "model_id": "10317",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "40f9241cd3485478c651ce48bb1cfa739b246b0d8a639a49548cdf42dd0f63e2",
       "unmatched_face_indices": [
         12,
         13,
@@ -1799,6 +1818,7 @@
       ],
       "model_id": "10340",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "667961ddae2e5693ec6faa83f337699f9ae1c517d618a0c868bedf4f765167fb",
       "unmatched_face_indices": []
     },
     {
@@ -1926,6 +1946,7 @@
           "right_index": 23
         }
       ],
+      "source_sha256": "b60b9c3bd9c8bfc19b03331d059081c7705712f352dd5011fe2c311cfb8944c8",
       "unmatched_face_indices": [
         2,
         4,
@@ -2001,6 +2022,7 @@
       ],
       "model_id": "10347",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "674fc595bb395a73421b1aad428f2d16d125b58d5d07b564d3afd3842fa15609",
       "unmatched_face_indices": []
     },
     {
@@ -2055,6 +2077,7 @@
       "matched_face_indices": [],
       "model_id": "10348",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "08cffb12dc41a13b356c80b9d48ede15a1f4ca70a376fcdf4ce014dd0d78eb77",
       "unmatched_face_indices": [
         1,
         7,
@@ -2123,6 +2146,7 @@
       "matched_face_indices": [],
       "model_id": "10348",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "08cffb12dc41a13b356c80b9d48ede15a1f4ca70a376fcdf4ce014dd0d78eb77",
       "unmatched_face_indices": [
         3,
         4,
@@ -2196,6 +2220,7 @@
       "matched_face_indices": [],
       "model_id": "10348",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "08cffb12dc41a13b356c80b9d48ede15a1f4ca70a376fcdf4ce014dd0d78eb77",
       "unmatched_face_indices": [
         14,
         16,
@@ -2280,6 +2305,7 @@
       ],
       "model_id": "10376",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "304033bbc1f766635b471855d350ff758b2f46bdfb74eec5f94585569059efb8",
       "unmatched_face_indices": []
     },
     {
@@ -2385,6 +2411,7 @@
           "right_index": 23
         }
       ],
+      "source_sha256": "df22a76b765714ff9c43127af600ea771b517ec12dcaf2a0b66c72aa3f35d9fa",
       "unmatched_face_indices": [
         18,
         19,
@@ -2518,6 +2545,7 @@
           "right_index": 8
         }
       ],
+      "source_sha256": "f625c611453b274be318302730c7df3d38017de9efead46fba0685ee4609c7ca",
       "unmatched_face_indices": [
         1,
         2,
@@ -2597,6 +2625,7 @@
       "matched_face_indices": [],
       "model_id": "10534",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a6dea14e1b1c8e344442928b71e100c3273f3519af5113d0b22646733f4c55d2",
       "unmatched_face_indices": [
         4,
         6,
@@ -2684,6 +2713,7 @@
       ],
       "model_id": "10534",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a6dea14e1b1c8e344442928b71e100c3273f3519af5113d0b22646733f4c55d2",
       "unmatched_face_indices": []
     },
     {
@@ -2756,6 +2786,7 @@
       "matched_face_indices": [],
       "model_id": "10568",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "642635d208e23cf4a6899dff50aff54b656df44ad09e9e42eebab100e7fbd14d",
       "unmatched_face_indices": [
         3,
         5,
@@ -2857,6 +2888,7 @@
           "right_index": 26
         }
       ],
+      "source_sha256": "746ea6de3e82b205bf40e9e966fb99e3a60f1c1ce222b5867e17e73ac332616e",
       "unmatched_face_indices": [
         12,
         17,
@@ -2933,6 +2965,7 @@
       "matched_face_indices": [],
       "model_id": "10594",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "965c994b91d5a6f957134a49f7153cb614a6be4bf37b5e50dcf740254af54fed",
       "unmatched_face_indices": [
         2,
         3,
@@ -3009,6 +3042,7 @@
       "matched_face_indices": [],
       "model_id": "1061",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "6aee996a063bab3f753cadb933ac18e441a3240414a171b586f1a980678460e5",
       "unmatched_face_indices": [
         6,
         14,
@@ -3067,6 +3101,7 @@
       "matched_face_indices": [],
       "model_id": "1062",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "32b50d905312fddc26bbd2adde2c7d3024a76eb1c30ad4e7e8400ba77a795ffe",
       "unmatched_face_indices": [
         3,
         5,
@@ -3151,6 +3186,7 @@
       ],
       "model_id": "10627",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d88155e6b27bc05c8a6031c796d2a325d6fee21810a6d460b8ed7d85472e9677",
       "unmatched_face_indices": []
     },
     {
@@ -3231,6 +3267,7 @@
       ],
       "model_id": "10653",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "ea56e5d814a79c7e80c69947e39b6c934b2ffc045867321abd032301c32a7956",
       "unmatched_face_indices": []
     },
     {
@@ -3308,6 +3345,7 @@
       "matched_face_indices": [],
       "model_id": "10710",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "c4897070fa181efc3d8cdcfcf6a2fdc6d8d969bc9372f5e6357dc901a39de2a5",
       "unmatched_face_indices": [
         7,
         8,
@@ -3376,6 +3414,7 @@
       "matched_face_indices": [],
       "model_id": "1072",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "edb571fbc96acecd0933e054a9c9cd9fce2812b509d1433c70fe6e6358500fb1",
       "unmatched_face_indices": [
         6,
         7,
@@ -3493,6 +3532,7 @@
           "right_index": 24
         }
       ],
+      "source_sha256": "73f35c0a7c55c5a6f42ddce6129bb93ca3ad5f00e93b6e83baa49aa96c2119e1",
       "unmatched_face_indices": [
         2,
         7,
@@ -3570,6 +3610,7 @@
       "matched_face_indices": [],
       "model_id": "10761",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "14a924b4b4102ddba38039f65f8616e6008a5575e1fcbf42a51dab071e901e1c",
       "unmatched_face_indices": [
         7,
         9,
@@ -3646,6 +3687,7 @@
       "matched_face_indices": [],
       "model_id": "10786",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0ed2c2eb1a6b6ab826e43c2623b43ab0aed630026352a15e7a60d29f2e369ec2",
       "unmatched_face_indices": [
         2,
         5,
@@ -3716,6 +3758,7 @@
       "matched_face_indices": [],
       "model_id": "10794",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f262070f436b678219636e84ef6a179139f84166198fd937df40ae5c81e1505f",
       "unmatched_face_indices": [
         6,
         7,
@@ -3785,6 +3828,7 @@
       "matched_face_indices": [],
       "model_id": "10812",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "e6838e899bb833dc3fcfb76ecbb5fbb555d3ff1d76273e8a207636bac385df44",
       "unmatched_face_indices": [
         5,
         6,
@@ -3869,6 +3913,7 @@
       ],
       "model_id": "10841",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "6f0e1d93f4235e445ebf507e88ff16f62c8eaee61d09fd1cec7eafb35fc4002a",
       "unmatched_face_indices": []
     },
     {
@@ -3971,6 +4016,7 @@
       ],
       "model_id": "10847",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "93f3293a47532bfc39570a0972d0891ab865d50d35dd926e74514576227ae551",
       "unmatched_face_indices": [
         3,
         5,
@@ -4092,6 +4138,7 @@
           "right_index": 10
         }
       ],
+      "source_sha256": "1b47c90f209ba542bc8d9cd2027fe48745ff524a1300a5af020e7723e92fdca5",
       "unmatched_face_indices": [
         1,
         2,
@@ -4180,6 +4227,7 @@
       ],
       "model_id": "1088",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a727a6ba319101e3af31456e58a9995bc623e02b4e92b47b2100a09a85780b6b",
       "unmatched_face_indices": []
     },
     {
@@ -4307,6 +4355,7 @@
           "right_index": 19
         }
       ],
+      "source_sha256": "24ef2792e9be24159bd07f3e8b3b33a75e6b21dfc7a408ab69ef3e7e15b5dd4d",
       "unmatched_face_indices": [
         3,
         9,
@@ -4375,6 +4424,7 @@
       "matched_face_indices": [],
       "model_id": "10897",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "ee87bd9ff05f5c63bb991eb9ae3c7f53afcb869194f55a057cb5b9fa1a63dd31",
       "unmatched_face_indices": [
         5,
         6,
@@ -4484,6 +4534,7 @@
           "right_index": 15
         }
       ],
+      "source_sha256": "2e59adcb52f5d340f845b4d81ada44cb24d10a2362803fe85d371551406522a1",
       "unmatched_face_indices": [
         1,
         3,
@@ -4568,6 +4619,7 @@
       ],
       "model_id": "10943",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "2e59adcb52f5d340f845b4d81ada44cb24d10a2362803fe85d371551406522a1",
       "unmatched_face_indices": []
     },
     {
@@ -4634,6 +4686,7 @@
       "matched_face_indices": [],
       "model_id": "10964",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0ff58d8b5071e27b92d869b612af11e31a2793f875c5919a6d7373d4dd61979f",
       "unmatched_face_indices": [
         18,
         19,
@@ -4719,6 +4772,7 @@
       ],
       "model_id": "10966",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "386aad54bf16a0c78339c40ee203e84c27541a512501ebcf11a40728799efd52",
       "unmatched_face_indices": []
     },
     {
@@ -4791,6 +4845,7 @@
       "matched_face_indices": [],
       "model_id": "10968",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "29902667f78ea90f759a79b4ee1deafa134f10d2ef54f4a016391e90d45180a1",
       "unmatched_face_indices": [
         2,
         9,
@@ -4867,6 +4922,7 @@
       "matched_face_indices": [],
       "model_id": "10968",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "29902667f78ea90f759a79b4ee1deafa134f10d2ef54f4a016391e90d45180a1",
       "unmatched_face_indices": [
         6,
         7,
@@ -4933,6 +4989,7 @@
       "matched_face_indices": [],
       "model_id": "10986",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "c64f071406a50a6bf388f9f21fa382887f45d3c9883ba8ad3cfd84694d7b31db",
       "unmatched_face_indices": [
         7,
         8,
@@ -5070,6 +5127,7 @@
           "right_index": 12
         }
       ],
+      "source_sha256": "80d97b0e364b6cf149e3bbad1b3b85fa3e10fb2e36e827bdcf9712c281a46039",
       "unmatched_face_indices": [
         2,
         3,
@@ -5140,6 +5198,7 @@
       "matched_face_indices": [],
       "model_id": "10988",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "80d97b0e364b6cf149e3bbad1b3b85fa3e10fb2e36e827bdcf9712c281a46039",
       "unmatched_face_indices": [
         5,
         6,
@@ -5241,6 +5300,7 @@
           "right_index": 17
         }
       ],
+      "source_sha256": "04a8d12e994d5ea8f384d493c857136e1be9d1b738608ad7f2b8d7320e4e33b0",
       "unmatched_face_indices": [
         12,
         13,
@@ -5366,6 +5426,7 @@
       ],
       "model_id": "11014",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0bb65ef25c9507a2861b0fe7f9e54f5d9e7ad7ab89727542e8bb8d87012ebdb8",
       "unmatched_face_indices": [
         2,
         3,
@@ -5427,6 +5488,7 @@
       "matched_face_indices": [],
       "model_id": "11041",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "96cb0493dc25435b849110d1d86886ea00f18be3ba775a9927f18b97313b81dd",
       "unmatched_face_indices": [
         8,
         10,
@@ -5508,6 +5570,7 @@
       "matched_face_indices": [],
       "model_id": "11064",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "236927b5e086464e7d7e836d403a688b6e3d1b0eb673ce21d73b875b8f9d348b",
       "unmatched_face_indices": [
         0,
         1,
@@ -5574,6 +5637,7 @@
       "matched_face_indices": [],
       "model_id": "11073",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b52656d4f6c24c5b02b611325a8c5eba6197a31f7cfdd55497df215df4d15bb4",
       "unmatched_face_indices": [
         8,
         10,
@@ -5655,6 +5719,7 @@
       "matched_face_indices": [],
       "model_id": "11078",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "e16d6f46c976821018dcca867b5bc60f1cc332ac8a7eaba8437af1849dbf161a",
       "unmatched_face_indices": [
         0,
         3,
@@ -5739,6 +5804,7 @@
       ],
       "model_id": "11082",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "723c60947754d24f0207561e2ac18792d414ccb7a5e0425ebe4fa7086282cb3b",
       "unmatched_face_indices": []
     },
     {
@@ -5811,6 +5877,7 @@
       "matched_face_indices": [],
       "model_id": "11098",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "8db52e66bf208c83332f87f33bb43eedffc83c8bb249671b80ff20011abebe31",
       "unmatched_face_indices": [
         10,
         11,
@@ -5879,6 +5946,7 @@
       "matched_face_indices": [],
       "model_id": "11124",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "88e5cb5b752a2a4212853ff40e4173dfb78b83259e2c08c37f06acdb52ed146a",
       "unmatched_face_indices": [
         4,
         5,
@@ -5963,6 +6031,7 @@
       "matched_face_indices": [],
       "model_id": "11124",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "88e5cb5b752a2a4212853ff40e4173dfb78b83259e2c08c37f06acdb52ed146a",
       "unmatched_face_indices": [
         8,
         9,
@@ -6039,6 +6108,7 @@
       "matched_face_indices": [],
       "model_id": "11124",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "88e5cb5b752a2a4212853ff40e4173dfb78b83259e2c08c37f06acdb52ed146a",
       "unmatched_face_indices": [
         11,
         12,
@@ -6102,6 +6172,7 @@
       "matched_face_indices": [],
       "model_id": "11131",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a4b4e33b131f9d070450c3f78670dcd785a84dd71ff8f8171b17245568044b1c",
       "unmatched_face_indices": [
         5,
         9,
@@ -6217,6 +6288,7 @@
           "right_index": 20
         }
       ],
+      "source_sha256": "a4b4e33b131f9d070450c3f78670dcd785a84dd71ff8f8171b17245568044b1c",
       "unmatched_face_indices": [
         6,
         7,
@@ -6323,6 +6395,7 @@
       ],
       "model_id": "11134",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "9962203fa3503154921c6203cd4d9deedf31177e4eefd61d28c960c72c3291bb",
       "unmatched_face_indices": [
         4,
         5,
@@ -6426,6 +6499,7 @@
           "right_index": 17
         }
       ],
+      "source_sha256": "e173a3409a6805ced8fa43d51eaa581b6fcb1a502ebe0804e7ae68e7954e05e2",
       "unmatched_face_indices": [
         7,
         8,
@@ -6530,6 +6604,7 @@
           "right_index": 3
         }
       ],
+      "source_sha256": "8b1aea4dfc4c144e99436752f6f289e5e617d29b28c4dea298abc6af22530780",
       "unmatched_face_indices": [
         2,
         3,
@@ -6660,6 +6735,7 @@
           "right_index": 26
         }
       ],
+      "source_sha256": "b7bb183fd17e4af2cc1027ac5a2c1b2edfb275ff350f98aca0c5333cbfc0b060",
       "unmatched_face_indices": [
         11,
         12,
@@ -6779,6 +6855,7 @@
           "right_index": 5
         }
       ],
+      "source_sha256": "be21e3f3a9852967220a22b2ccaacd88a8d76adf99be179d8a387fa8807823d3",
       "unmatched_face_indices": [
         4,
         5,
@@ -6863,6 +6940,7 @@
       ],
       "model_id": "11201",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "1c9d39f250b0c2fb90790d85d8e7a31d76f8869ef3bb60c029d5cbd98a73f666",
       "unmatched_face_indices": []
     },
     {
@@ -6943,6 +7021,7 @@
       ],
       "model_id": "11205",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "cde53b9679010d5c364b413bf0f6b78511ffdac4496c4bedb3adbf950edf6e96",
       "unmatched_face_indices": []
     },
     {
@@ -7014,6 +7093,7 @@
       ],
       "model_id": "11225",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "951896daddf78b9669edaca3b5a089a11a30b5f753b1ee974a20ab0cbe14761f",
       "unmatched_face_indices": []
     },
     {
@@ -7102,6 +7182,7 @@
       ],
       "model_id": "11229",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "7e4302d1a0745ac43d5a0ff91fa13f8e5673dbdc0ca64c7b114bcfff1daca231",
       "unmatched_face_indices": []
     },
     {
@@ -7147,6 +7228,7 @@
       "matched_face_indices": [],
       "model_id": "11251",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "c503129879fd915e6d10edaad7d3370d809f2df35b0558a0c8689b521ff50199",
       "unmatched_face_indices": [
         9
       ]
@@ -7194,6 +7276,7 @@
       "matched_face_indices": [],
       "model_id": "11251",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "c503129879fd915e6d10edaad7d3370d809f2df35b0558a0c8689b521ff50199",
       "unmatched_face_indices": [
         10
       ]
@@ -7259,6 +7342,7 @@
       "matched_face_indices": [],
       "model_id": "11251",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "c503129879fd915e6d10edaad7d3370d809f2df35b0558a0c8689b521ff50199",
       "unmatched_face_indices": [
         17
       ]
@@ -7372,6 +7456,7 @@
           "right_index": 20
         }
       ],
+      "source_sha256": "15a9821c76489e68b63fda8a3084fc009eeedb384ecc4ceadf831e399d8eac2d",
       "unmatched_face_indices": [
         7,
         8,
@@ -7447,6 +7532,7 @@
       ],
       "model_id": "11262",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0c2a2842f31cae5fe0930ada3a64282d67db098367db85ac8a8104aa3e440013",
       "unmatched_face_indices": []
     },
     {
@@ -7516,6 +7602,7 @@
       "matched_face_indices": [],
       "model_id": "11281",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b3000f55335b77669a9f28ac35f3c357a4c76661da2d564ba07fe5a84cb60e9d",
       "unmatched_face_indices": [
         5,
         7,
@@ -7600,6 +7687,7 @@
       ],
       "model_id": "11286",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0731c351481dca6ff797a088c6c0180ed2ead7615a6a5773726ac51308d9f71c",
       "unmatched_face_indices": []
     },
     {
@@ -7680,6 +7768,7 @@
       "matched_face_indices": [],
       "model_id": "11286",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0731c351481dca6ff797a088c6c0180ed2ead7615a6a5773726ac51308d9f71c",
       "unmatched_face_indices": [
         7,
         8,
@@ -7738,6 +7827,7 @@
       "matched_face_indices": [],
       "model_id": "11319",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "1a894ffc6df3fa99984711b5b7b2b5a43cd87b851f80150dbf2235d86d86a713",
       "unmatched_face_indices": [
         21,
         23,
@@ -7814,6 +7904,7 @@
       "matched_face_indices": [],
       "model_id": "11346",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b111d58836edc039662413a948af1e1b8aad6cb5a540c4fa2a4dff577274ddf3",
       "unmatched_face_indices": [
         7,
         8,
@@ -7929,6 +8020,7 @@
           "right_index": 6
         }
       ],
+      "source_sha256": "3f2c08f60b7f36d131a3fbf8a43194abb5c2915167a1ca7d8639fc5b78c65015",
       "unmatched_face_indices": [
         1,
         5,
@@ -8013,6 +8105,7 @@
       "matched_face_indices": [],
       "model_id": "11377",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "2d0acad69d783918b9571bb0a916bc4c300d2681ccc97657cf8441a474c900fe",
       "unmatched_face_indices": [
         1,
         2,
@@ -8071,6 +8164,7 @@
       "matched_face_indices": [],
       "model_id": "1139",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "5e668e8f7509ada88546fb71c3893ae67960a7ced9a7fea45b7c667092ae33e9",
       "unmatched_face_indices": [
         3,
         10,
@@ -8155,6 +8249,7 @@
       ],
       "model_id": "1139",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "5e668e8f7509ada88546fb71c3893ae67960a7ced9a7fea45b7c667092ae33e9",
       "unmatched_face_indices": []
     },
     {
@@ -8209,6 +8304,7 @@
       "matched_face_indices": [],
       "model_id": "11413",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d4abfcada1c3aa4a988282e4de7fcd4b6956ff3ff230b494e2db616efdebb64f",
       "unmatched_face_indices": [
         8,
         9,
@@ -8340,6 +8436,7 @@
           "right_index": 17
         }
       ],
+      "source_sha256": "2dfa36bfb97b65b9e6ae0e4da04f1fe5346076d20006793993c4a5c0f4f4f091",
       "unmatched_face_indices": [
         5,
         9,
@@ -8483,6 +8580,7 @@
           "right_index": 20
         }
       ],
+      "source_sha256": "87ac6a17587f629f617c61205ded9b0ecfd0ada719e0ca9714a2371d33c39500",
       "unmatched_face_indices": [
         5,
         6,
@@ -8572,6 +8670,7 @@
       ],
       "model_id": "11450",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d49e65b8ad47900f204c5888337b3042d7807897262402545cd9d3f55eee87f2",
       "unmatched_face_indices": []
     },
     {
@@ -8644,6 +8743,7 @@
       "matched_face_indices": [],
       "model_id": "11475",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f523095dbe7918a2e1cb6354159174ca67d1b311b6432d815d819bcacd1aff52",
       "unmatched_face_indices": [
         9,
         11,
@@ -8720,6 +8820,7 @@
       "matched_face_indices": [],
       "model_id": "11481",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "4f963c67b280e508ea7c52a9fa074ab21a567f909fed1177fe0935a6f2deb6b7",
       "unmatched_face_indices": [
         6,
         7,
@@ -8812,6 +8913,7 @@
       ],
       "model_id": "11532",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "ab69732926e7d3d3f2c104d760d445842aa669fe0abf62a37ce9d7d16eb71ce9",
       "unmatched_face_indices": []
     },
     {
@@ -8909,6 +9011,7 @@
           "right_index": 11
         }
       ],
+      "source_sha256": "1b9859ea13e1ecc3bafc7b6574a5e7cc3a471b8fd7ef3af88414ef3f1399fcd3",
       "unmatched_face_indices": [
         1,
         11,
@@ -9016,6 +9119,7 @@
           "right_index": 20
         }
       ],
+      "source_sha256": "1b9859ea13e1ecc3bafc7b6574a5e7cc3a471b8fd7ef3af88414ef3f1399fcd3",
       "unmatched_face_indices": [
         8,
         10,
@@ -9120,6 +9224,7 @@
           "right_index": 15
         }
       ],
+      "source_sha256": "4790058d639e8a78c432ebc2f63631cd929b7869e5bf6470f046fe9dca4b05d3",
       "unmatched_face_indices": [
         4,
         6,
@@ -9197,6 +9302,7 @@
       "matched_face_indices": [],
       "model_id": "11603",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "38e027d8e0c891d2716d7d292164b6b488004a73ddb752b4c16ad03c0c6fa04f",
       "unmatched_face_indices": [
         1,
         7,
@@ -9286,6 +9392,7 @@
       "matched_face_indices": [],
       "model_id": "11639",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "31a28d50cc51fce6f885a38c752cbb55bc0466cdaff269d053bd707867e5d778",
       "unmatched_face_indices": [
         0,
         4,
@@ -9344,6 +9451,7 @@
       "matched_face_indices": [],
       "model_id": "11654",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b2184afa3cb90596f2e784be0c9c617d0ebc5ca8065cd1035b14c34230eca5a4",
       "unmatched_face_indices": [
         11,
         13,
@@ -9420,6 +9528,7 @@
       "matched_face_indices": [],
       "model_id": "1168",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0a9cc0a4e3211ad181634e1a354218b4ca4f3cb8995f787f2ff0211507fedfe8",
       "unmatched_face_indices": [
         3,
         4,
@@ -9488,6 +9597,7 @@
       "matched_face_indices": [],
       "model_id": "11698",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "8662369cf681ebaf263985fe8e12255e9fbfe600f03240f15b84237669409d27",
       "unmatched_face_indices": [
         13,
         19,
@@ -9572,6 +9682,7 @@
       "matched_face_indices": [],
       "model_id": "11724",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f4aa028e2b6796fb320e1eb43731feca00fce5a0925349d20fdf3a97748cc898",
       "unmatched_face_indices": [
         6,
         7,
@@ -9673,6 +9784,7 @@
           "right_index": 21
         }
       ],
+      "source_sha256": "d3d77db2f72a339c780ca4040965c5ee27cf839a8d42d18007fcaa03c8846758",
       "unmatched_face_indices": [
         17,
         18,
@@ -9757,6 +9869,7 @@
       ],
       "model_id": "11836",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "5103ddc239e364c4c98be4ea3d64c31c920feb5ab41cf29316d93c747bd53ba8",
       "unmatched_face_indices": []
     },
     {
@@ -9837,6 +9950,7 @@
       ],
       "model_id": "11841",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "2f8deae0313932d0c6927ae5756e7620c11a2759c32a7dcfcc28206c6f0fe0ea",
       "unmatched_face_indices": []
     },
     {
@@ -9911,6 +10025,7 @@
       "matched_face_indices": [],
       "model_id": "11882",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "9a3330383e7917ef0995a42005a52ebe4c00c7343f17954e8767a02417ef977b",
       "unmatched_face_indices": [
         4,
         6,
@@ -10016,6 +10131,7 @@
       ],
       "model_id": "11889",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "6f2155ce206404c4290dc1da8779959aab79b905099aafb25002dbd4831550c1",
       "unmatched_face_indices": [
         14,
         22,
@@ -10085,6 +10201,7 @@
       "matched_face_indices": [],
       "model_id": "11896",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b3c70411d72f2363cf0b9dbedf0859dfe832b7b634ba073a2d3166517ff7b139",
       "unmatched_face_indices": [
         1,
         5,
@@ -10143,6 +10260,7 @@
       "matched_face_indices": [],
       "model_id": "11896",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b3c70411d72f2363cf0b9dbedf0859dfe832b7b634ba073a2d3166517ff7b139",
       "unmatched_face_indices": [
         7,
         9,
@@ -10219,6 +10337,7 @@
       "matched_face_indices": [],
       "model_id": "11906",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "a6f3e0c38a8698ffa6c0dabf49023b0753d810059186e28182d2217f9abf5b8a",
       "unmatched_face_indices": [
         10,
         18,
@@ -10287,6 +10406,7 @@
       "matched_face_indices": [],
       "model_id": "11931",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "cd28536c50583dedb2b071e67bba889524284a2510ed92f7c50135b120b647cc",
       "unmatched_face_indices": [
         5,
         6,
@@ -10402,6 +10522,7 @@
           "right_index": 8
         }
       ],
+      "source_sha256": "4e0c268e97f5a24cf4b8dc76d7bf91fe2d61e1742aaa54ac093b0de353fbb664",
       "unmatched_face_indices": [
         2,
         5,
@@ -10517,6 +10638,7 @@
           "right_index": 9
         }
       ],
+      "source_sha256": "5c149303f45669a71700e6fcd3eebbb915ec0bc4f422922a00b42f6cfb6ad0ed",
       "unmatched_face_indices": [
         8,
         9,
@@ -10593,6 +10715,7 @@
       "matched_face_indices": [],
       "model_id": "12043",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "fa9dd4982fbe2678c67b003b291d3d12e71bce5dbbe6329f36c8772b3af6f8c5",
       "unmatched_face_indices": [
         1,
         11,
@@ -10669,6 +10792,7 @@
       "matched_face_indices": [],
       "model_id": "12043",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "fa9dd4982fbe2678c67b003b291d3d12e71bce5dbbe6329f36c8772b3af6f8c5",
       "unmatched_face_indices": [
         5,
         7,
@@ -10737,6 +10861,7 @@
       "matched_face_indices": [],
       "model_id": "12056",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "04cd113c27e2c6f7e6831e119b9e1e9f660ee0dac6f3ffcf895052fff0008951",
       "unmatched_face_indices": [
         5,
         6,
@@ -10842,6 +10967,7 @@
       ],
       "model_id": "12060",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d41153bb4e150adcfcd600c748570a347c7fc838756761fc4b6f3e6f96717b8d",
       "unmatched_face_indices": []
     },
     {
@@ -10914,6 +11040,7 @@
       "matched_face_indices": [],
       "model_id": "12060",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d41153bb4e150adcfcd600c748570a347c7fc838756761fc4b6f3e6f96717b8d",
       "unmatched_face_indices": [
         15,
         16,
@@ -11045,6 +11172,7 @@
           "right_index": 23
         }
       ],
+      "source_sha256": "33a05588372415f53ad95dfc6ac90b47a4aa3d0372e6b17ab85520a4945784f2",
       "unmatched_face_indices": [
         17,
         18,
@@ -11121,6 +11249,7 @@
       "matched_face_indices": [],
       "model_id": "12148",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f7749fcc67e1c3467a0c4bda9ec4bc58962931ecd7d6951929a19fdad72af08d",
       "unmatched_face_indices": [
         7,
         8,
@@ -11189,6 +11318,7 @@
       "matched_face_indices": [],
       "model_id": "1215",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "5df0579eaa4bae7d277c6f9f60a62321b026e7188fb6625a3155bd41f7e269fa",
       "unmatched_face_indices": [
         6,
         7,
@@ -11259,6 +11389,7 @@
       "matched_face_indices": [],
       "model_id": "1219",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b2d5cec6058b26551fad0e5739a2ef5ed7c8cdea6f7dc2a227dfc21c857010a6",
       "unmatched_face_indices": [
         3,
         15,
@@ -11379,6 +11510,7 @@
           "right_index": 14
         }
       ],
+      "source_sha256": "b2d5cec6058b26551fad0e5739a2ef5ed7c8cdea6f7dc2a227dfc21c857010a6",
       "unmatched_face_indices": [
         4,
         6,
@@ -11513,6 +11645,7 @@
           "right_index": 47
         }
       ],
+      "source_sha256": "604dab4f5fcc472074865bb3f7cdea1f9fe99a24c381a21536be96fe584307b8",
       "unmatched_face_indices": [
         7,
         19,
@@ -11586,6 +11719,7 @@
       "matched_face_indices": [],
       "model_id": "12275",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "403a683570dbbeb6cfbec40345f57eab8ea31fe716790da00175d9dafc1f324b",
       "unmatched_face_indices": [
         3,
         5,
@@ -11678,6 +11812,7 @@
       ],
       "model_id": "12301",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d54c299e05d8f3528a1b69558636245bd15cc607ca488857a142580ec4b44103",
       "unmatched_face_indices": []
     },
     {
@@ -11734,6 +11869,7 @@
       "matched_face_indices": [],
       "model_id": "12317",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "00d9e982d069e08b57ed23888a834463f65004575266fcf84150e5e799fe54ed",
       "unmatched_face_indices": [
         14,
         15,
@@ -11852,6 +11988,7 @@
           "right_index": 23
         }
       ],
+      "source_sha256": "5dd99709cc2a846bb8f28c65b57349e854742c74ea08216d4df36c38b6e9dc23",
       "unmatched_face_indices": [
         7,
         8,
@@ -11926,6 +12063,7 @@
       "matched_face_indices": [],
       "model_id": "12345",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "bfc5817beded410158a7dc56f1d93801a52a97e25a46fdd0599393bd37bcdc1e",
       "unmatched_face_indices": [
         4,
         6,
@@ -12010,6 +12148,7 @@
       ],
       "model_id": "12345",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "bfc5817beded410158a7dc56f1d93801a52a97e25a46fdd0599393bd37bcdc1e",
       "unmatched_face_indices": []
     },
     {
@@ -12082,6 +12221,7 @@
       "matched_face_indices": [],
       "model_id": "12369",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f26bcff1ef31aa20536813f0d28e9377bc6638be97592d939508c3c1ac9971cd",
       "unmatched_face_indices": [
         4,
         9,
@@ -12174,6 +12314,7 @@
       ],
       "model_id": "12372",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d1840b08d56c8ec7e4d6c18a2281a93e95b1722628d0f71438cad4f818c26fcd",
       "unmatched_face_indices": []
     },
     {
@@ -12238,6 +12379,7 @@
       "matched_face_indices": [],
       "model_id": "12374",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "af0732b47790da3aaa48f55f83fdecfc29eee66b6b343942ed8e9f9ed5d274b5",
       "unmatched_face_indices": [
         3,
         5,
@@ -12304,6 +12446,7 @@
       "matched_face_indices": [],
       "model_id": "12374",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "af0732b47790da3aaa48f55f83fdecfc29eee66b6b343942ed8e9f9ed5d274b5",
       "unmatched_face_indices": [
         22,
         23,
@@ -12388,6 +12531,7 @@
       ],
       "model_id": "12387",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "81a6364fda04cde939491cffb06c3138241f01372c603fa00ce0870fd0ad0920",
       "unmatched_face_indices": []
     },
     {
@@ -12452,6 +12596,7 @@
       "matched_face_indices": [],
       "model_id": "12396",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "fc591e7756c90be238a48abff5cbbb9078b6b8e5e9934fe0faef41b0f958c72d",
       "unmatched_face_indices": [
         25,
         26,
@@ -12520,6 +12665,7 @@
       "matched_face_indices": [],
       "model_id": "12398",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "81c099cf4765d7954e2e39c80f9b6a44e6edefa8021b13abd07ef8ba28314cf4",
       "unmatched_face_indices": [
         2,
         3,
@@ -12588,6 +12734,7 @@
       "matched_face_indices": [],
       "model_id": "12409",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "ad695ed6ab5f0c6164c746dc3e0003ca7f9bc6601f407f32c669f196e97ba959",
       "unmatched_face_indices": [
         4,
         6,
@@ -12683,6 +12830,7 @@
       "matched_face_indices": [],
       "model_id": "1246",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b7ce56c7905417334f3220baff3f76552644493ce9de441f31d124bf9c1a5caf",
       "unmatched_face_indices": [
         3,
         5,
@@ -12764,6 +12912,7 @@
       "matched_face_indices": [],
       "model_id": "12517",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "89edaf9687d783e3ebd5c7487834649fb5735b6f9f5a1d5585a0a8643897fd13",
       "unmatched_face_indices": [
         4,
         6,
@@ -12850,6 +12999,7 @@
       ],
       "model_id": "12520",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "643a22c317e907e31440cbce63b02c706c81d240ce0fdb8740a9e9830cf0d889",
       "unmatched_face_indices": [
         11
       ]
@@ -12946,6 +13096,7 @@
       ],
       "model_id": "12540",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "100e625a2d3881a7f9798c5816fc5501fe18b43f5db8f48854cde778fb4af22b",
       "unmatched_face_indices": [
         2,
         4,
@@ -13022,6 +13173,7 @@
       "matched_face_indices": [],
       "model_id": "12540",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "100e625a2d3881a7f9798c5816fc5501fe18b43f5db8f48854cde778fb4af22b",
       "unmatched_face_indices": [
         5,
         7,
@@ -13106,6 +13258,7 @@
       ],
       "model_id": "12552",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "381eee821307981ad70c1e70c4ba9be363d93ed3ce0faaccb2ee736e13451c0a",
       "unmatched_face_indices": []
     },
     {
@@ -13219,6 +13372,7 @@
           "right_index": 12
         }
       ],
+      "source_sha256": "8582831799e68acf87220f1aea77b8384290f1e393b2997e516ecd362e077d64",
       "unmatched_face_indices": [
         2,
         3,
@@ -13296,6 +13450,7 @@
       "matched_face_indices": [],
       "model_id": "12578",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "74df319ff2be8dae8b3bad32fe8ff3dc217932d0cb9058ed5119d5d9e0c1ed71",
       "unmatched_face_indices": [
         2,
         4,
@@ -13418,6 +13573,7 @@
       ],
       "model_id": "1258",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "b00bbbbb2e969e722dfc50bf92af35778d3a2d99851729e048a8e601db53f1a1",
       "unmatched_face_indices": [
         5,
         6,
@@ -13476,6 +13632,7 @@
       "matched_face_indices": [],
       "model_id": "12643",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d8f2f37809eab78d124e13e653a2f2595cddbaf8e8074916b7c252a35b101945",
       "unmatched_face_indices": [
         3,
         4,
@@ -13560,6 +13717,7 @@
       ],
       "model_id": "12643",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "d8f2f37809eab78d124e13e653a2f2595cddbaf8e8074916b7c252a35b101945",
       "unmatched_face_indices": []
     },
     {
@@ -13671,6 +13829,7 @@
           "right_index": 20
         }
       ],
+      "source_sha256": "ae859fa0ca28e2d0804da94b8026935c308ee44ccaf25bcd16812015ab5b9512",
       "unmatched_face_indices": [
         3,
         11,
@@ -13755,6 +13914,7 @@
       ],
       "model_id": "12667",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "ae859fa0ca28e2d0804da94b8026935c308ee44ccaf25bcd16812015ab5b9512",
       "unmatched_face_indices": []
     },
     {
@@ -13835,6 +13995,7 @@
       "matched_face_indices": [],
       "model_id": "1269",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "58790ac249ab7542476d5a1432af81af5992e3cca70432247148811b144e0d17",
       "unmatched_face_indices": [
         1,
         2,
@@ -13911,6 +14072,7 @@
       "matched_face_indices": [],
       "model_id": "12743",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "771a8567a4e75ba65a4f1cf1daf5d3d2432a6f5b35d585a0bba4abf93e72580f",
       "unmatched_face_indices": [
         11,
         12,
@@ -13995,6 +14157,7 @@
       "matched_face_indices": [],
       "model_id": "12750",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "1c222bbaf5e59e20aba83705a50f58e107cb6e7d0752a219b016be23ff20d154",
       "unmatched_face_indices": [
         5,
         7,
@@ -14079,6 +14242,7 @@
       ],
       "model_id": "12750",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "1c222bbaf5e59e20aba83705a50f58e107cb6e7d0752a219b016be23ff20d154",
       "unmatched_face_indices": []
     },
     {
@@ -14151,6 +14315,7 @@
       "matched_face_indices": [],
       "model_id": "12783",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "4daef1800b3fb8ae794343a590a2ef325eddefcd8f7b4e7c557749fcbee434f1",
       "unmatched_face_indices": [
         7,
         9,
@@ -14227,6 +14392,7 @@
       "matched_face_indices": [],
       "model_id": "12793",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "8030d5285192aa7176c6932a00419e9623c0a250b43d34843b0ff4814a832ad1",
       "unmatched_face_indices": [
         2,
         4,
@@ -14303,6 +14469,7 @@
       "matched_face_indices": [],
       "model_id": "12805",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "7b0b81956eeeb7f4f8f87039f03546d2af2f8f546dd499078a4d3e5d58fb37df",
       "unmatched_face_indices": [
         2,
         5,
@@ -14359,6 +14526,7 @@
       "matched_face_indices": [],
       "model_id": "12805",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "7b0b81956eeeb7f4f8f87039f03546d2af2f8f546dd499078a4d3e5d58fb37df",
       "unmatched_face_indices": [
         18,
         24
@@ -14452,6 +14620,7 @@
       "matched_face_indices": [],
       "model_id": "12812",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "eb837899bd4318e7e94521bef4e10984305a51ba8fb19656a3027e2664b490aa",
       "unmatched_face_indices": [
         2,
         4,
@@ -14531,6 +14700,7 @@
       "matched_face_indices": [],
       "model_id": "12830",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "f83e9ffa8f209aec72b011170fa698d15488f5d5e14ec8b56764b6bdc586a8d2",
       "unmatched_face_indices": [
         6,
         10,
@@ -14612,6 +14782,7 @@
       "matched_face_indices": [],
       "model_id": "12832",
       "ramp_boundary_bypass_pairs": [],
+      "source_sha256": "0aebf1ef3dd2829aa3f8ed51993fd48acd548317669cdab62429f161dbc8dcb1",
       "unmatched_face_indices": [
         0,
         1,
@@ -14635,7 +14806,7 @@
     "not_one_exterior_one_internal_terminal": 1,
     "top_opening_thickness_direction": 33
   },
-  "implementation_commit": "0b766a5a26edbd64e4241cedc2a52d7c9e530c11",
+  "implementation_commit": "2f4052c7c3e5e4923a652632596fdc46200630bb",
   "native_instance_labels": false,
   "partial_clusters": [
     {
@@ -15668,7 +15839,8 @@
   },
   "selection": {
     "limit": 500,
-    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df"
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+    "selected_sources_sha256": "1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331"
   },
   "unrecalled_clusters": [
     {

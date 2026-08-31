@@ -72,19 +72,23 @@ top-opening pockets, asymmetric ramps or missing-bevel cases.
 ## Artifact and reproduction
 
 The immutable artifact is
-[`paired-ramp-boundary-audit-mfcadpp-500-0b766a5.json`](paired-ramp-boundary-audit-mfcadpp-500-0b766a5.json),
-SHA-256 `5561ba273d258301c8ba5619e5073d84107e967a6db839facafc13239bdc82ca`, generated at audit
-commit `0b766a5` using:
+[`paired-ramp-boundary-audit-mfcadpp-500-2f4052c.json`](paired-ramp-boundary-audit-mfcadpp-500-2f4052c.json),
+SHA-256 `129d4d34c83ceffa162113e66e7c954e55631475dac2b170ad0a8c8fba91080b`, generated at audit
+commit `2f4052c` using:
 
 ```bash
 uv run python tools/audit_mfcadpp_paired_ramp_steps.py \
   /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
   --limit 500 \
-  --output docs/benchmarks/paired-ramp-boundary-audit-mfcadpp-500-0b766a5.json
+  --output docs/benchmarks/paired-ramp-boundary-audit-mfcadpp-500-2f4052c.json
 ```
 
 Two exact runs are byte-identical. The selection hash remains
 `323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`.
+The aggregate exact-source hash is
+`1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331`; it hashes the
+ordered model ID and SHA-256 of every selected STEP file, whose embedded comments carry the
+MFCAD++ face labels. Each component also retains its model source hash.
 The artifact retains every component, matched and unmatched face identity, every ordinary pair
 gate, every comparison-arm result, projected defining identity and accepted-family overlap.
 
