@@ -90,6 +90,29 @@ def test_references_are_exactly_view_local_and_unforgeable() -> None:
         FeatureRef()
     with pytest.raises(TypeError, match="issued"):
         FaceRef()
+    with pytest.raises(TypeError, match="created"):
+        RecognitionEvidence()
+    with pytest.raises(TypeError, match="FeatureRef"):
+        first.record(face)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="FaceRef"):
+        first.face(feature)  # type: ignore[arg-type]
+
+    copied_feature = object.__new__(FeatureRef)
+    object.__setattr__(
+        copied_feature,
+        "_FeatureRef__authority",
+        object.__getattribute__(feature, "_FeatureRef__authority"),
+    )
+    copied_face = object.__new__(FaceRef)
+    object.__setattr__(
+        copied_face,
+        "_FaceRef__authority",
+        object.__getattribute__(face, "_FaceRef__authority"),
+    )
+    with pytest.raises(ValueError, match="foreign, copied, forged, or stale"):
+        first.record(copied_feature)
+    with pytest.raises(ValueError, match="foreign, copied, forged, or stale"):
+        first.face(copied_face)
 
 
 def test_defining_faces_resolve_to_the_exact_input_part() -> None:
@@ -142,3 +165,22 @@ def test_manifest_is_closed_deterministic_isolated_and_independently_versioned()
     for invalid in (True, 0, 2):
         with pytest.raises(EvidenceApiManifestError, match="unsupported requested"):
             evidence_api_manifest(format_version=invalid)
+
+
+def test_manifest_validation_rejects_each_closed_contract_layer() -> None:
+    valid = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    invalid_manifests: list[tuple[object, str]] = [
+        (None, "closed shape"),
+        ({**valid, "unexpected": True}, "closed shape"),
+        ({**valid, "format": "other"}, "format is unsupported"),
+        (
+            {**valid, "package": {"name": "other", "version": valid["package"]["version"]}},
+            "package identity",
+        ),
+        ({**valid, "api": {**valid["api"], "unexpected": True}}, "declaration"),
+        ({**valid, "api": {**valid["api"], "major": 2}}, "malformed"),
+    ]
+
+    for manifest, message in invalid_manifests:
+        with pytest.raises(EvidenceApiManifestError, match=message):
+            evidence_module._validate_manifest(manifest)
