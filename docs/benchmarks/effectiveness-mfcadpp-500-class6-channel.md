@@ -65,7 +65,9 @@ Artifacts:
 - `effectiveness-taxonomy-v7.json`: immutable mapping;
 - `effectiveness-mfcadpp-500-class6-channel-b277522.json`: canonical exact report.
 
-Reproduction:
+Reproduction (check out `e0251da` for the audit artifact and `b277522` for the
+effectiveness artifact; later documentation-only commits reproduce the counts but
+record their own exact head):
 
 ```console
 python tools/audit_mfcadpp_component_overlap.py \
@@ -88,8 +90,8 @@ The existing aggregate MFInstSeg summary directionally identifies the same conte
 individual MFInstSeg model was inspected. A canonical v7 transfer rerun remains an
 E0/E6 milestone item.
 
-The decision conforms to ADRs 0002, 0003, 0004, 0005, and 0007: family contracts and
+Final-diff review against ADRs 0002, 0003, 0004, 0005, and 0007 is clean: family contracts and
 deterministic output are unchanged; discovery and reconciliation remain separate;
 defining versus constituent evidence remains explicit; stable family identifiers are
-reused; and no recogniser module seam changes. Final-diff conformance and independent
-contract review are still required before merge.
+reused; and no recogniser module seam changes. One independent exact-head contract
+review is still required before merge.
