@@ -19,6 +19,7 @@ from build123d import (
     import_step,
 )
 
+import b123d_recognisers.rectangular_blind_slots as rectangular_blind_slots
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -215,6 +216,12 @@ def test_material_in_sweep_and_open_invalid_body_are_refused():
     open_body = Solid(Shell(list(part.faces())[:-1]))
     assert not open_body.is_valid
     assert recognise_rectangular_blind_slots(open_body) == []
+
+
+@pytest.mark.parametrize("proof", ("_common_convex_context", "_empty_sweep"))
+def test_failed_material_proof_refuses_the_candidate(monkeypatch, proof):
+    monkeypatch.setattr(rectangular_blind_slots, proof, lambda *_args: False)
+    assert recognise_rectangular_blind_slots(_slot()) == []
 
 
 def test_local_span_tolerance_accepts_and_rejects_both_sides():

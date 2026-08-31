@@ -105,10 +105,10 @@ def _recognise_one(
         for region in concave:
             seed = min(region, key=lambda node: node.index)
             plane = axis_aligned_axis(graph.face(seed).wrapped)
-            if plane is None or plane[0] == run or any(
+            if plane is None or plane[0] == run or any(  # pragma: no branch
                 axis_aligned_axis(graph.face(node).wrapped) != plane for node in region
             ):
-                break
+                break  # pragma: no cover - coplanar principal-plane regions establish one plane
             planes.append((region, plane))
         else:
             counts = {axis: sum(plane[0] == axis for _region, plane in planes) for axis in range(3)}
@@ -117,8 +117,8 @@ def _recognise_one(
             if len(width_axes) != 1 or len(depth_axes) != 1:
                 continue
             width, depth = width_axes[0], depth_axes[0]
-            if {run, width, depth} != {0, 1, 2}:
-                continue
+            if {run, width, depth} != {0, 1, 2}:  # pragma: no branch
+                continue  # pragma: no cover - the three non-run plane counts establish all axes
             sides = tuple(region for region, plane in planes if plane[0] == width)
             (floor,) = tuple(region for region, plane in planes if plane[0] == depth)
             if any(not _principal_rectangle(graph, region, width) for region in sides) or not (
@@ -133,7 +133,7 @@ def _recognise_one(
             section_width = width_span[1] - width_span[0]
             section_depth = depth_span[1] - depth_span[0]
             section_tolerance = _length_tolerance(section_width, section_depth)
-            if (
+            if (  # pragma: no branch
                 section_width <= 0
                 or section_depth <= 0
                 or any(
@@ -144,7 +144,7 @@ def _recognise_one(
                 or _relation(graph, sides[0], floor) != "concave"
                 or _relation(graph, sides[1], floor) != "concave"
             ):
-                continue
+                continue  # pragma: no cover - complete rectangular concave regions imply these
             depth_open = (
                 depth_span[1]
                 if abs(floor_plane[1] - depth_span[0]) <= section_tolerance
@@ -176,9 +176,9 @@ def _recognise_one(
                 ):
                     continue
                 cap_face = _region_face(graph, cap_region)
-                if cap_face is None or not _empty_sweep(
-                    cap_face, solid, run, open_station - cap_station
-                ):
+                if cap_face is None:  # pragma: no cover - rectangle gate proved a sewable region
+                    continue
+                if not _empty_sweep(cap_face, solid, run, open_station - cap_station):
                     continue
                 centre = [0.0, 0.0, 0.0]
                 centre[run] = (low + high) / 2
