@@ -128,6 +128,9 @@ def test_candidate_refuses_incomplete_direction_terminal_arc_and_span_proofs(mon
         patch.setattr(graph, "neighbours", lambda _node: ())
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
     with monkeypatch.context() as patch:
+        patch.setattr(graph, "is_planar", lambda _node: False)
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+    with monkeypatch.context() as patch:
         patch.setattr(paired_ramp_module, "_is_convex", lambda *_args: False)
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
 

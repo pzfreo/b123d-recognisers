@@ -45,6 +45,8 @@ class PairedRampStep(Record):
 
 
 def _axis_terminal(graph: FaceGraph, node: FaceNode, axis: int) -> bool:
+    if not graph.is_planar(node):
+        return False
     normal = graph.normal(node)
     return normal is not None and abs(normal[axis]) >= AXIS_ALIGNED_COS
 
