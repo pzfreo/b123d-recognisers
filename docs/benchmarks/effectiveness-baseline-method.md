@@ -37,6 +37,12 @@ geometrically supported subset but its label also covers materially different sh
 mapped family contract. It qualifies interpretation; it does not turn out-of-contract faces into
 false negatives or authorize a production predicate. Reports retain the full class numerator and
 denominator so readers can see the mixed-class agreement rather than erasing genuine matches.
+Reports after the O-ring decomposition audit use
+[`effectiveness-taxonomy-v5.json`](effectiveness-taxonomy-v5.json), which maps class 11 to both
+`bosses` and `holes`. The corpus owns an external cylinder, annular plane and internal cylinder as
+one label; the package deliberately owns the two cylinders through separate physical records and
+treats the annular cap as consulted context. The many-to-many mapping measures both legitimate
+defining sets without changing production ownership.
 
 ## Metrics and denominators
 
