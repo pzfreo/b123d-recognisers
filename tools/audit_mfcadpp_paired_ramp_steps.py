@@ -573,6 +573,18 @@ def main() -> int:
         if item["matched_face_indices"] and item["unmatched_face_indices"]
     ]
     reconciliation = _reconciliation(items, labelled_faces)
+    boundary_components = [item for item in items if item["ramp_boundary_bypass_pairs"]]
+    projected_pairs = [
+        (item, pair)
+        for item in boundary_components
+        for pair in item["ramp_boundary_bypass_pairs"]
+        if pair["result"]["first_failed_gate"] == "recognisable"
+    ]
+    projected_faces = {
+        (item["model_id"], index)
+        for item, pair in projected_pairs
+        for index in pair["projected_defining_indices"]
+    }
     report = {
         "format": "b123d-recognisers-mfcadpp-paired-ramp-miss-audit",
         "format_version": 2,
@@ -609,6 +621,28 @@ def main() -> int:
                 ).items()
             )
         ),
+        "ramp_boundary_bypass": {
+            "affected_components": len(boundary_components),
+            "wholly_unrecalled_components": sum(
+                not item["matched_face_indices"] for item in boundary_components
+            ),
+            "partially_recalled_components": sum(
+                bool(item["matched_face_indices"]) and bool(item["unmatched_face_indices"])
+                for item in boundary_components
+            ),
+            "candidate_pairs": sum(
+                len(item["ramp_boundary_bypass_pairs"])
+                for item in boundary_components
+            ),
+            "projected_recognisable_pairs": len(projected_pairs),
+            "projected_components": len(
+                {
+                    (item["model_id"], tuple(item["face_indices"]))
+                    for item, _pair in projected_pairs
+                }
+            ),
+            "projected_distinct_defining_faces": len(projected_faces),
+        },
         "ramp_boundary_bypass_gate_counts": dict(
             sorted(
                 Counter(
