@@ -363,8 +363,8 @@ def test_normalization_makes_the_complete_golden_inventory_rotation_invariant() 
     assert report["refused"] == {}
     assert report["totals"] == {
         name: {
-            "baseline_records": 79,
-            "same_family": 79,
+                "baseline_records": 80,
+                "same_family": 80,
             "reclassified": 0,
             "absent": 0,
             "introduced": 0,
@@ -379,8 +379,8 @@ def test_normalization_makes_the_complete_golden_inventory_translation_invariant
     assert report["refused"] == {}
     assert report["totals"] == {
         name: {
-            "baseline_records": 79,
-            "same_family": 79,
+                "baseline_records": 80,
+                "same_family": 80,
             "reclassified": 0,
             "absent": 0,
             "introduced": 0,

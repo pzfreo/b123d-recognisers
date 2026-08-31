@@ -77,6 +77,10 @@ from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     _discover_repeating_radial_profiles,
 )
+from b123d_recognisers.round_bottom_slots import (
+    RoundBottomBlindSlot,
+    recognise_round_bottom_blind_slots,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -544,6 +548,23 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("slot"),
         FullyAttributed("every returned Slot owns its complete selected wall and cap faces"),
+    ),
+    PhysicalDefinition(
+        FamilyId.ROUND_BOTTOM_BLIND_SLOTS,
+        (RoundBottomBlindSlot,),
+        "round_bottom_blind_slots",
+        "recognise_round_bottom_blind_slots",
+        (),
+        prismatic,
+        _simple(
+            lambda s: list(
+                recognise_round_bottom_blind_slots(s.context.part, ledger=s.writer)
+            )
+        ),
+        Counted("round_bottom_blind_slot"),
+        FullyAttributed(
+            "every returned round-bottom blind slot owns its two curved sides, floor, and cap"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.GROOVES,

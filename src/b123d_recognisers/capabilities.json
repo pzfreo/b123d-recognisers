@@ -1984,6 +1984,89 @@
       ]
     },
     {
+      "census_name": "round_bottom_blind_slot",
+      "census_output": "RecognitionResult.round_bottom_blind_slots",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/round_bottom_blind_slot/expected.json"
+      ],
+      "id": "round-bottom-blind-slots",
+      "introduced_in": "0.4.10",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_round_bottom_blind_slots",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.round_bottom_blind_slots"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "depth_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "depth_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "flat_width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "open_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width_axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "RoundBottomBlindSlot",
+          "qualified_name": "b123d_recognisers.RoundBottomBlindSlot",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py",
+        "tests/test_round_bottom_slots.py"
+      ]
+    },
+    {
       "census_name": null,
       "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",

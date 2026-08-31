@@ -9,9 +9,9 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 
 | rotation | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Z30 | 79 | 36 | 14 | 29 | 0 |
-| X30 | 79 | 30 | 7 | 42 | 0 |
-| X90 | 79 | 79 | 0 | 0 | 0 |
+| Z30 | 80 | 36 | 14 | 30 | 0 |
+| X30 | 80 | 30 | 7 | 43 | 0 |
+| X90 | 80 | 80 | 0 | 0 | 0 |
 
 ## Affected fixtures
 
@@ -24,6 +24,7 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 - **plates_pads_levels_and_slanted_steps** — Z30: 0 reclassified, 4 absent; absent plate ×1, pocket ×2, through_step ×1; X30: 0 reclassified, 4 absent; absent plate ×1, pocket ×2, through_step ×1
 - **polygonal_boss** — X30: 0 reclassified, 1 absent; absent plate ×1
 - **rectangular_through_step** — Z30: 0 reclassified, 1 absent; absent through_step ×1; X30: 0 reclassified, 1 absent; absent through_step ×1
+- **round_bottom_blind_slot** — Z30: 0 reclassified, 1 absent; absent round_bottom_blind_slot ×1; X30: 0 reclassified, 1 absent; absent round_bottom_blind_slot ×1
 - **slanted_steps** — Z30: 0 reclassified, 2 absent; absent pocket ×2; X30: 0 reclassified, 2 absent; absent pocket ×2
 - **straight_and_obround_slots** — Z30: 4 reclassified, 1 absent; transitions slot->passage ×4; absent slot ×1; X30: 4 reclassified, 1 absent; transitions slot->passage ×4; absent slot ×1
 - **traversal_order** — Z30: 3 reclassified, 6 absent; transitions slot->passage ×3; absent plate ×6; X30: 3 reclassified, 6 absent; transitions slot->passage ×3; absent plate ×6
