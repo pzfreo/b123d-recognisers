@@ -116,6 +116,13 @@ def _selection_hash(ids: list[str]) -> str:
     return hashlib.sha256(("\n".join(ids) + "\n").encode()).hexdigest()
 
 
+def _source_selection_hash(sources: list[tuple[str, str]]) -> str:
+    """Pin selected IDs to their exact STEP bytes (which embed MFCAD++ face labels)."""
+
+    manifest = "".join(f"{model_id}:{source_sha256}\n" for model_id, source_sha256 in sources)
+    return hashlib.sha256(manifest.encode()).hexdigest()
+
+
 def _counts(values: list[str]) -> tuple[tuple[str, int], ...]:
     return tuple(sorted(Counter(values).items()))
 
@@ -506,10 +513,10 @@ def main() -> int:
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
         parser.error("the selected workload contains no STEP files")
+    selected = [(path, load_mfcadpp_truth(path)) for path in paths]
     items: list[dict[str, Any]] = []
     labelled_faces = 0
-    for path in paths:
-        truth = load_mfcadpp_truth(path)
+    for path, truth in selected:
         labelled = {index for index, value in enumerate(truth.semantic) if value == args.class_id}
         if not labelled:
             continue
@@ -555,6 +562,7 @@ def main() -> int:
             items.append(
                 {
                     "model_id": path.stem,
+                    "source_sha256": truth.source_sha256,
                     "face_indices": sorted(node.index for node in component),
                     "matched_face_indices": sorted(node.index for node in matched),
                     "unmatched_face_indices": sorted(
@@ -603,6 +611,9 @@ def main() -> int:
         "selection": {
             "limit": args.limit,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
+            "selected_sources_sha256": _source_selection_hash(
+                [(truth.model_id, truth.source_sha256) for _path, truth in selected]
+            ),
         },
         "reconciliation": reconciliation,
         "gate_counts": dict(
