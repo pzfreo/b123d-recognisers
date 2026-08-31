@@ -5,12 +5,29 @@
 
 from __future__ import annotations
 
-from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Polygon, Pos, Rot, extrude
+from types import SimpleNamespace
+
+import pytest
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Cylinder,
+    Plane,
+    Polygon,
+    Pos,
+    Rot,
+    export_step,
+    extrude,
+    import_step,
+)
 
 import b123d_recognisers as r
+from b123d_recognisers._adjacency import FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers._passage_compat import PassageCompatibilityView
+from b123d_recognisers._recess_core import _has_smooth_depth_closure
 
 
 def _obround(length: float, width: float, height: float):
@@ -147,6 +164,85 @@ def test_empty_evidence_obround_pocket_survives_an_unrelated_passage():
 
     assert len(result.pockets) == 1
     assert len(result.passages) == 1
+
+
+@pytest.mark.parametrize("placement", [None, Pos(7, -3, 11) * Rot(90, 0, 0)])
+def test_deep_obround_pocket_caps_do_not_become_transverse_through_slot(
+    placement, tmp_path
+):
+    """Smooth end caps close the axis selected by the Slot length heuristic.
+
+    The pocket is deeper than its straight footprint is long.  A pure extent comparison therefore
+    tries its machining depth as the Slot long axis and its real length as the alleged through
+    axis.  Both curved ends are shared smooth closures on that alleged axis, so the geometry is a
+    blind pocket only through both the standalone and aggregate routes.
+    """
+
+    stock = Box(80, 50, 50)
+    part = stock - Pos(0, 0, 10) * _obround(30, 10, 40)
+    if placement is not None:
+        part = placement * part
+    step_path = tmp_path / "deep-obround-pocket.step"
+    export_step(part, step_path)
+
+    for candidate in (part, import_step(step_path)):
+        assert r.recognise_slots(candidate) == []
+        assert len(r.recognise_pockets(candidate)) == 1
+        assert r.build_recognition_result(candidate).slots == ()
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_split_smooth_depth_closure_is_one_order_independent_boundary(reverse):
+    """Tangent STEP patches need not leave one curved face adjacent to both walls."""
+
+    left, first, second, right = (FaceNode(index) for index in range(4))
+    adjacency = {
+        left: (first,),
+        first: (left, second),
+        second: (first, right),
+        right: (second,),
+    }
+
+    class SplitClosureGraph:
+        def neighbours(self, node):
+            values = adjacency[node]
+            return tuple(reversed(values)) if reverse else values
+
+        def arc(self, left_node, right_node):
+            return "smooth" if right_node in adjacency[left_node] else None
+
+        def is_planar(self, node):
+            return node in {left, right}
+
+        def smooth_region(self, _node):
+            return frozenset(adjacency)
+
+        def bounds(self, node):
+            return {
+                first: ((0.0, 0.5), (0.0, 1.0), (-2.0, -1.0)),
+                second: ((0.5, 1.0), (0.0, 1.0), (-2.0, -1.0)),
+            }[node]
+
+    assert _has_smooth_depth_closure(
+        SimpleNamespace(node=left),
+        SimpleNamespace(node=right),
+        SplitClosureGraph(),
+        "z",
+        (-1.0, 4.0),
+    )
+
+
+def test_smooth_depth_closure_refuses_walls_without_graph_identity():
+    """The topology predicate cannot silently answer from coordinate-only wall reductions."""
+
+    with pytest.raises(ValueError, match="recess walls require graph nodes"):
+        _has_smooth_depth_closure(
+            SimpleNamespace(node=None),
+            SimpleNamespace(node=FaceNode(0)),
+            SimpleNamespace(),
+            "z",
+            (-1.0, 1.0),
+        )
 
 
 def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():

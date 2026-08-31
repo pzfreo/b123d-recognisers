@@ -293,6 +293,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar recess boundary gate",
     ),
+    "_recess_core:_has_smooth_depth_closure:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "existing AAG surface-kind gate for a curved Slot depth closure seed",
+    ),
+    "_recess_core:_has_smooth_depth_closure:is_planar:2": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "existing AAG surface-kind gate while expanding one curved closure region",
+    ),
     "_recess_core:_bounds_one_void:is_planar:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar recess boundary gate",
