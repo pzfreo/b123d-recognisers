@@ -51,7 +51,10 @@ erasing genuine support. This does not decide whether an explicit rectangular ed
 would be valuable, and it does not close #310's independently reproduced Draftwright need for an
 enclosed free-axis Slot.
 
-The exact v4 report is generated at the scorer/taxonomy commit named in its filename, using:
+The exact v4 report is
+[`effectiveness-mfcadpp-500-class6-scope-8faa759.json`](effectiveness-mfcadpp-500-class6-scope-8faa759.json),
+SHA-256 `b1f20ac6c6fa9c1ecf0ddf8c0eb072540a80d7dcfc43e9d16ff6dd30708e3480`, generated at the
+scorer/taxonomy commit named in its filename using:
 
 ```bash
 uv run python tools/run_effectiveness_baseline.py \
@@ -59,7 +62,7 @@ uv run python tools/run_effectiveness_baseline.py \
   --dataset-version published-test-split \
   --limit 500 \
   --taxonomy docs/benchmarks/effectiveness-taxonomy-v4.json \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-class6-scope-COMMIT.json
+  --output docs/benchmarks/effectiveness-mfcadpp-500-class6-scope-8faa759.json
 ```
 
 Compared with the v3 report at `a8b5cdf`:
@@ -69,7 +72,8 @@ Compared with the v3 report at `a8b5cdf`:
 - `Slot` remains 45 accepted records;
 - class 6 retains 31/88 precision, 31/237 recall, 16 mapped records, and 3,237 total taxonomy
   mismatches, while its status changes from `supported` to `partial`;
-- separate run timing is descriptive only because production behavior is unchanged.
+- total runtime is 251.121 seconds versus 256.000 seconds (ratio 0.9809), descriptive only because
+  production behavior is unchanged.
 
 MFInstSeg inherits the same 25-class mapping. Its earlier rounded Slot summary combines class 6
 and class 7 under the now-rejected taxonomy, so it must be regenerated from the canonical model
