@@ -44,7 +44,8 @@ class RoundBottomBlindSlot(Record):
     """One capped, edge-open U-section slot.
 
     ``axis`` is the penetration/run direction and ``open_sign`` identifies its source-envelope
-    mouth. ``flat_width`` and ``radius`` define the section: total opening width is
+    mouth. ``depth_sign`` identifies the material-outward opening of the U section along
+    ``depth_axis``. ``flat_width`` and ``radius`` define the section: total opening width is
     ``flat_width + 2 * radius`` and profile depth is ``radius``.
     """
 
@@ -53,6 +54,7 @@ class RoundBottomBlindSlot(Record):
     length: float
     width_axis: str
     depth_axis: str
+    depth_sign: int
     radius: float
     flat_width: float
     at: tuple[float, float, float]
@@ -109,8 +111,7 @@ def _same_cylinder(
         axis == other_axis
         and abs(radius - other_radius) <= _length_tolerance(radius, other_radius)
         and all(
-            abs(centre[i] - other_centre[i])
-            <= _length_tolerance(radius, other_radius, centre[i], other_centre[i])
+            abs(centre[i] - other_centre[i]) <= _length_tolerance(radius, other_radius)
             for i in range(3)
             if i != axis
         )
@@ -183,6 +184,9 @@ def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
         return frozenset()
     found = {seed}
     pending = [seed]
+    seed_scale = max(
+        high - low for axis, (low, high) in enumerate(graph.bounds(seed)) if axis != plane[0]
+    )
     while pending:
         current = pending.pop()
         for neighbour in graph.neighbours(current):
@@ -192,7 +196,15 @@ def _coplanar_region(graph: FaceGraph, seed: FaceNode) -> frozenset[FaceNode]:
             if (
                 other is not None
                 and other[0] == plane[0]
-                and abs(other[1] - plane[1]) <= _length_tolerance(other[1], plane[1])
+                and abs(other[1] - plane[1])
+                <= _length_tolerance(
+                    seed_scale,
+                    *(
+                        high - low
+                        for axis, (low, high) in enumerate(graph.bounds(neighbour))
+                        if axis != plane[0]
+                    ),
+                )
             ):
                 found.add(neighbour)
                 pending.append(neighbour)
@@ -531,6 +543,7 @@ def _recognise_one(
         floor_coord = floor_plane[1]
         profile_tolerance = _length_tolerance(radius, flat_width)
         depth_open = depth_high if abs(depth_low - floor_coord) <= profile_tolerance else depth_low
+        depth_sign = 1 if depth_open > floor_coord else -1
         if (
             flat_width <= 0
             or abs((profile_high - profile_low) - (flat_width + 2 * radius)) > profile_tolerance
@@ -560,6 +573,7 @@ def _recognise_one(
             length=round(high - low, 3),
             width_axis=_AXES[width],
             depth_axis=_AXES[depth],
+            depth_sign=depth_sign,
             radius=round(radius, 3),
             flat_width=round(flat_width, 3),
             at=(round(centre[0], 3), round(centre[1], 3), round(centre[2], 3)),
@@ -577,10 +591,15 @@ def recognise_round_bottom_blind_slots(
     sink: EvidenceSink | None = None if ledger is None else ledger.sink
     found: list[tuple[RoundBottomBlindSlot, frozenset[FaceNode]]] = []
     for solid in part.solids():
+        if not solid.is_valid:
+            continue
         for record, nodes in _recognise_one(solid, graph):
             found.append((record, nodes))
     found.sort(key=lambda item: item[0])
     if sink is not None:
+        # Validate the whole family before the first proposal. This preserves prefix-free
+        # publication if a malformed compound exposes faces that cannot prove one closed owner.
+        found = [item for item in found if graph.common_valid_solid(item[1]) is not None]
         for record, nodes in found:
             sink.propose(FamilyId.ROUND_BOTTOM_BLIND_SLOTS, record, defining=nodes)
     return [record for record, _nodes in found]

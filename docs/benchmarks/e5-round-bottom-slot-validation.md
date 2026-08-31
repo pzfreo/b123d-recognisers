@@ -17,9 +17,10 @@ perforated or interrupted profiles, material-filled sweeps and cross-solid compo
 The only numerical equality gate uses a local length authority at relative `1e-7`, with authored
 tests on both sides; it is not derived from the corpus.
 
-The public record reports run axis/sign, oriented section axes, length, radius, flat width and
-centre. Defining and constituent evidence are the same complete original-face set. Face and feature
-references remain opaque, occurrence-preserving and valid only within the recognition run.
+The public record reports run axis/sign, oriented section axes and depth-opening sign, length,
+radius, flat width and centre. Defining and constituent evidence are the same complete original-face
+set. Face and feature references remain opaque, occurrence-preserving and valid only within the
+recognition run.
 
 ## Authored and integration evidence
 

@@ -87,6 +87,7 @@ def test_round_bottom_blind_slot_has_truthful_dimensions_and_evidence():
             length=20.0,
             width_axis="x",
             depth_axis="y",
+            depth_sign=1,
             radius=3.0,
             flat_width=4.0,
             at=(0.0, -1.5, 10.0),
@@ -133,6 +134,15 @@ def test_local_cylinder_equality_accepts_and_rejects_both_sides_of_the_tolerance
     assert _same_cylinder(reference, (radius + 0.5 * tolerance, 2, (0.0, 0.0, 1.0)))
     assert not _same_cylinder(reference, (radius + 2 * tolerance, 2, (0.0, 0.0, 1.0)))
     assert not _same_cylinder(reference, (radius, 2, (2 * tolerance, 0.0, 1.0)))
+    translated = (radius, 2, (1e9, 1e9, 0.0))
+    assert _same_cylinder(
+        translated,
+        (radius, 2, (1e9 + 0.5 * tolerance, 1e9, 1.0)),
+    )
+    assert not _same_cylinder(
+        translated,
+        (radius, 2, (1e9 + 2 * tolerance, 1e9, 1.0)),
+    )
 
 
 def test_translation_mirror_and_arbitrary_framed_presentation_preserve_the_feature():
@@ -151,6 +161,18 @@ def test_translation_mirror_and_arbitrary_framed_presentation_preserve_the_featu
     assert isinstance(framed, FramedRecognitionResult)
     (record,) = framed.result.round_bottom_blind_slots
     assert (record.radius, record.flat_width, record.length) == (3.0, 4.0, 20.0)
+
+
+def test_opposite_depth_openings_have_distinct_public_records():
+    base = _slot()
+    opposite = Pos(0, -3, 0) * base.mirror(Plane.XZ)
+
+    (positive,) = recognise_round_bottom_blind_slots(base)
+    (negative,) = recognise_round_bottom_blind_slots(opposite)
+
+    assert positive.depth_sign == 1
+    assert negative.depth_sign == -1
+    assert positive != negative
 
 
 def test_cap_side_and_context_subdivisions_preserve_the_logical_feature():
@@ -237,6 +259,25 @@ def test_compound_members_and_equal_occurrences_remain_distinct():
     )
     assert len(refs) == 2
     assert refs[0] is not refs[1]
+
+
+def test_invalid_open_solid_and_mixed_compound_never_publish_invalid_evidence():
+    valid = Pos(-100, 0, 0) * _slot()
+    invalid_source = Pos(100, 0, 0) * _slot()
+    removed = max(invalid_source.faces(), key=lambda face: face.area)
+    invalid = Solid(Shell(face for face in invalid_source.faces() if not face.is_same(removed)))
+    assert not invalid.is_valid
+
+    assert recognise_round_bottom_blind_slots(invalid) == []
+
+    mixed = Compound(children=[valid, invalid])
+    ledger = ClaimLedger(FaceGraph(mixed))
+    records = recognise_round_bottom_blind_slots(mixed, ledger=ledger)
+
+    assert len(records) == 1
+    assert records[0].at[0] < 0
+    assert len(ledger.claims) == 1
+    assert ledger.graph.common_valid_solid(ledger.claims[0].defining) is not None
 
 
 def test_two_slots_on_one_body_are_distinct_and_do_not_overlap_recess_families():

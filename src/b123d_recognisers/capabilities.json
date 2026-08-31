@@ -2022,6 +2022,11 @@
               "type": "str",
               "units": "none"
             },
+            "depth_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
             "flat_width": {
               "required": true,
               "type": "float",
