@@ -232,6 +232,19 @@ def test_split_smooth_depth_closure_is_one_order_independent_boundary(reverse):
     )
 
 
+def test_smooth_depth_closure_refuses_walls_without_graph_identity():
+    """The topology predicate cannot silently answer from coordinate-only wall reductions."""
+
+    with pytest.raises(ValueError, match="recess walls require graph nodes"):
+        _has_smooth_depth_closure(
+            SimpleNamespace(node=None),
+            SimpleNamespace(node=FaceNode(0)),
+            SimpleNamespace(),
+            "z",
+            (-1.0, 1.0),
+        )
+
+
 def test_a_non_rectangular_prismatic_pocket_beats_paired_wall_fragments():
     """The floor and complete ring describe one U pocket; paired rectangles do not."""
 
