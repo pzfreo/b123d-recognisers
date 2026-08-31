@@ -9,9 +9,9 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 
 | rotation | baseline | same family | reclassified | absent | introduced |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Z30 | 80 | 36 | 14 | 30 | 0 |
-| X30 | 80 | 30 | 7 | 43 | 0 |
-| X90 | 80 | 80 | 0 | 0 | 0 |
+| Z30 | 81 | 36 | 14 | 31 | 0 |
+| X30 | 81 | 30 | 7 | 44 | 0 |
+| X90 | 81 | 81 | 0 | 0 | 0 |
 
 ## Affected fixtures
 
@@ -23,6 +23,7 @@ evidence containment. Reclassification is therefore observed, not inferred from 
 - **paired_ramp_step** — Z30: 0 reclassified, 1 absent; absent paired_ramp_step ×1; X30: 0 reclassified, 1 absent; absent paired_ramp_step ×1
 - **plates_pads_levels_and_slanted_steps** — Z30: 0 reclassified, 4 absent; absent plate ×1, pocket ×2, through_step ×1; X30: 0 reclassified, 4 absent; absent plate ×1, pocket ×2, through_step ×1
 - **polygonal_boss** — X30: 0 reclassified, 1 absent; absent plate ×1
+- **rectangular_blind_slot** — Z30: 0 reclassified, 1 absent; absent rectangular_blind_slot ×1; X30: 0 reclassified, 1 absent; absent rectangular_blind_slot ×1
 - **rectangular_through_step** — Z30: 0 reclassified, 1 absent; absent through_step ×1; X30: 0 reclassified, 1 absent; absent through_step ×1
 - **round_bottom_blind_slot** — Z30: 0 reclassified, 1 absent; absent round_bottom_blind_slot ×1; X30: 0 reclassified, 1 absent; absent round_bottom_blind_slot ×1
 - **slanted_steps** — Z30: 0 reclassified, 2 absent; absent pocket ×2; X30: 0 reclassified, 2 absent; absent pocket ×2
