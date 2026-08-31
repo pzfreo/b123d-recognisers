@@ -4,14 +4,23 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import asdict
 
-from build123d import Box, Plane, Polygon, Pos, Rot, extrude
+import pytest
+from build123d import Box, Cylinder, Plane, Polygon, Pos, Rot, extrude
 
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._bevel import BevelReject, classify_bevel
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
-from tools.audit_mfcadpp_paired_ramp_steps import _describe_component, _rank
+from tools.audit_mfcadpp_paired_ramp_steps import (
+    _describe_component,
+    _probe_pair,
+    _rank,
+    _reconciliation,
+)
 
 
 def _side_cut():
@@ -71,3 +80,50 @@ def test_cluster_ranking_and_samples_are_deterministic() -> None:
         "model_id": "a",
         "face_indices": [1, 2, 3],
     }
+
+
+def test_drilled_terminal_reaches_only_the_subdivision_gate_with_full_run() -> None:
+    part = _side_cut() - Pos(15, -5, 0) * Rot(90, 0, 0) * Cylinder(1, 6)
+    graph = FaceGraph(part)
+    bevels = {}
+    for node in graph.nodes:
+        with suppress(BevelReject):
+            bevels[node] = classify_bevel(graph.face(node))
+
+    probes = [
+        _probe_pair(graph, left, right, bevels[left], bevels[right])
+        for left in graph.nodes
+        for right in graph.neighbours(left)
+        if right.index > left.index and left in bevels and right in bevels
+    ]
+    terminal = [
+        probe
+        for probe in probes
+        if probe.first_failed_gate == "subdivided_internal_terminal"
+    ]
+
+    assert len(terminal) == 1
+    assert terminal[0].full_shared_run is True
+    assert terminal[0].internal_terminal_edges not in (3, 5)
+
+
+def test_reconciliation_retains_residual_faces_in_touched_components() -> None:
+    rows = [
+        {
+            "matched_face_indices": [1, 2, 3],
+            "unmatched_face_indices": [4, 5],
+        },
+        {"matched_face_indices": [], "unmatched_face_indices": [6, 7, 8]},
+    ]
+
+    assert _reconciliation(rows, 8) == {
+        "labelled_faces": 8,
+        "matched_defining_faces": 3,
+        "unmatched_labelled_faces": 5,
+        "derived_components": 2,
+        "recalled_components": 1,
+        "unrecalled_components": 1,
+        "partially_recalled_components": 1,
+    }
+    with pytest.raises(RuntimeError, match="face reconciliation failed"):
+        _reconciliation(rows, 9)

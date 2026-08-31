@@ -447,6 +447,29 @@ def _rank(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _reconciliation(rows: list[dict[str, Any]], labelled_faces: int) -> dict[str, int]:
+    """Reconcile all labelled faces without hiding residuals in touched components."""
+
+    matched = sum(len(row["matched_face_indices"]) for row in rows)
+    unmatched = sum(len(row["unmatched_face_indices"]) for row in rows)
+    if matched + unmatched != labelled_faces:
+        raise RuntimeError("face reconciliation failed")
+    recalled = sum(bool(row["matched_face_indices"]) for row in rows)
+    partial = sum(
+        bool(row["matched_face_indices"]) and bool(row["unmatched_face_indices"])
+        for row in rows
+    )
+    return {
+        "labelled_faces": labelled_faces,
+        "matched_defining_faces": matched,
+        "unmatched_labelled_faces": unmatched,
+        "derived_components": len(rows),
+        "recalled_components": recalled,
+        "unrecalled_components": len(rows) - recalled,
+        "partially_recalled_components": partial,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
@@ -462,7 +485,7 @@ def main() -> int:
     if not paths:
         parser.error("the selected workload contains no STEP files")
     items: list[dict[str, Any]] = []
-    labelled_faces = matched_faces = components_total = recalled_components = 0
+    labelled_faces = 0
     for path in paths:
         truth = load_mfcadpp_truth(path)
         labelled = {index for index, value in enumerate(truth.semantic) if value == args.class_id}
@@ -489,17 +512,12 @@ def main() -> int:
             if disposition.candidate.family is FamilyId.PAIRED_RAMP_STEPS:
                 paired_claims.append(claim)
         labelled_faces += len(labelled)
-        components_total += len(components)
         for component in components:
             matched = (
                 set(component).intersection(set().union(*paired_claims))
                 if paired_claims
                 else set()
             )
-            if matched:
-                recalled_components += 1
-                matched_faces += len(matched)
-                continue
             anatomy = _describe_component(
                 graph,
                 tuple(component),
@@ -510,11 +528,22 @@ def main() -> int:
                 {
                     "model_id": path.stem,
                     "face_indices": sorted(node.index for node in component),
+                    "matched_face_indices": sorted(node.index for node in matched),
+                    "unmatched_face_indices": sorted(
+                        node.index for node in set(component).difference(matched)
+                    ),
                     "face_count": len(component),
                     "anatomy_key": anatomy.key(),
                     "anatomy": asdict(anatomy),
                 }
             )
+    unrecalled = [item for item in items if not item["matched_face_indices"]]
+    partial = [
+        item
+        for item in items
+        if item["matched_face_indices"] and item["unmatched_face_indices"]
+    ]
+    reconciliation = _reconciliation(items, labelled_faces)
     report = {
         "format": "b123d-recognisers-mfcadpp-paired-ramp-miss-audit",
         "format_version": 1,
@@ -534,30 +563,30 @@ def main() -> int:
             "limit": args.limit,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
         },
-        "reconciliation": {
-            "labelled_faces": labelled_faces,
-            "matched_defining_faces": matched_faces,
-            "unmatched_labelled_faces": labelled_faces - matched_faces,
-            "derived_components": components_total,
-            "recalled_components": recalled_components,
-            "unrecalled_components": len(items),
-        },
+        "reconciliation": reconciliation,
         "gate_counts": dict(
             sorted(
                 Counter(
                     item["anatomy"]["best_pair"]["first_failed_gate"]
-                    for item in items
+                    for item in unrecalled
                 ).items()
             )
         ),
-        "clusters": _rank(items),
-        "unrecalled_components": items,
+        "partial_component_gate_counts": dict(
+            sorted(
+                Counter(
+                    item["anatomy"]["best_pair"]["first_failed_gate"]
+                    for item in partial
+                ).items()
+            )
+        ),
+        "unrecalled_clusters": _rank(unrecalled),
+        "partial_clusters": _rank(partial),
+        "components": items,
     }
-    if recalled_components + len(items) != components_total:
-        raise RuntimeError("component reconciliation failed")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    summary = {key: value for key, value in report.items() if key != "unrecalled_components"}
+    summary = {key: value for key, value in report.items() if key != "components"}
     print(json.dumps(summary, indent=2))
     return 0
 
