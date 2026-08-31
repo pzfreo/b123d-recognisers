@@ -39,27 +39,29 @@ class _RecessProposal(Generic[_R]):
 
     ``record`` remains the public value.  Proposal identity is deliberately object identity:
     equal records on separate solids are separate occurrences until the body-scoped projection.
-    Planar defining nodes and cylindrical cap groups stay separate because this is neutral
-    plumbing; later family migrations decide which roles become published defining evidence.
+    Planar defining nodes, cylindrical cap groups and accepted floors stay separate because this
+    is neutral plumbing; family publication decides which roles are defining or constituent.
     """
 
     record: _R
     planar: frozenset[FaceNode] = frozenset()
     caps: tuple[frozenset[FaceNode], ...] = ()
+    floors: frozenset[FaceNode] = frozenset()
 
 
 def _replace_proposal(proposal: _RecessProposal[_R], record: _R) -> _RecessProposal[_R]:
-    return _RecessProposal(record, proposal.planar, proposal.caps)
+    return _RecessProposal(record, proposal.planar, proposal.caps, proposal.floors)
 
 
 def _combine_proposals(record: _R, proposals: list[_RecessProposal[_R]]) -> _RecessProposal[_R]:
     planar = frozenset(node for proposal in proposals for node in proposal.planar)
+    floors = frozenset(node for proposal in proposals for node in proposal.floors)
     cap_groups: list[frozenset[FaceNode]] = []
     for proposal in proposals:
         for group in proposal.caps:
             if group not in cap_groups:
                 cap_groups.append(group)
-    return _RecessProposal(record, planar, tuple(cap_groups))
+    return _RecessProposal(record, planar, tuple(cap_groups), floors)
 
 
 #: Which faces a record was built from, while it is being built. Keyed by the record's *value*,
@@ -87,9 +89,7 @@ def _prism_material_fraction(
     return prism_material_fraction(spans, part, inset=inset)
 
 
-def _prism_is_empty(
-    spans: dict[str, tuple[float, float]], part: Part, *, inset: float
-) -> bool:
+def _prism_is_empty(spans: dict[str, tuple[float, float]], part: Part, *, inset: float) -> bool:
     """Compatibility facade over the exact-empty volumetric measurement."""
 
     return prism_is_empty(spans, part, inset=inset)

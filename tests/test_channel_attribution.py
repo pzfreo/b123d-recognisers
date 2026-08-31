@@ -293,6 +293,15 @@ def _assert_roles(part, **kwargs):
         nodes = ledger.defining_of(candidate)
         assert nodes == expected_nodes
         assert ledger.graph.common_valid_solid(nodes) is not None
+        constituent = ledger.snapshot_index().constituent_of(candidate)
+        floor = constituent - nodes
+        depth_axis = "xyz".index(record.depth_axis)
+        assert nodes < constituent and floor
+        assert ledger.graph.common_valid_solid(constituent) is not None
+        assert all(ledger.graph.is_planar(node) for node in floor)
+        assert all(
+            ledger.graph.normal(node)[depth_axis] * record.open_sign > 0.99 for node in floor
+        )
         centres = []
         signs = []
         axis = "xyz".index(record.width_axis)
@@ -314,6 +323,29 @@ def test_canonical_channel_owns_only_two_opposed_walls() -> None:
     records, candidates, ledger = _assert_roles(build_fixture())
     assert len(records) == 1
     assert len(ledger.defining_of(candidates[0])) == 2
+    assert len(ledger.snapshot_index().constituent_of(candidates[0])) == 3
+
+
+@pytest.mark.parametrize("alias_wall", [False, True])
+def test_missing_or_wall_aliased_floor_refuses_before_publication(
+    monkeypatch, alias_wall
+) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    proposals = core_module._channel_proposals_one(part, graph=graph)
+    assert len(proposals) == 1
+    proposal = proposals[0]
+    floor = frozenset({proposal.low_wall}) if alias_wall else frozenset()
+    monkeypatch.setattr(
+        feature_module,
+        "_channel_proposals_one",
+        lambda *_args, **_kwargs: [replace(proposal, floor=floor)],
+    )
+
+    with pytest.raises(ValueError, match="floor identity is unavailable"):
+        _discover_channels(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.CHANNELS).candidates == ()
 
 
 def test_record_only_compatibility_wrapper_preserves_value_and_order() -> None:
@@ -733,6 +765,34 @@ def test_proposal_builder_refuses_a_candidate_without_graph_nodes(monkeypatch) -
     monkeypatch.setattr(core_module, "_channel_candidate", lambda *_args, **_kwargs: expected)
     with pytest.raises(ValueError, match="require graph nodes"):
         core_module._channel_proposals_one(part, graph=graph)
+
+
+def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    expected = recognise_channels(part)[0]
+
+    monkeypatch.setattr(core_module, "_channel_candidate", lambda *_args, **_kwargs: expected)
+    with pytest.raises(ValueError, match="floor identity is unavailable"):
+        core_module._channel_proposals_one(part, graph=graph)
+
+
+def test_candidate_remains_compatible_without_a_floor_identity_consumer(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    original = core_module._channel_candidate
+    captured = {}
+
+    def capture(*args, **kwargs):
+        result = original(*args, **kwargs)
+        if result is not None:
+            captured["args"] = args
+        return result
+
+    monkeypatch.setattr(core_module, "_channel_candidate", capture)
+    expected = core_module._channel_proposals_one(part, graph=graph)[0].record
+
+    assert original(*captured["args"]) == expected
 
 
 def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> None:
