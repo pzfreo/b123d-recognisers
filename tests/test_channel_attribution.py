@@ -777,6 +777,24 @@ def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monke
         core_module._channel_proposals_one(part, graph=graph)
 
 
+def test_candidate_remains_compatible_without_a_floor_identity_consumer(monkeypatch) -> None:
+    part = build_fixture()
+    graph = FaceGraph(part)
+    original = core_module._channel_candidate
+    captured = {}
+
+    def capture(*args, **kwargs):
+        result = original(*args, **kwargs)
+        if result is not None:
+            captured["args"] = args
+        return result
+
+    monkeypatch.setattr(core_module, "_channel_candidate", capture)
+    expected = core_module._channel_proposals_one(part, graph=graph)[0].record
+
+    assert original(*captured["args"]) == expected
+
+
 def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> None:
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
