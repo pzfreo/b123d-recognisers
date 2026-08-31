@@ -150,7 +150,7 @@ def test_compound_members_cannot_supply_one_cross_solid_slot():
     assert recognise_rectangular_blind_slots(Compound([left, right])) == []
 
 
-def test_split_cap_and_compound_order_preserve_complete_occurrences():
+def test_split_cap_sides_floor_and_compound_order_preserve_complete_occurrences():
     part = _slot()
     rebuilt = []
     for face in part.faces():
@@ -162,12 +162,29 @@ def test_split_cap_and_compound_order_preserve_complete_occurrences():
             and bounds.min.Y > 4.0
         ):
             rebuilt.extend(face.split(Plane.YZ, Keep.BOTH))
+        elif (
+            abs(abs(bounds.min.X) - 5.0) < 1e-7
+            and abs(bounds.max.X - bounds.min.X) < 1e-7
+            and bounds.min.Y > 4.0
+            and bounds.min.Z < 10 < bounds.max.Z
+        ):
+            rebuilt.extend(face.split(Plane.XY.offset(10), Keep.BOTH))
+        elif (
+            abs(bounds.min.Y - 5.0) < 1e-7
+            and abs(bounds.max.Y - bounds.min.Y) < 1e-7
+            and bounds.min.X < 0 < bounds.max.X
+            and bounds.min.Z < 10 < bounds.max.Z
+        ):
+            rebuilt.extend(face.split(Plane.YZ, Keep.BOTH))
         else:
             rebuilt.append(face)
     split = Solid(Shell(rebuilt))
     assert split.is_valid
     (record,) = recognise_rectangular_blind_slots(split)
     assert record == recognise_rectangular_blind_slots(part)[0]
+    split_ledger = ClaimLedger(FaceGraph(split))
+    assert recognise_rectangular_blind_slots(split, ledger=split_ledger) == [record]
+    assert len(split_ledger.claims[0].defining) == 8
 
     left = Pos(-50, 0, 0) * part
     right = Pos(50, 0, 0) * part
@@ -175,6 +192,19 @@ def test_split_cap_and_compound_order_preserve_complete_occurrences():
     reverse = recognise_rectangular_blind_slots(Compound([right, left]))
     assert forward == reverse
     assert len(forward) == 2
+
+
+@pytest.mark.parametrize(
+    "interruption",
+    (
+        Pos(4, 6, 9) * Box(4, 3, 2, align=(Align.MIN, Align.MIN, Align.MIN)),
+        Pos(-1, 3, 9) * Box(2, 4, 2, align=(Align.MIN, Align.MIN, Align.MIN)),
+    ),
+)
+def test_perforated_side_or_floor_is_not_a_complete_rectangular_section(interruption):
+    interrupted = _slot() - interruption
+    assert interrupted.is_valid
+    assert recognise_rectangular_blind_slots(interrupted) == []
 
 
 def test_material_in_sweep_and_open_invalid_body_are_refused():

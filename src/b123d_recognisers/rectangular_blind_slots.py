@@ -121,6 +121,10 @@ def _recognise_one(
                 continue
             sides = tuple(region for region, plane in planes if plane[0] == width)
             (floor,) = tuple(region for region, plane in planes if plane[0] == depth)
+            if any(not _principal_rectangle(graph, region, width) for region in sides) or not (
+                _principal_rectangle(graph, floor, depth)
+            ):
+                continue
             side_planes = sorted(plane[1] for _region, plane in planes if plane[0] == width)
             floor_plane = next(plane for _region, plane in planes if plane[0] == depth)
             cap_bounds = _region_bounds(graph, cap_region)

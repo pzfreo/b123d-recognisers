@@ -43,6 +43,7 @@ TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
 TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
 TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
 TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
+TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -240,6 +241,22 @@ def test_taxonomy_v5_moves_only_horizontal_round_bottom_slot_to_its_family() -> 
         "status": "supported",
     }
     assert load_taxonomy(TAXONOMY_V5, "mfinstseg") == current
+
+
+def test_taxonomy_v6_moves_only_rectangular_blind_slot_to_its_family() -> None:
+    historical = load_taxonomy(TAXONOMY_V5, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V6, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 17} == {
+        key: value for key, value in historical.items() if key != 17
+    }
+    assert historical[17]["families"] == ["pockets"]
+    assert current[17] == {
+        "families": ["rectangular-blind-slots"],
+        "name": "Rectangular blind slot",
+        "status": "supported",
+    }
+    assert load_taxonomy(TAXONOMY_V6, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
