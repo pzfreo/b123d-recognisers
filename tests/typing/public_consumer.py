@@ -83,6 +83,7 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
         assert_type(evidence.family(feature), str)
         assert_type(evidence.record(feature), RecognitionRecord)
         assert_type(evidence.defining_faces(feature), frozenset[FaceRef])
+        assert_type(evidence.constituent_faces(feature), frozenset[FaceRef])
     for reference in evidence.faces:
         assert_type(evidence.face(reference), Face)
     assert_type(result.holes, tuple[HoleRecord, ...])

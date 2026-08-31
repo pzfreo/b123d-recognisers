@@ -129,3 +129,25 @@ part; a working-shape face must not silently escape as caller identity.
 The new namespace has an independent closed installed API manifest. It does not change inspection
 format 1 or the recognition capability manifest, because neither document describes run-local
 reference operations.
+
+## Amendment (constituent face projection, issue #368)
+
+The same run-local view may project an accepted occurrence's **constituent** faces alongside its
+existing **defining** faces. Defining evidence keeps its exact meaning: it is the evidence that
+establishes the record and remains the only face set consulted by claims, reconciliation,
+dispositions, diagnostics and correspondence. Constituent evidence is physical membership for
+downstream selection and coverage; it is not ownership or precedence.
+
+The terminal evidence issuer enforces `defining` as a subset of `constituent`, exact graph-issued
+identity and one valid solid. Omission means constituent is the exact defining set, so an
+unmigrated family fails closed rather than guessing from adjacency. A face may be constituent to
+more than one accepted occurrence, and membership queries preserve occurrence identity and
+proposal order without turning overlap into a contest.
+
+Wider membership must retain identities already selected by the recogniser's accepted geometry
+proof. It must not be reconstructed later by coordinate matching, adjacency flood-fill, corpus
+labels or a second recognition pass. In particular, interrupted or blend-owned faces do not
+become constituents merely because they touch a feature. The public
+`RecognitionEvidence.constituent_faces()` method is therefore an additive projection through the
+existing `FeatureRef` and `FaceRef` carrier; it adds no durable face name and does not alter the
+format-1 manifest boundary.

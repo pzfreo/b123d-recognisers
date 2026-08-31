@@ -37,10 +37,16 @@ class GeometryEvidenceBridge:
         refs: Iterable[FaceRef],
         *,
         family: FamilyId,
+        constituent: Iterable[FaceRef] | None = None,
     ) -> None:
         ordered = tuple(refs)
         nodes = tuple(self.geometry._node(ref) for ref in ordered)
-        self._writer.add_defining(claimant, nodes, family=family)
+        members = (
+            None
+            if constituent is None
+            else tuple(self.geometry._node(ref) for ref in constituent)
+        )
+        self._writer.add_defining(claimant, nodes, family=family, constituent=members)
 
     def validate_defining(self, refs: Iterable[FaceRef]) -> None:
         """Validate a complete publication batch before any candidate is issued."""

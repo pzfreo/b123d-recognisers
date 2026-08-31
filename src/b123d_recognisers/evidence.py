@@ -131,6 +131,14 @@ class RecognitionEvidence:
             self.__node_refs[node] for node in self.__evidence.defining_of(candidate)
         )
 
+    def constituent_faces(self, feature: FeatureRef) -> frozenset[FaceRef]:
+        """Return the exact original faces physically belonging to *feature*."""
+
+        candidate = self.__feature_candidates[self.__feature_position(feature)]
+        return frozenset(
+            self.__node_refs[node] for node in self.__evidence.constituent_of(candidate)
+        )
+
     def face(self, reference: FaceRef) -> FaceLike:
         """Resolve *reference* to its borrowed original build123d face."""
 

@@ -226,6 +226,8 @@ def test_successful_step_owns_only_the_slant() -> None:
     evidence = ledger.snapshot_index()
 
     assert len(evidence.defining_of(candidate)) == 1
+    assert len(evidence.constituent_of(candidate)) == 2
+    assert evidence.defining_of(candidate) < evidence.constituent_of(candidate)
     assert len(ledger.claims) == 1
 
 
@@ -461,6 +463,7 @@ def test_a_bolt_hole_through_the_blind_end_does_not_hide_the_step():
     assert drilled == plain
     (candidate,) = ledger.candidate_set(FamilyId.ANGLED_STEPS).candidates
     assert len(ledger.defining_of(candidate)) == 1
+    assert len(ledger.snapshot_index().constituent_of(candidate)) == 2
 
 
 def test_a_step_is_a_step_at_any_scale():
@@ -497,6 +500,8 @@ def test_records_are_ordered_deterministically_and_are_plain_data():
     for candidate, step in zip(candidates, steps, strict=True):
         assert candidate.record is step
         (slant,) = ledger.defining_of(candidate)
+        constituent = ledger.snapshot_index().constituent_of(candidate)
+        assert len(constituent) == 2 and slant in constituent
         bounds = ledger.graph.bounds(slant)
         axis = "xyz".index(step.axis)
         assert round(bounds[axis][1] - bounds[axis][0], 3) == step.length
