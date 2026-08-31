@@ -94,6 +94,7 @@ class ComponentAnatomy:
     internal_arc_counts: tuple[tuple[str, int], ...]
     accepted_other_family_claims: tuple[tuple[str, int], ...]
     accepted_other_family_records: tuple[tuple[str, int], ...]
+    terminal_only_pairs: tuple[tuple[int, int, int], ...]
     best_pair: PairProbe
 
     def key(self) -> str:
@@ -101,6 +102,7 @@ class ComponentAnatomy:
         value["best_pair"].pop("run_axis")
         value["best_pair"].pop("internal_terminal_index")
         value["best_pair"].pop("exterior_terminal_index")
+        value["terminal_only_pair_count"] = len(value.pop("terminal_only_pairs"))
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
 
@@ -350,13 +352,17 @@ def _describe_component(
     for node in ordered:
         with contextlib.suppress(BevelReject):
             bevels[node] = classify_bevel(graph.face(node))
-    probes = [
-        _probe_pair(graph, left, right, bevels[left], bevels[right])
+    probed_pairs = [
+        (left, right, _probe_pair(graph, left, right, bevels[left], bevels[right]))
         for at, left in enumerate(ordered)
         for right in ordered[at + 1 :]
         if left in bevels and right in bevels and right in graph.neighbours(left)
     ]
-    best = max(probes, key=lambda probe: (probe.stage, probe.run_axis or ""), default=_failed(0))
+    best = max(
+        (probe for _left, _right, probe in probed_pairs),
+        key=lambda probe: (probe.stage, probe.run_axis or ""),
+        default=_failed(0),
+    )
     component = set(ordered)
     return ComponentAnatomy(
         face_count=len(ordered),
@@ -386,6 +392,15 @@ def _describe_component(
                 if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
                 and bool(component.intersection(claim))
             ]
+        ),
+        terminal_only_pairs=tuple(
+            sorted(
+                (left.index, right.index, probe.internal_terminal_index)
+                for left, right, probe in probed_pairs
+                if probe.first_failed_gate == "subdivided_internal_terminal"
+                and probe.full_shared_run is True
+                and probe.internal_terminal_index is not None
+            )
         ),
         best_pair=best,
     )
