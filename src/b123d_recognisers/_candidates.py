@@ -63,6 +63,7 @@ class FamilyId(Enum):
     POLYGONAL_STOCK = "polygonal_stock"
     PRISMATIC_POCKETS = "prismatic_pockets"
     REPEATING_RADIAL_PROFILES = "repeating_radial_profiles"
+    RECTANGULAR_BLIND_SLOTS = "rectangular_blind_slots"
     ROUND_BOTTOM_BLIND_SLOTS = "round_bottom_blind_slots"
     RISERS = "risers"
     SLOTS = "slots"

@@ -172,6 +172,10 @@ from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
 )
+from b123d_recognisers.rectangular_blind_slots import (
+    RectangularBlindSlot,
+    recognise_rectangular_blind_slots,
+)
 from b123d_recognisers.result import (
     RecognitionResult,
     build_raw_recognition_result,
@@ -334,6 +338,8 @@ __all__ = [
     "recognise_polygonal_stock",
     "recognise_rectangular_pads",
     "recognise_repeating_radial_profiles",
+    "RectangularBlindSlot",
+    "recognise_rectangular_blind_slots",
     "recognise_round_bottom_blind_slots",
     "recognise_slot_patterns",
     "recognise_slots",

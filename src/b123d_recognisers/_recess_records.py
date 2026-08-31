@@ -95,8 +95,9 @@ class Pocket(Record):
     :class:`Slot`: a pocket is floored, so it carries a third defining size — the
     ``depth`` from the open face down to the floor (``d_hi - d_lo``, the walls' extent
     on the depth axis). ``width``/``length`` are the in-plane footprint, exactly as for
-    a slot; a "blind slot" (elongated) and a "pocket" (near-square) are the same feature
-    — both a floored rectangular recess dimensioned width × length × depth.
+    a slot; elongated and near-square *bounded* recesses are the same feature here. A recess
+    whose longitudinal end reaches a source-solid envelope is instead the explicit edge-open
+    ``RectangularBlindSlot`` family.
 
     width_axis: axis across the recess (the walls' normal axis), 'x'/'y'/'z'.
     long_axis:  axis the recess runs along (largest shared wall extent).

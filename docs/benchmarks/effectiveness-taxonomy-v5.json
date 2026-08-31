@@ -21,7 +21,7 @@
         "14": {"families": ["pockets", "prismatic-pockets"], "name": "Rectangular pocket", "status": "supported"},
         "15": {"families": ["prismatic-pockets"], "name": "6-sided pocket", "status": "supported"},
         "16": {"families": ["pockets"], "name": "Circular end pocket", "status": "supported"},
-        "17": {"families": ["pockets"], "name": "Rectangular blind slot", "status": "supported"},
+        "17": {"families": ["rectangular-blind-slots"], "name": "Rectangular blind slot", "status": "supported"},
         "18": {"families": ["pockets"], "name": "Vertical circular end blind slot", "status": "supported"},
         "19": {"families": ["round-bottom-blind-slots"], "name": "Horizontal circular end blind slot", "status": "supported"},
         "20": {"families": ["angled-steps"], "name": "Triangular blind step", "status": "supported"},

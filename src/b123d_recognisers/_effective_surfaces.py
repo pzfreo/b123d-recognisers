@@ -191,12 +191,24 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "native cylinder and planar U-section grammar; recovered surfaces are not accepted",
     ),
+    "rectangular_blind_slots": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "native planar rectangular U-section grammar; recovered surfaces are not accepted",
+    ),
 }
 
 # Function/role/ordinal identities freeze every decision without depending on source line numbers.
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "rectangular_blind_slots:_recognise_one:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "cheap graph-owned native planar concave-neighbour gate",
+    ),
+    "rectangular_blind_slots:_recognise_one:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "graph-owned native planar cap-region gate",
+    ),
     "round_bottom_slots:_cylinder_surface:adaptor:1": (
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "native exact-cylinder grammar for the bounded U-section family",
