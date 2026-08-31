@@ -92,13 +92,17 @@ def test_slot_walls_must_turn_consistently_into_one_void(corpus, monkeypatch):
 
     The two faces are parallel, opposed and overlap, so bounding boxes alone report a slot.
     They do not bound one recess: their shared boundary turns concavely from one wall and
-    convexly from the other.  Disabling the arc-consistency gate restores two false candidates,
-    including the grazing one from issue #119; with it, only the coherent slot remains.
+    convexly from the other. The third historical candidate is the alternate-depth projection of
+    a deep circular-end pocket and is now rejected by its smooth curved depth closure. Disabling
+    that gate isolates the older AAG contract; disabling arc consistency then restores the two
+    additional false candidates, including the grazing one from issue #119.
     """
 
     part = next(part for name, part, *_rest in corpus if name == "10063.step")
-    coherent = recognise_slots(part)
-    assert len(coherent) == 1
+    assert recognise_slots(part) == []
+
+    monkeypatch.setattr(recess_core, "_has_smooth_depth_closure", lambda *_args: False)
+    assert len(recognise_slots(part)) == 1
 
     monkeypatch.setattr(recess_core, "_candidate_has_void_evidence", lambda *_args: True)
     assert len(recognise_slots(part)) == 1, "the AAG gate alone rejects both false pairs"
@@ -558,13 +562,10 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
         ReasonCode.DEFAULT_ACCEPTED,
     )
 
-    slot_dispositions = product.reconciliation.for_family(FamilyId.SLOTS)
-    assert len(slot_dispositions) == 1
-    assert slot_dispositions[0].outcome is Outcome.REJECTED
-    assert slot_dispositions[0].reason is ReasonCode.SLOT_SUPERSEDED_BY_POCKET
-    pocket_candidates = product.physical.candidate_set(FamilyId.POCKETS).candidates
-    assert len(slot_dispositions[0].related) == 1
-    assert slot_dispositions[0].related[0] is pocket_candidates[1]
+    # The historical alternate-depth Slot interpretation is now refused during discovery: the
+    # same smooth curved region closes its alleged through axis. It no longer needs a later Pocket
+    # precedence disposition.
+    assert product.reconciliation.for_family(FamilyId.SLOTS) == ()
     assert [
         (item.outcome, item.reason)
         for item in product.reconciliation.for_family(FamilyId.POCKETS)
@@ -710,12 +711,10 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14
 
     slots = claimed["Slot"]
-    # Exact prism evidence removes two paired-wall interpretations whose nominal boxes contain
-    # material: a 6-sided pocket fragment in 10101 and a rectangular-slot-labelled pair in
-    # 10138 whose proposed prism is 57% solid. The latter label is face-local evidence, not proof
-    # that this particular opposed pair describes the labelled removal's volume.
-    assert sum(slots.values()) == 34
-    assert slots[16] == 28, "most accepted Slot walls are labelled Circular end pocket"
+    # Exact prism and curved-depth closure evidence remove material-crossing and alternate-depth
+    # pocket interpretations. The remaining accepted walls in this frozen sample are all labelled
+    # rectangular through Slot; this is a change detector, not label authority.
+    assert slots == Counter({6: 4})
 
     # Pockets are the blind counterpart and land mostly where the name says. Complete ring
     # containment removes the old passage fragments; partial intersections deliberately remain.
