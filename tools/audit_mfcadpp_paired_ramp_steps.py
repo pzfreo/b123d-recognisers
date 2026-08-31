@@ -93,6 +93,7 @@ class ComponentAnatomy:
     faces_with_curved_edges: int
     internal_arc_counts: tuple[tuple[str, int], ...]
     accepted_other_family_claims: tuple[tuple[str, int], ...]
+    accepted_other_family_records: tuple[tuple[str, int], ...]
     best_pair: PairProbe
 
     def key(self) -> str:
@@ -342,6 +343,7 @@ def _describe_component(
     graph: FaceGraph,
     nodes: tuple[FaceNode, ...],
     other_claims: dict[FaceNode, set[str]],
+    accepted_claims: tuple[tuple[str, frozenset[FaceNode]], ...] = (),
 ) -> ComponentAnatomy:
     ordered = tuple(sorted(nodes, key=lambda node: node.index))
     bevels: dict[FaceNode, tuple[Any, ...]] = {}
@@ -376,6 +378,14 @@ def _describe_component(
         ),
         accepted_other_family_claims=_counts(
             [family for node in component for family in sorted(other_claims.get(node, set()))]
+        ),
+        accepted_other_family_records=_counts(
+            [
+                family
+                for family, claim in accepted_claims
+                if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
+                and bool(component.intersection(claim))
+            ]
         ),
         best_pair=best,
     )
@@ -429,12 +439,14 @@ def main() -> int:
         graph = product.context.graph
         components = _components(graph, {graph.require_node(faces[index]) for index in labelled})
         family_claims: dict[FaceNode, set[str]] = {}
+        accepted_claims: list[tuple[str, frozenset[FaceNode]]] = []
         paired_claims: list[frozenset[FaceNode]] = []
         for disposition in product.reconciliation.dispositions:
             if disposition.outcome is not Outcome.ACCEPTED:
                 continue
             claim = product.evidence.defining_of(disposition.candidate)
             family = disposition.candidate.family.value.replace("_", "-")
+            accepted_claims.append((family, claim))
             for node in claim:
                 family_claims.setdefault(node, set()).add(family)
             if disposition.candidate.family is FamilyId.PAIRED_RAMP_STEPS:
@@ -451,7 +463,12 @@ def main() -> int:
                 recalled_components += 1
                 matched_faces += len(matched)
                 continue
-            anatomy = _describe_component(graph, tuple(component), family_claims)
+            anatomy = _describe_component(
+                graph,
+                tuple(component),
+                family_claims,
+                tuple(accepted_claims),
+            )
             items.append(
                 {
                     "model_id": path.stem,
