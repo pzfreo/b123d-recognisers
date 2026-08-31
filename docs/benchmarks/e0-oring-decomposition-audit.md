@@ -30,8 +30,8 @@ No individual MFInstSeg model was inspected.
 ## Representative ownership proof
 
 Face indices are zero-based imported-face positions, matching the scorer and lexical STEP labels.
-`FORWARD` cylindrical orientation denotes material outside the analytic cylinder; `REVERSED`
-denotes material inside it. A full native cylinder has a 2π U span.
+`FORWARD` cylindrical orientation denotes material radially inside the analytic cylinder;
+`REVERSED` denotes material radially outside it. A full native cylinder has a 2π U span.
 
 | case | model and labelled faces | observed ownership |
 | --- | --- | --- |
