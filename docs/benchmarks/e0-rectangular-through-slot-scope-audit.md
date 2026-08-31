@@ -31,8 +31,9 @@ edge adjacency between faces carrying label 6. All 67 components were inspected:
 
 The audit therefore does not pretend the class is uniformly absent. It proves the opposite: the
 single class mixes a small supported closed subset, a free-axis subset, a dominant unsupported
-edge-slot geometry and intersection fragments. The current taxonomy has no partial-support state,
-and mapping the whole denominator to `Slot` is false.
+edge-slot geometry and intersection fragments. Taxonomy v4 therefore adds a `partial` state: it
+retains the legitimate `Slot` matches and full denominator while qualifying that unmatched faces
+do not all belong to the mapped family contract.
 
 As descriptive observations only, 17/50 labelled models emit any aggregate `Slot`, and 13/50 have
 at least one matched class-6 defining face under taxonomy v3. These are not instance-recall figures:
@@ -42,15 +43,15 @@ intersections. No individual MFInstSeg geometry was inspected.
 ## Immutable taxonomy result
 
 [`effectiveness-taxonomy-v4.json`](effectiveness-taxonomy-v4.json), SHA-256
-`511eaed9f0f5a14ad5245a2e501083fc4dfe7cde75c3b6edc61909e3f235587d`, differs from v3 only at
-class 6: the family list becomes empty and status becomes `unsupported`. Earlier versions and
-reports remain immutable. This does not decide whether an explicit rectangular edge-slot family
+`b5bd44072b64563926fea65a00587adbfbd0e71316c86656b680a161743f784b`, differs from v3 only at
+class 6 status: `slots` remains mapped and `supported` becomes `partial`. Earlier versions and
+reports remain immutable. The scorer treats partial mappings as measurable for matched evidence,
+record projection and mismatch accounting; the status qualifies interpretation rather than
+erasing genuine support. This does not decide whether an explicit rectangular edge-slot family
 would be valuable, and it does not close #310's independently reproduced Draftwright need for an
 enclosed free-axis Slot.
 
-The exact v4 report is
-[`effectiveness-mfcadpp-500-class6-scope-5606385.json`](effectiveness-mfcadpp-500-class6-scope-5606385.json),
-SHA-256 `bf800c7925210c66f10b11f6f02336dd86f4fef8d88b504a2207aeefbcd88e96`, produced with:
+The exact v4 report is generated at the scorer/taxonomy commit named in its filename, using:
 
 ```bash
 uv run python tools/run_effectiveness_baseline.py \
@@ -58,7 +59,7 @@ uv run python tools/run_effectiveness_baseline.py \
   --dataset-version published-test-split \
   --limit 500 \
   --taxonomy docs/benchmarks/effectiveness-taxonomy-v4.json \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-class6-scope-5606385.json
+  --output docs/benchmarks/effectiveness-mfcadpp-500-class6-scope-COMMIT.json
 ```
 
 Compared with the v3 report at `a8b5cdf`:
@@ -66,12 +67,9 @@ Compared with the v3 report at `a8b5cdf`:
 - all physical records, predicate observations, reconciliation drops, unsupported diagnostics,
   source hashes and non-mapping, non-runtime per-model fields are exactly equal;
 - `Slot` remains 45 accepted records;
-- class 6 changes from misleadingly supported 31/88 precision and 31/237 recall to unsupported;
-- 16 formerly class-6-mapped records become `unmapped`, as they should when no supported corpus
-  class owns their defining evidence;
-- taxonomy-mismatch defining occurrences fall 3,237→2,968 because class-6-labelled faces and
-  claims no longer count as supported-family disagreements; this is a scope correction only;
-- total runtime is 252.815 seconds versus 256.000 seconds (ratio 0.9876), descriptive only.
+- class 6 retains 31/88 precision, 31/237 recall, 16 mapped records, and 3,237 total taxonomy
+  mismatches, while its status changes from `supported` to `partial`;
+- separate run timing is descriptive only because production behavior is unchanged.
 
 MFInstSeg inherits the same 25-class mapping. Its earlier rounded Slot summary combines class 6
 and class 7 under the now-rejected taxonomy, so it must be regenerated from the canonical model

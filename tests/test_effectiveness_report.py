@@ -163,7 +163,7 @@ def test_taxonomy_v3_marks_only_circular_through_slot_unsupported() -> None:
     assert load_taxonomy(TAXONOMY_V3, "mfinstseg") == current
 
 
-def test_taxonomy_v4_marks_only_rectangular_through_slot_unsupported() -> None:
+def test_taxonomy_v4_marks_only_rectangular_through_slot_partially_supported() -> None:
     historical = load_taxonomy(TAXONOMY_V3, "mfcadpp")
     current = load_taxonomy(TAXONOMY_V4, "mfcadpp")
 
@@ -176,9 +176,9 @@ def test_taxonomy_v4_marks_only_rectangular_through_slot_unsupported() -> None:
         "status": "supported",
     }
     assert current[6] == {
-        "families": [],
+        "families": ["slots"],
         "name": "Rectangular through slot",
-        "status": "unsupported",
+        "status": "partial",
     }
     assert load_taxonomy(TAXONOMY_V4, "mfinstseg") == current
 

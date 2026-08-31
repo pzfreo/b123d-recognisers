@@ -10,7 +10,7 @@
         "3": {"families": ["passages"], "name": "Rectangular passage", "status": "supported"},
         "4": {"families": ["passages"], "name": "6-sided passage", "status": "supported"},
         "5": {"families": [], "name": "Triangular through slot", "status": "unsupported"},
-        "6": {"families": [], "name": "Rectangular through slot", "status": "unsupported"},
+        "6": {"families": ["slots"], "name": "Rectangular through slot", "status": "partial"},
         "7": {"families": [], "name": "Circular through slot", "status": "unsupported"},
         "8": {"families": ["through-steps"], "name": "Rectangular through step", "status": "supported"},
         "9": {"families": ["paired-ramp-steps"], "name": "2-sided through step", "status": "supported"},
@@ -30,7 +30,7 @@
         "23": {"families": ["fillets"], "name": "Round", "status": "supported"},
         "24": {"families": [], "name": "Stock", "status": "incomparable"}
       },
-      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 4 retains the version-3 circular-groove correction and marks class 6 unsupported after the complete audit found a dominant open-ended three-wall edge-slot motif plus closed/free-axis and intersected variants, rather than one geometry covered by the enclosed Slot contract. Earlier versions remain immutable for historical reports."
+      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 4 retains the version-3 circular-groove correction and marks class 6 partially supported after the complete audit found a small legitimate enclosed Slot subset inside a class dominated by open-ended three-wall edge slots and also containing free-axis and intersected variants. Earlier versions remain immutable for historical reports."
     },
     "mfinstseg": {
       "classes_from": "mfcadpp",
