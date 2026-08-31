@@ -58,16 +58,42 @@ a point on the untrimmed underlying surface; inner wires and concave outer wires
 
 The old `experimental_geometry.inspect_face` and surface-value names are exact-object aliases, as
 are the existing root or family-module paths for the other four reads. New code should use the
-inspection namespace. This graduation does not publish `GeometryGraph`, opaque graph handles,
-adjacency, blend collapse, sections, correspondence, Candidate/evidence, registry, or
-reconciliation. Those remain private or experimental because no second external consumer proved
-their cost.
+inspection namespace. This graduation does not publish `GeometryGraph`, adjacency, blend collapse,
+sections, correspondence, Candidate identity, registry, or reconciliation. Those remain private
+or experimental.
+
+## Within-run recognition evidence API
+
+Issue #375 separately publishes the smaller identity operation now required by a concrete
+recognition consumer:
+
+```python
+from b123d_recognisers.evidence import build_recognition_evidence
+
+view = build_recognition_evidence(part)
+for feature in view.features:
+    record = view.record(feature)
+    faces = [view.face(reference) for reference in view.defining_faces(feature)]
+```
+
+`FeatureRef` preserves accepted occurrence identity even when two records compare equal;
+`FaceRef` identifies one exact original face of the exact input part. Both are opaque,
+issuer-created, non-serializable, and valid only with their originating `RecognitionEvidence`
+view while the caller leaves the part unchanged. Forged, copied, stale and cross-view references
+fail closed. The view runs the aggregate once, exposes its existing `RecognitionResult`, and does
+not discover or reconcile anything itself.
+
+This is deliberately not persistent face naming. References from equivalent imports or rigidly
+transformed parts are not interchangeable, and symmetry is never broken with traversal order.
+The format-1 `evidence_api.json` document versions this namespace independently of the recognition
+and inspection manifests. The initial raw-coordinate API resolves caller-part faces; framed
+working-shape evidence remains excluded until it can be mapped back explicitly.
 
 ## Defining-face attribution status
 
-Attribution remains a private Candidate/evidence contract. Format 2 adds API roles and the counted
-aggregate output so compatibility projections cannot masquerade as a second physical authority;
-it does not expose face claims. `Fully attributed` means every aggregate record occurrence on every
+Attribution remains a private Candidate/evidence authority. The public evidence view projects
+accepted defining faces through opaque run-local references without exposing that authority or
+adding claims to format 2. `Fully attributed` means every aggregate record occurrence on every
 current output path has non-empty original-face defining evidence. `Incomplete` may include useful
 measured occurrences while at least one path remains empty; it does not mean the recogniser returns
 nothing. Every non-empty aggregate defining set, complete or partial, must belong to one graph-proved

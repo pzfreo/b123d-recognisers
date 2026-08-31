@@ -31,6 +31,13 @@ from b123d_recognisers import (
     recognise_paired_ramp_steps,
     recognise_plates,
 )
+from b123d_recognisers.evidence import (
+    FaceRef,
+    FeatureRef,
+    RecognitionEvidence,
+    RecognitionRecord,
+    build_recognition_evidence,
+)
 from b123d_recognisers.inspection import (
     BevelReject,
     FaceInspection,
@@ -57,6 +64,7 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     report = build_recognition_report(part)
     raw_result = build_raw_recognition_result(part)
     raw_report = build_raw_recognition_report(part)
+    evidence = build_recognition_evidence(part)
 
     assert_type(holes, list[HoleRecord])
     assert_type(bosses, list[BossRecord])
@@ -67,6 +75,16 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     assert_type(report.result, RecognitionResult)
     assert_type(raw_result, RecognitionResult)
     assert_type(raw_report, RecognitionReport)
+    assert_type(evidence, RecognitionEvidence)
+    assert_type(evidence.result, RecognitionResult)
+    assert_type(evidence.features, tuple[FeatureRef, ...])
+    assert_type(evidence.faces, frozenset[FaceRef])
+    for feature in evidence.features:
+        assert_type(evidence.family(feature), str)
+        assert_type(evidence.record(feature), RecognitionRecord)
+        assert_type(evidence.defining_faces(feature), frozenset[FaceRef])
+    for reference in evidence.faces:
+        assert_type(evidence.face(reference), Face)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
     assert_type(result.paired_ramp_steps, tuple[PairedRampStep, ...])
