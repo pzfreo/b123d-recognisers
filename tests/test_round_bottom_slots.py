@@ -21,6 +21,7 @@ from build123d import (
     Rot,
     Shell,
     Solid,
+    Spline,
     Vector,
     export_step,
     extrude,
@@ -28,6 +29,7 @@ from build123d import (
     make_face,
 )
 
+import b123d_recognisers.round_bottom_slots as round_bottom_slots
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.evidence import build_recognition_evidence
@@ -35,8 +37,20 @@ from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recog
 from b123d_recognisers.result import build_recognition_result
 from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
+    _alternating_profile_runs,
+    _boundary_runs,
+    _common_convex_context,
+    _coplanar_region,
+    _Cylinder,
+    _cylinder_surface,
+    _empty_sweep,
     _length_tolerance,
+    _principal_rectangle,
+    _quarter_cylinder,
+    _region_boundary_wire,
+    _region_face,
     _same_cylinder,
+    _same_span,
     recognise_round_bottom_blind_slots,
 )
 
@@ -93,6 +107,8 @@ def test_round_bottom_blind_slot_has_truthful_dimensions_and_evidence():
             at=(0.0, -1.5, 10.0),
         )
     ]
+    assert actual[0].width == 10.0
+    assert actual[0].depth == 3.0
     assert len(ledger.claims) == 1
     assert len(ledger.claims[0].defining) == 4
 
@@ -143,6 +159,98 @@ def test_local_cylinder_equality_accepts_and_rejects_both_sides_of_the_tolerance
         translated,
         (radius, 2, (1e9 + 2 * tolerance, 1e9, 1.0)),
     )
+
+
+def test_helper_refusal_boundaries_are_total_and_fail_closed(monkeypatch):
+    graph = FaceGraph(_slot())
+    assert _region_boundary_wire(graph, frozenset()) is None
+    assert _region_face(graph, frozenset()) is None
+    assert not _principal_rectangle(graph, frozenset(), 1)
+    assert not _quarter_cylinder(graph, _Cylinder(frozenset(), 3.0, 2, (0.0, 0.0, 0.0)), (0, 20))
+    assert not _common_convex_context(graph, (), 2, 0.0, 20.0)
+
+    shared_edge = object()
+
+    class NonManifoldGraph:
+        @staticmethod
+        def face(_node):
+            return type("ValidFace", (), {"is_valid": True})()
+
+        @staticmethod
+        def edges(_node):
+            return (shared_edge,)
+
+    assert _region_boundary_wire(NonManifoldGraph(), frozenset({1, 2, 3})) is None
+
+    with BuildLine() as spline_boundary:
+        Spline((0, 0), (1, 1), (2, 0))
+    assert _boundary_runs(spline_boundary.line) is None
+    assert _alternating_profile_runs(spline_boundary.line) is None
+
+    class BoundsGraph:
+        @staticmethod
+        def bounds(node):
+            return ((0.0, 1.0), (0.0, 1.0), (0.0, float(node)))
+
+    regions = (frozenset({1}), frozenset({2}), frozenset({1}))
+    assert _same_span(BoundsGraph(), regions, 2) is None
+
+    class EmptyIntersection:
+        @staticmethod
+        def intersect(_probe):
+            return None
+
+    cap = _profile(10, 3).faces()[0]
+    assert _empty_sweep(cap, EmptyIntersection(), 2, 20)
+
+    class ShapeListIntersection:
+        @staticmethod
+        def intersect(_probe):
+            return [type("ZeroVolume", (), {"volume": 0.0})()]
+
+    assert _empty_sweep(cap, ShapeListIntersection(), 2, 20)
+
+    class ShapeIntersection:
+        @staticmethod
+        def intersect(_probe):
+            return type("ZeroVolume", (), {"volume": 0.0})()
+
+    assert _empty_sweep(cap, ShapeIntersection(), 2, 20)
+
+    presented = _slot().rotate(Axis((0, 0, 0), (1, 1, 0)), 37)
+    presented_graph = FaceGraph(presented)
+    curved = next(
+        node
+        for node in presented_graph.nodes
+        if presented_graph.face(node).geom_type == GeomType.CYLINDER
+    )
+    planar = next(
+        node
+        for node in presented_graph.nodes
+        if presented_graph.face(node).geom_type == GeomType.PLANE
+    )
+    assert _cylinder_surface(presented_graph, curved) is None
+    assert _coplanar_region(presented_graph, planar) == frozenset()
+
+    cylinder = Cylinder(5, 10)
+    cylinder_graph = FaceGraph(cylinder)
+    circular_end = next(
+        node
+        for node in cylinder_graph.nodes
+        if cylinder_graph.face(node).geom_type == GeomType.PLANE
+    )
+    assert not _principal_rectangle(cylinder_graph, frozenset({circular_end}), 2)
+
+    rectangular_wire = Box(1, 1, 1).faces()[0].outer_wire()
+    assert _boundary_runs(rectangular_wire) is not None
+    assert _alternating_profile_runs(rectangular_wire) is None
+
+    with monkeypatch.context() as context:
+        context.setattr(round_bottom_slots, "_same_span", lambda *_args: None)
+        assert recognise_round_bottom_blind_slots(_slot()) == []
+    with monkeypatch.context() as context:
+        context.setattr(round_bottom_slots, "_region_face", lambda *_args: None)
+        assert recognise_round_bottom_blind_slots(_slot()) == []
 
 
 def test_translation_mirror_and_arbitrary_framed_presentation_preserve_the_feature():
