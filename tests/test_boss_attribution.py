@@ -265,7 +265,16 @@ def _bossed_plate(x: float = 0.0):
 def test_boss_writer_preserves_public_output_and_complete_segment_role() -> None:
     ledger, records = _claimed(_bossed_plate())
     assert len(records) == 1
-    assert len(ledger.defining_of(ledger.candidate_set(FamilyId.BOSSES).candidates[0])) == 1
+    candidate = ledger.candidate_set(FamilyId.BOSSES).candidates[0]
+    defining = ledger.defining_of(candidate)
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    terminal = constituent - defining
+    assert len(defining) == 1 and defining < constituent
+    assert len(terminal) == 1
+    assert (
+        BRepAdaptor_Surface(ledger.graph.face(next(iter(terminal))).wrapped).GetType()
+        == GeomAbs_Plane
+    )
 
 
 @pytest.mark.parametrize(
@@ -282,9 +291,15 @@ def test_boss_writer_preserves_public_output_and_complete_segment_role() -> None
     ],
 )
 def test_plate_boss_orientation_is_rederived_for_both_sides_and_xyz(part, axis, location) -> None:
-    _ledger, (record,) = _claimed(part)
+    ledger, (record,) = _claimed(part)
     assert record.axis == pytest.approx(axis)
     assert record.location == pytest.approx(location)
+    (candidate,) = ledger.candidate_set(FamilyId.BOSSES).candidates
+    defining = ledger.defining_of(candidate)
+    terminal = ledger.snapshot_index().constituent_of(candidate) - defining
+    assert len(terminal) == 1
+    normal = ledger.graph.normal(next(iter(terminal)))
+    assert normal is not None and sum(a * b for a, b in zip(normal, axis, strict=True)) > 0.99
 
 
 def test_chamfered_and_filleted_free_ends_keep_owner_and_orientation() -> None:
@@ -293,15 +308,24 @@ def test_chamfered_and_filleted_free_ends_keep_owner_and_orientation() -> None:
         negative.edges().filter_by(GeomType.CIRCLE).sort_by(Axis.Z)[0],
         1.0,
     )
-    _ledger, (chamfered_record,) = _claimed(chamfered)
+    chamfered_ledger, (chamfered_record,) = _claimed(chamfered)
     assert chamfered_record.axis == pytest.approx((0.0, 0.0, -1.0))
     assert chamfered_record.location[2] == pytest.approx(-12.0)
 
     positive = _bossed_plate()
     free = [edge for edge in positive.edges().filter_by(GeomType.CIRCLE) if edge.center().Z > 12.9]
-    _ledger, (filleted_record,) = _claimed(fillet(free, 1.0))
+    filleted_ledger, (filleted_record,) = _claimed(fillet(free, 1.0))
     assert filleted_record.axis == pytest.approx((0.0, 0.0, 1.0))
     assert filleted_record.location[2] == pytest.approx(12.0)
+
+    for ledger in (chamfered_ledger, filleted_ledger):
+        (candidate,) = ledger.candidate_set(FamilyId.BOSSES).candidates
+        constituent = ledger.snapshot_index().constituent_of(candidate)
+        assert all(
+            BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType()
+            not in (GeomAbs_Cone, GeomAbs_Torus)
+            for node in constituent
+        )
 
 
 def test_radial_pipe_boss_and_turned_od_keep_current_roles() -> None:
