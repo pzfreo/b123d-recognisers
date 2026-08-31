@@ -52,6 +52,7 @@ def recognition_snapshot(recognition, feature_census, part):
         "recognise_paired_ramp_steps",
         "recognise_passages",
         "recognise_prismatic_pockets",
+        "recognise_round_bottom_blind_slots",
         "recognise_through_steps",
     ):
         recognise = getattr(recognition, name, None)

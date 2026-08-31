@@ -249,6 +249,20 @@ FAMILIES = {
         "census": "slot",
         "goldens": ["straight_and_obround_slots"],
     },
+    "round-bottom-blind-slots": {
+        "recognisers": [("recognise_round_bottom_blind_slots", "part")],
+        "records": [
+            (
+                "RoundBottomBlindSlot",
+                "output",
+                ["RecognitionResult.round_bottom_blind_slots"],
+            )
+        ],
+        "census": "round_bottom_blind_slot",
+        "goldens": ["round_bottom_blind_slot"],
+        "introduced": "0.4.10",
+        "tests": ["tests/test_round_bottom_slots.py"],
+    },
     "turned-steps": {
         "recognisers": [("recognise_turned_steps", "part")],
         "records": [

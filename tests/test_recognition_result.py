@@ -160,9 +160,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # Fully-attributed FaceLevels cannot be fabricated without original horizontal-face evidence.
     # This test owns dependency injection, so keep the family empty but still invoked and bound.
     levels: list[FaceLevel] = []
-    monkeypatch.setattr(
-        registry_module, "_discover_step_levels", counted("step_levels", levels)
-    )
+    monkeypatch.setattr(registry_module, "_discover_step_levels", counted("step_levels", levels))
     monkeypatch.setattr(registry_module, "_discover_risers", counted("risers", []))
     monkeypatch.setattr(registry_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(registry_module, "recognise_angled_steps", counted("angled_steps", []))
@@ -180,6 +178,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         registry_module,
         "_discover_circular_blind_steps",
         counted("circular_blind_steps", []),
+    )
+    monkeypatch.setattr(
+        registry_module,
+        "recognise_round_bottom_blind_slots",
+        counted("round_bottom_blind_slots", []),
     )
 
     # All four recess families are proposed before one reconciler decides among them. Passage
@@ -243,6 +246,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "paired_ramp_steps",
         "through_steps",
         "circular_blind_steps",
+        "round_bottom_blind_slots",
         "passages",
         "reconcile_recesses",
         "reconcile_bevels",

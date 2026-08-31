@@ -1,5 +1,18 @@
 # Release notes
 
+## 0.4.10
+
+- **Added conservative round-bottom blind-slot recognition.**
+  `recognise_round_bottom_blind_slots()` reports principal-axis, edge-open recesses with one
+  planar blind cap and a constant U section formed by a flat floor tangent to two equal quarter
+  cylinders. The immutable `RoundBottomBlindSlot` record, aggregate result, census, capability
+  manifest and run-local defining/constituent face evidence preserve occurrence and body identity.
+  Through, doubly capped, rectangular, obround, non-principal, perforated, interrupted,
+  cross-solid and materially obstructed sections remain excluded. On the fixed MFCAD++-500
+  development set, class-19 defining recall moves from 0/90 to 72/90 at 72/72 defining precision,
+  while exact face coverage moves from 9/90 to 75/90 and every pre-existing class metric and
+  family count remains unchanged.
+
 ## 0.4.9
 
 - **Kept FaceLevel occurrences body-local in compounds.** Equal-height faces on separate solids

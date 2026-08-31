@@ -25,6 +25,7 @@ EXPECTED_CASES = {
     "polygonal_boss",
     "polygonal_stock",
     "repeating_radial_profile",
+    "round_bottom_blind_slot",
     "simple_through_hole",
     "slanted_counterbore",
     "slanted_steps",

@@ -177,6 +177,10 @@ from b123d_recognisers.result import (
     build_raw_recognition_result,
     build_recognition_result,
 )
+from b123d_recognisers.round_bottom_slots import (
+    RoundBottomBlindSlot,
+    recognise_round_bottom_blind_slots,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -273,6 +277,7 @@ __all__ = [
     "PolygonalStock",
     "RaisedPad",
     "RepeatingRadialProfile",
+    "RoundBottomBlindSlot",
     "RectGrid",
     "Slot",
     "SlotArray",
@@ -329,6 +334,7 @@ __all__ = [
     "recognise_polygonal_stock",
     "recognise_rectangular_pads",
     "recognise_repeating_radial_profiles",
+    "recognise_round_bottom_blind_slots",
     "recognise_slot_patterns",
     "recognise_slots",
     "recognise_turned_steps",
