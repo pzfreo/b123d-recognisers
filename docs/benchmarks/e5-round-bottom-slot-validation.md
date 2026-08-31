@@ -31,21 +31,23 @@ boundary notches, through/doubly capped sections, rectangular/obround alternativ
 interruptions refuse. Two equal compound occurrences and two slots on one body remain distinct,
 and the aggregate introduces no overlapping `Slot`, `Pocket` or `Channel`.
 
-The complete local suite at implementation commit `38f4359` passed 2,842 tests in 2,246.87 seconds.
-The changed/new paths also pass Ruff, mypy, capability-manifest regeneration, golden inventory,
-NURBS conversion and rigid-motion sweep checks.
+The complete local suite at pre-review implementation commit `38f4359` passed 2,842 tests in
+2,246.87 seconds. At corrected implementation commit `666914a`, 86 focused family, public-schema,
+golden and capability tests pass, including the independently found opposite-depth identity,
+translation-independent tolerance and invalid-solid atomicity regressions. The changed/new paths
+also pass Ruff, mypy and capability-manifest regeneration.
 
 ## Exact MFCAD++-500 result
 
 The canonical report is
-[`effectiveness-mfcadpp-500-round-bottom-38f4359.json`](effectiveness-mfcadpp-500-round-bottom-38f4359.json),
-SHA-256 `9876e1f8d6484b3cce31df06437eee1ff5e658cb7f635979e715d5535e86df4c`.
-It uses implementation commit `38f4359`, the published MFCAD++ test split, lexical first 500 unique
+[`effectiveness-mfcadpp-500-round-bottom-666914a.json`](effectiveness-mfcadpp-500-round-bottom-666914a.json),
+SHA-256 `fcb21f39202cf70c4c4985fcb65ba9ac51c717ad107f75b85b7ff59bb5b986a7`.
+It uses implementation commit `666914a`, the published MFCAD++ test split, lexical first 500 unique
 IDs, raw recognition, taxonomy v5 SHA-256
 `809c69e0725515c1ae9b3d429c9bd7eb3e15c9d1205bc598129139b00b1975d5` and selection SHA-256
 `323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`.
 
-| Measure | Pre-change `5bc9242`, taxonomy v4 | Enabled `38f4359`, taxonomy v5 |
+| Measure | Pre-change `5bc9242`, taxonomy v4 | Enabled `666914a`, taxonomy v5 |
 | --- | ---: | ---: |
 | Models evaluated / invalid / empty | 500 / 0 / 0 | 500 / 0 / 0 |
 | Round-bottom blind-slot records | 0 | 18 |
@@ -65,20 +67,20 @@ diagnostic, predicate observation, invalid/empty result and taxonomy-mismatch co
 The 18 records occur across 17 of the 20 affected models; the bounded missed variants remain
 explicit follow-up evidence rather than weakened acceptance rules.
 
-The report took 316.311 seconds versus 296.327 seconds for the historical pre-change report, but
+The report took 315.838 seconds versus 296.327 seconds for the historical pre-change report, but
 that ratio is descriptive because the runs used different Python environments and were not paired.
 
 ## Paired real-part performance and false positives
 
 The commit-pinned paired report is
-[`round-bottom-slot-performance-census-38f4359.json`](round-bottom-slot-performance-census-38f4359.json),
-SHA-256 `c6c1f84d603ca75aaaca0a705fee405cfb7bf36bf5e64676f8b498c17923d979`.
+[`round-bottom-slot-performance-census-666914a.json`](round-bottom-slot-performance-census-666914a.json),
+SHA-256 `8a4d15be1ae0e1c732a4dba995321b930195295f3bdff3adf65ba9d36bba34ae`.
 It alternates enabled/disabled order over 13 NIST and Gramel STEP parts on one host:
 
 - every pre-existing aggregate result is exactly equal;
 - neither raw nor accepted round-bottom slot candidates occur, so the census adds no false positive;
-- disabled total runtime is 216.456 seconds and enabled runtime is 230.299 seconds;
-- enabled/disabled ratio is 1.064 and paired median delta is 0.236 seconds, within the 1.10 gate.
+- disabled total runtime is 230.740 seconds and enabled runtime is 241.341 seconds;
+- enabled/disabled ratio is 1.046 and paired median delta is 0.125 seconds, within the 1.10 gate.
 
 ## Architecture and transfer
 
