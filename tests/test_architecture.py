@@ -339,6 +339,9 @@ ARC_READER_SITES = {
     "tools/audit_mfcadpp_circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_circular_blind_steps:_arc_name:arc:1": "legacy-contract",
+    "tools/audit_mfcadpp_paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_paired_ramp_steps:_arc_name:arc:1": "legacy-contract",
 }
 
 # Tests are part of the reviewed reader surface: an assertion may intentionally pin the legacy
