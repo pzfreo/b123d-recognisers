@@ -4,9 +4,10 @@
 
 This family deliberately starts with the unfragmented, mirror-symmetric case.  Two oblique
 planar quadrilaterals meet along the run axis, share one convex exterior opening and one concave
-three- or five-sided terminal, and belong to one valid solid. Polygonal pockets have superficially
-similar adjacency; the paired cross-section, arc directions and terminal contract discriminate
-geometry, while rigid axis permutations deliberately remain equivalent.
+planar terminal, and belong to one valid solid. The terminal boundary may be independently
+subdivided while its face identity and ramp arcs remain complete. Polygonal pockets have
+superficially similar adjacency; the paired cross-section, arc directions and terminal contract
+discriminate geometry, while rigid axis permutations deliberately remain equivalent.
 """
 
 from __future__ import annotations
@@ -44,6 +45,8 @@ class PairedRampStep(Record):
 
 
 def _axis_terminal(graph: FaceGraph, node: FaceNode, axis: int) -> bool:
+    if not graph.is_planar(node):
+        return False
     normal = graph.normal(node)
     return normal is not None and abs(normal[axis]) >= AXIS_ALIGNED_COS
 
@@ -154,11 +157,9 @@ def _candidate(
         and _is_concave(graph, right, internal[0])
     ):
         return None
-    # The supported terminal is one unsmoothed odd-sided cap. Three sides is the clean authored
-    # triangular end; five is the target side-cut's stock-intersection topology. Seven-sided
-    # terminals remain explicit follow-up scope rather than silently absorbing subdivisions.
-    if len(graph.edges(internal[0])) not in (3, 5):
-        return None
+    # One original planar terminal with exact concave arcs to both ramps is the authority. Its
+    # remaining boundary may be subdivided or independently interrupted; edge count is a B-Rep
+    # presentation fact and does not weaken the terminal, material, opening or run proofs.
 
     edge_box = shared[0].bounding_box()
     edge_bounds = (

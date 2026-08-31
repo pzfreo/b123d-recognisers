@@ -326,6 +326,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "shared edge curve kind, not a face surface",
     ),
+    "paired_ramp_steps:_axis_terminal:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "the contract requires one original planar terminal; recovered regions are out of scope",
+    ),
     "through_steps:_four_principal_runs:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge curve kind validates a rectangular boundary",

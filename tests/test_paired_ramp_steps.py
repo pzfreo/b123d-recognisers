@@ -71,6 +71,15 @@ def _proved_pair():
     raise AssertionError("authored side cut did not supply its proved ramp pair")
 
 
+def _two_side_cuts():
+    def cutter(center_x):
+        return Pos(center_x, 20, 0) * extrude(
+            Plane.XZ * Polygon((0, -6), (0, 6), (-8, 0)), 25
+        )
+
+    return Box(45, 40, 30) - cutter(10) - cutter(30)
+
+
 def test_a_mirror_ramp_pair_open_to_the_stock_side_is_one_physical_cut() -> None:
     assert recognise_paired_ramp_steps(_side_cut()) == [
         PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
@@ -117,6 +126,9 @@ def test_candidate_refuses_incomplete_direction_terminal_arc_and_span_proofs(mon
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
     with monkeypatch.context() as patch:
         patch.setattr(graph, "neighbours", lambda _node: ())
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "is_planar", lambda _node: False)
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
     with monkeypatch.context() as patch:
         patch.setattr(paired_ramp_module, "_is_convex", lambda *_args: False)
@@ -189,10 +201,60 @@ def test_two_solids_are_scoped_independently_without_cross_body_pairing() -> Non
     assert len(recognise_paired_ramp_steps(compound)) == 2
 
 
-def test_a_terminal_interrupted_by_another_feature_is_refused() -> None:
+def test_a_terminal_interrupted_by_a_drilled_hole_retains_the_proved_pair() -> None:
     interrupted = _side_cut() - Pos(15, -5, 0) * Rot(90, 0, 0) * Cylinder(1, 6)
 
-    assert recognise_paired_ramp_steps(interrupted) == []
+    assert recognise_paired_ramp_steps(interrupted) == [
+        PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
+    ]
+
+
+def test_a_straight_terminal_boundary_subdivision_retains_the_proved_pair() -> None:
+    subdivided = _side_cut() - Pos(15, -1, 0) * Box(1, 2, 3)
+
+    assert recognise_paired_ramp_steps(subdivided) == [
+        PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
+    ]
+
+
+def test_two_pairs_on_one_solid_keep_distinct_terminal_evidence() -> None:
+    product = _take_inventory(_two_side_cuts())
+    accepted = [
+        item
+        for item in product.reconciliation.for_family(FamilyId.PAIRED_RAMP_STEPS)
+        if item.outcome is Outcome.ACCEPTED
+    ]
+
+    assert [item.candidate.record.at for item in accepted] == [
+        (2.0, 7.5, 0.0),
+        (22.0, 7.5, 0.0),
+    ]
+    defining = [product.evidence.defining_of(item.candidate) for item in accepted]
+    assert [len(nodes) for nodes in defining] == [3, 3]
+    assert defining[0].isdisjoint(defining[1])
+
+
+def test_one_native_and_one_interrupted_pair_survive_on_the_same_solid() -> None:
+    part = _two_side_cuts() - Pos(5, -5, 0) * Rot(90, 0, 0) * Cylinder(1, 6)
+    product = _take_inventory(part)
+    accepted = [
+        item
+        for item in product.reconciliation.for_family(FamilyId.PAIRED_RAMP_STEPS)
+        if item.outcome is Outcome.ACCEPTED
+    ]
+
+    assert [item.candidate.record.at for item in accepted] == [
+        (2.0, 7.5, 0.0),
+        (22.0, 7.5, 0.0),
+    ]
+    terminal_edge_counts = sorted(
+        len(product.context.graph.edges(node))
+        for item in accepted
+        for node in product.evidence.defining_of(item.candidate)
+        if product.context.graph.normal(node) is not None
+        and abs(product.context.graph.normal(node)[1]) >= 0.99
+    )
+    assert terminal_edge_counts == [3, 4]
 
 
 def test_recognition_is_scale_independent_and_dimensions_scale() -> None:
