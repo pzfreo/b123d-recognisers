@@ -94,6 +94,12 @@ def _instance_components(value: object, count: int) -> tuple[frozenset[int], ...
     while remaining:
         seed = min(remaining)
         component = frozenset(index for index, linked in enumerate(rows[seed]) if linked)
+        if not component:
+            # A face can belong to no feature instance at all: MFInstSeg leaves the row of
+            # every Stock face entirely zero. Such a face carries no instance evidence, so it
+            # contributes no component rather than invalidating the model.
+            remaining.discard(seed)
+            continue
         if seed not in component or any(
             frozenset(index for index, linked in enumerate(rows[item]) if linked) != component
             for item in component

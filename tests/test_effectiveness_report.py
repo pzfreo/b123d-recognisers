@@ -91,6 +91,23 @@ def test_mfinstseg_adapter_reads_semantic_instances_and_bottom(tmp_path: Path) -
     assert len(truth.source_sha256) == 64
 
 
+def test_mfinstseg_adapter_accepts_a_face_in_no_instance(tmp_path: Path) -> None:
+    """The published data leaves every Stock row zero, so face 2 joins no instance.
+
+    Written against the real MFInstSeg release: across the first 300 test-split models the
+    ``inst`` matrix is symmetric, reflexive and disjoint on feature faces, and every all-zero
+    row carries semantic class 24 (``Stock``, ``incomparable``, no families). Requiring a
+    reflexive diagonal on those rows rejected all 9373 selectable models.
+    """
+
+    _mfinstseg(tmp_path, inst=[[1, 1, 0], [1, 1, 0], [0, 0, 0]])
+
+    truth = load_mfinstseg_truth(tmp_path, "part")
+
+    assert truth.semantic == (1, 1, 24)
+    assert truth.instances == (frozenset({0, 1}),)
+
+
 @pytest.mark.parametrize(
     ("inst", "message"),
     [
