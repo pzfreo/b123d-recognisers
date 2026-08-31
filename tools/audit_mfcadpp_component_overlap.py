@@ -69,6 +69,32 @@ def _relation(component: frozenset[Any], claims: tuple[dict[str, Any], ...], rol
     }
 
 
+def _family_relations(
+    component: frozenset[Any],
+    claims: tuple[dict[str, Any], ...],
+    families: tuple[str, ...],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Return independently attributable defining/constituent overlap per requested family."""
+
+    return {
+        family: {
+            role: _relation(
+                component,
+                tuple(claim for claim in claims if claim["family"] == family),
+                role,
+            )
+            for role in ("defining", "constituent")
+        }
+        for family in families
+    }
+
+
+def _accumulate_relation(totals: Counter[str], role: str, relation: dict[str, Any]) -> None:
+    totals[f"{role}_covered_faces"] += relation["covered_faces"]
+    totals[f"{role}_touched_components"] += relation["covered_faces"] > 0
+    totals[f"{role}_full_components"] += relation["full"]
+
+
 def _internal_arcs(graph: Any, node: Any, ordered: list[Any]) -> list[dict[str, Any]]:
     arcs = []
     for other in ordered:
@@ -91,6 +117,7 @@ def main() -> int:
     parser.add_argument("root", type=Path)
     parser.add_argument("--class-id", type=int, required=True)
     parser.add_argument("--mapped-family", action="append", default=[])
+    parser.add_argument("--compare-family", action="append", default=[])
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -101,12 +128,16 @@ def main() -> int:
     if not paths:
         parser.error("the selected workload contains no STEP files")
     known = {family.value for family in FamilyId if family is not FamilyId.LEGACY}
-    unknown = set(args.mapped_family) - known
+    compared_families = tuple(sorted(set(args.mapped_family) | set(args.compare_family)))
+    unknown = set(compared_families) - known
     if unknown:
         parser.error(f"unknown mapped families: {', '.join(sorted(unknown))}")
 
     rows = []
     family_component_touches: Counter[str] = Counter()
+    family_totals: dict[str, Counter[str]] = {
+        family: Counter() for family in compared_families
+    }
     totals: Counter[str] = Counter()
     for path in paths:
         truth = load_mfcadpp_truth(path)
@@ -139,6 +170,7 @@ def main() -> int:
             constituent = _relation(component, claims, "constituent")
             mapped_defining = _relation(component, mapped, "defining")
             mapped_constituent = _relation(component, mapped, "constituent")
+            by_family = _family_relations(component, claims, compared_families)
             for family in constituent["touching_families"]:
                 family_component_touches[family] += 1
             totals["components"] += 1
@@ -149,9 +181,10 @@ def main() -> int:
                 ("mapped_defining", mapped_defining),
                 ("mapped_constituent", mapped_constituent),
             ):
-                totals[f"{name}_covered_faces"] += relation["covered_faces"]
-                totals[f"{name}_touched_components"] += relation["covered_faces"] > 0
-                totals[f"{name}_full_components"] += relation["full"]
+                _accumulate_relation(totals, name, relation)
+            for family, relations in by_family.items():
+                for role, relation in relations.items():
+                    _accumulate_relation(family_totals[family], role, relation)
             rows.append(
                 {
                     "model_id": path.stem,
@@ -183,12 +216,13 @@ def main() -> int:
                         "defining": mapped_defining,
                         "constituent": mapped_constituent,
                     },
+                    "families": by_family,
                 }
             )
 
     report = {
         "format": "b123d-recognisers-mfcadpp-component-overlap-audit",
-        "format_version": 1,
+        "format_version": 2,
         "implementation_commit": _commit(),
         "class_id": args.class_id,
         "derivation": (
@@ -196,6 +230,7 @@ def main() -> int:
         ),
         "native_instance_labels": False,
         "mapped_families": sorted(args.mapped_family),
+        "compared_families": list(compared_families),
         "selection": {
             "limit": args.limit,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
@@ -203,6 +238,10 @@ def main() -> int:
         "models_with_class": len({row["model_id"] for row in rows}),
         "summary": dict(sorted(totals.items())),
         "constituent_component_touches_by_family": dict(sorted(family_component_touches.items())),
+        "family_summary": {
+            family: dict(sorted(summary.items()))
+            for family, summary in family_totals.items()
+        },
         "components": rows,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
