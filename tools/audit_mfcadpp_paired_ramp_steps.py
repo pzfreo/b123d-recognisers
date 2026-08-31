@@ -97,6 +97,7 @@ class ComponentAnatomy:
     terminal_only_pairs: tuple[tuple[int, int, int], ...]
     terminal_only_defining_claims: tuple[tuple[str, int], ...]
     terminal_only_record_overlaps: tuple[tuple[str, int], ...]
+    pair_gate_counts: tuple[tuple[str, int], ...]
     best_pair: PairProbe
 
     def key(self) -> str:
@@ -423,6 +424,9 @@ def _describe_component(
                 if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
                 and bool(projected_nodes.intersection(claim))
             ]
+        ),
+        pair_gate_counts=_counts(
+            [probe.first_failed_gate for _left, _right, probe in probed_pairs]
         ),
         best_pair=best,
     )
