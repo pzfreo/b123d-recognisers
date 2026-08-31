@@ -313,6 +313,12 @@ def _assert_six_side_role(part, occurrence_index, record, candidate, ledger, **k
     context = frozenset(ledger.graph.require_node(face) for face in expected_occurrence.context)
     assert context and defining.isdisjoint(context)
     assert all(abs(ledger.graph.normal(node)[2]) < 0.02 for node in defining)
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    terminal = constituent - defining
+    axis_index = "xyz".index(record.axis)
+    assert len(constituent) == 7 and defining < constituent
+    assert len(terminal) == 1 and terminal <= context
+    assert abs(ledger.graph.normal(next(iter(terminal)))[axis_index]) > 0.99
 
 
 def _assert_record_matches_original_side_evidence(
@@ -549,6 +555,7 @@ def test_registry_terminal_lifecycle_retains_nonempty_polygonal_boss() -> None:
     assert len(candidates) == len(product.result.polygonal_bosses) == 1
     assert candidates[0].record is product.result.polygonal_bosses[0]
     assert len(product.evidence.defining_of(candidates[0])) == 6
+    assert len(product.evidence.constituent_of(candidates[0])) == 7
 
 
 def test_six_explicit_blend_bridges_recover_the_sharp_polygonal_boss() -> None:

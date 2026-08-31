@@ -8,7 +8,7 @@ import pickle
 from pathlib import Path
 
 import pytest
-from build123d import Box, Compound, Pos, Rot
+from build123d import Box, Compound, Pos, RegularPolygon, Rot, extrude
 
 import b123d_recognisers.evidence as evidence_module
 from b123d_recognisers.evidence import (
@@ -134,6 +134,20 @@ def test_unmigrated_constituent_projection_defaults_exactly_to_defining() -> Non
     for feature in view.features:
         assert view.constituent_faces(feature) == view.defining_faces(feature)
         assert view.constituent_faces(feature) <= view.faces
+
+
+def test_public_constituent_projection_can_be_wider_than_defining() -> None:
+    part = Box(100, 80, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(20, 6), 30)
+    view = build_recognition_evidence(part)
+    (boss,) = tuple(
+        feature for feature in view.features if view.family(feature) == "polygonal_bosses"
+    )
+
+    defining = view.defining_faces(boss)
+    constituent = view.constituent_faces(boss)
+    assert len(defining) == 6
+    assert len(constituent) == 7
+    assert defining < constituent <= view.faces
 
 
 def test_projection_preserves_inventory_order_and_transformed_face_binding() -> None:
