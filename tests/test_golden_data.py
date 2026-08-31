@@ -32,6 +32,7 @@ PUBLIC_RECOGNISERS = {
     "recognise_polygonal_bosses",
     "recognise_polygonal_stock",
     "recognise_rectangular_pads",
+    "recognise_rectangular_blind_slots",
     "recognise_repeating_radial_profiles",
     "recognise_round_bottom_blind_slots",
     "recognise_risers",

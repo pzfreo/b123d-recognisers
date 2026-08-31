@@ -73,6 +73,10 @@ from b123d_recognisers.polygonal_bosses import (
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
 from b123d_recognisers.profiled_bores import DoubleDBore, _discover_double_d_bores
+from b123d_recognisers.rectangular_blind_slots import (
+    RectangularBlindSlot,
+    recognise_rectangular_blind_slots,
+)
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     _discover_repeating_radial_profiles,
@@ -548,6 +552,23 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("slot"),
         FullyAttributed("every returned Slot owns its complete selected wall and cap faces"),
+    ),
+    PhysicalDefinition(
+        FamilyId.RECTANGULAR_BLIND_SLOTS,
+        (RectangularBlindSlot,),
+        "rectangular_blind_slots",
+        "recognise_rectangular_blind_slots",
+        (),
+        prismatic,
+        _simple(
+            lambda s: list(
+                recognise_rectangular_blind_slots(s.context.part, ledger=s.writer)
+            )
+        ),
+        Counted("rectangular_blind_slot"),
+        FullyAttributed(
+            "every returned rectangular blind slot owns its two sides, floor, and cap"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.ROUND_BOTTOM_BLIND_SLOTS,

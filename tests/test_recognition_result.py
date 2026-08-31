@@ -181,19 +181,33 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     )
     monkeypatch.setattr(
         registry_module,
+        "recognise_rectangular_blind_slots",
+        counted("rectangular_blind_slots", []),
+    )
+    monkeypatch.setattr(
+        registry_module,
         "recognise_round_bottom_blind_slots",
         counted("round_bottom_blind_slots", []),
     )
 
-    # All four recess families are proposed before one reconciler decides among them. Passage
+    # All five recess families are proposed before one reconciler decides among them. Passage
     # discovery is a counted family call of its own; the reconciler receives completed records
     # and the point-in-time read capability rather than a Part or mutable ledger.
-    def fake_recesses(found_slots, found_pockets, prismatic, found_passages, evidence):
+    def fake_recesses(
+        found_slots,
+        found_pockets,
+        prismatic,
+        found_passages,
+        evidence,
+        *,
+        rectangular_blind_slots,
+    ):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
         assert same_records(
             [candidate.record for candidate in found_slots.candidates], slots
         ) and same_records([candidate.record for candidate in found_pockets.candidates], pockets)
         assert same_records([candidate.record for candidate in found_passages.candidates], passages)
+        assert rectangular_blind_slots.candidates == ()
         assert isinstance(evidence, EvidenceIndex)
         return ()
 
@@ -246,6 +260,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "paired_ramp_steps",
         "through_steps",
         "circular_blind_steps",
+        "rectangular_blind_slots",
         "round_bottom_blind_slots",
         "passages",
         "reconcile_recesses",

@@ -10,9 +10,9 @@ records.
 
 | fixtures | faces | native | converted | same | changed | absent | introduced |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 23 | 346 | 1 | 1 | 1 | 0 | 0 | 0 |
+| 24 | 356 | 1 | 1 | 1 | 0 | 0 | 0 |
 
-Recovered primitives: cone 1, cylinder 36, plane 309.
+Recovered primitives: cone 1, cylinder 36, plane 319.
 Refused facts: 0.
 
 Reviewed representation-delta bounds enforced across every face:

@@ -53,6 +53,7 @@ SHARED = {
     "hole_pattern": "hole_patterns",
     "boss": "bosses",
     "slot": "slots",
+    "rectangular_blind_slot": "rectangular_blind_slots",
     "round_bottom_blind_slot": "round_bottom_blind_slots",
     "groove": "grooves",
     "channel": "channels",

@@ -168,6 +168,10 @@ from b123d_recognisers.prismatic_pockets import (
     recognise_prismatic_pockets,
 )
 from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
+from b123d_recognisers.rectangular_blind_slots import (
+    RectangularBlindSlot,
+    recognise_rectangular_blind_slots,
+)
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
@@ -334,6 +338,8 @@ __all__ = [
     "recognise_polygonal_stock",
     "recognise_rectangular_pads",
     "recognise_repeating_radial_profiles",
+    "RectangularBlindSlot",
+    "recognise_rectangular_blind_slots",
     "recognise_round_bottom_blind_slots",
     "recognise_slot_patterns",
     "recognise_slots",

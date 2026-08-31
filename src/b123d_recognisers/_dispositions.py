@@ -18,6 +18,9 @@ class Outcome(Enum):
 class ReasonCode(Enum):
     DEFAULT_ACCEPTED = "default.accepted"
     PRISMATIC_SUPERSEDED_BY_POCKET = "recess.prismatic_superseded_by_pocket"
+    POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT = (
+        "recess.pocket_superseded_by_rectangular_blind_slot"
+    )
     POCKET_SUPERSEDED_BY_PASSAGE = "recess.pocket_superseded_by_passage"
     POCKET_SUPERSEDED_BY_PRISMATIC = "recess.pocket_superseded_by_prismatic"
     SLOT_SUPERSEDED_BY_POCKET = "recess.slot_superseded_by_pocket"
@@ -48,6 +51,12 @@ _REASON_SPEC: dict[ReasonCode, tuple[Outcome, FamilyId | None, FamilyId | None, 
         Outcome.REJECTED,
         FamilyId.PRISMATIC_POCKETS,
         FamilyId.POCKETS,
+        True,
+    ),
+    ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT: (
+        Outcome.REJECTED,
+        FamilyId.POCKETS,
+        FamilyId.RECTANGULAR_BLIND_SLOTS,
         True,
     ),
     ReasonCode.POCKET_SUPERSEDED_BY_PASSAGE: (

@@ -57,11 +57,20 @@ def reconcile_recess_candidates(
     prismatic: CandidateSet[object],
     passages: CandidateSet[object],
     evidence: EvidenceIndex,
+    *,
+    rectangular_blind_slots: CandidateSet[object] | None = None,
 ) -> tuple[Disposition, ...]:
     """Disposition form of the existing cascading recess precedence policy."""
 
     decisions: list[Disposition] = []
     pocket_candidates = list(pockets.candidates)
+    rectangular_blind_candidates = list(
+        (
+            evidence.candidate_set_for(FamilyId.RECTANGULAR_BLIND_SLOTS, ())
+            if rectangular_blind_slots is None
+            else rectangular_blind_slots
+        ).candidates
+    )
     passage_candidates = list(passages.candidates)
 
     accepted_prismatic: list[Candidate[object]] = []
@@ -97,12 +106,20 @@ def reconcile_recess_candidates(
         if not pocket_evidence:
             accepted_pockets.append(pocket)
             continue
+        pocket_members = evidence.constituent_of(pocket)
         winners = tuple(
-            passage
-            for passage in passage_candidates
-            if pocket_evidence <= evidence.defining_of(passage)
+            blind_slot
+            for blind_slot in rectangular_blind_candidates
+            if pocket_members and pocket_members <= evidence.defining_of(blind_slot)
         )
-        reason = ReasonCode.POCKET_SUPERSEDED_BY_PASSAGE
+        reason = ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
+        if not winners:
+            winners = tuple(
+                passage
+                for passage in passage_candidates
+                if pocket_evidence <= evidence.defining_of(passage)
+            )
+            reason = ReasonCode.POCKET_SUPERSEDED_BY_PASSAGE
         if not winners:
             winners = tuple(
                 ring for ring in nonrect_prismatic if pocket_evidence <= evidence.defining_of(ring)

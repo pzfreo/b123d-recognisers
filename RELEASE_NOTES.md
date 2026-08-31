@@ -2,6 +2,14 @@
 
 ## 0.4.10
 
+- **Added conservative edge-open rectangular blind-slot recognition.**
+  `recognise_rectangular_blind_slots()` reports principal-axis recesses with one rectangular blind
+  cap, two opposed planar sides, one planar floor, a source-envelope mouth and an empty rectangular
+  removal sweep. The immutable `RectangularBlindSlot` record and aggregate output retain complete
+  original-face evidence and supersede only Pocket candidates whose complete constituent evidence
+  belongs to the accepted slot. Enclosed pockets, through or doubly open channels, short notches,
+  non-principal, cross-solid, materially obstructed and ambiguous interpretations remain excluded.
+
 - **Added conservative round-bottom blind-slot recognition.**
   `recognise_round_bottom_blind_slots()` reports principal-axis, edge-open recesses with one
   planar blind cap and a constant U section formed by a flat floor tangent to two equal quarter
