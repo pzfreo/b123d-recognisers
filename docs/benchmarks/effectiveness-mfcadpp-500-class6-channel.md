@@ -93,5 +93,6 @@ E0/E6 milestone item.
 Final-diff review against ADRs 0002, 0003, 0004, 0005, and 0007 is clean: family contracts and
 deterministic output are unchanged; discovery and reconciliation remain separate;
 defining versus constituent evidence remains explicit; stable family identifiers are
-reused; and no recogniser module seam changes. One independent exact-head contract
-review is still required before merge.
+reused; and no recogniser module seam changes. The independent contract review of
+`458a594` reproduced the taxonomy delta, audit counts, exact score movement and
+normalized row parity and found no concrete blocker or materially false claim.
