@@ -28,11 +28,11 @@ from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
 TARGET_CLASSES = (2, 3, 4, 13, 14, 15, 16)
-TARGET_FAMILIES = {
+TARGET_FAMILIES = (
     FamilyId.PASSAGES,
     FamilyId.POCKETS,
     FamilyId.PRISMATIC_POCKETS,
-}
+)
 
 
 def _sha256(path: Path) -> str:
@@ -51,6 +51,31 @@ def _commit() -> str:
 
 def _selection_hash(ids: list[str]) -> str:
     return hashlib.sha256(("\n".join(ids) + "\n").encode()).hexdigest()
+
+
+def _source_selection_hash(sources: list[tuple[str, str]]) -> str:
+    value = "".join(f"{model_id}:{source_hash}\n" for model_id, source_hash in sources)
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _production_source() -> dict[str, Any]:
+    paths = sorted((ROOT / "src" / "b123d_recognisers").rglob("*.py"))
+    entries = [(path.relative_to(ROOT).as_posix(), _sha256(path)) for path in paths]
+    value = "".join(f"{path}:{digest}\n" for path, digest in entries)
+    return {
+        "root": "src/b123d_recognisers",
+        "python_files": len(entries),
+        "sha256": hashlib.sha256(value.encode()).hexdigest(),
+    }
+
+
+def _dominant_target_class(labels: Counter[int]) -> tuple[int | None, bool]:
+    target = {key: value for key, value in labels.items() if key in TARGET_CLASSES}
+    if not target:
+        return None, False
+    greatest = max(target.values())
+    leaders = sorted(key for key, value in target.items() if value == greatest)
+    return (leaders[0], False) if len(leaders) == 1 else (None, True)
 
 
 def _accepted(product: Any) -> tuple[dict[str, Any], ...]:
@@ -92,7 +117,8 @@ def _expand(graph: Any, owner: Any, seed: frozenset[Any]) -> frozenset[Any]:
         for neighbour in graph.neighbours(current):
             if neighbour is owner or neighbour in region:
                 continue
-            if graph.arc(current, neighbour) not in {"concave", "smooth"}:
+            kind = graph.arc(current, neighbour)
+            if not (kind == "concave" or kind == "smooth"):
                 continue
             region.add(neighbour)
             pending.append(neighbour)
@@ -136,6 +162,8 @@ def main() -> int:
     if not paths:
         parser.error("the selected workload contains no STEP files")
 
+    sources = [(path.stem, _sha256(path)) for path in paths]
+    source_hashes = dict(sources)
     started = time.perf_counter()
     totals: Counter[str] = Counter()
     confusion: Counter[tuple[int, int]] = Counter()
@@ -197,7 +225,7 @@ def main() -> int:
             )
             labels = Counter(truth.semantic[node.index] for node in region)
             target_labels = {key: value for key, value in labels.items() if key in TARGET_CLASSES}
-            dominant = max(target_labels, key=target_labels.get) if target_labels else None
+            dominant, target_class_tie = _dominant_target_class(labels)
             target_faces = sum(target_labels.values())
             non_target_faces = len(region) - target_faces
             touched_components = []
@@ -242,6 +270,7 @@ def main() -> int:
                 bool(target_faces) and not non_target_faces and len(target_labels) == 1
             )
             totals["mixed_label_regions"] += len(labels) > 1
+            totals["ambiguous_target_class_regions"] += target_class_tie
             totals["whole_body_regions"] += whole_body
             totals["same_solid_regions"] += solid is not None
             totals["unique_component_regions"] += unique_component
@@ -250,7 +279,8 @@ def main() -> int:
                 unique_component and unique_occurrence
             )
             for actual, count in labels.items():
-                confusion[(dominant if dominant is not None else -1, actual)] += count
+                predicted = -2 if target_class_tie else dominant if dominant is not None else -1
+                confusion[(predicted, actual)] += count
             if dominant is not None:
                 class_summary = class_totals[dominant]
                 class_summary["regions"] += 1
@@ -274,6 +304,7 @@ def main() -> int:
                     "whole_body": whole_body,
                     "labels": dict(sorted(labels.items())),
                     "dominant_target_class": dominant,
+                    "target_class_tie": target_class_tie,
                     "target_faces": target_faces,
                     "non_target_faces": non_target_faces,
                     "components": touched_components,
@@ -345,7 +376,7 @@ def main() -> int:
         rows.append(
             {
                 "model_id": path.stem,
-                "source_sha256": _sha256(path),
+                "source_sha256": source_hashes[path.stem],
                 "target_faces": len(labelled),
                 "accepted_occurrences": [item["family"] for item in accepted],
                 "regions": regions,
@@ -356,6 +387,7 @@ def main() -> int:
         "format": "b123d-recognisers-mfcadpp-cavity-enclosure-audit",
         "format_version": 1,
         "implementation_commit": _commit(),
+        "production_source": _production_source(),
         "labels_used_in_region_construction": False,
         "candidate_rule": "inner-wire adjacent seeds expanded over concave or smooth arcs",
         "target_classes": list(TARGET_CLASSES),
@@ -363,6 +395,7 @@ def main() -> int:
         "selection": {
             "limit": args.limit,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
+            "selected_sources_sha256": _source_selection_hash(sources),
         },
         "summary": dict(sorted(totals.items())),
         "rates": {
@@ -382,7 +415,14 @@ def main() -> int:
             ),
         },
         "confusion": [
-            {"predicted_target_class": predicted, "actual_class": actual, "faces": count}
+            {
+                "predicted_target_class": predicted if predicted >= 0 else None,
+                "prediction_state": (
+                    "class" if predicted >= 0 else "ambiguous" if predicted == -2 else "none"
+                ),
+                "actual_class": actual,
+                "faces": count,
+            }
             for (predicted, actual), count in sorted(confusion.items())
         ],
         "class_summary": {

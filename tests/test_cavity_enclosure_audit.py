@@ -1,9 +1,16 @@
 """Authored controls for the label-blind cavity-enclosure audit rule."""
 
+from collections import Counter
+
 from build123d import Box, Compound, Pos, Rot
 
 from b123d_recognisers._adjacency import FaceGraph
-from tools.audit_mfcadpp_cavity_enclosures import _candidate_regions
+from b123d_recognisers._candidates import FamilyId
+from tools.audit_mfcadpp_cavity_enclosures import (
+    TARGET_FAMILIES,
+    _candidate_regions,
+    _dominant_target_class,
+)
 
 
 def _blind_pocket():
@@ -60,3 +67,14 @@ def test_rigid_transform_preserves_region_structure() -> None:
     assert [len(owners) for _region, owners in base] == [
         len(owners) for _region, owners in moved
     ]
+
+
+def test_report_association_and_class_order_are_explicit() -> None:
+    assert TARGET_FAMILIES == (
+        FamilyId.PASSAGES,
+        FamilyId.POCKETS,
+        FamilyId.PRISMATIC_POCKETS,
+    )
+    for labels in (Counter({3: 4, 15: 4}), Counter({15: 4, 3: 4})):
+        assert _dominant_target_class(labels) == (None, True)
+    assert _dominant_target_class(Counter({15: 5, 3: 4})) == (15, False)
