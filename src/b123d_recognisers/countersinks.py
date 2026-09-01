@@ -16,17 +16,11 @@ Heuristic limits (``recognised`` tier): an edge-break / deburr / lead-in chamfer
 mouth is geometrically a shallow countersink, so a **flare-ratio floor** (``_MIN_MAJOR_RATIO``)
 excludes it — a screw seat flares to roughly twice the bore, an edge break barely widens
 it; a near-flat cone above ``_MAX_INCLUDED_ANGLE`` (a draft / relief) is excluded; a
-  countersink whose trimmed rims cease to be circular is missed. A side clip may retain circular
-  arc geometry and remains a documented standalone false positive in this neutral attribution slice.
+  countersink whose trimmed rims cease to be circular is missed. Material-side orientation
+  rejects external cones even when trimming leaves circular rim arcs.
 
 Known limitations (edge geometries; the common one-face countersink is exact):
 
-- an **external transition chamfer** between two coaxial cylinders (e.g. a stepped
-  shaft) presents a flared cone coaxial with a cylinder and can register in the
-  standalone recogniser. :func:`countersink_matches_hole` prevents consumers from attaching
-  that cone unless it is seated at a recognised internal bore; a shaft has no such bore. An
-  internal/external face-orientation check would exclude it (a future behavior change, not part
-  of the parity extraction);
 - a **DIN 332 lathe centre-drill** (a 60° cone flaring from a small pilot bore) is
   geometrically near-indistinguishable from a small countersink and can register;
 - a through hole countersunk on **both** faces yields two coaxial countersinks, but the
@@ -43,6 +37,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from build123d import GeomType
+from OCP.gp import gp_Cone
 
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
@@ -112,10 +107,10 @@ class _HoleLike(Protocol):
 def countersink_matches_hole(countersink: CounterSink, hole: _HoleLike) -> bool:
     """Return whether *countersink* is seated at a recognised bore mouth.
 
-    The standalone countersink recogniser deliberately admits an external stepped-shaft
-    false positive.  Association with a :class:`HoleRecord` is therefore the semantic
-    boundary that proves the cone is a hole requirement.  Keep that geometry predicate
-    recognition-owned so feature construction and downstream completeness cannot drift.
+    CounterSink discovery already proves that the cone opens into a void. This stricter
+    association establishes which recognised bore mouth it belongs to. Keep that geometry
+    predicate recognition-owned so feature construction and downstream completeness cannot
+    drift.
     """
     minor = tuple(
         countersink.location[index] + countersink.depth * countersink.axis[index]
@@ -164,6 +159,38 @@ def _dist_to_line(
     return math.sqrt(perp[0] ** 2 + perp[1] ** 2 + perp[2] ** 2)
 
 
+def _opens_into_void(face: FaceLike, cone: gp_Cone) -> bool:
+    """Whether the conical material-side normal points radially into its axis.
+
+    A hole-mouth seat bounds a void, so its outward-from-material normal points toward the
+    cone axis. An external stepped-shaft transition has the same analytic cone and coaxial
+    cylinder evidence, but its normal points away from the axis. The sign is invariant under
+    rigid transforms and uniform scale; the included-angle gate keeps a valid cone's radial
+    component bounded away from zero.
+    """
+    axis = cone.Axis()
+    origin = axis.Location()
+    direction = axis.Direction()
+    sample = face.center()
+    offset = (
+        sample.X - origin.X(),
+        sample.Y - origin.Y(),
+        sample.Z - origin.Z(),
+    )
+    along = (
+        offset[0] * direction.X()
+        + offset[1] * direction.Y()
+        + offset[2] * direction.Z()
+    )
+    radial = (
+        offset[0] - along * direction.X(),
+        offset[1] - along * direction.Y(),
+        offset[2] - along * direction.Z(),
+    )
+    normal = face.normal_at(sample)
+    return bool(radial[0] * normal.X + radial[1] * normal.Y + radial[2] * normal.Z < 0.0)
+
+
 def recognise_countersinks(part: Part) -> list[CounterSink]:
     """Recognise the countersinks of *part* (see module docstring). One
     :class:`CounterSink` per qualifying cone, sorted deterministically; empty when the
@@ -195,6 +222,7 @@ def _discover_countersinks(
 
     out: list[_CounterSinkProposal] = []
     for f in cones:
+        cone = BRepAdaptor_Surface(f.wrapped).Cone()
         rims = cone_rims(f)  # the shared single-face cone read
         if rims is None:
             continue  # drill-point cone (one circle + apex) or degenerate
@@ -204,6 +232,8 @@ def _discover_countersinks(
             continue  # too little flare — an edge break / deburr, not a screw seat
         if included_angle > _MAX_INCLUDED_ANGLE:
             continue  # a near-flat cone is a draft/relief/washer face, not a countersink
+        if not _opens_into_void(f, cone):
+            continue  # an outward-opening cone is an external shaft transition
         opening = major_e.arc_center
         opening_pt = (opening.X, opening.Y, opening.Z)
         mc = minor_e.arc_center

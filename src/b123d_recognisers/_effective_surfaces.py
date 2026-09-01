@@ -406,6 +406,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "cylinder direction uses oriented frame",
     ),
+    "countersinks:_discover_countersinks:adaptor:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original cone axis is paired with the original face material-side normal",
+    ),
     "fillets:_discover_fillets:adaptor:1": (
         SurfaceReaderDisposition.ORIENTATION_DEFERRED,
         "analytic anchor uses oriented frame",

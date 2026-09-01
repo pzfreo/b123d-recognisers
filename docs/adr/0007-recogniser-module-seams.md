@@ -278,6 +278,12 @@ It cannot read claims, evidence, inventory, reconciliation, or another family ou
 raw cylinder adaptor loop changes only its machine-owned surface-reader roster key; the existing
 orientation-deferred disposition remains unchanged.
 
+Issue #303 closes that orientation deferral inside the same core. The conical face's
+outward-from-material normal must point radially toward its analytic axis, proving an internal
+void boundary rather than an external stepped-shaft transition. Writer-free and writer-enabled
+paths share the gate, and the defining evidence remains only the accepted original cone face.
+No claim, sibling-family output, aggregate reconciliation, or consumer policy participates.
+
 For F5f, `_hole_features._discover_bosses` is the sole private writer-enabled Boss core and
 `_registry` its sole production writer caller. The public `recognise_bosses` compatibility facade
 retains its exact signature and delegates without a writer. The core carries only the returned
