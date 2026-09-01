@@ -108,5 +108,6 @@ v8 transfer rerun remains an E0/E6 milestone item.
 The decision conforms to ADRs 0002, 0003, 0004, 0005, and 0007: deterministic family
 contracts and output are unchanged; discovery and reconciliation remain separate;
 evidence roles stay explicit; stable family identifiers are reused; and no module seam
-changes. Final-diff conformance and one independent exact-head review remain required
-before merge.
+changes. The independent review found and corrected the mixed-face description and a
+missing residual census; its narrow recheck reproduced both corrections and returned
+clean.
