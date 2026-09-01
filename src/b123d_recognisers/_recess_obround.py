@@ -30,9 +30,8 @@ from b123d_recognisers._recess_faces import (
     _center,
     _cylinder_faces,
     _Face,
-    _floor_ends,
+    _floor_end_faces,
     _has_side_walls,
-    _open_sign,
     _union_bb,
 )
 from b123d_recognisers._recess_records import Pocket, Slot
@@ -152,7 +151,14 @@ def _extend_obround_proposals(
             for group in (low[0], high[0]):
                 if group not in cap_groups:
                     cap_groups.append(group)
-            out.append(_RecessProposal(extended, proposal.planar, tuple(cap_groups)))
+            out.append(
+                _RecessProposal(
+                    extended,
+                    proposal.planar,
+                    tuple(cap_groups),
+                    proposal.floors,
+                )
+            )
         else:
             out.append(proposal)
     return out
@@ -341,8 +347,10 @@ def _recognise_obround_from_ends(
             # Route on the EXACT floor count: a pocket is capped on ONE end (floor + opening); a
             # through-slot on neither; a sealed internal void (both ends capped) is neither — do not
             # emit it as a full-thickness-deep pocket.
-            n_floor = _floor_ends(faces, s)
+            floor_ends = _floor_end_faces(faces, s)
+            n_floor = sum(bool(end) for end in floor_ends)
             if blind and n_floor == 1:
+                open_sign = 1 if floor_ends[0] else -1
                 record = Pocket(
                     width_axis=wa,
                     long_axis=la,
@@ -355,10 +363,20 @@ def _recognise_obround_from_ends(
                     d_lo=round(dlo, 2),
                     d_hi=round(dhi, 2),
                     # which face this obround pocket opens through
-                    open_sign=_open_sign(faces, s),
+                    open_sign=open_sign,
                 )
                 out.append(record)
-                proposed.append(_RecessProposal(record, caps=(lo_end[9], hi_end[9])))
+                selected_floor = floor_ends[0] if floor_ends[0] else floor_ends[1]
+                floors = frozenset(
+                    face.node for face in selected_floor if face.node is not None
+                )
+                proposed.append(
+                    _RecessProposal(
+                        record,
+                        caps=(lo_end[9], hi_end[9]),
+                        floors=floors,
+                    )
+                )
                 i += 2
             elif not blind and n_floor == 0:
                 out.append(s)

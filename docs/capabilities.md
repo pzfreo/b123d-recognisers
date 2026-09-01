@@ -58,16 +58,48 @@ a point on the untrimmed underlying surface; inner wires and concave outer wires
 
 The old `experimental_geometry.inspect_face` and surface-value names are exact-object aliases, as
 are the existing root or family-module paths for the other four reads. New code should use the
-inspection namespace. This graduation does not publish `GeometryGraph`, opaque graph handles,
-adjacency, blend collapse, sections, correspondence, Candidate/evidence, registry, or
-reconciliation. Those remain private or experimental because no second external consumer proved
-their cost.
+inspection namespace. This graduation does not publish `GeometryGraph`, adjacency, blend collapse,
+sections, correspondence, Candidate identity, registry, or reconciliation. Those remain private
+or experimental.
+
+## Within-run recognition evidence API
+
+Issue #375 separately publishes the smaller identity operation now required by a concrete
+recognition consumer:
+
+```python
+from b123d_recognisers.evidence import build_recognition_evidence
+
+view = build_recognition_evidence(part)
+for feature in view.features:
+    record = view.record(feature)
+    proof = [view.face(reference) for reference in view.defining_faces(feature)]
+    members = [view.face(reference) for reference in view.constituent_faces(feature)]
+```
+
+`FeatureRef` preserves accepted occurrence identity even when two records compare equal;
+`FaceRef` identifies one exact original face of the exact input part. Both are opaque,
+issuer-created, non-serializable, and valid only with their originating `RecognitionEvidence`
+view while the caller leaves the part unchanged. Forged, copied, stale and cross-view references
+fail closed. The view runs the aggregate once, exposes its existing `RecognitionResult`, and does
+not discover or reconcile anything itself.
+
+Every constituent set contains its defining set. Defining faces retain their exact ownership and
+reconciliation meaning; the equal or wider constituent set reports physical membership only, may
+overlap another accepted occurrence, and creates no claim or precedence. Families without a
+proved wider set publish constituent equal to defining rather than infer membership by adjacency.
+
+This is deliberately not persistent face naming. References from equivalent imports or rigidly
+transformed parts are not interchangeable, and symmetry is never broken with traversal order.
+The format-1 `evidence_api.json` document versions this namespace independently of the recognition
+and inspection manifests. The initial raw-coordinate API resolves caller-part faces; framed
+working-shape evidence remains excluded until it can be mapped back explicitly.
 
 ## Defining-face attribution status
 
-Attribution remains a private Candidate/evidence contract. Format 2 adds API roles and the counted
-aggregate output so compatibility projections cannot masquerade as a second physical authority;
-it does not expose face claims. `Fully attributed` means every aggregate record occurrence on every
+Attribution remains a private Candidate/evidence authority. The public evidence view projects
+accepted defining faces through opaque run-local references without exposing that authority or
+adding claims to format 2. `Fully attributed` means every aggregate record occurrence on every
 current output path has non-empty original-face defining evidence. `Incomplete` may include useful
 measured occurrences while at least one path remains empty; it does not mean the recogniser returns
 nothing. Every non-empty aggregate defining set, complete or partial, must belong to one graph-proved
@@ -75,10 +107,10 @@ valid closed solid.
 
 | Status | Physical families | Reason / next boundary |
 | --- | --- | --- |
-| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `circular_blind_steps`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `paired_ramp_steps`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `repeating_radial_profiles`, `risers`, `slots`, `step_levels`, `through_steps`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. Face Levels and Risers retain body-local multiplicity and own their complete same-solid source-face clusters. |
+| Fully attributed | `angled_steps`, `bosses`, `chamfers`, `channels`, `circular_blind_steps`, `countersinks`, `double_d_bores`, `fillets`, `flats`, `grooves`, `holes`, `pads`, `paired_ramp_steps`, `passages`, `plates`, `pockets`, `polygonal_bosses`, `polygonal_stock`, `prismatic_pockets`, `rectangular_blind_slots`, `repeating_radial_profiles`, `risers`, `round_bottom_blind_slots`, `slots`, `step_levels`, `through_steps`, `turned_steps` | Existing writer-enabled paths claim every returned occurrence; the family audits prove exact original owner faces while preserving public output. Polygonal Stock remains stock context and is still deliberately absent from the feature census; Repeating Radial Profiles remain neutral correspondence evidence. Face Levels and Risers retain body-local multiplicity and own their complete same-solid source-face clusters. |
 | Incomplete | — | Every current aggregate family has complete original-face attribution. |
 
-The registry is the closed machine-checked authority for these 25 internal dispositions. Per-face
+The registry is the closed machine-checked authority for these 27 physical families. Per-face
 tools consume the completed frozen inventory and report records, Candidates, accepted occurrences,
 attributed occurrences and defining faces separately. Corpus labels are diagnostic comparisons and
 never establish ownership.
@@ -109,12 +141,14 @@ compatibility review, and release notes.
 | `recognise_section_passages` | Constant-section line-walled passages on principal or free axes, open at both ends, with one rich `SectionPassage` Candidate owning the complete original wall cycle. | Capped, tapered, stepped, curved-wall, open/invalid, cross-solid, or materially obstructed rings; line/arc schema exists but arc-wall discovery is deferred. | Independent topology oracle, principal compatibility matrix, arbitrary rotations, STEP, and exact Candidate/evidence tests. |
 | `recognise_plates` | Body-local thin prismatic slabs supported by opposed planar face clusters, a roll-invariant body-oriented cross-envelope area gate, and the configured thickness gate. Equal-valued occurrences on separate valid solids retain multiplicity and independent transverse witnesses. In a rotational-classified mixed compound, completed TurnedSteps exclude only their owning solids; a rotational run with no established turned profile retains the historical empty Plate inventory. | The single envelope plate, curved/non-prismatic shells, internally oblique normals, cross-solid face pairing, and slabs below the evidence gates. | Plate/level golden; signed-axis and in-plane-roll boundaries; single/equal/unequal/nested compound, mixed turned/prismatic, framed rigid-motion, STEP, provenance and package tests; paired [body-locality](benchmarks/e2-plate-body-locality-validation.md) and [roll-covariance](benchmarks/e2-plate-roll-covariance-validation.md) evidence. |
 | `recognise_pocket_patterns` | Constant-pitch linear and complete rectangular arrays of identical, coplanar, equally oriented `Pocket` records. | Bolt circles, pairs, mixed sizes/opening faces/depth planes, and incomplete grids. | Blind-pocket golden and pattern-negative tests. |
-| `recognise_pockets` | Principal-axis floored rectangular recesses bounded within one solid; elongated blind slots are the same record class. Corner depth is the uniquely shallowest complete physical leg. Opposed-wall recesses require exactly one valid floor/opening interpretation. After graph-proved curved end interruptions are trimmed, the unrounded rectangular prism must be materially empty within that solid. | Through slots, open-ended channels, non-rectangular or internally oblique floors, ambiguous equal corner legs or depth interpretations, same-solid internal islands/bridges that the simple record cannot express, and cross-solid composites. | Signed X/Y/Z, rigid-frame, STEP, provenance and ambiguity controls; blind-pocket golden, blind-U/rib adversaries, and matched MFCAD++ evidence. |
+| `recognise_pockets` | Principal-axis floored rectangular recesses with a bounded footprint within one solid; an elongated bounded pocket remains the same record class. Corner depth is the uniquely shallowest complete physical leg. Opposed-wall recesses require exactly one valid floor/opening interpretation. After graph-proved curved end interruptions are trimmed, the unrounded rectangular prism must be materially empty within that solid. | Through slots, edge-open blind slots, open-ended channels, non-rectangular or internally oblique floors, ambiguous equal corner legs or depth interpretations, same-solid internal islands/bridges that the simple record cannot express, and cross-solid composites. Aggregate reconciliation gives a complete `RectangularBlindSlot` boundary precedence over a paired-wall Pocket fragment. | Signed X/Y/Z, rigid-frame, STEP, provenance and ambiguity controls; blind-pocket golden, blind-U/rib adversaries, and matched MFCAD++ evidence. |
 | `recognise_polygonal_bosses` | Attached regular hexagonal principal-axis bosses with six outward side faces, one A/F value, and two unambiguous terminal boundaries whose normals agree on the signed attachment direction. `axis` is X, Y or Z; `base`/`top` remain ascending coordinates even when attachment runs in the negative direction. Six native constant-radius convex cylindrical corner-blend chains may explicitly bridge the otherwise retained planar side ring when their complete issuer-owned provenance forms one unambiguous cycle. | Non-principal axes in the supplied recognition frame, other side counts, whole-stock prisms, inward recesses, incomplete or competing blend cycles, automatic collapse, and cross-solid assemblies. | Signed X/Y/Z, in-plane/arbitrary-rigid-motion, exact face-anchor, compound, STEP, blend-interrupted sharp-control, aggregate and capability-negative tests. |
 | `recognise_polygonal_stock` | Exactly one solid consisting solely of a regular hexagonal principal-axis prism’s six sides and two caps; `axis` identifies X, Y or Z. | Non-principal axes in the supplied recognition frame, other side counts, attachments, holes, chamfers, missing/extra faces, and multi-solid assemblies. | Polygonal-stock golden, X/Y/Z transform and framed rigid-motion evidence, plus capability-negative tests. |
 | `recognise_rectangular_pads` | Bounded rectangular islands on all six signed principal directions, with a filled transverse footprint, body-local support, orientation-bearing XYZ bounds, and exact face ownership in one valid closed solid. A complete, unambiguous four-chain convex cylindrical corner-blend cycle may reconstruct the same four planar wall roles and rounded top. Overlapping readings require one uniquely shortest attachment span. | Full-span steps, non-rectangular/perforated tops, internally oblique pads, tied axis interpretations, partial or competing corner-blend cycles, cross-solid support, open/invalid bodies, and ambiguous or missing solid ownership. | Plate/pad/level golden; signed-axis sharp/blend, rigid-frame, ambiguity, rotated negative, STEP, provenance/refusal and aggregate pad tests; authored blend sweep; paired census and MFCAD++-500 effectiveness/performance evidence. |
+| `recognise_rectangular_blind_slots` | Principal-axis, edge-open blind slots with two opposed planar side regions, one planar floor, one planar cap, a body-envelope run mouth, complete concave section joins and an exactly empty rectangular sweep. The run is at least as wide as the section and unambiguously longer than its machining depth. | Doubly open Channels, bounded or doubly capped Pockets, through Slots, round/obround sections, tied role assignments, non-principal runs, material-filled sweeps, cross-solid evidence, and open or invalid bodies. | Authored positive, negative, transform, scale, STEP, evidence, reconciliation and tolerance-boundary tests; complete MFCAD++-500 anatomy and overlap audit. |
 | `recognise_prismatic_pockets` | Floored recesses of any planar cross-section, found by walking the closed ring of walls: a triangular, hexagonal or rectangular pocket alike. Reports the section, so shape survives into the record. | Obround recesses, whose cylindrical ends form no closed planar ring — `recognise_pockets` reaches those; voids open at both ends (a passage) or capped at both (an enclosed cavity, unreachable by a tool). In the aggregate, a four-wall ring yields to a paired `Pocket`; a non-rectangular ring survives and defeats paired-wall fragments inside it. | Prismatic-pocket functional tests; `triangular_and_hex_pockets` golden; measured over 250 MFCAD++ models, capped rings reach 80 triangular, 72 hexagonal and 61 rectangular pockets where wall pairing reaches essentially only the rectangular ones. |
 | `recognise_repeating_radial_profiles` | Complete outer-wire profiles invariant under a proved sector rotation, independently per solid. | Gear semantics, partial-repeat inference, inner-only profiles, and cross-solid cycles. | Repeating-radial-profile and traversal-order goldens. |
+| `recognise_round_bottom_blind_slots` | Principal-axis, edge-open blind slots with one planar cap and an exact constant U section formed by a flat floor tangent to two equal quarter cylinders, independently per valid solid. | Through or doubly capped sections, rectangular/obround recesses, non-principal runs, perforated or interrupted profiles, material in the removed sweep, and cross-solid evidence. | Authored positive, negative, subdivision, transformation, scale, STEP, occurrence, provenance, aggregate and semantic-golden tests; matched MFCAD++ development evidence. |
 | `recognise_risers` | Per-valid-solid full-span principal in-plane step-riser occurrences, including bounded slanted transitions. Each occurrence carries its body's eligible level-Z set so pure shoulder projection cannot borrow a level from another solid. | Pads, pocket walls, partial corner notches, and end-treated/inset risers outside tolerance; caller-specific level selection remains a pure consumer projection. | Plate/level and slanted-step goldens; equal/unequal separated-body, false-envelope, nested/order, STEP and framed-motion controls. |
 | `recognise_slot_patterns` | Constant-pitch linear and complete rectangular arrays of identical through `Slot` records on the same through plane. | Bolt circles, pairs, mixed sizes/planes, and incomplete grids. | Straight/obround-slot golden and pattern-negative tests. |
 | `recognise_slots` | Principal-axis enclosed through-slots proved by opposed walls or qualifying obround end caps, independently per solid. A planar pair must have agreeing AAG arcs into shared boundary neighbours, or belong to one smooth-connected boundary component when STEP has fragmented that boundary (the gAAG-equivalent query); after graph-proved curved end interruptions are trimmed, its unrounded rectangular prism must be materially empty. A connected curved region smoothly closing either selected depth end refuses the alternate deep-pocket interpretation. | Floored pockets and their alternate orthogonal projections, open-ended channels, internally oblique or merely narrow envelope sections, internal islands/bridges that the simple record cannot express, cross-solid composites, and opposed pairs assembled from different sides of a polygonal void. Aggregate reconciliation gives complete pocket and non-rectangular passage rings precedence over paired-wall fragments. | Signed X/Y/Z and framed covariance, straight/obround-slot golden, split-smooth-closure, AAG-coherence mutation, H/U/thin-rib/scale adversaries, frozen MFCAD++ holdout, NIST corrections, recess-reconciliation regressions, and [paired MFCAD++-500 validation](benchmarks/e5-slot-depth-closure-validation.md). |
@@ -354,23 +388,24 @@ what a new family adopts, and this is where the existing names are reconciled to
 
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
-| Rectangular through slot | Slot (partial) | a small enclosed principal-axis subset matches; the dominant three-wall edge-slot motif is open longitudinally, while free-axis/intersected variants remain outside this contract |
+| Rectangular through slot | Channel; Slot (partial) | the dominant three-wall, longitudinally open U-section satisfies Channel; a smaller enclosed/intersected principal-axis subset satisfies Slot, while free-axis and split variants remain outside both contracts |
 | Circular through slot | — | **unsupported**; MFCAD++/MFInstSeg use this label for a semicylindrical groove, which the current `Slot` record cannot express |
 | Rectangular pocket | Pocket | blind by definition here |
 | Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |
 | **Circular end pocket** | Pocket | an obround blind recess; direct recognisers may propose competing paired walls, but aggregate boundary reconciliation keeps the floored pocket |
+| Rectangular blind slot | RectangularBlindSlot | conservative principal-axis, edge-open, one-cap constant rectangular U-section subset |
 | Rectangular blind step | Pocket | a floored recess open at one edge reads as a corner notch |
 | Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
 | Triangular blind step | AngledStep | |
 | Chamfer | Chamfer | |
 | Round | Fillet | |
 | Circular blind step | CircularBlindStep | one physical occurrence owns its cylindrical wall and blind terminal; an overlapping Fillet is reconciled away |
+| Horizontal circular end blind slot | RoundBottomBlindSlot | conservative principal-axis, edge-open, one-cap constant U-section subset |
 | O-ring | BossRecord | |
 | Through hole; Blind hole | HoleRecord | |
 | 2-sided through step | PairedRampStep | conservative mirror-symmetric principal-axis subset; one planar terminal may retain independent boundary subdivisions |
 | Rectangular through step | ThroughStep | principal two-wall subset; independent boundary interruptions are allowed only with complete seam, terminal, envelope and empty-prism proofs |
 | Slanted through step | — | **unrecognised**; tracked under recognition-effectiveness roadmap |
-| — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
 therefore inconsistent exactly where two families disagree — the case a tiebreaker would be asked
@@ -418,8 +453,10 @@ invitation to construct values outside that evidence and call them recognized.
 | `PolygonalBoss` | One attached regular hexagonal principal-axis boss; `axis` is `"x"`, `"y"` or `"z"`, `side_count=6`, and `base`/`top` are ascending coordinates along that axis. |
 | `PolygonalStock` | One whole regular hexagonal principal-axis prism; `axis` is `"x"`, `"y"` or `"z"`, and `side_count=6`. `base`/`top` are coordinates along that axis while centre and flat geometry remain 3-D in the recognition frame. |
 | `RaisedPad` | One bounded rectangular principal-axis island. XYZ bounds locate the exact local occurrence; `axis` identifies its attachment-to-terminal coordinate and `direction` is `1` or `-1` for the material-outward terminal side. Overlapping axis readings select the unique shortest attachment span; a tied minimum is refused without a world-axis preference. |
+| `RectangularBlindSlot` | One edge-open, one-cap rectangular U-section blind slot; `axis` and `open_sign` locate its run, `width_axis`, `depth_axis` and `depth_sign` orient its section, and `width`, `depth`, `length` and `at` describe the removed volume. |
 | `RectGrid` | A complete rectangular lattice of same-spec holes with the documented row/column basis convention. |
 | `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, defined by its two original opposed extremal planar source faces; not gear semantics. |
+| `RoundBottomBlindSlot` | One edge-open, one-cap constant U-section blind slot; `axis` and `open_sign` locate its run, `width_axis`, `depth_axis` and `depth_sign` orient the section opening, and `flat_width` plus `radius` define its exact profile. |
 | `RiserEvidence` | One body-local full-span candidate riser before consumer-specific projection; `body_levels` retains the complete same-solid FaceLevel occurrences (`null` only for hand-built legacy records). `project_step_shoulders(..., levels_by_riser=...)` provides explicit occurrence-aligned selection when separate bodies have value-identical levels. |
 | `SectionPassage` | The sole attributed PASSAGES output: canonical frame, run interval, intrinsic section and explicit open ends. |
 | `Slot` | One enclosed through-slot; no floor and no open longitudinal end. |

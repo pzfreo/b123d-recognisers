@@ -313,6 +313,12 @@ def _assert_six_side_role(part, occurrence_index, record, candidate, ledger, **k
     context = frozenset(ledger.graph.require_node(face) for face in expected_occurrence.context)
     assert context and defining.isdisjoint(context)
     assert all(abs(ledger.graph.normal(node)[2]) < 0.02 for node in defining)
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    terminal = constituent - defining
+    axis_index = "xyz".index(record.axis)
+    assert len(constituent) == 7 and defining < constituent
+    assert len(terminal) == 1 and terminal <= context
+    assert abs(ledger.graph.normal(next(iter(terminal)))[axis_index]) > 0.99
 
 
 def _assert_record_matches_original_side_evidence(
@@ -479,6 +485,33 @@ def test_repeated_side_snapshot_refuses_atomically(monkeypatch) -> None:
     assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
 
 
+@pytest.mark.parametrize(
+    ("terminal", "message"),
+    [
+        (lambda proposal: None, "requires one retained terminal cap"),
+        (lambda proposal: proposal.side_faces[0], "terminal cap identity is unavailable"),
+    ],
+)
+def test_missing_or_side_aliased_terminal_cap_refuses_atomically(
+    monkeypatch, terminal, message
+) -> None:
+    part = _attached()
+    original_recognise = polygonal_module._recognise_one
+
+    def corrupted(*args, **kwargs):
+        proposals = original_recognise(*args, **kwargs)
+        return [
+            replace(proposal, terminal_cap=terminal(proposal))
+            for proposal in proposals
+        ]
+
+    ledger = ClaimLedger(FaceGraph(part))
+    monkeypatch.setattr(polygonal_module, "_recognise_one", corrupted)
+    with pytest.raises(ValueError, match=message):
+        _discover_polygonal_bosses(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POLYGONAL_BOSSES).candidates == ()
+
+
 def test_shallow_same_topology_wrappers_resolve_to_the_same_six_nodes(monkeypatch) -> None:
     part = _attached()
     original_recognise = polygonal_module._recognise_one
@@ -549,6 +582,7 @@ def test_registry_terminal_lifecycle_retains_nonempty_polygonal_boss() -> None:
     assert len(candidates) == len(product.result.polygonal_bosses) == 1
     assert candidates[0].record is product.result.polygonal_bosses[0]
     assert len(product.evidence.defining_of(candidates[0])) == 6
+    assert len(product.evidence.constituent_of(candidates[0])) == 7
 
 
 def test_six_explicit_blend_bridges_recover_the_sharp_polygonal_boss() -> None:

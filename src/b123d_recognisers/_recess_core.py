@@ -40,7 +40,7 @@ from b123d_recognisers._recess_faces import (
     _FLOOR_TOL,
     _MERGE_TOL,
     _center,
-    _end_capped,
+    _end_cap_faces,
     _Face,
     _has_floor,
     _overlap_len,
@@ -395,6 +395,7 @@ def _floored_candidate(
     graph: FaceGraph,
     *,
     channel_bounds: dict[str, tuple[float, float]] | None = None,
+    floor_nodes: list[FaceNode] | None = None,
 ) -> Pocket | Channel | None:
     """Build a floored opposed-wall recess, with open-vs-enclosed semantics explicit.
 
@@ -428,16 +429,16 @@ def _floored_candidate(
         ranges[a] = (lo, hi)
     w_range = (c_a + c_b) / 2 - width / 2, (c_a + c_b) / 2 + width / 2
     # The depth axis is the non-width axis capped on exactly one end (floor + opening).
-    candidates: list[Pocket | Channel] = []
+    candidates: list[tuple[Pocket | Channel, frozenset[FaceNode]]] = []
     for depth_axis in others:
         (long_axis,) = [a for a in others if a != depth_axis]
         d_lo, d_hi = ranges[depth_axis]
         l_lo, l_hi = ranges[long_axis]
         foot = {axis: w_range, long_axis: (l_lo, l_hi)}
         foot_area = width * (l_hi - l_lo)
-        cap_lo = _end_capped(faces, foot, foot_area, depth_axis, d_lo, 1.0)
-        cap_hi = _end_capped(faces, foot, foot_area, depth_axis, d_hi, -1.0)
-        if int(cap_lo) + int(cap_hi) != 1:
+        cap_lo = _end_cap_faces(faces, foot, foot_area, depth_axis, d_lo, 1.0)
+        cap_hi = _end_cap_faces(faces, foot, foot_area, depth_axis, d_hi, -1.0)
+        if int(bool(cap_lo)) + int(bool(cap_hi)) != 1:
             continue  # 0 = through on this axis; 2 = an enclosed end-cap pair, not a floor
         length = l_hi - l_lo
         if width > length and channel_bounds is None:
@@ -452,19 +453,24 @@ def _floored_candidate(
             }
             if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
                 continue
+            pocket_record = Pocket(
+                width_axis=axis,
+                long_axis=long_axis,
+                width=round(width, 2),
+                length=round(length, 2),
+                depth=round(d_hi - d_lo, 2),
+                w_center=round((c_a + c_b) / 2, 2),
+                lo=round(l_lo, 2),
+                hi=round(l_hi, 2),
+                d_lo=round(d_lo, 2),
+                d_hi=round(d_hi, 2),
+                open_sign=1 if cap_lo else -1,
+            )
+            selected = cap_lo if cap_lo else cap_hi
             candidates.append(
-                Pocket(
-                    width_axis=axis,
-                    long_axis=long_axis,
-                    width=round(width, 2),
-                    length=round(length, 2),
-                    depth=round(d_hi - d_lo, 2),
-                    w_center=round((c_a + c_b) / 2, 2),
-                    lo=round(l_lo, 2),
-                    hi=round(l_hi, 2),
-                    d_lo=round(d_lo, 2),
-                    d_hi=round(d_hi, 2),
-                    open_sign=1 if cap_lo else -1,
+                (
+                    pocket_record,
+                    frozenset(face.node for face in selected if face.node is not None),
                 )
             )
             continue
@@ -474,24 +480,32 @@ def _floored_candidate(
         spans = {axis: tuple(sorted((c_a, c_b))), long_axis: (l_lo, l_hi), depth_axis: (d_lo, d_hi)}
         if not _candidate_has_void_evidence(spans, long_axis, fa, fb, graph, part):
             continue
+        channel_record = Channel(
+            width_axis=axis,
+            long_axis=long_axis,
+            width=round(width, 2),
+            w_center=round((c_a + c_b) / 2, 2),
+            lo=round(l_lo, 2),
+            hi=round(l_hi, 2),
+            d_lo=round(d_lo, 2),
+            d_hi=round(d_hi, 2),
+            open_sign=1 if cap_lo else -1,
+        )
+        selected = cap_lo if cap_lo else cap_hi
         candidates.append(
-            Channel(
-                width_axis=axis,
-                long_axis=long_axis,
-                width=round(width, 2),
-                w_center=round((c_a + c_b) / 2, 2),
-                lo=round(l_lo, 2),
-                hi=round(l_hi, 2),
-                d_lo=round(d_lo, 2),
-                d_hi=round(d_hi, 2),
-                open_sign=1 if cap_lo else -1,
+            (
+                channel_record,
+                frozenset(face.node for face in selected if face.node is not None),
             )
         )
     if len(candidates) != 1:
         # Two valid depth axes describe an opening-corner ambiguity, not one rectangular recess.
         # Refuse rather than selecting whichever axis happens to appear first in ``"xyz"``.
         return None
-    return candidates[0]
+    record, selected_nodes = candidates[0]
+    if floor_nodes is not None:
+        floor_nodes.extend(selected_nodes)
+    return record
 
 
 def _pocket_candidate(
@@ -502,8 +516,12 @@ def _pocket_candidate(
     part_ext: dict[str, float],
     axis: str,
     graph: FaceGraph,
+    *,
+    floor_nodes: list[FaceNode] | None = None,
 ) -> Pocket | None:
-    candidate = _floored_candidate(fa, fb, part, faces, part_ext, axis, graph)
+    candidate = _floored_candidate(
+        fa, fb, part, faces, part_ext, axis, graph, floor_nodes=floor_nodes
+    )
     return candidate if isinstance(candidate, Pocket) else None
 
 
@@ -516,9 +534,19 @@ def _channel_candidate(
     part_bounds,
     axis: str,
     graph: FaceGraph,
+    *,
+    floor_nodes: list[FaceNode] | None = None,
 ) -> Channel | None:
     candidate = _floored_candidate(
-        fa, fb, part, faces, part_ext, axis, graph, channel_bounds=part_bounds
+        fa,
+        fb,
+        part,
+        faces,
+        part_ext,
+        axis,
+        graph,
+        channel_bounds=part_bounds,
+        floor_nodes=floor_nodes,
     )
     return candidate if isinstance(candidate, Channel) else None
 
@@ -545,6 +573,7 @@ class _ChannelProposal:
     record: Channel
     low_wall: FaceNode
     high_wall: FaceNode
+    floor: frozenset[FaceNode]
 
 
 def _pocket_proposals_one(
@@ -581,12 +610,24 @@ def _pocket_proposals_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
-                p = _pocket_candidate(walls[i], walls[j], part, faces, part_ext, axis, owner)
+                floor_nodes: list[FaceNode] = []
+                p = _pocket_candidate(
+                    walls[i],
+                    walls[j],
+                    part,
+                    faces,
+                    part_ext,
+                    axis,
+                    owner,
+                    floor_nodes=floor_nodes,
+                )
                 if p is not None:
                     nodes = frozenset(
                         node for node in (walls[i].node, walls[j].node) if node is not None
                     )
-                    candidates.append(_RecessProposal(p, nodes))
+                    if not floor_nodes:
+                        raise ValueError("Pocket floor identity is unavailable")
+                    candidates.append(_RecessProposal(p, nodes, floors=frozenset(floor_nodes)))
     candidates.extend(_corner_notch_proposals(faces, pbb))
     # Stubby blind obround pockets (straight section < width) have no pairable flat walls, so
     # recover them from their end caps — the blind counterpart of the through-slot path, and
@@ -651,13 +692,24 @@ def _channel_proposals_one(
     for axis, walls in by_axis.items():
         for i in range(len(walls)):
             for j in range(i + 1, len(walls)):
+                floor_nodes: list[FaceNode] = []
                 channel = _channel_candidate(
-                    walls[i], walls[j], part, faces, part_ext, part_bounds, axis, owner
+                    walls[i],
+                    walls[j],
+                    part,
+                    faces,
+                    part_ext,
+                    part_bounds,
+                    axis,
+                    owner,
+                    floor_nodes=floor_nodes,
                 )
                 if channel is not None:
                     first, second = walls[i], walls[j]
                     if first.node is None or second.node is None:
                         raise ValueError("Channel walls require graph nodes")
+                    if not floor_nodes:
+                        raise ValueError("Channel floor identity is unavailable")
                     first_node, second_node = first.node, second.node
                     k = _AXES[axis]
                     low_node, high_node = (
@@ -665,7 +717,9 @@ def _channel_proposals_one(
                         if _center(first.bb, k) <= _center(second.bb, k)
                         else (second_node, first_node)
                     )
-                    proposals.append(_ChannelProposal(channel, low_node, high_node))
+                    proposals.append(
+                        _ChannelProposal(channel, low_node, high_node, frozenset(floor_nodes))
+                    )
     return proposals
 
 
@@ -700,23 +754,20 @@ def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Poc
             second_span = second_hi - second_lo
             if first_span <= tol or second_span <= tol or abs(depth_hi - depth_lo) > tol:
                 continue
-            if (
-                first_span
-                >= _SLOT_MAX_SPAN_FRAC
-                * (envelope[first_axis][1] - envelope[first_axis][0])
-                or second_span
-                >= _SLOT_MAX_SPAN_FRAC
-                * (envelope[second_axis][1] - envelope[second_axis][0])
+            if first_span >= _SLOT_MAX_SPAN_FRAC * (
+                envelope[first_axis][1] - envelope[first_axis][0]
+            ) or second_span >= _SLOT_MAX_SPAN_FRAC * (
+                envelope[second_axis][1] - envelope[second_axis][0]
             ):
                 continue  # a full-span step face, not a bounded interruption
             first_at_low = abs(first_lo - envelope[first_axis][0]) <= tol
             first_at_high = abs(first_hi - envelope[first_axis][1]) <= tol
             second_at_low = abs(second_lo - envelope[second_axis][0]) <= tol
             second_at_high = abs(second_hi - envelope[second_axis][1]) <= tol
-            if not (
-                (first_at_low or first_at_high)
-                and (second_at_low or second_at_high)
-            ) or min(abs(depth_lo - end) for end in envelope[depth_axis]) <= tol:
+            if (
+                not ((first_at_low or first_at_high) and (second_at_low or second_at_high))
+                or min(abs(depth_lo - end) for end in envelope[depth_axis]) <= tol
+            ):
                 continue
             first_inner = first_hi if first_at_low else first_lo
             second_inner = second_hi if second_at_low else second_lo
@@ -752,9 +803,7 @@ def _corner_notch_proposals(faces: list[_Face], pbb) -> list[_RecessProposal[Poc
                 continue  # a split/interrupted side cannot define the complete removed box
             d_lo = max(first_depth[0], second_depth[0])
             d_hi = min(first_depth[1], second_depth[1])
-            if d_hi - d_lo <= tol or not (
-                d_lo - tol <= depth_lo <= d_hi + tol
-            ):
+            if d_hi - d_lo <= tol or not (d_lo - tol <= depth_lo <= d_hi + tol):
                 continue
 
             if first_span <= second_span:

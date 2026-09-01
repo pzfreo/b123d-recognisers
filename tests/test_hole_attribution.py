@@ -33,7 +33,7 @@ from build123d import (
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
-from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
+from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane
 
 from b123d_recognisers import recognise_holes
 from b123d_recognisers._adjacency import (
@@ -490,6 +490,95 @@ def test_basic_hole_routes_have_exact_cylindrical_owners(part) -> None:
     _claimed(part)
 
 
+@pytest.mark.parametrize(
+    "part",
+    [_blind(), Rot(0, 90, 0) * _blind(), Rot(90, 0, 0) * _blind()],
+)
+def test_blind_hole_constituent_retains_its_exact_terminal_plane(part) -> None:
+    (record,), (candidate,), ledger = _claimed(part)
+    defining = ledger.defining_of(candidate)
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    terminal = constituent - defining
+
+    assert record.bottom == "flat"
+    assert defining < constituent and len(terminal) == 1
+    assert (
+        BRepAdaptor_Surface(ledger.graph.face(next(iter(terminal))).wrapped).GetType()
+        == GeomAbs_Plane
+    )
+    assert ledger.graph.common_valid_solid(constituent) is not None
+
+
+def test_cached_end_classification_retains_terminal_identity_for_later_projection() -> None:
+    part = _blind()
+    z_cyls, cross_cyls = analyse_cylinders(part)
+    internal = [
+        cylinder
+        for cylinder in full_cylinders(z_cyls) + full_cylinders(cross_cyls)
+        if not cylinder["external"]
+    ]
+    (segment,) = _segments(internal)
+    adjacency = edge_face_map(part.faces())
+    cache = {}
+
+    classified = []
+    for coordinate, high in ((segment["s_lo"], False), (segment["s_hi"], True)):
+        state = _classify_end(segment, coordinate, high, adjacency, cache)
+        retained = []
+        assert _classify_end(
+            segment,
+            coordinate,
+            high,
+            adjacency,
+            cache,
+            terminal_faces=retained,
+        ) == state
+        classified.append((state, retained))
+
+    (terminal,) = [faces for state, faces in classified if state == "flat"]
+    assert len(terminal) == 1
+    assert BRepAdaptor_Surface(terminal[0].wrapped).GetType() == GeomAbs_Plane
+
+    # A later classification-only cache consumer must remain valid and must not require a
+    # destination list merely because identity was retained in the cached proof.
+    assert _classify_end(
+        segment,
+        segment["s_hi"],
+        True,
+        adjacency,
+        cache,
+    ) in {"flat", "open"}
+
+
+def test_uncached_end_classification_optionally_returns_terminal_identity() -> None:
+    part = _blind()
+    z_cyls, cross_cyls = analyse_cylinders(part)
+    internal = [
+        cylinder
+        for cylinder in full_cylinders(z_cyls) + full_cylinders(cross_cyls)
+        if not cylinder["external"]
+    ]
+    (segment,) = _segments(internal)
+    adjacency = edge_face_map(part.faces())
+    retained = []
+
+    state = _classify_end(
+        segment,
+        segment["s_lo"],
+        False,
+        adjacency,
+        terminal_faces=retained,
+    )
+    assert state in {"flat", "open"}
+    assert _classify_end(segment, segment["s_lo"], False, adjacency) == state
+
+
+def test_through_hole_has_no_terminal_constituent_to_infer() -> None:
+    (record,), (candidate,), ledger = _claimed(_through())
+    assert record.bottom == "through"
+    assert ledger.snapshot_index().constituent_of(candidate) == ledger.defining_of(candidate)
+
+
 def test_split_and_interrupted_bore_retains_every_original_patch() -> None:
     keyed = (
         Box(60, 40, 10)
@@ -803,6 +892,13 @@ def test_drill_point_cone_is_context_not_hole_evidence() -> None:
         BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
         for node in ledger.defining_of(candidate)
     )
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    terminal = constituent - ledger.defining_of(candidate)
+    assert len(terminal) == 1
+    assert (
+        BRepAdaptor_Surface(ledger.graph.face(next(iter(terminal))).wrapped).GetType()
+        == GeomAbs_Cone
+    )
 
 
 @pytest.mark.parametrize(
@@ -821,6 +917,7 @@ def test_nested_countersink_stays_predecessor_owned_and_hole_consulted(part, end
     assert countersink.record == expected_cone.record
     assert product.evidence.defining_of(countersink) == frozenset((expected_cone.node,))
     assert product.context.graph.common_valid_solid((expected_cone.node,)) == expected_cone.solid
+    assert expected_cone.node not in product.evidence.constituent_of(hole)
 
     (solid,) = part.solids()
     (bore,) = _raw_internal_cylinders(product.context.graph, solid)
@@ -1159,6 +1256,41 @@ def test_deep_or_translated_cylindrical_snapshot_refuses_atomically(monkeypatch,
 
     monkeypatch.setattr(module, "_bore_depth", changed)
     with pytest.raises(ValueError):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+
+def test_missing_or_aliased_hole_source_roles_refuse_atomically(monkeypatch) -> None:
+    import b123d_recognisers._hole_features as module
+
+    part = _blind()
+    ledger = ClaimLedger(FaceGraph(part))
+    original_depth = module._bore_depth
+
+    def without_cylinder(*args, **kwargs):
+        return replace(original_depth(*args, **kwargs), faces=())
+
+    monkeypatch.setattr(module, "_bore_depth", without_cylinder)
+    with pytest.raises(ValueError, match="cylindrical evidence"):
+        _discover_holes(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
+
+    monkeypatch.setattr(module, "_bore_depth", original_depth)
+    original_drilled_from = module._drilled_from
+
+    def alias_terminal(stack, *args, bottom_faces=None, **kwargs):
+        result = original_drilled_from(
+            stack,
+            *args,
+            bottom_faces=bottom_faces,
+            **kwargs,
+        )
+        assert bottom_faces is not None
+        bottom_faces.append(stack[0]["faces"][0])
+        return result
+
+    monkeypatch.setattr(module, "_drilled_from", alias_terminal)
+    with pytest.raises(ValueError, match="terminal identity aliases"):
         _discover_holes(part, writer=ledger.writer)
     assert ledger.candidate_set(FamilyId.HOLES).candidates == ()
 

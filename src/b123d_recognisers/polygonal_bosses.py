@@ -101,6 +101,7 @@ class _PolygonalProposal:
     side_faces: tuple[FaceLike, ...]
     lower_cap: FaceLike
     upper_cap: FaceLike
+    terminal_cap: FaceLike | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -688,10 +689,10 @@ def _recognise_one(
                 wall_hi=wall_hi,
             )
             if base is not None and top is not None:
-                cap_pairs.append((base, top))
+                cap_pairs.append((base, top, positive))
         if len(cap_pairs) != 1:
             continue
-        base, top = cap_pairs[0]
+        base, top, positive = cap_pairs[0]
         if base is None or top is None or top.coordinate - base.coordinate <= tol:
             continue
         if whole_stock and (
@@ -735,6 +736,7 @@ def _recognise_one(
                 tuple(graph.face(node) for node in ordered),
                 graph.face(base.node),
                 graph.face(top.node),
+                None if whole_stock else graph.face(top.node if positive else base.node),
             )
         )
     return found
@@ -795,7 +797,9 @@ def _discover_polygonal_bosses(
         return records
     bridge = GeometryEvidenceBridge(writer, shared)
 
-    pending: list[tuple[PolygonalBoss, tuple[FaceRef, ...]]] = []
+    pending: list[
+        tuple[PolygonalBoss, tuple[FaceRef, ...], tuple[FaceRef, ...]]
+    ] = []
     used: set[FaceRef] = set()
     for proposal, record in zip(proposals, records, strict=True):
         refs = bridge.refs(proposal.side_faces)
@@ -806,9 +810,21 @@ def _discover_polygonal_bosses(
             raise ValueError("Polygonal Boss occurrences share defining side faces")
         used.update(resolved)
         bridge.validate_defining(refs)
-        pending.append((record, refs))
-    for record, refs in pending:
-        bridge.add_defining(record, refs, family=FamilyId.POLYGONAL_BOSSES)
+        if proposal.terminal_cap is None:
+            raise ValueError("a Polygonal Boss requires one retained terminal cap")
+        terminal = bridge.refs((proposal.terminal_cap,))
+        if len(terminal) != 1 or terminal[0] in resolved:
+            raise ValueError("Polygonal Boss terminal cap identity is unavailable")
+        constituent: tuple[FaceRef, ...] = (*refs, *terminal)
+        bridge.validate_defining(constituent)
+        pending.append((record, refs, constituent))
+    for record, refs, constituent in pending:
+        bridge.add_defining(
+            record,
+            refs,
+            family=FamilyId.POLYGONAL_BOSSES,
+            constituent=constituent,
+        )
     return records
 
 

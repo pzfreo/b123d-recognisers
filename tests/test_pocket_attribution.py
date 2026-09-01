@@ -189,10 +189,7 @@ def _fresh_occurrences(part):
             if min(abs(sum(fb[di]) / 2 - end) for end in envelope[di]) <= 1e-6:
                 continue
             footprint = [axis for axis in range(3) if axis != di]
-            if any(
-                fb[axis][1] - fb[axis][0] >= 0.9 * extent[axis]
-                for axis in footprint
-            ):
+            if any(fb[axis][1] - fb[axis][0] >= 0.9 * extent[axis] for axis in footprint):
                 continue
             if not all(
                 abs(fb[axis][0] - envelope[axis][0]) <= 1e-6
@@ -471,6 +468,18 @@ def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, 
     assert sum(ledger.graph.is_planar(node) for node in nodes) == planar
     assert sum(not ledger.graph.is_planar(node) for node in nodes) == curved
     assert ledger.graph.common_valid_solid(nodes) is not None
+    constituent = ledger.snapshot_index().constituent_of(candidates[0])
+    if record.edge_anchored:
+        assert constituent == nodes
+    else:
+        floor = constituent - nodes
+        depth_axis = "xyz".index(record.depth_axis)
+        assert nodes < constituent and floor
+        assert all(ledger.graph.is_planar(node) for node in floor)
+        assert all(
+            ledger.graph.normal(node)[depth_axis] * record.open_sign > 0.99 for node in floor
+        )
+    assert ledger.graph.common_valid_solid(constituent) is not None
 
 
 def test_equal_coincident_bodies_remain_distinct_occurrences() -> None:
@@ -521,7 +530,8 @@ def test_writer_graph_authority_and_unwrapped_stale_identity_fail_closed(monkeyp
         _discover_pockets(part, graph=graph, writer=foreign.writer)
 
     record = _discover_pockets(part)[0]
-    stale = _RecessProposal(record, frozenset({FaceNode(999_999)}))
+    stale_nodes = frozenset({FaceNode(999_999)})
+    stale = _RecessProposal(record, stale_nodes, floors=frozenset({FaceNode(999_998)}))
     monkeypatch.setattr(module, "_body_scoped_proposals", lambda *_a, **_kw: [stale])
     ledger = ClaimLedger(graph)
     with pytest.raises(ValueError, match="not issued by this graph"):
@@ -927,7 +937,10 @@ def test_merge_tolerance_and_max_span_boundaries_drive_pocket_lifecycle(monkeypa
     graph = FaceGraph(base)
     ends = _obround_ends(base, graph)
     monkeypatch.setattr(module, "_has_side_walls", lambda _faces, _record: True)
-    monkeypatch.setattr(module, "_floor_ends", lambda _faces, _record: 1)
+    fake_floor = SimpleNamespace(node=FaceNode(999_999))
+    monkeypatch.setattr(
+        module, "_floor_end_faces", lambda _faces, _record: ((fake_floor,), ())
+    )
     for run, accepted in ((below, False), (_MERGE_TOL, False), (above, True)):
         changed = [
             (*ends[0][:5], -run / 2, *ends[0][6:]),
@@ -944,6 +957,34 @@ def test_merge_tolerance_and_max_span_boundaries_drive_pocket_lifecycle(monkeypa
         records = _discover_pockets(part, writer=ledger.writer)
         assert bool(records) is accepted
         assert bool(ledger.candidate_set(FamilyId.POCKETS).candidates) is accepted
+
+
+def test_obround_acceptance_carries_one_floor_read_directly_into_membership(monkeypatch) -> None:
+    import b123d_recognisers._recess_obround as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8)
+    graph = FaceGraph(part)
+    faces = _planar_faces(part, None, graph)
+    original = module._floor_end_faces
+    reads = []
+
+    def counted(read_faces, record):
+        result = original(read_faces, record)
+        reads.append(result)
+        return result
+
+    monkeypatch.setattr(module, "_floor_end_faces", counted)
+    proposals = _recognise_obround_from_ends(
+        part, faces, blind=True, graph=graph, proposals=True
+    )
+
+    assert len(proposals) == len(reads) == 1
+    low, high = reads[0]
+    selected = low if low else high
+    assert bool(low) != bool(high)
+    assert proposals[0].floors == frozenset(
+        face.node for face in selected if face.node is not None
+    )
 
 
 def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
@@ -999,9 +1040,7 @@ def test_obround_ratio_requires_exactly_one_across_and_bulge_axis() -> None:
 
 @pytest.mark.parametrize("coordinate", [0, 1])
 @pytest.mark.parametrize("outside", [False, True])
-def test_cap_cluster_fraction_controls_split_patch_union(
-    monkeypatch, coordinate, outside
-) -> None:
+def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, coordinate, outside) -> None:
     import b123d_recognisers._recess_obround as module
 
     radius = 10.0
@@ -1115,9 +1154,7 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module:
                 prefix = (
-                    f"b123d_recognisers.{statement.module}"
-                    if statement.level
-                    else statement.module
+                    f"b123d_recognisers.{statement.module}" if statement.level else statement.module
                 )
                 for alias in statement.names:
                     target = f"{prefix}.{alias.name}"
@@ -1194,18 +1231,26 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         return resolve(call.func)
 
     target = "b123d_recognisers._recess_features._discover_pockets"
-    assert resolved_call(
-        "import b123d_recognisers._recess_features\n"
-        "b123d_recognisers._recess_features._discover_pockets(part)"
-    ) == target
-    assert resolved_call(
-        "import b123d_recognisers._recess_features as recess\n"
-        "recess._discover_pockets(part)"
-    ) == target
-    assert resolved_call(
-        "from b123d_recognisers._recess_features import _discover_pockets as discover\n"
-        "discover(part)"
-    ) == target
+    assert (
+        resolved_call(
+            "import b123d_recognisers._recess_features\n"
+            "b123d_recognisers._recess_features._discover_pockets(part)"
+        )
+        == target
+    )
+    assert (
+        resolved_call(
+            "import b123d_recognisers._recess_features as recess\nrecess._discover_pockets(part)"
+        )
+        == target
+    )
+    assert (
+        resolved_call(
+            "from b123d_recognisers._recess_features import _discover_pockets as discover\n"
+            "discover(part)"
+        )
+        == target
+    )
 
 
 def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
@@ -1219,11 +1264,7 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         }
         for node in tree.body:
             if isinstance(node, ast.ImportFrom) and node.module:
-                prefix = (
-                    f"b123d_recognisers.{node.module}"
-                    if node.level
-                    else node.module
-                )
+                prefix = f"b123d_recognisers.{node.module}" if node.level else node.module
                 for alias in node.names:
                     names[alias.asname or alias.name] = f"{prefix}.{alias.name}"
             elif isinstance(node, ast.Import):
@@ -1280,16 +1321,18 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         ("_recess_features.py", "_discover_slots"),
         ("_recess_features.py", "_discover_pockets"),
     ]
-    assert sorted(sites["b123d_recognisers._recess_reduce._RecessProposal"]) == sorted([
-        ("_recess_core.py", "_slot_proposals_one"),
-        ("_recess_core.py", "_pocket_proposals_one"),
-        ("_recess_core.py", "_corner_notch_proposals"),
-        ("_recess_obround.py", "_extend_obround_proposals"),
-        ("_recess_obround.py", "_recognise_obround_from_ends"),
-        ("_recess_obround.py", "_recognise_obround_from_ends"),
-        ("_recess_reduce.py", "_replace_proposal"),
-        ("_recess_reduce.py", "_combine_proposals"),
-    ])
+    assert sorted(sites["b123d_recognisers._recess_reduce._RecessProposal"]) == sorted(
+        [
+            ("_recess_core.py", "_slot_proposals_one"),
+            ("_recess_core.py", "_pocket_proposals_one"),
+            ("_recess_core.py", "_corner_notch_proposals"),
+            ("_recess_obround.py", "_extend_obround_proposals"),
+            ("_recess_obround.py", "_recognise_obround_from_ends"),
+            ("_recess_obround.py", "_recognise_obround_from_ends"),
+            ("_recess_reduce.py", "_replace_proposal"),
+            ("_recess_reduce.py", "_combine_proposals"),
+        ]
+    )
     assert sites["b123d_recognisers._recess_reduce._merge_proposals"] == [
         ("_recess_core.py", "_slot_proposals_one"),
         ("_recess_core.py", "_pocket_proposals_one"),
@@ -1313,13 +1356,9 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         names = bindings(tree, name)
         references = {
             canonical(node, names) for node in ast.walk(tree) if isinstance(node, ast.Name)
-        } | {
-            canonical(node, names) for node in ast.walk(tree) if isinstance(node, ast.Attribute)
-        }
+        } | {canonical(node, names) for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
         offenders = {
-            reference
-            for reference in references
-            if reference.rsplit(".", 1)[-1] in prohibited
+            reference for reference in references if reference.rsplit(".", 1)[-1] in prohibited
         }
         assert not offenders, (name, offenders)
     definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.POCKETS)
@@ -1417,8 +1456,8 @@ def test_legacy_corner_claim_projection_uses_proposal_nodes() -> None:
     assert len(claims[record]) == 3
 
 
-def test_step_split_opposed_floor_remains_consulted_not_defining(tmp_path: Path) -> None:
-    """A paired Pocket's split floor controls routing but never becomes evidence."""
+def test_step_split_opposed_floor_is_constituent_but_not_defining(tmp_path: Path) -> None:
+    """A paired Pocket carries every proved floor patch without changing ownership."""
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1456,6 +1495,7 @@ def test_step_split_opposed_floor_remains_consulted_not_defining(tmp_path: Path)
     defining = ledger.defining_of(candidate)
     assert len(defining) == 2
     assert defining.isdisjoint(split_floors)
+    assert ledger.snapshot_index().constituent_of(candidate) == defining | split_floors
 
 
 def test_freeform_conversion_and_edge_corner_collision_do_not_leak() -> None:
@@ -1532,8 +1572,8 @@ def test_same_record_competing_bound_role_sets_refuse_without_prefix(monkeypatch
     record = _discover_pockets(part)[0]
     planar = [node for node in graph.nodes if graph.is_planar(node)]
     proposals = [
-        _RecessProposal(record, frozenset(planar[:2])),
-        _RecessProposal(record, frozenset(planar[2:4])),
+        _RecessProposal(record, frozenset(planar[:2]), floors=frozenset(planar[4:5])),
+        _RecessProposal(record, frozenset(planar[2:4]), floors=frozenset(planar[5:6])),
     ]
     monkeypatch.setattr(module, "_body_scoped_proposals", lambda *_args, **_kwargs: proposals)
     ledger = ClaimLedger(graph)
@@ -1549,8 +1589,9 @@ def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypat
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
     record = _discover_pockets(part)[0]
-    nodes = frozenset(node for node in graph.nodes if graph.is_planar(node))
-    proposal = _RecessProposal(record, nodes)
+    planar = [node for node in graph.nodes if graph.is_planar(node)]
+    nodes = frozenset(planar[:2])
+    proposal = _RecessProposal(record, nodes, floors=frozenset(planar[2:3]))
     monkeypatch.setattr(
         module, "_body_scoped_proposals", lambda *_args, **_kwargs: [proposal, proposal]
     )
@@ -1562,6 +1603,65 @@ def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypat
     assert ledger.defining_of(candidates[0]) == nodes
 
 
+def test_missing_floor_refuses_before_publication(monkeypatch) -> None:
+    import b123d_recognisers._recess_features as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    proposals = module._body_scoped_proposals(
+        [part], lambda solid: module._pocket_proposals_one(solid, graph=graph)
+    )
+    assert len(proposals) == 1
+    proposal = proposals[0]
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        lambda *_args, **_kwargs: [replace(proposal, floors=frozenset())],
+    )
+
+    with pytest.raises(_PocketAttributionError, match="floor identity is unavailable"):
+        _discover_pockets(part, writer=ledger.writer)
+    assert ledger.candidate_set(FamilyId.POCKETS).candidates == ()
+
+
+def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monkeypatch) -> None:
+    import b123d_recognisers._recess_core as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    expected = _pocket_proposals_one(part, graph=graph)[0].record
+
+    monkeypatch.setattr(module, "_pocket_candidate", lambda *_args, **_kwargs: expected)
+    with pytest.raises(ValueError, match="floor identity is unavailable"):
+        module._pocket_proposals_one(part, graph=graph)
+
+
+def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkeypatch) -> None:
+    """One face may prove the floor in one route and a wall in a merged orthogonal route."""
+
+    import b123d_recognisers._recess_features as module
+
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    proposal = module._body_scoped_proposals(
+        [part], lambda solid: module._pocket_proposals_one(solid, graph=graph)
+    )[0]
+    shared = next(iter(proposal.planar))
+    monkeypatch.setattr(
+        module,
+        "_body_scoped_proposals",
+        lambda *_args, **_kwargs: [replace(proposal, floors=frozenset({shared}))],
+    )
+
+    assert _discover_pockets(part, writer=ledger.writer) == [proposal.record]
+    candidate = ledger.candidate_set(FamilyId.POCKETS).candidates[0]
+    defining = ledger.defining_of(candidate)
+    assert shared in defining
+    assert ledger.snapshot_index().constituent_of(candidate) == defining
+
+
 def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(monkeypatch) -> None:
     import b123d_recognisers._recess_features as module
     from b123d_recognisers._recess_reduce import _RecessProposal
@@ -1569,8 +1669,9 @@ def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(m
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     context = start(part)
     record = _discover_pockets(part)[0]
-    nodes = frozenset(node for node in context.graph.nodes if context.graph.is_planar(node))
-    proposal = _RecessProposal(record, nodes)
+    planar = [node for node in context.graph.nodes if context.graph.is_planar(node)]
+    nodes = frozenset(planar[:2])
+    proposal = _RecessProposal(record, nodes, floors=frozenset(planar[2:3]))
     real = module._body_scoped_proposals
 
     def staged(sources, recognise_one):
@@ -1602,8 +1703,8 @@ def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeyp
         if recognise_one.func is not module._pocket_proposals_one:
             return real(sources, recognise_one)
         return [
-            _RecessProposal(record, frozenset(planar[:2])),
-            _RecessProposal(record, frozenset(planar[2:4])),
+            _RecessProposal(record, frozenset(planar[:2]), floors=frozenset(planar[4:5])),
+            _RecessProposal(record, frozenset(planar[2:4]), floors=frozenset(planar[5:6])),
         ]
 
     monkeypatch.setattr(
@@ -1728,6 +1829,7 @@ def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -
         proposals[1].record,
         proposals[1].planar | {shared},
         proposals[1].caps,
+        proposals[1].floors,
     )
     real = module._body_scoped_proposals
     monkeypatch.setattr(

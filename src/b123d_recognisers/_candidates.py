@@ -63,6 +63,8 @@ class FamilyId(Enum):
     POLYGONAL_STOCK = "polygonal_stock"
     PRISMATIC_POCKETS = "prismatic_pockets"
     REPEATING_RADIAL_PROFILES = "repeating_radial_profiles"
+    RECTANGULAR_BLIND_SLOTS = "rectangular_blind_slots"
+    ROUND_BOTTOM_BLIND_SLOTS = "round_bottom_blind_slots"
     RISERS = "risers"
     SLOTS = "slots"
     STEP_LEVELS = "step_levels"
@@ -70,12 +72,27 @@ class FamilyId(Enum):
     TURNED_STEPS = "turned_steps"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class Evidence:
-    """Original defining nodes and every effective-surface dependency used to accept them."""
+    """Original defining/constituent nodes and effective-surface acceptance dependencies."""
 
     defining: frozenset[FaceNode]
+    constituent: frozenset[FaceNode]
     surfaces: tuple[SurfaceUse, ...] = ()
+
+    def __init__(
+        self,
+        defining: frozenset[FaceNode],
+        surfaces: tuple[SurfaceUse, ...] = (),
+        *,
+        constituent: frozenset[FaceNode] | None = None,
+    ) -> None:
+        # Omission is the fail-closed migration state: a family publishes no wider membership
+        # than the ownership evidence it already proves. Frozen snapshots carry no three-state
+        # contract, and the default preserves the defining set's exact identity.
+        object.__setattr__(self, "defining", defining)
+        object.__setattr__(self, "constituent", defining if constituent is None else constituent)
+        object.__setattr__(self, "surfaces", surfaces)
 
 
 class PredicateId(Enum):
@@ -235,6 +252,7 @@ class EvidenceSink:
         record: RecordT,
         *,
         defining: Iterable[FaceNode] = (),
+        constituent: Iterable[FaceNode] | None = None,
         surfaces: Iterable[SurfaceUse] = (),
         compatibility: PassageCompatibilityView | None = None,
     ) -> Candidate[RecordT]:
@@ -244,6 +262,7 @@ class EvidenceSink:
             family,
             record,
             defining=defining,
+            constituent=constituent,
             surfaces=surfaces,
             compatibility=compatibility,
         )
@@ -285,6 +304,7 @@ class EvidenceIndex:
     _issued: Mapping[int, _IssuedCandidate] = field(repr=False)
     _by_record: Mapping[int, tuple[Candidate[object], ...]] = field(repr=False)
     _by_node: Mapping[FaceNode, tuple[Candidate[object], ...]] = field(repr=False)
+    _by_constituent: Mapping[FaceNode, tuple[Candidate[object], ...]] = field(repr=False)
     _observations: tuple[Observation, ...] = field(repr=False)
     _issued_observations: Mapping[int, _IssuedObservation] = field(repr=False)
 
@@ -377,6 +397,24 @@ class EvidenceIndex:
         candidate = _record_candidate(self._by_record, subject)
         return self._validate(candidate).defining if candidate is not None else frozenset()
 
+    def constituent_of(self, subject: object) -> frozenset[FaceNode]:
+        """Return physical membership without changing defining ownership or reconciliation."""
+
+        if isinstance(subject, Candidate):
+            return self._validate(subject).constituent
+        candidate = _record_candidate(self._by_record, subject)
+        return self._validate(candidate).constituent if candidate is not None else frozenset()
+
+    def memberships_of(self, node: FaceNode) -> tuple[Candidate[object], ...]:
+        """Return every candidate naming *node* as constituent, in proposal order."""
+
+        if not self._graph.owns(node):
+            raise ValueError(f"{node!r} is not this graph's node")
+        candidates = self._by_constituent.get(node, ())
+        for candidate in candidates:
+            self._validate(candidate)
+        return candidates
+
     def observations(self, family: FamilyId, predicate: PredicateId) -> tuple[Observation, ...]:
         """Return validated failed attempts in issuance order."""
 
@@ -417,6 +455,7 @@ class EvidenceIndex:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
+            or candidate.evidence.constituent is not issued.constituent
             or candidate.evidence.surfaces is not issued.surfaces
             or candidate.compatibility is not issued.compatibility
             or (
@@ -456,6 +495,7 @@ class _IssuedCandidate:
     record: object
     evidence: Evidence
     defining: frozenset[FaceNode]
+    constituent: frozenset[FaceNode]
     surfaces: tuple[SurfaceUse, ...]
     compatibility: PassageCompatibilityView | None
     compatibility_snapshot: CompatibilitySnapshot | None
@@ -508,6 +548,7 @@ class _CandidateIssuer:
         self._issued: dict[int, _IssuedCandidate] = {}
         self._by_record: dict[int, list[Candidate[object]]] = {}
         self._by_node: dict[FaceNode, list[Candidate[object]]] = {}
+        self._by_constituent: dict[FaceNode, list[Candidate[object]]] = {}
         self._observations: list[Observation] = []
         self._issued_observations: dict[int, _IssuedObservation] = {}
         self._completed: dict[FamilyId, CandidateSet[object]] = {}
@@ -525,6 +566,7 @@ class _CandidateIssuer:
         record: RecordT,
         *,
         defining: Iterable[FaceNode],
+        constituent: Iterable[FaceNode] | None = None,
         surfaces: Iterable[SurfaceUse] = (),
         compatibility: PassageCompatibilityView | None = None,
     ) -> Candidate[RecordT]:
@@ -533,16 +575,19 @@ class _CandidateIssuer:
         if family in self._completed:
             raise RuntimeError(f"{family.value} candidate issuance is already completed")
         nodes = frozenset(defining)
+        members = nodes if constituent is None else frozenset(constituent)
         surface_uses = tuple(surfaces)
-        foreign = [node for node in nodes if not self._graph.owns(node)]
+        foreign = [node for node in members | nodes if not self._graph.owns(node)]
         if foreign:
             raise ValueError(f"{sorted(node.index for node in foreign)} are not this graph's nodes")
+        if not nodes <= members:
+            raise ValueError("defining evidence must be a subset of constituent evidence")
         if (
             family is not FamilyId.LEGACY
-            and nodes
-            and self._graph.common_valid_solid(nodes) is None
+            and members
+            and self._graph.common_valid_solid(members) is None
         ):
-            raise ValueError("physical defining evidence must belong to one valid closed solid")
+            raise ValueError("physical evidence must belong to one valid closed solid")
         if surface_uses:
             migrated_surface_families = (
                 FamilyId.PADS,
@@ -593,7 +638,11 @@ class _CandidateIssuer:
         candidate = object.__new__(Candidate)
         object.__setattr__(candidate, "family", family)
         object.__setattr__(candidate, "record", record)
-        object.__setattr__(candidate, "evidence", Evidence(nodes, surface_uses))
+        object.__setattr__(
+            candidate,
+            "evidence",
+            Evidence(nodes, constituent=members, surfaces=surface_uses),
+        )
         object.__setattr__(candidate, "compatibility", compatibility)
         object.__setattr__(candidate, "_issuer", self._token)
         self._candidates.append(candidate)
@@ -603,6 +652,7 @@ class _CandidateIssuer:
             record,
             candidate.evidence,
             candidate.evidence.defining,
+            candidate.evidence.constituent,
             candidate.evidence.surfaces,
             compatibility,
             compatibility.issued_snapshot() if compatibility is not None else None,
@@ -610,6 +660,8 @@ class _CandidateIssuer:
         self._by_record.setdefault(id(record), []).append(candidate)
         for node in nodes:
             self._by_node.setdefault(node, []).append(candidate)
+        for node in members:
+            self._by_constituent.setdefault(node, []).append(candidate)
         if self._on_issued is not None:
             self._on_issued(candidate)
         return candidate
@@ -731,6 +783,7 @@ class _CandidateIssuer:
                             record,
                             evidence,
                             evidence.defining,
+                            evidence.constituent,
                             evidence.surfaces,
                             None,
                             None,
@@ -890,6 +943,13 @@ class _CandidateIssuer:
             "_by_node",
             MappingProxyType({key: tuple(value) for key, value in self._by_node.items()}),
         )
+        object.__setattr__(
+            result,
+            "_by_constituent",
+            MappingProxyType(
+                {key: tuple(value) for key, value in self._by_constituent.items()}
+            ),
+        )
         object.__setattr__(result, "_observations", tuple(self._observations))
         object.__setattr__(
             result,
@@ -940,6 +1000,7 @@ class _CandidateIssuer:
             or candidate.record is not issued.record
             or candidate.evidence is not issued.evidence
             or candidate.evidence.defining is not issued.defining
+            or candidate.evidence.constituent is not issued.constituent
         ):
             raise ValueError("candidate no longer matches its issued state")
         return issued

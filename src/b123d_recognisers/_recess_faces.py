@@ -169,10 +169,8 @@ def _overlap_len(bb_a, bb_b, axis) -> float:
     return float(hi - lo)
 
 
-def _end_capped(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> bool:
-    """True when inward-facing planar faces at ``end`` on ``depth_axis`` together cover at
-    least :data:`_FLOOR_COVER_FRAC` of the ``foot`` (width×length) footprint — one end's
-    half of the floor test.
+def _end_cap_faces(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> tuple[_Face, ...]:
+    """Return exact inward faces when they cover one end of the required footprint.
 
     ``want`` is the sign the covering normal must point (+depth at the low end, -depth at the
     high end) so the cap faces *into* the cavity; the part's own outer face at that level
@@ -183,6 +181,7 @@ def _end_capped(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> b
     interpenetrating solids (degenerate input)."""
     dk = _AXES[depth_axis]
     covered = 0.0
+    selected: list[_Face] = []
     for f in faces:
         if f.axis != depth_axis or abs(_center(f.bb, dk) - end) > _FLOOR_TOL:
             continue
@@ -194,34 +193,35 @@ def _end_capped(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> b
             ov = min(getattr(f.bb.max, c), hi) - max(getattr(f.bb.min, c), lo)
             area *= max(ov, 0.0)
         covered += area
-    return bool(covered >= _FLOOR_COVER_FRAC * foot_area)
+        if area > 0.0:
+            selected.append(f)
+    return tuple(selected) if covered >= _FLOOR_COVER_FRAC * foot_area else ()
 
 
-def _floor_ends(faces: list[_Face], s: Slot) -> int:
-    """How many of *s*'s two depth ends a planar floor caps: ``0`` = through (open both ends),
-    ``1`` = a blind recess (one floor + one opening — a real pocket), ``2`` = a sealed internal
-    void (capped both ends, no opening — NOT a machinable recess). The obround end-cap recovery
-    routes on this exact count, so a sealed void is not misread as a full-thickness-deep pocket."""
+def _end_capped(faces: list[_Face], foot, foot_area, depth_axis, end, want) -> bool:
+    """Whether :func:`_end_cap_faces` proves one capped footprint end."""
+
+    return bool(_end_cap_faces(faces, foot, foot_area, depth_axis, end, want))
+
+
+def _floor_end_faces(faces: list[_Face], s: Slot) -> tuple[tuple[_Face, ...], tuple[_Face, ...]]:
+    """Read both depth ends once and retain the exact accepted floor clusters."""
+
     foot = {
         s.width_axis: (s.w_center - s.width / 2, s.w_center + s.width / 2),
         s.long_axis: (s.lo, s.hi),
     }
     foot_area = math.prod(hi - lo for lo, hi in foot.values())
-    return int(_end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0)) + int(
-        _end_capped(faces, foot, foot_area, s.depth_axis, s.d_hi, -1.0)
+    return (
+        _end_cap_faces(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0),
+        _end_cap_faces(faces, foot, foot_area, s.depth_axis, s.d_hi, -1.0),
     )
 
 
-def _open_sign(faces: list[_Face], s) -> int:
-    """Which depth end *s* opens toward: ``+1`` (floor at ``d_lo``, opens +depth) or ``-1``
-    (floor at ``d_hi``, opens -depth). The capped end is the floor; the pocket opens the other
-    way. Assumes *s* is a blind recess (exactly one floor); the caller has already checked."""
-    foot = {
-        s.width_axis: (s.w_center - s.width / 2, s.w_center + s.width / 2),
-        s.long_axis: (s.lo, s.hi),
-    }
-    foot_area = math.prod(hi - lo for lo, hi in foot.values())
-    return 1 if _end_capped(faces, foot, foot_area, s.depth_axis, s.d_lo, 1.0) else -1
+def _floor_ends(faces: list[_Face], s: Slot) -> int:
+    """How many of *s*'s two depth ends are capped by accepted planar floor clusters."""
+
+    return sum(bool(end) for end in _floor_end_faces(faces, s))
 
 
 def _has_floor(faces: list[_Face], s: Slot) -> bool:

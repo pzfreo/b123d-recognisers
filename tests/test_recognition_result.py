@@ -160,9 +160,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     # Fully-attributed FaceLevels cannot be fabricated without original horizontal-face evidence.
     # This test owns dependency injection, so keep the family empty but still invoked and bound.
     levels: list[FaceLevel] = []
-    monkeypatch.setattr(
-        registry_module, "_discover_step_levels", counted("step_levels", levels)
-    )
+    monkeypatch.setattr(registry_module, "_discover_step_levels", counted("step_levels", levels))
     monkeypatch.setattr(registry_module, "_discover_risers", counted("risers", []))
     monkeypatch.setattr(registry_module, "recognise_chamfers", counted("chamfers", []))
     monkeypatch.setattr(registry_module, "recognise_angled_steps", counted("angled_steps", []))
@@ -181,16 +179,35 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "_discover_circular_blind_steps",
         counted("circular_blind_steps", []),
     )
+    monkeypatch.setattr(
+        registry_module,
+        "recognise_rectangular_blind_slots",
+        counted("rectangular_blind_slots", []),
+    )
+    monkeypatch.setattr(
+        registry_module,
+        "recognise_round_bottom_blind_slots",
+        counted("round_bottom_blind_slots", []),
+    )
 
-    # All four recess families are proposed before one reconciler decides among them. Passage
+    # All five recess families are proposed before one reconciler decides among them. Passage
     # discovery is a counted family call of its own; the reconciler receives completed records
     # and the point-in-time read capability rather than a Part or mutable ledger.
-    def fake_recesses(found_slots, found_pockets, prismatic, found_passages, evidence):
+    def fake_recesses(
+        found_slots,
+        found_pockets,
+        prismatic,
+        found_passages,
+        evidence,
+        *,
+        rectangular_blind_slots,
+    ):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
         assert same_records(
             [candidate.record for candidate in found_slots.candidates], slots
         ) and same_records([candidate.record for candidate in found_pockets.candidates], pockets)
         assert same_records([candidate.record for candidate in found_passages.candidates], passages)
+        assert rectangular_blind_slots.candidates == ()
         assert isinstance(evidence, EvidenceIndex)
         return ()
 
@@ -243,6 +260,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "paired_ramp_steps",
         "through_steps",
         "circular_blind_steps",
+        "rectangular_blind_slots",
+        "round_bottom_blind_slots",
         "passages",
         "reconcile_recesses",
         "reconcile_bevels",

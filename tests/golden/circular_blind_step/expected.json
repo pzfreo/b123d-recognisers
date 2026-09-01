@@ -1,6 +1,12 @@
 {
   "canonicalizer_version": 1,
   "fixture": "circular_blind_step",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source_path": "tests/test_circular_blind_steps.py",
+    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
+  },
   "recognition": {
     "aggregate": {
       "prismatic": {
@@ -82,9 +88,11 @@
         "polygonal_bosses": [],
         "polygonal_stock": [],
         "prismatic_pockets": [],
+        "rectangular_blind_slots": [],
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": false,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -137,9 +145,11 @@
         "polygonal_bosses": [],
         "polygonal_stock": [],
         "prismatic_pockets": [],
+        "rectangular_blind_slots": [],
         "repeating_radial_profiles": [],
         "risers": [],
         "rotational": true,
+        "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
         "step_levels": [],
@@ -164,6 +174,8 @@
       "plate": 0,
       "pocket": 0,
       "prismatic_pocket": 0,
+      "rectangular_blind_slot": 0,
+      "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 0,
       "through_step": 0
@@ -260,9 +272,11 @@
       "recognise_polygonal_bosses": [],
       "recognise_polygonal_stock": [],
       "recognise_prismatic_pockets": [],
+      "recognise_rectangular_blind_slots": [],
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
       "recognise_risers": [],
+      "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],

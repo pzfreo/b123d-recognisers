@@ -9,10 +9,14 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from build123d import Box, Cylinder, GeomType
 
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
 from tools.effectiveness_report import (
     DatasetTruth,
@@ -22,6 +26,8 @@ from tools.effectiveness_report import (
     load_mfinstseg_truth,
     load_taxonomy,
     score_inventory,
+    summarize_rows,
+    summarize_runtime,
     validate_report,
 )
 from tools.run_effectiveness_baseline import (
@@ -36,6 +42,9 @@ TAXONOMY = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v1.json"
 TAXONOMY_V2 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v2.json"
 TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
 TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
+TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
+TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
+TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -89,6 +98,42 @@ def test_mfinstseg_adapter_reads_semantic_instances_and_bottom(tmp_path: Path) -
     assert truth.instances == (frozenset({0, 1}), frozenset({2}))
     assert truth.bottom == (False, True, False)
     assert len(truth.source_sha256) == 64
+
+
+def test_mfinstseg_adapter_accepts_a_face_in_no_instance(tmp_path: Path) -> None:
+    """The published data leaves every Stock row zero, so face 2 joins no instance.
+
+    Written against the real MFInstSeg release: across the first 300 test-split models the
+    ``inst`` matrix is symmetric, reflexive and disjoint on feature faces, and every all-zero
+    row carries semantic class 24 (``Stock``, ``incomparable``, no families). Requiring a
+    reflexive diagonal on those rows rejected all 9373 selectable models.
+    """
+
+    _mfinstseg(tmp_path, inst=[[1, 1, 0], [1, 1, 0], [0, 0, 0]])
+
+    truth = load_mfinstseg_truth(tmp_path, "part")
+
+    assert truth.semantic == (1, 1, 24)
+    assert truth.instances == (frozenset({0, 1}),)
+
+
+def test_mfinstseg_adapter_drops_a_feature_face_left_out_of_every_instance(
+    tmp_path: Path,
+) -> None:
+    """A feature face with no instance row is dropped, not repaired and not rejected.
+
+    Four models in the published test partition do this, twice while a sibling face of the
+    same class does carry an instance. Pinned because the affected feature silently never
+    reaches ``truth_instances``: face 1 is class 1 here and joins nothing, so only face 0's
+    instance survives.
+    """
+
+    _mfinstseg(tmp_path, inst=[[1, 0, 0], [0, 0, 0], [0, 0, 1]])
+
+    truth = load_mfinstseg_truth(tmp_path, "part")
+
+    assert truth.semantic == (1, 1, 24)
+    assert truth.instances == (frozenset({0}), frozenset({2}))
 
 
 @pytest.mark.parametrize(
@@ -183,6 +228,58 @@ def test_taxonomy_v4_marks_only_rectangular_through_slot_partially_supported() -
     assert load_taxonomy(TAXONOMY_V4, "mfinstseg") == current
 
 
+def test_taxonomy_v5_moves_only_horizontal_round_bottom_slot_to_its_family() -> None:
+    historical = load_taxonomy(TAXONOMY_V4, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V5, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 19} == {
+        key: value for key, value in historical.items() if key != 19
+    }
+    assert historical[19]["families"] == ["pockets"]
+    assert current[19] == {
+        "families": ["round-bottom-blind-slots"],
+        "name": "Horizontal circular end blind slot",
+        "status": "supported",
+    }
+    assert load_taxonomy(TAXONOMY_V5, "mfinstseg") == current
+
+
+def test_taxonomy_v6_moves_only_rectangular_blind_slot_to_its_family() -> None:
+    historical = load_taxonomy(TAXONOMY_V5, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V6, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 17} == {
+        key: value for key, value in historical.items() if key != 17
+    }
+    assert historical[17]["families"] == ["pockets"]
+    assert current[17] == {
+        "families": ["rectangular-blind-slots"],
+        "name": "Rectangular blind slot",
+        "status": "supported",
+    }
+    assert load_taxonomy(TAXONOMY_V6, "mfinstseg") == current
+
+
+def test_taxonomy_v7_adds_only_channel_to_rectangular_through_slot() -> None:
+    historical = load_taxonomy(TAXONOMY_V6, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V7, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 6} == {
+        key: value for key, value in historical.items() if key != 6
+    }
+    assert historical[6] == {
+        "families": ["slots"],
+        "name": "Rectangular through slot",
+        "status": "partial",
+    }
+    assert current[6] == {
+        "families": ["channels", "slots"],
+        "name": "Rectangular through slot",
+        "status": "partial",
+    }
+    assert load_taxonomy(TAXONOMY_V7, "mfinstseg") == current
+
+
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
     tmp_path: Path,
 ) -> None:
@@ -239,12 +336,69 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
         "status": "supported",
         "labelled_faces": 1,
         "matched_defining_faces": 1,
+        "covered_faces": 1,
         "mapped_defining_faces": 1,
         "truth_instances": 1,
         "recalled_instances": 1,
     }
     assert row["taxonomy_mismatch_defining_faces"] == 0
     assert row["no_physical_records"] is False
+
+
+def test_face_coverage_counts_constituents_without_changing_defining_semantics() -> None:
+    part = Box(1, 1, 1)
+    faces = tuple(part.faces())
+    candidate = SimpleNamespace(family=FamilyId.STEP_LEVELS)
+    product = SimpleNamespace(
+        context=SimpleNamespace(graph=SimpleNamespace(face=lambda node: faces[node])),
+        reconciliation=SimpleNamespace(
+            dispositions=(SimpleNamespace(candidate=candidate, outcome=Outcome.ACCEPTED),)
+        ),
+        evidence=SimpleNamespace(
+            defining_of=lambda _candidate: (0,),
+            constituent_of=lambda _candidate: (0, 1),
+            observations=lambda *_args: (),
+        ),
+        diagnostics=(),
+    )
+    truth = DatasetTruth(
+        "coverage",
+        Path("coverage.step"),
+        (1, 1, 1, *(24 for _face in faces[3:])),
+        (),
+        None,
+        "0" * 64,
+    )
+
+    row = score_inventory(
+        truth,
+        part,
+        product,
+        load_taxonomy(TAXONOMY, "mfcadpp"),
+        0.0,
+    )
+    row["status"] = "evaluated"
+    summary = summarize_rows([row], 1, 0)
+
+    assert row["classes"]["1"] == {
+        "status": "supported",
+        "labelled_faces": 3,
+        "matched_defining_faces": 0,
+        "covered_faces": 2,
+        "mapped_defining_faces": 0,
+        "truth_instances": 0,
+        "recalled_instances": 0,
+    }
+    assert summary["classes"]["1"]["face_coverage"] == {
+        "numerator": 2,
+        "denominator": 3,
+        "value": 2 / 3,
+    }
+    assert summary["classes"]["0"]["face_coverage"] == {
+        "numerator": 0,
+        "denominator": 0,
+        "value": None,
+    }
 
 
 def test_partial_support_preserves_supported_scorer_semantics() -> None:
@@ -319,10 +473,10 @@ def test_taxonomy_provenance_path_supports_external_files(tmp_path: Path) -> Non
     assert _display_path(external) == str(external.resolve())
 
 
-def _report() -> dict[str, object]:
+def _report() -> dict[str, Any]:
     return {
         "format": "b123d-recognisers-effectiveness",
-        "format_version": 1,
+        "format_version": 3,
         "dataset": {"name": "fixture", "version": "1"},
         "package": {"name": "b123d-recognisers", "version": "1", "commit": "abc"},
         "environment": {"python": "3", "build123d": "1", "ocp": "1", "os": "test"},
@@ -359,12 +513,76 @@ def _report() -> dict[str, object]:
     }
 
 
+def _evaluated_report() -> dict[str, Any]:
+    report = _report()
+    classes = {
+        str(class_id): {
+            "status": "supported",
+            "labelled_faces": 0,
+            "matched_defining_faces": 0,
+            "covered_faces": 0,
+            "mapped_defining_faces": 0,
+            "truth_instances": 0,
+            "recalled_instances": 0,
+        }
+        for class_id in range(25)
+    }
+    classes["0"] = {
+        **classes["0"],
+        "labelled_faces": 1,
+        "matched_defining_faces": 1,
+        "covered_faces": 1,
+        "mapped_defining_faces": 1,
+    }
+    row = {
+        "model_id": "a",
+        "source_sha256": "0" * 64,
+        "seconds": 0.0,
+        "physical_records": {},
+        "mapped_dataset_class_records": {},
+        "no_physical_records": False,
+        "taxonomy_mismatch_defining_faces": 0,
+        "reconciliation_drops": {},
+        "unsupported_diagnostics": {},
+        "predicate_observations": {},
+        "classes": classes,
+        "status": "evaluated",
+    }
+    report["models"] = [row]
+    report["summary"] = summarize_rows([row], 1, 0)
+    report["runtime"] = summarize_runtime([row])
+    return report
+
+
 def test_report_validation_and_json_are_deterministic() -> None:
     report = _report()
 
     validate_report(report)
 
     assert canonical_json(report) == canonical_json(json.loads(canonical_json(report)))
+
+    validate_report(_evaluated_report())
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ({"covered_faces": 2}, "denominators are inconsistent"),
+        ({"matched_defining_faces": 2}, "denominators are inconsistent"),
+        ({"covered_faces": -1}, "counts must be non-negative integers"),
+        ({"unexpected": 0}, "invalid fields"),
+    ],
+)
+def test_report_validation_rejects_invalid_class_evidence(
+    mutation: dict[str, int], message: str
+) -> None:
+    report = _evaluated_report()
+    class_row = report["models"][0]["classes"]["0"]
+    class_row.update(mutation)
+    report["summary"] = summarize_rows(report["models"], 1, 0)
+
+    with pytest.raises(EffectivenessDataError, match=message):
+        validate_report(report)
 
 
 def test_report_validation_rejects_denominator_drift_and_duplicate_models() -> None:

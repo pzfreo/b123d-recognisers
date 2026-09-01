@@ -187,12 +187,60 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge geom_type classifies profile boundary curves, not face surfaces",
     ),
+    "round_bottom_slots": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "native cylinder and planar U-section grammar; recovered surfaces are not accepted",
+    ),
+    "rectangular_blind_slots": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "native planar rectangular U-section grammar; recovered surfaces are not accepted",
+    ),
 }
 
 # Function/role/ordinal identities freeze every decision without depending on source line numbers.
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "rectangular_blind_slots:_recognise_one:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "cheap graph-owned native planar concave-neighbour gate",
+    ),
+    "rectangular_blind_slots:_recognise_one:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "graph-owned native planar cap-region gate",
+    ),
+    "round_bottom_slots:_cylinder_surface:adaptor:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "native exact-cylinder grammar for the bounded U-section family",
+    ),
+    "round_bottom_slots:_principal_rectangle:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original boundary-line grammar for a hole-free floor region",
+    ),
+    "round_bottom_slots:_boundary_runs:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original boundary line/circle grammar refusal",
+    ),
+    "round_bottom_slots:_boundary_runs:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original boundary line/circle run grouping",
+    ),
+    "round_bottom_slots:_boundary_runs:geom_type:3": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original boundary line-run continuity proof",
+    ),
+    "round_bottom_slots:_boundary_runs:geom_type:4": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "original boundary circle-run continuity proof",
+    ),
+    "round_bottom_slots:_recognise_one:graph_surface:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "cheap graph-owned native-cylinder cap-neighbour gate",
+    ),
+    "round_bottom_slots:_recognise_one:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "graph-owned native planar side-region gate",
+    ),
     "_adjacency:surface:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base surface cache"),
     "_adjacency:is_planar:graph_surface:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base query"),
     "_adjacency:_normal_at:adaptor:1": (SurfaceReaderDisposition.RAW_TOPOLOGY, "base normal"),

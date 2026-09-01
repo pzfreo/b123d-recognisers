@@ -22,7 +22,7 @@ from b123d_recognisers._candidates import FamilyId, PredicateId
 from b123d_recognisers._dispositions import Outcome
 
 REPORT_FORMAT = "b123d-recognisers-effectiveness"
-REPORT_FORMAT_VERSION = 1
+REPORT_FORMAT_VERSION = 3
 _MFCAD_LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
 _CLASS_STATUSES = frozenset({"supported", "partial", "unsupported", "incomparable"})
 _MAPPED_CLASS_STATUSES = frozenset({"supported", "partial"})
@@ -94,6 +94,17 @@ def _instance_components(value: object, count: int) -> tuple[frozenset[int], ...
     while remaining:
         seed = min(remaining)
         component = frozenset(index for index, linked in enumerate(rows[seed]) if linked)
+        if not component:
+            # A face can belong to no feature instance. Almost always that is a Stock face,
+            # whose row the published data leaves entirely zero. It is not only those: four
+            # models in the test partition leave a *feature* face with no instance row, twice
+            # while a sibling face of the same class does have one. That is an annotation
+            # defect in the corpus rather than a format this adapter can repair, and failing
+            # the model would cost the other 9369 under the default fail-closed policy.
+            # Both cases contribute no component, so the affected feature never becomes a
+            # truth instance and is absent from the instance-recall denominator.
+            remaining.discard(seed)
+            continue
         if seed not in component or any(
             frozenset(index for index, linked in enumerate(rows[item]) if linked) != component
             for item in component
@@ -228,6 +239,7 @@ def score_inventory(
     )
     records: dict[str, int] = {}
     claims: list[tuple[str, frozenset[int]]] = []
+    constituents: list[frozenset[int]] = []
     for candidate in accepted:
         family = _public_family_id(candidate.family.value)
         records[family] = records.get(family, 0) + 1
@@ -237,7 +249,16 @@ def score_inventory(
         )
         if indices:
             claims.append((family, indices))
+        constituents.append(
+            frozenset(
+                face_index[graph.face(node)]
+                for node in product.evidence.constituent_of(candidate)  # type: ignore[attr-defined]
+            )
+        )
 
+    accepted_constituent_faces = (
+        set().union(*constituents) if constituents else set()
+    )
     per_class: dict[str, dict[str, int | str]] = {}
     for class_id, mapping in taxonomy.items():
         labelled = {index for index, value in enumerate(truth.semantic) if value == class_id}
@@ -248,6 +269,7 @@ def score_inventory(
             for index in indices
             if index in labelled
         }
+        covered = labelled.intersection(accepted_constituent_faces)
         claimed = {
             index
             for family, indices in claims
@@ -270,6 +292,7 @@ def score_inventory(
             "status": mapping["status"],
             "labelled_faces": len(labelled),
             "matched_defining_faces": len(matched),
+            "covered_faces": len(covered),
             "mapped_defining_faces": len(claimed),
             "truth_instances": len(truth_instances),
             "recalled_instances": recalled_instances,
@@ -358,6 +381,7 @@ def summarize_rows(
             for field in (
                 "labelled_faces",
                 "matched_defining_faces",
+                "covered_faces",
                 "mapped_defining_faces",
                 "truth_instances",
                 "recalled_instances",
@@ -381,6 +405,9 @@ def summarize_rows(
             ),
             "defining_face_recall": ratio(
                 aggregate["matched_defining_faces"], aggregate["labelled_faces"]
+            ),
+            "face_coverage": ratio(
+                aggregate["covered_faces"], aggregate["labelled_faces"]
             ),
             "instance_recall": ratio(
                 aggregate["recalled_instances"], aggregate["truth_instances"]
@@ -506,6 +533,46 @@ def validate_report(report: object) -> None:
                 or not isinstance(row["no_physical_records"], bool)
             ):
                 raise EffectivenessDataError("evaluated model row has invalid scalar values")
+            classes = row["classes"]
+            if not isinstance(classes, dict) or set(classes) != {
+                str(class_id) for class_id in range(25)
+            }:
+                raise EffectivenessDataError("evaluated model row needs exactly classes 0..24")
+            class_fields = {
+                "status",
+                "labelled_faces",
+                "matched_defining_faces",
+                "covered_faces",
+                "mapped_defining_faces",
+                "truth_instances",
+                "recalled_instances",
+            }
+            for class_row in classes.values():
+                if (
+                    not isinstance(class_row, dict)
+                    or set(class_row) != class_fields
+                    or class_row.get("status") not in _CLASS_STATUSES
+                ):
+                    raise EffectivenessDataError("evaluated class row has invalid fields")
+                counts = {
+                    field: class_row[field]
+                    for field in class_fields
+                    if field != "status"
+                }
+                if any(
+                    not isinstance(value, int) or isinstance(value, bool) or value < 0
+                    for value in counts.values()
+                ):
+                    raise EffectivenessDataError(
+                        "evaluated class counts must be non-negative integers"
+                    )
+                if not (
+                    counts["matched_defining_faces"] <= counts["covered_faces"]
+                    <= counts["labelled_faces"]
+                    and counts["matched_defining_faces"] <= counts["mapped_defining_faces"]
+                    and counts["recalled_instances"] <= counts["truth_instances"]
+                ):
+                    raise EffectivenessDataError("evaluated class denominators are inconsistent")
         else:
             raise EffectivenessDataError("model row status must be evaluated or invalid")
         ids.append(row["model_id"])

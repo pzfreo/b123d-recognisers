@@ -95,8 +95,9 @@ in or on the selected face's actual trim, including faces with holes or concave 
 The namespace also groups the four consumer-proven family reads: `classify_bevel` /
 `BevelReject`, `cone_rims`, `read_double_d_tool`, and `floor_face_anchor`. Existing root,
 family-module, and `experimental_geometry.inspect_face` imports remain exact-object compatibility
-aliases. `GeometryGraph`, adjacency, blend collapse, correspondence, evidence, and reconciliation
-are not part of this supported API.
+aliases. `GeometryGraph`, adjacency, blend collapse, correspondence, Candidate identity, and
+reconciliation are not part of this supported inspection API. The separate run-local evidence
+view below exposes only opaque accepted-feature and caller-face references.
 
 `inspection_api_manifest()` returns the separately versioned, installed-wheel contract for this
 roster. It does not change the recognition capability-manifest schema. See
@@ -106,6 +107,30 @@ That contract includes the closed `BevelReject.reason` values and the ordered
 `read_double_d_tool()` result: `(axis, major_diameter, across_flats, origin, depth,
 profile_direction)`. Diameters, origin coordinates, and depth use model-length units;
 `profile_direction` is unitless and `axis` is one of `x`, `y`, or `z`.
+
+### Resolve accepted features to caller faces
+
+When a consumer needs the exact faces behind accepted occurrences, use the separate within-run
+evidence view:
+
+```python
+from b123d_recognisers.evidence import build_recognition_evidence
+
+view = build_recognition_evidence(part)
+for feature in view.features:
+    print(view.family(feature), view.record(feature).to_dict())
+    proof_faces = [view.face(ref) for ref in view.defining_faces(feature)]
+    feature_faces = [view.face(ref) for ref in view.constituent_faces(feature)]
+```
+
+`FeatureRef` keeps equal-valued occurrences distinct and `FaceRef` resolves to an original face
+of the exact input part. Defining faces prove acceptance; constituent faces are the equal or wider
+physical membership and do not participate in reconciliation. These opaque references are valid
+only with their issuing view, cannot be
+serialized, and are not persistent names across imports, transforms, edits, or separate runs.
+The caller must not mutate the part while using the view. The initial API is caller-coordinate
+only; it does not return references to a framed working shape as though they belonged to the
+original part.
 
 ### Recognise independently of STEP placement
 

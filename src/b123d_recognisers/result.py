@@ -79,7 +79,9 @@ from b123d_recognisers.polygonal_bosses import (
 )
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 from b123d_recognisers.profiled_bores import DoubleDBore
+from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
+from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -272,6 +274,10 @@ class RecognitionResult:
     channels: tuple[Channel, ...]
     slots: tuple[Slot, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
+    #: Edge-open, one-cap blind slots with a constant rectangular U section.
+    rectangular_blind_slots: tuple[RectangularBlindSlot, ...]
+    #: Edge-open, one-cap blind slots with a constant flat-plus-quarter-cylinder U section.
+    round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
     grooves: tuple[Groove, ...]
     flats: tuple[Flat, ...]
     pockets: tuple[Pocket, ...]
@@ -560,6 +566,9 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.PRISMATIC_POCKETS),
         physical.candidate_set(FamilyId.PASSAGES),
         evidence,
+        rectangular_blind_slots=physical.candidate_set(
+            FamilyId.RECTANGULAR_BLIND_SLOTS
+        ),
     )
     decisions += reconcile_bevel_candidates(
         physical.candidate_set(FamilyId.CHAMFERS),
@@ -644,6 +653,20 @@ def _project_result(
         channels=tuple(_records(accepted, FamilyId.CHANNELS, Channel)),
         slots=tuple(_records(accepted, FamilyId.SLOTS, Slot)),
         slot_patterns=derived.slot_patterns,
+        rectangular_blind_slots=tuple(
+            _records(
+                accepted,
+                FamilyId.RECTANGULAR_BLIND_SLOTS,
+                RectangularBlindSlot,
+            )
+        ),
+        round_bottom_blind_slots=tuple(
+            _records(
+                accepted,
+                FamilyId.ROUND_BOTTOM_BLIND_SLOTS,
+                RoundBottomBlindSlot,
+            )
+        ),
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),

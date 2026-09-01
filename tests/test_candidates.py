@@ -87,6 +87,70 @@ def test_empty_evidence_is_a_candidate_but_not_a_claim() -> None:
     assert ledger.snapshot_index().defining_of(candidate) == frozenset()
 
 
+def test_constituent_evidence_defaults_to_the_exact_defining_set() -> None:
+    ledger = _registry_ledger()
+    candidate = ledger.sink.propose(
+        FamilyId.SLOTS,
+        Record(1),
+        defining=[ledger.graph.nodes[0]],
+    )
+
+    assert candidate.evidence.constituent is candidate.evidence.defining
+    assert ledger.snapshot_index().constituent_of(candidate) == candidate.evidence.defining
+
+
+def test_constituent_membership_is_wider_non_exclusive_and_proposal_ordered() -> None:
+    ledger = _registry_ledger()
+    first_node, second_node, shared = ledger.graph.nodes[:3]
+    first = ledger.writer.add_defining(
+        Record(1),
+        [first_node],
+        family=FamilyId.SLOTS,
+        constituent=[first_node, shared],
+    )
+    second = ledger.writer.add_defining(
+        Record(2),
+        [second_node],
+        family=FamilyId.SLOTS,
+        constituent=[second_node, shared],
+    )
+    snapshot = ledger.snapshot_index()
+
+    assert snapshot.constituent_of(first) == frozenset((first_node, shared))
+    assert snapshot.constituent_of(second) == frozenset((second_node, shared))
+    assert snapshot.constituent_of(first.record) == frozenset((first_node, shared))
+    assert snapshot.constituent_of(Record(99)) == frozenset()
+    assert snapshot.memberships_of(shared) == (first, second)
+    assert snapshot.claims_of(shared) == ()
+
+    foreign = FaceGraph(Box(4, 4, 4)).nodes[0]
+    with pytest.raises(ValueError, match="not this graph's node"):
+        snapshot.memberships_of(foreign)
+
+
+def test_constituent_evidence_requires_defining_subset_and_local_nodes() -> None:
+    ledger = _registry_ledger()
+    other = FaceGraph(Box(4, 4, 4))
+    defining, member = ledger.graph.nodes[:2]
+
+    with pytest.raises(ValueError, match="subset"):
+        ledger.sink.propose(
+            FamilyId.SLOTS,
+            Record(1),
+            defining=[defining],
+            constituent=[member],
+        )
+    with pytest.raises(ValueError, match="not this graph's nodes"):
+        ledger.sink.propose(
+            FamilyId.SLOTS,
+            Record(2),
+            defining=[defining],
+            constituent=[defining, other.nodes[0]],
+        )
+
+    assert ledger.candidate_set(FamilyId.SLOTS).candidates == ()
+
+
 def test_physical_evidence_requires_one_valid_solid_but_legacy_remains_compatible() -> None:
     assembly = Pos(-20, 0, 0) * Box(10, 10, 10) + Pos(20, 0, 0) * Box(10, 10, 10)
     ledger = ClaimLedger(FaceGraph(assembly))
@@ -368,7 +432,14 @@ def test_copying_an_issuer_token_does_not_forge_a_candidate(foreign: bool) -> No
 
 @pytest.mark.parametrize(
     "field",
-    ["foreign_evidence", "local_evidence", "evidence_contents", "family", "record"],
+    [
+        "foreign_evidence",
+        "local_evidence",
+        "evidence_contents",
+        "constituent_contents",
+        "family",
+        "record",
+    ],
 )
 def test_an_issued_candidate_cannot_be_altered_after_issuance(field: str) -> None:
     ledger = ClaimLedger(FaceGraph(Box(10, 10, 10)))
@@ -381,6 +452,8 @@ def test_an_issued_candidate_cannot_be_altered_after_issuance(field: str) -> Non
         object.__setattr__(candidate, "evidence", Evidence(frozenset({ledger.graph.nodes[1]})))
     elif field == "evidence_contents":
         object.__setattr__(candidate.evidence, "defining", frozenset({other.nodes[0]}))
+    elif field == "constituent_contents":
+        object.__setattr__(candidate.evidence, "constituent", frozenset({other.nodes[0]}))
     elif field == "family":
         object.__setattr__(candidate, "family", FamilyId.ANGLED_STEPS)
     else:

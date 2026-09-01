@@ -640,6 +640,50 @@
         }
       }
     },
+    "rectangular_blind_slot": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "rectangular_blind_slot": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "rectangular_blind_slot": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 1,
+          "absent_by_family": {
+            "rectangular_blind_slot": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
     "rectangular_through_step": {
       "baseline_records": 1,
       "rotations": {
@@ -713,6 +757,50 @@
           "absent": 0,
           "absent_by_family": {},
           "baseline_records": 0,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        }
+      }
+    },
+    "round_bottom_blind_slot": {
+      "baseline_records": 1,
+      "rotations": {
+        "X30": {
+          "absent": 1,
+          "absent_by_family": {
+            "round_bottom_blind_slot": 1
+          },
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 0,
+          "same_family": {},
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 1,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 1,
+          "same_family": {
+            "round_bottom_blind_slot": 1
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 1,
+          "absent_by_family": {
+            "round_bottom_blind_slot": 1
+          },
+          "baseline_records": 1,
           "introduced": 0,
           "introduced_by_family": {},
           "reclassified": 0,
@@ -1058,22 +1146,22 @@
   "schema": 1,
   "totals": {
     "X30": {
-      "absent": 42,
-      "baseline_records": 79,
+      "absent": 44,
+      "baseline_records": 81,
       "introduced": 0,
       "reclassified": 7,
       "retained_same_family": 30
     },
     "X90": {
       "absent": 0,
-      "baseline_records": 79,
+      "baseline_records": 81,
       "introduced": 0,
       "reclassified": 0,
-      "retained_same_family": 79
+      "retained_same_family": 81
     },
     "Z30": {
-      "absent": 29,
-      "baseline_records": 79,
+      "absent": 31,
+      "baseline_records": 81,
       "introduced": 0,
       "reclassified": 14,
       "retained_same_family": 36

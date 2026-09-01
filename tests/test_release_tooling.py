@@ -9,7 +9,7 @@ The script exists because a release that moves some copies and not others fails 
 testing is not that it can write a version -- it is that a partial write cannot survive.
 
 ``uv version`` is stubbed here rather than run. It owns ``pyproject.toml`` and ``uv.lock``
-and is not this script's behaviour; what is, is what happens to the other three files around
+and is not this script's behaviour; what is, is what happens to the other four files around
 it, including when it fails.
 """
 
@@ -54,6 +54,15 @@ def _project(root: Path, version: str = "0.2.5") -> None:
         + "\n",
         encoding="utf-8",
     )
+    (root / "src/b123d_recognisers/evidence_api.json").write_text(
+        json.dumps(
+            {"api": {}, "package": {"name": "b123d-recognisers", "version": version}},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (root / "src/b123d_recognisers/__init__.py").write_text(
         'try:\n'
         '    __version__ = version("b123d-recognisers")\n'
@@ -66,10 +75,12 @@ def _project(root: Path, version: str = "0.2.5") -> None:
 def _versions(root: Path) -> dict[str, str]:
     manifest = json.loads((root / "src/b123d_recognisers/capabilities.json").read_text())
     inspection = json.loads((root / "src/b123d_recognisers/inspection_api.json").read_text())
+    evidence = json.loads((root / "src/b123d_recognisers/evidence_api.json").read_text())
     init = (root / "src/b123d_recognisers/__init__.py").read_text(encoding="utf-8")
     return {
         "manifest": manifest["package"]["version"],
         "inspection": inspection["package"]["version"],
+        "evidence": evidence["package"]["version"],
         "fallback": init.split('__version__ = "')[-1].split('"')[0],
     }
 
@@ -87,6 +98,7 @@ def test_every_embedded_copy_moves_together(tmp_path, monkeypatch, target) -> No
     assert _versions(tmp_path) == {
         "manifest": target,
         "inspection": target,
+        "evidence": target,
         "fallback": target,
     }
 
@@ -142,7 +154,7 @@ def test_a_failure_after_the_manifest_is_written_still_restores_it(tmp_path, mon
 
     That one raises inside the `uv version` stub, i.e. before the manifest and fallback are
     touched -- so a rollback restoring only `pyproject.toml` and `uv.lock` passed it. Failing
-    at the *last* write is what actually requires all five snapshots to be honoured.
+    at the *last* write is what actually requires all six snapshots to be honoured.
     """
 
     module = _load()

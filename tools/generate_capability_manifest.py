@@ -213,6 +213,20 @@ FAMILIES = {
             "tests/test_pad_attribution.py",
         ],
     },
+    "rectangular-blind-slots": {
+        "recognisers": [("recognise_rectangular_blind_slots", "part")],
+        "records": [
+            (
+                "RectangularBlindSlot",
+                "output",
+                ["RecognitionResult.rectangular_blind_slots"],
+            )
+        ],
+        "census": "rectangular_blind_slot",
+        "goldens": ["rectangular_blind_slot"],
+        "introduced": "0.4.10",
+        "tests": ["tests/test_rectangular_blind_slots.py"],
+    },
     "repeating-radial-profiles": {
         "recognisers": [("recognise_repeating_radial_profiles", "part")],
         "records": [
@@ -248,6 +262,20 @@ FAMILIES = {
         "records": [("Slot", "output", ["RecognitionResult.slots"])],
         "census": "slot",
         "goldens": ["straight_and_obround_slots"],
+    },
+    "round-bottom-blind-slots": {
+        "recognisers": [("recognise_round_bottom_blind_slots", "part")],
+        "records": [
+            (
+                "RoundBottomBlindSlot",
+                "output",
+                ["RecognitionResult.round_bottom_blind_slots"],
+            )
+        ],
+        "census": "round_bottom_blind_slot",
+        "goldens": ["round_bottom_blind_slot"],
+        "introduced": "0.4.10",
+        "tests": ["tests/test_round_bottom_slots.py"],
     },
     "turned-steps": {
         "recognisers": [("recognise_turned_steps", "part")],
