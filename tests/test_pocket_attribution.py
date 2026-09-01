@@ -520,6 +520,28 @@ def test_nearby_hole_inner_loop_does_not_attach_to_pocket() -> None:
     assert all(ledger.graph.is_planar(node) for node in constituent)
 
 
+def test_intersecting_hole_regions_fall_back_to_historical_pocket_membership() -> None:
+    part = (
+        Box(80, 50, 14)
+        - Pos(0, 0, 5) * Box(20, 12, 10)
+        - Pos(10, 0, 0) * Cylinder(2, 14)
+    )
+    graph = FaceGraph(part)
+    (proposal,) = _pocket_proposals_one(part, graph=graph)
+    assert proposal.constituent == frozenset()
+
+    ledger = ClaimLedger(graph)
+    (record,) = _discover_pockets(part, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
+    defining = ledger.defining_of(candidate)
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+
+    assert candidate.record is record
+    assert constituent == defining | proposal.floors
+    assert len(constituent) == 3
+    assert all(ledger.graph.is_planar(node) for node in constituent)
+
+
 @pytest.mark.parametrize(
     "foreign", [lambda part: deepcopy(part), lambda part: Pos(100, 0, 0) * part]
 )

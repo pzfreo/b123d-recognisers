@@ -709,6 +709,15 @@ def _attach_complete_pocket_regions(
             continue
         regions.append((region, openings))
     regions.sort(key=lambda item: tuple(sorted(node.index for node in item[0])))
+    intersecting = {
+        index
+        for index, (region, _openings) in enumerate(regions)
+        if any(
+            region & other
+            for other_index, (other, _other_openings) in enumerate(regions)
+            if other_index != index
+        )
+    }
 
     matches: list[list[int]] = []
     for proposal in proposals:
@@ -717,7 +726,11 @@ def _attach_complete_pocket_regions(
         )
         anchors = defining | proposal.floors
         matches.append(
-            [index for index, (region, _openings) in enumerate(regions) if anchors <= region]
+            [
+                index
+                for index, (region, _openings) in enumerate(regions)
+                if index not in intersecting and anchors <= region
+            ]
         )
     region_uses = Counter(index for proposal_matches in matches for index in proposal_matches)
 
