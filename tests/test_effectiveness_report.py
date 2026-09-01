@@ -677,6 +677,16 @@ def test_corpus_run_authority_captures_mapping_and_refuses_drift(
         _verify_run_authority(authority, taxonomy)
 
 
+def test_taxonomy_loader_scores_from_captured_bytes(tmp_path: Path) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    captured = TAXONOMY_V2.read_bytes()
+    taxonomy.write_text("not the captured mapping", encoding="utf-8")
+
+    loaded = load_taxonomy(taxonomy, "mfcadpp", contents=captured)
+
+    assert loaded[7]["status"] == "supported"
+
+
 @pytest.mark.parametrize(("commit", "clean"), [("b" * 40, True), ("a" * 40, False)])
 def test_corpus_run_authority_refuses_source_drift(
     tmp_path: Path,
