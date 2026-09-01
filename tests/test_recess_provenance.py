@@ -11,13 +11,14 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from build123d import Box, Compound, Cylinder, Edge, Pos, Rot, export_step, import_step
 from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import recognise_pockets, recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
@@ -31,6 +32,7 @@ from b123d_recognisers._recess_faces import (
     _planar_faces,
 )
 from b123d_recognisers._recess_obround import (
+    _CAP_CLUSTER_FRAC,
     _extend_obround_ends,
     _extend_obround_proposals,
     _obround_end,
@@ -86,6 +88,22 @@ def test_stubby_pocket_dual_read_retains_caps_without_publishing_them() -> None:
     (proposal,) = proposals
     assert proposal.planar == frozenset()
     assert len(proposal.caps) == 2
+
+
+@pytest.mark.parametrize(("angle", "expected"), [(2.1, 1), (2.2, 0)])
+def test_near_principal_cap_centerlines_use_scaled_pairing_boundary(
+    angle: float, expected: int
+) -> None:
+    tool = Rot(0, 0, angle) * _obround(1, 1, 8)
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * tool
+    graph = FaceGraph(part)
+    ends = [end for end in _obround_ends(part, graph) if end[2] == "z"]
+
+    assert len(ends) == 2
+    delta = abs(ends[0][4] - ends[1][4])
+    tolerance = length_tol(ends[0][3], rel=_CAP_CLUSTER_FRAC)
+    assert (delta <= tolerance) is bool(expected)
+    assert len(_pocket_proposals_one(part, graph=graph)) == expected
 
 
 @pytest.mark.parametrize(
@@ -273,9 +291,10 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
 
     assert _prism_material_fraction(spans, IntersectionPart(None), inset=0) == 0.0
     assert _prism_material_fraction(spans, IntersectionPart(Volume(4.0)), inset=0) == 0.5
-    assert _prism_material_fraction(
-        spans, IntersectionPart([Volume(1.0), Volume(3.0)]), inset=0
-    ) == 0.5
+    assert (
+        _prism_material_fraction(spans, IntersectionPart([Volume(1.0), Volume(3.0)]), inset=0)
+        == 0.5
+    )
     with pytest.raises(ValueError, match="positive extent"):
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
     assert (

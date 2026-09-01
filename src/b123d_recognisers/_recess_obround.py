@@ -180,6 +180,36 @@ _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) /
 _CAP_CLUSTER_FRAC = 0.075
 
 
+def _compatible_end_groups(ends: list[tuple]) -> tuple[tuple[tuple, ...], ...]:
+    """Group ends by shared recess geometry without decimal-bucket centreline loss.
+
+    Imported or near-principal caps can establish width centres on opposite sides of a decimal
+    rounding boundary.  The same radius-scaled authority used to cluster patches of one physical
+    cap therefore groups opposing caps by centreline.  Requiring every member to agree with every
+    other member prevents a transitive chain from joining distinct recesses.
+    """
+
+    by_geometry: dict[tuple, list[tuple]] = {}
+    for end in ends:
+        wa, la, da, rad, _wc, _flat, _direction, d_lo, d_hi, _patches = end
+        key = (wa, la, da, round(rad, 2), round(d_lo, 2), round(d_hi, 2))
+        by_geometry.setdefault(key, []).append(end)
+
+    groups: list[tuple[tuple, ...]] = []
+    for key in sorted(by_geometry):
+        clusters: list[list[tuple]] = []
+        for end in sorted(by_geometry[key], key=lambda item: (item[4], item[5], item[6])):
+            tolerance = length_tol(end[3], rel=_CAP_CLUSTER_FRAC)
+            for cluster in clusters:
+                if all(abs(existing[4] - end[4]) <= tolerance for existing in cluster):
+                    cluster.append(end)
+                    break
+            else:
+                clusters.append([end])
+        groups.extend(tuple(cluster) for cluster in clusters)
+    return tuple(groups)
+
+
 def _obround_end(cap: tuple, patches: frozenset[FaceNode] = frozenset()) -> tuple | None:
     """Classify a concave cylinder *cap* (from :func:`_cylinder_faces`) as a half-cylinder obround
     end, or None. A half-cylinder end's in-plane bounding box is ≈ 2r across (its width axis) by
@@ -306,17 +336,14 @@ def _recognise_obround_from_ends(
     The two flats must be more than ``_MERGE_TOL`` apart to count as distinct ends — so a genuinely
     sub-millimetre obround (straight run < 0.5 mm) is not recovered; supporting that would need the
     module-wide absolute ``_MERGE_TOL`` to go relative, out of scope here."""
-    groups: dict[tuple, list[tuple]] = {}
-    for e in _obround_ends(part, graph):
-        wa, la, da, rad, wc, flat, direction, dlo, dhi, _patches = e
-        key = (wa, la, da, round(rad, 2), round(wc, 2), round(dlo, 2), round(dhi, 2))
-        groups.setdefault(key, []).append(e)
     # The list is homogeneous per call -- `blind` decides which record kind is appended -- but
     # that is a fact about the flag, not about this local, so the overloads above carry it and
     # the local is typed as what it structurally is.
     out: list[Slot | Pocket] = []
     proposed: list[_RecessProposal] = []
-    for (wa, la, _da, rad, wc, dlo, dhi), grp in groups.items():
+    for grp in _compatible_end_groups(_obround_ends(part, graph)):
+        wa, la, _da, rad, _wc, _flat, _direction, dlo, dhi, _patches = grp[0]
+        wc = sum(end[4] for end in grp) / len(grp)
         run = sorted(grp, key=lambda e: e[5])  # by flat along the long axis
         i = 0
         while i < len(run) - 1:
@@ -367,9 +394,7 @@ def _recognise_obround_from_ends(
                 )
                 out.append(record)
                 selected_floor = floor_ends[0] if floor_ends[0] else floor_ends[1]
-                floors = frozenset(
-                    face.node for face in selected_floor if face.node is not None
-                )
+                floors = frozenset(face.node for face in selected_floor if face.node is not None)
                 proposed.append(
                     _RecessProposal(
                         record,
