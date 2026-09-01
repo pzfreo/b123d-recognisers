@@ -353,3 +353,17 @@ Defining evidence remains the sole ownership relation and the sole face relation
 may read. Issue #368 may add constituent membership to the same terminal view only as a second
 non-owning projection with `defining` as a required subset. A consumer cannot construct either
 relationship from adjacency, labels or record values.
+
+## Amendment (Double-D bore precedence, issue #304)
+
+An accepted `DoubleDBore` supersedes an ordinary `HoleRecord` only when the Hole's non-empty exact
+defining-node set is a proper subset of the Double-D occurrence's complete defining wall set. The
+Double-D record describes the same constant through void and additionally retains both planar
+flats; the Hole is the partial-cylinder interpretation of that boundary. The rule runs after all
+discovery against terminal evidence, rejects only the Hole Candidate, and relates it to the exact
+winning Double-D Candidate. Direct family discovery remains independent.
+
+Coordinates, diameter, axis and record equality are not occurrence authority. Coincident voids
+on separate solids, disjoint ordinary holes and incomplete/empty evidence therefore cannot be
+collapsed. Hole-pattern derivation consumes the accepted Hole inventory and cannot recreate the
+rejected partial interpretation.

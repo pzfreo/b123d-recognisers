@@ -239,6 +239,39 @@ def reconcile_circular_step_fillets(
     return tuple(decisions)
 
 
+def reconcile_profiled_bore_candidates(
+    holes: CandidateSet[object],
+    double_d_bores: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Reject a partial circular-hole reading of one accepted Double-D void.
+
+    A Double-D bore retains its complete constant-extrusion wall set. A coincident ordinary
+    Hole sees only the cylindrical subset of that same boundary. Exact graph containment is
+    therefore the occurrence-safe precedence proof; equal coordinates, diameters and axes are
+    deliberately insufficient.
+    """
+
+    decisions = []
+    for hole in holes.candidates:
+        hole_faces = evidence.defining_of(hole)
+        winners = tuple(
+            bore
+            for bore in double_d_bores.candidates
+            if hole_faces and hole_faces < evidence.defining_of(bore)
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    hole,
+                    Outcome.REJECTED,
+                    ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE,
+                    winners,
+                )
+            )
+    return tuple(decisions)
+
+
 def reconcile_step_groove_candidates(
     steps: CandidateSet[object],
     grooves: CandidateSet[object],
