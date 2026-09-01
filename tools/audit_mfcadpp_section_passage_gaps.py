@@ -214,8 +214,7 @@ def _probe_run(
     complete_spans = cast(tuple[tuple[float, float], ...], spans)
     low, high = complete_spans[0]
     if any(
-        abs(span[0] - low) > _INTERVAL_TOL
-        or abs(span[1] - high) > _INTERVAL_TOL
+        abs(span[0] - low) > _INTERVAL_TOL or abs(span[1] - high) > _INTERVAL_TOL
         for span in complete_spans
     ):
         return _failed(
@@ -235,9 +234,7 @@ def _probe_run(
         centre = raw.centroid
         frame = LocalFrame.canonical(
             base.run,
-            tuple(
-                centre[0] * base.u[index] + centre[1] * base.v[index] for index in range(3)
-            ),
+            tuple(centre[0] * base.u[index] + centre[1] * base.v[index] for index in range(3)),
         )
         section = PlanarSection(
             tuple(
@@ -284,7 +281,9 @@ def _probe_component(graph: FaceGraph, component: frozenset[FaceNode]) -> Compon
     return max((_probe_run(graph, members, run) for run in runs), key=lambda probe: probe.stage)
 
 
-def _accepted_claims(product: Any) -> tuple[tuple[str, frozenset[FaceNode]], ...]:
+def _accepted_claims(
+    product: Any,
+) -> tuple[tuple[str, frozenset[FaceNode], frozenset[FaceNode]], ...]:
     claims = []
     for family in FamilyId:
         if family is FamilyId.LEGACY:
@@ -292,32 +291,40 @@ def _accepted_claims(product: Any) -> tuple[tuple[str, frozenset[FaceNode]], ...
         for disposition in product.reconciliation.for_family(family):
             if disposition.outcome is Outcome.ACCEPTED:
                 candidate = disposition.candidate
-                faces = product.evidence.defining_of(candidate) | product.evidence.constituent_of(
-                    candidate
+                claims.append(
+                    (
+                        family.value,
+                        product.evidence.defining_of(candidate),
+                        product.evidence.constituent_of(candidate),
+                    )
                 )
-                claims.append((family.value, faces))
     return tuple(claims)
+
+
+def _relation(
+    component: frozenset[FaceNode],
+    claims: tuple[tuple[str, frozenset[FaceNode], frozenset[FaceNode]], ...],
+    role: int,
+) -> dict[str, Any]:
+    touched = [claim for claim in claims if component & claim[role]]
+    covered = set().union(*(component & claim[role] for claim in touched)) if touched else set()
+    return {
+        "covered_faces": len(covered),
+        "full": component <= covered,
+        "touching_families": sorted({claim[0] for claim in touched}),
+    }
 
 
 def _component_row(
     graph: FaceGraph,
     component: frozenset[FaceNode],
-    claims: tuple[tuple[str, frozenset[FaceNode]], ...],
+    claims: tuple[tuple[str, frozenset[FaceNode], frozenset[FaceNode]], ...],
     proposals: tuple[frozenset[FaceNode], ...],
     *,
     model_id: str,
     ordinal: int,
 ) -> dict[str, Any]:
-    touched = [(family, faces) for family, faces in claims if component & faces]
-    covered = set().union(*(component & faces for _family, faces in touched)) if touched else set()
-    passage_touched = [
-        faces for family, faces in touched if family == FamilyId.PASSAGES.value
-    ]
-    passage_covered = (
-        set().union(*(component & faces for faces in passage_touched))
-        if passage_touched
-        else set()
-    )
+    passage_claims = tuple(claim for claim in claims if claim[0] == FamilyId.PASSAGES.value)
     surface_counts = Counter(str(graph.surface(node)) for node in component)
     proposal_overlap = [
         overlap
@@ -331,13 +338,12 @@ def _component_row(
         "face_count": len(component),
         "surface_counts": dict(sorted(surface_counts.items())),
         "accepted": {
-            "covered_faces": len(covered),
-            "full": component <= covered,
-            "touching_families": sorted({family for family, _faces in touched}),
+            "defining": _relation(component, claims, 1),
+            "constituent": _relation(component, claims, 2),
         },
         "passages": {
-            "covered_faces": len(passage_covered),
-            "full": component <= passage_covered,
+            "defining": _relation(component, passage_claims, 1),
+            "constituent": _relation(component, passage_claims, 2),
         },
         "production_proposal_overlaps": sorted(proposal_overlap),
         "probe": asdict(_probe_component(graph, component)),
@@ -363,9 +369,7 @@ def main() -> int:
         truth = load_mfcadpp_truth(path)
         sources.append((truth.model_id, truth.source_sha256))
         indices = {
-            index
-            for index, class_id in enumerate(truth.semantic)
-            if class_id == args.class_id
+            index for index, class_id in enumerate(truth.semantic) if class_id == args.class_id
         }
         if not indices:
             continue
@@ -392,10 +396,10 @@ def main() -> int:
             for ordinal, component in enumerate(_components(graph, nodes), start=1)
         )
     gate_counts = Counter(row["probe"]["first_failed_gate"] for row in rows)
-    untouched = [row for row in rows if row["accepted"]["covered_faces"] == 0]
+    untouched = [row for row in rows if row["accepted"]["constituent"]["covered_faces"] == 0]
     report = {
         "format": "b123d-recognisers-mfcadpp-section-passage-gap-audit",
-        "format_version": 1,
+        "format_version": 2,
         "implementation_commit": _commit(),
         "production_source": {
             "path": "src/b123d_recognisers/_section_passages.py",

@@ -21,6 +21,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._section_passages import section_ring_proposals
 from tools.audit_mfcadpp_section_passage_gaps import (
     _probe_component,
+    _relation,
     _selection_hash,
     _source_selection_hash,
 )
@@ -109,6 +110,23 @@ def test_equal_rectangular_passages_on_separate_bodies_remain_distinct() -> None
     owners = [graph.common_valid_solid(component) for component in components]
     assert None not in owners
     assert owners[0] != owners[1]
+
+
+def test_audit_keeps_defining_and_constituent_coverage_separate() -> None:
+    part = _polygonal_passage(4)
+    graph = FaceGraph(part)
+    (proposal,) = section_ring_proposals(part, graph)
+    component = frozenset(proposal.nodes)
+    defining = frozenset((min(component, key=lambda node: node.index),))
+    claims = (("passages", defining, component),)
+
+    defining_relation = _relation(component, claims, 1)
+    constituent_relation = _relation(component, claims, 2)
+
+    assert defining_relation["covered_faces"] == 1
+    assert defining_relation["full"] is False
+    assert constituent_relation["covered_faces"] == 4
+    assert constituent_relation["full"] is True
 
 
 def test_selection_hashes_pin_order_and_source_content() -> None:
