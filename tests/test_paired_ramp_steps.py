@@ -305,7 +305,7 @@ def test_multiple_coplanar_ramp_faces_are_not_traversed_or_merged() -> None:
     ]
     assert len(ramps) == 3
     assert sum(
-        graph.arc(left, right) == "smooth"
+        graph.normal(left) == graph.normal(right) and bool(graph.shared_edges(left, right))
         for index, left in enumerate(ramps)
         for right in ramps[index + 1 :]
     ) == 1
