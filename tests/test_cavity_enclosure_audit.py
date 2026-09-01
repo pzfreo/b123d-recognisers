@@ -21,7 +21,7 @@ def test_blind_and_through_cavities_form_one_bounded_region() -> None:
         assert len(regions) == 1
         region, owners = regions[0]
         assert owners
-        assert graph.common_valid_solid(region) is not None
+        assert graph.common_valid_solid(region | owners) is not None
         assert region < frozenset(graph.nodes)
 
 
@@ -34,7 +34,10 @@ def test_multiple_and_separate_body_cavities_remain_distinct() -> None:
     graph = FaceGraph(compound)
     regions = _candidate_regions(graph)
     assert len(regions) == 2
-    assert all(graph.common_valid_solid(region) is not None for region, _owners in regions)
+    assert all(
+        graph.common_valid_solid(region | owners) is not None
+        for region, owners in regions
+    )
     assert graph.common_valid_solid(regions[0][0] | regions[1][0]) is None
 
 

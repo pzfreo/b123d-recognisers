@@ -189,7 +189,7 @@ def main() -> int:
             _candidate_regions(graph),
             start=1,
         ):
-            solid = graph.common_valid_solid(region)
+            solid = graph.common_valid_solid(region | owners)
             solid_nodes = (
                 {node for node in graph.nodes if graph.common_valid_solid((node,)) is solid}
                 if solid is not None
