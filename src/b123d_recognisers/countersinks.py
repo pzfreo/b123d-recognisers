@@ -16,8 +16,8 @@ Heuristic limits (``recognised`` tier): an edge-break / deburr / lead-in chamfer
 mouth is geometrically a shallow countersink, so a **flare-ratio floor** (``_MIN_MAJOR_RATIO``)
 excludes it — a screw seat flares to roughly twice the bore, an edge break barely widens
 it; a near-flat cone above ``_MAX_INCLUDED_ANGLE`` (a draft / relief) is excluded; a
-  countersink whose trimmed rims cease to be circular is missed. A side clip may retain circular
-  arc geometry and remains a documented standalone false positive in this neutral attribution slice.
+  countersink whose trimmed rims cease to be circular is missed. Material-side orientation
+  rejects external cones even when trimming leaves circular rim arcs.
 
 Known limitations (edge geometries; the common one-face countersink is exact):
 
@@ -107,10 +107,10 @@ class _HoleLike(Protocol):
 def countersink_matches_hole(countersink: CounterSink, hole: _HoleLike) -> bool:
     """Return whether *countersink* is seated at a recognised bore mouth.
 
-    The standalone countersink recogniser deliberately admits an external stepped-shaft
-    false positive.  Association with a :class:`HoleRecord` is therefore the semantic
-    boundary that proves the cone is a hole requirement.  Keep that geometry predicate
-    recognition-owned so feature construction and downstream completeness cannot drift.
+    CounterSink discovery already proves that the cone opens into a void. This stricter
+    association establishes which recognised bore mouth it belongs to. Keep that geometry
+    predicate recognition-owned so feature construction and downstream completeness cannot
+    drift.
     """
     minor = tuple(
         countersink.location[index] + countersink.depth * countersink.axis[index]
