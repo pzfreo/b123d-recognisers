@@ -536,6 +536,67 @@
       ]
     },
     {
+      "census_name": "blend",
+      "census_output": "RecognitionResult.blends",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [],
+      "id": "blends",
+      "introduced_in": "0.4.11",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_blends",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.blends"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "axis_direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "side": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "Blend",
+          "qualified_name": "b123d_recognisers.Blend",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_blends.py",
+        "tests/test_blend_view.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "fillet",
       "census_output": "RecognitionResult.fillets",
       "documentation": [

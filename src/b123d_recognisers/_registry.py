@@ -42,6 +42,7 @@ from b123d_recognisers._recess_features import (
 from b123d_recognisers._run import RecognitionContext
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
+from b123d_recognisers.blends import Blend, _discover_blends
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.circular_blind_steps import (
     CircularBlindStep,
@@ -835,6 +836,26 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         Counted("passage"),
         FullyAttributed("every returned passage claims its defining passage faces"),
         projected=prismatic,
+    ),
+    PhysicalDefinition(
+        FamilyId.BLENDS,
+        (Blend,),
+        "blends",
+        "recognise_blends",
+        (),
+        always,
+        _simple(
+            lambda s: list(
+                _discover_blends(
+                    s.context.part,
+                    graph=s.context.graph,
+                    surfaces=s.context.surfaces,
+                    writer=s.writer,
+                )
+            )
+        ),
+        Counted("blend"),
+        FullyAttributed("every returned Blend owns every original cylindrical chain patch"),
     ),
     PhysicalDefinition(
         FamilyId.FILLETS,

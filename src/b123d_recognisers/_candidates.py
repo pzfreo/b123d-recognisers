@@ -44,6 +44,7 @@ class FamilyId(Enum):
 
     LEGACY = "legacy"
     ANGLED_STEPS = "angled_steps"
+    BLENDS = "blends"
     BOSSES = "bosses"
     CHAMFERS = "chamfers"
     CHANNELS = "channels"
