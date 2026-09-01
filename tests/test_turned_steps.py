@@ -9,7 +9,12 @@ import pytest
 from attribution_audit import attributed_run, unattributed_run
 from build123d import Box, Cylinder, GeomType, Pos, Rotation
 
-from b123d_recognisers import TurnedProfile, TurnedStep, recognise_turned_steps
+from b123d_recognisers import (
+    TurnedProfile,
+    TurnedStep,
+    build_raw_recognition_result,
+    recognise_turned_steps,
+)
 from b123d_recognisers._candidates import FamilyId
 
 
@@ -27,6 +32,20 @@ def _shaft_x(*sections):
 
 def _lengths(steps):
     return sorted(round(s.length, 2) for s in steps)
+
+
+def _blind_bored_shaft(axis: str):
+    shaft = Cylinder(15, 30) + Pos(0, 0, 30) * Cylinder(8, 30)
+    shaft -= Pos(0, 0, 45) * Cylinder(5, 30)
+    return {
+        "x": Rotation(0, 90, 0),
+        "y": Rotation(90, 0, 0),
+        "z": Rotation(0, 0, 0),
+    }[axis] * shaft
+
+
+def _step_signature(steps):
+    return [(step.axis, step.lo, step.hi, step.length, step.diameter) for step in steps]
 
 
 class TestFindTurnedSteps:
@@ -62,6 +81,25 @@ class TestFindTurnedSteps:
         steps = recognise_turned_steps(shaft)
         assert steps
         assert _lengths(steps) == [30.0, 40.0]
+
+    @pytest.mark.parametrize("axis", ["x", "y", "z"])
+    def test_blind_bore_floor_is_ignored_after_transverse_translation(self, axis):
+        part = _blind_bored_shaft(axis)
+        translation = (91, -37, 48)
+        moved = Pos(*translation) * part
+
+        baseline = recognise_turned_steps(part)
+        translated = recognise_turned_steps(moved)
+        assert len(baseline) == len(translated) == 2
+        axial_shift = translation["xyz".index(axis)]
+        assert _step_signature(translated) == [
+            (step.axis, step.lo + axial_shift, step.hi + axial_shift, step.length, step.diameter)
+            for step in baseline
+        ]
+
+        # The raw aggregate keeps caller coordinates and uses the same corrected discovery path.
+        aggregate = build_raw_recognition_result(moved)
+        assert _step_signature(aggregate.turned_steps) == _step_signature(translated)
 
     def test_chamfered_shoulders_keep_true_lengths(self):
         # Chamfer the shoulder edges; the step lengths must stay shoulder-to-
