@@ -1,0 +1,489 @@
+{
+  "class_id": 15,
+  "component_derivation": "same-label original faces connected by shared-edge adjacency",
+  "dataset_version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+  "first_failed_gates": {
+    "not_simple_cycle": 17,
+    "not_single_cap": 2
+  },
+  "format": "b123d-recognisers-mfcadpp-prismatic-pocket-gap-audit",
+  "format_version": 1,
+  "global_pocket_overlaps": 0,
+  "global_ring_overlaps": 4,
+  "implementation_commit": "b93cf263c85cc1ec9dfcf3048d4d63a74012a10c",
+  "native_instance_labels": false,
+  "rows": [
+    {
+      "faces": 4,
+      "internal_degrees": {
+        "2": 2,
+        "3": 2
+      },
+      "model_id": "10027",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 3,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 3,
+        "stage": 2
+      },
+      "source_sha256": "ae7b12ea02a330366fc5a3644ee6069791bd537cc211dd05150383b86ec567d2",
+      "surfaces": {
+        "GeomAbs_Plane": 4
+      }
+    },
+    {
+      "faces": 3,
+      "internal_degrees": {
+        "2": 3
+      },
+      "model_id": "10255",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 2,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 2,
+        "stage": 2
+      },
+      "source_sha256": "324d912c89adbe25a94669454d756c8fbbaa0aa37d76b90333d4f9e8e84160d9",
+      "surfaces": {
+        "GeomAbs_Plane": 3
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "3": 6,
+        "6": 1
+      },
+      "model_id": "10285",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 5,
+        "stage": 2
+      },
+      "source_sha256": "95ba6427a4f5e8033615810d0abc61ea3a3eef89acc95ac8c348cad5cfe2b52e",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "2": 2,
+        "3": 4,
+        "6": 1
+      },
+      "model_id": "10550",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 6,
+        "stage": 2
+      },
+      "source_sha256": "146a41a1f0bc396a99d671c379d4a2226b152e574cf66b2fa5b62a410fe501e7",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 6,
+      "internal_degrees": {
+        "2": 2,
+        "3": 3,
+        "5": 1
+      },
+      "model_id": "10881",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 5,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 5,
+        "stage": 2
+      },
+      "source_sha256": "24ef2792e9be24159bd07f3e8b3b33a75e6b21dfc7a408ab69ef3e7e15b5dd4d",
+      "surfaces": {
+        "GeomAbs_Plane": 6
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "2": 2,
+        "3": 4,
+        "6": 1
+      },
+      "model_id": "10948",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 1,
+      "ring_probe": {
+        "axis": 2,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 6,
+        "stage": 2
+      },
+      "source_sha256": "0b5ec4ade093c71d8500e1b591df7d82971ad26a3c8be902d4c255ae2b4dbb7a",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 3,
+      "internal_degrees": {
+        "2": 3
+      },
+      "model_id": "10948",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 2,
+      "ring_probe": {
+        "axis": 2,
+        "cap_counts": null,
+        "eligible_walls": 2,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 2,
+        "stage": 2
+      },
+      "source_sha256": "0b5ec4ade093c71d8500e1b591df7d82971ad26a3c8be902d4c255ae2b4dbb7a",
+      "surfaces": {
+        "GeomAbs_Plane": 3
+      }
+    },
+    {
+      "faces": 6,
+      "internal_degrees": {
+        "2": 2,
+        "3": 3,
+        "5": 1
+      },
+      "model_id": "11314",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 5,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 5,
+        "stage": 2
+      },
+      "source_sha256": "dc69cf7c204766d3d2935511a269fc0eb01ccbcb83cb25c7b7e3d4c274f8b652",
+      "surfaces": {
+        "GeomAbs_Plane": 6
+      }
+    },
+    {
+      "faces": 4,
+      "internal_degrees": {
+        "2": 2,
+        "3": 2
+      },
+      "model_id": "11430",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 3,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 3,
+        "stage": 2
+      },
+      "source_sha256": "4c204038a79ff4adad100f03c805497332f063e2169013c0b527b7a28bfd8587",
+      "surfaces": {
+        "GeomAbs_Plane": 4
+      }
+    },
+    {
+      "faces": 3,
+      "internal_degrees": {
+        "2": 3
+      },
+      "model_id": "11430",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 2,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 2,
+        "stage": 2
+      },
+      "source_sha256": "4c204038a79ff4adad100f03c805497332f063e2169013c0b527b7a28bfd8587",
+      "surfaces": {
+        "GeomAbs_Plane": 3
+      }
+    },
+    {
+      "faces": 4,
+      "internal_degrees": {
+        "2": 2,
+        "3": 2
+      },
+      "model_id": "11532",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 3,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 3,
+        "stage": 2
+      },
+      "source_sha256": "ab69732926e7d3d3f2c104d760d445842aa669fe0abf62a37ce9d7d16eb71ce9",
+      "surfaces": {
+        "GeomAbs_Plane": 4
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "3": 6,
+        "6": 1
+      },
+      "model_id": "11698",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 5,
+        "stage": 2
+      },
+      "source_sha256": "8662369cf681ebaf263985fe8e12255e9fbfe600f03240f15b84237669409d27",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "2": 2,
+        "3": 4,
+        "6": 1
+      },
+      "model_id": "11906",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 2,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 3,
+        "stage": 2
+      },
+      "source_sha256": "a6f3e0c38a8698ffa6c0dabf49023b0753d810059186e28182d2217f9abf5b8a",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "3": 6,
+        "6": 1
+      },
+      "model_id": "12083",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 7,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": [
+          1,
+          1
+        ],
+        "eligible_walls": 6,
+        "first_failed_gate": "not_single_cap",
+        "span_members": 6,
+        "stage": 5
+      },
+      "source_sha256": "974084eefc9c536cf77f95052ada785bfcaf6257bacefe16df928be30f51d7ef",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 5,
+      "internal_degrees": {
+        "2": 2,
+        "3": 2,
+        "4": 1
+      },
+      "model_id": "12118",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 4,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 4,
+        "stage": 2
+      },
+      "source_sha256": "a2578ea01fac190f85b6e436397b6ec029aca98839f6c78448a2385aa689aaca",
+      "surfaces": {
+        "GeomAbs_Plane": 5
+      }
+    },
+    {
+      "faces": 3,
+      "internal_degrees": {
+        "2": 3
+      },
+      "model_id": "12118",
+      "one_valid_solid": true,
+      "ordinal": 1,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": null,
+        "eligible_walls": 2,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 2,
+        "stage": 2
+      },
+      "source_sha256": "a2578ea01fac190f85b6e436397b6ec029aca98839f6c78448a2385aa689aaca",
+      "surfaces": {
+        "GeomAbs_Plane": 3
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "3": 6,
+        "6": 1
+      },
+      "model_id": "12454",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 2,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 5,
+        "stage": 2
+      },
+      "source_sha256": "e346c4ab26aeccc810be27ddf08822dd9b03b5f35974468fcd78e06e0dbaff0a",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "3": 6,
+        "6": 1
+      },
+      "model_id": "12603",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 7,
+      "ring_probe": {
+        "axis": 1,
+        "cap_counts": [
+          1,
+          1
+        ],
+        "eligible_walls": 6,
+        "first_failed_gate": "not_single_cap",
+        "span_members": 6,
+        "stage": 5
+      },
+      "source_sha256": "0bdda08cabb24ea81c1e1d7abfeaed4875c6bcf69bcbc2475d95b73315933784",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    },
+    {
+      "faces": 7,
+      "internal_degrees": {
+        "2": 2,
+        "3": 4,
+        "6": 1
+      },
+      "model_id": "1267",
+      "one_valid_solid": true,
+      "ordinal": 0,
+      "pocket_overlap_faces": 0,
+      "ring_overlap_faces": 0,
+      "ring_probe": {
+        "axis": 0,
+        "cap_counts": null,
+        "eligible_walls": 6,
+        "first_failed_gate": "not_simple_cycle",
+        "span_members": 6,
+        "stage": 2
+      },
+      "source_sha256": "3306a491792e799ad3b881f80427f1f7e848345c556eb6283c8c793bcf619aa9",
+      "surfaces": {
+        "GeomAbs_Plane": 7
+      }
+    }
+  ],
+  "selection": {
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+    "selected_sources_sha256": "1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331"
+  },
+  "untouched_components": 19,
+  "untouched_faces": 104
+}
