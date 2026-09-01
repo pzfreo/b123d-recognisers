@@ -10,17 +10,20 @@ from build123d import (
     Box,
     Compound,
     Cylinder,
+    Edge,
     Plane,
     Polygon,
     Pos,
     Rot,
     Shell,
+    Solid,
     Vector,
     chamfer,
     export_step,
     extrude,
     import_step,
 )
+from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import (
     PairedRampStep,
@@ -273,6 +276,43 @@ def test_an_independent_circular_ramp_inner_wire_retains_the_original_face_pair(
     assert recognise_paired_ramp_steps(interrupted) == [
         PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
     ]
+
+
+def test_multiple_coplanar_ramp_faces_are_not_traversed_or_merged() -> None:
+    part = _side_cut()
+    lower_ramp = next(
+        face
+        for face in part.faces()
+        if (normal := face.normal_at()).X > 0.6 and normal.Z > 0.7
+    )
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(
+        Edge.make_line((10, 5, 0), (20, 5, -8)).wrapped,
+        lower_ramp.wrapped,
+    )
+    splitter.Build()
+    assert splitter.IsDone()
+    split = Solid(splitter.Shape())
+    assert split.is_valid
+
+    graph = FaceGraph(split)
+    ramps = [
+        node
+        for node in graph.nodes
+        if (normal := graph.normal(node)) is not None
+        and normal[0] > 0.6
+        and abs(normal[2]) > 0.7
+    ]
+    assert len(ramps) == 3
+    assert sum(
+        graph.arc(left, right) == "smooth"
+        for index, left in enumerate(ramps)
+        for right in ramps[index + 1 :]
+    ) == 1
+
+    ledger = ClaimLedger(graph)
+    assert recognise_paired_ramp_steps(split, ledger=ledger) == []
+    assert ledger.claims == ()
 
 
 def test_subdivided_ramps_remain_covariant_and_profile_order_independent() -> None:
