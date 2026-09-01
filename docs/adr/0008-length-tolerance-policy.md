@@ -440,3 +440,13 @@ gates use the candidate face's valid-solid bounds; another solid cannot enlarge 
 or make an exterior face appear interior. `body_levels` uses the existing body-local FaceLevel
 clustering and end filtering. Projection uses `RiserEvidence.tol` for both the caller-level/body-
 level intersection and the endpoint tie. No corpus-derived tolerance is introduced.
+
+## Amendment (Plate maximum-thickness boundary, issue #383)
+
+`Plate.max_thick_frac` remains a dimensionless strict upper bound on slab thickness. An exact
+tie is a refusal: a span must meaningfully clear the maximum on its thin side before it can issue
+a Plate. Both the early eligibility check and the final proposal gate therefore use
+`clears_threshold(maximum_thickness, thickness)`. This rejects insignificant reconstruction noise
+on either side of an exact tie while preserving the established just-inside acceptance and
+just-outside refusal. `_TOL` remains the separate absolute minimum-evidence threshold and record
+rounding remains serialization only.
