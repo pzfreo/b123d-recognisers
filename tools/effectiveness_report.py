@@ -18,9 +18,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from b123d_recognisers._candidates import FamilyId, PredicateId
-from b123d_recognisers._dispositions import Outcome
-
 REPORT_FORMAT = "b123d-recognisers-effectiveness"
 REPORT_FORMAT_VERSION = 3
 _MFCAD_LABEL = re.compile(rb"ADVANCED_FACE\('(\d+)'")
@@ -225,6 +222,10 @@ def score_inventory(
     seconds: float,
 ) -> dict[str, Any]:
     """Score one already-completed inventory without rerunning a recogniser."""
+
+    # Authority is captured before production recognisers are imported by the corpus runner.
+    from b123d_recognisers._candidates import FamilyId, PredicateId
+    from b123d_recognisers._dispositions import Outcome
 
     if not math.isfinite(seconds) or seconds < 0.0:
         raise EffectivenessDataError("runtime must be finite and non-negative")
