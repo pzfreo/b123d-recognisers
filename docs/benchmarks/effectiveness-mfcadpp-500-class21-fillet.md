@@ -22,8 +22,10 @@ faces in 173 shared-edge same-label component proxies across 131 models.
 - Thirty-seven of those residual components also contain one or more labelled planar
   terminals which Fillet does not own: 29 contain one cylinder plus one plane, seven
   contain one cylinder plus two planes, and one contains two cylinders plus three
-  planes. `StepLevel` supplies the apparent all-family coverage of the terminal; it
-  does not turn the Fillet record into a complete circular blind step.
+  planes. `StepLevel` touches only 12 of these 37 components, `AngledStep` touches one,
+  and accepted all-family evidence fully covers only nine. These other families can
+  supply some terminal coverage, but none turns the Fillet record itself into a
+  complete circular blind step.
 - The remaining five Fillet-covered label components are singleton cylinders, but
   they have the same accepted Fillet wall semantics and provide no terminal evidence
   that would justify treating a generic round as a complete CircularBlindStep.
@@ -83,5 +85,6 @@ contract; a future canonical transfer run should retain the shipped mapping.
 
 The decision conforms to ADRs 0002, 0003, 0004, 0005, and 0007. Deterministic family
 output, explicit reconciliation, defining/constituent evidence, stable family IDs and
-module seams are unchanged. Final-diff conformance and one independent exact-head
-contract review remain required before this evidence-only closure merges.
+module seams are unchanged. The independent review found and corrected an
+overstatement of StepLevel terminal coverage; the decision, audit arithmetic,
+counterfactual, unchanged taxonomy and ADR conformance were otherwise clean.
