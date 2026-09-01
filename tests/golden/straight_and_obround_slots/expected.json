@@ -13,40 +13,7 @@
       "prismatic": {
         "_type": "RecognitionResult",
         "angled_steps": [],
-        "blends": [
-          {
-            "_type": "Blend",
-            "at": [
-              15.0,
-              0.0,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "radius": 5.0,
-            "side": "concave"
-          },
-          {
-            "_type": "Blend",
-            "at": [
-              49.0,
-              0.0,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "radius": 5.0,
-            "side": "concave"
-          }
-        ],
+        "blends": [],
         "bosses": [],
         "chamfers": [],
         "channels": [],
@@ -333,40 +300,7 @@
       "rotational": {
         "_type": "RecognitionResult",
         "angled_steps": [],
-        "blends": [
-          {
-            "_type": "Blend",
-            "at": [
-              15.0,
-              0.0,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "radius": 5.0,
-            "side": "concave"
-          },
-          {
-            "_type": "Blend",
-            "at": [
-              49.0,
-              0.0,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "radius": 5.0,
-            "side": "concave"
-          }
-        ],
+        "blends": [],
         "bosses": [],
         "chamfers": [],
         "channels": [],
@@ -653,7 +587,7 @@
     },
     "feature_census": {
       "angled_step": 0,
-      "blend": 2,
+      "blend": 0,
       "boss": 0,
       "chamfer": 0,
       "channel": 0,
@@ -677,40 +611,7 @@
     },
     "individual": {
       "recognise_angled_steps": [],
-      "recognise_blends": [
-        {
-          "_type": "Blend",
-          "at": [
-            15.0,
-            0.0,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "radius": 5.0,
-          "side": "concave"
-        },
-        {
-          "_type": "Blend",
-          "at": [
-            49.0,
-            0.0,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "radius": 5.0,
-          "side": "concave"
-        }
-      ],
+      "recognise_blends": [],
       "recognise_bosses": [],
       "recognise_chamfers": [],
       "recognise_channels": [],

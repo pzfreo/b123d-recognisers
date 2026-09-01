@@ -2,12 +2,12 @@
 # Copyright 2024-2026 Paul Fremantle
 """Complete cylindrical rolling-ball blend-chain recognition.
 
-A :class:`Blend` is neutral geometry rather than a dimensioning policy: one connected,
-same-solid chain of native cylindrical patches with one radius, one material side and exactly
-two complete support regions.  Convex and concave chains are both reported.  The narrower
-:class:`~b123d_recognisers.fillets.Fillet` family remains the dimension-worthy external edge
-treatment; aggregate reconciliation prefers that family, or a CircularBlindStep, when either
-describes the same curved faces.
+A :class:`Blend` is one connected, same-solid convex chain of native cylindrical patches with
+one radius and exactly two complete support regions. The private index also proves concave chains,
+but those usually belong to a larger pocket, slot or step and are not yet independent public
+occurrences. The narrower :class:`~b123d_recognisers.fillets.Fillet` family remains the
+dimension-worthy external edge treatment; aggregate reconciliation prefers that family when it
+describes the complete curved chain.
 
 The recogniser consumes the immutable :class:`._blend_view.BlendCollapseIndex`.  It never copies
 Analysis Situs rules, consults a corpus label, or infers membership after recognition.  Every
@@ -36,9 +36,9 @@ from b123d_recognisers._typing import Part
 class Blend(Record):
     """One complete cylindrical rolling-ball chain.
 
-    ``side`` is ``"convex"`` for an external round and ``"concave"`` for an internal round.
-    ``axis`` names the dominant component of the canonical unit ``axis_direction``. ``at`` is a
-    subdivision-invariant leader point on the chain's common analytic cylinder.
+    The initial public contract always reports ``side="convex"``. ``axis`` names the dominant
+    component of the canonical unit ``axis_direction``. ``at`` is a subdivision-invariant leader
+    point on the chain's common analytic cylinder.
     """
 
     axis: str
@@ -48,8 +48,8 @@ class Blend(Record):
     axis_direction: tuple[float, float, float]
 
     def __post_init__(self) -> None:
-        if self.side not in {"convex", "concave"}:
-            raise ValueError("blend side must be convex or concave")
+        if self.side != "convex":
+            raise ValueError("public blend side must be convex")
         object.__setattr__(
             self,
             "axis_direction",
@@ -161,6 +161,7 @@ def _discover_blends(
     proposals = [
         proposal
         for chain in BlendCollapseIndex(graph, surfaces).chains()
+        if chain.side == "convex"
         if (proposal := _proposal(chain, graph, surfaces)) is not None
     ]
     proposals.sort(

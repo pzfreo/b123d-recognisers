@@ -16,18 +16,23 @@ The existing private `BlendCollapseIndex` already establishes a stronger neutral
 groups native cylindrical patches only when exact original topology proves one connected,
 nonbranching, same-solid chain with one analytic cylinder, one convex or concave material side,
 two unambiguous support regions and complete spring/internal/terminal boundary provenance. Its
-complete MFCAD++-2,500 label-blind audit found that the useful missing subset is reachable without
-changing `Fillet`; MFInstSeg remains sealed pseudo-blind transfer evidence and did not shape this
-decision.
+complete MFCAD++-2,500 label-blind audit found five newly reached untouched Round faces, all on
+convex chains. The one concave pure-Round chain was already constituent evidence of a Pocket, while
+1,827 other concave chains carried no Round label. Labels do not decide geometry, but this result
+shows no independent downstream ownership benefit for public concave occurrences. MFInstSeg remains
+sealed pseudo-blind transfer evidence and did not shape this decision.
 
 ## Decision
 
 Add public `recognise_blends(part) -> list[Blend]` and aggregate
-`RecognitionResult.blends`. One complete cylindrical chain is one occurrence, regardless of how
-many original patches subdivide it. `Blend` serializes:
+`RecognitionResult.blends`. The initial public family includes complete **convex** cylindrical
+chains only; concave chains remain available inside the private `BlendCollapseIndex` until a
+concrete consumer can define their ownership relative to pockets, slots and steps. One complete
+public chain is one occurrence, regardless of how many original patches subdivide it. `Blend`
+serializes:
 
 - the analytic radius;
-- the proved `side` (`"convex"` or `"concave"`);
+- the proved `side`, fixed to `"convex"` in schema version 1;
 - the dominant local `axis` plus its canonical full `axis_direction`; and
 - a leader point obtained by projecting the chain's aggregate area centroid to its common
   analytic cylinder.
@@ -39,7 +44,7 @@ indices, graph handles or kernel objects.
 `Blend` is geometry, while `Fillet` is a more specific dimensioning-ready interpretation.
 Discovery remains independent. During aggregate reconciliation, accepted Fillet occurrences
 supersede a Blend only when their exact defining-face union covers the complete chain. Small,
-internal, oblique or otherwise unmatched chains remain accepted. Current CircularBlindStep and
+oblique or otherwise unmatched convex chains remain accepted. Current CircularBlindStep and
 annular Boss/Hole geometry do not satisfy the complete-chain predicate, so no speculative
 precedence rule is added for them.
 
@@ -67,7 +72,7 @@ explicitly outside it.
 
 ## Required evidence
 
-- convex, concave, small-radius and non-principal authored positives;
+- convex, small-radius and non-principal authored positives plus public concave exclusion;
 - sharp/full-cylinder negatives, index refusal and tolerance-boundary coverage;
 - rigid translation/rotation, scale, traversal-order and compound ownership controls;
 - exact defining-face evidence and one-occurrence-per-chain behavior;
@@ -82,8 +87,9 @@ aggregate pseudo-blind transfer milestone; individual transfer models do not fee
 
 ## Consequences
 
-Consumers can locate complete rounds and their exact faces without weakening Fillet semantics or
-opening the private graph API. Existing Fillet records stay source/value compatible. The aggregate
-and census gain an additive `blend` family, and the capability manifest advances with `Blend`
-schema version 1. The initial family is intentionally cylindrical rather than a claim of complete
-vertex- or turned-blend coverage.
+Consumers can locate complete external rounds and their exact faces without weakening Fillet
+semantics or opening the private graph API. Existing Fillet records stay source/value compatible.
+The aggregate and census gain an additive `blend` family, and the capability manifest advances
+with `Blend` schema version 1. Concave chains remain private evidence rather than duplicate
+top-level occurrences. The initial family is intentionally cylindrical rather than a claim of
+complete vertex- or turned-blend coverage.

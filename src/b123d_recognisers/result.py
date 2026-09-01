@@ -23,6 +23,7 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._correspondence import _CorrespondenceSnapshotAuthority
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
+    Outcome,
     ReasonCode,
 )
 from b123d_recognisers._dispositions import (
@@ -580,15 +581,21 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.ANGLED_STEPS),
         evidence,
     )
-    decisions += reconcile_circular_step_fillets(
+    circular_fillet_decisions = reconcile_circular_step_fillets(
         physical.candidate_set(FamilyId.FILLETS),
         physical.candidate_set(FamilyId.CIRCULAR_BLIND_STEPS),
         evidence,
     )
+    decisions += circular_fillet_decisions
     decisions += reconcile_blend_candidates(
         physical.candidate_set(FamilyId.BLENDS),
         physical.candidate_set(FamilyId.FILLETS),
         evidence,
+        rejected_fillets=frozenset(
+            decision.candidate
+            for decision in circular_fillet_decisions
+            if decision.outcome is Outcome.REJECTED
+        ),
     )
     decisions += reconcile_profiled_bore_candidates(
         physical.candidate_set(FamilyId.HOLES),

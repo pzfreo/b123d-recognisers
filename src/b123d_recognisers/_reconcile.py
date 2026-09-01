@@ -243,6 +243,8 @@ def reconcile_blend_candidates(
     blends: CandidateSet[object],
     fillets: CandidateSet[object],
     evidence: EvidenceIndex,
+    *,
+    rejected_fillets: frozenset[Candidate[object]] = frozenset(),
 ) -> tuple[Disposition, ...]:
     """Prefer complete feature semantics over the neutral cylindrical chain carrier."""
 
@@ -252,6 +254,7 @@ def reconcile_blend_candidates(
         fillet_winners = tuple(
             fillet
             for fillet in fillets.candidates
+            if fillet not in rejected_fillets
             if not blend_faces.isdisjoint(evidence.defining_of(fillet))
         )
         covered = frozenset(

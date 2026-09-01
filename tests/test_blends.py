@@ -91,11 +91,11 @@ def test_small_convex_chains_remain_public_with_exact_face_evidence() -> None:
         assert face.geom_type.name == "CYLINDER"
 
 
-def test_internal_rounds_are_concave_blends_not_fillets() -> None:
+def test_internal_rounds_remain_private_concave_index_evidence() -> None:
     product = _take_inventory(_internal())
 
-    assert len(product.result.blends) == 4
-    assert {record.side for record in product.result.blends} == {"concave"}
+    assert recognise_blends(_internal()) == []
+    assert product.result.blends == ()
     assert product.result.fillets == ()
 
 
@@ -135,6 +135,20 @@ def test_oblique_chain_retains_canonical_free_axis_and_rigid_translation() -> No
             (left.at[0] + 13, left.at[1] - 7, left.at[2] + 5),
             abs=1e-3,
         )
+
+
+def test_uniform_scale_preserves_occurrences_and_scales_dimensions() -> None:
+    base = recognise_blends(_external(0.2))
+    scaled = recognise_blends(_external(0.2).scale(10))
+
+    assert len(base) == len(scaled) == 4
+    for left, right in zip(base, scaled, strict=True):
+        assert right.axis == left.axis
+        assert right.side == left.side == "convex"
+        assert right.axis_direction == pytest.approx(left.axis_direction, abs=1e-12)
+        assert right.radius == pytest.approx(left.radius * 10)
+        # Each public anchor is independently quantized to 0.001 model units.
+        assert right.at == pytest.approx(tuple(value * 10 for value in left.at), abs=6e-3)
 
 
 def test_compound_keeps_equal_looking_chains_body_local() -> None:
