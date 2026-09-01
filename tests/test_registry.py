@@ -41,8 +41,8 @@ from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionRes
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
-    assert len(PHYSICAL_DEFINITIONS) == 28
-    assert len(DERIVED_DEFINITIONS) == 4
+    assert len(PHYSICAL_DEFINITIONS) == 29
+    assert len(DERIVED_DEFINITIONS) == 5
     assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
     assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
     assert tuple(item.identifier for item in DERIVED_DEFINITIONS) == tuple(DerivedId)
@@ -55,6 +55,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
     } == {
         FamilyId.PRISMATIC_POCKETS,
         FamilyId.PASSAGES,
+        FamilyId.ORIENTED_SLOTS,
         FamilyId.GROOVES,
         FamilyId.TURNED_STEPS,
         FamilyId.CHAMFERS,
@@ -112,6 +113,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.THROUGH_STEPS,
         FamilyId.CIRCULAR_BLIND_STEPS,
         FamilyId.PASSAGES,
+        FamilyId.ORIENTED_SLOTS,
         FamilyId.BLENDS,
         FamilyId.FILLETS,
         FamilyId.PLATES,
@@ -173,6 +175,7 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
     }
     assert dependencies == {
         FamilyId.HOLES: (FamilyId.COUNTERSINKS,),
+        FamilyId.ORIENTED_SLOTS: (FamilyId.PASSAGES,),
         FamilyId.PLATES: (FamilyId.TURNED_STEPS,),
         FamilyId.RISERS: (FamilyId.STEP_LEVELS,),
     }
@@ -180,6 +183,7 @@ def test_registry_dependencies_are_explicit_and_restricted() -> None:
     assert sources == {
         DerivedId.HOLE_PATTERNS: (FamilyId.HOLES,),
         DerivedId.SLOT_PATTERNS: (FamilyId.SLOTS,),
+        DerivedId.ORIENTED_SLOT_PATTERNS: (FamilyId.ORIENTED_SLOTS,),
         DerivedId.POCKET_PATTERNS: (FamilyId.POCKETS,),
         DerivedId.PASSAGES_COMPAT: (FamilyId.PASSAGES,),
     }
