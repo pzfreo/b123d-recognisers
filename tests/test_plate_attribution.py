@@ -488,6 +488,39 @@ def test_rolled_plate_area_authority_survives_step_and_arbitrary_framing(tmp_pat
     assert len(framed.result.plates) == 2
 
 
+def test_framed_plate_maximum_thickness_tie_is_rigid_motion_covariant() -> None:
+    aligned = (Align.CENTER, Align.CENTER, Align.MIN)
+    part = Box(60, 40, 10, align=aligned) + Pos(-15, 0, 10) * Box(
+        30, 40, 15, align=aligned
+    )
+    moved = Pos(91, -37, 48) * Rot(31, 47, 13) * part
+
+    baseline = build_framed_recognition_result(part, rotational=False)
+    presented = build_framed_recognition_result(moved, rotational=False)
+    assert isinstance(baseline, FramedRecognitionResult)
+    assert isinstance(presented, FramedRecognitionResult)
+
+    def plate_keys(result: FramedRecognitionResult):
+        return tuple((plate.axis, plate.lo, plate.hi) for plate in result.result.plates)
+
+    assert plate_keys(baseline) == plate_keys(presented) == (("x", -10.357, -0.357),)
+    assert baseline.result.through_steps == presented.result.through_steps
+    (baseline_level,) = baseline.result.step_levels
+    (presented_level,) = presented.result.step_levels
+    assert (
+        baseline_level.z,
+        *baseline_level.x_span,
+        *baseline_level.y_span,
+    ) == pytest.approx(
+        (
+            presented_level.z,
+            *presented_level.x_span,
+            *presented_level.y_span,
+        ),
+        abs=1e-9,
+    )
+
+
 @pytest.mark.parametrize(("delta", "z_nodes"), [(0.4999, 3), (0.5, 3), (0.5001, 2)])
 def test_real_face_coordinate_clusters_include_exact_tolerance_only(delta, z_nodes) -> None:
     part = (Pos(-10, 0, 0) * Box(20, 20, 8)) + (
