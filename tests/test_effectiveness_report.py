@@ -45,6 +45,7 @@ TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
 TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
 TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
+TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -278,6 +279,26 @@ def test_taxonomy_v7_adds_only_channel_to_rectangular_through_slot() -> None:
         "status": "partial",
     }
     assert load_taxonomy(TAXONOMY_V7, "mfinstseg") == current
+
+
+def test_taxonomy_v8_adds_only_countersink_to_chamfer() -> None:
+    historical = load_taxonomy(TAXONOMY_V7, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V8, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 0} == {
+        key: value for key, value in historical.items() if key != 0
+    }
+    assert historical[0] == {
+        "families": ["chamfers"],
+        "name": "Chamfer",
+        "status": "supported",
+    }
+    assert current[0] == {
+        "families": ["chamfers", "countersinks"],
+        "name": "Chamfer",
+        "status": "supported",
+    }
+    assert load_taxonomy(TAXONOMY_V8, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
