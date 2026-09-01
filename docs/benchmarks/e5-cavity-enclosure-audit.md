@@ -13,7 +13,8 @@ openings are deduplicated while retaining both opening faces. This is an audit a
 not recognition or constituent authority.
 
 Authored controls cover blind and through cavities, multiple cavities, intersecting cavities,
-separate bodies and a general rigid transform. All four tests pass. Ruff is clean.
+separate bodies, a general rigid transform and deterministic report ordering. All five tests
+pass. Ruff is clean.
 
 ## Full-denominator result
 
@@ -26,7 +27,7 @@ separate bodies and a general rigid transform. All four tests pass. Ruff is clea
 - 890 regions have a bidirectionally unique accepted-occurrence association.
 - Accepted-occurrence reach is 282/282 Passages, 325/325 Prismatic Pockets and 335/533 Pockets.
   The Pocket denominator also contains family shapes outside these seven cavity classes.
-- Runtime is 304.22 seconds.
+- Runtime is 301.36 seconds.
 
 The high reach does not establish a generic ownership rule. There are 682 non-target-only regions,
 including holes and O-rings, 191 mixed-label regions, and material merge/fragmentation. Corpus
