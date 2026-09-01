@@ -27,6 +27,7 @@ from b123d_recognisers._blend_view import (  # noqa: E402
 )
 from b123d_recognisers._candidates import FamilyId  # noqa: E402
 from b123d_recognisers._dispositions import Outcome  # noqa: E402
+from b123d_recognisers._run import start  # noqa: E402
 from b123d_recognisers.result import _take_inventory  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
@@ -104,40 +105,30 @@ def main() -> int:
     refusal_reasons: Counter[str] = Counter()
     accepted_families: Counter[str] = Counter()
     chain_label_profiles: Counter[str] = Counter()
+    chain_side_label_profiles: Counter[str] = Counter()
     outside_surface_kinds: Counter[str] = Counter()
     rows = []
+    source_hashes = dict(sources)
     started = time.perf_counter()
     for path in paths:
-        truth = load_mfcadpp_truth(path)
-        labelled_indices = {
-            index for index, class_id in enumerate(truth.semantic) if class_id == ROUND_CLASS
-        }
-        if not labelled_indices:
-            continue
         part = import_step(path)
         faces = tuple(part.faces())
-        if len(faces) != len(truth.semantic):
-            raise RuntimeError(f"{path.stem}: imported face count does not match labels")
-        product = _take_inventory(part)
-        graph = product.context.graph
-        labelled = {graph.require_node(faces[index]) for index in labelled_indices}
-        accepted = _accepted(product)
-        accepted_constituent = {
-            node for occurrence in accepted for node in occurrence["constituent"]
-        }
-        accepted_defining = {node for occurrence in accepted for node in occurrence["defining"]}
-        fillet_constituent = {
-            node
-            for occurrence in accepted
-            if occurrence["family"] == "fillets"
-            for node in occurrence["constituent"]
-        }
-
-        results = BlendCollapseIndex(graph, product.context.surfaces).results()
+        context = start(part)
+        graph = context.graph
+        results = BlendCollapseIndex(graph, context.surfaces).results()
         chains = tuple(result for result in results if isinstance(result, BlendChain))
         refusals = tuple(
             result for result in results if isinstance(result, RefusedBlendComponent)
         )
+
+        # Labels enter only after the complete selected model's neutral discovery has finished.
+        truth = load_mfcadpp_truth(path)
+        if len(faces) != len(truth.semantic):
+            raise RuntimeError(f"{path.stem}: imported face count does not match labels")
+        labelled_indices = {
+            index for index, class_id in enumerate(truth.semantic) if class_id == ROUND_CLASS
+        }
+        labelled = {graph.require_node(faces[index]) for index in labelled_indices}
         chain_nodes = {node for chain in chains for node in chain.blend_nodes}
         convex_nodes = {
             node for chain in chains if chain.side == "convex" for node in chain.blend_nodes
@@ -147,40 +138,67 @@ def main() -> int:
         }
         refused_nodes = {node for refusal in refusals for node in refusal.nodes}
 
+        accepted: tuple[dict[str, Any], ...] = ()
+        accepted_constituent_indices: set[int] = set()
+        accepted_defining_indices: set[int] = set()
+        fillet_constituent_indices: set[int] = set()
+        if labelled_indices:
+            product = _take_inventory(part)
+            accepted = _accepted(product)
+            accepted_constituent_indices = {
+                node.index for occurrence in accepted for node in occurrence["constituent"]
+            }
+            accepted_defining_indices = {
+                node.index for occurrence in accepted for node in occurrence["defining"]
+            }
+            fillet_constituent_indices = {
+                node.index
+                for occurrence in accepted
+                if occurrence["family"] == "fillets"
+                for node in occurrence["constituent"]
+            }
+
         for chain in chains:
             sides[chain.side] += 1
             labels = Counter(truth.semantic[node.index] for node in chain.blend_nodes)
             target = labels[ROUND_CLASS]
             if target == len(chain.blend_nodes):
-                chain_label_profiles["pure_round"] += 1
+                profile = "pure_round"
             elif target:
-                chain_label_profiles["mixed_round"] += 1
+                profile = "mixed_round"
             else:
-                chain_label_profiles["no_round"] += 1
+                profile = "no_round"
+            chain_label_profiles[profile] += 1
+            chain_side_label_profiles[f"{chain.side}:{profile}"] += 1
         for refusal in refusals:
             refusal_reasons[refusal.reason.value] += len(refusal.nodes & labelled)
         for family in sorted({occurrence["family"] for occurrence in accepted}):
             family_nodes = {
-                node
+                node.index
                 for occurrence in accepted
                 if occurrence["family"] == family
                 for node in occurrence["constituent"]
             }
-            accepted_families[family] += len(family_nodes & labelled)
+            accepted_families[family] += len(family_nodes & labelled_indices)
 
-        touched = labelled & accepted_constituent
-        untouched = labelled - accepted_constituent
+        touched_indices = labelled_indices & accepted_constituent_indices
+        touched = {node for node in labelled if node.index in touched_indices}
+        untouched = {node for node in labelled if node.index not in touched_indices}
         outside = untouched - chain_nodes - refused_nodes
         for node in outside:
             kind = BRepAdaptor_Surface(graph.face(node).wrapped).GetType().name
             outside_surface_kinds[kind] += 1
         row = {
             "model_id": path.stem,
-            "source_sha256": dict(sources)[path.stem],
+            "source_sha256": source_hashes[path.stem],
             "round_faces": len(labelled),
-            "accepted_defining_round_faces": len(labelled & accepted_defining),
+            "accepted_defining_round_faces": len(
+                labelled_indices & accepted_defining_indices
+            ),
             "accepted_covered_round_faces": len(touched),
-            "fillet_covered_round_faces": len(labelled & fillet_constituent),
+            "fillet_covered_round_faces": len(
+                labelled_indices & fillet_constituent_indices
+            ),
             "chain_faces": len(chain_nodes),
             "chain_round_faces": len(labelled & chain_nodes),
             "convex_chain_faces": len(convex_nodes),
@@ -217,6 +235,7 @@ def main() -> int:
         "summary": dict(sorted(totals.items())),
         "chain_sides": dict(sorted(sides.items())),
         "chain_label_profiles": dict(sorted(chain_label_profiles.items())),
+        "chain_side_label_profiles": dict(sorted(chain_side_label_profiles.items())),
         "refused_round_faces_by_reason": dict(sorted(refusal_reasons.items())),
         "accepted_round_constituents_by_family": dict(sorted(accepted_families.items())),
         "untouched_outside_index_by_kernel_surface": dict(
