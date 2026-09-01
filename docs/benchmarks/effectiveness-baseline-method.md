@@ -101,6 +101,13 @@ uv run python tools/run_effectiveness_baseline.py \
   --output docs/benchmarks/effectiveness-mfcadpp-500-0.5.0.json
 ```
 
+The runner imports production recognition code from the environment that launches it. When an
+existing virtual environment is reused to replay another worktree, put that worktree's `src`
+directory first on `PYTHONPATH` and verify `b123d_recognisers.__file__` before the long run. A
+detached worktree alone does not override an editable install from another checkout. The runner's
+captured source authority will refuse publication drift during a run, but it cannot infer that the
+operator intended a different checkout from the one Python actually imported.
+
 The frozen result and interpretation are in the
 [`0.5.0 MFCAD++ baseline`](effectiveness-mfcadpp-500-0.5.0.md).
 
