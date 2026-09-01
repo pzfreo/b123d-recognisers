@@ -52,11 +52,12 @@ def test_runtime_prose_only_uses_normative_package_adrs() -> None:
 def test_the_normative_adr_check_still_rejects_a_consumer_record() -> None:
     """Deriving the allowed set must not make the check above vacuous.
 
-    Draftwright ADRs 0013, 0015 and 0017 are historical inputs this package does not publish, so
-    they must stay unciteable from runtime prose however many records ``docs/adr`` gains.
+    Draftwright ADRs 0015 and 0017 are historical inputs this package does not publish, so they
+    must stay unciteable from runtime prose however many records ``docs/adr`` gains. Package ADR
+    0013 is now the independently numbered public Blend decision.
     """
 
-    assert _package_adr_numbers().isdisjoint({"0013", "0015", "0017"})
+    assert _package_adr_numbers().isdisjoint({"0015", "0017"})
 
 
 def test_runtime_prose_has_no_consumer_internal_paths() -> None:

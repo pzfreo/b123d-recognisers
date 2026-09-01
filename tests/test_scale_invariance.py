@@ -50,7 +50,12 @@ FACTORS = (0.05, 5.0, 100.0)
 #: Kinds whose recogniser applies an absolute *minimum-evidence threshold*, so shrinking a part
 #: far enough legitimately takes the feature below it. These are excluded by design, not pending
 #: conversion — see ADR 0008 on why a threshold must not scale with the part.
-NOT_YET_SCALE_FREE = frozenset({"chamfer", "fillet", "flat", "plate", "pocket", "channel"})
+# Aggregate Blend membership is also threshold-dependent: direct Blend geometry is scale-free,
+# but an accepted thresholded Fillet deliberately supersedes the same complete chain. Its direct
+# scale contract is pinned in ``tests/test_blends.py`` rather than erased from that ownership rule.
+NOT_YET_SCALE_FREE = frozenset(
+    {"blend", "chamfer", "fillet", "flat", "plate", "pocket", "channel"}
+)
 
 
 def _scale_free_census(part) -> dict[str, int]:

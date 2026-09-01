@@ -164,18 +164,22 @@ def test_oblique_chain_retains_canonical_free_axis_and_rigid_translation() -> No
         )
 
 
-def test_uniform_scale_preserves_occurrences_and_scales_dimensions() -> None:
+@pytest.mark.parametrize("factor", (0.05, 5.0, 100.0))
+def test_uniform_scale_preserves_occurrences_and_scales_dimensions(factor: float) -> None:
     base = recognise_blends(_external(0.2))
-    scaled = recognise_blends(_external(0.2).scale(10))
+    scaled = recognise_blends(_external(0.2).scale(factor))
 
     assert len(base) == len(scaled) == 4
     for left, right in zip(base, scaled, strict=True):
         assert right.axis == left.axis
         assert right.side == left.side == "convex"
         assert right.axis_direction == pytest.approx(left.axis_direction, abs=1e-12)
-        assert right.radius == pytest.approx(left.radius * 10)
+        assert right.radius == pytest.approx(left.radius * factor)
         # Each public anchor is independently quantized to 0.001 model units.
-        assert right.at == pytest.approx(tuple(value * 10 for value in left.at), abs=6e-3)
+        assert right.at == pytest.approx(
+            tuple(value * factor for value in left.at),
+            abs=max(6e-4, 6e-4 * factor),
+        )
 
 
 def test_compound_keeps_equal_looking_chains_body_local() -> None:
