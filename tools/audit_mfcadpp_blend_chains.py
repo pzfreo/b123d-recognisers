@@ -89,6 +89,7 @@ def main() -> int:
     args = parser.parse_args()
 
     from build123d import import_step
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
 
     paths = sorted(args.root.glob("*.st*p"), key=lambda path: path.name)[: args.limit]
     if not paths:
@@ -171,8 +172,7 @@ def main() -> int:
         untouched = labelled - accepted_constituent
         outside = untouched - chain_nodes - refused_nodes
         for node in outside:
-            fact = product.context.surfaces.fact(node)
-            kind = getattr(getattr(fact, "kind", None), "value", "unsupported")
+            kind = BRepAdaptor_Surface(graph.face(node).wrapped).GetType().name
             outside_surface_kinds[kind] += 1
         row = {
             "model_id": path.stem,
@@ -219,7 +219,9 @@ def main() -> int:
         "chain_label_profiles": dict(sorted(chain_label_profiles.items())),
         "refused_round_faces_by_reason": dict(sorted(refusal_reasons.items())),
         "accepted_round_constituents_by_family": dict(sorted(accepted_families.items())),
-        "untouched_outside_index_by_surface": dict(sorted(outside_surface_kinds.items())),
+        "untouched_outside_index_by_kernel_surface": dict(
+            sorted(outside_surface_kinds.items())
+        ),
         "runtime_seconds": time.perf_counter() - started,
         "models": rows,
     }
