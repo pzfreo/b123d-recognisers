@@ -33,6 +33,7 @@ from b123d_recognisers._recess_faces import (
 )
 from b123d_recognisers._recess_obround import (
     _CAP_CLUSTER_FRAC,
+    _compatible_end_groups,
     _extend_obround_ends,
     _extend_obround_proposals,
     _obround_end,
@@ -104,6 +105,28 @@ def test_near_principal_cap_centerlines_use_scaled_pairing_boundary(
     tolerance = length_tol(ends[0][3], rel=_CAP_CLUSTER_FRAC)
     assert (delta <= tolerance) is bool(expected)
     assert len(_pocket_proposals_one(part, graph=graph)) == expected
+
+
+def test_fuzzy_centerline_pairing_is_limited_to_stubby_recesses() -> None:
+    """End recovery must not duplicate an elongated recess already found from its walls."""
+
+    def end(*, center: float, flat: float, direction: int) -> tuple:
+        return ("y", "x", "z", 1.0, center, flat, direction, 4.0, 12.0, frozenset())
+
+    # Both pairs straddle the legacy two-decimal centre bucket while remaining within the
+    # radius-scaled cap tolerance. Only the pair whose straight run is no longer than its width
+    # belongs to the end-only recovery path.
+    stubby = [
+        end(center=0.004, flat=-0.5, direction=-1),
+        end(center=0.006, flat=0.5, direction=1),
+    ]
+    elongated = [
+        end(center=25.529956, flat=12.0169, direction=-1),
+        end(center=25.541459, flat=17.2992, direction=1),
+    ]
+
+    assert tuple(map(len, _compatible_end_groups(stubby))) == (2,)
+    assert tuple(map(len, _compatible_end_groups(elongated))) == (1, 1)
 
 
 @pytest.mark.parametrize(

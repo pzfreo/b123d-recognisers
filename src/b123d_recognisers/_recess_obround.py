@@ -181,33 +181,72 @@ _CAP_CLUSTER_FRAC = 0.075
 
 
 def _compatible_end_groups(ends: list[tuple]) -> tuple[tuple[tuple, ...], ...]:
-    """Group ends by shared recess geometry without decimal-bucket centreline loss.
+    """Extend legacy decimal groups only for a lost stubby opposing pair.
 
-    Imported or near-principal caps can establish width centres on opposite sides of a decimal
-    rounding boundary.  The same radius-scaled authority used to cluster patches of one physical
-    cap therefore groups opposing caps by centreline.  Requiring every member to agree with every
-    other member prevents a transitive chain from joining distinct recesses.
+    Existing exact rounded-centre groups remain byte-for-byte authoritative. Imported or
+    near-principal caps can place the two ends of one stubby recess on opposite sides of a decimal
+    boundary, however. Merge exactly two singleton groups only when the existing radius-scaled cap
+    authority says their centrelines agree *and* their opposed flats retain the documented stubby
+    span (straight run no longer than the width). The latter prevents end recovery from duplicating
+    an elongated wall-derived Pocket.
     """
 
-    by_geometry: dict[tuple, list[tuple]] = {}
+    legacy: dict[tuple, list[tuple]] = {}
     for end in ends:
-        wa, la, da, rad, _wc, _flat, _direction, d_lo, d_hi, _patches = end
-        key = (wa, la, da, round(rad, 2), round(d_lo, 2), round(d_hi, 2))
-        by_geometry.setdefault(key, []).append(end)
+        wa, la, da, rad, wc, _flat, _direction, d_lo, d_hi, _patches = end
+        key = (
+            wa,
+            la,
+            da,
+            round(rad, 2),
+            round(wc, 2),
+            round(d_lo, 2),
+            round(d_hi, 2),
+        )
+        legacy.setdefault(key, []).append(end)
 
-    groups: list[tuple[tuple, ...]] = []
-    for key in sorted(by_geometry):
-        clusters: list[list[tuple]] = []
-        for end in sorted(by_geometry[key], key=lambda item: (item[4], item[5], item[6])):
-            tolerance = length_tol(end[3], rel=_CAP_CLUSTER_FRAC)
-            for cluster in clusters:
-                if all(abs(existing[4] - end[4]) <= tolerance for existing in cluster):
-                    cluster.append(end)
-                    break
-            else:
-                clusters.append([end])
-        groups.extend(tuple(cluster) for cluster in clusters)
-    return tuple(groups)
+    groups = [tuple(group) for group in legacy.values()]
+    out: list[tuple[tuple, ...]] = []
+    consumed: set[int] = set()
+    for index, group in enumerate(groups):
+        if index in consumed:
+            continue
+        if len(group) != 1:
+            out.append(group)
+            continue
+        matches: list[tuple[int, tuple, tuple]] = []
+        for other_index in range(index + 1, len(groups)):
+            if other_index in consumed:
+                continue
+            other = groups[other_index]
+            if len(other) != 1:
+                continue
+            low, high = sorted((group[0], other[0]), key=lambda end: end[5])
+            radius = round(low[3], 2)
+            tolerance = length_tol(radius, rel=_CAP_CLUSTER_FRAC)
+            base_matches = (
+                low[0:3] == high[0:3]
+                and round(low[3], 2) == round(high[3], 2)
+                and round(low[7], 2) == round(high[7], 2)
+                and round(low[8], 2) == round(high[8], 2)
+            )
+            if (
+                base_matches
+                and abs(low[4] - high[4]) <= tolerance
+                and low[6] == -1
+                and high[6] == 1
+                and high[5] - low[5] <= 2 * radius + tolerance
+            ):
+                matches.append((other_index, low, high))
+        # Multiple plausible partners are ambiguous topology, not authority to choose the nearest
+        # or first traversal occurrence. Preserve every legacy bucket and let recognition refuse.
+        if len(matches) == 1:
+            other_index, low, high = matches[0]
+            consumed.add(other_index)
+            out.append((low, high))
+        else:
+            out.append(group)
+    return tuple(out)
 
 
 def _obround_end(cap: tuple, patches: frozenset[FaceNode] = frozenset()) -> tuple | None:
@@ -342,8 +381,9 @@ def _recognise_obround_from_ends(
     out: list[Slot | Pocket] = []
     proposed: list[_RecessProposal] = []
     for grp in _compatible_end_groups(_obround_ends(part, graph)):
-        wa, la, _da, rad, _wc, _flat, _direction, dlo, dhi, _patches = grp[0]
-        wc = sum(end[4] for end in grp) / len(grp)
+        wa, la, _da, raw_rad, _wc, _flat, _direction, raw_dlo, raw_dhi, _patches = grp[0]
+        rad, dlo, dhi = round(raw_rad, 2), round(raw_dlo, 2), round(raw_dhi, 2)
+        wc = round(sum(end[4] for end in grp) / len(grp), 2)
         run = sorted(grp, key=lambda e: e[5])  # by flat along the long axis
         i = 0
         while i < len(run) - 1:
