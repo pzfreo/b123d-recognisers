@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from build123d import (
+    Align,
     Box,
     Compound,
     Cone,
@@ -223,6 +224,17 @@ def _external_cone_and_cylinder(
     return Compound([cone, cylinder])
 
 
+def _internal_cone_and_cylinder(
+    *, major: float = 6.0, bore: float = 3.0, offset: float = 0.0, tilt: float = 0.0
+):
+    """An inward-facing cone plus an independently adjustable cylindrical substrate."""
+
+    depth = max(major - 3, 1.0)
+    cone_owner = Box(30, 30, 10) - Cone(3, major, depth)
+    cylinder = Pos(offset, 0, 0) * Rot(tilt, 0, 0) * Cylinder(bore, 4)
+    return Compound([cone_owner, cylinder])
+
+
 @pytest.mark.parametrize("angle", [60.0, 82.0, 90.0, 100.0, 120.0, 160.0])
 def test_standard_and_inclusive_maximum_angles_keep_exact_owner(angle: float) -> None:
     _ledger, records = _claimed(_angle_plate(angle))
@@ -232,44 +244,43 @@ def test_standard_and_inclusive_maximum_angles_keep_exact_owner(angle: float) ->
 
 @pytest.mark.parametrize(("ratio", "accepted"), [(1.499, False), (1.5, True), (1.501, True)])
 def test_flare_ratio_boundary_is_inclusive(ratio: float, accepted: bool) -> None:
-    _boundary_claimed(_external_cone_and_cylinder(major=3 * ratio), accepted)
+    _boundary_claimed(_internal_cone_and_cylinder(major=3 * ratio), accepted)
 
 
 @pytest.mark.parametrize(("delta", "accepted"), [(0.049, True), (0.0501, True), (0.051, False)])
 def test_minor_radius_match_boundary_is_inclusive(delta: float, accepted: bool) -> None:
-    _boundary_claimed(_external_cone_and_cylinder(bore=3 + delta), accepted)
+    _boundary_claimed(_internal_cone_and_cylinder(bore=3 + delta), accepted)
 
 
 @pytest.mark.parametrize(("offset", "accepted"), [(0.099, True), (0.1002, True), (0.101, False)])
 def test_axis_line_offset_boundary_is_inclusive(offset: float, accepted: bool) -> None:
-    _boundary_claimed(_external_cone_and_cylinder(offset=offset), accepted)
+    _boundary_claimed(_internal_cone_and_cylinder(offset=offset), accepted)
 
 
 @pytest.mark.parametrize(("tilt", "accepted"), [(2.5, True), (2.56, True), (2.57, False)])
 def test_parallel_angular_boundary_is_strict(tilt: float, accepted: bool) -> None:
-    _boundary_claimed(_external_cone_and_cylinder(tilt=tilt), accepted)
+    _boundary_claimed(_internal_cone_and_cylinder(tilt=tilt), accepted)
 
 
-def test_cross_solid_borrowed_cylinder_behavior_remains_attributed() -> None:
-    ledger, records = _claimed(_external_cone_and_cylinder())
-    assert len(records) == 1
-    candidate = ledger.candidate_set(FamilyId.COUNTERSINKS).candidates[0]
-    owner_solid = ledger.graph.common_valid_solid(ledger.defining_of(candidate))
-    cylinder_nodes = [
-        node
-        for node in ledger.graph.nodes
-        if BRepAdaptor_Surface(ledger.graph.face(node).wrapped).GetType() == GeomAbs_Cylinder
-    ]
-    assert cylinder_nodes
-    assert all(
-        ledger.graph.common_valid_solid((node,)) is not owner_solid for node in cylinder_nodes
+def test_external_cone_cannot_borrow_a_cylinder_from_another_solid() -> None:
+    _boundary_claimed(_external_cone_and_cylinder(), False)
+
+
+@pytest.mark.parametrize(
+    "transform",
+    [None, Rot(90, 0, 0), Rot(0, 90, 0), Rot(31, 17, 43), Rot(0, 0, 180)],
+)
+def test_connected_external_stepped_shaft_is_rejected_covariantly(transform) -> None:
+    xyz_min = (Align.CENTER, Align.CENTER, Align.MIN)
+    shaft = (
+        Cylinder(3, 5, align=xyz_min)
+        + Pos(0, 0, 5) * Cone(3, 7, 4, align=xyz_min)
+        + Pos(0, 0, 9) * Cylinder(7, 5, align=xyz_min)
     )
-
-
-def test_connected_external_stepped_shaft_false_positive_remains_attributed() -> None:
-    shaft = Cylinder(3, 4) + Pos(0, 0, 3.5) * Cone(3, 6, 3)
-    _ledger, records = _claimed(shaft)
-    assert len(records) == 1
+    if transform is not None:
+        shaft = transform * shaft
+    _boundary_claimed(shaft, False)
+    assert _take_inventory(shaft).result.countersinks == ()
 
 
 def test_centre_drill_geometry_false_positive_remains_attributed() -> None:
@@ -320,10 +331,9 @@ def test_distinct_rim_and_context_refusals_issue_no_candidate(part) -> None:
     _boundary_claimed(part, False)
 
 
-def test_side_clipped_circular_arc_cone_remains_a_regression_positive() -> None:
+def test_side_clipped_external_cone_is_rejected() -> None:
     clipped = Cone(3, 6, 3) - Pos(3, 0, 0) * Box(4, 20, 20)
-    _ledger, records = _claimed(Compound([clipped, Cylinder(3, 4)]))
-    assert len(records) == 1
+    _boundary_claimed(Compound([clipped, Cylinder(3, 4)]), False)
 
 
 def test_geometry_only_open_shell_result_has_no_aggregate_publication() -> None:

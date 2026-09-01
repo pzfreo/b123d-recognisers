@@ -138,3 +138,11 @@ one complete four-edge convex singleton cycle, a certified outward planar top wh
 fully explained by those corner radii, and the existing bounded-island, local-base, tier and
 one-solid rules. Partial, duplicate, competing, concave, multi-node, perforated-top or corrupted
 cycles are declined locally without changing the neutral view or any sibling family.
+
+## Amendment (CounterSink material-side gate, issue #303)
+
+An external stepped-shaft cone and an internal countersink can share analytic cone, rim and
+coaxial-cylinder measurements. CounterSink discovery therefore applies its own visible
+material-side gate: the original conical face normal must point radially toward the cone axis.
+The graph and surface adaptors remain total, no Hole result is used as a post-hoc filter, and the
+same gate governs direct and aggregate discovery under rigid transforms and uniform scale.
