@@ -23,10 +23,28 @@ test resolves four faces for a triangular pocket while defining evidence remains
 
 ## MFCAD++-500 result
 
-The immutable format-3 report is
-[`effectiveness-mfcadpp-500-prismatic-floor-a61888a.json`](effectiveness-mfcadpp-500-prismatic-floor-a61888a.json).
-It was regenerated at implementation commit `a61888a` with taxonomy v8 and the fixed lexical
-selection:
+The original immutable format-3 report
+[`effectiveness-mfcadpp-500-prismatic-floor-a61888a.json`](effectiveness-mfcadpp-500-prismatic-floor-a61888a.json)
+is retained, but its inventory is not reproducible from its recorded production source. Its
+taxonomy-v8 hash and class statuses are internally consistent; the discrepancy is not an axis or
+taxonomy-revision difference. An exact replay whose `src/` tree equals `a61888a` produces different
+records and scores. The old runner could observe a worktree transition during a long run while
+recording only its final commit, so the historical +284 claim is not comparison authority.
+
+The corrected comparison uses two immutable reports produced by the #405 source-pinned runner:
+
+- [`effectiveness-mfcadpp-500-prismatic-floor-parent-8eed072.json`](effectiveness-mfcadpp-500-prismatic-floor-parent-8eed072.json)
+  is current main with only the two #403 production edits removed;
+- [`effectiveness-mfcadpp-500-prismatic-floor-corrected-5949cd0.json`](effectiveness-mfcadpp-500-prismatic-floor-corrected-5949cd0.json)
+  is the matching current-source implementation report.
+
+The two report commits differ in production code only in `_rings.py` and
+`prismatic_pockets.py`, the #403 implementation. A separate audit commit whose `src/` tree exactly
+equals historical implementation commit `a61888a` produces the same normalized model evidence as
+the current-source implementation report; it is retained as reproducibility evidence rather than
+used as the parent/child comparison.
+
+Both use taxonomy v8 and the same fixed lexical selection:
 
 ```console
 uv run python tools/run_effectiveness_baseline.py mfcadpp \
@@ -34,34 +52,35 @@ uv run python tools/run_effectiveness_baseline.py mfcadpp \
   --dataset-version "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823" \
   --taxonomy docs/benchmarks/effectiveness-taxonomy-v8.json \
   --limit 500 \
-  --output docs/benchmarks/effectiveness-mfcadpp-500-prismatic-floor-a61888a.json
+  --output /tmp/source-pinned-report.json
 ```
 
 All 500 models load and evaluate; invalid and empty counts remain zero. Compared with the
-behavior-identical audit-only main baseline, exactly 200 models gain 284 covered labelled faces:
+production parent, exactly 205 models gain 295 covered labelled faces:
 
 | Dataset class | Before | After | Delta |
 | --- | ---: | ---: | ---: |
-| 13 Triangular pocket | 515/732 (70.36%) | 664/732 (90.71%) | +149 |
-| 14 Rectangular pocket | 659/907 (72.66%) | 670/907 (73.87%) | +11 |
-| 15 Six-sided pocket | 860/1,133 (75.90%) | 980/1,133 (86.50%) | +120 |
-| 16 Circular-end pocket | 664/973 (68.24%) | 667/973 (68.55%) | +3 |
-| 4 Six-sided passage | 662/1,336 (49.55%) | 663/1,336 (49.63%) | +1 |
-| **Supported/partial total** | **8,085/11,244 (71.91%)** | **8,369/11,244 (74.43%)** | **+284 / +2.53 points** |
-| **All statuses** | **8,841/15,170 (58.28%)** | **9,125/15,170 (60.15%)** | **+284 / +1.87 points** |
+| 13 Triangular pocket | 489/732 (66.80%) | 642/732 (87.70%) | +153 |
+| 14 Rectangular pocket | 654/907 (72.11%) | 665/907 (73.32%) | +11 |
+| 15 Six-sided pocket | 845/1,133 (74.58%) | 972/1,133 (85.79%) | +127 |
+| 16 Circular-end pocket | 637/973 (65.47%) | 640/973 (65.78%) | +3 |
+| 4 Six-sided passage | 659/1,336 (49.33%) | 660/1,336 (49.40%) | +1 |
+| **Supported/partial total** | **7,940/11,244 (70.62%)** | **8,235/11,244 (73.24%)** | **+295 / +2.62 points** |
+| **All statuses** | **8,732/15,170 (57.56%)** | **9,027/15,170 (59.51%)** | **+295 / +1.94 points** |
 
 The class-4 and class-16 increments are honest overlapping-label effects: the recogniser retains
 cap geometry without consulting taxonomy. They are reported rather than suppressed.
 
-After removing commit/timestamp/runtime and coverage fields, every model row and summary field is
-exactly equal: physical records, defining precision/recall, mapped counts, reconciliation drops,
-diagnostics and taxonomy mismatches do not move. A second exact regeneration after rebasing is
-identical to the first after normalising only commit and runtime metadata.
+After removing commit/runtime and coverage fields, every model row and summary field is exactly
+equal: physical records, defining precision/recall, mapped counts, reconciliation drops,
+diagnostics and taxonomy mismatches do not move. The implementation report is also normalized-equal
+to an independent fresh taxonomy-v8 run on current source, which separately checks stable import
+pairing and recogniser inventory.
 
 ## Runtime and compatibility
 
-Immediate same-host raw runs measured 315.45 seconds for the unchanged baseline and 331.22 seconds
-for this commit, a 1.050x ratio; medians were 0.596 and 0.615 seconds. The implementation adds set
+The corrected same-host runs measured 288.24 seconds for the production parent and 356.39 seconds
+for the implementation, a 1.236x raw ratio; medians were 0.534 and 0.663 seconds. The implementation adds set
 retention inside an already-required neighbour loop and no kernel query or second scan. The ratio
 is recorded as a conservative observed bound rather than attributed CPU cost.
 

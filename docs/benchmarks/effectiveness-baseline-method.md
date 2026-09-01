@@ -154,12 +154,15 @@ unchanged before publication. A mid-run checkout, rebase or tracked edit therefo
 report instead of attaching post-run provenance to pre-run in-memory code or mapping. Untracked
 output files do not make a commit claim misleading and remain compatible with atomic report
 creation. Issue #405 identified this as a latent provenance race during a cross-version report
-comparison. It does not invalidate an existing artifact: a report whose recorded commit, taxonomy
-hash and class statuses reconcile remains evidence for that exact authority.
+comparison. A recorded commit and taxonomy hash are necessary but not sufficient to establish that
+the in-memory recogniser stayed at that authority throughout the run. The historical #404 artifact
+has internally consistent taxonomy-v8 metadata, but a source-exact replay does not reproduce its
+inventory or scores. It is retained with an explicit warning; a new source-pinned
+parent/implementation pair is the comparison authority.
 
 The face-to-label adapter boundary has a separate cross-process guard: an asymmetric STEP fixture
 assigns distinct `ADVANCED_FACE` labels, imports it in independent Python processes, and requires
-the same label/area/centroid/normal pairing. The two fresh 500-model runs that diagnosed #405 also
+the same label/area/centroid/normal pairing. The source-exact replay and a fresh current-source run
 produced exactly equal model evidence after removing only runtime and commit metadata. Together
 these guard stable imported face pairing independently of the preventative source-authority check.
 Score differences between taxonomy revisions are expected and must never be described as
