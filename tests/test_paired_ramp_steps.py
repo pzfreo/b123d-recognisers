@@ -2,20 +2,28 @@
 # Copyright 2024-2026 Paul Fremantle
 
 from contextlib import suppress
+from pathlib import Path
 
 from build123d import (
+    Align,
     Axis,
     Box,
     Compound,
     Cylinder,
+    Edge,
     Plane,
     Polygon,
     Pos,
     Rot,
     Shell,
+    Solid,
+    Vector,
     chamfer,
+    export_step,
     extrude,
+    import_step,
 )
+from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import (
     PairedRampStep,
@@ -50,8 +58,8 @@ def _side_cut(
     return stock - cutter
 
 
-def _proved_pair():
-    graph = FaceGraph(_side_cut())
+def _proved_pair_from(part):
+    graph = FaceGraph(part)
     bevels = {}
     for node in graph.nodes:
         with suppress(BevelReject):
@@ -71,6 +79,10 @@ def _proved_pair():
     raise AssertionError("authored side cut did not supply its proved ramp pair")
 
 
+def _proved_pair():
+    return _proved_pair_from(_side_cut())
+
+
 def _two_side_cuts():
     def cutter(center_x):
         return Pos(center_x, 20, 0) * extrude(
@@ -78,6 +90,25 @@ def _two_side_cuts():
         )
 
     return Box(45, 40, 30) - cutter(10) - cutter(30)
+
+
+def _ramp_boundary_notch(*, upper: bool = False, y: float = 5.0, scale: float = 1.0):
+    """Cut a straight notch into the non-terminal boundary of one original ramp face."""
+
+    return Pos(19 * scale, y * scale, (9 if upper else -9) * scale) * Box(
+        2 * scale, 2 * scale, 4 * scale
+    )
+
+
+def _ramp_inner_wire(*, upper: bool = False, y: float = 5.0, scale: float = 1.0):
+    normal = Vector(0.6246950475544243, 0, -0.7808688094430304 if upper else 0.7808688094430304)
+    return Plane(
+        origin=(15 * scale, y * scale, (4 if upper else -4) * scale), z_dir=normal
+    ) * Cylinder(
+        1 * scale,
+        6 * scale,
+        align=(Align.CENTER, Align.CENTER, Align.CENTER),
+    )
 
 
 def test_a_mirror_ramp_pair_open_to_the_stock_side_is_one_physical_cut() -> None:
@@ -132,6 +163,10 @@ def test_candidate_refuses_incomplete_direction_terminal_arc_and_span_proofs(mon
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
     with monkeypatch.context() as patch:
         patch.setattr(paired_ramp_module, "_is_convex", lambda *_args: False)
+        assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
+    with monkeypatch.context() as patch:
+        shared = graph.shared_edges(left, right)
+        patch.setattr(graph, "shared_edges", lambda *_args: shared + shared)
         assert paired_ramp_module._candidate(graph, left, right, left_read, right_read) is None
 
     axis, normal, spans, hi, lo = left_read
@@ -215,6 +250,123 @@ def test_a_straight_terminal_boundary_subdivision_retains_the_proved_pair() -> N
     assert recognise_paired_ramp_steps(subdivided) == [
         PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
     ]
+
+
+def test_a_straight_ramp_boundary_subdivision_retains_the_original_face_pair() -> None:
+    one_subdivided = _side_cut() - _ramp_boundary_notch()
+    both_subdivided = one_subdivided - _ramp_boundary_notch(upper=True, y=10)
+
+    for part, expected_edge_counts in (
+        (one_subdivided, [4, 8]),
+        (both_subdivided, [8, 8]),
+    ):
+        graph, left, right, _left_read, _right_read = _proved_pair_from(part)
+        assert sorted((len(graph.edges(left)), len(graph.edges(right)))) == expected_edge_counts
+        assert recognise_paired_ramp_steps(part) == [
+            PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
+        ]
+
+
+def test_an_independent_circular_ramp_inner_wire_retains_the_original_face_pair() -> None:
+    interrupted = _side_cut() - _ramp_inner_wire()
+    graph, left, right, _left_read, _right_read = _proved_pair_from(interrupted)
+
+    ramp_faces = (graph.face(left), graph.face(right))
+    assert sorted(len(face.inner_wires()) for face in ramp_faces) == [0, 1]
+    assert recognise_paired_ramp_steps(interrupted) == [
+        PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
+    ]
+
+
+def test_multiple_coplanar_ramp_faces_are_not_traversed_or_merged() -> None:
+    part = _side_cut()
+    lower_ramp = next(
+        face
+        for face in part.faces()
+        if (normal := face.normal_at()).X > 0.6 and normal.Z > 0.7
+    )
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(
+        Edge.make_line((10, 5, 0), (20, 5, -8)).wrapped,
+        lower_ramp.wrapped,
+    )
+    splitter.Build()
+    assert splitter.IsDone()
+    split = Solid(splitter.Shape())
+    assert split.is_valid
+
+    graph = FaceGraph(split)
+    ramps = [
+        node
+        for node in graph.nodes
+        if (normal := graph.normal(node)) is not None
+        and normal[0] > 0.6
+        and abs(normal[2]) > 0.7
+    ]
+    assert len(ramps) == 3
+    assert sum(
+        graph.normal(left) == graph.normal(right) and bool(graph.shared_edges(left, right))
+        for index, left in enumerate(ramps)
+        for right in ramps[index + 1 :]
+    ) == 1
+
+    ledger = ClaimLedger(graph)
+    assert recognise_paired_ramp_steps(split, ledger=ledger) == []
+    assert ledger.claims == ()
+
+
+def test_subdivided_ramps_remain_covariant_and_profile_order_independent() -> None:
+    part = _side_cut() - _ramp_boundary_notch()
+
+    assert recognise_paired_ramp_steps(Rot(0, 0, 90) * part)[0].axis == "x"
+    assert recognise_paired_ramp_steps(Rot(90, 0, 0) * part)[0].axis == "z"
+    assert recognise_paired_ramp_steps(Pos(3, 4, 5) * part) == [
+        PairedRampStep(axis="y", angle=51.34, length=25.0, at=(13.0, 11.5, 5.0))
+    ]
+    assert recognise_paired_ramp_steps(_side_cut(cycle=1) - _ramp_boundary_notch()) == (
+        recognise_paired_ramp_steps(_side_cut(cycle=2) - _ramp_boundary_notch())
+    )
+
+
+def test_interrupted_ramp_recognition_is_scale_independent() -> None:
+    small = recognise_paired_ramp_steps(
+        _side_cut(scale=0.01) - _ramp_inner_wire(scale=0.01)
+    )[0]
+    large = recognise_paired_ramp_steps(
+        _side_cut(scale=100.0) - _ramp_inner_wire(scale=100.0)
+    )[0]
+
+    assert small.axis == large.axis == "y"
+    assert small.angle == large.angle == 51.34
+    assert small.length == 0.25
+    assert large.length == 2500.0
+
+
+def test_subdivided_ramp_survives_step_round_trip(tmp_path: Path) -> None:
+    part = _side_cut() - _ramp_boundary_notch()
+    path = tmp_path / "subdivided-paired-ramp.step"
+
+    assert export_step(part, path)
+    assert recognise_paired_ramp_steps(import_step(path)) == recognise_paired_ramp_steps(part)
+
+
+def test_two_boundary_subdivided_occurrences_retain_distinct_original_evidence() -> None:
+    first = _side_cut() - _ramp_boundary_notch()
+    second = Pos(100, 0, 0) * (_side_cut() - _ramp_inner_wire(upper=True))
+    product = _take_inventory(Compound([first, second]))
+    accepted = [
+        item
+        for item in product.reconciliation.for_family(FamilyId.PAIRED_RAMP_STEPS)
+        if item.outcome is Outcome.ACCEPTED
+    ]
+
+    assert [item.candidate.record.at for item in accepted] == [
+        (10.0, 7.5, 0.0),
+        (110.0, 7.5, 0.0),
+    ]
+    defining = [product.evidence.defining_of(item.candidate) for item in accepted]
+    assert [len(nodes) for nodes in defining] == [3, 3]
+    assert defining[0].isdisjoint(defining[1])
 
 
 def test_two_pairs_on_one_solid_keep_distinct_terminal_evidence() -> None:
