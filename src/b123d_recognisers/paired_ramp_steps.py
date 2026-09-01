@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from build123d import GeomType
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
-from b123d_recognisers._bevel import BevelReject, classify_bevel
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS, SMOOTH_ARC_GAP, length_tol, part_scale
@@ -26,6 +25,40 @@ from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
 _RUN_DIRECTION_COS = 1.0 - SMOOTH_ARC_GAP
+
+
+def _read_ramp(
+    graph: FaceGraph, node: FaceNode
+) -> tuple[int, tuple[float, float, float], dict[int, tuple[float, float]], float, float] | None:
+    """Read one principal-run planar ramp without applying Chamfer angle policy.
+
+    ``classify_bevel`` deliberately treats shallow draft-like planes as aligned because they are
+    not useful Chamfer candidates.  A paired through-step is instead established by its complete
+    mirror pair, ridge, terminals, material side and run.  Reusing the Chamfer angle gate here
+    therefore makes a presentation angle decide a different family's physical contract.
+
+    The run direction is the one normal component equal to zero within the package's existing
+    smooth-direction tolerance.  Exact principal planes have two such components and free-axis
+    planes have none, so both remain outside this principal-run family without a minimum angle.
+    """
+
+    if not graph.is_planar(node):
+        return None
+    normal = graph.normal(node)
+    if normal is None:
+        return None
+    run_axes = tuple(
+        axis
+        for axis, component in enumerate(normal)
+        if abs(component) <= SMOOTH_ARC_GAP
+    )
+    if len(run_axes) != 1:
+        return None
+    axis = run_axes[0]
+    spans = {index: graph.bounds(node)[index] for index in range(3)}
+    cross = tuple(index for index in range(3) if index != axis)
+    legs = tuple(spans[index][1] - spans[index][0] for index in cross)
+    return axis, normal, spans, max(legs), min(legs)
 
 
 @dataclass(frozen=True, order=True)
@@ -197,22 +230,21 @@ def recognise_paired_ramp_steps(
 
     graph = FaceGraph(part) if ledger is None else ledger.graph
     sink: EvidenceSink | None = None if ledger is None else ledger.sink
-    bevels: dict[FaceNode, tuple] = {}
+    ramps: dict[FaceNode, tuple] = {}
     for node in graph.nodes:
-        try:
-            bevels[node] = classify_bevel(graph.face(node))
-        except BevelReject:
-            continue
+        read = _read_ramp(graph, node)
+        if read is not None:
+            ramps[node] = read
 
     found: list[tuple[PairedRampStep, FaceNode, FaceNode, FaceNode]] = []
     for left in graph.nodes:
-        left_read = bevels.get(left)
+        left_read = ramps.get(left)
         if left_read is None:
             continue
         for right in graph.neighbours(left):
-            if right.index <= left.index or right not in bevels:
+            if right.index <= left.index or right not in ramps:
                 continue
-            candidate = _candidate(graph, left, right, left_read, bevels[right])
+            candidate = _candidate(graph, left, right, left_read, ramps[right])
             if candidate is not None:
                 record, terminal = candidate
                 found.append((record, left, right, terminal))
