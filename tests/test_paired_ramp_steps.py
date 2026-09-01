@@ -147,6 +147,17 @@ def test_principal_planes_do_not_become_zero_angle_ramps() -> None:
     assert recognise_paired_ramp_steps(Box(10, 20, 30)) == []
 
 
+def test_ramp_reader_refuses_non_planar_or_normal_less_faces(monkeypatch) -> None:
+    graph, left, _right, _left_read, _right_read = _proved_pair()
+
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "is_planar", lambda _node: False)
+        assert paired_ramp_module._read_ramp(graph, left) is None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: None)
+        assert paired_ramp_module._read_ramp(graph, left) is None
+
+
 def test_ramp_run_direction_uses_the_existing_direction_tolerance(monkeypatch) -> None:
     part = _side_cut(half_height=0.5)
     graph = FaceGraph(part)
