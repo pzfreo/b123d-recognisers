@@ -147,6 +147,30 @@ def test_principal_planes_do_not_become_zero_angle_ramps() -> None:
     assert recognise_paired_ramp_steps(Box(10, 20, 30)) == []
 
 
+def test_ramp_run_direction_uses_the_existing_direction_tolerance(monkeypatch) -> None:
+    part = _side_cut(half_height=0.5)
+    graph = FaceGraph(part)
+    node = next(node for node in graph.nodes if paired_ramp_module._read_ramp(graph, node))
+    normal = graph.normal(node)
+    assert normal is not None
+    run = min(range(3), key=lambda axis: abs(normal[axis]))
+
+    at_boundary = tuple(
+        paired_ramp_module.SMOOTH_ARC_GAP if axis == run else component
+        for axis, component in enumerate(normal)
+    )
+    outside_boundary = tuple(
+        2 * paired_ramp_module.SMOOTH_ARC_GAP if axis == run else component
+        for axis, component in enumerate(normal)
+    )
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: at_boundary)
+        assert paired_ramp_module._read_ramp(graph, node) is not None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: outside_boundary)
+        assert paired_ramp_module._read_ramp(graph, node) is None
+
+
 def test_the_pair_claims_both_original_ramps_and_its_required_terminal() -> None:
     part = _side_cut()
     ledger = ClaimLedger(FaceGraph(part))

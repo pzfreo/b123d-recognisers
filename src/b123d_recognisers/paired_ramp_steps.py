@@ -2,12 +2,13 @@
 # Copyright 2024-2026 Paul Fremantle
 """Conservative recognition of a two-ramp through step cut into a stock side.
 
-This family deliberately starts with one original mirror-symmetric planar pair. Two oblique
+This family deliberately starts with one original mirror-symmetric planar pair. Two non-principal
 planar faces meet along the run axis, share one convex exterior opening and one concave planar
-terminal, and belong to one valid solid. A ramp or terminal boundary may be independently
-subdivided while its face identity and ramp arcs remain complete. Polygonal pockets have
-superficially similar adjacency; the paired cross-section, arc directions and terminal contract
-discriminate geometry, while rigid axis permutations deliberately remain equivalent.
+terminal, and belong to one valid solid. Their angle may be shallow: Chamfer's draft-angle
+exclusion is not part of this paired geometry contract. A ramp or terminal boundary may be
+independently subdivided while its face identity and ramp arcs remain complete. Polygonal pockets
+have superficially similar adjacency; the paired cross-section, arc directions and terminal
+contract discriminate geometry, while rigid axis permutations deliberately remain equivalent.
 """
 
 from __future__ import annotations
