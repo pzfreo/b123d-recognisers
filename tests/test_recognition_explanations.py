@@ -180,22 +180,23 @@ def test_public_report_executes_the_inventory_once(monkeypatch) -> None:
     assert report.result is products[0].result
 
 
-def test_bounded_residual_projects_publicly_and_tracks_raw_coordinates() -> None:
+def test_recognised_split_terminal_tracks_raw_coordinates_without_a_residual() -> None:
     part = _side_subdivided_blind_step()
     original = r.build_recognition_report(part)
     transformed = r.build_recognition_report(Pos(100, -20, 5) * part)
 
-    assert len(original.diagnostics) == 1
-    diagnostic = original.diagnostics[0]
-    assert diagnostic.code is (
-        r.RecognitionDiagnosticCode.UNSUPPORTED_SUBDIVIDED_ANGLED_STEP_TERMINAL
+    assert len(original.result.angled_steps) == len(transformed.result.angled_steps) == 1
+    assert original.diagnostics == transformed.diagnostics == ()
+    step = original.result.angled_steps[0]
+    moved = transformed.result.angled_steps[0]
+    assert (moved.axis, moved.leg1, moved.leg2, moved.angle, moved.length) == (
+        step.axis,
+        step.leg1,
+        step.leg2,
+        step.angle,
+        step.length,
     )
-    assert diagnostic.status is r.RecognitionDiagnosticStatus.UNSUPPORTED
-    assert diagnostic.family == "angled_steps"
-    assert diagnostic.raw_outer_edges == 4
-    assert diagnostic.effective_outer_sides == 3
-    assert transformed.diagnostics[0].at != diagnostic.at
-    assert transformed.diagnostics[0].code is diagnostic.code
+    assert moved.at == (step.at[0] + 100, step.at[1] - 20, step.at[2] + 5)
     assert tuple(
         (item.family, item.evaluation, item.proposed, item.accepted, item.rejected)
         for item in transformed.families

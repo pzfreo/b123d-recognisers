@@ -354,6 +354,20 @@ may read. Issue #368 may add constituent membership to the same terminal view on
 non-owning projection with `defining` as a required subset. A consumer cannot construct either
 relationship from adjacency, labels or record values.
 
+## Amendment (AngledStep subdivided terminal recovery, issue #111)
+
+The issue #158 and #161 statements that the subdivided terminal supplies no `AngledStep` Candidate
+are superseded only for the closed geometry proof accepted by ADR 0004: an axis-aligned planar
+terminal with exactly three straight cyclic outer-boundary runs. Discovery now emits the missing
+Candidate with its original slant as defining evidence and its exact original terminal face as
+constituent evidence. The existing Chamfer candidate remains independently proposed; the unchanged
+named bevel precedence then rejects it using exact shared defining evidence.
+
+This does not add a fourth reconciliation outcome, let reconciliation rediscover geometry, or make
+the result order-dependent. Curved, unreadable and genuinely four-run terminals still emit no
+`AngledStep`. The former failed-predicate diagnostic remains a compatible closed explanation value
+but is no longer issued for geometry that passes the terminal proof.
+
 ## Amendment (Double-D bore precedence, issue #304)
 
 An accepted `DoubleDBore` supersedes an ordinary `HoleRecord` only when the Hole's non-empty exact

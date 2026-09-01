@@ -109,6 +109,24 @@ The private residual reducer is a bounded identity join over those observations 
 candidates, not a residual graph scan or a second recogniser. Broader residual classification,
 other consulted roles and public diagnostic schemas remain future work.
 
+## Amendment (AngledStep subdivided terminal recovery, issue #111)
+
+The diagnostic-only boundary above is superseded for the exact fact it established. An
+axis-aligned planar terminal whose outer wire has more than three raw edges but exactly three
+cyclic straight geometric runs is a geometrically triangular terminal and may establish an
+`AngledStep`. Consecutive linear edges collapse only when their unit tangents are co-directed under
+the existing dimensionless smooth-direction tolerance. A rectangular cap therefore retains four
+runs; a kink outside that tolerance retains four; any curved, degenerate or unreadable outer edge
+fails closed.
+
+This is the named subdivided-region query required by the issue #75 amendment. It remains local to
+AngledStep discovery, preserves the exact original terminal face as constituent evidence, and does
+not mutate graph adjacency, synthesize topology, relax a raw edge count, or let labels decide
+acceptance. Successful discovery supplies the missing Candidate, after which the unchanged named
+Chamfer reconciliation rule can disposition the overlapping bevel. The historical diagnostic code
+remains a compatible closed explanation value, but production no longer issues its failed-predicate
+observation for geometry that now satisfies the terminal proof.
+
 Neutral structural candidates such as FaceLevel and Riser may own the same original face after
 their attribution becomes complete, but that ownership is not a manufacturing-feature explanation
 and does not suppress an independently issued unsupported-family observation. Only an accepted

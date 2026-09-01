@@ -20,7 +20,7 @@ measurement: the legs of the two populations overlap on every part-relative and
 neighbour-relative ratio tried, and a threshold that separated them on one corpus would be
 fitted to that corpus. The distinction is topological — **a chamfer runs the full length of
 the edge it breaks; an angled step stops, and something has to close the end.** That
-something is a triangular flat, and :func:`_closed_by_a_triangular_flat` is the whole
+something is a geometrically triangular flat, and :func:`_closed_by_a_triangular_flat` is the whole
 discriminator. It says nothing about the part around the face, so a step is a step at any
 scale, which a size gate could never promise.
 
@@ -60,25 +60,17 @@ two cannot disagree about what they are looking at:
   it. Convexity cannot see the difference — both have vacuum on the bevel side;
 - **a triangular companion** — the blind end.
 
-No size gate, no tolerance, no fraction: every gate here is either a shared geometric
-classification, a solid-classifier probe or a count of edges.
+No size gate or length tolerance: every gate here is either a shared geometric classification,
+a solid-classifier probe, a boundary count or a dimensionless direction comparison.
 
-**What that costs is recall, and the edge count is where about half of it goes.** The
-companion test asks for three edges, so a blind end whose triangle is *subdivided* reads as
-four or five and the step is missed. Across 120 MFCAD++ models carrying the feature, instance
-recall was 70% (114 of 163), and 24 of the 49 misses have no bare triangular face anywhere on
-them. That measurement predates the outer-wire count below and was taken over a set larger
-than the one vendored here, so it is left as the figure it was rather than restated.
-
-Relaxing the count is not the fix. A chamfer strip's own end caps are axis-aligned faces
-too, so admitting four-edge companions would hand every chamfer straight back to this
-family. **Counting the outer wire is not relaxing it**, and recovers one of the two ways a
-flat gets subdivided: a hole drilled through the blind end — a bolt hole in the face closing
-an angled shoulder — adds an inner wire, leaving three edges in the outer one. A rectangle
-still has four however it is drilled. The other way, a *side* split by a neighbouring
-feature, puts the extra edge in the outer wire itself and is still missed; recovering that
-needs the companion recognised as *geometrically* triangular rather than topologically so,
-which is a different and larger change.
+**A raw edge count is not the triangle proof.** A hole drilled through the blind end adds an
+inner wire, while a neighbouring feature may split one straight outer side into several
+co-directed edges. Neither changes the terminal's geometric boundary. The predicate therefore
+requires exactly three cyclic linear runs on the outer wire: it collapses only consecutive
+co-directed straight edges under the shared dimensionless smooth-direction tolerance. A chamfer
+strip's rectangular cap retains four runs, a kinked near-triangle retains four, and a curved or
+unreadable boundary fails closed. This is the named subdivided-region query required by ADR 0004,
+not a relaxation from three edges to four or five.
 
 Depends on ``chamfers`` for the bevel read and the convexity probe rather than copying
 either, so a change to what counts as a bevel reaches both recognisers at once.
@@ -106,8 +98,6 @@ from b123d_recognisers._bevel import (
 from b123d_recognisers._candidates import (
     EvidenceSink,
     FamilyId,
-    PredicateId,
-    SplitTriangularTerminalFact,
 )
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._geometry import SMOOTH_ARC_GAP
@@ -139,7 +129,7 @@ class AngledStep(Record):
 def _closed_by_a_triangular_flat(
     face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
 ) -> bool:
-    """Is *face* edge-adjacent to an axis-aligned planar face bounded by exactly three edges?
+    """Is *face* adjacent to an axis-aligned planar face with three straight outer sides?
 
     The blind end, and the whole discriminator (see the module docstring). A chamfer strip runs
     the length of the edge it breaks, so its neighbours are the two walls it bridges; a slant
@@ -154,14 +144,11 @@ def _closed_by_a_triangular_flat(
     nothing now, so the one caller keeps it.
     """
 
-    terminals, _near_misses = _terminal_read(
-        face, edge_faces, face_edges=face_edges
-    )
-    return bool(terminals)
+    return bool(_terminal_read(face, edge_faces, face_edges=face_edges))
 
 
 def _effective_linear_sides(face: FaceLike) -> int | None:
-    """Count cyclic, co-directed linear runs on one outer boundary."""
+    """Count cyclic, co-directed linear runs on one outer boundary, or fail closed."""
 
     try:
         edges = list(face.outer_wire().edges())
@@ -183,14 +170,10 @@ def _effective_linear_sides(face: FaceLike) -> int | None:
 
 def _terminal_read(
     face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
-) -> tuple[
-    list[FaceLike],
-    list[tuple[FaceLike, SplitTriangularTerminalFact]],
-]:
-    """Return accepted triangular terminals and the one bounded diagnostic near miss."""
+) -> list[FaceLike]:
+    """Return axis-aligned terminals whose outer boundary has three straight sides."""
 
     terminals: list[FaceLike] = []
-    near_misses: list[tuple[FaceLike, SplitTriangularTerminalFact]] = []
     for other in neighbours(face, edge_faces, face_edges=face_edges):
         if axis_aligned_axis(other.wrapped) is None:
             continue
@@ -208,16 +191,8 @@ def _terminal_read(
             continue
         effective_sides = _effective_linear_sides(other)
         if len(outer_edges) > 3 and effective_sides == 3:
-            near_misses.append(
-                (
-                    other,
-                    SplitTriangularTerminalFact(
-                        raw_outer_edges=len(outer_edges),
-                        effective_outer_sides=effective_sides,
-                    ),
-                )
-            )
-    return terminals, near_misses
+            terminals.append(other)
+    return terminals
 
 
 def recognise_angled_steps(
@@ -285,22 +260,8 @@ def _discover_angled_steps(
         # `convex_bevel` is reached by so few faces that it is 1% of this function, while the
         # companion walk costs a `.edges()` per axis-aligned neighbour. The cost lives in the
         # unavoidable scan above — `edge_face_map` and `classify_bevel` are two thirds of it.
-        terminals, near_misses = _terminal_read(
-            f, edge_faces, face_edges=face_edges
-        )
+        terminals = _terminal_read(f, edge_faces, face_edges=face_edges)
         if not terminals:
-            if sink is not None and near_misses:
-                if graph is None:
-                    raise ValueError("an evidence sink requires its graph")
-                subject = graph.require_node(f)
-                for terminal, fact in near_misses:
-                    sink.observe(
-                        FamilyId.ANGLED_STEPS,
-                        PredicateId.ANGLED_STEP_TERMINAL,
-                        subject=subject,
-                        consulted=[graph.require_node(terminal)],
-                        fact=fact,
-                    )
             continue  # runs edge to edge — a chamfer, and the reconciler leaves it to them
         fctr = f.center()
         out.append(
