@@ -78,8 +78,9 @@ def test_capped_polygonal_void_reaches_only_material_or_capped_gate(sides: int) 
     assert section_ring_proposals(part, graph) == ()
 
 
-def test_probe_is_axis_covariant() -> None:
-    first_part = _polygonal_passage()
+@pytest.mark.parametrize("sides", (4, 6))
+def test_probe_is_axis_covariant(sides: int) -> None:
+    first_part = _polygonal_passage(sides)
     second_part = Rot(90, 0, 0) * first_part
     first_graph = FaceGraph(first_part)
     second_graph = FaceGraph(second_part)
@@ -91,7 +92,7 @@ def test_probe_is_axis_covariant() -> None:
 
     assert first_probe.first_failed_gate == second_probe.first_failed_gate == "recognisable"
     assert first_probe.run != second_probe.run
-    assert first_probe.planar_walls == second_probe.planar_walls == 6
+    assert first_probe.planar_walls == second_probe.planar_walls == sides
 
 
 def test_equal_rectangular_passages_on_separate_bodies_remain_distinct() -> None:
