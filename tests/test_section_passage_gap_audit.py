@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import pytest
 from build123d import Box, BuildPart, BuildSketch, Plane, RegularPolygon, Rot, extrude
 
 from b123d_recognisers._adjacency import FaceGraph
@@ -15,16 +16,16 @@ from tools.audit_mfcadpp_section_passage_gaps import (
 )
 
 
-def _hexagonal_tool(*, depth: float = 60.0):
+def _polygonal_tool(sides: int, *, depth: float = 60.0):
     with BuildPart() as tool:
         with BuildSketch(Plane.XY):
-            RegularPolygon(7, 6)
+            RegularPolygon(7, sides)
         extrude(amount=depth, both=depth == 60.0)
     return tool.part
 
 
-def _hexagonal_passage():
-    return Box(60, 40, 20) - _hexagonal_tool()
+def _polygonal_passage(sides: int = 6):
+    return Box(60, 40, 20) - _polygonal_tool(sides)
 
 
 def _vertical_inner_walls(graph: FaceGraph):
@@ -38,8 +39,9 @@ def _vertical_inner_walls(graph: FaceGraph):
     )
 
 
-def test_intact_hexagonal_passage_reaches_exact_production_proposal() -> None:
-    part = _hexagonal_passage()
+@pytest.mark.parametrize("sides", (3, 6))
+def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) -> None:
+    part = _polygonal_passage(sides)
     graph = FaceGraph(part)
     (proposal,) = section_ring_proposals(part, graph)
     component = frozenset(proposal.nodes)
@@ -47,25 +49,26 @@ def test_intact_hexagonal_passage_reaches_exact_production_proposal() -> None:
     probe = _probe_component(graph, component)
 
     assert probe.first_failed_gate == "recognisable"
-    assert probe.planar_walls == probe.collinear_pairs == probe.interval_pairs == 6
-    assert probe.cycle_faces == 6
+    assert probe.planar_walls == probe.collinear_pairs == probe.interval_pairs == sides
+    assert probe.cycle_faces == sides
     assert component == frozenset(proposal.nodes)
 
 
-def test_capped_hexagonal_void_reaches_only_material_or_capped_gate() -> None:
-    part = Box(60, 40, 20) - _hexagonal_tool(depth=10.0)
+@pytest.mark.parametrize("sides", (3, 6))
+def test_capped_polygonal_void_reaches_only_material_or_capped_gate(sides: int) -> None:
+    part = Box(60, 40, 20) - _polygonal_tool(sides, depth=10.0)
     graph = FaceGraph(part)
     component = _vertical_inner_walls(graph)
 
     probe = _probe_component(graph, component)
 
-    assert len(component) == 6
+    assert len(component) == sides
     assert probe.first_failed_gate == "material_or_capped"
     assert section_ring_proposals(part, graph) == ()
 
 
 def test_probe_is_axis_covariant() -> None:
-    first_part = _hexagonal_passage()
+    first_part = _polygonal_passage()
     second_part = Rot(90, 0, 0) * first_part
     first_graph = FaceGraph(first_part)
     second_graph = FaceGraph(second_part)

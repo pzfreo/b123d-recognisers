@@ -14,6 +14,7 @@ the 500 lexical model IDs, and every selected STEP-file hash. Generate it with:
 ```console
 uv run python tools/audit_mfcadpp_section_passage_gaps.py \
   /path/to/MFCAD++_dataset/step/test \
+  --class-id 4 \
   --limit 500 \
   --output docs/benchmarks/effectiveness-mfcadpp-500-section-passage-gap-9949949.json
 ```
