@@ -164,3 +164,16 @@ the unchanged proof accepts at the closed end are retained; none is chosen by co
 coordinate rematching or adjacency expansion after recognition. Passages and rejected enclosed
 cavities publish no Prismatic Pocket evidence. Non-exclusive membership remains valid when an
 accepted cap patch is also constituent to another occurrence.
+
+## Amendment (Pocket bounded-region membership, issue #420)
+
+The prohibition on reconstructing wider membership later by adjacency flood-fill remains. A narrow
+exception is admitted inside the final neutral Pocket proposal proof: an exact inner-wire seed may
+traverse concave or smooth original graph arcs and associate the resulting bounded region with the
+exact retained wall, cap and floor nodes. This occurs before Candidate issuance; the public evidence
+view performs no search or rematch. Both association directions must be one-to-one, and invalid or
+ambiguous cases fall back to the existing constituent set. The opening face is proof context, not a
+constituent, and defining evidence is unchanged.
+
+This is physical run-local membership, not ownership or persistent identity. It publishes no
+adjacency, cavity API, graph type or durable face name.

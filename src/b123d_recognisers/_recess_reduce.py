@@ -47,21 +47,25 @@ class _RecessProposal(Generic[_R]):
     planar: frozenset[FaceNode] = frozenset()
     caps: tuple[frozenset[FaceNode], ...] = ()
     floors: frozenset[FaceNode] = frozenset()
+    constituent: frozenset[FaceNode] = frozenset()
 
 
 def _replace_proposal(proposal: _RecessProposal[_R], record: _R) -> _RecessProposal[_R]:
-    return _RecessProposal(record, proposal.planar, proposal.caps, proposal.floors)
+    return _RecessProposal(
+        record, proposal.planar, proposal.caps, proposal.floors, proposal.constituent
+    )
 
 
 def _combine_proposals(record: _R, proposals: list[_RecessProposal[_R]]) -> _RecessProposal[_R]:
     planar = frozenset(node for proposal in proposals for node in proposal.planar)
     floors = frozenset(node for proposal in proposals for node in proposal.floors)
+    constituent = frozenset(node for proposal in proposals for node in proposal.constituent)
     cap_groups: list[frozenset[FaceNode]] = []
     for proposal in proposals:
         for group in proposal.caps:
             if group not in cap_groups:
                 cap_groups.append(group)
-    return _RecessProposal(record, planar, tuple(cap_groups), floors)
+    return _RecessProposal(record, planar, tuple(cap_groups), floors, constituent)
 
 
 #: Which faces a record was built from, while it is being built. Keyed by the record's *value*,

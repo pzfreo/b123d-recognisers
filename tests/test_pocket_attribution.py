@@ -472,13 +472,17 @@ def test_route_selected_sources_are_complete_and_one_body(part, planar, curved, 
     if record.edge_anchored:
         assert constituent == nodes
     else:
-        floor = constituent - nodes
         depth_axis = "xyz".index(record.depth_axis)
-        assert nodes < constituent and floor
-        assert all(ledger.graph.is_planar(node) for node in floor)
-        assert all(
-            ledger.graph.normal(node)[depth_axis] * record.open_sign > 0.99 for node in floor
-        )
+        floors = {
+            node
+            for node in constituent
+            if ledger.graph.is_planar(node)
+            and (normal := ledger.graph.normal(node)) is not None
+            and normal[depth_axis] * record.open_sign > 0.99
+        }
+        assert nodes < constituent
+        assert len(constituent) == 5
+        assert len(floors) == 1
     assert ledger.graph.common_valid_solid(constituent) is not None
 
 
@@ -492,6 +496,28 @@ def test_equal_coincident_bodies_remain_distinct_occurrences() -> None:
     assert all(
         candidate.record is record for candidate, record in zip(candidates, records, strict=True)
     )
+    constituents = [ledger.snapshot_index().constituent_of(item) for item in candidates]
+    assert [len(nodes) for nodes in constituents] == [5, 5]
+    assert ledger.graph.common_valid_solid(constituents[0]) is not ledger.graph.common_valid_solid(
+        constituents[1]
+    )
+
+
+def test_nearby_hole_inner_loop_does_not_attach_to_pocket() -> None:
+    part = (
+        Box(80, 50, 14)
+        - Pos(-18, 0, 5) * Box(20, 12, 10)
+        - Pos(22, 0, 0) * Cylinder(4, 14)
+    )
+    ledger = ClaimLedger(FaceGraph(part))
+
+    (record,) = _discover_pockets(part, writer=ledger.writer)
+    (candidate,) = ledger.candidate_set(FamilyId.POCKETS).candidates
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+
+    assert candidate.record is record
+    assert len(constituent) == 5
+    assert all(ledger.graph.is_planar(node) for node in constituent)
 
 
 @pytest.mark.parametrize(
@@ -1495,7 +1521,9 @@ def test_step_split_opposed_floor_is_constituent_but_not_defining(tmp_path: Path
     defining = ledger.defining_of(candidate)
     assert len(defining) == 2
     assert defining.isdisjoint(split_floors)
-    assert ledger.snapshot_index().constituent_of(candidate) == defining | split_floors
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    assert defining | split_floors < constituent
+    assert len(constituent) == 6
 
 
 def test_freeform_conversion_and_edge_corner_collision_do_not_leak() -> None:
@@ -1525,17 +1553,27 @@ def test_reversed_face_traversal_preserves_records_and_roles(monkeypatch) -> Non
             frozenset(ledger.graph.face(node) for node in ledger.defining_of(candidate))
             for candidate in ledger.candidate_set(FamilyId.POCKETS).candidates
         ]
-        return records, roles
+        constituents = [
+            frozenset(
+                ledger.graph.face(node)
+                for node in ledger.snapshot_index().constituent_of(candidate)
+            )
+            for candidate in ledger.candidate_set(FamilyId.POCKETS).candidates
+        ]
+        return records, roles, constituents
 
-    before_records, before_roles = run()
+    before_records, before_roles, before_constituents = run()
     original = type(part).faces
     monkeypatch.setattr(type(part), "faces", lambda self: list(reversed(original(self))))
-    after_records, after_roles = run()
+    after_records, after_roles, after_constituents = run()
     assert [record.to_dict() for record in after_records] == [
         record.to_dict() for record in before_records
     ]
     assert len(before_roles) == len(after_roles)
     for before, after in zip(before_roles, after_roles, strict=True):
+        assert all(any(face.is_same(other) for other in after) for face in before)
+    for before, after in zip(before_constituents, after_constituents, strict=True):
+        assert len(before) == len(after)
         assert all(any(face.is_same(other) for other in after) for face in before)
 
 
@@ -1659,7 +1697,9 @@ def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkey
     candidate = ledger.candidate_set(FamilyId.POCKETS).candidates[0]
     defining = ledger.defining_of(candidate)
     assert shared in defining
-    assert ledger.snapshot_index().constituent_of(candidate) == defining
+    constituent = ledger.snapshot_index().constituent_of(candidate)
+    assert constituent == defining | proposal.constituent
+    assert len(constituent) == 5
 
 
 def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(monkeypatch) -> None:
@@ -1787,6 +1827,7 @@ def test_same_body_multiple_pockets_keep_geometry_order_and_exact_identity() -> 
         actual_faces = [ledger.graph.face(node) for node in ledger.defining_of(candidate)]
         expected_faces = [fresh_graph.face(node) for node in nodes]
         assert all(any(face.is_same(want) for face in actual_faces) for want in expected_faces)
+        assert len(ledger.snapshot_index().constituent_of(candidate)) == 5
 
 
 def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
