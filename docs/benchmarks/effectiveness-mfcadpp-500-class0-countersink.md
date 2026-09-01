@@ -19,8 +19,8 @@ Countersink evidence covers eight conical faces in six components:
 
 - models `10260`, `10812`, and `12729` contain singleton conical label components
   fully and exclusively owned by accepted Countersink records;
-- models `11145` and `11186` contain four-face smooth conical bevel groups partitioned
-  into two valid Chamfers and two valid Countersinks;
+- models `11145` and `11186` contain four-face connected mixed bevel groups,
+  partitioned into two planar Chamfer faces and two conical Countersink faces;
 - model `1201` contains a three-face group partitioned into two Chamfers and one
   Countersink.
 
@@ -38,6 +38,18 @@ constant planar cross-section and floor, not a bevel occurrence. Mapping the ent
 pocket family from these isolated labels would make unrelated pocket faces eligible
 for class 0 and mistake single-assignment face labelling for physical-feature
 equivalence. The proposal is therefore rejected.
+
+The audit also bounds what neither decision solves. Ninety-seven components carrying
+122 labelled faces are untouched by every accepted family. They comprise 78 singleton
+planes (75 non-principal and three principal), nine singleton cones, three two-plane
+groups, two cone-plus-two-plane groups, one two-cone-plus-plane group, three
+two-cone-plus-two-plane groups, and one four-cone-plus-four-plane group. Representative
+residuals include the non-principal singleton bevels in `1007` and `10278`, singleton
+cones in `10327` and `10955`, the mixed three-face group in `10092`, and the eight-face
+mixed group in `11354`. One further face is uncovered inside the two-plane component
+partially recognised as Chamfer in `10077`, giving the report's 123 uncovered faces in
+total. These are genuine detection/contract-boundary work, not evidence for broadening
+either mapping decided here.
 
 ## Exact comparison
 
