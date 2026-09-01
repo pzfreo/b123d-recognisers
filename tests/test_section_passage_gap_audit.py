@@ -1,11 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Authored controls for the class-4 section-passage gap audit."""
+"""Authored controls for the section-passage gap audits."""
 
 from __future__ import annotations
 
 import pytest
-from build123d import Box, BuildPart, BuildSketch, Plane, RegularPolygon, Rot, extrude
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Compound,
+    Plane,
+    Pos,
+    RegularPolygon,
+    Rot,
+    extrude,
+)
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._section_passages import section_ring_proposals
@@ -39,7 +49,7 @@ def _vertical_inner_walls(graph: FaceGraph):
     )
 
 
-@pytest.mark.parametrize("sides", (3, 6))
+@pytest.mark.parametrize("sides", (3, 4, 6))
 def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) -> None:
     part = _polygonal_passage(sides)
     graph = FaceGraph(part)
@@ -54,7 +64,7 @@ def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) 
     assert component == frozenset(proposal.nodes)
 
 
-@pytest.mark.parametrize("sides", (3, 6))
+@pytest.mark.parametrize("sides", (3, 4, 6))
 def test_capped_polygonal_void_reaches_only_material_or_capped_gate(sides: int) -> None:
     part = Box(60, 40, 20) - _polygonal_tool(sides, depth=10.0)
     graph = FaceGraph(part)
@@ -83,9 +93,25 @@ def test_probe_is_axis_covariant() -> None:
     assert first_probe.planar_walls == second_probe.planar_walls == 6
 
 
+def test_equal_rectangular_passages_on_separate_bodies_remain_distinct() -> None:
+    first = _polygonal_passage(4)
+    second = Pos(100, 0, 0) * first
+    compound = Compound(children=[first, second])
+    graph = FaceGraph(compound)
+    proposals = section_ring_proposals(compound, graph)
+
+    assert len(proposals) == 2
+    components = [frozenset(proposal.nodes) for proposal in proposals]
+    assert all(
+        _probe_component(graph, component).first_failed_gate == "recognisable"
+        for component in components
+    )
+    owners = [graph.common_valid_solid(component) for component in components]
+    assert None not in owners
+    assert owners[0] != owners[1]
+
+
 def test_selection_hashes_pin_order_and_source_content() -> None:
     assert _selection_hash(["100", "200"]) == _selection_hash(["100", "200"])
     assert _selection_hash(["100", "200"]) != _selection_hash(["200", "100"])
-    assert _source_selection_hash([("100", "aaa")]) != _source_selection_hash(
-        [("100", "changed")]
-    )
+    assert _source_selection_hash([("100", "aaa")]) != _source_selection_hash([("100", "changed")])
