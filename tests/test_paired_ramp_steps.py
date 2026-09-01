@@ -47,10 +47,11 @@ def _side_cut(
     asymmetric: bool = False,
     blind: bool = False,
     cycle: int = 0,
+    half_height: float = 8.0,
 ):
     stock = Box(40 * scale, 40 * scale, 30 * scale)
-    upper = 11 if asymmetric else 8
-    points = [(0, -8 * scale), (0, upper * scale), (-10 * scale, 0)]
+    upper = 11 if asymmetric else half_height
+    points = [(0, -half_height * scale), (0, upper * scale), (-10 * scale, 0)]
     points = points[cycle:] + points[:cycle]
     profile = Polygon(*points)
     opening_y = 15 * scale if blind else 20 * scale
@@ -115,6 +116,70 @@ def test_a_mirror_ramp_pair_open_to_the_stock_side_is_one_physical_cut() -> None
     assert recognise_paired_ramp_steps(_side_cut()) == [
         PairedRampStep(axis="y", angle=51.34, length=25.0, at=(10.0, 7.5, 0.0))
     ]
+
+
+def test_a_shallow_mirror_pair_is_a_step_even_when_neither_face_is_a_chamfer() -> None:
+    part = _side_cut(half_height=0.5)
+    graph = FaceGraph(part)
+    shallow = [
+        node
+        for node in graph.nodes
+        if (normal := graph.normal(node)) is not None
+        and sum(abs(component) <= paired_ramp_module.SMOOTH_ARC_GAP for component in normal) == 1
+        and max(abs(component) for component in normal) > 0.99
+    ]
+
+    assert len(shallow) == 2
+    assert all(paired_ramp_module._read_ramp(graph, node) is not None for node in shallow)
+    for node in shallow:
+        with suppress(BevelReject):
+            classify_bevel(graph.face(node))
+            raise AssertionError("the shared Chamfer reader unexpectedly accepted a shallow ramp")
+    assert recognise_paired_ramp_steps(part) == [
+        PairedRampStep(axis="y", angle=87.14, length=25.0, at=(10.0, 7.5, 0.0))
+    ]
+
+
+def test_principal_planes_do_not_become_zero_angle_ramps() -> None:
+    graph = FaceGraph(Box(10, 20, 30))
+
+    assert all(paired_ramp_module._read_ramp(graph, node) is None for node in graph.nodes)
+    assert recognise_paired_ramp_steps(Box(10, 20, 30)) == []
+
+
+def test_ramp_reader_refuses_non_planar_or_normal_less_faces(monkeypatch) -> None:
+    graph, left, _right, _left_read, _right_read = _proved_pair()
+
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "is_planar", lambda _node: False)
+        assert paired_ramp_module._read_ramp(graph, left) is None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: None)
+        assert paired_ramp_module._read_ramp(graph, left) is None
+
+
+def test_ramp_run_direction_uses_the_existing_direction_tolerance(monkeypatch) -> None:
+    part = _side_cut(half_height=0.5)
+    graph = FaceGraph(part)
+    node = next(node for node in graph.nodes if paired_ramp_module._read_ramp(graph, node))
+    normal = graph.normal(node)
+    assert normal is not None
+    run = min(range(3), key=lambda axis: abs(normal[axis]))
+
+    at_boundary = tuple(
+        paired_ramp_module.SMOOTH_ARC_GAP if axis == run else component
+        for axis, component in enumerate(normal)
+    )
+    outside_boundary = tuple(
+        2 * paired_ramp_module.SMOOTH_ARC_GAP if axis == run else component
+        for axis, component in enumerate(normal)
+    )
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: at_boundary)
+        assert paired_ramp_module._read_ramp(graph, node) is not None
+    with monkeypatch.context() as patch:
+        patch.setattr(graph, "normal", lambda _node: outside_boundary)
+        assert paired_ramp_module._read_ramp(graph, node) is None
 
 
 def test_the_pair_claims_both_original_ramps_and_its_required_terminal() -> None:
