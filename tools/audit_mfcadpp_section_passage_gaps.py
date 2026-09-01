@@ -347,6 +347,7 @@ def _component_row(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
+    parser.add_argument("--class-id", type=int, required=True)
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -361,7 +362,11 @@ def main() -> int:
     for path in paths:
         truth = load_mfcadpp_truth(path)
         sources.append((truth.model_id, truth.source_sha256))
-        indices = {index for index, class_id in enumerate(truth.semantic) if class_id == 4}
+        indices = {
+            index
+            for index, class_id in enumerate(truth.semantic)
+            if class_id == args.class_id
+        }
         if not indices:
             continue
         part = import_step(path)
@@ -397,7 +402,7 @@ def main() -> int:
             "sha256": _sha256(ROOT / "src/b123d_recognisers/_section_passages.py"),
         },
         "dataset": {"name": "mfcadpp", "version": _PUBLISHED_VERSION},
-        "class_id": 4,
+        "class_id": args.class_id,
         "derivation": "connected same-label original faces under shared-edge adjacency",
         "probe_semantics": (
             "Counterfactual application of the unchanged production proofs to every face in one "
