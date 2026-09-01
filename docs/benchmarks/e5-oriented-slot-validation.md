@@ -15,11 +15,11 @@ source Passage only when the successor has the exact same non-empty defining wal
 
 ## MFCAD++-500 development transfer
 
-The fixed lexical 500-model selection was run in raw coordinates at package commit `0f4bcd2`
-using `effectiveness-taxonomy-v9.json`. The canonical report is
-`effectiveness-mfcadpp-500-oriented-slot-0f4bcd2.json`.
+The fixed lexical 500-model selection was run in raw coordinates at package commit `72541af`
+using `effectiveness-taxonomy-v10.json`. The canonical report is
+`effectiveness-mfcadpp-500-oriented-slot-72541af.json`.
 
-Taxonomy v9 makes an explicit vocabulary translation: MFCAD++ calls an enclosed rectangular
+Taxonomy v10 makes an explicit vocabulary translation: MFCAD++ calls an enclosed rectangular
 through-cut a *rectangular passage* (class 3), while its published feature diagram uses
 *rectangular through slot* (class 6) for an edge-open/full-span cut. The package and Draftwright
 use Slot for the former consumer semantic. This translation affects scoring only and never enters
