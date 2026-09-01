@@ -33,9 +33,9 @@ recording only its final commit, so the historical +284 claim is not comparison 
 
 The corrected comparison uses two immutable reports produced by the #405 source-pinned runner:
 
-- [`effectiveness-mfcadpp-500-prismatic-floor-parent-8eed072.json`](effectiveness-mfcadpp-500-prismatic-floor-parent-8eed072.json)
+- [`effectiveness-mfcadpp-500-prismatic-floor-parent-39d7028.json`](effectiveness-mfcadpp-500-prismatic-floor-parent-39d7028.json)
   is current main with only the two #403 production edits removed;
-- [`effectiveness-mfcadpp-500-prismatic-floor-corrected-5949cd0.json`](effectiveness-mfcadpp-500-prismatic-floor-corrected-5949cd0.json)
+- [`effectiveness-mfcadpp-500-prismatic-floor-corrected-8dde6f5.json`](effectiveness-mfcadpp-500-prismatic-floor-corrected-8dde6f5.json)
   is the matching current-source implementation report.
 
 The two report commits differ in production code only in `_rings.py` and
@@ -79,8 +79,8 @@ pairing and recogniser inventory.
 
 ## Runtime and compatibility
 
-The corrected same-host runs measured 288.24 seconds for the production parent and 356.39 seconds
-for the implementation, a 1.236x raw ratio; medians were 0.534 and 0.663 seconds. The implementation adds set
+The final-runner same-host runs measured 309.11 seconds for the production parent and 311.61
+seconds for the implementation, a 1.008x raw ratio; medians were 0.586 seconds for both. The implementation adds set
 retention inside an already-required neighbour loop and no kernel query or second scan. The ratio
 is recorded as a conservative observed bound rather than attributed CPU cost.
 
