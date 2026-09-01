@@ -25,6 +25,7 @@ from dataclasses import dataclass, replace
 from typing import Generic, TypeVar
 
 from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._geometry import body_signature
 from b123d_recognisers._recess_faces import _MERGE_TOL
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
@@ -124,17 +125,7 @@ def _body_signature(solid) -> tuple[float, ...]:
     under package ADR 0002. Callers treat duplicate signatures across separate solids as
     ambiguous and fail closed rather than using the signature as proof of shared ownership.
     """
-    bb = solid.bounding_box()
-    return (
-        float(bb.min.X),
-        float(bb.min.Y),
-        float(bb.min.Z),
-        float(bb.max.X),
-        float(bb.max.Y),
-        float(bb.max.Z),
-        float(solid.volume),
-        float(solid.area),
-    )
+    return body_signature(solid)
 
 
 def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:

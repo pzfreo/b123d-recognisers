@@ -265,6 +265,35 @@ FAMILIES = {
         "census": None,
         "goldens": ["straight_and_obround_slots"],
     },
+    "oriented-slots": {
+        "recognisers": [("recognise_oriented_slots", "part")],
+        "records": [
+            ("OrientedSlot", "output", ["RecognitionResult.oriented_slots"]),
+        ],
+        "census": "oriented_slot",
+        "goldens": ["straight_and_obround_slots"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_oriented_slots.py"],
+    },
+    "oriented-slot-patterns": {
+        "recognisers": [("recognise_oriented_slot_patterns", "derived")],
+        "records": [
+            (
+                "OrientedSlotArray",
+                "output",
+                ["RecognitionResult.oriented_slot_patterns"],
+            ),
+            (
+                "OrientedSlotGrid",
+                "output",
+                ["RecognitionResult.oriented_slot_patterns"],
+            ),
+        ],
+        "census": None,
+        "goldens": ["straight_and_obround_slots"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_oriented_slots.py"],
+    },
     "slots": {
         "recognisers": [("recognise_slots", "part")],
         "records": [("Slot", "output", ["RecognitionResult.slots"])],
@@ -356,11 +385,14 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         return "deg"
     if name in {
         "axis_direction",
+        "depth_direction",
         "flat_direction",
         "flat_directions",
+        "long_direction",
         "run",
         "u",
         "v",
+        "width_direction",
     }:
         return "unit-vector"
     if name == "direction" and rendered.startswith("tuple[float,3]"):

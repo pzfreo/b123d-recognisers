@@ -63,7 +63,11 @@ def recognition_snapshot(recognition, feature_census, part):
 
     # Added in the 0.4 rich-schema transition and pinned by its own schema/oracle goldens.
     # This legacy snapshot deliberately stays byte-identical to the Draftwright-era surface.
-    post_baseline = {"recognise_section_passages"}
+    post_baseline = {
+        "recognise_section_passages",
+        "recognise_oriented_slots",
+        "recognise_oriented_slot_patterns",
+    }
     public_recognisers = {
         name
         for name in recognition.__all__

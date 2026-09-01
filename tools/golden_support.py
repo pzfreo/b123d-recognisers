@@ -11,7 +11,10 @@ from typing import Any
 
 CANONICALIZER_VERSION = 1
 FLOAT_DIGITS = 8
-_OMIT_MAPPING_KEYS = frozenset({"face", "solid_idx"})
+_OMIT_MAPPING_KEYS = frozenset({"face", "solid_idx", "oriented_slot"})
+_POST_BASELINE_RESULT_FIELDS = frozenset(
+    {"section_passages", "oriented_slots", "oriented_slot_patterns"}
+)
 
 
 class CanonicalizationError(TypeError):
@@ -33,7 +36,8 @@ def canonicalize(value: Any) -> Any:
             field.name: canonicalize(getattr(value, field.name))
             for field in dataclasses.fields(value)
             if not (
-                type(value).__name__ == "RecognitionResult" and field.name == "section_passages"
+                type(value).__name__ == "RecognitionResult"
+                and field.name in _POST_BASELINE_RESULT_FIELDS
             )
         }
         return {"_type": type(value).__name__, **fields}

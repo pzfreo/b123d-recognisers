@@ -177,3 +177,10 @@ constituent, and defining evidence is unchanged.
 
 This is physical run-local membership, not ownership or persistent identity. It publishes no
 adjacency, cavity API, graph type or durable face name.
+
+## Amendment (public oriented Slot projection, issue #310)
+
+`OrientedSlot.source` does not expose the private section graph. It nests the already supported
+immutable `SectionPassage` value so callers receive the exact frame, span, serialized rectangle
+and open-end proof that authored the projection. Original-face identity remains available only
+through the run-scoped evidence facade.

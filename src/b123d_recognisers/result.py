@@ -40,6 +40,7 @@ from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
     reconcile_blend_candidates,
     reconcile_circular_step_fillets,
+    reconcile_oriented_slot_passages,
     reconcile_profiled_bore_candidates,
     reconcile_recess_candidates,
     reconcile_step_groove_candidates,
@@ -73,6 +74,7 @@ from b123d_recognisers.levels import (
     RiserEvidence,
     bounded_end_margin,
 )
+from b123d_recognisers.oriented_slots import OrientedSlot, OrientedSlotArray, OrientedSlotGrid
 from b123d_recognisers.pads import RaisedPad
 from b123d_recognisers.paired_ramp_steps import PairedRampStep
 from b123d_recognisers.passages import Passage, SectionPassage
@@ -214,6 +216,7 @@ class DerivedInventory:
 
     hole_patterns: tuple[BoltCircle | LinearArray | RectGrid, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
+    oriented_slot_patterns: tuple[OrientedSlotArray | OrientedSlotGrid, ...]
     pocket_patterns: tuple[PocketArray | PocketGrid, ...]
     passages: tuple[Passage, ...]
 
@@ -277,7 +280,10 @@ class RecognitionResult:
     polygonal_stock: tuple[PolygonalStock, ...]
     channels: tuple[Channel, ...]
     slots: tuple[Slot, ...]
+    #: Rectangular through slots whose in-plane axes are not principal in the supplied frame.
+    oriented_slots: tuple[OrientedSlot, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
+    oriented_slot_patterns: tuple[OrientedSlotArray | OrientedSlotGrid, ...]
     #: Edge-open, one-cap blind slots with a constant rectangular U section.
     rectangular_blind_slots: tuple[RectangularBlindSlot, ...]
     #: Edge-open, one-cap blind slots with a constant flat-plus-quarter-cylinder U section.
@@ -607,6 +613,11 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.GROOVES),
         evidence,
     )
+    decisions += reconcile_oriented_slot_passages(
+        physical.candidate_set(FamilyId.PASSAGES),
+        physical.candidate_set(FamilyId.ORIENTED_SLOTS),
+        evidence,
+    )
     return CandidateReconciliation.complete(
         tuple(physical.candidate_set(family) for family in PHYSICAL_FAMILIES),
         decisions,
@@ -633,6 +644,10 @@ def _derive_patterns(accepted: CandidateInventory) -> DerivedInventory:
             derived[DerivedId.HOLE_PATTERNS],
         ),
         slot_patterns=cast(tuple[SlotArray | SlotGrid, ...], derived[DerivedId.SLOT_PATTERNS]),
+        oriented_slot_patterns=cast(
+            tuple[OrientedSlotArray | OrientedSlotGrid, ...],
+            derived[DerivedId.ORIENTED_SLOT_PATTERNS],
+        ),
         pocket_patterns=cast(
             tuple[PocketArray | PocketGrid, ...], derived[DerivedId.POCKET_PATTERNS]
         ),
@@ -674,7 +689,9 @@ def _project_result(
         polygonal_stock=tuple(_records(accepted, FamilyId.POLYGONAL_STOCK, PolygonalStock)),
         channels=tuple(_records(accepted, FamilyId.CHANNELS, Channel)),
         slots=tuple(_records(accepted, FamilyId.SLOTS, Slot)),
+        oriented_slots=tuple(_records(accepted, FamilyId.ORIENTED_SLOTS, OrientedSlot)),
         slot_patterns=derived.slot_patterns,
+        oriented_slot_patterns=derived.oriented_slot_patterns,
         rectangular_blind_slots=tuple(
             _records(
                 accepted,

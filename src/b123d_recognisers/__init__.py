@@ -144,6 +144,13 @@ from b123d_recognisers.levels import (
     step_level_records,
     step_level_zs,
 )
+from b123d_recognisers.oriented_slots import (
+    OrientedSlot,
+    OrientedSlotArray,
+    OrientedSlotGrid,
+    recognise_oriented_slot_patterns,
+    recognise_oriented_slots,
+)
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
 from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
 from b123d_recognisers.passages import (
@@ -211,7 +218,7 @@ from b123d_recognisers.turned import (
 try:
     __version__ = version("b123d-recognisers")
 except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
-    __version__ = "0.4.12.dev0"
+    __version__ = "0.5.0.dev0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402
@@ -239,6 +246,9 @@ __all__ = [
     "PassageSectionVertex",
     "PairedRampStep",
     "SectionPassage",
+    "OrientedSlot",
+    "OrientedSlotArray",
+    "OrientedSlotGrid",
     "BoltCircle",
     "Blend",
     "Chamfer",
@@ -322,6 +332,8 @@ __all__ = [
     "PrismaticPocket",
     "recognise_passages",
     "recognise_section_passages",
+    "recognise_oriented_slots",
+    "recognise_oriented_slot_patterns",
     "recognise_prismatic_pockets",
     "recognise_bosses",
     "recognise_blends",

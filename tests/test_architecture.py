@@ -30,6 +30,7 @@ PUBLIC_MODULES = {
     "grooves",
     "inspection",
     "levels",
+    "oriented_slots",
     "pads",
     "paired_ramp_steps",
     "through_steps",
@@ -199,6 +200,7 @@ MODULE_SEAM_EDGES = {
     "_recess_faces": {"_adjacency", "_recess_records", "_typing", "_volume_probe"},
     "_recess_reduce": {
         "_adjacency",
+        "_geometry",
         "_recess_faces",
         "_recess_records",
         "_typing",
@@ -265,6 +267,7 @@ MODULE_SEAM_EDGES = {
         "flats",
         "grooves",
         "levels",
+        "oriented_slots",
         "pads",
         "paired_ramp_steps",
         "through_steps",
@@ -280,6 +283,17 @@ MODULE_SEAM_EDGES = {
         "turned",
     },
     "_recess_patterns": {"_pattern_geometry", "_recess_records"},
+    "oriented_slots": {
+        "_adjacency",
+        "_candidates",
+        "_claims",
+        "_geometry",
+        "_pattern_geometry",
+        "_record",
+        "_section_passages",
+        "_typing",
+        "passages",
+    },
     # Epic 0004's private geometry values are a stdlib-only leaf. The adapter names exactly the
     # two polygonal records whose legacy values round-trip; production recognition does not use it.
     "_sections": set(),

@@ -212,6 +212,33 @@ def reconcile_bevel_candidates(
     return tuple(decisions)
 
 
+def reconcile_oriented_slot_passages(
+    passages: CandidateSet[object],
+    oriented_slots: CandidateSet[object],
+    evidence: EvidenceIndex,
+) -> tuple[Disposition, ...]:
+    """Prefer the specific free-axis rectangular Slot interpretation to its source passage."""
+
+    decisions = []
+    for passage in passages.candidates:
+        walls = evidence.defining_of(passage)
+        winners = tuple(
+            slot
+            for slot in oriented_slots.candidates
+            if walls and walls == evidence.defining_of(slot)
+        )
+        if winners:
+            decisions.append(
+                Disposition(
+                    passage,
+                    Outcome.REJECTED,
+                    ReasonCode.PASSAGE_SUPERSEDED_BY_ORIENTED_SLOT,
+                    winners,
+                )
+            )
+    return tuple(decisions)
+
+
 def reconcile_circular_step_fillets(
     fillets: CandidateSet[object],
     circular_steps: CandidateSet[object],

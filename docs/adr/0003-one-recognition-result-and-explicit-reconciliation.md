@@ -386,3 +386,11 @@ The bounded public explanation projection adds the matching closed
 `ReconciliationReason.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE` value. This is an additive public enum
 member, not a record-schema or capability-manifest change; aggregate clients that display or
 persist reconciliation reasons can distinguish the corrected physical decision.
+
+## Amendment (free-axis rectangular Slot successor, issue #310)
+
+`SectionPassage` remains the sole physical discovery authority for a closed constant-section
+through ring. A completed occurrence may issue `OrientedSlot` only when its serialized boundary
+proves a non-square four-line rectangle not representable by legacy principal-axis `Slot`. The
+successor reissues the exact source walls; explicit reconciliation rejects only that generic
+Passage occurrence. Pattern recognition consumes accepted successor records only.

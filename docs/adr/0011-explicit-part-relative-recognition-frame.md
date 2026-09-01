@@ -201,3 +201,10 @@ envelope rather than the local coordinate-aligned bounding rectangle. The author
 the exact framed working solid and rotates with that solid; the frame representative is not
 reordered or probed again. Axis, bounds, witnesses and original defining faces remain expressed in
 the one supplied local frame, and internally oblique Plate normals remain unsupported.
+
+## Amendment (internally oblique Slot directions, issue #310)
+
+An internally slanted slot does not redefine the part frame. `OrientedSlot` expresses width,
+long, run and centre in the one coordinate system supplied to recognition: raw for raw calls and
+the selected local frame for framed calls. Whole-part covariance transforms them together; no
+family-specific reframing or world-axis fallback is permitted.

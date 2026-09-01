@@ -55,6 +55,7 @@ class FamilyId(Enum):
     FLATS = "flats"
     GROOVES = "grooves"
     HOLES = "holes"
+    ORIENTED_SLOTS = "oriented_slots"
     PADS = "pads"
     PAIRED_RAMP_STEPS = "paired_ramp_steps"
     PASSAGES = "passages"

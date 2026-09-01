@@ -10,6 +10,7 @@ projection, reconciliation policy, and census key order remain independently rev
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import Enum
@@ -57,6 +58,16 @@ from b123d_recognisers.levels import (
     RiserEvidence,
     _discover_risers,
     _discover_step_levels,
+)
+from b123d_recognisers.oriented_slots import (
+    OrientedSlot,
+    OrientedSlotArray,
+    OrientedSlotGrid,
+    _body_signature,
+    recognise_oriented_slot_patterns,
+)
+from b123d_recognisers.oriented_slots import (
+    _project as _project_oriented_slot,
 )
 from b123d_recognisers.pads import RaisedPad, _discover_rectangular_pads
 from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
@@ -141,6 +152,7 @@ class DerivedId(Enum):
 
     HOLE_PATTERNS = "hole_patterns"
     SLOT_PATTERNS = "slot_patterns"
+    ORIENTED_SLOT_PATTERNS = "oriented_slot_patterns"
     POCKET_PATTERNS = "pocket_patterns"
     PASSAGES_COMPAT = "passages_compat"
 
@@ -388,12 +400,47 @@ def _risers(services: DiscoveryServices, inputs: CompletedInputs) -> list[object
     )
 
 
+def _oriented_slots(services: DiscoveryServices, inputs: CompletedInputs) -> list[object]:
+    occurrences = inputs.occurrences(FamilyId.PASSAGES, SectionPassage)
+    solids = []
+    for occurrence in occurrences:
+        solid = occurrence.solid()
+        if solid is None:  # pragma: no cover - completed passage evidence is nonempty/same-solid
+            raise ValueError("completed SectionPassage occurrence has no valid solid")
+        solids.append(solid)
+    unique = tuple(dict.fromkeys(solids))
+    signatures = {
+        solid: _body_signature(services.context.graph.solid_shape(solid)) for solid in unique
+    }
+    counts = Counter(signatures.values())
+    found: list[OrientedSlot] = []
+    for occurrence, solid in zip(occurrences, solids, strict=True):
+        signature = signatures[solid]
+        record = _project_oriented_slot(
+            occurrence.record(SectionPassage),
+            signature if counts[signature] == 1 else None,
+        )
+        if record is None:
+            continue
+        defining = occurrence.defining()
+        services.writer.sink.propose(FamilyId.ORIENTED_SLOTS, record, defining=defining)
+        found.append(record)
+    found.sort()
+    return list(found)
+
+
 def _hole_patterns(inputs: AcceptedInputs) -> list[object]:
     return list(recognise_hole_patterns(inputs.records(FamilyId.HOLES, HoleRecord)))
 
 
 def _slot_patterns(inputs: AcceptedInputs) -> list[object]:
     return list(recognise_slot_patterns(inputs.records(FamilyId.SLOTS, Slot)))
+
+
+def _oriented_slot_patterns(inputs: AcceptedInputs) -> list[object]:
+    return list(
+        recognise_oriented_slot_patterns(inputs.records(FamilyId.ORIENTED_SLOTS, OrientedSlot))
+    )
 
 
 def _pocket_patterns(inputs: AcceptedInputs) -> list[object]:
@@ -838,6 +885,19 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         projected=prismatic,
     ),
     PhysicalDefinition(
+        FamilyId.ORIENTED_SLOTS,
+        (OrientedSlot,),
+        "oriented_slots",
+        "recognise_oriented_slots",
+        (FamilyId.PASSAGES,),
+        prismatic,
+        _oriented_slots,
+        Counted("oriented_slot"),
+        FullyAttributed(
+            "every oriented slot reissues the exact accepted rectangular passage wall set"
+        ),
+    ),
+    PhysicalDefinition(
         FamilyId.BLENDS,
         (Blend,),
         "blends",
@@ -911,6 +971,15 @@ DERIVED_DEFINITIONS: tuple[DerivedDefinition, ...] = (
         "recognise_slot_patterns",
         (FamilyId.SLOTS,),
         _slot_patterns,
+        NotCounted("not a distinct census key"),
+    ),
+    DerivedDefinition(
+        DerivedId.ORIENTED_SLOT_PATTERNS,
+        (OrientedSlotArray, OrientedSlotGrid),
+        "oriented_slot_patterns",
+        "recognise_oriented_slot_patterns",
+        (FamilyId.ORIENTED_SLOTS,),
+        _oriented_slot_patterns,
         NotCounted("not a distinct census key"),
     ),
     DerivedDefinition(
