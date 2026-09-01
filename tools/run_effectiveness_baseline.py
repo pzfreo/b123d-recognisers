@@ -13,6 +13,7 @@ import tempfile
 import time
 from collections import Counter
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,59 @@ def _git_commit() -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+
+def _git_tree_is_clean() -> bool:
+    """Whether tracked files still equal the commit named by this report."""
+
+    completed = subprocess.run(
+        ["git", "diff", "--quiet", "HEAD", "--"],
+        cwd=ROOT,
+        check=False,
+    )
+    if completed.returncode not in (0, 1):
+        raise EffectivenessDataError("could not verify corpus-run source authority")
+    return completed.returncode == 0
+
+
+@dataclass(frozen=True, slots=True)
+class _RunAuthority:
+    commit: str
+    taxonomy: bytes
+    taxonomy_sha256: str
+
+
+def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
+    """Freeze the authority a long corpus run will claim in its metadata."""
+
+    if not _git_tree_is_clean():
+        raise EffectivenessDataError(
+            "tracked worktree changes would make the package commit misleading"
+        )
+    try:
+        taxonomy = taxonomy_path.read_bytes()
+    except OSError as error:
+        raise EffectivenessDataError("taxonomy is unreadable") from error
+    return _RunAuthority(
+        commit=_git_commit(),
+        taxonomy=taxonomy,
+        taxonomy_sha256=hashlib.sha256(taxonomy).hexdigest(),
+    )
+
+
+def _verify_run_authority(authority: _RunAuthority, taxonomy_path: Path) -> None:
+    """Refuse a report if its source or mapping changed while models were running."""
+
+    try:
+        taxonomy = taxonomy_path.read_bytes()
+    except OSError as error:
+        raise EffectivenessDataError("taxonomy changed during corpus run") from error
+    if (
+        _git_commit() != authority.commit
+        or not _git_tree_is_clean()
+        or taxonomy != authority.taxonomy
+    ):
+        raise EffectivenessDataError("source authority changed during corpus run")
 
 
 def _selection_hash(ids: list[str]) -> str:
@@ -180,6 +234,7 @@ def main() -> int:
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
     try:
+        authority = _capture_run_authority(args.taxonomy)
         if args.dataset == "mfcadpp":
             ids, loader, selection_extra = _mfcadpp_selection(args.root)
         else:
@@ -188,7 +243,9 @@ def main() -> int:
             ids, loader, selection_extra = _mfinstseg_selection(args.root, args.partition_root)
         if args.limit is not None:
             ids = ids[: args.limit]
-        taxonomy = load_taxonomy(args.taxonomy, args.dataset)
+        taxonomy = load_taxonomy(
+            args.taxonomy, args.dataset, contents=authority.taxonomy
+        )
     except EffectivenessDataError as error:
         parser.error(str(error))
 
@@ -219,12 +276,20 @@ def main() -> int:
             invalid += 1
             row = {"model_id": model_id, "status": "invalid", "reason": str(error)}
         rows.append(row)
+    try:
+        _verify_run_authority(authority, args.taxonomy)
+    except EffectivenessDataError as error:
+        parser.error(str(error))
     summary = summarize_rows(rows, len(ids), invalid)
     report = {
         "format": REPORT_FORMAT,
         "format_version": REPORT_FORMAT_VERSION,
         "dataset": {"name": args.dataset, "version": args.dataset_version},
-        "package": {"name": "b123d-recognisers", "version": __version__, "commit": _git_commit()},
+        "package": {
+            "name": "b123d-recognisers",
+            "version": __version__,
+            "commit": authority.commit,
+        },
         "environment": _environment(),
         "selection": {
             "rule": "unique model ID, lexical ascending",
@@ -235,7 +300,7 @@ def main() -> int:
         },
         "mapping": {
             "format_version": 1,
-            "sha256": hashlib.sha256(args.taxonomy.read_bytes()).hexdigest(),
+            "sha256": authority.taxonomy_sha256,
             "path": _display_path(args.taxonomy),
         },
         "models": rows,

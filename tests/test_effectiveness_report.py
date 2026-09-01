@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 from build123d import Box, Cylinder, GeomType
 
+import tools.run_effectiveness_baseline as baseline_runner
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
@@ -31,9 +32,11 @@ from tools.effectiveness_report import (
     validate_report,
 )
 from tools.run_effectiveness_baseline import (
+    _capture_run_authority,
     _display_path,
     _mfcadpp_selection,
     _mfinstseg_selection,
+    _verify_run_authority,
     _write_new_report,
 )
 
@@ -652,6 +655,58 @@ def test_report_creation_is_exclusive_and_preserves_existing_bytes(tmp_path: Pat
         _write_new_report(output, "second\n")
 
     assert output.read_bytes() == b"first\n"
+
+
+def test_corpus_run_authority_captures_mapping_and_refuses_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"first")
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: "a" * 40)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: True)
+
+    authority = _capture_run_authority(taxonomy)
+
+    assert authority.commit == "a" * 40
+    assert authority.taxonomy == b"first"
+    assert authority.taxonomy_sha256 == hashlib.sha256(b"first").hexdigest()
+    _verify_run_authority(authority, taxonomy)
+
+    taxonomy.write_bytes(b"second")
+    with pytest.raises(EffectivenessDataError, match="source authority changed"):
+        _verify_run_authority(authority, taxonomy)
+
+
+@pytest.mark.parametrize(("commit", "clean"), [("b" * 40, True), ("a" * 40, False)])
+def test_corpus_run_authority_refuses_source_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    commit: str,
+    clean: bool,
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    authority = baseline_runner._RunAuthority(
+        commit="a" * 40,
+        taxonomy=b"mapping",
+        taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
+    )
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: clean)
+
+    with pytest.raises(EffectivenessDataError, match="source authority changed"):
+        _verify_run_authority(authority, taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_dirty_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: False)
+
+    with pytest.raises(EffectivenessDataError, match="package commit misleading"):
+        _capture_run_authority(taxonomy)
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:

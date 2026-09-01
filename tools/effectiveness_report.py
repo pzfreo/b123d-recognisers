@@ -165,11 +165,17 @@ def load_mfinstseg_truth(root: Path, model_id: str) -> DatasetTruth:
     )
 
 
-def load_taxonomy(path: Path, dataset: str) -> dict[int, dict[str, Any]]:
+def load_taxonomy(
+    path: Path, dataset: str, *, contents: bytes | None = None
+) -> dict[int, dict[str, Any]]:
     """Load and validate the closed mapping used by a report."""
 
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(
+            path.read_text(encoding="utf-8")
+            if contents is None
+            else contents.decode("utf-8")
+        )
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise EffectivenessDataError("taxonomy is unreadable") from error
     if payload.get("format") != "b123d-recognisers-effectiveness-taxonomy":

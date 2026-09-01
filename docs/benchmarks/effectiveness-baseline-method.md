@@ -147,6 +147,15 @@ runtime, or a malformed taxonomy fail closed. By default, any invalid selected m
 output file. `--allow-invalid` exists only when a written benchmark policy names the expected
 invalid cases; the report then preserves each invalid model and reason.
 
+A long corpus run also freezes its source authority before importing the first model. The runner
+requires tracked files to equal `HEAD`, captures that commit and the exact taxonomy bytes/hash,
+scores from those captured bytes, and verifies that commit, tracked tree and taxonomy are still
+unchanged before publication. A mid-run checkout, rebase or tracked edit therefore refuses the
+report instead of attaching post-run provenance to pre-run in-memory code or mapping. Untracked
+output files do not make a commit claim misleading and remain compatible with atomic report
+creation. Issue #405 records the historical artifact that exposed this boundary; it remains
+immutable but is not authoritative for its claimed taxonomy revision.
+
 Effectiveness report format version 2 added per-class `covered_faces` evidence and the derived
 `face_coverage` ratio over defining evidence. Version 3 changes that numerator to exact accepted
 constituent evidence after #368; defining-face fields and their semantics are unchanged. Historical
