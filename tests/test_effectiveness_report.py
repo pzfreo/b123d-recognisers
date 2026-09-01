@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,8 +14,9 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from build123d import Box, Cylinder, GeomType
+from build123d import Box, Cylinder, GeomType, export_step
 
+import tools.run_effectiveness_baseline as baseline_runner
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers.result import _take_inventory
@@ -31,9 +33,11 @@ from tools.effectiveness_report import (
     validate_report,
 )
 from tools.run_effectiveness_baseline import (
+    _capture_run_authority,
     _display_path,
     _mfcadpp_selection,
     _mfinstseg_selection,
+    _verify_run_authority,
     _write_new_report,
 )
 
@@ -75,6 +79,72 @@ def test_mfcadpp_adapter_reads_only_advanced_face_names(tmp_path: Path) -> None:
     assert truth.instances == ()
     assert truth.bottom is None
     assert len(truth.source_sha256) == 64
+
+
+def test_mfcadpp_face_label_pairing_is_stable_across_processes(tmp_path: Path) -> None:
+    step = tmp_path / "asymmetric-box.step"
+    export_step(Box(7, 11, 13), step)
+    next_label = iter(range(6))
+    labelled, count = re.subn(
+        r"ADVANCED_FACE\('[^']*'",
+        lambda _match: f"ADVANCED_FACE('{next(next_label)}'",
+        step.read_text(encoding="utf-8"),
+    )
+    assert count == 6
+    step.write_text(labelled, encoding="utf-8")
+    script = """
+import json
+import sys
+from build123d import import_step
+from tools.effectiveness_report import load_mfcadpp_truth
+
+truth = load_mfcadpp_truth(__import__('pathlib').Path(sys.argv[1]))
+part = import_step(truth.step_path)
+signature = []
+for label, face in zip(truth.semantic, part.faces(), strict=True):
+    center = face.center()
+    normal = face.normal_at()
+    signature.append([
+        label,
+        round(face.area, 9),
+        [round(value, 9) for value in center],
+        [round(value, 9) for value in normal],
+    ])
+print(json.dumps(signature, sort_keys=True))
+"""
+
+    outputs = [
+        subprocess.run(
+            [sys.executable, "-c", script, str(step)],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        ).stdout
+        for _ in range(2)
+    ]
+
+    assert outputs[0] == outputs[1]
+
+
+def test_runner_import_does_not_load_production_recognisers() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; import tools.run_effectiveness_baseline; "
+            "print(any(name == 'b123d_recognisers' or "
+            "name.startswith('b123d_recognisers.') for name in sys.modules))",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.stdout == "False\n"
 
 
 def test_mfcadpp_adapter_rejects_missing_labels(tmp_path: Path) -> None:
@@ -652,6 +722,105 @@ def test_report_creation_is_exclusive_and_preserves_existing_bytes(tmp_path: Pat
         _write_new_report(output, "second\n")
 
     assert output.read_bytes() == b"first\n"
+
+
+def test_corpus_run_authority_captures_mapping_and_refuses_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"first")
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: "a" * 40)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    authority = _capture_run_authority(taxonomy)
+
+    assert authority.commit == "a" * 40
+    assert authority.taxonomy == b"first"
+    assert authority.taxonomy_sha256 == hashlib.sha256(b"first").hexdigest()
+    _verify_run_authority(authority, taxonomy)
+
+    taxonomy.write_bytes(b"second")
+    with pytest.raises(EffectivenessDataError, match="source authority changed"):
+        _verify_run_authority(authority, taxonomy)
+
+
+def test_taxonomy_loader_scores_from_captured_bytes(tmp_path: Path) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    captured = TAXONOMY_V2.read_bytes()
+    taxonomy.write_text("not the captured mapping", encoding="utf-8")
+
+    loaded = load_taxonomy(taxonomy, "mfcadpp", contents=captured)
+
+    assert loaded[7]["status"] == "supported"
+
+
+@pytest.mark.parametrize(("commit", "clean"), [("b" * 40, True), ("a" * 40, False)])
+def test_corpus_run_authority_refuses_source_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    commit: str,
+    clean: bool,
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    authority = baseline_runner._RunAuthority(
+        commit="a" * 40,
+        source_sha256="source",
+        taxonomy=b"mapping",
+        taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
+    )
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: clean)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    with pytest.raises(EffectivenessDataError, match="source authority changed"):
+        _verify_run_authority(authority, taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_dirty_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: False)
+
+    with pytest.raises(EffectivenessDataError, match="package commit misleading"):
+        _capture_run_authority(taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_commit_transition_during_capture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    commits = iter(("a" * 40, "b" * 40))
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    with pytest.raises(EffectivenessDataError, match="changed while it was captured"):
+        _capture_run_authority(taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_commit_transition_during_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    authority = baseline_runner._RunAuthority(
+        commit="a" * 40,
+        source_sha256="source",
+        taxonomy=b"mapping",
+        taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
+    )
+    commits = iter(("a" * 40, "b" * 40))
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    with pytest.raises(EffectivenessDataError, match="changed during corpus run"):
+        _verify_run_authority(authority, taxonomy)
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:

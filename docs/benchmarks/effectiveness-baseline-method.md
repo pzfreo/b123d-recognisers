@@ -147,6 +147,29 @@ runtime, or a malformed taxonomy fail closed. By default, any invalid selected m
 output file. `--allow-invalid` exists only when a written benchmark policy names the expected
 invalid cases; the report then preserves each invalid model and reason.
 
+A long corpus run also freezes its source authority before importing the first model. The runner
+requires tracked files to equal `HEAD`, captures that commit, a digest of importable Python source,
+and the exact taxonomy bytes/hash before importing production recognisers. Capture and verification
+sandwich those values between repeated commit/tree/source checks; production imports receive an
+immediate verification before scoring, and the same verification runs before publication. A
+mid-run checkout, rebase or tracked edit therefore refuses the report instead of attaching post-run
+provenance to pre-run in-memory code or mapping. Untracked
+output files do not make a commit claim misleading and remain compatible with atomic report
+creation. Issue #405 identified this as a latent provenance race during a cross-version report
+comparison. A recorded commit and taxonomy hash are necessary but not sufficient to establish that
+the in-memory recogniser stayed at that authority throughout the run. The historical #404 artifact
+has internally consistent taxonomy-v8 metadata, but a source-exact replay does not reproduce its
+inventory or scores. It is retained with an explicit warning; a new source-pinned
+parent/implementation pair is the comparison authority.
+
+The face-to-label adapter boundary has a separate cross-process guard: an asymmetric STEP fixture
+assigns distinct `ADVANCED_FACE` labels, imports it in independent Python processes, and requires
+the same label/area/centroid/normal pairing. The source-exact replay and a fresh current-source run
+produced exactly equal model evidence after removing only runtime and commit metadata. Together
+these guard stable imported face pairing independently of the preventative source-authority check.
+Score differences between taxonomy revisions are expected and must never be described as
+same-authority non-reproducibility.
+
 Effectiveness report format version 2 added per-class `covered_faces` evidence and the derived
 `face_coverage` ratio over defining evidence. Version 3 changes that numerator to exact accepted
 constituent evidence after #368; defining-face fields and their semantics are unchanged. Historical

@@ -13,6 +13,7 @@ import tempfile
 import time
 from collections import Counter
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,92 @@ def _git_commit() -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+
+def _git_tree_is_clean(commit: str) -> bool:
+    """Whether tracked files still equal the commit named by this report."""
+
+    completed = subprocess.run(
+        ["git", "diff", "--quiet", commit, "--"],
+        cwd=ROOT,
+        check=False,
+    )
+    if completed.returncode not in (0, 1):
+        raise EffectivenessDataError("could not verify corpus-run source authority")
+    return completed.returncode == 0
+
+
+def _source_digest() -> str:
+    """Fingerprint the Python bytes that can be imported by the corpus worker."""
+
+    digest = hashlib.sha256()
+    paths = sorted((*ROOT.glob("src/**/*.py"), *ROOT.glob("tools/**/*.py")))
+    for path in paths:
+        relative = path.relative_to(ROOT).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        try:
+            contents = path.read_bytes()
+        except OSError as error:
+            raise EffectivenessDataError("could not fingerprint corpus-run source") from error
+        digest.update(len(contents).to_bytes(8, "big"))
+        digest.update(contents)
+    return digest.hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class _RunAuthority:
+    commit: str
+    source_sha256: str
+    taxonomy: bytes
+    taxonomy_sha256: str
+
+
+def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
+    """Freeze the authority a long corpus run will claim in its metadata."""
+
+    commit = _git_commit()
+    if not _git_tree_is_clean(commit):
+        raise EffectivenessDataError(
+            "tracked worktree changes would make the package commit misleading"
+        )
+    source_sha256 = _source_digest()
+    try:
+        taxonomy = taxonomy_path.read_bytes()
+    except OSError as error:
+        raise EffectivenessDataError("taxonomy is unreadable") from error
+    if _git_commit() != commit or not _git_tree_is_clean(commit):
+        raise EffectivenessDataError("source authority changed while it was captured")
+    if _source_digest() != source_sha256:
+        raise EffectivenessDataError("source authority changed while it was captured")
+    return _RunAuthority(
+        commit=commit,
+        source_sha256=source_sha256,
+        taxonomy=taxonomy,
+        taxonomy_sha256=hashlib.sha256(taxonomy).hexdigest(),
+    )
+
+
+def _verify_run_authority(authority: _RunAuthority, taxonomy_path: Path) -> None:
+    """Refuse a report if its source or mapping changed while models were running."""
+
+    commit_before = _git_commit()
+    clean_before = _git_tree_is_clean(authority.commit)
+    source_before = _source_digest()
+    try:
+        taxonomy = taxonomy_path.read_bytes()
+    except OSError as error:
+        raise EffectivenessDataError("taxonomy changed during corpus run") from error
+    if (
+        commit_before != authority.commit
+        or not clean_before
+        or source_before != authority.source_sha256
+        or taxonomy != authority.taxonomy
+        or _source_digest() != authority.source_sha256
+        or not _git_tree_is_clean(authority.commit)
+        or _git_commit() != authority.commit
+    ):
+        raise EffectivenessDataError("source authority changed during corpus run")
 
 
 def _selection_hash(ids: list[str]) -> str:
@@ -180,6 +267,7 @@ def main() -> int:
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
     try:
+        authority = _capture_run_authority(args.taxonomy)
         if args.dataset == "mfcadpp":
             ids, loader, selection_extra = _mfcadpp_selection(args.root)
         else:
@@ -188,7 +276,9 @@ def main() -> int:
             ids, loader, selection_extra = _mfinstseg_selection(args.root, args.partition_root)
         if args.limit is not None:
             ids = ids[: args.limit]
-        taxonomy = load_taxonomy(args.taxonomy, args.dataset)
+        taxonomy = load_taxonomy(
+            args.taxonomy, args.dataset, contents=authority.taxonomy
+        )
     except EffectivenessDataError as error:
         parser.error(str(error))
 
@@ -197,6 +287,11 @@ def main() -> int:
     from b123d_recognisers import __version__
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
+
+    try:
+        _verify_run_authority(authority, args.taxonomy)
+    except EffectivenessDataError as error:
+        parser.error(str(error))
 
     rows: list[dict[str, Any]] = []
     invalid = 0
@@ -219,12 +314,20 @@ def main() -> int:
             invalid += 1
             row = {"model_id": model_id, "status": "invalid", "reason": str(error)}
         rows.append(row)
+    try:
+        _verify_run_authority(authority, args.taxonomy)
+    except EffectivenessDataError as error:
+        parser.error(str(error))
     summary = summarize_rows(rows, len(ids), invalid)
     report = {
         "format": REPORT_FORMAT,
         "format_version": REPORT_FORMAT_VERSION,
         "dataset": {"name": args.dataset, "version": args.dataset_version},
-        "package": {"name": "b123d-recognisers", "version": __version__, "commit": _git_commit()},
+        "package": {
+            "name": "b123d-recognisers",
+            "version": __version__,
+            "commit": authority.commit,
+        },
         "environment": _environment(),
         "selection": {
             "rule": "unique model ID, lexical ascending",
@@ -235,7 +338,7 @@ def main() -> int:
         },
         "mapping": {
             "format_version": 1,
-            "sha256": hashlib.sha256(args.taxonomy.read_bytes()).hexdigest(),
+            "sha256": authority.taxonomy_sha256,
             "path": _display_path(args.taxonomy),
         },
         "models": rows,
