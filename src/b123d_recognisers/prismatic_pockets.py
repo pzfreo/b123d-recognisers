@@ -102,15 +102,14 @@ def recognise_prismatic_pockets(
     :func:`b123d_recognisers._reconcile.prismatic_pockets_that_are_not_pockets`, decided from
     the claims rather than by either family second-guessing the other.
 
-    *ledger* records the faces the pocket was **established by**: its ring walls. The exact cap
-    faces already selected by that proof are wider constituent evidence, not defining claims --
-    the floor is what makes the recess blind, while `depth` is the walls' own span rather than a
-    measurement off it. This preserves the same ownership line
+    *ledger* records the faces the pocket was **established by**: its ring walls. The floor is
+    inspected but remains unclaimed -- it is what makes the recess blind, and `depth` is the
+    walls' own span rather than a measurement off it -- the same line
     :func:`b123d_recognisers.recognise_pockets` draws for the recess it finds by pairing.
     """
 
     graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
-    found: list[tuple[PrismaticPocket, tuple, frozenset]] = []
+    found: list[tuple[PrismaticPocket, tuple]] = []
     for ring in rings(part, graph):
         low_capped, high_capped = ring.caps
         if low_capped == high_capped:
@@ -133,18 +132,11 @@ def recognise_prismatic_pockets(
                     section=tuple((round(u, 3), round(v, 3)) for u, v in section),
                 ),
                 tuple(ring.nodes),
-                frozenset(ring.nodes) | ring.cap_nodes[0] | ring.cap_nodes[1],
             )
         )
 
-    found.sort(key=lambda item: (item[0].axis, item[0].at))
+    found.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
-        writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
-        for pocket, nodes, constituent in found:
-            writer.add_defining(
-                pocket,
-                nodes,
-                family=FamilyId.PRISMATIC_POCKETS,
-                constituent=constituent,
-            )
-    return [pocket for pocket, _nodes, _constituent in found]
+        for pocket, nodes in found:
+            ledger.add_defining(pocket, nodes, family=FamilyId.PRISMATIC_POCKETS)
+    return [pocket for pocket, _ in found]
