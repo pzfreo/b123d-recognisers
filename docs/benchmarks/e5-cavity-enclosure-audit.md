@@ -1,7 +1,7 @@
 # E5 cavity-enclosure audit
 
 Issue #418 tests the shared-root hypothesis in #415 without changing recognition. The exact
-production and audit source is `f98a10c4601fda48d01eebd97e90125b62e4e5fb`; the report covers
+production and audit source is `7db2b2b30901abd4a521e7193045f411d0a2cd4b`; the report covers
 the first 500 lexical MFCAD++ test models (469 contain classes 2, 3, 4, 13, 14, 15 or 16).
 Labels are read only after candidate construction.
 
@@ -20,6 +20,7 @@ separate bodies and a general rigid transform. All four tests pass. Ruff is clea
 - 6,532/6,661 target faces and 1,288/1,315 same-label component proxies are reached.
 - All 1,987 candidate regions are same-solid and none captures a whole body.
 - 1,305 regions touch a target class; 1,130 are class-pure target regions.
+- 11 regions have tied target-class face counts and remain explicitly ambiguous.
 - 79 target components are fragmented and 68 regions merge multiple target components.
 - 872 regions have both one target component and one accepted Pocket/Passage occurrence.
 - 890 regions have a bidirectionally unique accepted-occurrence association.
@@ -45,4 +46,7 @@ circular-end), with exact accepted-occurrence identity carried through their exi
 provenance. Passage detection gaps remain separate work; their 100% accepted-occurrence reach does
 not turn missed corpus regions into accepted features.
 
-Machine evidence: [`mfcadpp-cavity-enclosure-audit-f98a10c.json`](mfcadpp-cavity-enclosure-audit-f98a10c.json).
+The report records an aggregate hash over all 500 selected STEP sources and an aggregate hash over
+all 68 production Python sources, alongside every evaluated model's source hash.
+
+Machine evidence: [`mfcadpp-cavity-enclosure-audit-7db2b2b.json`](mfcadpp-cavity-enclosure-audit-7db2b2b.json).
