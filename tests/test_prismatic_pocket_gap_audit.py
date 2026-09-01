@@ -104,6 +104,4 @@ def test_separate_bodies_keep_distinct_recognisable_pockets() -> None:
 
 def test_selection_hashes_pin_order_and_source_content() -> None:
     assert _selection_hash(["100", "200"]) != _selection_hash(["200", "100"])
-    assert _source_selection_hash([("100", "aaa")]) != _source_selection_hash(
-        [("100", "changed")]
-    )
+    assert _source_selection_hash([("100", "aaa")]) != _source_selection_hash([("100", "changed")])

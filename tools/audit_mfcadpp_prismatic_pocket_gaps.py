@@ -99,23 +99,15 @@ def _probe_span_component(
     eligible_walls: int,
 ) -> RingProbe:
     members = set(ring)
-    if len(ring) < 3 or any(
-        len(set(graph.neighbours(node)) & members) != 2 for node in ring
-    ):
-        return _failed(
-            2, axis=axis, eligible_walls=eligible_walls, span_members=len(ring)
-        )
+    if len(ring) < 3 or any(len(set(graph.neighbours(node)) & members) != 2 for node in ring):
+        return _failed(2, axis=axis, eligible_walls=eligible_walls, span_members=len(ring))
     section = _cross_section(graph, ring, members, axis)
     if section is None:
-        return _failed(
-            3, axis=axis, eligible_walls=eligible_walls, span_members=len(ring)
-        )
+        return _failed(3, axis=axis, eligible_walls=eligible_walls, span_members=len(ring))
     spans = [graph.bounds(node)[axis] for node in ring]
     low, high = min(lo for lo, _hi in spans), max(hi for _lo, hi in spans)
     if not _is_void(part, section, axis, low, high):
-        return _failed(
-            4, axis=axis, eligible_walls=eligible_walls, span_members=len(ring)
-        )
+        return _failed(4, axis=axis, eligible_walls=eligible_walls, span_members=len(ring))
     caps = _capped_ends(graph, ring, members, axis, low, high)
     cap_counts = (len(caps[0]), len(caps[1]))
     if bool(caps[0]) == bool(caps[1]):
@@ -159,15 +151,9 @@ def _probe_component(part: Any, graph: FaceGraph, component: frozenset[FaceNode]
         ) -> bool:
             return (
                 b in selected_adjacency[a]
-                and abs(
-                    graph.bounds(a)[selected_axis][0]
-                    - graph.bounds(b)[selected_axis][0]
-                )
+                and abs(graph.bounds(a)[selected_axis][0] - graph.bounds(b)[selected_axis][0])
                 <= SPAN_EPS
-                and abs(
-                    graph.bounds(a)[selected_axis][1]
-                    - graph.bounds(b)[selected_axis][1]
-                )
+                and abs(graph.bounds(a)[selected_axis][1] - graph.bounds(b)[selected_axis][1])
                 <= SPAN_EPS
             )
 
@@ -184,7 +170,9 @@ def _probe_component(part: Any, graph: FaceGraph, component: frozenset[FaceNode]
     )
 
 
-def _accepted_evidence(product: Any) -> tuple[frozenset[FaceNode], ...]:
+def _accepted_evidence(
+    product: Any,
+) -> tuple[tuple[str, frozenset[FaceNode], frozenset[FaceNode]], ...]:
     result = []
     for family in FamilyId:
         if family is FamilyId.LEGACY:
@@ -193,8 +181,11 @@ def _accepted_evidence(product: Any) -> tuple[frozenset[FaceNode], ...]:
             if disposition.outcome is Outcome.ACCEPTED:
                 candidate = disposition.candidate
                 result.append(
-                    product.evidence.defining_of(candidate)
-                    | product.evidence.constituent_of(candidate)
+                    (
+                        family.value,
+                        product.evidence.defining_of(candidate),
+                        product.evidence.constituent_of(candidate),
+                    )
                 )
     return tuple(result)
 
@@ -216,7 +207,7 @@ def main() -> int:
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
         parser.error("the selected workload contains no STEP files")
-    rows = []
+    rows: list[dict[str, Any]] = []
     sources = []
     for path in paths:
         truth = load_mfcadpp_truth(path)
@@ -247,9 +238,17 @@ def main() -> int:
             for proposal in _pocket_proposals_one(solid, graph=graph)
         )
         for ordinal, component in enumerate(components):
-            covered = set().union(*(component & evidence for evidence in accepted))
-            if covered:
-                continue
+            accepted_defining = set().union(*(component & defining for _, defining, _ in accepted))
+            accepted_constituent = set().union(
+                *(component & constituent for _, _, constituent in accepted)
+            )
+            accepted_families = sorted(
+                {
+                    family
+                    for family, defining, constituent in accepted
+                    if component & (defining | constituent)
+                }
+            )
             probe = _probe_component(part, graph, component)
             degrees = Counter(
                 len(set(graph.neighbours(node)) & set(component)) for node in component
@@ -260,7 +259,12 @@ def main() -> int:
                     "model_id": truth.model_id,
                     "ordinal": ordinal,
                     "faces": len(component),
+                    "face_indices": sorted(node.index for node in component),
                     "source_sha256": truth.source_sha256,
+                    "accepted_defining_faces": len(accepted_defining),
+                    "accepted_constituent_faces": len(accepted_constituent),
+                    "accepted_families": accepted_families,
+                    "untouched": not accepted_constituent,
                     "surfaces": dict(sorted(surfaces.items())),
                     "internal_degrees": {str(key): value for key, value in sorted(degrees.items())},
                     "one_valid_solid": graph.common_valid_solid(component) is not None,
@@ -269,7 +273,8 @@ def main() -> int:
                     "ring_probe": asdict(probe),
                 }
             )
-    gates = Counter(row["ring_probe"]["first_failed_gate"] for row in rows)
+    untouched = [row for row in rows if row["untouched"]]
+    gates = Counter(row["ring_probe"]["first_failed_gate"] for row in untouched)
     report = {
         "format": "b123d-recognisers-mfcadpp-prismatic-pocket-gap-audit",
         "format_version": 1,
@@ -283,11 +288,13 @@ def main() -> int:
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
             "selected_sources_sha256": _source_selection_hash(sources),
         },
-        "untouched_components": len(rows),
-        "untouched_faces": sum(row["faces"] for row in rows),
+        "class_components": len(rows),
+        "class_faces": sum(row["faces"] for row in rows),
+        "untouched_components": len(untouched),
+        "untouched_faces": sum(row["faces"] for row in untouched),
         "first_failed_gates": dict(sorted(gates.items())),
-        "global_ring_overlaps": sum(row["ring_overlap_faces"] > 0 for row in rows),
-        "global_pocket_overlaps": sum(row["pocket_overlap_faces"] > 0 for row in rows),
+        "global_ring_overlaps": sum(row["ring_overlap_faces"] > 0 for row in untouched),
+        "global_pocket_overlaps": sum(row["pocket_overlap_faces"] > 0 for row in untouched),
         "rows": rows,
     }
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

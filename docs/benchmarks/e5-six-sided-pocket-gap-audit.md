@@ -22,14 +22,15 @@ uv run python tools/audit_mfcadpp_prismatic_pocket_gaps.py \
   --output /tmp/e5-six-sided-pocket-gap-audit.json
 ```
 
-For each proxy, the harness consumes one completed aggregate inventory and records accepted
-all-family defining/constituent coverage. Untouched proxies are compared with the complete neutral
-Pocket proposal roster and complete production `rings()` roster. Its ring probe calls the same
+For every class-15 proxy, the harness records its exact original face indices and consumes one
+completed aggregate inventory to record accepted all-family defining/constituent coverage.
+Untouched proxies are then derived from that full denominator and compared with the complete
+neutral Pocket proposal roster and complete production `rings()` roster. Its ring probe calls the same
 principal-wall, equal-span, cycle, cross-section, void and cap functions as production; it does not
 reimplement or relax those predicates.
 
-Authored controls cover a valid blind hexagonal pocket, through and two-cap variants, arbitrary
-axis rotation, source/order hashes, and two equal pockets on separate bodies. The compound control
+Authored controls cover a valid blind hexagonal pocket, through and two-cap variants, principal-axis
+rotation, source/order hashes, and two equal pockets on separate bodies. The compound control
 requires distinct valid-solid authorities rather than permitting cross-body identity collapse.
 
 ## Result
