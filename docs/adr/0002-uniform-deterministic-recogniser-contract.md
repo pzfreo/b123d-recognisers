@@ -279,6 +279,19 @@ An original face may define multiple unequal Pocket records on the same graph-is
 depth readings in established geometry). Equal records collapse only when their complete bound role
 sets are identical; competing assignments refuse before publication.
 
+## Amendment (Pocket complete constituent boundary, issue #420)
+
+For the existing opposed-wall rectangular and circular-end Pocket routes, the final neutral
+proposal proof may retain one complete bounded interior region as constituent membership. It joins
+an exact opening inner-wire region to the exact wall, cap and floor nodes already retained by the
+proposal, before Candidate issuance. The region and proposal must select each other uniquely and
+the region plus its opening must belong to one valid solid. Whole-body, cross-solid, intersecting,
+merged, fragmented or competing cases retain the historical defining-and-floor constituent set.
+
+This changes constituent membership only. Pocket records, ordering, serialization, standalone
+recognition, defining evidence, claims and reconciliation remain unchanged. The neutral reduction
+does not read Candidates, public evidence, sibling recognisers, corpus labels or policy outcomes.
+
 ## Amendment (Rectangular Pad blend-view consumer, issue #277)
 
 `recognise_rectangular_pads` remains the public writer-free facade over the same optional-writer

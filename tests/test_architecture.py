@@ -335,6 +335,7 @@ ARC_READER_SITES = {
     "src/b123d_recognisers/round_bottom_slots:_coplanar_region:is_any_smooth:1": "any-smooth",
     "src/b123d_recognisers/round_bottom_slots:_recognise_one:arc:1": "legacy-contract",
     "src/b123d_recognisers/rectangular_blind_slots:_recognise_one:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/_recess_core:_bounded_inner_region:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_component_overlap:_internal_arcs:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_expand:arc:1": "legacy-contract",
     "src/b123d_recognisers/experimental_geometry:arc:arc:1": "facade-projection",

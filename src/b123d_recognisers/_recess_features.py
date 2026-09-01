@@ -251,7 +251,7 @@ def _discover_pockets(
                 raise _PocketAttributionError("Pocket occurrence has no defining source faces")
             if not proposal.record.edge_anchored and not proposal.floors:
                 raise _PocketAttributionError("Pocket floor identity is unavailable")
-            members = nodes | proposal.floors
+            members = nodes | proposal.floors | proposal.constituent
             for node in members:
                 writer.graph.face(node)
             solid = writer.graph.common_valid_solid(members)

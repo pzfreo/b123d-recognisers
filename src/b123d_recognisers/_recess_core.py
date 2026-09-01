@@ -23,7 +23,8 @@ share nothing above them.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
 from typing import cast
 
 from b123d_recognisers._adjacency import (
@@ -635,12 +636,110 @@ def _pocket_proposals_one(
     # `_planar_faces` never yielded and which no consumer reconciling planar walls can want.
     recovered = _recognise_obround_from_ends(part, faces, blind=True, graph=owner, proposals=True)
     candidates.extend(cast(list[_RecessProposal[Pocket]], recovered))
-    return _extend_obround_proposals(
+    proposals = _extend_obround_proposals(
         _merge_proposals(candidates),
         part,
         owner,
         strict_ambiguity=strict_cap_ambiguity,
     )
+    return _attach_complete_pocket_regions(proposals, owner)
+
+
+def _inner_wire_seed(graph: FaceGraph, opening: FaceNode, wire) -> frozenset[FaceNode]:
+    edges = tuple(wire.edges())
+    return frozenset(
+        neighbour
+        for neighbour in graph.neighbours(opening)
+        if any(
+            occurrence.edge == edge
+            for occurrence in graph.shared_occurrences(opening, neighbour)
+            for edge in edges
+        )
+    )
+
+
+def _bounded_inner_region(
+    graph: FaceGraph, opening: FaceNode, seed: frozenset[FaceNode]
+) -> frozenset[FaceNode]:
+    region = set(seed)
+    pending = list(seed)
+    while pending:
+        current = pending.pop()
+        for neighbour in graph.neighbours(current):
+            if neighbour is opening or neighbour in region:
+                continue
+            kind = graph.arc(current, neighbour)
+            if not (kind == "concave" or kind == "smooth"):
+                continue
+            region.add(neighbour)
+            pending.append(neighbour)
+    return frozenset(region)
+
+
+def _attach_complete_pocket_regions(
+    proposals: list[_RecessProposal[Pocket]], graph: FaceGraph
+) -> list[_RecessProposal[Pocket]]:
+    """Retain a complete inner-loop region only for a one-to-one Pocket occurrence.
+
+    This is part of the final Pocket proposal proof, before Candidate issuance.  It starts from
+    exact graph-owned opening-wire occurrences and joins them to the exact wall/cap/floor nodes
+    already carried by discovery.  Ambiguity changes no record and leaves the historical
+    constituent set to the publishing adapter.
+    """
+
+    by_region: dict[frozenset[FaceNode], set[FaceNode]] = {}
+    for opening in graph.nodes:
+        for wire in graph.face(opening).inner_wires():
+            seed = _inner_wire_seed(graph, opening, wire)
+            if not seed:
+                continue
+            region = _bounded_inner_region(graph, opening, seed)
+            by_region.setdefault(region, set()).add(opening)
+
+    regions: list[tuple[frozenset[FaceNode], frozenset[FaceNode]]] = []
+    for region, opening_set in by_region.items():
+        openings = frozenset(opening_set)
+        solid = graph.common_valid_solid(region | openings)
+        if solid is None:
+            continue
+        solid_nodes = {
+            node for node in graph.nodes if graph.common_valid_solid((node,)) is solid
+        }
+        if region >= solid_nodes - openings:
+            continue
+        regions.append((region, openings))
+    regions.sort(key=lambda item: tuple(sorted(node.index for node in item[0])))
+    intersecting = {
+        index
+        for index, (region, _openings) in enumerate(regions)
+        if any(
+            region & other
+            for other_index, (other, _other_openings) in enumerate(regions)
+            if other_index != index
+        )
+    }
+
+    matches: list[list[int]] = []
+    for proposal in proposals:
+        defining = proposal.planar | frozenset(
+            node for group in proposal.caps for node in group
+        )
+        anchors = defining | proposal.floors
+        matches.append(
+            [
+                index
+                for index, (region, _openings) in enumerate(regions)
+                if index not in intersecting and anchors <= region
+            ]
+        )
+    region_uses = Counter(index for proposal_matches in matches for index in proposal_matches)
+
+    return [
+        replace(proposal, constituent=regions[proposal_matches[0]][0])
+        if len(proposal_matches) == 1 and region_uses[proposal_matches[0]] == 1
+        else proposal
+        for proposal, proposal_matches in zip(proposals, matches, strict=True)
+    ]
 
 
 def _recognise_pockets_one(
