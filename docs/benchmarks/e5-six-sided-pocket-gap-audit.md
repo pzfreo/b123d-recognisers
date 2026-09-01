@@ -8,8 +8,8 @@ proposal or geometry predicate.
 ## Authority and method
 
 The immutable report is
-[`e5-six-sided-pocket-gap-audit-b93cf26.json`](e5-six-sided-pocket-gap-audit-b93cf26.json).
-It records audit commit `b93cf263c85cc1ec9dfcf3048d4d63a74012a10c`, the published MFCAD++
+[`e5-six-sided-pocket-gap-audit-7fa9a98.json`](e5-six-sided-pocket-gap-audit-7fa9a98.json).
+It records audit commit `7fa9a984481429dab997301a75a1d5a10c454edd`, the published MFCAD++
 test split, the standard lexical 500-model selection hash, and a hash over every selected model ID
 and STEP source hash. MFCAD++ has no native instance IDs; an “instance” here is explicitly a
 same-label shared-edge component proxy.
@@ -25,9 +25,9 @@ uv run python tools/audit_mfcadpp_prismatic_pocket_gaps.py \
 For every class-15 proxy, the harness records its exact original face indices and consumes one
 completed aggregate inventory to record accepted all-family defining/constituent coverage.
 Untouched proxies are then derived from that full denominator and compared with the complete
-neutral Pocket proposal roster and complete production `rings()` roster. Its ring probe calls the same
-principal-wall, equal-span, cycle, cross-section, void and cap functions as production; it does not
-reimplement or relax those predicates.
+neutral Pocket proposal roster and complete production `rings()` roster. Its ring probe calls the
+same principal-wall, equal-span, cycle, cross-section, void and cap functions as production; it
+does not reimplement or relax those predicates.
 
 Authored controls cover a valid blind hexagonal pocket, through and two-cap variants, principal-axis
 rotation, source/order hashes, and two equal pockets on separate bodies. The compound control
@@ -35,8 +35,13 @@ requires distinct valid-solid authorities rather than permitting cross-body iden
 
 ## Result
 
-Fresh main contains **19 wholly untouched proxies / 104 faces**, correcting the stale pre-#403
-estimate of 21 / 113. Every proxy is planar and belongs to one valid solid.
+The full denominator is **167 class-15 proxies / 1,133 faces**. Of those, 148 proxies have some
+accepted constituent evidence; 19 are wholly untouched. Accepted evidence covers 980 constituent
+faces and 859 defining faces. Ten of the 148 touched proxies are only partially covered, which is
+kept visible rather than folded into the wholly untouched bucket.
+
+Fresh main therefore contains **19 wholly untouched proxies / 104 faces**, correcting the stale
+pre-#403 estimate of 21 / 113. Every untouched proxy is planar and belongs to one valid solid.
 
 | First unchanged ring result | Proxies | Faces/meaning |
 | --- | ---: | --- |
