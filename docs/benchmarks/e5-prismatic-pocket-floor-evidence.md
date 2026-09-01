@@ -4,12 +4,6 @@ Issue [#403](https://github.com/pzfreo/b123d-recognisers/issues/403) retains the
 already selected by the neutral ring proof and publishes them as `PrismaticPocket` constituent
 evidence. It does not change records, defining evidence, claims, reconciliation or recognition.
 
-> **Evidence correction (#405):** the historical report below was produced across a mid-run
-> worktree/taxonomy change and is internally inconsistent with its recorded mapping authority. It
-> remains immutable but is not valid taxonomy-v2/v8 evidence. Use the
-> [corrected stable-run comparison](e5-prismatic-pocket-floor-evidence-correction.md) for corpus
-> counts and deltas. The implementation and authored contract evidence are unchanged.
-
 ## Contract and implementation
 
 `Ring.cap_nodes` replaces the private boolean-only cap result. Its `caps` property preserves the
