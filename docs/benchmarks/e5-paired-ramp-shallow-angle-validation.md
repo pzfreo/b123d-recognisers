@@ -22,8 +22,17 @@ ownership contracts.
 
 ## MFCAD++ development result
 
-The exact lexical 500-model parent/candidate reports use taxonomy v9 and the same published test
-selection. The final immutable filenames and hashes are recorded after final-head regeneration.
+The exact lexical 500-model reports are
+[`effectiveness-mfcadpp-500-paired-shallow-parent-a74344f.json`](effectiveness-mfcadpp-500-paired-shallow-parent-a74344f.json)
+(SHA-256 `d7f55a33040c71a29caf99a2b163377e71d9b901c53d40e7011c6c6f4e875264`)
+and
+[`effectiveness-mfcadpp-500-paired-shallow-4b612d0.json`](effectiveness-mfcadpp-500-paired-shallow-4b612d0.json)
+(SHA-256 `bd98e9b89a4d63dab98c37a3432705e2f91b538ce8078b55eee61e44dfc6cf03`).
+They use taxonomy v9 hash
+`e97995053d2db6089442a3b87868117ff9114f74a0c8ab15896cd343ef80fe51`,
+the same published lexical selection hash
+`323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df`,
+raw recognition, Python 3.12.14, build123d 0.11.1 and OCP 7.9.3.1.
 
 | Measure | Parent | Candidate |
 | --- | ---: | ---: |
@@ -32,12 +41,15 @@ selection. The final immutable filenames and hashes are recorded after final-hea
 | class-9 defining recall | 192 / 592 (32.43%) | 270 / 592 (45.61%) |
 | class-9 face coverage | 392 / 592 (66.22%) | 440 / 592 (74.32%) |
 | evaluated / invalid / empty models | 500 / 0 / 0 | 500 / 0 / 0 |
-| total runtime | 313.74 s | 320.08 s (1.020x) |
+| descriptive total runtime | 313.74 s | 275.60 s |
 
 Label-independent discovery adds 26 occurrences across 25 models. All 78 new defining faces map
 to class 9; existing physical records, mapped records, reconciliation drops, mismatch counts and
 all non-class-9 score fields are unchanged after excluding timing and the new paired-ramp values.
 MFCAD++ labels measure the result but do not participate in the ramp read or any acceptance gate.
+Runtime is recorded for completeness but is not treated as a performance result: the functional
+epic deliberately defers optimization and these sequential process runs are not a controlled
+paired benchmark.
 
 MFInstSeg was not inspected or run for this increment. Its aggregate result selected the broad
 through-step priority only; no transfer-model anatomy shaped this contract.
