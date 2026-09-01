@@ -388,7 +388,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 
 | MFCAD++ class | reported here as | note |
 | --- | --- | --- |
-| Rectangular through slot | Slot (partial) | a small enclosed principal-axis subset matches; the dominant three-wall edge-slot motif is open longitudinally, while free-axis/intersected variants remain outside this contract |
+| Rectangular through slot | Channel; Slot (partial) | the dominant three-wall, longitudinally open U-section satisfies Channel; a smaller enclosed/intersected principal-axis subset satisfies Slot, while free-axis and split variants remain outside both contracts |
 | Circular through slot | — | **unsupported**; MFCAD++/MFInstSeg use this label for a semicylindrical groove, which the current `Slot` record cannot express |
 | Rectangular pocket | Pocket | blind by definition here |
 | Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |
@@ -406,7 +406,6 @@ what a new family adopts, and this is where the existing names are reconciled to
 | 2-sided through step | PairedRampStep | conservative mirror-symmetric principal-axis subset; one planar terminal may retain independent boundary subdivisions |
 | Rectangular through step | ThroughStep | principal two-wall subset; independent boundary interruptions are allowed only with complete seam, terminal, envelope and empty-prism proofs |
 | Slanted through step | — | **unrecognised**; tracked under recognition-effectiveness roadmap |
-| — | Channel | full-span floored recess; no MFCAD++ counterpart |
 
 **A contested face is not decided by MFCAD++'s taxonomy.** Its labels are single-assignment and
 therefore inconsistent exactly where two families disagree — the case a tiebreaker would be asked

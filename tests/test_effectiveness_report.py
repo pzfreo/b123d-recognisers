@@ -44,6 +44,7 @@ TAXONOMY_V3 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v3.json"
 TAXONOMY_V4 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v4.json"
 TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
 TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
+TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -257,6 +258,26 @@ def test_taxonomy_v6_moves_only_rectangular_blind_slot_to_its_family() -> None:
         "status": "supported",
     }
     assert load_taxonomy(TAXONOMY_V6, "mfinstseg") == current
+
+
+def test_taxonomy_v7_adds_only_channel_to_rectangular_through_slot() -> None:
+    historical = load_taxonomy(TAXONOMY_V6, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V7, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 6} == {
+        key: value for key, value in historical.items() if key != 6
+    }
+    assert historical[6] == {
+        "families": ["slots"],
+        "name": "Rectangular through slot",
+        "status": "partial",
+    }
+    assert current[6] == {
+        "families": ["channels", "slots"],
+        "name": "Rectangular through slot",
+        "status": "partial",
+    }
+    assert load_taxonomy(TAXONOMY_V7, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
