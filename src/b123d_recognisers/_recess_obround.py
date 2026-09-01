@@ -206,18 +206,11 @@ def _compatible_end_groups(ends: list[tuple]) -> tuple[tuple[tuple, ...], ...]:
         legacy.setdefault(key, []).append(end)
 
     groups = [tuple(group) for group in legacy.values()]
-    out: list[tuple[tuple, ...]] = []
-    consumed: set[int] = set()
+    partners: dict[int, list[tuple[int, tuple, tuple]]] = {}
     for index, group in enumerate(groups):
-        if index in consumed:
-            continue
         if len(group) != 1:
-            out.append(group)
             continue
-        matches: list[tuple[int, tuple, tuple]] = []
         for other_index in range(index + 1, len(groups)):
-            if other_index in consumed:
-                continue
             other = groups[other_index]
             if len(other) != 1:
                 continue
@@ -237,10 +230,22 @@ def _compatible_end_groups(ends: list[tuple]) -> tuple[tuple[tuple, ...], ...]:
                 and high[6] == 1
                 and high[5] - low[5] <= 2 * radius + tolerance
             ):
-                matches.append((other_index, low, high))
-        # Multiple plausible partners are ambiguous topology, not authority to choose the nearest
-        # or first traversal occurrence. Preserve every legacy bucket and let recognition refuse.
-        if len(matches) == 1:
+                partners.setdefault(index, []).append((other_index, low, high))
+                partners.setdefault(other_index, []).append((index, low, high))
+
+    out: list[tuple[tuple, ...]] = []
+    consumed: set[int] = set()
+    for index, group in enumerate(groups):
+        if index in consumed:
+            continue
+        if len(group) != 1:
+            out.append(group)
+            continue
+        matches = partners.get(index, [])
+        # A pair is admissible only when both ends name each other as their sole partner. Multiple
+        # plausible partners are ambiguous topology, not authority to choose the nearest or first
+        # traversal occurrence. Preserve every legacy bucket and let recognition refuse.
+        if len(matches) == 1 and len(partners.get(matches[0][0], [])) == 1:
             other_index, low, high = matches[0]
             consumed.add(other_index)
             out.append((low, high))

@@ -7,6 +7,7 @@ import inspect
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
+from itertools import permutations
 from pathlib import Path
 from typing import Any, cast
 
@@ -127,6 +128,19 @@ def test_fuzzy_centerline_pairing_is_limited_to_stubby_recesses() -> None:
 
     assert tuple(map(len, _compatible_end_groups(stubby))) == (2,)
     assert tuple(map(len, _compatible_end_groups(elongated))) == (1, 1)
+
+
+def test_fuzzy_centerline_pairing_refuses_a_shared_partner() -> None:
+    """Uniqueness belongs to both ends; traversal order cannot select one of two low caps."""
+
+    ends = [
+        ("y", "x", "z", 1.0, 0.004, -0.5, -1, 4.0, 12.0, frozenset()),
+        ("y", "x", "z", 1.0, 0.014, 0.5, 1, 4.0, 12.0, frozenset()),
+        ("y", "x", "z", 1.0, 0.024, -0.4, -1, 4.0, 12.0, frozenset()),
+    ]
+
+    for ordered in permutations(ends):
+        assert tuple(map(len, _compatible_end_groups(list(ordered)))) == (1, 1, 1)
 
 
 @pytest.mark.parametrize(
