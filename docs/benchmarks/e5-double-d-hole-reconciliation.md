@@ -14,13 +14,14 @@ or tolerance establishes the relationship. Disjoint holes and equal-diameter hol
 solid therefore remain accepted. The rejected Hole records the exact winning Double-D Candidate,
 and Hole patterns derive only from the accepted Hole inventory.
 
-ADRs 0002, 0003, 0004, 0007 and 0009 apply. Discovery remains sibling-blind and writer/direct
+ADRs 0002, 0003, 0004, 0005, 0007 and 0009 apply. Discovery remains sibling-blind and writer/direct
 parity is unchanged; the rule consumes only completed Candidate sets and terminal frozen evidence
-inside `_reconcile`. No public record, schema, family output, tolerance, graph authority or
-persistent identity changes. ADR 0003 records the new closed precedence decision.
+inside `_reconcile`. No public record schema, family output, tolerance, graph authority or
+persistent identity changes. The bounded public explanation enum gains the corresponding reason;
+ADRs 0003 and 0005 record the precedence and additive compatibility decision.
 
 Authored evidence covers the reported geometry-dependent duplicate, direct-family preservation,
-the exact rejected disposition and winner, pattern suppression, a disjoint circular hole on the
+the exact rejected disposition and winner, public explanation projection, pattern suppression, a disjoint circular hole on the
 same solid, and an equal-diameter circular hole on another solid. Existing Double-D transform,
 scale, STEP, topology-order, multiple-occurrence and provenance tests remain authoritative.
 

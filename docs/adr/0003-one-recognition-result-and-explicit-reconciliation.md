@@ -367,3 +367,8 @@ Coordinates, diameter, axis and record equality are not occurrence authority. Co
 on separate solids, disjoint ordinary holes and incomplete/empty evidence therefore cannot be
 collapsed. Hole-pattern derivation consumes the accepted Hole inventory and cannot recreate the
 rejected partial interpretation.
+
+The bounded public explanation projection adds the matching closed
+`ReconciliationReason.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE` value. This is an additive public enum
+member, not a record-schema or capability-manifest change; aggregate clients that display or
+persist reconciliation reasons can distinguish the corrected physical decision.

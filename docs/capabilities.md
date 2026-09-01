@@ -496,6 +496,11 @@ second cylinder scan. `build_raw_recognition_report()` is the explicit caller-co
 compatibility boundary; surface-cache summaries are not shipped. The [E1 validation](benchmarks/e1-bounded-explanations-validation.md) records exact
 MFCAD++ parity and the separately measured projection cost.
 
+The report exposes closed, package-owned reconciliation reason values. Aggregate Double-D
+precedence reports `bore.hole_superseded_by_double_d_bore` for the rejected partial Hole reading;
+direct family discovery remains independent. Adding this reason is an additive public enum change,
+not a record-schema or capability-manifest change.
+
 Every public `recognise_*` export must appear exactly once in the recogniser table above. CI derives
 that export inventory from the installed public module rather than trusting this page,
 so adding a recogniser without an explicit capability claim fails closed even before the

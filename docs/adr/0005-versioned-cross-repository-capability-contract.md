@@ -388,3 +388,13 @@ The closed attribution disposition is private registry metadata and reviewed hum
 prose. It adds no field to `capabilities.json`, no public record/result field and no Draftwright pin
 movement. Publishing machine-readable attribution requires a separately authorised format
 transition under this ADR; unknown format-1 family fields remain rejected.
+
+## Bounded explanation reason evolution (issue #304)
+
+`ReconciliationReason` is a public closed projection of package-owned aggregate policy, but it is
+not a feature family, record serialization schema or capability-manifest field. A new named
+precedence rule therefore adds the same reason value to the private and public enums and requires
+behavior evidence plus an exact parity guard between them. It does not advance a record schema or
+manifest format. Consumers must not infer drafting semantics from the reason; they may display or
+persist the new aggregate explanation value. Removing or changing a reason value remains a public
+compatibility event.

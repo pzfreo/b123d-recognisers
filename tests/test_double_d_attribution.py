@@ -31,7 +31,7 @@ from build123d import (
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-from b123d_recognisers import recognise_holes
+from b123d_recognisers import build_recognition_report, recognise_holes
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -875,6 +875,15 @@ def test_aggregate_rejects_partial_circular_reading_of_same_double_d_boundary() 
     assert disposition.outcome is Outcome.REJECTED
     assert disposition.reason is ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE
     assert disposition.related == double_d
+
+    hole_report = next(
+        family for family in build_recognition_report(part).families if family.family == "holes"
+    )
+    assert (hole_report.proposed, hole_report.accepted, hole_report.rejected) == (1, 0, 1)
+    assert hole_report.dispositions[0].reason.value == (
+        "bore.hole_superseded_by_double_d_bore"
+    )
+    assert hole_report.dispositions[0].related_occurrences == 1
 
 
 def test_double_d_precedence_keeps_a_disjoint_ordinary_hole_on_the_same_solid() -> None:
