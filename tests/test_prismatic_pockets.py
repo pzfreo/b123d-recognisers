@@ -32,6 +32,7 @@ from build123d import (
     Pos,
     export_step,
     extrude,
+    fillet,
     import_step,
     mirror,
 )
@@ -41,6 +42,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
+from b123d_recognisers._rings import rings
 from b123d_recognisers.frames import (
     FramedRecognitionResult,
     build_framed_recognition_result,
@@ -135,6 +137,35 @@ def test_each_prismatic_section_retains_its_proved_floor_as_constituent(
     assert pocket.sides == sides
     assert len(evidence.defining_of(candidate)) == sides
     assert len(evidence.constituent_of(candidate)) == sides + 1
+
+
+def test_every_selected_blended_cap_patch_is_constituent_but_not_defining() -> None:
+    sharp = _hexagonal()
+    floor_edges = [edge for edge in sharp.edges() if abs(edge.center().Z - 2.0) < 1e-6]
+    assert len(floor_edges) == 6
+    part = fillet(floor_edges, 2.0)
+    ledger = ClaimLedger(FaceGraph(part))
+    selected = tuple(ring for ring in rings(part, ledger.graph) if any(ring.caps))
+
+    (pocket,) = r.recognise_prismatic_pockets(part, ledger=ledger)
+    (ring,) = selected
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+    cap_nodes = ring.cap_nodes[0] | ring.cap_nodes[1]
+
+    assert pocket.sides == len(evidence.defining_of(candidate)) == 6
+    assert len(cap_nodes) == 6
+    assert evidence.constituent_of(candidate) - evidence.defining_of(candidate) == cap_nodes
+
+
+def test_both_capped_internal_cavity_issues_no_record_or_evidence() -> None:
+    enclosed = Box(120, 80, 20) - Pos(0, 0, -3) * _prism(
+        (-12, -9), (12, -9), (0, 12), height=6
+    )
+    ledger = ClaimLedger(FaceGraph(enclosed))
+
+    assert r.recognise_prismatic_pockets(enclosed, ledger=ledger) == []
+    assert ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates == ()
 
 
 def test_multiple_pockets_keep_sorted_occurrence_identity() -> None:
