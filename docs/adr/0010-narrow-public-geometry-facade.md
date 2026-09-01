@@ -151,3 +151,16 @@ become constituents merely because they touch a feature. The public
 `RecognitionEvidence.constituent_faces()` method is therefore an additive projection through the
 existing `FeatureRef` and `FaceRef` carrier; it adds no durable face name and does not alter the
 format-1 manifest boundary.
+
+## Amendment (Prismatic Pocket cap membership, issue #403)
+
+The neutral ring proof retains the exact graph nodes whose end-bounded adjacency establishes each
+cap instead of reducing them immediately to two booleans. `PrismaticPocket` publishes the cap at
+its accepted closed end as constituent evidence together with its defining wall ring. Defining
+evidence, claims, reconciliation and the public record remain wall-only and unchanged.
+
+This is retention at the existing decision site, not a later floor search. All cap patches that
+the unchanged proof accepts at the closed end are retained; none is chosen by corpus label,
+coordinate rematching or adjacency expansion after recognition. Passages and rejected enclosed
+cavities publish no Prismatic Pocket evidence. Non-exclusive membership remains valid when an
+accepted cap patch is also constituent to another occurrence.

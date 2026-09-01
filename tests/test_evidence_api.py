@@ -150,6 +150,20 @@ def test_public_constituent_projection_can_be_wider_than_defining() -> None:
     assert defining < constituent <= view.faces
 
 
+def test_public_prismatic_pocket_projection_includes_its_proved_floor() -> None:
+    part = Box(80, 60, 20) - Pos(0, 0, 2) * extrude(RegularPolygon(10, 3), 30)
+    view = build_recognition_evidence(part)
+    (pocket,) = tuple(
+        feature for feature in view.features if view.family(feature) == "prismatic_pockets"
+    )
+
+    defining = view.defining_faces(pocket)
+    constituent = view.constituent_faces(pocket)
+    assert len(defining) == 3
+    assert len(constituent) == 4
+    assert defining < constituent <= view.faces
+
+
 def test_projection_preserves_inventory_order_and_transformed_face_binding() -> None:
     def step():
         return Box(60, 40, 10) + Pos(-15, 0, 10) * Box(30, 40, 10)

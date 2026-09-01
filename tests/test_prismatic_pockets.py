@@ -32,6 +32,7 @@ from build123d import (
     Pos,
     export_step,
     extrude,
+    fillet,
     import_step,
     mirror,
 )
@@ -41,6 +42,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
+from b123d_recognisers._rings import rings
 from b123d_recognisers.frames import (
     FramedRecognitionResult,
     build_framed_recognition_result,
@@ -106,14 +108,64 @@ def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():
     assert r.recognise_pockets(part) == [], "the pairing family must be blind to this"
 
 
-def test_both_cap_orientations_issue_complete_wall_evidence() -> None:
+def test_both_cap_orientations_issue_wall_defining_and_floor_constituent_evidence() -> None:
     low_ledger, (low,) = _claimed(_triangular())
     high_ledger, (high,) = _claimed(mirror(_triangular(), about=Plane.XY))
 
     assert (low.open_sign, high.open_sign) == (1, -1)
     for ledger, pocket in ((low_ledger, low), (high_ledger, high)):
         (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
-        assert len(ledger.defining_of(candidate)) == pocket.sides
+        defining = ledger.defining_of(candidate)
+        constituent = ledger.snapshot_index().constituent_of(candidate)
+        assert len(defining) == pocket.sides
+        assert defining < constituent
+        assert len(constituent - defining) == 1
+        (floor,) = constituent - defining
+        assert abs(ledger.graph.normal(floor)[2]) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    ("fixture", "sides"), ((_triangular, 3), (_rectangular, 4), (_hexagonal, 6))
+)
+def test_each_prismatic_section_retains_its_proved_floor_as_constituent(
+    fixture, sides: int
+) -> None:
+    ledger, (pocket,) = _claimed(fixture())
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+
+    assert pocket.sides == sides
+    assert len(evidence.defining_of(candidate)) == sides
+    assert len(evidence.constituent_of(candidate)) == sides + 1
+
+
+def test_every_selected_blended_cap_patch_is_constituent_but_not_defining() -> None:
+    sharp = _hexagonal()
+    floor_edges = [edge for edge in sharp.edges() if abs(edge.center().Z - 2.0) < 1e-6]
+    assert len(floor_edges) == 6
+    part = fillet(floor_edges, 2.0)
+    ledger = ClaimLedger(FaceGraph(part))
+    selected = tuple(ring for ring in rings(part, ledger.graph) if any(ring.caps))
+
+    (pocket,) = r.recognise_prismatic_pockets(part, ledger=ledger)
+    (ring,) = selected
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+    cap_nodes = ring.cap_nodes[0] | ring.cap_nodes[1]
+
+    assert pocket.sides == len(evidence.defining_of(candidate)) == 6
+    assert len(cap_nodes) == 6
+    assert evidence.constituent_of(candidate) - evidence.defining_of(candidate) == cap_nodes
+
+
+def test_both_capped_internal_cavity_issues_no_record_or_evidence() -> None:
+    enclosed = Box(120, 80, 20) - Pos(0, 0, -3) * _prism(
+        (-12, -9), (12, -9), (0, 12), height=6
+    )
+    ledger = ClaimLedger(FaceGraph(enclosed))
+
+    assert r.recognise_prismatic_pockets(enclosed, ledger=ledger) == []
+    assert ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates == ()
 
 
 def test_multiple_pockets_keep_sorted_occurrence_identity() -> None:

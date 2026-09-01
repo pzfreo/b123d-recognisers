@@ -343,7 +343,7 @@ def test_legacy_roster_assigns_ordinals_after_the_stable_public_sort(monkeypatch
         2,
         -5.0,
         5.0,
-        (False, False),
+        (frozenset(), frozenset()),
     )
     triangle = Ring(
         nodes[4:7],
@@ -351,7 +351,7 @@ def test_legacy_roster_assigns_ordinals_after_the_stable_public_sort(monkeypatch
         2,
         -5.0,
         5.0,
-        (False, False),
+        (frozenset(), frozenset()),
     )
     monkeypatch.setattr(passages_module, "rings", lambda *_args: iter((square, triangle)))
     roster = passages_module._legacy_roster(part, graph)
