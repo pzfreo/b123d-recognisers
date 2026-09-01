@@ -153,15 +153,17 @@ scores from those captured bytes, and verifies that commit, tracked tree and tax
 unchanged before publication. A mid-run checkout, rebase or tracked edit therefore refuses the
 report instead of attaching post-run provenance to pre-run in-memory code or mapping. Untracked
 output files do not make a commit claim misleading and remain compatible with atomic report
-creation. Issue #405 records the historical artifact that exposed this boundary; it remains
-immutable but is not authoritative for its claimed taxonomy revision.
+creation. Issue #405 identified this as a latent provenance race during a cross-version report
+comparison. It does not invalidate an existing artifact: a report whose recorded commit, taxonomy
+hash and class statuses reconcile remains evidence for that exact authority.
 
 The face-to-label adapter boundary has a separate cross-process guard: an asymmetric STEP fixture
 assigns distinct `ADVANCED_FACE` labels, imports it in independent Python processes, and requires
 the same label/area/centroid/normal pairing. The two fresh 500-model runs that diagnosed #405 also
 produced exactly equal model evidence after removing only runtime and commit metadata. Together
-these distinguish stable imported face pairing from the taxonomy/commit provenance race that
-invalidated the historical artifact.
+these guard stable imported face pairing independently of the preventative source-authority check.
+Score differences between taxonomy revisions are expected and must never be described as
+same-authority non-reproducibility.
 
 Effectiveness report format version 2 added per-class `covered_faces` evidence and the derived
 `face_coverage` ratio over defining evidence. Version 3 changes that numerator to exact accepted
