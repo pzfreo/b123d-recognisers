@@ -7,7 +7,7 @@
         "0": {"families": ["chamfers", "countersinks"], "name": "Chamfer", "status": "supported"},
         "1": {"families": ["holes"], "name": "Through hole", "status": "supported"},
         "2": {"families": ["passages"], "name": "Triangular passage", "status": "supported"},
-        "3": {"families": ["passages"], "name": "Rectangular passage", "status": "supported"},
+        "3": {"families": ["oriented-slots", "passages"], "name": "Rectangular passage", "status": "supported"},
         "4": {"families": ["passages"], "name": "6-sided passage", "status": "supported"},
         "5": {"families": [], "name": "Triangular through slot", "status": "unsupported"},
         "6": {"families": ["channels", "slots"], "name": "Rectangular through slot", "status": "partial"},
@@ -27,14 +27,14 @@
         "20": {"families": ["angled-steps"], "name": "Triangular blind step", "status": "supported"},
         "21": {"families": ["circular-blind-steps"], "name": "Circular blind step", "status": "supported"},
         "22": {"families": ["pockets"], "name": "Rectangular blind step", "status": "supported"},
-        "23": {"families": ["blends", "fillets"], "name": "Round", "status": "supported"},
+        "23": {"families": ["fillets"], "name": "Round", "status": "supported"},
         "24": {"families": [], "name": "Stock", "status": "incomparable"}
       },
-      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 9 retains version 8 except that class 23 maps both dimension-worthy Fillet and complete native cylindrical Blend chains. Discovery and ownership remain label-blind. Earlier versions remain immutable for historical reports."
+      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 9 retains version 8 and maps the package's enclosed OrientedSlot successor to MFCAD++ class 3 rectangular passage. MFCAD++ class 6 uses through-slot for the edge-open/full-span form shown in the published dataset feature diagram, which remains mapped to Channel and the historical Slot family. This is an explicit vocabulary translation, not a geometry predicate. Earlier versions remain immutable for historical reports."
     },
     "mfinstseg": {
       "classes_from": "mfcadpp",
-      "notes": "MFInstSeg uses the same 25-class feature vocabulary and adds instance and bottom-face labels. Reports using earlier taxonomy versions retain their historical class-23 mapping."
+      "notes": "MFInstSeg uses the same 25-class feature vocabulary and adds instance and bottom-face labels. Reports using earlier taxonomy versions retain their historical mappings."
     }
   }
 }
