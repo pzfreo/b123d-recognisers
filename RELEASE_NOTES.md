@@ -2,6 +2,23 @@
 
 ## 0.4.10
 
+- **Published exact original-face membership for downstream consumers.** Accepted occurrences now
+  expose opaque, run-local defining and constituent face references without leaking mutable kernel
+  identity. Hole/Boss terminals, Channel/Pocket floors, complete Pocket interior regions, and
+  PrismaticPocket floors are available through the versioned evidence contract. Corpus reports
+  score face coverage separately from defining-face recall.
+
+- **Closed several deterministic recognition gaps.** Slot recognition now proves depth closure;
+  paired-ramp steps accept geometrically unchanged subdivided terminals and ramp boundaries;
+  stubby circular-end pockets tolerate imported analytic noise under the existing local tolerance;
+  and AngledStep accepts a subdivided blind terminal only when its linear boundary still proves
+  exactly three cyclic straight runs.
+
+- **Corrected downstream ownership and covariance defects.** Double-D bores suppress the ordinary
+  Hole candidate built from the same defining faces, external stepped-shaft cones no longer appear
+  as CounterSinks, Plate thickness ties are frame-covariant, and turned-step shoulder filtering is
+  measured relative to the owning shaft axis line rather than the world origin.
+
 - **Added conservative edge-open rectangular blind-slot recognition.**
   `recognise_rectangular_blind_slots()` reports principal-axis recesses with one rectangular blind
   cap, two opposed planar sides, one planar floor, a source-envelope mouth and an empty rectangular
