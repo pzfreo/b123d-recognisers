@@ -12,6 +12,7 @@
       "prismatic": {
         "_type": "RecognitionResult",
         "angled_steps": [],
+        "blends": [],
         "bosses": [],
         "chamfers": [],
         "channels": [],
@@ -99,6 +100,7 @@
       "rotational": {
         "_type": "RecognitionResult",
         "angled_steps": [],
+        "blends": [],
         "bosses": [],
         "chamfers": [],
         "channels": [],
@@ -174,6 +176,7 @@
     },
     "feature_census": {
       "angled_step": 0,
+      "blend": 0,
       "boss": 0,
       "chamfer": 0,
       "channel": 0,
@@ -197,6 +200,7 @@
     },
     "individual": {
       "recognise_angled_steps": [],
+      "recognise_blends": [],
       "recognise_bosses": [],
       "recognise_chamfers": [],
       "recognise_channels": [],
