@@ -106,14 +106,35 @@ def test_a_triangular_recess_is_recognised_where_wall_pairing_cannot_see_it():
     assert r.recognise_pockets(part) == [], "the pairing family must be blind to this"
 
 
-def test_both_cap_orientations_issue_complete_wall_evidence() -> None:
+def test_both_cap_orientations_issue_wall_defining_and_floor_constituent_evidence() -> None:
     low_ledger, (low,) = _claimed(_triangular())
     high_ledger, (high,) = _claimed(mirror(_triangular(), about=Plane.XY))
 
     assert (low.open_sign, high.open_sign) == (1, -1)
     for ledger, pocket in ((low_ledger, low), (high_ledger, high)):
         (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
-        assert len(ledger.defining_of(candidate)) == pocket.sides
+        defining = ledger.defining_of(candidate)
+        constituent = ledger.snapshot_index().constituent_of(candidate)
+        assert len(defining) == pocket.sides
+        assert defining < constituent
+        assert len(constituent - defining) == 1
+        (floor,) = constituent - defining
+        assert abs(ledger.graph.normal(floor)[2]) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    ("fixture", "sides"), ((_triangular, 3), (_rectangular, 4), (_hexagonal, 6))
+)
+def test_each_prismatic_section_retains_its_proved_floor_as_constituent(
+    fixture, sides: int
+) -> None:
+    ledger, (pocket,) = _claimed(fixture())
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+
+    assert pocket.sides == sides
+    assert len(evidence.defining_of(candidate)) == sides
+    assert len(evidence.constituent_of(candidate)) == sides + 1
 
 
 def test_multiple_pockets_keep_sorted_occurrence_identity() -> None:

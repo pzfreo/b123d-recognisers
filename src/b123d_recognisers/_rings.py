@@ -42,8 +42,9 @@ class Ring:
     """One closed ring, with everything a recogniser needs to judge it.
 
     ``nodes`` walks the cycle; ``section`` is its cross-section corners in the two axes other
-    than ``axis``; ``low``/``high`` bound its span along ``axis``; ``caps`` says which ends a
-    face fills -- ``(low_end, high_end)``.
+    than ``axis``; ``low``/``high`` bound its span along ``axis``; ``cap_nodes`` retains the
+    exact graph identities whose existing end proof says they fill each end. ``caps`` is the
+    compatibility boolean view of those identities.
     """
 
     nodes: tuple[FaceNode, ...]
@@ -51,7 +52,11 @@ class Ring:
     axis: int
     low: float
     high: float
-    caps: tuple[bool, bool]
+    cap_nodes: tuple[frozenset[FaceNode], frozenset[FaceNode]]
+
+    @property
+    def caps(self) -> tuple[bool, bool]:
+        return bool(self.cap_nodes[0]), bool(self.cap_nodes[1])
 
 
 def rings(part: Part, graph: FaceGraph) -> Iterator[Ring]:
@@ -282,8 +287,8 @@ def _capped_ends(
     axis: int,
     low: float,
     high: float,
-) -> tuple[bool, bool]:
-    """Which ends of *ring* a face closes, as ``(low_end, high_end)``.
+) -> tuple[frozenset[FaceNode], frozenset[FaceNode]]:
+    """Exact neighbouring faces that close each end of *ring*.
 
     Reported per end rather than as one bool because the count is what names the feature: neither
     end is a passage, one is a pocket with a floor, both is an enclosed cavity. A single "is it
@@ -300,7 +305,7 @@ def _capped_ends(
     others = [a for a in (0, 1, 2) if a != axis]
     ring_low = [min(graph.bounds(node)[a][0] for node in ring) for a in others]
     ring_high = [max(graph.bounds(node)[a][1] for node in ring) for a in others]
-    caps = [False, False]
+    caps: tuple[set[FaceNode], set[FaceNode]] = (set(), set())
     for node in ring:
         for other in graph.neighbours(node):
             if other in members:
@@ -326,7 +331,7 @@ def _capped_ends(
                 for k, a in enumerate(others)
             ):
                 if near_low:
-                    caps[0] = True
+                    caps[0].add(other)
                 if near_high:
-                    caps[1] = True
-    return caps[0], caps[1]
+                    caps[1].add(other)
+    return frozenset(caps[0]), frozenset(caps[1])
