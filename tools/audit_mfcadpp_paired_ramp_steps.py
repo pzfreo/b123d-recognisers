@@ -3,6 +3,8 @@
 
 Dataset labels select faces to describe. They never participate in recognition or weaken the
 production predicate. A component is the documented non-native shared-edge same-class proxy.
+The boundary-bypass arm changes only the four-edge ramp gate and continues through every other
+production gate; it is a projection, not production acceptance.
 """
 
 from __future__ import annotations
@@ -56,7 +58,6 @@ _GATE_ORDER = (
     "not_one_exterior_one_internal_terminal",
     "exterior_not_convex",
     "internal_not_concave",
-    "subdivided_internal_terminal",
     "incomplete_shared_run",
     "recognisable",
 )
@@ -94,9 +95,6 @@ class ComponentAnatomy:
     internal_arc_counts: tuple[tuple[str, int], ...]
     accepted_other_family_claims: tuple[tuple[str, int], ...]
     accepted_other_family_records: tuple[tuple[str, int], ...]
-    terminal_only_pairs: tuple[tuple[int, int, int], ...]
-    terminal_only_defining_claims: tuple[tuple[str, int], ...]
-    terminal_only_record_overlaps: tuple[tuple[str, int], ...]
     pair_gate_counts: tuple[tuple[str, int], ...]
     best_pair: PairProbe
 
@@ -105,7 +103,6 @@ class ComponentAnatomy:
         value["best_pair"].pop("run_axis")
         value["best_pair"].pop("internal_terminal_index")
         value["best_pair"].pop("exterior_terminal_index")
-        value["terminal_only_pair_count"] = len(value.pop("terminal_only_pairs"))
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
 
@@ -117,6 +114,13 @@ def _commit() -> str:
 
 def _selection_hash(ids: list[str]) -> str:
     return hashlib.sha256(("\n".join(ids) + "\n").encode()).hexdigest()
+
+
+def _source_selection_hash(sources: list[tuple[str, str]]) -> str:
+    """Pin selected IDs to their exact STEP bytes (which embed MFCAD++ face labels)."""
+
+    manifest = "".join(f"{model_id}:{source_sha256}\n" for model_id, source_sha256 in sources)
+    return hashlib.sha256(manifest.encode()).hexdigest()
 
 
 def _counts(values: list[str]) -> tuple[tuple[str, int], ...]:
@@ -177,6 +181,8 @@ def _probe_pair(
     right: FaceNode,
     left_read: tuple[Any, ...],
     right_read: tuple[Any, ...],
+    *,
+    bypass_ramp_boundary: bool = False,
 ) -> PairProbe:
     axis, left_normal, left_span, _left_hi, _left_lo = left_read
     right_axis, right_normal, right_span, _right_hi, _right_lo = right_read
@@ -196,7 +202,7 @@ def _probe_pair(
     if len(shared) != 1 or shared[0].geom_type != GeomType.LINE:
         return _failed(4, axis=axis, mirror_delta=mirror_delta, shared_edges=len(shared))
     ramp_edges = (len(graph.edges(left)), len(graph.edges(right)))
-    if ramp_edges != (4, 4):
+    if ramp_edges != (4, 4) and not bypass_ramp_boundary:
         return _failed(
             5,
             axis=axis,
@@ -217,7 +223,8 @@ def _probe_pair(
         (
             node
             for node in common
-            if (normal := graph.normal(node)) is not None
+            if graph.is_planar(node)
+            and (normal := graph.normal(node)) is not None
             and abs(normal[axis]) >= AXIS_ALIGNED_COS
         ),
         key=lambda node: node.index,
@@ -302,23 +309,9 @@ def _probe_pair(
         for face_run in (left_span[axis], right_span[axis])
         for end in (0, 1)
     )
-    if internal_edges not in (3, 5):
-        return _failed(
-            14,
-            axis=axis,
-            mirror_delta=mirror_delta,
-            ramp_edges=ramp_edges,
-            shared_edges=1,
-            terminals=2,
-            internal_edges=internal_edges,
-            exterior_edges=exterior_edges,
-            full_run=full_run,
-            internal_index=internal[0].index,
-            exterior_index=exterior[0].index,
-        )
     if not full_run:
         return _failed(
-            15,
+            14,
             axis=axis,
             ramp_edges=ramp_edges,
             shared_edges=1,
@@ -330,7 +323,7 @@ def _probe_pair(
             exterior_index=exterior[0].index,
         )
     return _failed(
-        16,
+        15,
         axis=axis,
         mirror_delta=mirror_delta,
         ramp_edges=ramp_edges,
@@ -342,6 +335,67 @@ def _probe_pair(
         internal_index=internal[0].index,
         exterior_index=exterior[0].index,
     )
+
+
+def _ramp_boundary_bypass_pairs(
+    graph: FaceGraph,
+    nodes: tuple[FaceNode, ...],
+    other_claims: dict[FaceNode, set[str]] | None = None,
+    accepted_claims: tuple[tuple[str, frozenset[FaceNode]], ...] = (),
+) -> tuple[dict[str, Any], ...]:
+    """Continue only boundary-gated pairs through every otherwise unchanged gate."""
+
+    ordered = tuple(sorted(set(nodes), key=lambda node: node.index))
+    bevels: dict[FaceNode, tuple[Any, ...]] = {}
+    for node in ordered:
+        with contextlib.suppress(BevelReject):
+            bevels[node] = classify_bevel(graph.face(node))
+    rows: list[dict[str, Any]] = []
+    for at, left in enumerate(ordered):
+        for right in ordered[at + 1 :]:
+            if left not in bevels or right not in bevels or right not in graph.neighbours(left):
+                continue
+            ordinary = _probe_pair(graph, left, right, bevels[left], bevels[right])
+            if ordinary.first_failed_gate != "fragmented_ramp_boundary":
+                continue
+            bypass = _probe_pair(
+                graph,
+                left,
+                right,
+                bevels[left],
+                bevels[right],
+                bypass_ramp_boundary=True,
+            )
+            defining: list[int] = []
+            if bypass.first_failed_gate == "recognisable":
+                assert bypass.internal_terminal_index is not None
+                defining = [left.index, right.index, bypass.internal_terminal_index]
+            nodes_by_index = {node.index: node for node in graph.nodes}
+            projected_nodes = {nodes_by_index[index] for index in defining}
+            rows.append(
+                {
+                    "left_index": left.index,
+                    "right_index": right.index,
+                    "projected_defining_indices": sorted(defining),
+                    "projected_defining_claims": _counts(
+                        [
+                            family
+                            for node in projected_nodes
+                            for family in sorted((other_claims or {}).get(node, set()))
+                        ]
+                    ),
+                    "projected_record_overlaps": _counts(
+                        [
+                            family
+                            for family, claim in accepted_claims
+                            if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
+                            and bool(projected_nodes.intersection(claim))
+                        ]
+                    ),
+                    "result": asdict(bypass),
+                }
+            )
+    return tuple(rows)
 
 
 def _describe_component(
@@ -367,19 +421,6 @@ def _describe_component(
         default=_failed(0),
     )
     component = set(ordered)
-    terminal_only_pairs = tuple(
-        sorted(
-            (left.index, right.index, probe.internal_terminal_index)
-            for left, right, probe in probed_pairs
-            if probe.first_failed_gate == "subdivided_internal_terminal"
-            and probe.full_shared_run is True
-            and probe.internal_terminal_index is not None
-        )
-    )
-    nodes_by_index = {node.index: node for node in graph.nodes}
-    projected_nodes = {
-        nodes_by_index[index] for pair in terminal_only_pairs for index in pair
-    }
     return ComponentAnatomy(
         face_count=len(ordered),
         surface_counts=_counts([graph.face(node).geom_type.name for node in ordered]),
@@ -407,22 +448,6 @@ def _describe_component(
                 for family, claim in accepted_claims
                 if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
                 and bool(component.intersection(claim))
-            ]
-        ),
-        terminal_only_pairs=terminal_only_pairs,
-        terminal_only_defining_claims=_counts(
-            [
-                family
-                for node in projected_nodes
-                for family in sorted(other_claims.get(node, set()))
-            ]
-        ),
-        terminal_only_record_overlaps=_counts(
-            [
-                family
-                for family, claim in accepted_claims
-                if family != FamilyId.PAIRED_RAMP_STEPS.value.replace("_", "-")
-                and bool(projected_nodes.intersection(claim))
             ]
         ),
         pair_gate_counts=_counts(
@@ -488,10 +513,10 @@ def main() -> int:
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
         parser.error("the selected workload contains no STEP files")
+    selected = [(path, load_mfcadpp_truth(path)) for path in paths]
     items: list[dict[str, Any]] = []
     labelled_faces = 0
-    for path in paths:
-        truth = load_mfcadpp_truth(path)
+    for path, truth in selected:
         labelled = {index for index, value in enumerate(truth.semantic) if value == args.class_id}
         if not labelled:
             continue
@@ -528,9 +553,16 @@ def main() -> int:
                 family_claims,
                 tuple(accepted_claims),
             )
+            bypass_pairs = _ramp_boundary_bypass_pairs(
+                graph,
+                tuple(component),
+                family_claims,
+                tuple(accepted_claims),
+            )
             items.append(
                 {
                     "model_id": path.stem,
+                    "source_sha256": truth.source_sha256,
                     "face_indices": sorted(node.index for node in component),
                     "matched_face_indices": sorted(node.index for node in matched),
                     "unmatched_face_indices": sorted(
@@ -539,6 +571,7 @@ def main() -> int:
                     "face_count": len(component),
                     "anatomy_key": anatomy.key(),
                     "anatomy": asdict(anatomy),
+                    "ramp_boundary_bypass_pairs": bypass_pairs,
                 }
             )
     unrecalled = [item for item in items if not item["matched_face_indices"]]
@@ -548,9 +581,21 @@ def main() -> int:
         if item["matched_face_indices"] and item["unmatched_face_indices"]
     ]
     reconciliation = _reconciliation(items, labelled_faces)
+    boundary_components = [item for item in items if item["ramp_boundary_bypass_pairs"]]
+    projected_pairs = [
+        (item, pair)
+        for item in boundary_components
+        for pair in item["ramp_boundary_bypass_pairs"]
+        if pair["result"]["first_failed_gate"] == "recognisable"
+    ]
+    projected_faces = {
+        (item["model_id"], index)
+        for item, pair in projected_pairs
+        for index in pair["projected_defining_indices"]
+    }
     report = {
         "format": "b123d-recognisers-mfcadpp-paired-ramp-miss-audit",
-        "format_version": 1,
+        "format_version": 2,
         "implementation_commit": _commit(),
         "dataset": {
             "name": "MFCAD++",
@@ -566,6 +611,9 @@ def main() -> int:
         "selection": {
             "limit": args.limit,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
+            "selected_sources_sha256": _source_selection_hash(
+                [(truth.model_id, truth.source_sha256) for _path, truth in selected]
+            ),
         },
         "reconciliation": reconciliation,
         "gate_counts": dict(
@@ -581,6 +629,37 @@ def main() -> int:
                 Counter(
                     item["anatomy"]["best_pair"]["first_failed_gate"]
                     for item in partial
+                ).items()
+            )
+        ),
+        "ramp_boundary_bypass": {
+            "affected_components": len(boundary_components),
+            "wholly_unrecalled_components": sum(
+                not item["matched_face_indices"] for item in boundary_components
+            ),
+            "partially_recalled_components": sum(
+                bool(item["matched_face_indices"]) and bool(item["unmatched_face_indices"])
+                for item in boundary_components
+            ),
+            "candidate_pairs": sum(
+                len(item["ramp_boundary_bypass_pairs"])
+                for item in boundary_components
+            ),
+            "projected_recognisable_pairs": len(projected_pairs),
+            "projected_components": len(
+                {
+                    (item["model_id"], tuple(item["face_indices"]))
+                    for item, _pair in projected_pairs
+                }
+            ),
+            "projected_distinct_defining_faces": len(projected_faces),
+        },
+        "ramp_boundary_bypass_gate_counts": dict(
+            sorted(
+                Counter(
+                    pair["result"]["first_failed_gate"]
+                    for item in items
+                    for pair in item["ramp_boundary_bypass_pairs"]
                 ).items()
             )
         ),
