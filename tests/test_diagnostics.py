@@ -135,20 +135,23 @@ def _side_subdivided_blind_step() -> Solid:
     return result
 
 
-def test_split_terminal_near_miss_flows_through_the_real_aggregate() -> None:
+def test_split_terminal_now_flows_through_the_real_aggregate() -> None:
     part = _side_subdivided_blind_step()
     product = _take_inventory(part)
 
-    assert product.result.angled_steps == ()
-    assert product.physical.candidate_set(FamilyId.ANGLED_STEPS).candidates == ()
-    assert len(
+    assert len(product.result.angled_steps) == 1
+    assert len(product.physical.candidate_set(FamilyId.ANGLED_STEPS).candidates) == 1
+    assert (
         product.evidence.observations(
             FamilyId.ANGLED_STEPS, PredicateId.ANGLED_STEP_TERMINAL
         )
-    ) == 1
-    assert len(product.result.chamfers) == 1
-    assert len(product.diagnostics) == 1
-    assert product.diagnostics[0].at == product.result.chamfers[0].at
+        == ()
+    )
+    assert product.result.chamfers == ()
+    assert product.diagnostics == ()
+    (candidate,) = product.physical.candidate_set(FamilyId.ANGLED_STEPS).candidates
+    assert len(product.evidence.defining_of(candidate)) == 1
+    assert len(product.evidence.constituent_of(candidate)) == 2
 
 
 def test_stock_supported_step_and_plain_chamfer_emit_no_residuals() -> None:

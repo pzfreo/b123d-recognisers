@@ -17,6 +17,10 @@ two on size, the equal-legs assertions here would keep passing and
 
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import pytest
 from attribution_audit import attributed_run, unattributed_run
 from build123d import (
@@ -64,6 +68,10 @@ from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
 #: on each axis, so a side of 4·√2 cuts 4 mm into each of the two faces meeting at the edge.
 _WEDGE = 5.657
+_SUBDIVIDED_TERMINAL = (
+    Path(__file__).parent / "corpus" / "mfcadpp_regressions" / "11512.step"
+)
+_SUBDIVIDED_TERMINAL_MANIFEST = _SUBDIVIDED_TERMINAL.with_name("MANIFEST.json")
 
 
 def _block() -> Box:
@@ -87,7 +95,7 @@ def _linear_face(points: list[tuple[float, float, float]]) -> Face:
     return Face(Wire.make_polygon([Vector(*point) for point in points], close=True))
 
 
-def test_split_triangle_diagnostic_predicate_is_not_a_four_sided_relaxation() -> None:
+def test_split_triangle_predicate_is_not_a_four_sided_relaxation() -> None:
     split_triangle = _linear_face([(0, 0, 0), (2, 0, 0), (4, 0, 0), (0, 4, 0)])
     split_rectangle = _linear_face(
         [(0, 0, 0), (2, 0, 0), (4, 0, 0), (4, 4, 0), (0, 4, 0)]
@@ -113,7 +121,61 @@ def test_split_triangle_diagnostic_predicate_is_not_a_four_sided_relaxation() ->
     assert _effective_linear_sides(reversed_triangle) == 3
 
 
-def test_unreadable_diagnostic_boundary_fails_closed_without_changing_recognition() -> None:
+@pytest.mark.parametrize(
+    ("offset", "expected"),
+    [(1e-5, 3), (1e-4, 4)],
+)
+def test_split_triangle_direction_boundary_is_fail_closed(
+    offset: float, expected: int
+) -> None:
+    boundary = _linear_face([(0, 0, 0), (2, offset, 0), (4, 0, 0), (0, 4, 0)])
+
+    assert _effective_linear_sides(boundary) == expected
+
+
+@pytest.mark.skipif(
+    not _SUBDIVIDED_TERMINAL.is_file(),
+    reason="the independently authored STEP regression is excluded from the sdist",
+)
+@pytest.mark.parametrize(
+    ("rotation_axis", "degrees", "expected_axis"),
+    [(Axis.X, 0, "z"), (Axis.X, 90, "y"), (Axis.Y, 90, "x")],
+)
+def test_independently_authored_split_terminal_is_recognised_covariantly(
+    rotation_axis: Axis, degrees: float, expected_axis: str
+) -> None:
+    source = import_step(_SUBDIVIDED_TERMINAL)
+    part = Pos(91, -37, 48) * source.rotate(rotation_axis, degrees)
+
+    steps = recognise_angled_steps(part)
+    aggregate = build_recognition_result(part)
+
+    assert len(steps) == 1
+    assert aggregate.angled_steps == tuple(steps)
+    assert steps[0].axis == expected_axis
+    assert (steps[0].leg1, steps[0].leg2, steps[0].angle, steps[0].length) == (
+        6.121,
+        2.685,
+        23.68,
+        13.534,
+    )
+    assert all(chamfer.at != steps[0].at for chamfer in aggregate.chamfers)
+
+
+@pytest.mark.skipif(
+    not _SUBDIVIDED_TERMINAL.is_file(),
+    reason="the independently authored STEP regression is excluded from the sdist",
+)
+def test_independently_authored_split_terminal_has_pinned_provenance() -> None:
+    manifest = json.loads(_SUBDIVIDED_TERMINAL_MANIFEST.read_text(encoding="utf-8"))
+    entry = manifest["models"][_SUBDIVIDED_TERMINAL.name]
+
+    assert manifest["source"] == "MFCAD++ published test split"
+    assert manifest["licence"] == "CC BY"
+    assert hashlib.sha256(_SUBDIVIDED_TERMINAL.read_bytes()).hexdigest() == entry["sha256"]
+
+
+def test_unreadable_terminal_boundary_fails_closed_without_changing_recognition() -> None:
     class BrokenEdge:
         geom_type = type("Geometry", (), {"name": "LINE"})()
 

@@ -1,0 +1,11 @@
+{
+  "doi": "https://doi.org/10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+  "licence": "CC BY",
+  "models": {
+    "11512.step": {
+      "reason": "AngledStep terminal has five raw outer edges and three straight geometric runs",
+      "sha256": "5dc3ff1ba7307846c534650ac0c0c2ae1442cd51f29fb0a028a63a1ecd041e67"
+    }
+  },
+  "source": "MFCAD++ published test split"
+}
