@@ -211,7 +211,7 @@ from b123d_recognisers.turned import (
 try:
     __version__ = version("b123d-recognisers")
 except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
-    __version__ = "0.4.11.dev0"
+    __version__ = "0.4.12.dev0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402
