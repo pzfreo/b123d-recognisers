@@ -128,6 +128,25 @@ print(json.dumps(signature, sort_keys=True))
     assert outputs[0] == outputs[1]
 
 
+def test_runner_import_does_not_load_production_recognisers() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; import tools.run_effectiveness_baseline; "
+            "print(any(name == 'b123d_recognisers' or "
+            "name.startswith('b123d_recognisers.') for name in sys.modules))",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.stdout == "False\n"
+
+
 def test_mfcadpp_adapter_rejects_missing_labels(tmp_path: Path) -> None:
     step = tmp_path / "empty.step"
     step.write_text("ISO-10303-21;", encoding="ascii")
@@ -711,7 +730,8 @@ def test_corpus_run_authority_captures_mapping_and_refuses_drift(
     taxonomy = tmp_path / "taxonomy.json"
     taxonomy.write_bytes(b"first")
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: "a" * 40)
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: True)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     authority = _capture_run_authority(taxonomy)
 
@@ -746,11 +766,13 @@ def test_corpus_run_authority_refuses_source_drift(
     taxonomy.write_bytes(b"mapping")
     authority = baseline_runner._RunAuthority(
         commit="a" * 40,
+        source_sha256="source",
         taxonomy=b"mapping",
         taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
     )
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: clean)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: clean)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="source authority changed"):
         _verify_run_authority(authority, taxonomy)
@@ -761,10 +783,44 @@ def test_corpus_run_authority_refuses_a_dirty_start(
 ) -> None:
     taxonomy = tmp_path / "taxonomy.json"
     taxonomy.write_bytes(b"mapping")
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda: False)
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: False)
 
     with pytest.raises(EffectivenessDataError, match="package commit misleading"):
         _capture_run_authority(taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_commit_transition_during_capture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    commits = iter(("a" * 40, "b" * 40))
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    with pytest.raises(EffectivenessDataError, match="changed while it was captured"):
+        _capture_run_authority(taxonomy)
+
+
+def test_corpus_run_authority_refuses_a_commit_transition_during_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    authority = baseline_runner._RunAuthority(
+        commit="a" * 40,
+        source_sha256="source",
+        taxonomy=b"mapping",
+        taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
+    )
+    commits = iter(("a" * 40, "b" * 40))
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
+    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
+
+    with pytest.raises(EffectivenessDataError, match="changed during corpus run"):
+        _verify_run_authority(authority, taxonomy)
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:

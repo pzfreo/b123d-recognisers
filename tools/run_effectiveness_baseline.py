@@ -46,11 +46,11 @@ def _git_commit() -> str:
     ).stdout.strip()
 
 
-def _git_tree_is_clean() -> bool:
+def _git_tree_is_clean(commit: str) -> bool:
     """Whether tracked files still equal the commit named by this report."""
 
     completed = subprocess.run(
-        ["git", "diff", "--quiet", "HEAD", "--"],
+        ["git", "diff", "--quiet", commit, "--"],
         cwd=ROOT,
         check=False,
     )
@@ -59,9 +59,28 @@ def _git_tree_is_clean() -> bool:
     return completed.returncode == 0
 
 
+def _source_digest() -> str:
+    """Fingerprint the Python bytes that can be imported by the corpus worker."""
+
+    digest = hashlib.sha256()
+    paths = sorted((*ROOT.glob("src/**/*.py"), *ROOT.glob("tools/**/*.py")))
+    for path in paths:
+        relative = path.relative_to(ROOT).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        try:
+            contents = path.read_bytes()
+        except OSError as error:
+            raise EffectivenessDataError("could not fingerprint corpus-run source") from error
+        digest.update(len(contents).to_bytes(8, "big"))
+        digest.update(contents)
+    return digest.hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class _RunAuthority:
     commit: str
+    source_sha256: str
     taxonomy: bytes
     taxonomy_sha256: str
 
@@ -69,16 +88,23 @@ class _RunAuthority:
 def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
     """Freeze the authority a long corpus run will claim in its metadata."""
 
-    if not _git_tree_is_clean():
+    commit = _git_commit()
+    if not _git_tree_is_clean(commit):
         raise EffectivenessDataError(
             "tracked worktree changes would make the package commit misleading"
         )
+    source_sha256 = _source_digest()
     try:
         taxonomy = taxonomy_path.read_bytes()
     except OSError as error:
         raise EffectivenessDataError("taxonomy is unreadable") from error
+    if _git_commit() != commit or not _git_tree_is_clean(commit):
+        raise EffectivenessDataError("source authority changed while it was captured")
+    if _source_digest() != source_sha256:
+        raise EffectivenessDataError("source authority changed while it was captured")
     return _RunAuthority(
-        commit=_git_commit(),
+        commit=commit,
+        source_sha256=source_sha256,
         taxonomy=taxonomy,
         taxonomy_sha256=hashlib.sha256(taxonomy).hexdigest(),
     )
@@ -87,14 +113,21 @@ def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
 def _verify_run_authority(authority: _RunAuthority, taxonomy_path: Path) -> None:
     """Refuse a report if its source or mapping changed while models were running."""
 
+    commit_before = _git_commit()
+    clean_before = _git_tree_is_clean(authority.commit)
+    source_before = _source_digest()
     try:
         taxonomy = taxonomy_path.read_bytes()
     except OSError as error:
         raise EffectivenessDataError("taxonomy changed during corpus run") from error
     if (
-        _git_commit() != authority.commit
-        or not _git_tree_is_clean()
+        commit_before != authority.commit
+        or not clean_before
+        or source_before != authority.source_sha256
         or taxonomy != authority.taxonomy
+        or _source_digest() != authority.source_sha256
+        or not _git_tree_is_clean(authority.commit)
+        or _git_commit() != authority.commit
     ):
         raise EffectivenessDataError("source authority changed during corpus run")
 
@@ -254,6 +287,11 @@ def main() -> int:
     from b123d_recognisers import __version__
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
+
+    try:
+        _verify_run_authority(authority, args.taxonomy)
+    except EffectivenessDataError as error:
+        parser.error(str(error))
 
     rows: list[dict[str, Any]] = []
     invalid = 0

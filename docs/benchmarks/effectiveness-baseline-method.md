@@ -148,10 +148,12 @@ output file. `--allow-invalid` exists only when a written benchmark policy names
 invalid cases; the report then preserves each invalid model and reason.
 
 A long corpus run also freezes its source authority before importing the first model. The runner
-requires tracked files to equal `HEAD`, captures that commit and the exact taxonomy bytes/hash,
-scores from those captured bytes, and verifies that commit, tracked tree and taxonomy are still
-unchanged before publication. A mid-run checkout, rebase or tracked edit therefore refuses the
-report instead of attaching post-run provenance to pre-run in-memory code or mapping. Untracked
+requires tracked files to equal `HEAD`, captures that commit, a digest of importable Python source,
+and the exact taxonomy bytes/hash before importing production recognisers. Capture and verification
+sandwich those values between repeated commit/tree/source checks; production imports receive an
+immediate verification before scoring, and the same verification runs before publication. A
+mid-run checkout, rebase or tracked edit therefore refuses the report instead of attaching post-run
+provenance to pre-run in-memory code or mapping. Untracked
 output files do not make a commit claim misleading and remain compatible with atomic report
 creation. Issue #405 records the historical artifact that exposed this boundary; it remains
 immutable but is not authoritative for its claimed taxonomy revision.
