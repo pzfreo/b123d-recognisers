@@ -360,7 +360,14 @@ def _turned_step_proposals_one(
         bb = face.bounding_box()
         pos = (face.center().X, face.center().Y, face.center().Z)[idx]
         spans = ((bb.min.X, bb.max.X), (bb.min.Y, bb.max.Y), (bb.min.Z, bb.max.Z))
-        outer = max(max(abs(spans[j][0]), abs(spans[j][1])) for j in range(3) if j != idx)
+        outer = max(
+            max(
+                abs(spans[j][0] - profile.axis_origin[j]),
+                abs(spans[j][1] - profile.axis_origin[j]),
+            )
+            for j in range(3)
+            if j != idx
+        )
         od = local_od(pos)
         allowance = min(_CHAMFER_ALLOWANCE_ABS + _CHAMFER_ALLOWANCE_FRAC * od, od / 2)
         if outer >= od - allowance:
