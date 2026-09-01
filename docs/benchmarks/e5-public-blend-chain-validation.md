@@ -7,9 +7,9 @@ chain. [ADR 0013](../adr/0013-public-blend-chain-recognition.md) records the pub
 
 ## Evidence protocol
 
-- Authored geometry supplies positive convex and concave chains, small-radius and free-axis
-  examples, compounds, rigid transforms, traversal-order invariance, and sharp/full-cylinder
-  negatives.
+- Authored geometry supplies positive convex chains, an explicit public concave exclusion,
+  small-radius and free-axis examples, compounds, rigid transforms, uniform scaling,
+  traversal-order invariance, and sharp/full-cylinder negatives.
 - The package golden `small_convex_blends` proves the supported public result, census, and archive
   surface end to end.
 - MFCAD++ is open development evidence. Discovery and ownership do not read its labels; taxonomy
@@ -48,5 +48,48 @@ uv run python tools/run_effectiveness_baseline.py \
   --output docs/benchmarks/effectiveness-mfcadpp-2500-blends-<commit>.json
 ```
 
-The final report, measured result, independent review, and merge authority will be added after the
-corpus run completes.
+## Complete-corpus result
+
+Taxonomy files are only the versioned translation from benchmark labels to public recogniser
+families; they do not change recognition geometry. The parent uses v8, where class 23 `Round` maps
+to `fillets`. The candidate uses v9, where the same class maps to `fillets` and `blends`. A new
+taxonomy version is justified here because that translation changed; no additional checkpoint is
+needed merely for review or merge.
+
+The exact same 2,500 selected IDs and source hashes were evaluated on the parent and candidate.
+Both reports contain the same seven invalid ID/reason rows listed above. After removing provenance,
+ordinary timing, class-23 scoring, and the new `blends` counter, every per-model result is
+unchanged.
+
+| Measurement | Parent `56b8bd9` | Convex candidate `142edf7` | Change |
+| --- | ---: | ---: | ---: |
+| Evaluated models | 2,493 | 2,493 | 0 |
+| Physical Blend occurrences | 0 | 5 | +5 |
+| Round defining-face recall | 0/13 (0.00%) | 5/13 (38.46%) | +5 faces |
+| Round face coverage | 5/13 (38.46%) | 10/13 (76.92%) | +5 faces |
+| Round mapped defining precision | 0/219 (0.00%) | 5/224 (2.23%) | +5 matches and +5 candidates |
+
+The precision denominator includes both mapped Fillet and Blend records; the five new Blend
+occurrences are the five new defining-face matches. Runtime is recorded only as descriptive report
+metadata, not as a performance claim or acceptance gate: median model time was 0.675 seconds on
+the parent and 0.678 seconds on the candidate (p95 1.300 and 1.292 seconds respectively).
+
+Checked-in reports:
+
+- `effectiveness-mfcadpp-2500-blends-parent-56b8bd9.json` — taxonomy v8, SHA-256
+  `bdcdaf0a9e8663d20ac51aef91759c311a2b7d30cad7f1afdebbb6ea9e4102c9`;
+- `effectiveness-mfcadpp-2500-blends-convex-142edf7.json` — taxonomy v9, SHA-256
+  `a9f984c6d06bcbaec9f38f2c9d4ffcec89eb6c35a6f9cb3ff7db7509b9722e57`; and
+- `effectiveness-mfcadpp-2500-blends-broad-fea506d.json` — rejected broad-scope evidence,
+  SHA-256 `c6b1ed104426f5cc8c38fa7b42a83e7b92c898dd03aca7c6fde9a84107873650`.
+
+The rejected broad candidate published 1,832 Blend occurrences, of which 1,827 were concave
+chains with no Round label. It reached 6/13 Round defining faces rather than 5/13, but its sole
+additional match was a concave chain already owned as Pocket constituent evidence. That weak
+ownership boundary and duplication did not justify a public concave contract. The broad report is
+retained to make that decision auditable, not as the accepted effectiveness result.
+
+All three reports pass the closed report-schema and denominator validator. The independent review,
+final-diff ADR conformance, and merge authority are recorded in the pull request; Analysis Situs
+and aggregate-only MFInstSeg transfer checks remain post-merge gates against the exact merged
+`main` commit.
