@@ -20,7 +20,7 @@ measurement: the legs of the two populations overlap on every part-relative and
 neighbour-relative ratio tried, and a threshold that separated them on one corpus would be
 fitted to that corpus. The distinction is topological — **a chamfer runs the full length of
 the edge it breaks; an angled step stops, and something has to close the end.** That
-something is a geometrically triangular flat, and :func:`_closed_by_a_triangular_flat` is the whole
+something is a triangular flat, and :func:`_closed_by_a_triangular_flat` is the whole
 discriminator. It says nothing about the part around the face, so a step is a step at any
 scale, which a size gate could never promise.
 
@@ -129,7 +129,7 @@ class AngledStep(Record):
 def _closed_by_a_triangular_flat(
     face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
 ) -> bool:
-    """Is *face* adjacent to an axis-aligned planar face with three straight outer sides?
+    """Is *face* adjacent to an axis-aligned planar face with a triangular outer boundary?
 
     The blind end, and the whole discriminator (see the module docstring). A chamfer strip runs
     the length of the edge it breaks, so its neighbours are the two walls it bridges; a slant
@@ -171,7 +171,7 @@ def _effective_linear_sides(face: FaceLike) -> int | None:
 def _terminal_read(
     face: FaceLike, edge_faces: dict, *, face_edges: FaceEdges | None = None
 ) -> list[FaceLike]:
-    """Return axis-aligned terminals whose outer boundary has three straight sides."""
+    """Return legacy three-edge terminals or split terminals proved as three straight runs."""
 
     terminals: list[FaceLike] = []
     for other in neighbours(face, edge_faces, face_edges=face_edges):

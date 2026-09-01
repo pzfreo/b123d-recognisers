@@ -10,17 +10,19 @@
 
 ## Geometry decision
 
-An AngledStep blind end is geometrically triangular when its axis-aligned planar outer boundary
-has exactly three cyclic straight runs. A topological split may turn one straight side into several
-consecutive co-directed linear edges without changing that fact. Discovery collapses only those
-directions under the existing dimensionless smooth-direction tolerance; it does not relax a raw
-edge-count threshold. Rectangular caps retain four runs, a kink outside the tolerance retains four,
-and curved, degenerate or unreadable boundaries fail closed.
+For a subdivided AngledStep blind end with more than three raw outer edges, the axis-aligned planar
+boundary is geometrically triangular only when it has exactly three cyclic straight runs. A
+topological split may turn one straight side into several consecutive co-directed linear edges
+without changing that fact. Discovery collapses only those directions under the existing
+dimensionless smooth-direction tolerance; it does not relax the legacy three-edge path.
+Rectangular caps retain four runs, a kink outside the tolerance retains four, and curved,
+degenerate or unreadable subdivided boundaries fail closed.
 
 The authored fixture constructs a valid closed solid with the terminal/slant shared boundary split
 in two. It now yields one AngledStep with the exact slant as defining evidence and the exact terminal
 face as constituent evidence; the aggregate's existing named reconciliation removes the overlapping
-Chamfer and emits no residual diagnostic. Translation preserves raw coordinates and physical values.
+Chamfer and emits no residual diagnostic. Translation moves the raw `at` anchor consistently while
+preserving physical values.
 Straight-run direction controls cover both sides of the tolerance boundary, a true rectangle, a
 reversed boundary, curved/unreadable failure, and the existing through-Chamfer, pocket, gusset,
 scale, principal-axis, STEP and topology-order controls.
@@ -28,8 +30,8 @@ scale, principal-axis, STEP and topology-order controls.
 Independently authored MFCAD++ test model `11512` is vendored byte-for-byte under CC BY with source
 SHA-256 `5dc3ff1ba7307846c534650ac0c0c2ae1442cd51f29fb0a028a63a1ecd041e67`.
 Its class-20 terminal has five raw outer edges but three straight runs. Under translated X/Y/Z
-principal-axis presentations, direct recognition and the raw aggregate each retain one occurrence
-with invariant `leg1=6.121`, `leg2=2.685`, `angle=23.68`, and `length=13.534`; no surviving Chamfer
+principal-axis presentations, direct recognition and the raw aggregate each retain one occurrence;
+the occurrence has invariant `leg1=6.121`, `leg2=2.685`, `angle=23.68`, and `length=13.534`; no surviving Chamfer
 shares its slant anchor.
 
 ## MFCAD++ development evidence
@@ -66,10 +68,12 @@ Standalone runtime remains inside ordinary run variance for this one-model seman
 - Full fast tier: 2,563 passed.
 - Focused AngledStep, diagnostics, explanations, bevel claims and vendored MFCAD++ suite: 69 passed.
 - The final full Ruff and mypy checks are recorded after the evidence commit.
+- One bounded independent review found no blocker. Its low-severity documentation findings—scope
+  the straight-run rule to promoted subdivided terminals and describe raw translation correctly—are
+  incorporated here; the change did not warrant a second review.
 - ADR 0002 keeps equivalent geometry deterministic; the proof depends only on cyclic unit directions.
   ADR 0003 retains independent proposals and unchanged named reconciliation. ADR 0004 is amended to
   supersede its diagnostic-only boundary for this exact three-run fact. ADR 0007 keeps the query
   local to AngledStep discovery. ADR 0008 classifies the reused unit-direction comparison as
   dimensionless and introduces no new tolerance. ADR 0009 keeps terminal filtering inside its owning
   recogniser. ADR 0011's raw/framed coordinate meanings are unchanged.
-
