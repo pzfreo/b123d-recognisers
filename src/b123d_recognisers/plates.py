@@ -263,10 +263,7 @@ def _plate_proposals(
         # correctly ordered, geometrically thin opposed span. Avoid constructing oriented
         # envelopes for axes that are incapable of publishing a Plate under any area threshold.
         if not any(
-            tol < high - low
-            and clears_threshold(maximum_thickness, high - low)
-            for low in negative
-            for high in positive
+            tol < high - low < maximum_thickness for low in negative for high in positive
         ):
             continue
 
@@ -291,7 +288,7 @@ def _plate_proposals(
             if low_sign != -1 or high_sign != 1:
                 continue
             thickness = high - low
-            if thickness <= tol or not clears_threshold(maximum_thickness, thickness):
+            if thickness <= tol or thickness >= maximum_thickness:
                 continue
             combined_area = low_group.area + high_group.area
             out.append(
