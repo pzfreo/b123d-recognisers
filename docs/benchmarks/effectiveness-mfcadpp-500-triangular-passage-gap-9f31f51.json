@@ -1,0 +1,8233 @@
+{
+  "class_id": 2,
+  "components": [
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "1000",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        36,
+        37,
+        38
+      ],
+      "model_id": "1000",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 10,
+      "face_indices": [
+        7,
+        8,
+        9,
+        18,
+        19,
+        26,
+        31,
+        36,
+        38,
+        40
+      ],
+      "model_id": "10038",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.13325184609701432,
+          0.911232408226098,
+          -0.3897427917360419
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 10
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 4,
+      "face_indices": [
+        10,
+        16,
+        32,
+        33
+      ],
+      "model_id": "10038",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "10044",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "10046",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "plates"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        12,
+        13,
+        14,
+        20
+      ],
+      "model_id": "10049",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        17
+      ],
+      "model_id": "10060",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        27,
+        28,
+        29
+      ],
+      "model_id": "10060",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          27,
+          28,
+          29
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        28,
+        29,
+        30
+      ],
+      "model_id": "10070",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          28,
+          29,
+          30
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "10096",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        26,
+        27,
+        28
+      ],
+      "model_id": "10096",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": true,
+        "touching_families": [
+          "prismatic_pockets"
+        ]
+      },
+      "component": 1,
+      "face_count": 2,
+      "face_indices": [
+        21,
+        22
+      ],
+      "model_id": "10098",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 1,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 2,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 2
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": false,
+        "touching_families": [
+          "chamfers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 9,
+      "face_indices": [
+        9,
+        10,
+        11,
+        22,
+        23,
+        28,
+        29,
+        30,
+        34
+      ],
+      "model_id": "10103",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.6864389544490098,
+          0.011073628846480157,
+          0.7271031127420103
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 9
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 8,
+      "face_indices": [
+        7,
+        8,
+        9,
+        13,
+        14,
+        15,
+        19,
+        20
+      ],
+      "model_id": "10116",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.42706637760383254,
+          0.8731791134286576,
+          -0.23488836708590788
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 8
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        14
+      ],
+      "model_id": "10118",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          -0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          12,
+          13,
+          14
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "prismatic_pockets",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        0,
+        1,
+        7
+      ],
+      "model_id": "10127",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        14,
+        15,
+        16
+      ],
+      "model_id": "10131",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          14,
+          15,
+          16
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        21,
+        22,
+        23
+      ],
+      "model_id": "10138",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          21,
+          22,
+          23
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "10155",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        32,
+        33,
+        34
+      ],
+      "model_id": "10155",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "10163",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "10163",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        21,
+        22,
+        23
+      ],
+      "model_id": "10167",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "10170",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        17
+      ],
+      "model_id": "10228",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          15,
+          16,
+          17
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        30,
+        31,
+        32
+      ],
+      "model_id": "10228",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          30,
+          31,
+          32
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        17
+      ],
+      "model_id": "10261",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          15,
+          16,
+          17
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "10269",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        1,
+        3,
+        4
+      ],
+      "model_id": "10286",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          1,
+          3,
+          4
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        1,
+        3,
+        17
+      ],
+      "model_id": "10308",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "10308",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        22,
+        23,
+        24,
+        29
+      ],
+      "model_id": "10314",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        14,
+        15,
+        16,
+        24
+      ],
+      "model_id": "10340",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        19
+      ],
+      "model_id": "10340",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "10340",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "10344",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        25,
+        26,
+        27
+      ],
+      "model_id": "10344",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          25,
+          26,
+          27
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        31,
+        32,
+        33
+      ],
+      "model_id": "10344",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "10347",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -1.103471617387e-30,
+          1.0,
+          -1.27506192187e-31
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          19,
+          20
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "10350",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          8,
+          9,
+          10
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "10364",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          19,
+          20
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        27
+      ],
+      "model_id": "10387",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        24,
+        26
+      ],
+      "model_id": "10387",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "10407",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "10410",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        12,
+        13,
+        14,
+        21
+      ],
+      "model_id": "10414",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "10428",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        9,
+        32
+      ],
+      "model_id": "10433",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        19,
+        20,
+        21,
+        25
+      ],
+      "model_id": "10465",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        28,
+        29,
+        30
+      ],
+      "model_id": "10469",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          28,
+          29,
+          30
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "10492",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.21661329439596816,
+          -0.0,
+          0.9762574868808565
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 6,
+      "face_indices": [
+        13,
+        14,
+        15,
+        19,
+        20,
+        21
+      ],
+      "model_id": "10499",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.09225405999433804,
+          -0.06212809860561174,
+          0.993795395329548
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 6
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        14,
+        15,
+        16,
+        23
+      ],
+      "model_id": "10513",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        11,
+        22
+      ],
+      "model_id": "10520",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "10520",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        23,
+        24,
+        25
+      ],
+      "model_id": "10520",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.9887441747141215,
+          0.0,
+          -0.14961603179101837
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "10526",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "10531",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": false,
+        "touching_families": [
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        0,
+        3,
+        7,
+        10
+      ],
+      "model_id": "10537",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        22,
+        23,
+        24
+      ],
+      "model_id": "10600",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          22,
+          23,
+          24
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "10601",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "10601",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          20,
+          21,
+          22
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "10602",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          8,
+          9,
+          10
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "10602",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "10643",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          9,
+          10,
+          11
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "10652",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        17
+      ],
+      "model_id": "10652",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        22,
+        23,
+        24
+      ],
+      "model_id": "1067",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          22,
+          23,
+          24
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        28,
+        30,
+        31
+      ],
+      "model_id": "1067",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        33,
+        34,
+        35
+      ],
+      "model_id": "1067",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "1069",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "chamfers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        22,
+        23,
+        24,
+        30
+      ],
+      "model_id": "10710",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 7,
+      "face_indices": [
+        12,
+        13,
+        14,
+        17,
+        18,
+        19,
+        22
+      ],
+      "model_id": "10712",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.4775646645651235,
+          0.3743794052760968,
+          0.7948408973272055
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 7
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "1072",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "chamfers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        4,
+        6,
+        8
+      ],
+      "model_id": "10727",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "10736",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        19
+      ],
+      "model_id": "10753",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        27,
+        28,
+        29
+      ],
+      "model_id": "10753",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          27,
+          28,
+          29
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        30,
+        31,
+        32
+      ],
+      "model_id": "10753",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 4,
+      "face_count": 3,
+      "face_indices": [
+        34,
+        35,
+        36
+      ],
+      "model_id": "10753",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 5,
+      "face_count": 3,
+      "face_indices": [
+        39,
+        40,
+        41
+      ],
+      "model_id": "10753",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          39,
+          40,
+          41
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "10834",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "10841",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        15,
+        16,
+        17,
+        34
+      ],
+      "model_id": "10847",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "10881",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "10893",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        6,
+        7,
+        8
+      ],
+      "model_id": "10895",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          6,
+          7,
+          8
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "10895",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "10908",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 7,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 7,
+      "face_indices": [
+        15,
+        16,
+        17,
+        19,
+        21,
+        23,
+        25
+      ],
+      "model_id": "10908",
+      "passages": {
+        "covered_faces": 7,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 6,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 6,
+        "planar_walls": 7,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          15,
+          16,
+          17,
+          19,
+          21,
+          23,
+          25
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 7
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        24
+      ],
+      "model_id": "1095",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "10968",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        3,
+        13,
+        14
+      ],
+      "model_id": "10986",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        11,
+        12
+      ],
+      "model_id": "10994",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          9,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "11004",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "angled_steps",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "11037",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 2,
+      "face_indices": [
+        8,
+        10
+      ],
+      "model_id": "11038",
+      "passages": {
+        "covered_faces": 2,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 1,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 2,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          8,
+          10
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 2
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        14,
+        15,
+        16
+      ],
+      "model_id": "11074",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          14,
+          15,
+          16
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "11108",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "11112",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "11112",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          -0.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          8,
+          9,
+          10
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        14,
+        15,
+        16
+      ],
+      "model_id": "11112",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          14,
+          15,
+          16
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        10,
+        11
+      ],
+      "model_id": "11117",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "prismatic_pockets"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        21,
+        22
+      ],
+      "model_id": "11134",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          21,
+          22
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        13
+      ],
+      "model_id": "11149",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        1,
+        3,
+        8
+      ],
+      "model_id": "11201",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        25,
+        26,
+        27
+      ],
+      "model_id": "11201",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          25,
+          26,
+          27
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "11242",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "11302",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        29,
+        30,
+        31
+      ],
+      "model_id": "11302",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          29,
+          30,
+          31
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "1134",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          13,
+          14,
+          15
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        25,
+        26,
+        27
+      ],
+      "model_id": "11428",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          25,
+          26,
+          27
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "11429",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        6,
+        7,
+        8
+      ],
+      "model_id": "11430",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        27,
+        28,
+        29
+      ],
+      "model_id": "11430",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "chamfers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        9,
+        11
+      ],
+      "model_id": "11435",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        6,
+        7,
+        8
+      ],
+      "model_id": "11459",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          6,
+          7,
+          8
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "1149",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "11515",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "11525",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        24,
+        25,
+        30
+      ],
+      "model_id": "11534",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "11570",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "11570",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        21,
+        22,
+        23
+      ],
+      "model_id": "11621",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          21,
+          22,
+          23
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "11631",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          19,
+          20
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        36,
+        37,
+        38
+      ],
+      "model_id": "11645",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          36,
+          37,
+          38
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        1,
+        3,
+        17
+      ],
+      "model_id": "11654",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "11655",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        5,
+        6,
+        7,
+        32
+      ],
+      "model_id": "11683",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 4,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        19
+      ],
+      "model_id": "11683",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "11687",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "11697",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        19
+      ],
+      "model_id": "11763",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        18,
+        19,
+        20,
+        28
+      ],
+      "model_id": "11809",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "11822",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "11836",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          13,
+          14,
+          15
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "11841",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        27
+      ],
+      "model_id": "11841",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 2,
+      "face_indices": [
+        1,
+        3
+      ],
+      "model_id": "11845",
+      "passages": {
+        "covered_faces": 2,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 1,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 2,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          1,
+          3
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 2
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 1,
+      "face_indices": [
+        4
+      ],
+      "model_id": "11845",
+      "passages": {
+        "covered_faces": 1,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "no_linear_run",
+        "interval_pairs": 0,
+        "planar_walls": 0,
+        "run": null,
+        "stage": 0
+      },
+      "production_proposal_overlaps": [
+        [
+          4
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 1
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": false,
+        "touching_families": [
+          "prismatic_pockets"
+        ]
+      },
+      "component": 1,
+      "face_count": 9,
+      "face_indices": [
+        6,
+        7,
+        8,
+        17,
+        18,
+        19,
+        26,
+        27,
+        28
+      ],
+      "model_id": "11865",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.22034303776196096,
+          0.8732088779018452,
+          -0.43468977588992297
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 9
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        26,
+        27,
+        28,
+        29
+      ],
+      "model_id": "11867",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "11899",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "11905",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          19,
+          20
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "11917",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "11954",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          13,
+          14,
+          15
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 8,
+      "face_indices": [
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        34,
+        40
+      ],
+      "model_id": "11956",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.341876412939141,
+          -0.1486607253200613,
+          0.9279119069303827
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 8
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 6,
+      "face_indices": [
+        1,
+        3,
+        8,
+        9,
+        10,
+        22
+      ],
+      "model_id": "11966",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.036404170507182775,
+          0.9036433529995724,
+          -0.4267357811917981
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 6
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "plates"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "11966",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        22,
+        23,
+        24
+      ],
+      "model_id": "11974",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        29,
+        30,
+        31
+      ],
+      "model_id": "11974",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          29,
+          30,
+          31
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "11994",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          19,
+          20,
+          21
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "12013",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          18,
+          19,
+          20
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        3,
+        4,
+        17
+      ],
+      "model_id": "12024",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          0.9743367786190335,
+          -0.2250951839340077,
+          -0.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 2,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 7,
+      "face_indices": [
+        9,
+        10,
+        11,
+        12,
+        35,
+        36,
+        37
+      ],
+      "model_id": "12042",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 7,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 5,
+        "planar_walls": 7,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 7
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        31,
+        32,
+        33
+      ],
+      "model_id": "12042",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          31,
+          32,
+          33
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "12046",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        16,
+        17,
+        18
+      ],
+      "model_id": "12046",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          16,
+          17,
+          18
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 3,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "12046",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        14
+      ],
+      "model_id": "12056",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          12,
+          13,
+          14
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        6,
+        7
+      ],
+      "model_id": "12058",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          6,
+          7
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        13
+      ],
+      "model_id": "12062",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        37,
+        38,
+        39
+      ],
+      "model_id": "12062",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          37,
+          38,
+          39
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        23,
+        24,
+        25
+      ],
+      "model_id": "12134",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          23,
+          24,
+          25
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "chamfers",
+          "prismatic_pockets",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        18,
+        19,
+        20
+      ],
+      "model_id": "12141",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        19,
+        20,
+        21
+      ],
+      "model_id": "12142",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        25,
+        26,
+        27
+      ],
+      "model_id": "12142",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        26,
+        27,
+        28
+      ],
+      "model_id": "1215",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          26,
+          27,
+          28
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        6,
+        7,
+        8
+      ],
+      "model_id": "12169",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          6,
+          7,
+          8
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        17,
+        18,
+        19
+      ],
+      "model_id": "12206",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        5,
+        11,
+        12
+      ],
+      "model_id": "12208",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [
+        [
+          5,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "12218",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        13,
+        14,
+        15
+      ],
+      "model_id": "12269",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          13,
+          14,
+          15
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "12279",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        16,
+        17
+      ],
+      "model_id": "12281",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          15,
+          16,
+          17
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "chamfers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "12328",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "pair_interval_mismatch",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 3
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "12355",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        14
+      ],
+      "model_id": "1236",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          12,
+          13,
+          14
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        7,
+        8,
+        9
+      ],
+      "model_id": "12375",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          7,
+          8,
+          9
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        25,
+        26,
+        27
+      ],
+      "model_id": "12375",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        14,
+        15,
+        16
+      ],
+      "model_id": "12396",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": false,
+        "touching_families": [
+          "holes",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 4,
+      "face_indices": [
+        26,
+        27,
+        28,
+        34
+      ],
+      "model_id": "12419",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 5,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 4,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 4
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "12445",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 1,
+        "full": false,
+        "touching_families": [
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 6,
+      "face_indices": [
+        0,
+        3,
+        6,
+        7,
+        12,
+        16
+      ],
+      "model_id": "1247",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 2,
+        "run": [
+          -0.12963805257302388,
+          0.988372808829182,
+          0.07945543462965463
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 6
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        22,
+        23,
+        24
+      ],
+      "model_id": "1247",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          22,
+          23,
+          24
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "12484",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        6,
+        7,
+        8
+      ],
+      "model_id": "12520",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          6,
+          7,
+          8
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        10,
+        11,
+        12
+      ],
+      "model_id": "12547",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        20,
+        21,
+        22
+      ],
+      "model_id": "12547",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": false,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 9,
+      "face_indices": [
+        7,
+        8,
+        9,
+        11,
+        12,
+        13,
+        22,
+        23,
+        24
+      ],
+      "model_id": "12626",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 0,
+        "cycle_faces": 0,
+        "first_failed_gate": "nonplanar_or_nonwall",
+        "interval_pairs": 0,
+        "planar_walls": 3,
+        "run": [
+          -0.4064586888699668,
+          0.8522175569389304,
+          0.3294185330049731
+        ],
+        "stage": 1
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 9
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        8,
+        9,
+        10
+      ],
+      "model_id": "12649",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          8,
+          9,
+          10
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        14
+      ],
+      "model_id": "12649",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          -0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          12,
+          13,
+          14
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        15,
+        21,
+        22
+      ],
+      "model_id": "1269",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -8.385250091345e-32,
+          -1.172467553335e-32,
+          1.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        22,
+        23,
+        24
+      ],
+      "model_id": "12772",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          22,
+          23,
+          24
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "risers"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        9,
+        10,
+        11
+      ],
+      "model_id": "12792",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 2,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 2,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages",
+          "risers",
+          "step_levels"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        11,
+        12,
+        13
+      ],
+      "model_id": "12794",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        24,
+        25,
+        26
+      ],
+      "model_id": "12794",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 3,
+        "full": true,
+        "touching_families": [
+          "passages"
+        ]
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        12,
+        13,
+        14
+      ],
+      "model_id": "12816",
+      "passages": {
+        "covered_faces": 3,
+        "full": true
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 3,
+        "first_failed_gate": "recognisable",
+        "interval_pairs": 3,
+        "planar_walls": 3,
+        "run": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "stage": 9
+      },
+      "production_proposal_overlaps": [
+        [
+          12,
+          13,
+          14
+        ]
+      ],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 1,
+      "face_count": 3,
+      "face_indices": [
+        14,
+        15,
+        16
+      ],
+      "model_id": "12832",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    },
+    {
+      "accepted": {
+        "covered_faces": 0,
+        "full": false,
+        "touching_families": []
+      },
+      "component": 2,
+      "face_count": 3,
+      "face_indices": [
+        21,
+        22,
+        23
+      ],
+      "model_id": "12832",
+      "passages": {
+        "covered_faces": 0,
+        "full": false
+      },
+      "probe": {
+        "collinear_pairs": 3,
+        "cycle_faces": 0,
+        "first_failed_gate": "not_simple_cycle",
+        "interval_pairs": 1,
+        "planar_walls": 3,
+        "run": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "stage": 4
+      },
+      "production_proposal_overlaps": [],
+      "surface_counts": {
+        "GeomAbs_SurfaceType.GeomAbs_Plane": 3
+      }
+    }
+  ],
+  "dataset": {
+    "name": "mfcadpp",
+    "version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
+  },
+  "derivation": "connected same-label original faces under shared-edge adjacency",
+  "format": "b123d-recognisers-mfcadpp-section-passage-gap-audit",
+  "format_version": 1,
+  "implementation_commit": "9f31f51cd3468343cc23e968e184e32567d3e0fc",
+  "native_instance_labels": false,
+  "probe_semantics": "Counterfactual application of the unchanged production proofs to every face in one label-component proxy. Exact production discovery is reported separately as proposal overlap; a probe failure is diagnostic anatomy, not proof that labels define a feature.",
+  "production_source": {
+    "path": "src/b123d_recognisers/_section_passages.py",
+    "sha256": "1c30c759a686629778c9b900fee8bda6a6a84c9a85cad825a31f9643652bc9c7"
+  },
+  "selection": {
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+    "selected_sources_sha256": "1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331"
+  },
+  "summary": {
+    "components": 201,
+    "faces": 668,
+    "gate_counts": {
+      "no_linear_run": 1,
+      "nonplanar_or_nonwall": 10,
+      "not_simple_cycle": 94,
+      "pair_interval_mismatch": 7,
+      "recognisable": 89
+    },
+    "models_with_class": 153,
+    "untouched_components": 63,
+    "untouched_faces": 212,
+    "untouched_gate_counts": {
+      "nonplanar_or_nonwall": 3,
+      "not_simple_cycle": 56,
+      "pair_interval_mismatch": 4
+    }
+  }
+}
