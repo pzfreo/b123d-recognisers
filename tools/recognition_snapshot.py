@@ -48,6 +48,7 @@ def recognition_snapshot(recognition, feature_census, part):
     # is a mismatch, so this cannot quietly drop a family from a package that does have it.
     for name in (
         "recognise_angled_steps",
+        "recognise_blends",
         "recognise_circular_blind_steps",
         "recognise_paired_ramp_steps",
         "recognise_passages",

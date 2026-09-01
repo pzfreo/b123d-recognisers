@@ -1,5 +1,23 @@
 # Release notes
 
+## 0.4.11
+
+- **Published conservative convex rolling-ball Blend chains.**
+  `recognise_blends()` and aggregate `RecognitionResult.blends` report one immutable occurrence
+  for each complete, same-solid, same-radius native cylindrical convex chain, including small and
+  non-principal rounds. Records retain exact defining/constituent face evidence, canonical full
+  axis direction and a subdivision-invariant cylindrical anchor. Accepted dimension-worthy
+  `Fillet` occurrences retain precedence only when their exact defining faces cover the complete
+  chain; concave, branched, incomplete, recovered-surface and non-cylindrical blends remain outside
+  the public contract.
+
+- **Improved reproducible Round coverage without changing unrelated recognition.** On the complete
+  2,500-model MFCAD++ development split, five public Blend occurrences raise class-23 defining-face
+  recall from 0/13 to 5/13 and face coverage from 5/13 to 10/13. The same seven pre-existing invalid
+  Hole rows remain explicit, and every per-model result outside the new Blend counter and Round
+  mapping is unchanged. A rejected broad-scope audit records why 1,827 concave chains without Round
+  labels were not published as duplicate top-level features.
+
 ## 0.4.10
 
 - **Published exact original-face membership for downstream consumers.** Accepted occurrences now

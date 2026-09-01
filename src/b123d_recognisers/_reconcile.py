@@ -239,6 +239,39 @@ def reconcile_circular_step_fillets(
     return tuple(decisions)
 
 
+def reconcile_blend_candidates(
+    blends: CandidateSet[object],
+    fillets: CandidateSet[object],
+    evidence: EvidenceIndex,
+    *,
+    rejected_fillets: frozenset[Candidate[object]] = frozenset(),
+) -> tuple[Disposition, ...]:
+    """Prefer complete feature semantics over the neutral cylindrical chain carrier."""
+
+    decisions = []
+    for blend in blends.candidates:
+        blend_faces = evidence.defining_of(blend)
+        fillet_winners = tuple(
+            fillet
+            for fillet in fillets.candidates
+            if fillet not in rejected_fillets
+            if not blend_faces.isdisjoint(evidence.defining_of(fillet))
+        )
+        covered = frozenset(
+            node for fillet in fillet_winners for node in evidence.defining_of(fillet)
+        )
+        if blend_faces and blend_faces <= covered:
+            decisions.append(
+                Disposition(
+                    blend,
+                    Outcome.REJECTED,
+                    ReasonCode.BLEND_SUPERSEDED_BY_FILLET,
+                    fillet_winners,
+                )
+            )
+    return tuple(decisions)
+
+
 def reconcile_profiled_bore_candidates(
     holes: CandidateSet[object],
     double_d_bores: CandidateSet[object],

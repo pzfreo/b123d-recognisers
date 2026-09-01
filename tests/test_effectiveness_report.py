@@ -50,6 +50,7 @@ TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
 TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
+TAXONOMY_V9 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v9.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -369,6 +370,26 @@ def test_taxonomy_v8_adds_only_countersink_to_chamfer() -> None:
         "status": "supported",
     }
     assert load_taxonomy(TAXONOMY_V8, "mfinstseg") == current
+
+
+def test_taxonomy_v9_adds_only_blend_to_round() -> None:
+    historical = load_taxonomy(TAXONOMY_V8, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V9, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 23} == {
+        key: value for key, value in historical.items() if key != 23
+    }
+    assert historical[23] == {
+        "families": ["fillets"],
+        "name": "Round",
+        "status": "supported",
+    }
+    assert current[23] == {
+        "families": ["blends", "fillets"],
+        "name": "Round",
+        "status": "supported",
+    }
+    assert load_taxonomy(TAXONOMY_V9, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(

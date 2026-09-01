@@ -31,6 +31,7 @@ class ReasonCode(Enum):
     FILLET_SUPERSEDED_BY_CIRCULAR_BLIND_STEP = (
         "blend.fillet_superseded_by_circular_blind_step"
     )
+    BLEND_SUPERSEDED_BY_FILLET = "blend.chain_superseded_by_fillet"
     HOLE_SUPERSEDED_BY_DOUBLE_D_BORE = "bore.hole_superseded_by_double_d_bore"
     TURNED_STEP_GROOVE_COMPATIBLE = "turned.step_groove_compatible"
     GROOVE_TURNED_STEP_COMPATIBLE = "turned.groove_step_compatible"
@@ -106,6 +107,12 @@ _REASON_SPEC: dict[ReasonCode, tuple[Outcome, FamilyId | None, FamilyId | None, 
         Outcome.REJECTED,
         FamilyId.FILLETS,
         FamilyId.CIRCULAR_BLIND_STEPS,
+        True,
+    ),
+    ReasonCode.BLEND_SUPERSEDED_BY_FILLET: (
+        Outcome.REJECTED,
+        FamilyId.BLENDS,
+        FamilyId.FILLETS,
         True,
     ),
     ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE: (

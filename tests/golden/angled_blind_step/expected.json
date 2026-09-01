@@ -27,6 +27,7 @@
             "length": 12.0
           }
         ],
+        "blends": [],
         "bosses": [],
         "chamfers": [
           {
@@ -114,6 +115,7 @@
       "rotational": {
         "_type": "RecognitionResult",
         "angled_steps": [],
+        "blends": [],
         "bosses": [],
         "chamfers": [],
         "channels": [],
@@ -187,6 +189,7 @@
     },
     "feature_census": {
       "angled_step": 1,
+      "blend": 0,
       "boss": 0,
       "chamfer": 1,
       "channel": 0,
@@ -224,6 +227,7 @@
           "length": 12.0
         }
       ],
+      "recognise_blends": [],
       "recognise_bosses": [],
       "recognise_chamfers": [
         {

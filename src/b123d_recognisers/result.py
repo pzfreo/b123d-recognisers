@@ -23,6 +23,7 @@ from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._correspondence import _CorrespondenceSnapshotAuthority
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
+    Outcome,
     ReasonCode,
 )
 from b123d_recognisers._dispositions import (
@@ -37,6 +38,7 @@ from b123d_recognisers._features import (
 )
 from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
+    reconcile_blend_candidates,
     reconcile_circular_step_fillets,
     reconcile_profiled_bore_candidates,
     reconcile_recess_candidates,
@@ -59,6 +61,7 @@ from b123d_recognisers._registry import (
 from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
+from b123d_recognisers.blends import Blend
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.circular_blind_steps import CircularBlindStep
 from b123d_recognisers.countersinks import CounterSink
@@ -323,6 +326,8 @@ class RecognitionResult:
     #: proposals, but this public tuple is then projected as ``()``.
     section_passages: tuple[SectionPassage, ...]
     passages: tuple[Passage, ...]
+    #: Complete cylindrical rolling-ball chains not superseded by a more specific family.
+    blends: tuple[Blend, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]
 
@@ -576,10 +581,21 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.ANGLED_STEPS),
         evidence,
     )
-    decisions += reconcile_circular_step_fillets(
+    circular_fillet_decisions = reconcile_circular_step_fillets(
         physical.candidate_set(FamilyId.FILLETS),
         physical.candidate_set(FamilyId.CIRCULAR_BLIND_STEPS),
         evidence,
+    )
+    decisions += circular_fillet_decisions
+    decisions += reconcile_blend_candidates(
+        physical.candidate_set(FamilyId.BLENDS),
+        physical.candidate_set(FamilyId.FILLETS),
+        evidence,
+        rejected_fillets=frozenset(
+            decision.candidate
+            for decision in circular_fillet_decisions
+            if decision.outcome is Outcome.REJECTED
+        ),
     )
     decisions += reconcile_profiled_bore_candidates(
         physical.candidate_set(FamilyId.HOLES),
@@ -703,6 +719,7 @@ def _project_result(
             else ()
         ),
         passages=derived.passages if passage_definition.projected(context) else (),
+        blends=tuple(_records(accepted, FamilyId.BLENDS, Blend)),
         fillets=tuple(_records(accepted, FamilyId.FILLETS, Fillet)),
         plates=tuple(_records(accepted, FamilyId.PLATES, Plate)),
     )

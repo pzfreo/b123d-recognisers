@@ -28,6 +28,7 @@ EXPECTED_CASES = {
     "repeating_radial_profile",
     "round_bottom_blind_slot",
     "simple_through_hole",
+    "small_convex_blends",
     "slanted_counterbore",
     "slanted_steps",
     "straight_and_obround_slots",

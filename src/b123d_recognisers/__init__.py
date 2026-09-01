@@ -87,6 +87,7 @@ from b123d_recognisers.angled_steps import (
     AngledStep,
     recognise_angled_steps,
 )
+from b123d_recognisers.blends import Blend, recognise_blends
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.circular_blind_steps import (
     CircularBlindStep,
@@ -239,6 +240,7 @@ __all__ = [
     "PairedRampStep",
     "SectionPassage",
     "BoltCircle",
+    "Blend",
     "Chamfer",
     "Channel",
     "Fillet",
@@ -322,6 +324,7 @@ __all__ = [
     "recognise_section_passages",
     "recognise_prismatic_pockets",
     "recognise_bosses",
+    "recognise_blends",
     "recognise_chamfers",
     "recognise_channels",
     "recognise_fillets",

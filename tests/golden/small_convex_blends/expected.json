@@ -1,242 +1,23 @@
 {
   "canonicalizer_version": 1,
-  "fixture": "chamfers_fillets_and_flats",
+  "fixture": "small_convex_blends",
   "provenance": {
     "creator": "Paul Fremantle",
     "license": "Apache-2.0",
-    "source_commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "source_path": "tests/test_recogniser_contract.py",
-    "source_repository": "https://github.com/pzfreo/draftwright.git"
+    "source_path": "tests/test_blends.py",
+    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
   },
   "recognition": {
     "aggregate": {
       "prismatic": {
         "_type": "RecognitionResult",
         "angled_steps": [],
-        "blends": [],
-        "bosses": [
+        "blends": [
           {
-            "_type": "BossRecord",
-            "axis": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "diameter": 30.0,
-            "height": 40.0,
-            "location": [
-              70.0,
-              0.0,
-              20.0
-            ]
-          }
-        ],
-        "chamfers": [
-          {
-            "_type": "Chamfer",
-            "angle": 45.0,
+            "_type": "Blend",
             "at": [
-              -88.5,
-              -13.5,
-              0.0
-            ],
-            "axis": "z",
-            "leg1": 3.0,
-            "leg2": 3.0,
-            "turned": false
-          },
-          {
-            "_type": "Chamfer",
-            "angle": 45.0,
-            "at": [
-              -88.5,
-              13.5,
-              0.0
-            ],
-            "axis": "z",
-            "leg1": 3.0,
-            "leg2": 3.0,
-            "turned": false
-          },
-          {
-            "_type": "Chamfer",
-            "angle": 45.0,
-            "at": [
-              -51.5,
-              -13.5,
-              0.0
-            ],
-            "axis": "z",
-            "leg1": 3.0,
-            "leg2": 3.0,
-            "turned": false
-          },
-          {
-            "_type": "Chamfer",
-            "angle": 45.0,
-            "at": [
-              -51.5,
-              13.5,
-              0.0
-            ],
-            "axis": "z",
-            "leg1": 3.0,
-            "leg2": 3.0,
-            "turned": false
-          }
-        ],
-        "channels": [],
-        "circular_blind_steps": [],
-        "countersinks": [],
-        "cylinders": [
-          [
-            {
-              "axis": "z",
-              "axis_xyz": [
-                -16.0,
-                -11.0,
-                -10.0
-              ],
-              "diameter": 8.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 10.0,
-              "s_lo": -10.0,
-              "u_extent": 1.57079633
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                -16.0,
-                11.0,
-                -10.0
-              ],
-              "diameter": 8.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 10.0,
-              "s_lo": -10.0,
-              "u_extent": 1.57079633
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                16.0,
-                -11.0,
-                -10.0
-              ],
-              "diameter": 8.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 10.0,
-              "s_lo": -10.0,
-              "u_extent": 1.57079633
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                16.0,
-                11.0,
-                -10.0
-              ],
-              "diameter": 8.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 10.0,
-              "s_lo": -10.0,
-              "u_extent": 1.57079633
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                70.0,
-                0.0,
-                -20.0
-              ],
-              "diameter": 30.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 20.0,
-              "s_lo": -20.0,
-              "u_extent": 4.78801661
-            }
-          ],
-          []
-        ],
-        "double_d_bores": [],
-        "fillets": [
-          {
-            "_type": "Fillet",
-            "at": [
-              -18.828,
-              -13.828,
-              0.0
-            ],
-            "axis": "z",
-            "radius": 4.0,
-            "turned": false
-          },
-          {
-            "_type": "Fillet",
-            "at": [
-              -18.828,
-              13.828,
-              0.0
-            ],
-            "axis": "z",
-            "radius": 4.0,
-            "turned": false
-          },
-          {
-            "_type": "Fillet",
-            "at": [
-              18.828,
-              -13.828,
-              0.0
-            ],
-            "axis": "z",
-            "radius": 4.0,
-            "turned": false
-          },
-          {
-            "_type": "Fillet",
-            "at": [
-              18.828,
-              13.828,
-              0.0
-            ],
-            "axis": "z",
-            "radius": 4.0,
-            "turned": false
-          }
-        ],
-        "flats": [
-          {
-            "_type": "Flat",
-            "across": 26.0,
-            "at": [
-              70.0,
-              11.0,
+              -19.941,
+              -14.941,
               0.0
             ],
             "axis": "z",
@@ -245,16 +26,143 @@
               0.0,
               1.0
             ],
-            "axis_line": [
-              70.0,
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "at": [
+              -19.941,
+              14.941,
               0.0
             ],
-            "stock_span": [
-              -20.0,
-              20.0
-            ]
+            "axis": "z",
+            "axis_direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "at": [
+              19.941,
+              -14.941,
+              0.0
+            ],
+            "axis": "z",
+            "axis_direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "at": [
+              19.941,
+              14.941,
+              0.0
+            ],
+            "axis": "z",
+            "axis_direction": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 0.2,
+            "side": "convex"
           }
         ],
+        "bosses": [],
+        "chamfers": [],
+        "channels": [],
+        "circular_blind_steps": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -19.8,
+                -14.8,
+                -10.0
+              ],
+              "diameter": 0.4,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 10.0,
+              "s_lo": -10.0,
+              "u_extent": 1.57079633
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                -19.8,
+                14.8,
+                -10.0
+              ],
+              "diameter": 0.4,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 10.0,
+              "s_lo": -10.0,
+              "u_extent": 1.57079633
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                19.8,
+                -14.8,
+                -10.0
+              ],
+              "diameter": 0.4,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 10.0,
+              "s_lo": -10.0,
+              "u_extent": 1.57079633
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                19.8,
+                14.8,
+                -10.0
+              ],
+              "diameter": 0.4,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 10.0,
+              "s_lo": -10.0,
+              "u_extent": 1.57079633
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
         "grooves": [],
         "hole_patterns": [],
         "holes": [],
@@ -285,8 +193,8 @@
           {
             "_type": "Blend",
             "at": [
-              -18.828,
-              -13.828,
+              -19.941,
+              -14.941,
               0.0
             ],
             "axis": "z",
@@ -295,14 +203,14 @@
               0.0,
               1.0
             ],
-            "radius": 4.0,
+            "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
             "at": [
-              -18.828,
-              13.828,
+              -19.941,
+              14.941,
               0.0
             ],
             "axis": "z",
@@ -311,14 +219,14 @@
               0.0,
               1.0
             ],
-            "radius": 4.0,
+            "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
             "at": [
-              18.828,
-              -13.828,
+              19.941,
+              -14.941,
               0.0
             ],
             "axis": "z",
@@ -327,14 +235,14 @@
               0.0,
               1.0
             ],
-            "radius": 4.0,
+            "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
             "at": [
-              18.828,
-              13.828,
+              19.941,
+              14.941,
               0.0
             ],
             "axis": "z",
@@ -343,27 +251,11 @@
               0.0,
               1.0
             ],
-            "radius": 4.0,
+            "radius": 0.2,
             "side": "convex"
           }
         ],
-        "bosses": [
-          {
-            "_type": "BossRecord",
-            "axis": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "diameter": 30.0,
-            "height": 40.0,
-            "location": [
-              70.0,
-              0.0,
-              20.0
-            ]
-          }
-        ],
+        "bosses": [],
         "chamfers": [],
         "channels": [],
         "circular_blind_steps": [],
@@ -373,11 +265,11 @@
             {
               "axis": "z",
               "axis_xyz": [
-                -16.0,
-                -11.0,
+                -19.8,
+                -14.8,
                 -10.0
               ],
-              "diameter": 8.0,
+              "diameter": 0.4,
               "dir_xyz": [
                 0.0,
                 0.0,
@@ -391,11 +283,11 @@
             {
               "axis": "z",
               "axis_xyz": [
-                -16.0,
-                11.0,
+                -19.8,
+                14.8,
                 -10.0
               ],
-              "diameter": 8.0,
+              "diameter": 0.4,
               "dir_xyz": [
                 0.0,
                 0.0,
@@ -409,11 +301,11 @@
             {
               "axis": "z",
               "axis_xyz": [
-                16.0,
-                -11.0,
+                19.8,
+                -14.8,
                 -10.0
               ],
-              "diameter": 8.0,
+              "diameter": 0.4,
               "dir_xyz": [
                 0.0,
                 0.0,
@@ -427,11 +319,11 @@
             {
               "axis": "z",
               "axis_xyz": [
-                16.0,
-                11.0,
+                19.8,
+                14.8,
                 -10.0
               ],
-              "diameter": 8.0,
+              "diameter": 0.4,
               "dir_xyz": [
                 0.0,
                 0.0,
@@ -441,55 +333,13 @@
               "s_hi": 10.0,
               "s_lo": -10.0,
               "u_extent": 1.57079633
-            },
-            {
-              "axis": "z",
-              "axis_xyz": [
-                70.0,
-                0.0,
-                -20.0
-              ],
-              "diameter": 30.0,
-              "dir_xyz": [
-                0.0,
-                0.0,
-                1.0
-              ],
-              "external": true,
-              "s_hi": 20.0,
-              "s_lo": -20.0,
-              "u_extent": 4.78801661
             }
           ],
           []
         ],
         "double_d_bores": [],
         "fillets": [],
-        "flats": [
-          {
-            "_type": "Flat",
-            "across": 26.0,
-            "at": [
-              70.0,
-              11.0,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "axis_line": [
-              70.0,
-              0.0
-            ],
-            "stock_span": [
-              -20.0,
-              20.0
-            ]
-          }
-        ],
+        "flats": [],
         "grooves": [],
         "hole_patterns": [],
         "holes": [],
@@ -516,14 +366,14 @@
     },
     "feature_census": {
       "angled_step": 0,
-      "blend": 0,
-      "boss": 1,
-      "chamfer": 4,
+      "blend": 4,
+      "boss": 0,
+      "chamfer": 0,
       "channel": 0,
       "circular_blind_step": 0,
       "countersink": 0,
-      "fillet": 4,
-      "flat": 1,
+      "fillet": 0,
+      "flat": 0,
       "groove": 0,
       "hole": 0,
       "hole_pattern": 0,
@@ -544,8 +394,8 @@
         {
           "_type": "Blend",
           "at": [
-            -18.828,
-            -13.828,
+            -19.941,
+            -14.941,
             0.0
           ],
           "axis": "z",
@@ -554,14 +404,14 @@
             0.0,
             1.0
           ],
-          "radius": 4.0,
+          "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
           "at": [
-            -18.828,
-            13.828,
+            -19.941,
+            14.941,
             0.0
           ],
           "axis": "z",
@@ -570,14 +420,14 @@
             0.0,
             1.0
           ],
-          "radius": 4.0,
+          "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
           "at": [
-            18.828,
-            -13.828,
+            19.941,
+            -14.941,
             0.0
           ],
           "axis": "z",
@@ -586,14 +436,14 @@
             0.0,
             1.0
           ],
-          "radius": 4.0,
+          "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
           "at": [
-            18.828,
-            13.828,
+            19.941,
+            14.941,
             0.0
           ],
           "axis": "z",
@@ -602,81 +452,12 @@
             0.0,
             1.0
           ],
-          "radius": 4.0,
+          "radius": 0.2,
           "side": "convex"
         }
       ],
-      "recognise_bosses": [
-        {
-          "_type": "BossRecord",
-          "axis": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "diameter": 30.0,
-          "height": 40.0,
-          "location": [
-            70.0,
-            0.0,
-            20.0
-          ]
-        }
-      ],
-      "recognise_chamfers": [
-        {
-          "_type": "Chamfer",
-          "angle": 45.0,
-          "at": [
-            -88.5,
-            -13.5,
-            0.0
-          ],
-          "axis": "z",
-          "leg1": 3.0,
-          "leg2": 3.0,
-          "turned": false
-        },
-        {
-          "_type": "Chamfer",
-          "angle": 45.0,
-          "at": [
-            -88.5,
-            13.5,
-            0.0
-          ],
-          "axis": "z",
-          "leg1": 3.0,
-          "leg2": 3.0,
-          "turned": false
-        },
-        {
-          "_type": "Chamfer",
-          "angle": 45.0,
-          "at": [
-            -51.5,
-            -13.5,
-            0.0
-          ],
-          "axis": "z",
-          "leg1": 3.0,
-          "leg2": 3.0,
-          "turned": false
-        },
-        {
-          "_type": "Chamfer",
-          "angle": 45.0,
-          "at": [
-            -51.5,
-            13.5,
-            0.0
-          ],
-          "axis": "z",
-          "leg1": 3.0,
-          "leg2": 3.0,
-          "turned": false
-        }
-      ],
+      "recognise_bosses": [],
+      "recognise_chamfers": [],
       "recognise_channels": [],
       "recognise_circular_blind_steps": [],
       "recognise_countersinks": [],
@@ -685,30 +466,6 @@
         {
           "_type": "FaceLevel",
           "x_span": [
-            55.0,
-            85.0
-          ],
-          "y_span": [
-            -15.0,
-            11.0
-          ],
-          "z": -20.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -90.0,
-            -50.0
-          ],
-          "y_span": [
-            -15.0,
-            15.0
-          ],
-          "z": -10.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
             -20.0,
             20.0
           ],
@@ -721,18 +478,6 @@
         {
           "_type": "FaceLevel",
           "x_span": [
-            -90.0,
-            -50.0
-          ],
-          "y_span": [
-            -15.0,
-            15.0
-          ],
-          "z": 10.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
             -20.0,
             20.0
           ],
@@ -741,91 +486,10 @@
             15.0
           ],
           "z": 10.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            55.0,
-            85.0
-          ],
-          "y_span": [
-            -15.0,
-            11.0
-          ],
-          "z": 20.0
         }
       ],
-      "recognise_fillets": [
-        {
-          "_type": "Fillet",
-          "at": [
-            -18.828,
-            -13.828,
-            0.0
-          ],
-          "axis": "z",
-          "radius": 4.0,
-          "turned": false
-        },
-        {
-          "_type": "Fillet",
-          "at": [
-            -18.828,
-            13.828,
-            0.0
-          ],
-          "axis": "z",
-          "radius": 4.0,
-          "turned": false
-        },
-        {
-          "_type": "Fillet",
-          "at": [
-            18.828,
-            -13.828,
-            0.0
-          ],
-          "axis": "z",
-          "radius": 4.0,
-          "turned": false
-        },
-        {
-          "_type": "Fillet",
-          "at": [
-            18.828,
-            13.828,
-            0.0
-          ],
-          "axis": "z",
-          "radius": 4.0,
-          "turned": false
-        }
-      ],
-      "recognise_flats": [
-        {
-          "_type": "Flat",
-          "across": 26.0,
-          "at": [
-            70.0,
-            11.0,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "axis_line": [
-            70.0,
-            0.0
-          ],
-          "stock_span": [
-            -20.0,
-            20.0
-          ]
-        }
-      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
       "recognise_grooves": [],
       "recognise_hole_patterns": [],
       "recognise_holes": [],
@@ -853,11 +517,11 @@
           {
             "axis": "z",
             "axis_xyz": [
-              -16.0,
-              -11.0,
+              -19.8,
+              -14.8,
               -10.0
             ],
-            "diameter": 8.0,
+            "diameter": 0.4,
             "dir_xyz": [
               0.0,
               0.0,
@@ -871,11 +535,11 @@
           {
             "axis": "z",
             "axis_xyz": [
-              -16.0,
-              11.0,
+              -19.8,
+              14.8,
               -10.0
             ],
-            "diameter": 8.0,
+            "diameter": 0.4,
             "dir_xyz": [
               0.0,
               0.0,
@@ -889,11 +553,11 @@
           {
             "axis": "z",
             "axis_xyz": [
-              16.0,
-              -11.0,
+              19.8,
+              -14.8,
               -10.0
             ],
-            "diameter": 8.0,
+            "diameter": 0.4,
             "dir_xyz": [
               0.0,
               0.0,
@@ -907,11 +571,11 @@
           {
             "axis": "z",
             "axis_xyz": [
-              16.0,
-              11.0,
+              19.8,
+              14.8,
               -10.0
             ],
-            "diameter": 8.0,
+            "diameter": 0.4,
             "dir_xyz": [
               0.0,
               0.0,
@@ -921,59 +585,20 @@
             "s_hi": 10.0,
             "s_lo": -10.0,
             "u_extent": 1.57079633
-          },
-          {
-            "axis": "z",
-            "axis_xyz": [
-              70.0,
-              0.0,
-              -20.0
-            ],
-            "diameter": 30.0,
-            "dir_xyz": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "external": true,
-            "s_hi": 20.0,
-            "s_lo": -20.0,
-            "u_extent": 4.78801661
           }
         ],
         []
       ],
-      "feature_diameters": [
-        30.0
-      ],
+      "feature_diameters": [],
       "full_cylinders": [
-        [
-          {
-            "axis": "z",
-            "axis_xyz": [
-              70.0,
-              0.0,
-              -20.0
-            ],
-            "diameter": 30.0,
-            "dir_xyz": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "external": true,
-            "s_hi": 20.0,
-            "s_lo": -20.0,
-            "u_extent": 4.78801661
-          }
-        ],
+        [],
         []
       ],
       "step_level_records": []
     }
   },
   "source": {
-    "commit": "3fe20b0f71a71deced06b310943dd44cc66e355e",
-    "repository": "https://github.com/pzfreo/draftwright.git"
+    "commit": "428da55",
+    "repository": "https://github.com/pzfreo/b123d-recognisers.git"
   }
 }

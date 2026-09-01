@@ -45,22 +45,22 @@ def test_checked_in_rigid_motion_evidence_is_current(report) -> None:
 def test_rigid_motion_baseline_separates_absence_from_reclassification(report) -> None:
     assert report["totals"] == {
         "Z30": {
-            "baseline_records": 81,
-            "retained_same_family": 36,
-            "reclassified": 14,
-            "absent": 31,
+            "baseline_records": 85,
+            "retained_same_family": 40,
+            "reclassified": 18,
+            "absent": 27,
             "introduced": 0,
         },
         "X30": {
-            "baseline_records": 81,
-            "retained_same_family": 30,
-            "reclassified": 7,
-            "absent": 44,
+            "baseline_records": 85,
+            "retained_same_family": 34,
+            "reclassified": 11,
+            "absent": 40,
             "introduced": 0,
         },
         "X90": {
-            "baseline_records": 81,
-            "retained_same_family": 81,
+            "baseline_records": 85,
+            "retained_same_family": 85,
             "reclassified": 0,
             "absent": 0,
             "introduced": 0,

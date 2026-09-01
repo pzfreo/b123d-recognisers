@@ -89,6 +89,14 @@ FAMILIES = {
         "census": "boss",
         "goldens": ["simple_through_hole", "turned_steps_and_grooves"],
     },
+    "blends": {
+        "recognisers": [("recognise_blends", "part")],
+        "records": [("Blend", "output", ["RecognitionResult.blends"])],
+        "census": "blend",
+        "goldens": ["small_convex_blends"],
+        "introduced": "0.4.11",
+        "tests": ["tests/test_blends.py", "tests/test_blend_view.py"],
+    },
     "chamfers": {
         "recognisers": [("recognise_chamfers", "part")],
         "records": [("Chamfer", "output", ["RecognitionResult.chamfers"])],
