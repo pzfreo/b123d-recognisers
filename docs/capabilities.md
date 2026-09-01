@@ -397,7 +397,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Rectangular blind step | Pocket | a floored recess open at one edge reads as a corner notch |
 | Rectangular / Triangular / 6-sided passage | Passage | one family, three shapes, not distinguished |
 | Triangular blind step | AngledStep | |
-| Chamfer | Chamfer | |
+| Chamfer | Chamfer; Countersink | broad dataset bevel class includes external planar/principal conical chamfers and internal conical hole-mouth seats; complete PrismaticPocket records are not mapped from isolated labelled slanted faces |
 | Round | Fillet | |
 | Circular blind step | CircularBlindStep | one physical occurrence owns its cylindrical wall and blind terminal; an overlapping Fillet is reconciled away |
 | Horizontal circular end blind slot | RoundBottomBlindSlot | conservative principal-axis, edge-open, one-cap constant U-section subset |
