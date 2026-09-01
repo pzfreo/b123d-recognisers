@@ -156,6 +156,13 @@ output files do not make a commit claim misleading and remain compatible with at
 creation. Issue #405 records the historical artifact that exposed this boundary; it remains
 immutable but is not authoritative for its claimed taxonomy revision.
 
+The face-to-label adapter boundary has a separate cross-process guard: an asymmetric STEP fixture
+assigns distinct `ADVANCED_FACE` labels, imports it in independent Python processes, and requires
+the same label/area/centroid/normal pairing. The two fresh 500-model runs that diagnosed #405 also
+produced exactly equal model evidence after removing only runtime and commit metadata. Together
+these distinguish stable imported face pairing from the taxonomy/commit provenance race that
+invalidated the historical artifact.
+
 Effectiveness report format version 2 added per-class `covered_faces` evidence and the derived
 `face_coverage` ratio over defining evidence. Version 3 changes that numerator to exact accepted
 constituent evidence after #368; defining-face fields and their semantics are unchanged. Historical

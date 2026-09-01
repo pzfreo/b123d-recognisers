@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +14,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from build123d import Box, Cylinder, GeomType
+from build123d import Box, Cylinder, GeomType, export_step
 
 import tools.run_effectiveness_baseline as baseline_runner
 from b123d_recognisers._candidates import FamilyId
@@ -78,6 +79,53 @@ def test_mfcadpp_adapter_reads_only_advanced_face_names(tmp_path: Path) -> None:
     assert truth.instances == ()
     assert truth.bottom is None
     assert len(truth.source_sha256) == 64
+
+
+def test_mfcadpp_face_label_pairing_is_stable_across_processes(tmp_path: Path) -> None:
+    step = tmp_path / "asymmetric-box.step"
+    export_step(Box(7, 11, 13), step)
+    next_label = iter(range(6))
+    labelled, count = re.subn(
+        r"ADVANCED_FACE\('[^']*'",
+        lambda _match: f"ADVANCED_FACE('{next(next_label)}'",
+        step.read_text(encoding="utf-8"),
+    )
+    assert count == 6
+    step.write_text(labelled, encoding="utf-8")
+    script = """
+import json
+import sys
+from build123d import import_step
+from tools.effectiveness_report import load_mfcadpp_truth
+
+truth = load_mfcadpp_truth(__import__('pathlib').Path(sys.argv[1]))
+part = import_step(truth.step_path)
+signature = []
+for label, face in zip(truth.semantic, part.faces(), strict=True):
+    center = face.center()
+    normal = face.normal_at()
+    signature.append([
+        label,
+        round(face.area, 9),
+        [round(value, 9) for value in center],
+        [round(value, 9) for value in normal],
+    ])
+print(json.dumps(signature, sort_keys=True))
+"""
+
+    outputs = [
+        subprocess.run(
+            [sys.executable, "-c", script, str(step)],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        ).stdout
+        for _ in range(2)
+    ]
+
+    assert outputs[0] == outputs[1]
 
 
 def test_mfcadpp_adapter_rejects_missing_labels(tmp_path: Path) -> None:
