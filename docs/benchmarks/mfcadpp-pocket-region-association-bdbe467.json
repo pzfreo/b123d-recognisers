@@ -67,8 +67,8 @@
       "non_target_faces_in_regions": 42,
       "regions": 211,
       "target_faces_in_regions": 679,
-      "unique_accepted_occurrence_regions": 103,
-      "unique_component_and_occurrence_regions": 102,
+      "unique_accepted_occurrence_regions": 95,
+      "unique_component_and_occurrence_regions": 94,
       "unique_component_regions": 209
     },
     "3": {
@@ -81,8 +81,8 @@
       "non_target_faces_in_regions": 54,
       "regions": 212,
       "target_faces_in_regions": 951,
-      "unique_accepted_occurrence_regions": 104,
-      "unique_component_and_occurrence_regions": 101,
+      "unique_accepted_occurrence_regions": 103,
+      "unique_component_and_occurrence_regions": 100,
       "unique_component_regions": 207
     },
     "4": {
@@ -95,8 +95,8 @@
       "non_target_faces_in_regions": 53,
       "regions": 214,
       "target_faces_in_regions": 1446,
-      "unique_accepted_occurrence_regions": 103,
-      "unique_component_and_occurrence_regions": 98,
+      "unique_accepted_occurrence_regions": 99,
+      "unique_component_and_occurrence_regions": 94,
       "unique_component_regions": 201
     }
   },
@@ -579,9 +579,9 @@
     },
     "pockets": {
       "accepted_occurrences": 533,
-      "multiply_touched_occurrences": 23,
+      "multiply_touched_occurrences": 4,
       "touched_occurrences": 335,
-      "touched_once_occurrences": 312
+      "touched_once_occurrences": 331
     },
     "prismatic_pockets": {
       "accepted_occurrences": 325,
@@ -592,7 +592,7 @@
   },
   "format": "b123d-recognisers-mfcadpp-cavity-enclosure-audit",
   "format_version": 1,
-  "implementation_commit": "b2e2203f1e2f7cf82fe70c255a68abf288108646",
+  "implementation_commit": "bdbe467c72d0a2062c0d89dec7000f5e6bb19386",
   "labels_used_in_region_construction": false,
   "models": [
     {
@@ -1721,8 +1721,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 11,
-              "constituent_overlap": 11,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -1769,21 +1769,12 @@
           "target_class_tie": false,
           "target_faces": 11,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 11,
-              "constituent_overlap": 6,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 4,
@@ -1812,7 +1803,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 6,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -3197,8 +3188,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 8,
-              "constituent_overlap": 8,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -3242,21 +3233,12 @@
           "target_class_tie": false,
           "target_faces": 8,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 8,
-              "constituent_overlap": 3,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -3282,7 +3264,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -4841,16 +4823,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 10,
-              "constituent_overlap": 6,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 4,
@@ -4879,7 +4852,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 6,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -4888,8 +4861,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 10,
-              "constituent_overlap": 10,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -4935,7 +4908,7 @@
           "target_class_tie": false,
           "target_faces": 10,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -4943,8 +4916,8 @@
           "accepted_associations": [
             {
               "accepted": 4,
-              "constituent_faces": 8,
-              "constituent_overlap": 8,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -4988,21 +4961,12 @@
           "target_class_tie": false,
           "target_faces": 8,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 4,
-              "constituent_faces": 8,
-              "constituent_overlap": 3,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -5028,7 +4992,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -13477,8 +13441,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 11,
-              "constituent_overlap": 11,
+              "constituent_faces": 4,
+              "constituent_overlap": 4,
               "defining_faces": 3,
               "defining_overlap": 3,
               "family": "pockets"
@@ -13525,21 +13489,12 @@
           "target_class_tie": false,
           "target_faces": 11,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 11,
-              "constituent_overlap": 3,
-              "defining_faces": 3,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -13565,7 +13520,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -23824,16 +23779,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 7,
-              "constituent_overlap": 1,
-              "defining_faces": 3,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [],
           "dominant_target_class": null,
           "face_indices": [
@@ -23850,7 +23796,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 0,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -23859,8 +23805,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 7,
-              "constituent_overlap": 7,
+              "constituent_faces": 4,
+              "constituent_overlap": 4,
               "defining_faces": 3,
               "defining_overlap": 3,
               "family": "pockets"
@@ -23897,7 +23843,7 @@
           "target_class_tie": false,
           "target_faces": 6,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": true,
           "whole_body": false
         },
@@ -31780,8 +31726,8 @@
           "accepted_associations": [
             {
               "accepted": 3,
-              "constituent_faces": 12,
-              "constituent_overlap": 12,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -31829,21 +31775,12 @@
           "target_class_tie": true,
           "target_faces": 12,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 3,
-              "constituent_faces": 12,
-              "constituent_overlap": 6,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 4,
@@ -31872,7 +31809,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 6,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -33456,16 +33393,7 @@
       "model_id": "11131",
       "regions": [
         {
-          "accepted_associations": [
-            {
-              "accepted": 1,
-              "constituent_faces": 13,
-              "constituent_overlap": 1,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [],
           "dominant_target_class": null,
           "face_indices": [
@@ -33482,7 +33410,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 0,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -33491,8 +33419,8 @@
           "accepted_associations": [
             {
               "accepted": 1,
-              "constituent_faces": 13,
-              "constituent_overlap": 13,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -33548,7 +33476,7 @@
           "target_class_tie": false,
           "target_faces": 9,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -46179,16 +46107,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 12,
-              "constituent_overlap": 6,
-              "defining_faces": 3,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 4,
@@ -46217,7 +46136,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 6,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -46226,8 +46145,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 12,
-              "constituent_overlap": 12,
+              "constituent_faces": 4,
+              "constituent_overlap": 4,
               "defining_faces": 3,
               "defining_overlap": 3,
               "family": "pockets"
@@ -46275,7 +46194,7 @@
           "target_class_tie": true,
           "target_faces": 12,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -47703,8 +47622,8 @@
           "accepted_associations": [
             {
               "accepted": 1,
-              "constituent_faces": 10,
-              "constituent_overlap": 10,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -47751,21 +47670,12 @@
           "target_class_tie": false,
           "target_faces": 8,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 1,
-              "constituent_faces": 10,
-              "constituent_overlap": 4,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -47793,7 +47703,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -49466,16 +49376,7 @@
       "model_id": "11731",
       "regions": [
         {
-          "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 6,
-              "constituent_overlap": 1,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [],
           "dominant_target_class": null,
           "face_indices": [
@@ -49492,7 +49393,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 0,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -49501,8 +49402,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 6,
-              "constituent_overlap": 6,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -49538,7 +49439,7 @@
           "target_class_tie": false,
           "target_faces": 5,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": true,
           "whole_body": false
         },
@@ -56766,8 +56667,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 8,
-              "constituent_overlap": 8,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -56811,21 +56712,12 @@
           "target_class_tie": false,
           "target_faces": 8,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 8,
-              "constituent_overlap": 3,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -56851,7 +56743,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -58416,16 +58308,7 @@
       "model_id": "12134",
       "regions": [
         {
-          "accepted_associations": [
-            {
-              "accepted": 4,
-              "constituent_faces": 7,
-              "constituent_overlap": 1,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [],
           "dominant_target_class": null,
           "face_indices": [
@@ -58442,7 +58325,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 0,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -58451,8 +58334,8 @@
           "accepted_associations": [
             {
               "accepted": 4,
-              "constituent_faces": 7,
-              "constituent_overlap": 7,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -58489,7 +58372,7 @@
           "target_class_tie": false,
           "target_faces": 6,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": true,
           "whole_body": false
         },
@@ -63412,16 +63295,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 1,
-              "constituent_faces": 10,
-              "constituent_overlap": 4,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 3,
@@ -63448,7 +63322,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 4,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -63457,8 +63331,8 @@
           "accepted_associations": [
             {
               "accepted": 1,
-              "constituent_faces": 10,
-              "constituent_overlap": 10,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -63504,7 +63378,7 @@
           "target_class_tie": false,
           "target_faces": 10,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -64455,16 +64329,7 @@
       "model_id": "12328",
       "regions": [
         {
-          "accepted_associations": [
-            {
-              "accepted": 1,
-              "constituent_faces": 9,
-              "constituent_overlap": 3,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -64490,7 +64355,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -64499,8 +64364,8 @@
           "accepted_associations": [
             {
               "accepted": 1,
-              "constituent_faces": 9,
-              "constituent_overlap": 9,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -64545,7 +64410,7 @@
           "target_class_tie": false,
           "target_faces": 9,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -65316,8 +65181,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 10,
-              "constituent_overlap": 10,
+              "constituent_faces": 4,
+              "constituent_overlap": 4,
               "defining_faces": 3,
               "defining_overlap": 3,
               "family": "pockets"
@@ -65377,14 +65242,6 @@
         },
         {
           "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 10,
-              "constituent_overlap": 4,
-              "defining_faces": 3,
-              "defining_overlap": 0,
-              "family": "pockets"
-            },
             {
               "accepted": 3,
               "constituent_faces": 6,
@@ -65448,7 +65305,7 @@
           "solid_proved": true,
           "target_class_tie": true,
           "target_faces": 18,
-          "unique_accepted_occurrence": false,
+          "unique_accepted_occurrence": true,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -67459,16 +67316,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 9,
-              "constituent_overlap": 3,
-              "defining_faces": 5,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -67494,7 +67342,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -67503,8 +67351,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 9,
-              "constituent_overlap": 9,
+              "constituent_faces": 6,
+              "constituent_overlap": 6,
               "defining_faces": 5,
               "defining_overlap": 5,
               "family": "pockets"
@@ -67549,7 +67397,7 @@
           "target_class_tie": false,
           "target_faces": 9,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
@@ -73435,8 +73283,8 @@
           "accepted_associations": [
             {
               "accepted": 2,
-              "constituent_faces": 9,
-              "constituent_overlap": 9,
+              "constituent_faces": 4,
+              "constituent_overlap": 4,
               "defining_faces": 3,
               "defining_overlap": 3,
               "family": "pockets"
@@ -73481,21 +73329,12 @@
           "target_class_tie": false,
           "target_faces": 9,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": false,
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 2,
-              "constituent_faces": 9,
-              "constituent_overlap": 3,
-              "defining_faces": 3,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [
             {
               "class_id": 2,
@@ -73521,7 +73360,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 3,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": true,
           "whole_body": false
@@ -74045,8 +73884,8 @@
           "accepted_associations": [
             {
               "accepted": 1,
-              "constituent_faces": 9,
-              "constituent_overlap": 9,
+              "constituent_faces": 3,
+              "constituent_overlap": 3,
               "defining_faces": 2,
               "defining_overlap": 2,
               "family": "pockets"
@@ -74085,7 +73924,7 @@
           "target_class_tie": false,
           "target_faces": 5,
           "unique_accepted_occurrence": true,
-          "unique_bidirectional_accepted_occurrence": false,
+          "unique_bidirectional_accepted_occurrence": true,
           "unique_component": true,
           "whole_body": false
         },
@@ -74113,16 +73952,7 @@
           "whole_body": false
         },
         {
-          "accepted_associations": [
-            {
-              "accepted": 1,
-              "constituent_faces": 9,
-              "constituent_overlap": 1,
-              "defining_faces": 2,
-              "defining_overlap": 0,
-              "family": "pockets"
-            }
-          ],
+          "accepted_associations": [],
           "components": [],
           "dominant_target_class": null,
           "face_indices": [
@@ -74139,7 +73969,7 @@
           "solid_proved": true,
           "target_class_tie": false,
           "target_faces": 0,
-          "unique_accepted_occurrence": true,
+          "unique_accepted_occurrence": false,
           "unique_bidirectional_accepted_occurrence": false,
           "unique_component": false,
           "whole_body": false
@@ -77181,7 +77011,7 @@
   "production_source": {
     "python_files": 68,
     "root": "src/b123d_recognisers",
-    "sha256": "93c7640fe0bc5157cfcd821030c90d5728273381db1658c050bef28f78ed3159"
+    "sha256": "2a7a12458dbc882ccb8b354be3636f31ed4f3b7ab18fc587dde0138c27828571"
   },
   "rates": {
     "accepted_occurrence_reach": {
@@ -77211,11 +77041,11 @@
     },
     "unique_component_and_occurrence": {
       "denominator": 1987,
-      "numerator": 885,
-      "value": 0.44539506794162054
+      "numerator": 872,
+      "value": 0.43885254151987924
     }
   },
-  "runtime_seconds": 384.85108877602033,
+  "runtime_seconds": 419.648113097006,
   "selection": {
     "limit": 500,
     "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
@@ -77224,7 +77054,7 @@
   "summary": {
     "accepted_occurrences": 1140,
     "accepted_occurrences_touched": 942,
-    "accepted_occurrences_touched_once": 908,
+    "accepted_occurrences_touched_once": 927,
     "ambiguous_target_class_regions": 11,
     "class_pure_target_regions": 1130,
     "fragmented_components": 79,
@@ -77241,9 +77071,9 @@
     "target_faces": 6661,
     "target_region_faces": 6801,
     "touched_target_components": 1288,
-    "unique_accepted_occurrence_regions": 919,
-    "unique_bidirectional_accepted_regions": 872,
-    "unique_component_and_occurrence_regions": 885,
+    "unique_accepted_occurrence_regions": 902,
+    "unique_bidirectional_accepted_regions": 890,
+    "unique_component_and_occurrence_regions": 872,
     "unique_component_regions": 1237,
     "unique_target_faces_reached": 6532,
     "whole_body_regions": 0
