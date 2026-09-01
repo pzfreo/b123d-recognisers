@@ -65,6 +65,7 @@ SHARED = {
     "paired_ramp_step": "paired_ramp_steps",
     "through_step": "through_steps",
     "circular_blind_step": "circular_blind_steps",
+    "blend": "blends",
     "fillet": "fillets",
     "countersink": "countersinks",
     "plate": "plates",
