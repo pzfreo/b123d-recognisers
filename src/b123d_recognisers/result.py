@@ -38,6 +38,7 @@ from b123d_recognisers._features import (
 from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
     reconcile_circular_step_fillets,
+    reconcile_profiled_bore_candidates,
     reconcile_recess_candidates,
     reconcile_step_groove_candidates,
 )
@@ -578,6 +579,11 @@ def _reconcile_existing(
     decisions += reconcile_circular_step_fillets(
         physical.candidate_set(FamilyId.FILLETS),
         physical.candidate_set(FamilyId.CIRCULAR_BLIND_STEPS),
+        evidence,
+    )
+    decisions += reconcile_profiled_bore_candidates(
+        physical.candidate_set(FamilyId.HOLES),
+        physical.candidate_set(FamilyId.DOUBLE_D_BORES),
         evidence,
     )
     decisions += reconcile_step_groove_candidates(

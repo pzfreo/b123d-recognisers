@@ -230,6 +230,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     )
     monkeypatch.setattr(
         result_module,
+        "reconcile_profiled_bore_candidates",
+        fake_policy("reconcile_profiled_bores"),
+    )
+    monkeypatch.setattr(
+        result_module,
         "reconcile_step_groove_candidates",
         fake_policy("reconcile_step_grooves"),
     )
@@ -266,6 +271,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "reconcile_recesses",
         "reconcile_bevels",
         "reconcile_circular_step_fillets",
+        "reconcile_profiled_bores",
         "reconcile_step_grooves",
         "diagnose_residuals",
         "cylinders",

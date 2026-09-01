@@ -153,16 +153,14 @@ def test_classification_distinguishes_not_applicable_from_evaluated_empty() -> N
 
 
 def test_public_closed_values_match_private_authority() -> None:
-    assert {item.value for item in r.ReconciliationReason} == {
-        item.value for item in ReasonCode
-    }
-    assert {item.value for item in r.RecognitionOutcome} == {item.value for item in Outcome}
-    assert {item.value for item in r.RecognitionDiagnosticCode} == {
-        item.value for item in DiagnosticCode
-    }
-    assert {item.value for item in r.RecognitionDiagnosticStatus} == {
-        item.value for item in DiagnosticStatus
-    }
+    def exact_members(enum_type):
+        assert len(enum_type.__members__) == len(enum_type)
+        return {name: member.value for name, member in enum_type.__members__.items()}
+
+    assert exact_members(r.ReconciliationReason) == exact_members(ReasonCode)
+    assert exact_members(r.RecognitionOutcome) == exact_members(Outcome)
+    assert exact_members(r.RecognitionDiagnosticCode) == exact_members(DiagnosticCode)
+    assert exact_members(r.RecognitionDiagnosticStatus) == exact_members(DiagnosticStatus)
 
 
 def test_public_report_executes_the_inventory_once(monkeypatch) -> None:

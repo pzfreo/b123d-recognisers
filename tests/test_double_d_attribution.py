@@ -31,9 +31,11 @@ from build123d import (
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
+from b123d_recognisers import build_recognition_report, recognise_holes
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._dispositions import Outcome, ReasonCode
 from b123d_recognisers.profiled_bores import (
     _discover_double_d_bores,
     _valid_wall_chain_facts,
@@ -443,6 +445,12 @@ def _plate():
     return Box(30, 30, 10, align=_CENTRE) - _tool()
 
 
+def _duplicate_hole_plate():
+    return Box(30, 30, 12, align=_CENTRE) - (
+        Cylinder(4, 20, align=_CENTRE) & Box(6, 30, 30, align=_CENTRE)
+    )
+
+
 def _claimed(part):
     public = recognise_double_d_bores(part)
     ledger = ClaimLedger(FaceGraph(part))
@@ -848,6 +856,76 @@ def test_aggregate_inventory_publishes_terminal_double_d_wall_evidence() -> None
     assert product.accepted.candidate_set(FamilyId.DOUBLE_D_BORES).candidates == candidates
     assert len(candidates) == 1
     assert len(product.evidence.defining_of(candidates[0])) == 4
+
+
+def test_aggregate_rejects_partial_circular_reading_of_same_double_d_boundary() -> None:
+    part = _duplicate_hole_plate()
+    product = _take_inventory(part)
+    holes = product.physical.candidate_set(FamilyId.HOLES).candidates
+    double_d = product.physical.candidate_set(FamilyId.DOUBLE_D_BORES).candidates
+
+    assert len(recognise_holes(part)) == len(holes) == len(double_d) == 1
+    assert product.result.holes == ()
+    assert len(product.result.double_d_bores) == 1
+    assert product.result.hole_patterns == ()
+    assert product.evidence.defining_of(holes[0]) < product.evidence.defining_of(double_d[0])
+    disposition = next(
+        item for item in product.reconciliation.dispositions if item.candidate is holes[0]
+    )
+    assert disposition.outcome is Outcome.REJECTED
+    assert disposition.reason is ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE
+    assert disposition.related == double_d
+
+    hole_report = next(
+        family for family in build_recognition_report(part).families if family.family == "holes"
+    )
+    assert (hole_report.proposed, hole_report.accepted, hole_report.rejected) == (1, 0, 1)
+    assert hole_report.dispositions[0].reason.value == (
+        "bore.hole_superseded_by_double_d_bore"
+    )
+    assert hole_report.dispositions[0].related_occurrences == 1
+
+
+def test_double_d_precedence_keeps_a_disjoint_ordinary_hole_on_the_same_solid() -> None:
+    part = _duplicate_hole_plate() - Pos(10, 0, 0) * Cylinder(2, 20, align=_CENTRE)
+    product = _take_inventory(part)
+    proposed_holes = product.physical.candidate_set(FamilyId.HOLES).candidates
+    accepted_holes = product.accepted.candidate_set(FamilyId.HOLES).candidates
+    (double_d,) = product.physical.candidate_set(FamilyId.DOUBLE_D_BORES).candidates
+
+    assert len(proposed_holes) == 2
+    assert len(accepted_holes) == len(product.result.holes) == 1
+    assert product.evidence.defining_of(accepted_holes[0]).isdisjoint(
+        product.evidence.defining_of(double_d)
+    )
+    rejected = [
+        item
+        for item in product.reconciliation.dispositions
+        if item.reason is ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE
+    ]
+    assert len(rejected) == 1
+    assert rejected[0].related == (double_d,)
+
+
+def test_double_d_precedence_keeps_equal_diameter_hole_on_another_solid() -> None:
+    circular = Box(30, 30, 12, align=_CENTRE) - Cylinder(4, 20, align=_CENTRE)
+    part = Compound(
+        [Pos(-25, 0, 0) * _duplicate_hole_plate(), Pos(25, 0, 0) * circular]
+    )
+    product = _take_inventory(part)
+    proposed_holes = product.physical.candidate_set(FamilyId.HOLES).candidates
+    accepted_holes = product.accepted.candidate_set(FamilyId.HOLES).candidates
+    (double_d,) = product.physical.candidate_set(FamilyId.DOUBLE_D_BORES).candidates
+
+    assert len(proposed_holes) == 2
+    assert len(accepted_holes) == len(product.result.holes) == 1
+    assert product.evidence.defining_of(accepted_holes[0]).isdisjoint(
+        product.evidence.defining_of(double_d)
+    )
+    assert sum(
+        item.reason is ReasonCode.HOLE_SUPERSEDED_BY_DOUBLE_D_BORE
+        for item in product.reconciliation.dispositions
+    ) == 1
 
 
 @pytest.mark.parametrize(
