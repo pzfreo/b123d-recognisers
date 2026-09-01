@@ -500,10 +500,16 @@ def test_framed_plate_maximum_thickness_tie_is_rigid_motion_covariant() -> None:
     assert isinstance(baseline, FramedRecognitionResult)
     assert isinstance(presented, FramedRecognitionResult)
 
-    def plate_keys(result: FramedRecognitionResult):
-        return tuple((plate.axis, plate.lo, plate.hi) for plate in result.result.plates)
-
-    assert plate_keys(baseline) == plate_keys(presented) == (("x", -10.357, -0.357),)
+    (baseline_plate,) = baseline.result.plates
+    (presented_plate,) = presented.result.plates
+    assert (baseline_plate.axis, baseline_plate.lo, baseline_plate.hi) == (
+        presented_plate.axis,
+        presented_plate.lo,
+        presented_plate.hi,
+    ) == ("x", -10.357, -0.357)
+    assert (baseline_plate.u, baseline_plate.v) == pytest.approx(
+        (presented_plate.u, presented_plate.v), abs=1e-9
+    )
     assert baseline.result.through_steps == presented.result.through_steps
     (baseline_level,) = baseline.result.step_levels
     (presented_level,) = presented.result.step_levels
