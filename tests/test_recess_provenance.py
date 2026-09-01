@@ -7,17 +7,19 @@ import inspect
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
+from itertools import permutations
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from build123d import Box, Compound, Cylinder, Edge, Pos, export_step, import_step
+from build123d import Box, Compound, Cylinder, Edge, Pos, Rot, export_step, import_step
 from OCP.BRepFeat import BRepFeat_SplitShape
 
 from b123d_recognisers import recognise_pockets, recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
@@ -31,6 +33,8 @@ from b123d_recognisers._recess_faces import (
     _planar_faces,
 )
 from b123d_recognisers._recess_obround import (
+    _CAP_CLUSTER_FRAC,
+    _compatible_end_groups,
     _extend_obround_ends,
     _extend_obround_proposals,
     _obround_end,
@@ -86,6 +90,57 @@ def test_stubby_pocket_dual_read_retains_caps_without_publishing_them() -> None:
     (proposal,) = proposals
     assert proposal.planar == frozenset()
     assert len(proposal.caps) == 2
+
+
+@pytest.mark.parametrize(("angle", "expected"), [(2.1, 1), (2.2, 0)])
+def test_near_principal_cap_centerlines_use_scaled_pairing_boundary(
+    angle: float, expected: int
+) -> None:
+    tool = Rot(0, 0, angle) * _obround(1, 1, 8)
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * tool
+    graph = FaceGraph(part)
+    ends = [end for end in _obround_ends(part, graph) if end[2] == "z"]
+
+    assert len(ends) == 2
+    delta = abs(ends[0][4] - ends[1][4])
+    tolerance = length_tol(ends[0][3], rel=_CAP_CLUSTER_FRAC)
+    assert (delta <= tolerance) is bool(expected)
+    assert len(_pocket_proposals_one(part, graph=graph)) == expected
+
+
+def test_fuzzy_centerline_pairing_is_limited_to_stubby_recesses() -> None:
+    """End recovery must not duplicate an elongated recess already found from its walls."""
+
+    def end(*, center: float, flat: float, direction: int) -> tuple:
+        return ("y", "x", "z", 1.0, center, flat, direction, 4.0, 12.0, frozenset())
+
+    # Both pairs straddle the legacy two-decimal centre bucket while remaining within the
+    # radius-scaled cap tolerance. Only the pair whose straight run is no longer than its width
+    # belongs to the end-only recovery path.
+    stubby = [
+        end(center=0.004, flat=-0.5, direction=-1),
+        end(center=0.006, flat=0.5, direction=1),
+    ]
+    elongated = [
+        end(center=25.529956, flat=12.0169, direction=-1),
+        end(center=25.541459, flat=17.2992, direction=1),
+    ]
+
+    assert tuple(map(len, _compatible_end_groups(stubby))) == (2,)
+    assert tuple(map(len, _compatible_end_groups(elongated))) == (1, 1)
+
+
+def test_fuzzy_centerline_pairing_refuses_a_shared_partner() -> None:
+    """Uniqueness belongs to both ends; traversal order cannot select one of two low caps."""
+
+    ends = [
+        ("y", "x", "z", 1.0, 0.004, -0.5, -1, 4.0, 12.0, frozenset()),
+        ("y", "x", "z", 1.0, 0.014, 0.5, 1, 4.0, 12.0, frozenset()),
+        ("y", "x", "z", 1.0, 0.024, -0.4, -1, 4.0, 12.0, frozenset()),
+    ]
+
+    for ordered in permutations(ends):
+        assert tuple(map(len, _compatible_end_groups(list(ordered)))) == (1, 1, 1)
 
 
 @pytest.mark.parametrize(
@@ -273,9 +328,10 @@ def test_legacy_reducer_geometric_measurement_boundaries() -> None:
 
     assert _prism_material_fraction(spans, IntersectionPart(None), inset=0) == 0.0
     assert _prism_material_fraction(spans, IntersectionPart(Volume(4.0)), inset=0) == 0.5
-    assert _prism_material_fraction(
-        spans, IntersectionPart([Volume(1.0), Volume(3.0)]), inset=0
-    ) == 0.5
+    assert (
+        _prism_material_fraction(spans, IntersectionPart([Volume(1.0), Volume(3.0)]), inset=0)
+        == 0.5
+    )
     with pytest.raises(ValueError, match="positive extent"):
         _prism_material_fraction({**spans, "x": (1.0, 1.0)}, IntersectionPart(None))
     assert (

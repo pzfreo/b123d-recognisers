@@ -180,6 +180,80 @@ _OBROUND_RATIO_TOL = 0.1  # a half-cylinder's in-plane extents are 2r (across) /
 _CAP_CLUSTER_FRAC = 0.075
 
 
+def _compatible_end_groups(ends: list[tuple]) -> tuple[tuple[tuple, ...], ...]:
+    """Extend legacy decimal groups only for a lost stubby opposing pair.
+
+    Existing exact rounded-centre groups remain byte-for-byte authoritative. Imported or
+    near-principal caps can place the two ends of one stubby recess on opposite sides of a decimal
+    boundary, however. Merge exactly two singleton groups only when the existing radius-scaled cap
+    authority says their centrelines agree *and* their opposed flats retain the documented stubby
+    span (straight run no longer than the width). The latter prevents end recovery from duplicating
+    an elongated wall-derived Pocket.
+    """
+
+    legacy: dict[tuple, list[tuple]] = {}
+    for end in ends:
+        wa, la, da, rad, wc, _flat, _direction, d_lo, d_hi, _patches = end
+        key = (
+            wa,
+            la,
+            da,
+            round(rad, 2),
+            round(wc, 2),
+            round(d_lo, 2),
+            round(d_hi, 2),
+        )
+        legacy.setdefault(key, []).append(end)
+
+    groups = [tuple(group) for group in legacy.values()]
+    partners: dict[int, list[tuple[int, tuple, tuple]]] = {}
+    for index, group in enumerate(groups):
+        if len(group) != 1:
+            continue
+        for other_index in range(index + 1, len(groups)):
+            other = groups[other_index]
+            if len(other) != 1:
+                continue
+            low, high = sorted((group[0], other[0]), key=lambda end: end[5])
+            radius = round(low[3], 2)
+            tolerance = length_tol(radius, rel=_CAP_CLUSTER_FRAC)
+            base_matches = (
+                low[0:3] == high[0:3]
+                and round(low[3], 2) == round(high[3], 2)
+                and round(low[7], 2) == round(high[7], 2)
+                and round(low[8], 2) == round(high[8], 2)
+            )
+            if (
+                base_matches
+                and abs(low[4] - high[4]) <= tolerance
+                and low[6] == -1
+                and high[6] == 1
+                and high[5] - low[5] <= 2 * radius + tolerance
+            ):
+                partners.setdefault(index, []).append((other_index, low, high))
+                partners.setdefault(other_index, []).append((index, low, high))
+
+    out: list[tuple[tuple, ...]] = []
+    consumed: set[int] = set()
+    for index, group in enumerate(groups):
+        if index in consumed:
+            continue
+        if len(group) != 1:
+            out.append(group)
+            continue
+        matches = partners.get(index, [])
+        # A pair is admissible only when both ends name each other as their sole partner. Multiple
+        # plausible partners are ambiguous topology, not authority to choose the nearest or first
+        # traversal occurrence. Preserve every legacy bucket and let recognition refuse.
+        if len(matches) == 1 and len(partners.get(matches[0][0], [])) == 1:
+            other_index, low, high = matches[0]
+            consumed.add(other_index)
+            out.append((low, high))
+        else:
+            out.append(group)
+    return tuple(out)
+
+
 def _obround_end(cap: tuple, patches: frozenset[FaceNode] = frozenset()) -> tuple | None:
     """Classify a concave cylinder *cap* (from :func:`_cylinder_faces`) as a half-cylinder obround
     end, or None. A half-cylinder end's in-plane bounding box is ≈ 2r across (its width axis) by
@@ -306,17 +380,15 @@ def _recognise_obround_from_ends(
     The two flats must be more than ``_MERGE_TOL`` apart to count as distinct ends — so a genuinely
     sub-millimetre obround (straight run < 0.5 mm) is not recovered; supporting that would need the
     module-wide absolute ``_MERGE_TOL`` to go relative, out of scope here."""
-    groups: dict[tuple, list[tuple]] = {}
-    for e in _obround_ends(part, graph):
-        wa, la, da, rad, wc, flat, direction, dlo, dhi, _patches = e
-        key = (wa, la, da, round(rad, 2), round(wc, 2), round(dlo, 2), round(dhi, 2))
-        groups.setdefault(key, []).append(e)
     # The list is homogeneous per call -- `blind` decides which record kind is appended -- but
     # that is a fact about the flag, not about this local, so the overloads above carry it and
     # the local is typed as what it structurally is.
     out: list[Slot | Pocket] = []
     proposed: list[_RecessProposal] = []
-    for (wa, la, _da, rad, wc, dlo, dhi), grp in groups.items():
+    for grp in _compatible_end_groups(_obround_ends(part, graph)):
+        wa, la, _da, raw_rad, _wc, _flat, _direction, raw_dlo, raw_dhi, _patches = grp[0]
+        rad, dlo, dhi = round(raw_rad, 2), round(raw_dlo, 2), round(raw_dhi, 2)
+        wc = round(sum(end[4] for end in grp) / len(grp), 2)
         run = sorted(grp, key=lambda e: e[5])  # by flat along the long axis
         i = 0
         while i < len(run) - 1:
@@ -367,9 +439,7 @@ def _recognise_obround_from_ends(
                 )
                 out.append(record)
                 selected_floor = floor_ends[0] if floor_ends[0] else floor_ends[1]
-                floors = frozenset(
-                    face.node for face in selected_floor if face.node is not None
-                )
+                floors = frozenset(face.node for face in selected_floor if face.node is not None)
                 proposed.append(
                     _RecessProposal(
                         record,
