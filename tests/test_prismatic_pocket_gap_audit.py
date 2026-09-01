@@ -5,7 +5,17 @@
 from __future__ import annotations
 
 import pytest
-from build123d import Box, BuildPart, BuildSketch, Plane, RegularPolygon, Rot, extrude
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Compound,
+    Plane,
+    Pos,
+    RegularPolygon,
+    Rot,
+    extrude,
+)
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._rings import rings
@@ -70,6 +80,26 @@ def test_probe_is_axis_covariant() -> None:
     assert first_probe.first_failed_gate == second_probe.first_failed_gate == "recognisable"
     assert first_probe.axis != second_probe.axis
     assert first_probe.span_members == second_probe.span_members == 6
+
+
+def test_separate_bodies_keep_distinct_recognisable_pockets() -> None:
+    first = Box(60, 40, 20) - _hexagonal_tool(depth=10)
+    second = Pos(100, 0, 0) * first
+    compound = Compound(children=[first, second])
+    graph = FaceGraph(compound)
+    found = tuple(rings(compound, graph))
+
+    assert len(found) == 2
+    components = [
+        frozenset((*ring.nodes, *ring.cap_nodes[0], *ring.cap_nodes[1])) for ring in found
+    ]
+    assert all(
+        _probe_component(compound, graph, component).first_failed_gate == "recognisable"
+        for component in components
+    )
+    owners = [graph.common_valid_solid(component) for component in components]
+    assert None not in owners
+    assert owners[0] != owners[1]
 
 
 def test_selection_hashes_pin_order_and_source_content() -> None:
