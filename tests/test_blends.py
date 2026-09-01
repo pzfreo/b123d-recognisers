@@ -10,8 +10,11 @@ import pytest
 from build123d import Axis, Box, Compound, Cylinder, Pos, Rot, fillet
 
 from b123d_recognisers import Blend, feature_census, recognise_blends
+from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._dispositions import Outcome, ReasonCode
+from b123d_recognisers._reconcile import reconcile_blend_candidates
 from b123d_recognisers.evidence import build_recognition_evidence
 from b123d_recognisers.result import _take_inventory
 
@@ -73,6 +76,30 @@ def test_direct_convex_chains_are_superseded_by_dimension_worthy_fillets() -> No
     assert all(item.outcome is Outcome.REJECTED for item in decisions)
     assert all(item.reason is ReasonCode.BLEND_SUPERSEDED_BY_FILLET for item in decisions)
     assert all(item.related for item in decisions)
+
+
+def test_only_an_accepted_fillet_can_supersede_a_blend() -> None:
+    graph = FaceGraph(Box(10, 10, 10))
+    ledger = ClaimLedger(graph)
+    node = graph.nodes[0]
+    blend = ledger.propose(FamilyId.BLENDS, object(), (node,))
+    fillet = ledger.propose(FamilyId.FILLETS, object(), (node,))
+    evidence = ledger.snapshot_index()
+    blends = evidence.candidate_set(FamilyId.BLENDS)
+    fillets = evidence.candidate_set(FamilyId.FILLETS)
+
+    accepted_decisions = reconcile_blend_candidates(blends, fillets, evidence)
+    rejected_decisions = reconcile_blend_candidates(
+        blends,
+        fillets,
+        evidence,
+        rejected_fillets=frozenset((fillet,)),
+    )
+
+    assert len(accepted_decisions) == 1
+    assert accepted_decisions[0].candidate is blend
+    assert accepted_decisions[0].reason is ReasonCode.BLEND_SUPERSEDED_BY_FILLET
+    assert rejected_decisions == ()
 
 
 def test_small_convex_chains_remain_public_with_exact_face_evidence() -> None:
@@ -166,8 +193,9 @@ def test_sharp_stock_and_full_cylinder_are_not_blends() -> None:
 
 
 def test_face_traversal_order_does_not_change_records(monkeypatch) -> None:
-    part = _internal()
+    part = _external(0.2)
     baseline = _rounded_signature(part)
+    assert len(baseline) == 4
     part_type = type(part)
     real_faces = part_type.faces
 

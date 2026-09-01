@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[1]
 PACKAGE = ROOT / "src" / "b123d_recognisers"
 
 PUBLIC_MODULES = {
+    "blends",
     "angled_steps",
     "capabilities",
     "census",
@@ -95,6 +96,16 @@ MODULE_SEAM_EDGES = {
         "_adjacency",
         "_candidates",
         "_claims",
+        "_geometry",
+        "_record",
+        "_typing",
+    },
+    "blends": {
+        "_adjacency",
+        "_blend_view",
+        "_candidates",
+        "_claims",
+        "_effective_surfaces",
         "_geometry",
         "_record",
         "_typing",
@@ -246,6 +257,7 @@ MODULE_SEAM_EDGES = {
         "_run",
         "_typing",
         "angled_steps",
+        "blends",
         "chamfers",
         "circular_blind_steps",
         "countersinks",
@@ -968,9 +980,10 @@ def test_internal_module_seams_match_adr_0007() -> None:
     assert crossings == {}
 
 
-def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
+def test_neutral_blend_view_has_exactly_the_reviewed_consumers() -> None:
     graph = _package_import_graph()
     assert {module for module, dependencies in graph.items() if "_blend_view" in dependencies} == {
+        "blends",
         "experimental_geometry"
     }
     assert {
@@ -982,7 +995,7 @@ def test_neutral_blend_view_has_exactly_the_reviewed_f3b_consumer() -> None:
     )
 
 
-def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
+def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> None:
     def resolver(aliases: dict[str, str]):
         def qualified(node: ast.expr) -> str:
             if isinstance(node, ast.Name):
@@ -1169,6 +1182,7 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
     }
     forbidden_reexports: set[tuple[str, str]] = set()
     exempt = {
+        "blends.py",
         "experimental_geometry.py",
         "inspection.py",
         "_run.py",
@@ -1188,6 +1202,8 @@ def test_f3b_blend_index_and_view_have_one_production_call_site_each() -> None:
                 forbidden_reexports.add((path.name, node.attr))
     assert forbidden_reexports == set()
     assert calls == {
+        ("blends.py", "BlendCollapseIndex"),
+        ("blends.py", "EffectiveSurfaceIndex"),
         ("experimental_geometry.py", "BlendCollapseIndex"),
         ("experimental_geometry.py", "BlendCollapseIndex.view"),
         ("experimental_geometry.py", "CollapsedGraphView.expand_arc"),
