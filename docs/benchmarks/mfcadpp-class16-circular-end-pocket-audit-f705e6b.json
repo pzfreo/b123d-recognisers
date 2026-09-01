@@ -6544,12 +6544,12 @@
   "derivation": "connected same-label original faces under shared-edge adjacency",
   "format": "b123d-recognisers-mfcadpp-circular-end-pocket-gap-audit",
   "format_version": 1,
-  "implementation_commit": "9171a7412f79fa2846699f823e794c324d0ac7c3",
+  "implementation_commit": "f705e6bf3d0cf0a2b286f668b7035e66f2c29fcf",
   "native_instance_labels": false,
   "production_sources": {
     "src/b123d_recognisers/_recess_core.py": "237c3bef44f931f9025ddb84bed123ff28a053cc62bdc2f167e3ac4ff66a5770",
     "src/b123d_recognisers/_recess_faces.py": "dcc4fd4c8fd6cc11086f51c1496ae808bdc4708807f370feeb57d277f126240d",
-    "src/b123d_recognisers/_recess_obround.py": "144a9775cbc3218ce2d178b4ef87263d998946407432e9fee5c8077ac35e4c7e"
+    "src/b123d_recognisers/_recess_obround.py": "039560c82fec08b54ade9ab8f48a3bcbb283b1c18ec391ff951a1135a32b8450"
   },
   "selection": {
     "limit": 500,

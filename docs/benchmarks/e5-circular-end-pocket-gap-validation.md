@@ -9,9 +9,9 @@ imported centreline estimates straddle the historical two-decimal grouping bound
 
 The immutable component audits are the
 [parent](mfcadpp-class16-circular-end-pocket-audit-parent-ad27678.json) and
-[implementation](mfcadpp-class16-circular-end-pocket-audit-9171a74.json) reports. Their SHA-256
+[implementation](mfcadpp-class16-circular-end-pocket-audit-f705e6b.json) reports. Their SHA-256
 digests are respectively `7ee3ace622ca4b58ada6a9e49100ebe35d25a2d222cabebee52825743693ce26`
-and `ebe0d7b9b22c4bfb006c2407ef9a8d271d7f13e81a735a16a8f6836e7334e24d`.
+and `9325c9733356ae4cdf78a83ed388ee3891c744317121d8e912667b48f81a18b7`.
 Both pin the audit implementation, production source digests, exact lexical selection, and every
 selected STEP-file digest.
 
@@ -24,9 +24,9 @@ uv run python tools/audit_mfcadpp_circular_end_pocket_gaps.py \
 
 The exact taxonomy-v8 aggregate reports are likewise the
 [parent](effectiveness-mfcadpp-500-obround-centerline-parent-9bb925f.json) and
-[implementation](effectiveness-mfcadpp-500-obround-centerline-9171a74.json), with SHA-256 digests
+[implementation](effectiveness-mfcadpp-500-obround-centerline-f705e6b.json), with SHA-256 digests
 `928905f039a83ab2d7675c8f1f414cf3890958f8d64eb5f2703f3b58694baa4b` and
-`cc6543b25356389c746b9fee3fb070db5e026adc7c6ebb6594ef5afe48042318`.
+`30a64c3671367cb12ec5949f98794987635fd1fed5a0039492c0c45662fc06e6`.
 
 ## Complete denominator and failure anatomy
 
@@ -75,7 +75,7 @@ failure categories. Only models 11124 and 12229 change in normalized aggregate r
 and every other model are unchanged. Direct exact-source comparison additionally proves that every
 pre-existing Pocket in 12229 retains its byte/value/order projection; one new Pocket is inserted.
 
-| Metric | Parent `9bb925f` | Implementation `9171a74` | Delta |
+| Metric | Parent `9bb925f` | Implementation `f705e6b` | Delta |
 | --- | ---: | ---: | ---: |
 | Physical Pockets | 543 | 545 | +2 |
 | Class-16 mapped records | 162 | 164 | +2 |
@@ -83,8 +83,8 @@ pre-existing Pocket in 12229 retains its byte/value/order projection; one new Po
 | Class-16 face coverage | 667/973 (68.55%) | 673/973 (69.17%) | +6 faces |
 | Supported/partial face coverage | 8,369/11,244 (74.43%) | 8,375/11,244 (74.48%) | +6 faces |
 | All-status face coverage | 9,125/15,170 (60.15%) | 9,131/15,170 (60.19%) | +6 faces |
-| Total runtime | 278.06 s | 288.40 s | 1.037x |
-| Median model runtime | 0.5240 s | 0.5451 s | 1.040x |
+| Total runtime | 278.06 s | 283.30 s | 1.019x |
+| Median model runtime | 0.5240 s | 0.5353 s | 1.022x |
 
 The two added Pocket defining sets also enter the precision denominator of every class mapped to
 Pocket; only class 16 gains matching faces. This is expected many-to-many scorer accounting, not a
