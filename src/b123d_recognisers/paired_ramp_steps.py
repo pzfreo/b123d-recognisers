@@ -2,9 +2,9 @@
 # Copyright 2024-2026 Paul Fremantle
 """Conservative recognition of a two-ramp through step cut into a stock side.
 
-This family deliberately starts with the unfragmented, mirror-symmetric case.  Two oblique
-planar quadrilaterals meet along the run axis, share one convex exterior opening and one concave
-planar terminal, and belong to one valid solid. The terminal boundary may be independently
+This family deliberately starts with one original mirror-symmetric planar pair. Two oblique
+planar faces meet along the run axis, share one convex exterior opening and one concave planar
+terminal, and belong to one valid solid. A ramp or terminal boundary may be independently
 subdivided while its face identity and ramp arcs remain complete. Polygonal pockets have
 superficially similar adjacency; the paired cross-section, arc directions and terminal contract
 discriminate geometry, while rigid axis permutations deliberately remain equivalent.
@@ -92,8 +92,6 @@ def _candidate(
 
     shared = graph.shared_edges(left, right)
     if len(shared) != 1 or shared[0].geom_type != GeomType.LINE:
-        return None
-    if len(graph.edges(left)) != 4 or len(graph.edges(right)) != 4:
         return None
     try:
         tangent = shared[0].tangent_at()
