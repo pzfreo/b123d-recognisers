@@ -137,16 +137,30 @@ def test_two_mouth_fallback_publishes_exact_constituent_membership() -> None:
     assert evidence.defining_of(candidate) <= evidence.constituent_of(candidate)
 
 
-def test_two_mouth_fallback_refuses_blind_circular_and_branched_voids() -> None:
+def test_two_mouth_fallback_refuses_blind_and_circular_voids() -> None:
     import b123d_recognisers._section_passages as module
 
     blind = Box(60, 50, 20) - _polygonal_tool(6, depth=10)
     circular = Box(60, 50, 20) - Cylinder(7, 60)
-    branched = Box(60, 50, 20) - Box(16, 12, 60) - Box(60, 8, 6)
 
-    for part in (blind, circular, branched):
+    for part in (blind, circular):
         graph = FaceGraph(part)
         assert module._enclosure_proposals(graph, module._BodyAdapter()) == ()
+
+
+def test_two_mouth_fallback_adds_no_occurrence_to_existing_crossed_cycles() -> None:
+    import b123d_recognisers._section_passages as module
+
+    branched = Box(60, 50, 20) - Box(16, 12, 60) - Box(60, 8, 6)
+    graph = FaceGraph(branched)
+
+    fallback = module._enclosure_proposals(graph, module._BodyAdapter())
+    final = section_ring_proposals(branched, graph)
+
+    assert {frozenset(proposal.nodes) for proposal in fallback} == {
+        frozenset(proposal.nodes) for proposal in final
+    }
+    assert all(not proposal.constituent for proposal in final)
 
 
 @pytest.mark.parametrize("sides", (3, 4, 6))

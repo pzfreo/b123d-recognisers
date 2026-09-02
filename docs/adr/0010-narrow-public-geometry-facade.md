@@ -191,6 +191,11 @@ This exception recovers a physical Passage whose wall spans no longer form the h
 span cycle. It does not publish a cavity traversal API, infer ownership after recognition, admit a
 one-ended pocket or circular bore, or let constituent membership affect reconciliation.
 
+Issue #450 clarifies that exact mouth topology may be used inside this pre-Candidate proof. The
+section corners are the shared vertices of consecutive ordered wire edges, rather than the
+unordered unique-vertex enumeration returned by `Wire.vertices()`. Public records, original-face
+evidence, ownership authority, and the facade boundary are unchanged.
+
 ## Amendment (public oriented Slot projection, issue #310)
 
 `OrientedSlot.source` does not expose the private section graph. It nests the already supported
