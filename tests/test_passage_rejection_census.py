@@ -35,9 +35,13 @@ def _gates(part) -> list[str]:
     mouths = dict(_mouth_regions(graph))
     fallback = _enclosure_proposals(graph, _BodyAdapter())
     fallback_by_region = {proposal.constituent: proposal for proposal in fallback}
+    final = section_ring_proposals(part, graph)
+    existing_regions = frozenset(
+        frozenset(proposal.nodes) for proposal in final if not proposal.constituent
+    )
     final_regions = frozenset(
         proposal.constituent
-        for proposal in section_ring_proposals(part, graph)
+        for proposal in final
         if proposal.constituent
     )
     return [
@@ -46,6 +50,7 @@ def _gates(part) -> list[str]:
             region,
             mouths.get(region),
             fallback_by_region,
+            existing_regions,
             final_regions,
         )
         for region, _openings in _two_ended_regions(graph)

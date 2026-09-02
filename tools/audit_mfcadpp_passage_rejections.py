@@ -65,10 +65,13 @@ def _classify_region(
     region: frozenset[FaceNode],
     mouths: tuple[Mouth, ...] | None,
     fallback_by_region: dict[frozenset[FaceNode], Any],
+    existing_cycle_regions: frozenset[frozenset[FaceNode]],
     final_fallback_regions: frozenset[frozenset[FaceNode]],
 ) -> str:
     """Mirror the production fallback and return its first failed gate."""
 
+    if region in existing_cycle_regions:
+        return "duplicate_or_existing_cycle"
     if mouths is None or len(mouths) != 2:
         return "planar_mouth_seed"
     (first_opening, first_wire, _first_seed), (
@@ -170,6 +173,9 @@ def main() -> int:
         fallback = _enclosure_proposals(graph, _BodyAdapter())
         fallback_by_region = {proposal.constituent: proposal for proposal in fallback}
         final = section_ring_proposals(part, graph)
+        existing_cycle_regions = frozenset(
+            frozenset(proposal.nodes) for proposal in final if not proposal.constituent
+        )
         final_fallback_regions = frozenset(
             proposal.constituent for proposal in final if proposal.constituent
         )
@@ -194,6 +200,7 @@ def main() -> int:
                 region,
                 matched_mouths,
                 fallback_by_region,
+                existing_cycle_regions,
                 final_fallback_regions,
             )
             labels = Counter(truth.semantic[node.index] for node in region)
