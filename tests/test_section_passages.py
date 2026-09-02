@@ -212,6 +212,58 @@ def test_authored_polygonal_passages_cover_distinct_planar_terminations(
     assert record.ends.high_gradient == pytest.approx(expected[1], abs=1e-6)
 
 
+def test_sloped_passage_is_covariant_and_scale_preserves_end_gradients() -> None:
+    source = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    original = recognise_section_passages(source)[0]
+    rotated = Rot(17, 23, 31) * source
+    moved = Pos(17, -9, 4) * rotated
+    scaled = rotated.scale(2.5)
+
+    rotated_record = recognise_section_passages(rotated)[0]
+    moved_record = recognise_section_passages(moved)[0]
+    scaled_record = recognise_section_passages(scaled)[0]
+
+    assert moved_record.ends == rotated_record.ends
+    assert scaled_record.ends == rotated_record.ends
+    assert sorted(
+        math.hypot(*value)
+        for value in (moved_record.ends.low_gradient, moved_record.ends.high_gradient)
+    ) == pytest.approx(
+        sorted(
+            math.hypot(*value)
+            for value in (original.ends.low_gradient, original.ends.high_gradient)
+        ),
+        abs=1e-6,
+    )
+    assert scaled_record.run_interval == pytest.approx(
+        tuple(value * 2.5 for value in rotated_record.run_interval),
+        abs=0.002,
+    )
+
+
+def test_sloped_passage_publishes_walls_only_as_defining_and_constituent_evidence() -> None:
+    part = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    ledger = ClaimLedger(FaceGraph(part))
+
+    records = recognise_section_passages(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    evidence = ledger.snapshot_index()
+
+    assert candidate.record is records[0]
+    assert len(evidence.defining_of(candidate)) == 6
+    assert evidence.constituent_of(candidate) == evidence.defining_of(candidate)
+
+
+def test_sloped_passage_survives_step_round_trip(tmp_path) -> None:
+    source = Rot(17, 23, 31) * (Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6))
+    path = tmp_path / "sloped-end-passage.step"
+
+    assert export_step(source, path)
+    imported = import_step(path)
+
+    assert recognise_section_passages(imported) == recognise_section_passages(source)
+
+
 @dataclass(frozen=True)
 class _RawPassageOracle:
     walls: tuple[Face, ...]
@@ -406,9 +458,7 @@ def test_same_legacy_defining_set_cannot_issue_competing_rich_records(monkeypatc
     from b123d_recognisers._section_passages import section_ring_proposals
 
     part = Rot(17, 23, 31) * (
-        Box(80, 40, 20)
-        - Pos(-20, 0, 0) * Box(8, 8, 60)
-        - Pos(20, 0, 0) * Box(12, 6, 60)
+        Box(80, 40, 20) - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
     )
     graph = FaceGraph(part)
     first, second = section_ring_proposals(part, graph)

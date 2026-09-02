@@ -302,6 +302,10 @@ class SectionPassage(Record):
             raise ValueError("section must be a PassageSection")
         if not isinstance(self.ends, PassageEnds) or self.ends.low_capped or self.ends.high_capped:
             raise ValueError("SectionPassage must be open at both ends")
+        if (self.ends.low_gradient != (0.0, 0.0) or self.ends.high_gradient != (0.0, 0.0)) and any(
+            vertex.bulge != 0.0 for vertex in self.section.boundary
+        ):
+            raise ValueError("sloped passage terminations require a line-only section")
         if any(
             interval[0]
             + self.ends.low_gradient[0] * vertex.point[0]
@@ -464,8 +468,7 @@ def _discover_section_passages(
             )
             if proposal.solid is other_solid and same_nodes:
                 if record != other_record or (
-                    compatibility.issued_snapshot()
-                    != other_compatibility.issued_snapshot()
+                    compatibility.issued_snapshot() != other_compatibility.issued_snapshot()
                 ):
                     raise ValueError("one passage defining set produced competing records")
                 duplicate = True

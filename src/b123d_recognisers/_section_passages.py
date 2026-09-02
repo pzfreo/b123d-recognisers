@@ -188,9 +188,9 @@ def _bounded_inner_region(
 def _mouth_regions(
     graph: FaceGraph,
 ) -> tuple[tuple[frozenset[FaceNode], tuple[tuple[FaceNode, Wire, frozenset[FaceNode]], ...]], ...]:
-    by_region: dict[
-        frozenset[FaceNode], list[tuple[FaceNode, Wire, frozenset[FaceNode]]]
-    ] = defaultdict(list)
+    by_region: dict[frozenset[FaceNode], list[tuple[FaceNode, Wire, frozenset[FaceNode]]]] = (
+        defaultdict(list)
+    )
     for opening in graph.nodes:
         if not graph.is_planar(opening):
             continue
@@ -202,9 +202,7 @@ def _mouth_regions(
                 or not all(graph.arc(opening, node) == "convex" for node in seed)
             ):
                 continue
-            by_region[_bounded_inner_region(graph, opening, seed)].append(
-                (opening, wire, seed)
-            )
+            by_region[_bounded_inner_region(graph, opening, seed)].append((opening, wire, seed))
     return tuple(
         (region, tuple(sorted(mouths, key=lambda item: item[0].index)))
         for region, mouths in sorted(
@@ -241,8 +239,7 @@ def _line_section(wire: Wire, base: LocalFrame) -> tuple[PlanarSection, Vector3]
         )
         centre = raw.centroid
         world_centre = tuple(
-            centre[0] * base.u[index] + centre[1] * base.v[index]
-            for index in range(3)
+            centre[0] * base.u[index] + centre[1] * base.v[index] for index in range(3)
         )
         section = PlanarSection(
             tuple(
@@ -286,8 +283,7 @@ def _wall_run(graph: FaceGraph, region: frozenset[FaceNode]) -> Vector3 | None:
     if any(not _parallel(candidate, run) for candidate in runs):
         return None
     if any(
-        (normal := graph.normal(node)) is None
-        or abs(_dot(normal, run)) > _DIRECTION_TOL
+        (normal := graph.normal(node)) is None or abs(_dot(normal, run)) > _DIRECTION_TOL
         for node in region
     ):
         return None
@@ -386,16 +382,13 @@ def _void_and_planar_open(
             section,
         )
         return _material_fraction(solid, inner) <= _MATERIAL_VOL_FRAC and all(
-            _material_fraction(solid, slab) <= _MATERIAL_VOL_FRAC
-            for slab in (low_slab, high_slab)
+            _material_fraction(solid, slab) <= _MATERIAL_VOL_FRAC for slab in (low_slab, high_slab)
         )
     except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return False
 
 
-def _enclosure_proposals(
-    graph: FaceGraph, bodies: _BodyAdapter
-) -> tuple[SectionRingProposal, ...]:
+def _enclosure_proposals(graph: FaceGraph, bodies: _BodyAdapter) -> tuple[SectionRingProposal, ...]:
     proposals = []
     for region, mouths in _mouth_regions(graph):
         if len(mouths) != 2:
@@ -600,9 +593,9 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
     for face in part.faces():
         graph.require_node(face)
     planar = tuple(node for node in graph.nodes if graph.is_planar(node))
-    direction_pairs: dict[
-        tuple[float, float, float], list[tuple[FaceNode, FaceNode, Vector3]]
-    ] = defaultdict(list)
+    direction_pairs: dict[tuple[float, float, float], list[tuple[FaceNode, FaceNode, Vector3]]] = (
+        defaultdict(list)
+    )
     inspected_pairs: set[frozenset[FaceNode]] = set()
     for left in planar:
         for right in graph.neighbours(left):
