@@ -102,7 +102,9 @@ serialize identically cannot select different in-plane gauges.
 These are serialization-validation bounds, not recognition tolerances. Every vector and point is
 an exact-length JSON array (three and two elements respectively). Every numeric member must be a
 finite JSON number and not a boolean. `run_interval` contains exactly two numbers with
-`low < high`; end flags are actual JSON booleans; the boundary contains at least two vertices,
+`low < high`; each end gradient contains exactly two finite six-decimal numbers, and its two
+planes must not cross over the boundary. End flags are actual JSON booleans. A nonzero gradient
+currently requires a line-only boundary. The boundary contains at least two vertices,
 has distinct adjacent points, is simple, has positive signed line-and-arc area, and follows the
 canonical winding/start rules. Its analytic serialized centroid must be within `0.0008 mm` of
 `(0, 0)`. The rounded placement must satisfy

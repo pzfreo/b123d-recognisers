@@ -254,6 +254,17 @@ def test_sloped_passage_publishes_walls_only_as_defining_and_constituent_evidenc
     assert evidence.constituent_of(candidate) == evidence.defining_of(candidate)
 
 
+def test_sloped_passages_preserve_compound_multiplicity_and_presentation_order() -> None:
+    first = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    compound = Compound([first, Pos(100, 0, 0) * first])
+
+    expected = recognise_section_passages(compound)
+    reordered = recognise_section_passages(_ReversedFacesPart(compound))  # type: ignore[arg-type]
+
+    assert len(expected) == len(reordered) == 2
+    assert reordered == expected
+
+
 def test_sloped_passage_survives_step_round_trip(tmp_path) -> None:
     source = Rot(17, 23, 31) * (Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6))
     path = tmp_path / "sloped-end-passage.step"
@@ -922,4 +933,27 @@ def test_public_section_passage_refuses_crossing_termination_planes() -> None:
             (-1.0, 1.0),
             section,
             PassageEnds(False, False, (1.0, 0.0), (-1.0, 0.0)),
+        )
+
+
+def test_public_section_passage_refuses_curved_section_with_sloped_ends() -> None:
+    section = PassageSection(
+        (
+            PassageSectionVertex((-1.0, 0.0), 1.0),
+            PassageSectionVertex((1.0, 0.0), 1.0),
+        )
+    )
+    frame = PassageFrame(
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+    with pytest.raises(ValueError, match="sloped passage terminations require a line-only"):
+        SectionPassage(
+            frame,
+            (-1.0, 1.0),
+            section,
+            PassageEnds(False, False, (0.1, 0.0), (0.0, 0.0)),
         )

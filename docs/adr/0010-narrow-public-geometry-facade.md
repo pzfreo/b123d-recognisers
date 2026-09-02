@@ -196,6 +196,11 @@ section corners are the shared vertices of consecutive ordered wire edges, rathe
 unordered unique-vertex enumeration returned by `Wire.vertices()`. Public records, original-face
 evidence, ownership authority, and the facade boundary are unchanged.
 
+Issue #453 permits the same producer to derive a unique run from the planar wall junctions when
+the two opening stock faces are not parallel. Those faces supply only the two local termination
+plane equations added by ADR 0015; their identity remains consulted context and never crosses the
+facade. The defining and constituent evidence remains the exact original wall region.
+
 ## Amendment (public oriented Slot projection, issue #310)
 
 `OrientedSlot.source` does not expose the private section graph. It nests the already supported
