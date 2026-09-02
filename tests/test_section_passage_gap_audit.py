@@ -10,6 +10,7 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Compound,
+    Cylinder,
     Plane,
     Pos,
     RegularPolygon,
@@ -103,6 +104,30 @@ def test_two_mouth_enclosure_is_rigid_transform_covariant(sides: int) -> None:
     assert base[0].run_interval[1] - base[0].run_interval[0] == pytest.approx(
         transformed[0].run_interval[1] - transformed[0].run_interval[0]
     )
+
+
+def test_two_mouth_fallback_preserves_equal_compound_occurrences() -> None:
+    first = _interrupted_polygonal_passage(6)
+    compound = Compound([first, Pos(100, 0, 0) * first])
+    graph = FaceGraph(compound)
+
+    proposals = section_ring_proposals(compound, graph)
+
+    assert len(proposals) == 2
+    assert all(proposal.constituent for proposal in proposals)
+    assert proposals[0].solid is not proposals[1].solid
+
+
+def test_two_mouth_fallback_refuses_blind_circular_and_branched_voids() -> None:
+    import b123d_recognisers._section_passages as module
+
+    blind = Box(60, 50, 20) - _polygonal_tool(6, depth=10)
+    circular = Box(60, 50, 20) - Cylinder(7, 60)
+    branched = Box(60, 50, 20) - Box(16, 12, 60) - Box(60, 8, 6)
+
+    for part in (blind, circular, branched):
+        graph = FaceGraph(part)
+        assert module._enclosure_proposals(graph, module._BodyAdapter()) == ()
 
 
 @pytest.mark.parametrize("sides", (3, 4, 6))

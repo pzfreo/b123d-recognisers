@@ -8,6 +8,11 @@ F4b keeps section-ring discovery neutral. Passage policy alone requires two open
 neutral occurrence to the public record. Legacy principal-axis projection happens only after rich
 Passage reconciliation; it is not a shared reduction and cannot filter or create physical
 Candidates.
+
+Issue #446 keeps the polygonal-domain filters in the Passage producer: two opposed planar mouths,
+at least three planar wall seeds, matching line-only sections, one valid solid, and an empty open
+prism. The underlying enclosure walk is not a generic cavity admission filter and does not create
+Pocket, Hole, or other-family Candidates.
 - **Evidence:** [epic 0002](../epics/0002-one-substrate-before-more-recognisers.md), item 0
 
 ## Context

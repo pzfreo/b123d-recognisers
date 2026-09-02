@@ -178,6 +178,19 @@ constituent, and defining evidence is unchanged.
 This is physical run-local membership, not ownership or persistent identity. It publishes no
 adjacency, cavity API, graph type or durable face name.
 
+## Amendment (two-ended Passage enclosure, issue #446)
+
+The same restriction permits one Passage-specific discovery proof before Candidate issuance.
+Exactly two complete convex inner-wire mouths may seed the same concave-or-smooth region when both
+mouths have matching straight-edged polygonal sections, at least three original planar wall seeds,
+one valid solid, and the established empty-prism/open-end proof. The mouth-adjacent planar walls
+are defining evidence; the exact traversed region is constituent membership. The opening stock
+faces remain consulted context.
+
+This exception recovers a physical Passage whose wall spans no longer form the historical equal-
+span cycle. It does not publish a cavity traversal API, infer ownership after recognition, admit a
+one-ended pocket or circular bore, or let constituent membership affect reconciliation.
+
 ## Amendment (public oriented Slot projection, issue #310)
 
 `OrientedSlot.source` does not expose the private section graph. It nests the already supported
