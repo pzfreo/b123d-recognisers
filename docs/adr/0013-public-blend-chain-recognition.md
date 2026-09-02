@@ -122,3 +122,44 @@ chains, mixed radii/sides, toroidal and other unsupported surfaces remain outsid
 The change is motivated by downstream access to internal-round radius and face identity and by the
 aggregate transfer gap recorded on issue #440. Individual MFInstSeg geometry remains uninspected;
 MFCAD++ labels measure the result but do not decide whether proved rolling-ball geometry exists.
+
+## Amendment — explicit straight and circular rolling paths (issue #442)
+
+`Blend` schema version 3 replaces the cylindrical surface-axis fields with one discriminated path
+record before Draftwright or another known consumer adopts the family. A rolling-ball occurrence
+now contains `radius`, proved `side`, and exactly one of:
+
+- `StraightBlendPath(at, direction)`, where `at` is the subdivision-invariant area centre projected
+  to the common cylinder axis and `direction` is canonical; or
+- `CircularBlendPath(center, normal, radius)`, describing the complete centre-line circle of a
+  native torus by its centre, canonical plane normal, and major radius.
+
+The nested record type is the discriminator. No nullable collection of flat fields can represent
+an invalid mixture of line and circle parameters. `Blend.radius` always means rolling-ball radius,
+which is the cylinder radius for a straight path and torus minor radius for a circular path.
+`CircularBlendPath.radius` is always the path's major radius. The old dominant `axis`, surface
+leader `at`, and `axis_direction` fields are removed rather than assigned a second meaning for
+tori. A straight path intentionally remains an unbounded analytic line plus an occurrence anchor,
+matching the information content of schema 2; a circular path is initially a complete closed
+circle. Partial circular paths require a later explicit bounded-arc schema and are not inferred.
+
+The first circular-path recogniser accepts one complete, same-solid component of native toroidal
+patches only when all patches share one torus, their original boundaries are fully accounted for,
+and they meet exactly two unambiguous support regions through tangent springs. The initial supported
+support geometry is the ordinary turned edge: one plane transverse to, and one cylinder coaxial
+with, the torus axis. Material side is derived from the oriented native torus minor-radius normal
+and must be consistent across patches and spring evidence. A full torus has no supports; a rolled
+bead has the wrong support topology; incomplete, partial-path, mixed-torus, ambiguous-side and
+cross-solid components refuse.
+
+`Fillet(turned=True)` remains the dimension-worthy external interpretation. Discovery stays
+independent, and aggregate reconciliation may supersede a circular-path Blend only when accepted
+Fillet defining faces cover its complete toroidal component. Internal circular-path Blends remain
+available because the Fillet contract intentionally excludes them.
+
+This is a deliberate pre-adoption schema correction, not compatibility padding. Schema versions 1
+and 2 remain historical facts, but no release after v0.4.12 is made by this epic. The implementation
+requires several checked-in authored goldens: external and internal circular-path occurrences plus
+multi-body ownership, as well as full-torus, bead, turned-Fillet coexistence, incomplete-support,
+non-tangent, transform, mirror, scale, STEP and traversal-order controls. Sparse MFCAD++ evidence
+measures the result but does not define it; MFInstSeg remains aggregate-only pseudo-blind evidence.
