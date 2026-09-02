@@ -273,7 +273,7 @@ FAMILIES = {
         "census": "oriented_slot",
         "goldens": [],
         "golden_paths": ["tests/golden/oriented_slots/contract.json"],
-        "introduced": "0.5.0",
+        "introduced": "0.4.12",
         "tests": ["tests/test_oriented_slots.py"],
     },
     "oriented-slot-patterns": {
@@ -293,7 +293,7 @@ FAMILIES = {
         "census": None,
         "goldens": [],
         "golden_paths": ["tests/golden/oriented_slots/contract.json"],
-        "introduced": "0.5.0",
+        "introduced": "0.4.12",
         "tests": ["tests/test_oriented_slots.py"],
     },
     "slots": {

@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.5.0
+## 0.4.12
 
 - **Added free-axis rectangular through-slot recognition.**
   `recognise_oriented_slots()` projects exact four-wall rectangular `SectionPassage`
@@ -17,11 +17,17 @@
   exact principal planes and the existing asymmetry, completeness, opening, terminal and
   ownership refusals remain unchanged.
 
-- **Recorded the additive 0.5 contract transition explicitly.**
+- **Recorded the additive contract transition explicitly.**
   The capability manifest adds schema-version-1 `OrientedSlot`, `OrientedSlotArray` and
   `OrientedSlotGrid` records plus their entry points and aggregate fields. Existing principal
   `Slot` records and legacy raw/framed recognition behavior retain their prior meanings;
   consumers must explicitly adopt the new family before treating it as supported.
+
+- **Release-level exception.**
+  ADR 0005 ordinarily classifies an additive public family as a minor release. The project owner
+  explicitly directed this additive contract to ship as patch release 0.4.12 instead. Consumers
+  must still opt in to the new family and aggregate fields; the lower release number does not make
+  unknown records safe to consume implicitly.
 
 ## 0.4.11
 

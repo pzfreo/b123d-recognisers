@@ -402,5 +402,8 @@ compatibility event.
 ## Free-axis Slot capability event (issue #310)
 
 The successor records, entry points, aggregate fields, census key and reconciliation reason are
-an additive capability, not a patch correction to axis-letter `Slot`. They begin the `0.5.0`
-development line. Legacy principal Slot values remain unchanged; consumers opt in explicitly.
+an additive capability, not a patch correction to axis-letter `Slot`. ADR 0005 therefore assigns
+them to a minor release. The project owner explicitly overrode that release level for 0.4.12;
+their schema and consumer opt-in requirements remain additive-contract requirements despite the
+patch number. Legacy principal Slot values remain unchanged; consumers opt in explicitly. This is
+a recorded exception, not a general change to the transition table above.

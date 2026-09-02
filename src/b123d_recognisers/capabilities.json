@@ -1061,7 +1061,7 @@
         "tests/golden/oriented_slots/contract.json"
       ],
       "id": "oriented-slot-patterns",
-      "introduced_in": "0.5.0",
+      "introduced_in": "0.4.12",
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_oriented_slot_patterns",
@@ -1160,7 +1160,7 @@
         "tests/golden/oriented_slots/contract.json"
       ],
       "id": "oriented-slots",
-      "introduced_in": "0.5.0",
+      "introduced_in": "0.4.12",
       "recognisers": [
         {
           "entry_point": "b123d_recognisers.recognise_oriented_slots",
@@ -2747,6 +2747,6 @@
   "format_version": 2,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.5.0.dev0"
+    "version": "0.4.12.dev0"
   }
 }
