@@ -1,0 +1,863 @@
+{
+  "canonicalizer_version": 1,
+  "fixture": "toroidal_blends_turned",
+  "provenance": {
+    "creator": "Paul Fremantle",
+    "license": "Apache-2.0",
+    "source_path": "tests/test_blends.py",
+    "source_repository": "https://github.com/pzfreo/b123d-recognisers.git"
+  },
+  "recognition": {
+    "aggregate": {
+      "prismatic": {
+        "_type": "RecognitionResult",
+        "angled_steps": [],
+        "blends": [
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                0.2
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 14.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                39.8
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 14.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                40.2
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 8.2
+            },
+            "radius": 0.2,
+            "side": "concave"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                69.8
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 7.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          }
+        ],
+        "bosses": [
+          {
+            "_type": "BossRecord",
+            "axis": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "diameter": 30.0,
+            "height": 39.6,
+            "location": [
+              0.0,
+              0.0,
+              39.8
+            ]
+          },
+          {
+            "_type": "BossRecord",
+            "axis": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "diameter": 16.0,
+            "height": 29.6,
+            "location": [
+              0.0,
+              0.0,
+              69.8
+            ]
+          }
+        ],
+        "chamfers": [],
+        "channels": [],
+        "circular_blind_steps": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "diameter": 30.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 39.8,
+              "s_lo": 0.2,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                0.0,
+                0.0,
+                40.0
+              ],
+              "diameter": 16.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 69.8,
+              "s_lo": 40.2,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "paired_ramp_steps": [],
+        "passages": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "prismatic_pockets": [],
+        "rectangular_blind_slots": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": false,
+        "round_bottom_blind_slots": [],
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -14.8,
+              14.8
+            ],
+            "y_span": [
+              -14.8,
+              14.8
+            ],
+            "z": 40.0
+          }
+        ],
+        "through_steps": [],
+        "turned_steps": [
+          {
+            "_type": "TurnedStep",
+            "axis": "z",
+            "diameter": 30.0,
+            "hi": 40.0,
+            "lo": 0.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0000001,
+                15.0,
+                -15.0000001,
+                15.0000001,
+                0.0,
+                70.0
+              ]
+            }
+          },
+          {
+            "_type": "TurnedStep",
+            "axis": "z",
+            "diameter": 16.0,
+            "hi": 70.0,
+            "lo": 40.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0000001,
+                15.0,
+                -15.0000001,
+                15.0000001,
+                0.0,
+                70.0
+              ]
+            }
+          }
+        ]
+      },
+      "rotational": {
+        "_type": "RecognitionResult",
+        "angled_steps": [],
+        "blends": [
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                0.2
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 14.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                39.8
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 14.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                40.2
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 8.2
+            },
+            "radius": 0.2,
+            "side": "concave"
+          },
+          {
+            "_type": "Blend",
+            "path": {
+              "_type": "CircularBlendPath",
+              "center": [
+                0.0,
+                0.0,
+                69.8
+              ],
+              "normal": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "radius": 7.8
+            },
+            "radius": 0.2,
+            "side": "convex"
+          }
+        ],
+        "bosses": [
+          {
+            "_type": "BossRecord",
+            "axis": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "diameter": 30.0,
+            "height": 39.6,
+            "location": [
+              0.0,
+              0.0,
+              39.8
+            ]
+          },
+          {
+            "_type": "BossRecord",
+            "axis": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "diameter": 16.0,
+            "height": 29.6,
+            "location": [
+              0.0,
+              0.0,
+              69.8
+            ]
+          }
+        ],
+        "chamfers": [],
+        "channels": [],
+        "circular_blind_steps": [],
+        "countersinks": [],
+        "cylinders": [
+          [
+            {
+              "axis": "z",
+              "axis_xyz": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "diameter": 30.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 39.8,
+              "s_lo": 0.2,
+              "u_extent": 6.28318531
+            },
+            {
+              "axis": "z",
+              "axis_xyz": [
+                0.0,
+                0.0,
+                40.0
+              ],
+              "diameter": 16.0,
+              "dir_xyz": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "external": true,
+              "s_hi": 69.8,
+              "s_lo": 40.2,
+              "u_extent": 6.28318531
+            }
+          ],
+          []
+        ],
+        "double_d_bores": [],
+        "fillets": [],
+        "flats": [],
+        "grooves": [],
+        "hole_patterns": [],
+        "holes": [],
+        "pads": [],
+        "paired_ramp_steps": [],
+        "passages": [],
+        "plates": [],
+        "pocket_patterns": [],
+        "pockets": [],
+        "polygonal_bosses": [],
+        "polygonal_stock": [],
+        "prismatic_pockets": [],
+        "rectangular_blind_slots": [],
+        "repeating_radial_profiles": [],
+        "risers": [],
+        "rotational": true,
+        "round_bottom_blind_slots": [],
+        "slot_patterns": [],
+        "slots": [],
+        "step_levels": [
+          {
+            "_type": "FaceLevel",
+            "x_span": [
+              -14.8,
+              14.8
+            ],
+            "y_span": [
+              -14.8,
+              14.8
+            ],
+            "z": 40.0
+          }
+        ],
+        "through_steps": [],
+        "turned_steps": [
+          {
+            "_type": "TurnedStep",
+            "axis": "z",
+            "diameter": 30.0,
+            "hi": 40.0,
+            "lo": 0.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0000001,
+                15.0,
+                -15.0000001,
+                15.0000001,
+                0.0,
+                70.0
+              ]
+            }
+          },
+          {
+            "_type": "TurnedStep",
+            "axis": "z",
+            "diameter": 16.0,
+            "hi": 70.0,
+            "lo": 40.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0000001,
+                15.0,
+                -15.0000001,
+                15.0000001,
+                0.0,
+                70.0
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "feature_census": {
+      "angled_step": 0,
+      "blend": 4,
+      "boss": 2,
+      "chamfer": 0,
+      "channel": 0,
+      "circular_blind_step": 0,
+      "countersink": 0,
+      "fillet": 0,
+      "flat": 0,
+      "groove": 0,
+      "hole": 0,
+      "hole_pattern": 0,
+      "paired_ramp_step": 0,
+      "passage": 0,
+      "plate": 0,
+      "pocket": 0,
+      "prismatic_pocket": 0,
+      "rectangular_blind_slot": 0,
+      "round_bottom_blind_slot": 0,
+      "slot": 0,
+      "step": 2,
+      "through_step": 0
+    },
+    "individual": {
+      "recognise_angled_steps": [],
+      "recognise_blends": [
+        {
+          "_type": "Blend",
+          "path": {
+            "_type": "CircularBlendPath",
+            "center": [
+              0.0,
+              0.0,
+              0.2
+            ],
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 14.8
+          },
+          "radius": 0.2,
+          "side": "convex"
+        },
+        {
+          "_type": "Blend",
+          "path": {
+            "_type": "CircularBlendPath",
+            "center": [
+              0.0,
+              0.0,
+              39.8
+            ],
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 14.8
+          },
+          "radius": 0.2,
+          "side": "convex"
+        },
+        {
+          "_type": "Blend",
+          "path": {
+            "_type": "CircularBlendPath",
+            "center": [
+              0.0,
+              0.0,
+              40.2
+            ],
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 8.2
+          },
+          "radius": 0.2,
+          "side": "concave"
+        },
+        {
+          "_type": "Blend",
+          "path": {
+            "_type": "CircularBlendPath",
+            "center": [
+              0.0,
+              0.0,
+              69.8
+            ],
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "radius": 7.8
+          },
+          "radius": 0.2,
+          "side": "convex"
+        }
+      ],
+      "recognise_bosses": [
+        {
+          "_type": "BossRecord",
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "diameter": 30.0,
+          "height": 39.6,
+          "location": [
+            0.0,
+            0.0,
+            39.8
+          ]
+        },
+        {
+          "_type": "BossRecord",
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "diameter": 16.0,
+          "height": 29.6,
+          "location": [
+            0.0,
+            0.0,
+            69.8
+          ]
+        }
+      ],
+      "recognise_chamfers": [],
+      "recognise_channels": [],
+      "recognise_circular_blind_steps": [],
+      "recognise_countersinks": [],
+      "recognise_double_d_bores": [],
+      "recognise_face_levels": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -14.8,
+            14.8
+          ],
+          "y_span": [
+            -14.8,
+            14.8
+          ],
+          "z": 0.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -14.8,
+            14.8
+          ],
+          "y_span": [
+            -14.8,
+            14.8
+          ],
+          "z": 40.0
+        },
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -7.8,
+            7.8
+          ],
+          "y_span": [
+            -7.8,
+            7.8
+          ],
+          "z": 70.0
+        }
+      ],
+      "recognise_fillets": [],
+      "recognise_flats": [],
+      "recognise_grooves": [],
+      "recognise_hole_patterns": [],
+      "recognise_holes": [],
+      "recognise_paired_ramp_steps": [],
+      "recognise_passages": [],
+      "recognise_plates": [],
+      "recognise_pocket_patterns": [],
+      "recognise_pockets": [],
+      "recognise_polygonal_bosses": [],
+      "recognise_polygonal_stock": [],
+      "recognise_prismatic_pockets": [],
+      "recognise_rectangular_blind_slots": [],
+      "recognise_rectangular_pads": [],
+      "recognise_repeating_radial_profiles": [],
+      "recognise_risers": [],
+      "recognise_round_bottom_blind_slots": [],
+      "recognise_slot_patterns": [],
+      "recognise_slots": [],
+      "recognise_through_steps": [],
+      "recognise_turned_steps": [
+        {
+          "_type": "TurnedStep",
+          "axis": "z",
+          "diameter": 30.0,
+          "hi": 40.0,
+          "lo": 0.0,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0000001,
+              15.0,
+              -15.0000001,
+              15.0000001,
+              0.0,
+              70.0
+            ]
+          }
+        },
+        {
+          "_type": "TurnedStep",
+          "axis": "z",
+          "diameter": 16.0,
+          "hi": 70.0,
+          "lo": 40.0,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0000001,
+              15.0,
+              -15.0000001,
+              15.0000001,
+              0.0,
+              70.0
+            ]
+          }
+        }
+      ]
+    },
+    "substrates": {
+      "analyse_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "diameter": 30.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": true,
+            "s_hi": 39.8,
+            "s_lo": 0.2,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              0.0,
+              0.0,
+              40.0
+            ],
+            "diameter": 16.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": true,
+            "s_hi": 69.8,
+            "s_lo": 40.2,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "feature_diameters": [
+        16.0,
+        30.0
+      ],
+      "full_cylinders": [
+        [
+          {
+            "axis": "z",
+            "axis_xyz": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "diameter": 30.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": true,
+            "s_hi": 39.8,
+            "s_lo": 0.2,
+            "u_extent": 6.28318531
+          },
+          {
+            "axis": "z",
+            "axis_xyz": [
+              0.0,
+              0.0,
+              40.0
+            ],
+            "diameter": 16.0,
+            "dir_xyz": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "external": true,
+            "s_hi": 69.8,
+            "s_lo": 40.2,
+            "u_extent": 6.28318531
+          }
+        ],
+        []
+      ],
+      "step_level_records": [
+        {
+          "_type": "FaceLevel",
+          "x_span": [
+            -14.8,
+            14.8
+          ],
+          "y_span": [
+            -14.8,
+            14.8
+          ],
+          "z": 40.0
+        }
+      ]
+    }
+  },
+  "source": {
+    "commit": "482b19b",
+    "repository": "https://github.com/pzfreo/b123d-recognisers.git"
+  }
+}

@@ -15,65 +15,73 @@
         "blends": [
           {
             "_type": "Blend",
-            "at": [
-              -19.941,
-              -14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                -19.8,
+                -14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              -19.941,
-              14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                -19.8,
+                14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              19.941,
-              -14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                19.8,
+                -14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              19.941,
-              14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                19.8,
+                14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           }
@@ -192,65 +200,73 @@
         "blends": [
           {
             "_type": "Blend",
-            "at": [
-              -19.941,
-              -14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                -19.8,
+                -14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              -19.941,
-              14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                -19.8,
+                14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              19.941,
-              -14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                19.8,
+                -14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           },
           {
             "_type": "Blend",
-            "at": [
-              19.941,
-              14.941,
-              0.0
-            ],
-            "axis": "z",
-            "axis_direction": [
-              0.0,
-              0.0,
-              1.0
-            ],
+            "path": {
+              "_type": "StraightBlendPath",
+              "at": [
+                19.8,
+                14.8,
+                0.0
+              ],
+              "direction": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
             "radius": 0.2,
             "side": "convex"
           }
@@ -393,65 +409,73 @@
       "recognise_blends": [
         {
           "_type": "Blend",
-          "at": [
-            -19.941,
-            -14.941,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
+          "path": {
+            "_type": "StraightBlendPath",
+            "at": [
+              -19.8,
+              -14.8,
+              0.0
+            ],
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
           "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
-          "at": [
-            -19.941,
-            14.941,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
+          "path": {
+            "_type": "StraightBlendPath",
+            "at": [
+              -19.8,
+              14.8,
+              0.0
+            ],
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
           "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
-          "at": [
-            19.941,
-            -14.941,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
+          "path": {
+            "_type": "StraightBlendPath",
+            "at": [
+              19.8,
+              -14.8,
+              0.0
+            ],
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
           "radius": 0.2,
           "side": "convex"
         },
         {
           "_type": "Blend",
-          "at": [
-            19.941,
-            14.941,
-            0.0
-          ],
-          "axis": "z",
-          "axis_direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
+          "path": {
+            "_type": "StraightBlendPath",
+            "at": [
+              19.8,
+              14.8,
+              0.0
+            ],
+            "direction": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
           "radius": 0.2,
           "side": "convex"
         }

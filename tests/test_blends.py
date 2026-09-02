@@ -24,6 +24,11 @@ from build123d import (
     extrude,
     fillet,
 )
+from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Surface
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+from OCP.BRepFeat import BRepFeat_SplitShape
+from OCP.GeomAbs import GeomAbs_Torus
 
 from b123d_recognisers import (
     Blend,
@@ -252,10 +257,38 @@ def test_full_torus_bead_and_incomplete_torus_are_not_edge_blends() -> None:
     full = Torus(10, 2)
     bead = Cylinder(10, 20) + Torus(10, 2)
     incomplete = Torus(10, 2) & Pos(0, -12, -3) * Box(12, 24, 6)
+    non_tangent = Cylinder(10, 20) + Pos(0, 0, 10) * Torus(9, 2)
 
     assert recognise_blends(full) == []
     assert recognise_blends(bead) == []
     assert recognise_blends(incomplete) == []
+    assert recognise_blends(non_tangent) == []
+
+
+def test_subdivided_torus_is_one_complete_circular_path() -> None:
+    part = _internal_toroidal_bottom()
+    torus_face = next(
+        face
+        for face in part.faces()
+        if BRepAdaptor_Surface(face.wrapped).GetType() == GeomAbs_Torus
+    )
+    adaptor = BRepAdaptor_Surface(torus_face.wrapped)
+    surface = BRep_Tool.Surface_s(torus_face.wrapped)
+    seam = BRepBuilderAPI_MakeEdge(
+        surface.UIso(1.0), adaptor.FirstVParameter(), adaptor.LastVParameter()
+    ).Edge()
+    splitter = BRepFeat_SplitShape(part.wrapped)
+    splitter.Add(seam, torus_face.wrapped)
+    splitter.Build()
+    assert splitter.IsDone()
+    split = type(part).cast(splitter.Shape())
+
+    assert sum(face.geom_type == GeomType.TORUS for face in split.faces()) == 2
+    assert recognise_blends(split) == recognise_blends(part)
+    view = build_recognition_evidence(split)
+    (feature,) = [item for item in view.features if view.family(item) == "blends"]
+    assert len(view.defining_faces(feature)) == 2
+    assert view.constituent_faces(feature) == view.defining_faces(feature)
 
 
 def test_circular_blind_step_is_not_a_complete_blend_chain() -> None:

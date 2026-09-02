@@ -91,9 +91,18 @@ FAMILIES = {
     },
     "blends": {
         "recognisers": [("recognise_blends", "part")],
-        "records": [("Blend", "output", ["RecognitionResult.blends"])],
+        "records": [
+            ("Blend", "output", ["RecognitionResult.blends"]),
+            ("CircularBlendPath", "nested", ["RecognitionResult.blends.path"]),
+            ("StraightBlendPath", "nested", ["RecognitionResult.blends.path"]),
+        ],
         "census": "blend",
-        "goldens": ["small_convex_blends"],
+        "goldens": [
+            "small_convex_blends",
+            "toroidal_blend_compound",
+            "toroidal_blend_internal",
+            "toroidal_blends_turned",
+        ],
         "introduced": "0.4.11",
         "tests": ["tests/test_blends.py", "tests/test_blend_view.py"],
     },
@@ -329,7 +338,7 @@ FAMILIES = {
 }
 
 RECORD_SCHEMA_VERSIONS = {
-    "Blend": 2,
+    "Blend": 3,
     "Chamfer": 2,
     "Fillet": 2,
     "RaisedPad": 2,
@@ -392,6 +401,7 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         "flat_direction",
         "flat_directions",
         "long_direction",
+        "normal",
         "run",
         "u",
         "v",

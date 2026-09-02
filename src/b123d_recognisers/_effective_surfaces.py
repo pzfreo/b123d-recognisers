@@ -124,6 +124,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.MIGRATED_EFFECTIVE,
         "planar membership and native/recovered cylinder provenance use the run-owned query",
     ),
+    "blends": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "ADR 0013 authorizes native torus parameters, UV extent and oriented differential",
+    ),
     "_bevel": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar bevel family gate"),
     "_cylinder_substrate": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -201,6 +205,18 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "blends:_native_torus:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "read native torus parameters for the ADR 0013 circular-path contract",
+    ),
+    "blends:_covers_complete_circle:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "read the native torus UV domain to require a complete circular path",
+    ),
+    "blends:_torus_side:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "read the oriented native torus differential to derive material-side curvature",
+    ),
     "rectangular_blind_slots:_recognise_one:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "cheap graph-owned native planar concave-neighbour gate",

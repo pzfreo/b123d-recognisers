@@ -208,10 +208,11 @@ def _support_region(
     while queue:
         current = queue.popleft()
         for neighbour in sorted(graph.neighbours(current), key=lambda node: node.index):
+            exact_smooth = graph.arc(current, neighbour) == "smooth"
             if (
                 neighbour in found
                 or neighbour in excluded
-                or graph.arc(current, neighbour) != "smooth"
+                or not exact_smooth
             ):
                 continue
             fact = surfaces.fact(neighbour)
@@ -342,10 +343,12 @@ def _circular_proposal(
                 return None
             accounted.update(half for occurrence in occurrences for half in occurrence.halves)
             if neighbour in component:
-                if graph.arc(node, neighbour) != "smooth":
+                internal_smooth = graph.arc(node, neighbour) == "smooth"
+                if not internal_smooth:
                     return None
                 continue
-            if graph.arc(node, neighbour) != "smooth":
+            spring_smooth = graph.arc(node, neighbour) == "smooth"
+            if not spring_smooth:
                 return None
             region = support_cache.get(neighbour)
             if region is None:
@@ -516,7 +519,7 @@ def _proposal(
 
 
 def recognise_blends(part: Part) -> list[Blend]:
-    """Recognise complete native cylindrical blend chains in *part*."""
+    """Recognise complete native straight and circular Blend paths in *part*."""
 
     return _discover_blends(part)
 

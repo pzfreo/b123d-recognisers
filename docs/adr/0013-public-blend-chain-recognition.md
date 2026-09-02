@@ -163,3 +163,10 @@ requires several checked-in authored goldens: external and internal circular-pat
 multi-body ownership, as well as full-torus, bead, turned-Fillet coexistence, incomplete-support,
 non-tangent, transform, mirror, scale, STEP and traversal-order controls. Sparse MFCAD++ evidence
 measures the result but does not define it; MFInstSeg remains aggregate-only pseudo-blind evidence.
+
+The circular consumer reads the graph's exact legacy `"smooth"` arc only as the native tangency
+certificate for torus-to-torus grouping and torus-to-support springs. It does not interpret the
+legacy convex/concave arc value: torus/cylinder springs cannot provide that fact. Side instead comes
+from the oriented native torus differential relative to its analytic minor-radius direction, sampled
+at multiple interior parameters and accepted only when every patch agrees. Architecture tests roster
+all four exact-smooth reads so no truthiness or negative inference can enter unnoticed.

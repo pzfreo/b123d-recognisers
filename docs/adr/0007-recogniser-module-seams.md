@@ -454,3 +454,12 @@ ownership from equal Z values.
 It does not import orchestration or reconciliation. `_registry` owns the completed-occurrence
 adapter and `_reconcile` alone owns Passage precedence; the import guard records those one-way
 edges.
+
+## Amendment (native toroidal Blend paths, issue #442)
+
+`blends` may import `_analytic_surfaces` only to apply its shared parameter-equivalence rule while
+joining patches of one native torus. It may also read native torus parameters, UV extent and the
+oriented surface differential directly: `_effective_surfaces` deliberately offers no recovered
+torus, while ADR 0013 requires those three facts to prove a complete circular path and its material
+side. The reader roster names each call site. No recovery, fitting or second topology scan is
+introduced by this edge.
