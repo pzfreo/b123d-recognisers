@@ -214,13 +214,28 @@ def _mouth_regions(
 
 def _line_section(wire: Wire, base: LocalFrame) -> tuple[PlanarSection, Vector3] | None:
     try:
-        if any(edge.geom_type.name != "LINE" for edge in wire.edges()):
+        edges = tuple(wire.edges())
+        if any(edge.geom_type.name != "LINE" for edge in edges):
             return None
-        points = tuple(_point(vertex) for vertex in wire.vertices())
-        if len(points) < 3:
+        points = []
+        for index, edge in enumerate(edges):
+            shared = tuple(
+                left
+                for left in edges[index - 1].vertices()
+                for right in edge.vertices()
+                if left == right
+            )
+            if len(shared) != 1:
+                return None
+            points.append(_point(shared[0]))
+        ordered_points = tuple(points)
+        if len(ordered_points) < 3:
             return None
         raw = PlanarSection(
-            tuple(SectionVertex((_dot(point, base.u), _dot(point, base.v))) for point in points)
+            tuple(
+                SectionVertex((_dot(point, base.u), _dot(point, base.v)))
+                for point in ordered_points
+            )
         )
         centre = raw.centroid
         world_centre = tuple(

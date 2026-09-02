@@ -4,15 +4,32 @@
 
 from __future__ import annotations
 
-from build123d import Box, BuildPart, BuildSketch, Cylinder, Plane, Pos, RegularPolygon, extrude
+import math
+
+import pytest
+from build123d import (
+    Box,
+    BuildPart,
+    BuildSketch,
+    Cylinder,
+    Edge,
+    Plane,
+    Pos,
+    RegularPolygon,
+    Vector,
+    Wire,
+    extrude,
+)
 
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._section_passages import (
     _BodyAdapter,
     _enclosure_proposals,
+    _line_section,
     _mouth_regions,
     section_ring_proposals,
 )
+from b123d_recognisers._sections import LocalFrame
 from tools.audit_mfcadpp_cavity_enclosures import _two_ended_regions
 from tools.audit_mfcadpp_passage_rejections import _classify_region
 
@@ -64,3 +81,28 @@ def test_census_distinguishes_new_fallback_from_existing_cycle() -> None:
 
 def test_census_places_circular_bore_at_planar_seed_gate() -> None:
     assert _gates(Box(60, 50, 20) - Cylinder(7, 60)) == ["planar_mouth_seed"]
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+def test_line_section_uses_edge_incidence_not_unique_vertex_enumeration(sides: int) -> None:
+    points = tuple(
+        Vector(7 * math.cos(index * math.tau / sides), 7 * math.sin(index * math.tau / sides), 0)
+        for index in range(sides)
+    )
+    edges = tuple(
+        Edge.make_line(
+            points[(index + 1) % sides] if index % 2 else points[index],
+            points[index] if index % 2 else points[(index + 1) % sides],
+        )
+        for index in range(sides)
+    )
+    wire = Wire(edges)
+    assert tuple(wire.vertices()) != tuple(
+        edge.vertices()[0] for edge in wire.edges()
+    )
+
+    result = _line_section(wire, LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0)))
+
+    assert result is not None
+    assert len(result[0].boundary) == sides
+    assert result[0].area > 0.0
