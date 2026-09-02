@@ -231,10 +231,13 @@ def _prepare_checkpoint(
             raise EffectivenessDataError(f"checkpoint row is corrupt: {path}") from error
         if (
             not isinstance(payload, dict)
-            or set(payload) != {"model_id", "source_sha256", "row"}
+            or set(payload) != {"model_id", "source_sha256", "row", "row_sha256"}
             or not isinstance(payload["model_id"], str)
             or not isinstance(payload["source_sha256"], str)
             or not isinstance(payload["row"], dict)
+            or not isinstance(payload["row_sha256"], str)
+            or payload["row_sha256"]
+            != hashlib.sha256(canonical_json(payload["row"]).encode()).hexdigest()
             or payload["row"].get("model_id") != payload["model_id"]
             or path.stem != _checkpoint_key(payload["model_id"])
             or payload["model_id"] in completed
@@ -245,10 +248,12 @@ def _prepare_checkpoint(
 
 
 def _write_checkpoint_row(root: Path, truth: DatasetTruth, row: dict[str, Any]) -> None:
+    row_sha256 = hashlib.sha256(canonical_json(row).encode()).hexdigest()
     payload = {
         "model_id": truth.model_id,
         "source_sha256": truth.source_sha256,
         "row": row,
+        "row_sha256": row_sha256,
     }
     _atomic_replace(
         root / "rows" / f"{_checkpoint_key(truth.model_id)}.json",

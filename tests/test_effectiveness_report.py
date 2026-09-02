@@ -904,6 +904,8 @@ def test_checkpoint_authority_pins_every_run_input(tmp_path: Path) -> None:
         recognition_frame="raw",
         allow_invalid=False,
     )
+    moved_truth = replace(truths[0], step_path=tmp_path / "moved.step")
+    assert _source_selection_hash(truths) != _source_selection_hash([moved_truth])
     for changed_authority in (
         replace(authority, commit="d" * 40),
         replace(authority, source_sha256="d" * 64),
@@ -921,6 +923,19 @@ def test_checkpoint_authority_pins_every_run_input(tmp_path: Path) -> None:
         )
     assert base["recognition_frame"] == "raw"
     assert base["allow_invalid"] is False
+    assert base["selection_limit"] == 1
+    variants = (
+        {**base, "dataset_version": "changed"},
+        {**base, "selected_ids_sha256": "0" * 64},
+        {**base, "selection_limit": None},
+        {**base, "recognition_frame": "framed"},
+        {**base, "allow_invalid": True},
+    )
+    checkpoint = tmp_path / "authority-checkpoint"
+    _prepare_checkpoint(checkpoint, base)
+    for variant in variants:
+        with pytest.raises(EffectivenessDataError, match="authority does not match"):
+            _prepare_checkpoint(checkpoint, variant)
 
 
 def test_checkpoint_round_trip_and_authority_refusal(tmp_path: Path) -> None:
@@ -1005,6 +1020,23 @@ def test_model_scoring_is_worker_count_independent_except_runtime(tmp_path: Path
     assert serial.pop("seconds") >= 0
     assert parallel.pop("seconds") >= 0
     assert serial == parallel
+
+    checkpoint = tmp_path / "valid-checkpoint"
+    authority = _RunAuthority("a" * 40, "b" * 64, b"mapping", "c" * 64)
+    captured = _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="fixture",
+        ids=[truth.model_id],
+        truths=[truth],
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+    _prepare_checkpoint(checkpoint, captured)
+    parallel["seconds"] = 0.0
+    _write_checkpoint_row(checkpoint, truth, parallel)
+    assert _prepare_checkpoint(checkpoint, captured)[truth.model_id]["row"] == parallel
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:
