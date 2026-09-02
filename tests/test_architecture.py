@@ -366,6 +366,8 @@ ARC_READER_SITES = {
     "src/b123d_recognisers/_recess_core:_bounded_inner_region:arc:1": "legacy-contract",
     "src/b123d_recognisers/_section_passages:_bounded_inner_region:arc:1": "legacy-contract",
     "src/b123d_recognisers/_section_passages:_mouth_regions:arc:1": "exact-nonsmooth",
+    "src/b123d_recognisers/prismatic_pockets:_inner_region:arc:1": "legacy-contract",
+    "src/b123d_recognisers/prismatic_pockets:_one_ended_regions:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_component_overlap:_internal_arcs:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_expand:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_convex_mouth:arc:1": "exact-nonsmooth",

@@ -186,6 +186,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "planar polygonal-side membership gate",
     ),
+    "prismatic_pockets": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "original planar opening, wall and floor roles in the bounded cavity proof",
+    ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
     "repeating_profiles": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -398,6 +402,14 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         "cylindrical recess boundary gate",
     ),
     "_rings:rings:is_planar:1": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar ring gate"),
+    "prismatic_pockets:_one_ended_regions:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "principal-axis cavity opening must be an original plane",
+    ),
+    "prismatic_pockets:_one_ended_regions:is_planar:2": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "wall-cycle reconstruction uses original planar supports",
+    ),
     "angled_steps:_effective_linear_sides:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge curve kind, not a face surface",

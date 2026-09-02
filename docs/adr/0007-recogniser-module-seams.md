@@ -411,6 +411,17 @@ void/open geometry before one proposal is issued. `passages` still performs the 
 schema projection and Candidate issuance; no second Passage authority or graph dependency is
 introduced.
 
+Issue #460 adds one Pocket-local fallback inside `prismatic_pockets`, the existing record and
+evidence issuer for that family. It starts from an original planar opening's inner wire, traverses
+only exact concave or smooth graph arcs, reconstructs one direct cycle of original planar wall
+supports, and proves one floor, an empty full-section interior, an exterior opening and material
+behind the floor before constructing a record. Every retained non-wall/non-floor interruption must
+belong to that original mouth seed, so a deeper branch cannot enter constituent evidence. It does
+not import or call Passage, Blend, Pocket,
+Candidates, reconciliation or completed evidence, and it does not create a shared cavity API.
+The same module retains the exact traversed nodes and remains the sole issuer of
+`PrismaticPocket` defining and constituent evidence.
+
 F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
 below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
 only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,

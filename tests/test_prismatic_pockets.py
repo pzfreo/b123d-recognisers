@@ -26,10 +26,12 @@ from build123d import (
     Box,
     BuildPart,
     BuildSketch,
+    Compound,
     Cylinder,
     Plane,
     Polygon,
     Pos,
+    chamfer,
     export_step,
     extrude,
     fillet,
@@ -73,6 +75,19 @@ def _hexagonal():
     return Box(120, 80, 20) - Pos(0, 0, 2) * _prism(
         (-12, -7), (-6, -12), (6, -12), (12, -7), (6, -2), (-6, -2)
     )
+
+
+def _with_one_treated_mouth_edge(part, treatment):
+    opening_edges = [
+        edge
+        for edge in part.edges()
+        if abs(edge.center().Z - 10.0) < 1e-6
+        and all(abs(vertex.Z - 10.0) < 1e-6 for vertex in edge.vertices())
+        and abs(edge.center().X) < 20.0
+        and abs(edge.center().Y) < 20.0
+    ]
+    assert opening_edges
+    return treatment([opening_edges[0]], 1.0)
 
 
 def _through():
@@ -137,6 +152,72 @@ def test_each_prismatic_section_retains_its_proved_floor_as_constituent(
     assert pocket.sides == sides
     assert len(evidence.defining_of(candidate)) == sides
     assert len(evidence.constituent_of(candidate)) == sides + 1
+
+
+@pytest.mark.parametrize(
+    ("fixture", "sides", "depth"),
+    ((_triangular, 3, 8.0), (_rectangular, 4, 9.0), (_hexagonal, 6, 8.0)),
+)
+@pytest.mark.parametrize("treatment", (chamfer, fillet))
+def test_partial_mouth_treatment_does_not_hide_a_uniquely_bounded_pocket(
+    fixture, sides: int, depth: float, treatment
+) -> None:
+    part = _with_one_treated_mouth_edge(fixture(), treatment)
+    ledger = ClaimLedger(FaceGraph(part))
+
+    direct = r.recognise_prismatic_pockets(part)
+    attributed = r.recognise_prismatic_pockets(part, ledger=ledger)
+    (pocket,) = attributed
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+
+    assert direct == attributed
+    assert candidate.record is pocket
+    assert pocket.sides == sides
+    assert pocket.depth == depth
+    assert len(evidence.defining_of(candidate)) == sides
+    assert len(evidence.constituent_of(candidate)) == sides + 2
+    assert evidence.defining_of(candidate) < evidence.constituent_of(candidate)
+
+
+@pytest.mark.parametrize("treatment", (chamfer, fillet))
+def test_partial_treatment_does_not_turn_a_through_void_into_a_pocket(treatment) -> None:
+    part = _with_one_treated_mouth_edge(_through(), treatment)
+
+    assert r.recognise_prismatic_pockets(part) == []
+
+
+def test_partial_mouth_recovery_refuses_a_breached_floor() -> None:
+    pocket = _with_one_treated_mouth_edge(_triangular(), chamfer)
+    breached = pocket - Pos(0, 0, -5) * Cylinder(1, 30)
+
+    assert r.recognise_prismatic_pockets(breached) == []
+
+
+def test_partial_mouth_recovery_is_covariant_and_body_local() -> None:
+    treated = _with_one_treated_mouth_edge(_hexagonal(), fillet)
+    first = Pos(-90, 0, 0) * treated.rotate(Axis.X, -90)
+    second = Pos(90, 0, 0) * treated.rotate(Axis.X, -90)
+
+    records = r.recognise_prismatic_pockets(Compound([second, first]))
+
+    assert len(records) == 2
+    assert all(
+        (record.axis, record.sides, record.depth, record.open_sign) == ("y", 6, 8.0, 1)
+        for record in records
+    )
+    assert [record.at[0] for record in records] == [-90.0, 90.0]
+
+
+def test_partial_mouth_recovery_survives_step_round_trip(tmp_path: Path) -> None:
+    treated = _with_one_treated_mouth_edge(_triangular(), chamfer).rotate(Axis.Y, 90)
+    path = tmp_path / "partial-mouth-triangular-pocket.step"
+
+    assert export_step(treated, path)
+    imported = import_step(path)
+
+    (record,) = r.recognise_prismatic_pockets(imported)
+    assert (record.axis, record.sides, record.depth, record.open_sign) == ("x", 3, 8.0, 1)
 
 
 def test_every_selected_blended_cap_patch_is_constituent_but_not_defining() -> None:
