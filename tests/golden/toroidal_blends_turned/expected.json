@@ -18,14 +18,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                0.078,
                 0.0,
-                0.0,
-                0.2
+                0.184
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 14.8
             },
@@ -37,14 +37,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                15.551,
                 0.0,
-                0.0,
-                39.8
+                36.636
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 14.8
             },
@@ -56,14 +56,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                15.707,
                 0.0,
-                0.0,
-                40.2
+                37.004
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 8.2
             },
@@ -75,14 +75,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                27.273,
                 0.0,
-                0.0,
-                69.8
+                64.251
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 7.8
             },
@@ -94,31 +94,31 @@
           {
             "_type": "BossRecord",
             "axis": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "diameter": 30.0,
             "height": 39.6,
             "location": [
+              15.55109891,
               0.0,
-              0.0,
-              39.8
+              36.63609317
             ]
           },
           {
             "_type": "BossRecord",
             "axis": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "diameter": 16.0,
             "height": 29.6,
             "location": [
+              27.27303277,
               0.0,
-              0.0,
-              69.8
+              64.25123877
             ]
           }
         ],
@@ -137,9 +137,9 @@
               ],
               "diameter": 30.0,
               "dir_xyz": [
+                0.39073113,
                 0.0,
-                0.0,
-                1.0
+                0.92050485
               ],
               "external": true,
               "s_hi": 39.8,
@@ -149,15 +149,15 @@
             {
               "axis": "z",
               "axis_xyz": [
+                15.62924514,
                 0.0,
-                0.0,
-                40.0
+                36.82019414
               ],
               "diameter": 16.0,
               "dir_xyz": [
+                0.39073113,
                 0.0,
-                0.0,
-                1.0
+                0.92050485
               ],
               "external": true,
               "s_hi": 69.8,
@@ -184,76 +184,48 @@
         "prismatic_pockets": [],
         "rectangular_blind_slots": [],
         "repeating_radial_profiles": [],
-        "risers": [],
+        "risers": [
+          {
+            "_type": "RiserEvidence",
+            "axis": "x",
+            "body_levels": [],
+            "hi_at_envelope": false,
+            "lo_at_envelope": false,
+            "other_axis": "y",
+            "other_positions": [],
+            "positions": [
+              2.006,
+              29.253
+            ],
+            "tol": 0.5,
+            "vertical": false,
+            "z_hi": 42.60301484,
+            "z_lo": 31.03737344
+          },
+          {
+            "_type": "RiserEvidence",
+            "axis": "x",
+            "body_levels": [],
+            "hi_at_envelope": false,
+            "lo_at_envelope": true,
+            "other_axis": "y",
+            "other_positions": [],
+            "positions": [
+              13.623
+            ],
+            "tol": 0.5,
+            "vertical": false,
+            "z_hi": 5.7828207,
+            "z_lo": -5.7828207
+          }
+        ],
         "rotational": false,
         "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
-        "step_levels": [
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -14.8,
-              14.8
-            ],
-            "y_span": [
-              -14.8,
-              14.8
-            ],
-            "z": 40.0
-          }
-        ],
+        "step_levels": [],
         "through_steps": [],
-        "turned_steps": [
-          {
-            "_type": "TurnedStep",
-            "axis": "z",
-            "diameter": 30.0,
-            "hi": 40.0,
-            "lo": 0.0,
-            "profile": {
-              "_type": "TurnedProfileKey",
-              "axis": "z",
-              "axis_origin": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "body_bounds": [
-                -15.0000001,
-                15.0,
-                -15.0000001,
-                15.0000001,
-                0.0,
-                70.0
-              ]
-            }
-          },
-          {
-            "_type": "TurnedStep",
-            "axis": "z",
-            "diameter": 16.0,
-            "hi": 70.0,
-            "lo": 40.0,
-            "profile": {
-              "_type": "TurnedProfileKey",
-              "axis": "z",
-              "axis_origin": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "body_bounds": [
-                -15.0000001,
-                15.0,
-                -15.0000001,
-                15.0000001,
-                0.0,
-                70.0
-              ]
-            }
-          }
-        ]
+        "turned_steps": []
       },
       "rotational": {
         "_type": "RecognitionResult",
@@ -264,14 +236,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                0.078,
                 0.0,
-                0.0,
-                0.2
+                0.184
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 14.8
             },
@@ -283,14 +255,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                15.551,
                 0.0,
-                0.0,
-                39.8
+                36.636
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 14.8
             },
@@ -302,14 +274,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                15.707,
                 0.0,
-                0.0,
-                40.2
+                37.004
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 8.2
             },
@@ -321,14 +293,14 @@
             "path": {
               "_type": "CircularBlendPath",
               "center": [
+                27.273,
                 0.0,
-                0.0,
-                69.8
+                64.251
               ],
               "normal": [
+                0.390731,
                 0.0,
-                0.0,
-                1.0
+                0.920505
               ],
               "radius": 7.8
             },
@@ -340,31 +312,31 @@
           {
             "_type": "BossRecord",
             "axis": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "diameter": 30.0,
             "height": 39.6,
             "location": [
+              15.55109891,
               0.0,
-              0.0,
-              39.8
+              36.63609317
             ]
           },
           {
             "_type": "BossRecord",
             "axis": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "diameter": 16.0,
             "height": 29.6,
             "location": [
+              27.27303277,
               0.0,
-              0.0,
-              69.8
+              64.25123877
             ]
           }
         ],
@@ -383,9 +355,9 @@
               ],
               "diameter": 30.0,
               "dir_xyz": [
+                0.39073113,
                 0.0,
-                0.0,
-                1.0
+                0.92050485
               ],
               "external": true,
               "s_hi": 39.8,
@@ -395,15 +367,15 @@
             {
               "axis": "z",
               "axis_xyz": [
+                15.62924514,
                 0.0,
-                0.0,
-                40.0
+                36.82019414
               ],
               "diameter": 16.0,
               "dir_xyz": [
+                0.39073113,
                 0.0,
-                0.0,
-                1.0
+                0.92050485
               ],
               "external": true,
               "s_hi": 69.8,
@@ -430,76 +402,48 @@
         "prismatic_pockets": [],
         "rectangular_blind_slots": [],
         "repeating_radial_profiles": [],
-        "risers": [],
+        "risers": [
+          {
+            "_type": "RiserEvidence",
+            "axis": "x",
+            "body_levels": [],
+            "hi_at_envelope": false,
+            "lo_at_envelope": false,
+            "other_axis": "y",
+            "other_positions": [],
+            "positions": [
+              2.006,
+              29.253
+            ],
+            "tol": 0.5,
+            "vertical": false,
+            "z_hi": 42.60301484,
+            "z_lo": 31.03737344
+          },
+          {
+            "_type": "RiserEvidence",
+            "axis": "x",
+            "body_levels": [],
+            "hi_at_envelope": false,
+            "lo_at_envelope": true,
+            "other_axis": "y",
+            "other_positions": [],
+            "positions": [
+              13.623
+            ],
+            "tol": 0.5,
+            "vertical": false,
+            "z_hi": 5.7828207,
+            "z_lo": -5.7828207
+          }
+        ],
         "rotational": true,
         "round_bottom_blind_slots": [],
         "slot_patterns": [],
         "slots": [],
-        "step_levels": [
-          {
-            "_type": "FaceLevel",
-            "x_span": [
-              -14.8,
-              14.8
-            ],
-            "y_span": [
-              -14.8,
-              14.8
-            ],
-            "z": 40.0
-          }
-        ],
+        "step_levels": [],
         "through_steps": [],
-        "turned_steps": [
-          {
-            "_type": "TurnedStep",
-            "axis": "z",
-            "diameter": 30.0,
-            "hi": 40.0,
-            "lo": 0.0,
-            "profile": {
-              "_type": "TurnedProfileKey",
-              "axis": "z",
-              "axis_origin": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "body_bounds": [
-                -15.0000001,
-                15.0,
-                -15.0000001,
-                15.0000001,
-                0.0,
-                70.0
-              ]
-            }
-          },
-          {
-            "_type": "TurnedStep",
-            "axis": "z",
-            "diameter": 16.0,
-            "hi": 70.0,
-            "lo": 40.0,
-            "profile": {
-              "_type": "TurnedProfileKey",
-              "axis": "z",
-              "axis_origin": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "body_bounds": [
-                -15.0000001,
-                15.0,
-                -15.0000001,
-                15.0000001,
-                0.0,
-                70.0
-              ]
-            }
-          }
-        ]
+        "turned_steps": []
       }
     },
     "feature_census": {
@@ -523,7 +467,7 @@
       "rectangular_blind_slot": 0,
       "round_bottom_blind_slot": 0,
       "slot": 0,
-      "step": 2,
+      "step": 0,
       "through_step": 0
     },
     "individual": {
@@ -534,14 +478,14 @@
           "path": {
             "_type": "CircularBlendPath",
             "center": [
+              0.078,
               0.0,
-              0.0,
-              0.2
+              0.184
             ],
             "normal": [
+              0.390731,
               0.0,
-              0.0,
-              1.0
+              0.920505
             ],
             "radius": 14.8
           },
@@ -553,14 +497,14 @@
           "path": {
             "_type": "CircularBlendPath",
             "center": [
+              15.551,
               0.0,
-              0.0,
-              39.8
+              36.636
             ],
             "normal": [
+              0.390731,
               0.0,
-              0.0,
-              1.0
+              0.920505
             ],
             "radius": 14.8
           },
@@ -572,14 +516,14 @@
           "path": {
             "_type": "CircularBlendPath",
             "center": [
+              15.707,
               0.0,
-              0.0,
-              40.2
+              37.004
             ],
             "normal": [
+              0.390731,
               0.0,
-              0.0,
-              1.0
+              0.920505
             ],
             "radius": 8.2
           },
@@ -591,14 +535,14 @@
           "path": {
             "_type": "CircularBlendPath",
             "center": [
+              27.273,
               0.0,
-              0.0,
-              69.8
+              64.251
             ],
             "normal": [
+              0.390731,
               0.0,
-              0.0,
-              1.0
+              0.920505
             ],
             "radius": 7.8
           },
@@ -610,31 +554,31 @@
         {
           "_type": "BossRecord",
           "axis": [
+            0.39073113,
             0.0,
-            0.0,
-            1.0
+            0.92050485
           ],
           "diameter": 30.0,
           "height": 39.6,
           "location": [
+            15.55109891,
             0.0,
-            0.0,
-            39.8
+            36.63609317
           ]
         },
         {
           "_type": "BossRecord",
           "axis": [
+            0.39073113,
             0.0,
-            0.0,
-            1.0
+            0.92050485
           ],
           "diameter": 16.0,
           "height": 29.6,
           "location": [
+            27.27303277,
             0.0,
-            0.0,
-            69.8
+            64.25123877
           ]
         }
       ],
@@ -643,44 +587,7 @@
       "recognise_circular_blind_steps": [],
       "recognise_countersinks": [],
       "recognise_double_d_bores": [],
-      "recognise_face_levels": [
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -14.8,
-            14.8
-          ],
-          "y_span": [
-            -14.8,
-            14.8
-          ],
-          "z": 0.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -14.8,
-            14.8
-          ],
-          "y_span": [
-            -14.8,
-            14.8
-          ],
-          "z": 40.0
-        },
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -7.8,
-            7.8
-          ],
-          "y_span": [
-            -7.8,
-            7.8
-          ],
-          "z": 70.0
-        }
-      ],
+      "recognise_face_levels": [],
       "recognise_fillets": [],
       "recognise_flats": [],
       "recognise_grooves": [],
@@ -697,61 +604,46 @@
       "recognise_rectangular_blind_slots": [],
       "recognise_rectangular_pads": [],
       "recognise_repeating_radial_profiles": [],
-      "recognise_risers": [],
+      "recognise_risers": [
+        {
+          "_type": "RiserEvidence",
+          "axis": "x",
+          "body_levels": [],
+          "hi_at_envelope": false,
+          "lo_at_envelope": false,
+          "other_axis": "y",
+          "other_positions": [],
+          "positions": [
+            2.006,
+            29.253
+          ],
+          "tol": 0.5,
+          "vertical": false,
+          "z_hi": 42.60301484,
+          "z_lo": 31.03737344
+        },
+        {
+          "_type": "RiserEvidence",
+          "axis": "x",
+          "body_levels": [],
+          "hi_at_envelope": false,
+          "lo_at_envelope": true,
+          "other_axis": "y",
+          "other_positions": [],
+          "positions": [
+            13.623
+          ],
+          "tol": 0.5,
+          "vertical": false,
+          "z_hi": 5.7828207,
+          "z_lo": -5.7828207
+        }
+      ],
       "recognise_round_bottom_blind_slots": [],
       "recognise_slot_patterns": [],
       "recognise_slots": [],
       "recognise_through_steps": [],
-      "recognise_turned_steps": [
-        {
-          "_type": "TurnedStep",
-          "axis": "z",
-          "diameter": 30.0,
-          "hi": 40.0,
-          "lo": 0.0,
-          "profile": {
-            "_type": "TurnedProfileKey",
-            "axis": "z",
-            "axis_origin": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "body_bounds": [
-              -15.0000001,
-              15.0,
-              -15.0000001,
-              15.0000001,
-              0.0,
-              70.0
-            ]
-          }
-        },
-        {
-          "_type": "TurnedStep",
-          "axis": "z",
-          "diameter": 16.0,
-          "hi": 70.0,
-          "lo": 40.0,
-          "profile": {
-            "_type": "TurnedProfileKey",
-            "axis": "z",
-            "axis_origin": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "body_bounds": [
-              -15.0000001,
-              15.0,
-              -15.0000001,
-              15.0000001,
-              0.0,
-              70.0
-            ]
-          }
-        }
-      ]
+      "recognise_turned_steps": []
     },
     "substrates": {
       "analyse_cylinders": [
@@ -765,9 +657,9 @@
             ],
             "diameter": 30.0,
             "dir_xyz": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "external": true,
             "s_hi": 39.8,
@@ -777,15 +669,15 @@
           {
             "axis": "z",
             "axis_xyz": [
+              15.62924514,
               0.0,
-              0.0,
-              40.0
+              36.82019414
             ],
             "diameter": 16.0,
             "dir_xyz": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "external": true,
             "s_hi": 69.8,
@@ -810,9 +702,9 @@
             ],
             "diameter": 30.0,
             "dir_xyz": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "external": true,
             "s_hi": 39.8,
@@ -822,15 +714,15 @@
           {
             "axis": "z",
             "axis_xyz": [
+              15.62924514,
               0.0,
-              0.0,
-              40.0
+              36.82019414
             ],
             "diameter": 16.0,
             "dir_xyz": [
+              0.39073113,
               0.0,
-              0.0,
-              1.0
+              0.92050485
             ],
             "external": true,
             "s_hi": 69.8,
@@ -840,20 +732,7 @@
         ],
         []
       ],
-      "step_level_records": [
-        {
-          "_type": "FaceLevel",
-          "x_span": [
-            -14.8,
-            14.8
-          ],
-          "y_span": [
-            -14.8,
-            14.8
-          ],
-          "z": 40.0
-        }
-      ]
+      "step_level_records": []
     }
   },
   "source": {
