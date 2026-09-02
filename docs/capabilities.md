@@ -462,7 +462,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `LinearArray` | At least three same-spec holes on one constant-pitch line, ordered along `direction`. |
 | `Passage` | One closed uncapped ring of walls; `sides` is the polygon, so a triangular passage reports 3, and `section` gives its corners so the shape can be dimensioned rather than only named. |
 | `PassageEnds` | Nested explicit low/high cap state; `SectionPassage` requires the canonical open/open value. |
-| `PassageFrame` | Nested canonical right-handed run/u/v frame and perpendicular origin for rich section geometry. |
+| `PassageFrame` | Nested canonical right-handed run/u/v frame and perpendicular origin for rich section geometry. Six-decimal direction validation includes the analytically bounded component-rounding error, so valid arbitrary rigid transforms remain representable. |
 | `PassageSection` | Nested canonical, origin-centred immutable line/arc boundary. |
 | `PassageSectionVertex` | One nested 2-D section vertex whose bulge describes the edge to the next vertex. |
 | `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. |

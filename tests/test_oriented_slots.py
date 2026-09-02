@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from build123d import (
     Align,
+    Axis,
     Box,
     Compound,
     Cone,
@@ -139,6 +140,25 @@ def test_record_directions_follow_a_rotated_whole_part() -> None:
     assert math.isclose(abs(rotated.width_direction[0]), abs(base.width_direction[0]), abs_tol=2e-6)
     assert math.isclose(abs(rotated.width_direction[2]), abs(base.width_direction[1]), abs_tol=2e-6)
     assert abs(rotated.width_direction[1]) < 2e-6
+
+
+@pytest.mark.parametrize("x_angle,z_angle", [(17, 41), (49, 23), (73, 67)])
+def test_public_record_accepts_serialized_frame_after_arbitrary_rigid_transform(
+    x_angle: float, z_angle: float
+) -> None:
+    base = Box(120, 90, 10) - Rot(0, 0, 30) * Box(
+        24, 6, 20, align=(Align.CENTER,) * 3
+    )
+    moved = base.rotate(Axis.X, x_angle).rotate(Axis.Z, z_angle)
+
+    (record,) = recognise_oriented_slots(moved)
+    framed = build_framed_recognition_result(moved)
+
+    assert record.width == pytest.approx(6.0, abs=0.002)
+    assert record.length == pytest.approx(24.0, abs=0.002)
+    assert record.source.frame == recognise_section_passages(moved)[0].frame
+    assert isinstance(framed, FramedRecognitionResult)
+    assert len(framed.result.oriented_slots) == 1
 
 
 def test_framed_result_preserves_oriented_array_under_arbitrary_presentation() -> None:

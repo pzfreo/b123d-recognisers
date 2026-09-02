@@ -186,7 +186,8 @@ class PassageFrame(Record):
         for name, direction in (("run", run), ("u", u), ("v", v)):
             _serialized(direction, 6, name=name)
         for direction in (run, u, v):
-            if abs(_dot(direction, direction) - 1.0) > 1e-6:
+            # The extra 1e-12 only absorbs binary evaluation of the closed decimal boundary.
+            if abs(math.sqrt(_dot(direction, direction)) - 1.0) > 1e-6 + 1e-12:
                 raise ValueError("frame directions must be unit length")
         if any(abs(_dot(a, b)) > 2e-6 for a, b in ((run, u), (run, v), (u, v))):
             raise ValueError("frame directions must be orthogonal")
