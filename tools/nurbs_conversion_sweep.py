@@ -48,7 +48,10 @@ PERFORMANCE_BUDGET_SECONDS = 3.0
 # workload. The family's supported selected-cylinder recovery is pinned independently in its own
 # contract test; silently weakening this sweep's topology oracle would invalidate its evidence.
 EXCLUDED_FIXTURES = {
-    "circular_blind_step": "whole-solid conversion changes the quarter-cylinder edge signature"
+    "circular_blind_step": "whole-solid conversion changes the quarter-cylinder edge signature",
+    "toroidal_blend_compound": "effective-surface recovery deliberately excludes native tori",
+    "toroidal_blend_internal": "effective-surface recovery deliberately excludes native tori",
+    "toroidal_blends_turned": "effective-surface recovery deliberately excludes native tori",
 }
 REVIEWED_DELTA_BOUNDS = {
     "face_centre_model_units": 0.1,

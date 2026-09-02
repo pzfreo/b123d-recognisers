@@ -332,7 +332,7 @@ class RecognitionResult:
     #: proposals, but this public tuple is then projected as ``()``.
     section_passages: tuple[SectionPassage, ...]
     passages: tuple[Passage, ...]
-    #: Complete cylindrical rolling-ball chains not superseded by a more specific family.
+    #: Complete straight or circular rolling-ball paths not superseded by a specific family.
     blends: tuple[Blend, ...]
     fillets: tuple[Fillet, ...]
     plates: tuple[Plate, ...]

@@ -76,7 +76,10 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
-        "tests/golden/small_convex_blends/expected.json"
+        "tests/golden/small_convex_blends/expected.json",
+        "tests/golden/toroidal_blend_compound/expected.json",
+        "tests/golden/toroidal_blend_internal/expected.json",
+        "tests/golden/toroidal_blends_turned/expected.json"
       ],
       "id": "blends",
       "introduced_in": "0.4.11",
@@ -93,20 +96,10 @@
             "RecognitionResult.blends"
           ],
           "fields": {
-            "at": {
+            "path": {
               "required": true,
-              "type": "tuple[float,3]",
-              "units": "mm"
-            },
-            "axis": {
-              "required": true,
-              "type": "str",
+              "type": "record:CircularBlendPath|record:StraightBlendPath",
               "units": "none"
-            },
-            "axis_direction": {
-              "required": true,
-              "type": "tuple[float,3]",
-              "units": "unit-vector"
             },
             "radius": {
               "required": true,
@@ -122,7 +115,54 @@
           "name": "Blend",
           "qualified_name": "b123d_recognisers.Blend",
           "role": "output",
-          "schema_version": 2
+          "schema_version": 3
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.blends.path"
+          ],
+          "fields": {
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "normal": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "radius": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            }
+          },
+          "name": "CircularBlendPath",
+          "qualified_name": "b123d_recognisers.CircularBlendPath",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.blends.path"
+          ],
+          "fields": {
+            "at": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            }
+          },
+          "name": "StraightBlendPath",
+          "qualified_name": "b123d_recognisers.StraightBlendPath",
+          "role": "nested",
+          "schema_version": 1
         }
       ],
       "status": "supported",
