@@ -332,6 +332,10 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b two-mouth fallback is limited to original planar wall seeds",
     ),
+    "_section_passages:_wall_run:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b nonparallel-end run proof is limited to original planar walls",
+    ),
     "_section_passages:section_ring_proposals:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b original planar wall-cycle membership",
