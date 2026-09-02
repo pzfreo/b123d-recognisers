@@ -201,6 +201,27 @@ the two opening stock faces are not parallel. Those faces supply only the two lo
 plane equations added by ADR 0016; their identity remains consulted context and never crosses the
 facade. The defining and constituent evidence remains the exact original wall region.
 
+## Amendment (interrupted Prismatic Pocket discovery, issue #460)
+
+The one-ended exclusion above is superseded only for `PrismaticPocket` discovery inside its
+existing family module. One original principal-plane inner wire may seed a same-solid
+concave-or-smooth region when the region contains a unique direct cycle of at least three original
+planar wall supports and exactly one distinct principal-plane floor. The support cycle, rather than
+the treated mouth wire, defines the constant polygonal section. The complete section must be void
+from floor to mouth and immediately outside the mouth, and completely material immediately behind
+the floor. Multiple mouths, intersecting candidate regions, a broken or branching support cycle,
+multiple floors, a floor breach, a deeper non-mouth interruption, through/enclosed topology and
+invalid ownership refuse.
+
+The original planar wall supports are defining evidence. The exact traversed wall, treatment and
+floor region is constituent evidence; the opening stock face remains consulted context. This proof
+is completed before Candidate issuance and changes neither reconciliation nor the public evidence
+facade. In particular, it does not authorize a post-acceptance flood fill, durable face identity,
+public adjacency/cavity API, corpus-driven membership, or reading another family's Candidates.
+Smooth mouth incidence is accepted only alongside at least one convex incidence and the complete
+physical proof, allowing a partial rolling treatment without turning arbitrary tangent openings
+into seeds.
+
 ## Amendment (public oriented Slot projection, issue #310)
 
 `OrientedSlot.source` does not expose the private section graph. It nests the already supported

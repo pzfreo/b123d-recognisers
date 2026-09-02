@@ -8,7 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 CONSTRUCTOR_COUNTS = {
-    "prismatic_pockets.py": ("PrismaticPocket", 1),
+    # The equal-span ring path and the ADR 0007/#460 bounded-mouth fallback are the two
+    # reviewed issuers. Both stay local to prismatic_pockets and publish through its writer.
+    "prismatic_pockets.py": ("PrismaticPocket", 2),
     # The sole direct constructor is the frozen writer-free legacy finder. Accepted rich
     # compatibility values are built through `_passage_compat.passage_from_view` instead.
     "passages.py": ("Passage", 1),
