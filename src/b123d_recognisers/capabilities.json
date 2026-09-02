@@ -1394,9 +1394,9 @@
               "units": "none"
             },
             "high_gradient": {
-              "required": true,
+              "required": false,
               "type": "tuple[float,2]",
-              "units": "ratio"
+              "units": "none"
             },
             "low_capped": {
               "required": true,
@@ -1404,9 +1404,9 @@
               "units": "none"
             },
             "low_gradient": {
-              "required": true,
+              "required": false,
               "type": "tuple[float,2]",
-              "units": "ratio"
+              "units": "none"
             }
           },
           "name": "PassageEnds",

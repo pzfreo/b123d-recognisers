@@ -342,9 +342,11 @@ RECORD_SCHEMA_VERSIONS = {
     "Chamfer": 2,
     "Fillet": 2,
     "RaisedPad": 2,
+    "PassageEnds": 2,
     "RiserEvidence": 2,
     "TurnedProfile": 2,
     "TurnedStep": 2,
+    "SectionPassage": 2,
 }
 
 NO_MEMBERSHIP_RATIONALE = {
@@ -412,7 +414,11 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         return "unit-vector"
     if name == "axis" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"
-    if name == "bulge" or rendered in {"bool", "int", "str"} or rendered.startswith("record:"):
+    if (
+        name in {"bulge", "low_gradient", "high_gradient"}
+        or rendered in {"bool", "int", "str"}
+        or rendered.startswith("record:")
+    ):
         return "none"
     if rendered.startswith("list[record:") or name in {
         "body_key",
