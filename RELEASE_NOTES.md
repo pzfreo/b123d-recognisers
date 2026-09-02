@@ -1,5 +1,28 @@
 # Release notes
 
+## 0.5.0
+
+- **Added free-axis rectangular through-slot recognition.**
+  `recognise_oriented_slots()` projects exact four-wall rectangular `SectionPassage`
+  occurrences whose width and long directions are oblique in the supplied recognition frame.
+  The immutable `OrientedSlot` record retains free direction vectors, dimensions, centre,
+  source passage, body authority and original-face evidence. Linear and complete rectangular
+  same-body arrays are available through `recognise_oriented_slot_patterns()` and the aggregate
+  result. Principal-axis slots remain unchanged `Slot` values; square, curved, capped, tapered,
+  incomplete and ownership-ambiguous interpretations remain excluded.
+
+- **Extended paired-ramp steps to shallow nonzero ramp angles.**
+  `PairedRampStep` recognition no longer inherits the unrelated Chamfer draft-angle threshold.
+  Shallow mirror-symmetric ramp pairs now use the existing geometric direction tolerance while
+  exact principal planes and the existing asymmetry, completeness, opening, terminal and
+  ownership refusals remain unchanged.
+
+- **Recorded the additive 0.5 contract transition explicitly.**
+  The capability manifest adds schema-version-1 `OrientedSlot`, `OrientedSlotArray` and
+  `OrientedSlotGrid` records plus their entry points and aggregate fields. Existing principal
+  `Slot` records and legacy raw/framed recognition behavior retain their prior meanings;
+  consumers must explicitly adopt the new family before treating it as supported.
+
 ## 0.4.11
 
 - **Published conservative convex rolling-ball Blend chains.**
