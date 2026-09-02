@@ -75,6 +75,7 @@ from b123d_recognisers._passage_compat import (
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import _centroid, rings
 from b123d_recognisers._section_passages import SectionRingProposal, section_ring_proposals
+from b123d_recognisers._sections import PlanarSection, SectionVertex
 from b123d_recognisers._typing import Part
 
 #: Two walls belong to one ring when their spans along the run axis agree. A coordinate
@@ -370,6 +371,23 @@ def recognise_section_passages(
     return _discover_section_passages(part, graph, None if ledger is None else ledger.sink)
 
 
+def _serialized_passage_section(section: PlanarSection) -> PassageSection:
+    """Round, then canonicalise in the public section's serialized coordinate domain."""
+
+    projected = PlanarSection(
+        tuple(
+            SectionVertex(
+                (round(vertex.point[0], 4), round(vertex.point[1], 4)),
+                round(vertex.bulge, 12),
+            )
+            for vertex in section.boundary
+        )
+    )
+    return PassageSection(
+        tuple(PassageSectionVertex(vertex.point, vertex.bulge) for vertex in projected.boundary)
+    )
+
+
 def _section_passage_record(proposal: SectionRingProposal) -> SectionPassage:
     """Project one validated neutral proposal into its public serialized value."""
 
@@ -381,15 +399,7 @@ def _section_passage_record(proposal: SectionRingProposal) -> SectionPassage:
             tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
         ),
         tuple(round(value, 3) for value in proposal.run_interval),  # type: ignore[arg-type]
-        PassageSection(
-            tuple(
-                PassageSectionVertex(
-                    (round(vertex.point[0], 4), round(vertex.point[1], 4)),
-                    round(vertex.bulge, 12),
-                )
-                for vertex in proposal.section.boundary
-            )
-        ),
+        _serialized_passage_section(proposal.section),
         PassageEnds(
             False,
             False,
@@ -515,10 +525,17 @@ def _section_projection_displacement(
 ) -> float:
     """Maximum source-to-serialized movement over every section vertex at both ends."""
 
+    source_by_projected_point = {
+        (round(vertex.point[0], 4), round(vertex.point[1], 4)): vertex
+        for vertex in proposal.section.boundary
+    }
+    if len(source_by_projected_point) != len(proposal.section.boundary):
+        return math.inf
     maximum = 0.0
-    for source_vertex, serialized_vertex in zip(
-        proposal.section.boundary, record.section.boundary, strict=True
-    ):
+    for serialized_vertex in record.section.boundary:
+        source_vertex = source_by_projected_point.get(serialized_vertex.point)
+        if source_vertex is None:
+            return math.inf
         source_ts = (
             proposal.run_interval[0]
             + proposal.low_gradient[0] * source_vertex.point[0]
