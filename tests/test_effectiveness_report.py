@@ -48,6 +48,7 @@ from tools.run_effectiveness_baseline import (
     _RunAuthority,
     _score_model,
     _source_selection_hash,
+    _unreadable_truth,
     _verify_run_authority,
     _write_checkpoint_row,
     _write_new_report,
@@ -996,6 +997,20 @@ def test_known_full_selection_refuses_invalid_policy_before_scoring() -> None:
         _require_known_invalid_policy("mfcadpp", ids, False)
     _require_known_invalid_policy("mfcadpp", ids, True)
     _require_known_invalid_policy("mfcadpp", ids[:500], False)
+
+
+def test_malformed_truth_remains_an_invalid_model_task(tmp_path: Path) -> None:
+    step = tmp_path / "broken.step"
+    step.write_text("ISO-10303-21;", encoding="ascii")
+    truth = _unreadable_truth("mfcadpp", tmp_path, "broken")
+    task = _ModelTask(truth, {}, "raw", "no ADVANCED_FACE labels")
+
+    assert len(truth.source_sha256) == 64
+    assert _score_model(task) == {
+        "model_id": "broken",
+        "status": "invalid",
+        "reason": "no ADVANCED_FACE labels",
+    }
 
 
 def test_model_scoring_is_worker_count_independent_except_runtime(tmp_path: Path) -> None:

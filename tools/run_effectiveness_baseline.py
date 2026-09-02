@@ -98,10 +98,18 @@ class _ModelTask:
     truth: DatasetTruth
     taxonomy: dict[int, dict[str, Any]]
     recognition_frame: str
+    input_error: str | None = None
 
 
 def _score_model(task: _ModelTask) -> dict[str, Any]:
     """Evaluate one immutable model task in either this process or a worker."""
+
+    if task.input_error is not None:
+        return {
+            "model_id": task.truth.model_id,
+            "status": "invalid",
+            "reason": task.input_error,
+        }
 
     from b123d_recognisers import import_step_geometry as import_step
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
@@ -123,6 +131,44 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
         return row
     except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
         return {"model_id": task.truth.model_id, "status": "invalid", "reason": str(error)}
+
+
+def _unreadable_truth(dataset: str, root: Path, model_id: str) -> DatasetTruth:
+    """Fingerprint malformed selected inputs while retaining their invalid report row."""
+
+    candidates: tuple[Path, ...]
+    if dataset == "mfcadpp":
+        candidates = (root / f"{model_id}.step", root / f"{model_id}.stp")
+    else:
+        candidates = (
+            root / "steps" / f"{model_id}.step",
+            root / "steps" / f"{model_id}.stp",
+            root / "labels" / f"{model_id}.json",
+        )
+    present = tuple(path for path in candidates if path.is_file())
+    digest = hashlib.sha256()
+    for path in candidates:
+        name = str(path.resolve()).encode()
+        digest.update(len(name).to_bytes(4, "big"))
+        digest.update(name)
+        if path in present:
+            contents = path.read_bytes()
+            digest.update(len(contents).to_bytes(8, "big"))
+            digest.update(contents)
+        else:
+            digest.update((0).to_bytes(8, "big"))
+    step_path = next(
+        (path for path in present if path.suffix.lower() in {".step", ".stp"}),
+        candidates[0],
+    )
+    return DatasetTruth(
+        model_id=model_id,
+        step_path=step_path,
+        semantic=(),
+        instances=(),
+        bottom=None,
+        source_sha256=digest.hexdigest(),
+    )
 
 
 def _source_selection_hash(truths: Iterable[DatasetTruth]) -> str:
@@ -472,7 +518,14 @@ def main() -> int:
         )
         # Loading truth also fingerprints every selected STEP/label source before costly
         # recognition. The immutable objects are safe inputs to independent workers.
-        truths = [loader(model_id) for model_id in ids]
+        truths: list[DatasetTruth] = []
+        input_errors: dict[str, str] = {}
+        for model_id in ids:
+            try:
+                truths.append(loader(model_id))
+            except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
+                truths.append(_unreadable_truth(args.dataset, args.root, model_id))
+                input_errors[model_id] = str(error)
         checkpoint_authority = _checkpoint_authority(
             authority,
             dataset=args.dataset,
@@ -536,7 +589,17 @@ def main() -> int:
 
     if pending and workers == 1:
         for truth in pending:
-            record(truth, _score_model(_ModelTask(truth, taxonomy, args.recognition_frame)))
+            record(
+                truth,
+                _score_model(
+                    _ModelTask(
+                        truth,
+                        taxonomy,
+                        args.recognition_frame,
+                        input_errors.get(truth.model_id),
+                    )
+                ),
+            )
     elif pending:
         # OCCT may already have native worker threads by this point. Forking that state can
         # deadlock, so every platform starts workers from a fresh interpreter.
@@ -545,7 +608,13 @@ def main() -> int:
         ) as executor:
             futures = {
                 executor.submit(
-                    _score_model, _ModelTask(truth, taxonomy, args.recognition_frame)
+                    _score_model,
+                    _ModelTask(
+                        truth,
+                        taxonomy,
+                        args.recognition_frame,
+                        input_errors.get(truth.model_id),
+                    ),
                 ): truth
                 for truth in pending
             }
