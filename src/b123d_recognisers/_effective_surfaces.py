@@ -320,6 +320,18 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b bounded straight junction-edge grammar",
     ),
+    "_section_passages:_line_section:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b two-mouth fallback requires an original straight-edged polygon",
+    ),
+    "_section_passages:_mouth_regions:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b opening faces must be original planes",
+    ),
+    "_section_passages:_mouth_regions:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "F4b two-mouth fallback is limited to original planar wall seeds",
+    ),
     "_section_passages:section_ring_proposals:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "F4b original planar wall-cycle membership",

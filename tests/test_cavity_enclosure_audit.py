@@ -9,7 +9,9 @@ from b123d_recognisers._candidates import FamilyId
 from tools.audit_mfcadpp_cavity_enclosures import (
     TARGET_FAMILIES,
     _candidate_regions,
+    _convex_mouth,
     _dominant_target_class,
+    _two_ended_regions,
 )
 
 
@@ -32,6 +34,16 @@ def test_blind_and_through_cavities_form_one_bounded_region() -> None:
         assert region < frozenset(graph.nodes)
 
 
+def test_two_convex_mouths_distinguish_through_from_blind_cavity() -> None:
+    through_graph = FaceGraph(_through_passage())
+    blind_graph = FaceGraph(_blind_pocket())
+
+    [(region, mouths)] = _two_ended_regions(through_graph)
+    assert len(mouths) == 2
+    assert all(_convex_mouth(through_graph, mouth, region) for mouth in mouths)
+    assert _two_ended_regions(blind_graph) == ()
+
+
 def test_multiple_and_separate_body_cavities_remain_distinct() -> None:
     two = Box(80, 50, 20) - Pos(-22, 0, 8) * Box(16, 10, 8)
     two -= Pos(22, 0, 8) * Box(16, 10, 8)
@@ -44,6 +56,19 @@ def test_multiple_and_separate_body_cavities_remain_distinct() -> None:
     assert all(
         graph.common_valid_solid(region | owners) is not None
         for region, owners in regions
+    )
+    assert graph.common_valid_solid(regions[0][0] | regions[1][0]) is None
+
+
+def test_two_ended_regions_preserve_compound_ownership() -> None:
+    compound = Compound([_through_passage(), Pos(100, 0, 0) * _through_passage()])
+    graph = FaceGraph(compound)
+
+    regions = _two_ended_regions(graph)
+    assert len(regions) == 2
+    assert all(
+        graph.common_valid_solid(region | set(mouths)) is not None
+        for region, mouths in regions
     )
     assert graph.common_valid_solid(regions[0][0] | regions[1][0]) is None
 

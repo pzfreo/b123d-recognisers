@@ -711,10 +711,11 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
 
     ring = claimed["SectionPassage"]
     assert set(ring) == set(passages.values()), "a passage claimed a non-passage face"
-    # F4b's complete constant-section authority retains 100 truthfully labelled walls. The old
-    # 115-face compatibility baseline included partial-span rings such as 10060's X occurrence;
-    # those remain visible only from the frozen writer-free legacy API and cannot own evidence.
-    assert ring == Counter({4: 42, 3: 40, 2: 18})
+    # The complete-cycle path plus the bounded two-mouth fallback retain 104 truthfully labelled
+    # walls. The old 115-face compatibility baseline included partial-span rings such as 10060's
+    # X occurrence; those remain visible only from the frozen writer-free legacy API and cannot
+    # own evidence.
+    assert ring == Counter({4: 42, 3: 40, 2: 22})
 
     bevels = claimed["Chamfer"]
     assert bevels[CHAMFER] == 14 and sum(bevels.values()) == 17

@@ -383,7 +383,13 @@ def _discover_section_passages(
             raise ValueError("legacy passage roster has competing defining-node matches")
         legacy_by_nodes[key] = (legacy, ordinal)
     found: list[
-        tuple[SectionPassage, tuple[FaceNode, ...], SolidRef, PassageCompatibilityView]
+        tuple[
+            SectionPassage,
+            tuple[FaceNode, ...],
+            frozenset[FaceNode],
+            SolidRef,
+            PassageCompatibilityView,
+        ]
     ] = []
     for proposal in proposals:
         full_precision_projection = _proposal_legacy_projection(proposal)
@@ -423,7 +429,7 @@ def _discover_section_passages(
         else:
             compatibility = compatibility_view(full_precision_projection, eligible=False)
         duplicate = False
-        for other_record, other_nodes, other_solid, other_compatibility in found:
+        for other_record, other_nodes, _, other_solid, other_compatibility in found:
             same_nodes = len(proposal.nodes) == len(other_nodes) and all(
                 any(left is right for right in other_nodes) for left in proposal.nodes
             )
@@ -442,10 +448,18 @@ def _discover_section_passages(
             ):
                 raise ValueError("one legacy passage occurrence matched multiple rich proposals")
         if not duplicate:
-            found.append((record, proposal.nodes, proposal.solid, compatibility))
+            found.append(
+                (
+                    record,
+                    proposal.nodes,
+                    proposal.constituent or frozenset(proposal.nodes),
+                    proposal.solid,
+                    compatibility,
+                )
+            )
     found.sort(key=lambda pair: (pair[0].frame.run, pair[0].run_interval, pair[0].frame.origin))
-    for at, (record, nodes, solid, _) in enumerate(found):
-        for other_record, other_nodes, other_solid, _ in found[at + 1 :]:
+    for at, (record, nodes, _, solid, _) in enumerate(found):
+        for other_record, other_nodes, _, other_solid, _ in found[at + 1 :]:
             if record == other_record and solid is other_solid:
                 same_nodes = len(nodes) == len(other_nodes) and all(
                     any(left is right for right in other_nodes) for left in nodes
@@ -453,14 +467,15 @@ def _discover_section_passages(
                 if not same_nodes:
                     raise ValueError("equal section passage proposals compete on one solid")
     if sink is not None:
-        for record, nodes, _, compatibility in found:
+        for record, nodes, constituent, _, compatibility in found:
             sink.propose(
                 FamilyId.PASSAGES,
                 record,
                 defining=nodes,
+                constituent=constituent,
                 compatibility=compatibility,
             )
-    return [record for record, _, _, _ in found]
+    return [record for record, _, _, _, _ in found]
 
 
 def _section_projection_displacement(

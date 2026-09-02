@@ -393,6 +393,12 @@ may read `FaceGraph`, analytic section primitives, and solid classification, but
 evidence, reconciliation, results, census, or sibling recognisers. `passages` is its sole policy
 caller and the sole constructor/issuer of public `SectionPassage` records.
 
+Issue #446 adds a second proof inside that same neutral producer rather than a second Passage
+recogniser. When a wall cycle is interrupted, exactly two complete convex inner-wire mouths may
+seed one same-solid concave-or-smooth enclosure. Matching straight-edged polygonal mouth sections
+and the existing empty-prism/open-end classifier must still pass. The producer retains the exact
+traversed region; `passages` remains the sole record and evidence issuer.
+
 F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
 below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
 only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,

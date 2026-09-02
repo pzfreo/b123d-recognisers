@@ -10,6 +10,7 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Compound,
+    Cylinder,
     Plane,
     Pos,
     RegularPolygon,
@@ -18,7 +19,10 @@ from build123d import (
 )
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._section_passages import section_ring_proposals
+from b123d_recognisers.passages import recognise_section_passages
 from tools.audit_mfcadpp_section_passage_gaps import (
     _probe_component,
     _relation,
@@ -37,6 +41,13 @@ def _polygonal_tool(sides: int, *, depth: float = 60.0):
 
 def _polygonal_passage(sides: int = 6):
     return Box(60, 40, 20) - _polygonal_tool(sides)
+
+
+def _interrupted_polygonal_passage(sides: int):
+    passage = Box(60, 50, 20) - _polygonal_tool(sides)
+    if sides == 3:
+        return passage - Pos(15, 3, 5) * Box(30, 8, 6)
+    return passage - Pos(15, -8, 0) * Box(30, 6, 6)
 
 
 def _vertical_inner_walls(graph: FaceGraph):
@@ -63,6 +74,79 @@ def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) 
     assert probe.planar_walls == probe.collinear_pairs == probe.interval_pairs == sides
     assert probe.cycle_faces == sides
     assert component == frozenset(proposal.nodes)
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+def test_two_mouth_enclosure_recovers_interrupted_polygonal_passage(
+    sides: int, monkeypatch
+) -> None:
+    import b123d_recognisers._section_passages as module
+
+    part = _interrupted_polygonal_passage(sides)
+    graph = FaceGraph(part)
+    (proposal,) = section_ring_proposals(part, graph)
+
+    assert len(proposal.section.boundary) == sides
+    assert proposal.constituent == frozenset(proposal.nodes)
+    assert graph.common_valid_solid(proposal.constituent) is proposal.solid
+
+    monkeypatch.setattr(module, "_enclosure_proposals", lambda *_args: ())
+    assert module.section_ring_proposals(part, FaceGraph(part)) == ()
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+def test_two_mouth_enclosure_is_rigid_transform_covariant(sides: int) -> None:
+    part = _interrupted_polygonal_passage(sides)
+    moved = Pos(17, -11, 9) * Rot(31, 17, 23) * part
+
+    base = section_ring_proposals(part, FaceGraph(part))
+    transformed = section_ring_proposals(moved, FaceGraph(moved))
+
+    assert len(base) == len(transformed) == 1
+    assert len(base[0].section.boundary) == len(transformed[0].section.boundary) == sides
+    assert base[0].run_interval[1] - base[0].run_interval[0] == pytest.approx(
+        transformed[0].run_interval[1] - transformed[0].run_interval[0]
+    )
+
+
+def test_two_mouth_fallback_preserves_equal_compound_occurrences() -> None:
+    first = _interrupted_polygonal_passage(6)
+    compound = Compound([first, Pos(100, 0, 0) * first])
+    graph = FaceGraph(compound)
+
+    proposals = section_ring_proposals(compound, graph)
+
+    assert len(proposals) == 2
+    assert all(proposal.constituent for proposal in proposals)
+    assert proposals[0].solid is not proposals[1].solid
+
+
+def test_two_mouth_fallback_publishes_exact_constituent_membership() -> None:
+    part = _interrupted_polygonal_passage(6)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    (proposal,) = section_ring_proposals(part, graph)
+
+    (record,) = recognise_section_passages(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    evidence = ledger.snapshot_index()
+
+    assert candidate.record is record
+    assert evidence.defining_of(candidate) == frozenset(proposal.nodes)
+    assert evidence.constituent_of(candidate) == proposal.constituent
+    assert evidence.defining_of(candidate) <= evidence.constituent_of(candidate)
+
+
+def test_two_mouth_fallback_refuses_blind_circular_and_branched_voids() -> None:
+    import b123d_recognisers._section_passages as module
+
+    blind = Box(60, 50, 20) - _polygonal_tool(6, depth=10)
+    circular = Box(60, 50, 20) - Cylinder(7, 60)
+    branched = Box(60, 50, 20) - Box(16, 12, 60) - Box(60, 8, 6)
+
+    for part in (blind, circular, branched):
+        graph = FaceGraph(part)
+        assert module._enclosure_proposals(graph, module._BodyAdapter()) == ()
 
 
 @pytest.mark.parametrize("sides", (3, 4, 6))
