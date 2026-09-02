@@ -40,6 +40,8 @@ class SectionRingProposal:
     solid: SolidRef
     body_adapter: _BodyAdapter
     constituent: frozenset[FaceNode] = frozenset()
+    low_gradient: tuple[float, float] = (0.0, 0.0)
+    high_gradient: tuple[float, float] = (0.0, 0.0)
 
     @property
     def frame(self) -> LocalFrame:
@@ -260,6 +262,137 @@ def _same_section(left: PlanarSection, right: PlanarSection) -> bool:
     )
 
 
+def _wall_run(graph: FaceGraph, region: frozenset[FaceNode]) -> Vector3 | None:
+    """Return the unique straight junction direction proved by one planar wall region."""
+
+    if len(region) < 3 or any(not graph.is_planar(node) for node in region):
+        return None
+    runs: list[Vector3] = []
+    adjacency: dict[FaceNode, set[FaceNode]] = defaultdict(set)
+    for left in region:
+        for right in graph.neighbours(left):
+            if right not in region or right.index <= left.index:
+                continue
+            edges = tuple(graph.shared_edges(left, right))
+            edge_runs = tuple(_canonical_run(edge) for edge in edges)
+            if not edge_runs or any(run is None for run in edge_runs):
+                return None
+            runs.extend(cast(tuple[Vector3, ...], edge_runs))
+            adjacency[left].add(right)
+            adjacency[right].add(left)
+    if not runs or any(len(adjacency[node]) != 2 for node in region):
+        return None
+    run = min(runs)
+    if any(not _parallel(candidate, run) for candidate in runs):
+        return None
+    if any(
+        (normal := graph.normal(node)) is None
+        or abs(_dot(normal, run)) > _DIRECTION_TOL
+        for node in region
+    ):
+        return None
+    return run
+
+
+def _termination_plane(
+    normal: Vector3, wire: Wire, frame: LocalFrame
+) -> tuple[float, tuple[float, float]] | None:
+    """Express one planar mouth as ``t = at + du*x + dv*y`` in *frame*."""
+
+    along = _dot(normal, frame.run)
+    if abs(along) <= _DIRECTION_TOL:
+        return None
+    try:
+        point = _point(wire.vertices()[0])
+    except (AttributeError, IndexError, RuntimeError, TypeError, ValueError):
+        return None
+    delta = cast(Vector3, tuple(point[i] - frame.origin[i] for i in range(3)))
+    at = _dot(normal, delta) / along
+    gradient = (-_dot(normal, frame.u) / along, -_dot(normal, frame.v) / along)
+    if not all(math.isfinite(value) for value in (at, *gradient)):
+        return None
+    return at, gradient
+
+
+def _plane_wire(
+    frame: LocalFrame,
+    at: float,
+    gradient: tuple[float, float],
+    section: PlanarSection,
+) -> Wire:
+    points = tuple(
+        Vector(
+            *_world(
+                frame,
+                at + gradient[0] * vertex.point[0] + gradient[1] * vertex.point[1],
+                vertex.point,
+            )
+        )
+        for vertex in section.boundary
+    )
+    return Wire.make_polygon((*points, points[0]))
+
+
+def _between_planes(
+    frame: LocalFrame,
+    low: tuple[float, tuple[float, float]],
+    high: tuple[float, tuple[float, float]],
+    section: PlanarSection,
+) -> Solid:
+    if any(
+        low[0] + low[1][0] * vertex.point[0] + low[1][1] * vertex.point[1]
+        >= high[0] + high[1][0] * vertex.point[0] + high[1][1] * vertex.point[1]
+        for vertex in section.boundary
+    ):
+        raise ValueError("passage termination planes cross")
+    return Solid.make_loft(
+        [
+            _plane_wire(frame, low[0], low[1], section),
+            _plane_wire(frame, high[0], high[1], section),
+        ],
+        ruled=True,
+    )
+
+
+def _void_and_planar_open(
+    solid: Part,
+    frame: LocalFrame,
+    low: tuple[float, tuple[float, float]],
+    high: tuple[float, tuple[float, float]],
+    section: PlanarSection,
+) -> bool:
+    """Prove an empty clipped prism and exterior void beyond both planar mouths."""
+
+    try:
+        scale = max(1.0, high[0] - low[0])
+        radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
+        thickness = max(_END_PROBE, scale * 1e-4, radius * 1e-4)
+        inner = _between_planes(
+            frame,
+            (low[0] + _COORD_FLOOR, low[1]),
+            (high[0] - _COORD_FLOOR, high[1]),
+            section,
+        )
+        low_slab = _between_planes(
+            frame,
+            (low[0] - thickness, low[1]),
+            (low[0] - _COORD_FLOOR, low[1]),
+            section,
+        )
+        high_slab = _between_planes(
+            frame,
+            (high[0] + _COORD_FLOOR, high[1]),
+            (high[0] + thickness, high[1]),
+            section,
+        )
+        return _material_fraction(solid, inner) <= _MATERIAL_VOL_FRAC and all(
+            _material_fraction(solid, slab) <= _MATERIAL_VOL_FRAC
+            for slab in (low_slab, high_slab)
+        )
+    except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
+        return False
+
+
 def _enclosure_proposals(
     graph: FaceGraph, bodies: _BodyAdapter
 ) -> tuple[SectionRingProposal, ...]:
@@ -271,13 +404,55 @@ def _enclosure_proposals(
         first_normal = graph.normal(first_opening)
         second_normal = graph.normal(second_opening)
         solid = graph.common_valid_solid(region | {first_opening, second_opening})
-        if (
-            first_normal is None
-            or second_normal is None
-            or not _parallel(first_normal, second_normal)
-            or _dot(first_normal, second_normal) > 0.0
-            or solid is None
-        ):
+        if first_normal is None or second_normal is None or solid is None:
+            continue
+        if not _parallel(first_normal, second_normal):
+            run = _wall_run(graph, region)
+            if run is None:
+                continue
+            base = LocalFrame.canonical(run, (0.0, 0.0, 0.0))
+            first = _line_section(first_wire, base)
+            second = _line_section(second_wire, base)
+            if (
+                first is None
+                or second is None
+                or not _same_section(first[0], second[0])
+                or math.dist(first[1], second[1]) > _INTERVAL_TOL
+            ):
+                continue
+            section, centre = first
+            frame = LocalFrame.canonical(base.run, centre)
+            first_plane = _termination_plane(first_normal, first_wire, frame)
+            second_plane = _termination_plane(second_normal, second_wire, frame)
+            if first_plane is None or second_plane is None:
+                continue
+            low, high = sorted((first_plane, second_plane), key=lambda item: item[0])
+            if high[0] - low[0] <= _COORD_FLOOR or not _void_and_planar_open(
+                graph.solid_shape(solid), frame, low, high, section
+            ):
+                continue
+            defining = tuple(sorted(first_seed | second_seed, key=lambda node: node.index))
+            occurrence = SectionOccurrence(
+                bodies.body(solid),
+                frame,
+                (low[0], high[0]),
+                section,
+                SectionEnds(False, False),
+            )
+            bodies.validate(solid, occurrence)
+            proposals.append(
+                SectionRingProposal(
+                    occurrence,
+                    defining,
+                    solid,
+                    bodies,
+                    constituent=region,
+                    low_gradient=low[1],
+                    high_gradient=high[1],
+                )
+            )
+            continue
+        if _dot(first_normal, second_normal) > 0.0:
             continue
         base = LocalFrame.canonical(first_normal, (0.0, 0.0, 0.0))
         first = _line_section(first_wire, base)

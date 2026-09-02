@@ -1393,16 +1393,26 @@
               "type": "bool",
               "units": "none"
             },
+            "high_gradient": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "ratio"
+            },
             "low_capped": {
               "required": true,
               "type": "bool",
               "units": "none"
+            },
+            "low_gradient": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "ratio"
             }
           },
           "name": "PassageEnds",
           "qualified_name": "b123d_recognisers.PassageEnds",
           "role": "nested",
-          "schema_version": 1
+          "schema_version": 2
         },
         {
           "aggregate_membership": [],
@@ -1498,7 +1508,7 @@
           "name": "SectionPassage",
           "qualified_name": "b123d_recognisers.SectionPassage",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
