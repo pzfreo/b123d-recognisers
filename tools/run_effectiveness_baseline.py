@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 import hashlib
 import json
 import multiprocessing
@@ -152,11 +153,12 @@ def _unreadable_truth(dataset: str, root: Path, model_id: str) -> DatasetTruth:
         digest.update(len(name).to_bytes(4, "big"))
         digest.update(name)
         if path in present:
+            digest.update(b"\x01")
             contents = path.read_bytes()
             digest.update(len(contents).to_bytes(8, "big"))
             digest.update(contents)
         else:
-            digest.update((0).to_bytes(8, "big"))
+            digest.update(b"\x00")
     step_path = next(
         (path for path in present if path.suffix.lower() in {".step", ".stp"}),
         candidates[0],
@@ -228,6 +230,29 @@ def _atomic_replace(path: Path, contents: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def _create_checkpoint_manifest(path: Path, contents: str) -> None:
+    """Publish one immutable authority manifest without a concurrent overwrite race."""
+
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", newline="", dir=path.parent, delete=False
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        with contextlib.suppress(FileExistsError):
+            os.link(temporary, path)
+    except OSError as error:
+        raise EffectivenessDataError(
+            f"could not create checkpoint authority {path}: {error}"
+        ) from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def _checkpoint_key(model_id: str) -> str:
     return hashlib.sha256(model_id.encode("utf-8")).hexdigest()
 
@@ -254,17 +279,15 @@ def _prepare_checkpoint(
 
     manifest = root / "authority.json"
     expected = canonical_json(checkpoint_authority)
-    if manifest.exists():
-        try:
-            if manifest.read_text(encoding="utf-8") != expected:
-                raise EffectivenessDataError("checkpoint authority does not match this run")
-        except (OSError, UnicodeError) as error:
-            raise EffectivenessDataError("checkpoint authority is unreadable") from error
-    else:
-        if root.exists() and any(root.iterdir()):
-            raise EffectivenessDataError("checkpoint directory has no authority manifest")
-        root.mkdir(parents=True, exist_ok=True)
-        _atomic_replace(manifest, expected)
+    if not manifest.exists() and root.exists() and any(root.iterdir()):
+        raise EffectivenessDataError("checkpoint directory has no authority manifest")
+    root.mkdir(parents=True, exist_ok=True)
+    _create_checkpoint_manifest(manifest, expected)
+    try:
+        if manifest.read_text(encoding="utf-8") != expected:
+            raise EffectivenessDataError("checkpoint authority does not match this run")
+    except (OSError, UnicodeError) as error:
+        raise EffectivenessDataError("checkpoint authority is unreadable") from error
 
     completed: dict[str, dict[str, Any]] = {}
     rows_root = root / "rows"

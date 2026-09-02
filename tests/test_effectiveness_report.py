@@ -1011,6 +1011,9 @@ def test_malformed_truth_remains_an_invalid_model_task(tmp_path: Path) -> None:
         "status": "invalid",
         "reason": "no ADVANCED_FACE labels",
     }
+    empty_hash = truth.source_sha256
+    step.unlink()
+    assert _unreadable_truth("mfcadpp", tmp_path, "broken").source_sha256 != empty_hash
 
 
 def test_model_scoring_is_worker_count_independent_except_runtime(tmp_path: Path) -> None:
