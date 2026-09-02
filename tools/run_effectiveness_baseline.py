@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
+import json
+import multiprocessing
 import os
 import platform
 import subprocess
@@ -12,7 +15,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -83,6 +86,174 @@ class _RunAuthority:
     source_sha256: str
     taxonomy: bytes
     taxonomy_sha256: str
+
+
+_KNOWN_MFCADPP_2500_INVALID = frozenset(
+    {"12939", "13975", "14052", "14307", "18628", "22386", "22439"}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _ModelTask:
+    truth: DatasetTruth
+    taxonomy: dict[int, dict[str, Any]]
+    recognition_frame: str
+
+
+def _score_model(task: _ModelTask) -> dict[str, Any]:
+    """Evaluate one immutable model task in either this process or a worker."""
+
+    from b123d_recognisers import import_step_geometry as import_step
+    from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
+    from b123d_recognisers.result import _take_inventory
+
+    try:
+        part = import_step(task.truth.step_path)
+        started = time.perf_counter()
+        working_part = part
+        if task.recognition_frame == "framed":
+            frame = infer_part_frame(part)
+            if isinstance(frame, RefusedPartFrame):
+                raise EffectivenessDataError(f"frame refused: {frame.reason.value}")
+            working_part = _normalize_part(part, frame)
+        product = _take_inventory(working_part)
+        seconds = time.perf_counter() - started
+        row = score_inventory(task.truth, working_part, product, task.taxonomy, seconds)
+        row["status"] = "evaluated"
+        return row
+    except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
+        return {"model_id": task.truth.model_id, "status": "invalid", "reason": str(error)}
+
+
+def _source_selection_hash(truths: Iterable[DatasetTruth]) -> str:
+    digest = hashlib.sha256()
+    for truth in truths:
+        value = (
+            f"{truth.model_id}\0{truth.step_path.resolve()}\0{truth.source_sha256}\n"
+        ).encode()
+        digest.update(value)
+    return digest.hexdigest()
+
+
+def _checkpoint_authority(
+    authority: _RunAuthority,
+    *,
+    dataset: str,
+    dataset_version: str,
+    ids: list[str],
+    truths: list[DatasetTruth],
+    selection_limit: int | None,
+    recognition_frame: str,
+    allow_invalid: bool,
+) -> dict[str, Any]:
+    return {
+        "format": "b123d-recognisers-effectiveness-checkpoint",
+        "format_version": 1,
+        "commit": authority.commit,
+        "source_sha256": authority.source_sha256,
+        "taxonomy_sha256": authority.taxonomy_sha256,
+        "dataset": dataset,
+        "dataset_version": dataset_version,
+        "selected_ids_sha256": _selection_hash(ids),
+        "selected_sources_sha256": _source_selection_hash(truths),
+        "selection_limit": selection_limit,
+        "recognition_frame": recognition_frame,
+        "allow_invalid": allow_invalid,
+    }
+
+
+def _atomic_replace(path: Path, contents: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", newline="", dir=path.parent, delete=False
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        temporary = None
+    except OSError as error:
+        raise EffectivenessDataError(f"could not write checkpoint {path}: {error}") from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _checkpoint_key(model_id: str) -> str:
+    return hashlib.sha256(model_id.encode("utf-8")).hexdigest()
+
+
+def _require_known_invalid_policy(
+    dataset: str, ids: list[str], allow_invalid: bool
+) -> None:
+    if (
+        dataset == "mfcadpp"
+        and len(ids) == 2500
+        and set(ids) >= _KNOWN_MFCADPP_2500_INVALID
+        and not allow_invalid
+    ):
+        raise EffectivenessDataError(
+            "the known MFCAD++-2,500 selection contains seven invalid models; "
+            "supply the documented --allow-invalid policy before recognition"
+        )
+
+
+def _prepare_checkpoint(
+    root: Path, checkpoint_authority: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
+    """Create or validate a checkpoint and return its completed model rows."""
+
+    manifest = root / "authority.json"
+    expected = canonical_json(checkpoint_authority)
+    if manifest.exists():
+        try:
+            if manifest.read_text(encoding="utf-8") != expected:
+                raise EffectivenessDataError("checkpoint authority does not match this run")
+        except (OSError, UnicodeError) as error:
+            raise EffectivenessDataError("checkpoint authority is unreadable") from error
+    else:
+        if root.exists() and any(root.iterdir()):
+            raise EffectivenessDataError("checkpoint directory has no authority manifest")
+        root.mkdir(parents=True, exist_ok=True)
+        _atomic_replace(manifest, expected)
+
+    completed: dict[str, dict[str, Any]] = {}
+    rows_root = root / "rows"
+    if not rows_root.exists():
+        return completed
+    for path in sorted(rows_root.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise EffectivenessDataError(f"checkpoint row is corrupt: {path}") from error
+        if (
+            not isinstance(payload, dict)
+            or set(payload) != {"model_id", "source_sha256", "row"}
+            or not isinstance(payload["model_id"], str)
+            or not isinstance(payload["source_sha256"], str)
+            or not isinstance(payload["row"], dict)
+            or payload["row"].get("model_id") != payload["model_id"]
+            or path.stem != _checkpoint_key(payload["model_id"])
+            or payload["model_id"] in completed
+        ):
+            raise EffectivenessDataError(f"checkpoint row is malformed: {path}")
+        completed[payload["model_id"]] = payload
+    return completed
+
+
+def _write_checkpoint_row(root: Path, truth: DatasetTruth, row: dict[str, Any]) -> None:
+    payload = {
+        "model_id": truth.model_id,
+        "source_sha256": truth.source_sha256,
+        "row": row,
+    }
+    _atomic_replace(
+        root / "rows" / f"{_checkpoint_key(truth.model_id)}.json",
+        canonical_json(payload),
+    )
 
 
 def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
@@ -263,9 +434,23 @@ def main() -> int:
         help="score caller-space recognition or the inferred local framed route",
     )
     parser.add_argument("--allow-invalid", action="store_true")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=min(4, os.cpu_count() or 1),
+        help="model workers (default: up to 4; use 0 for every available CPU)",
+    )
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        help="persist authority-bound model rows here and resume matching work",
+    )
     args = parser.parse_args()
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
+    if args.workers < 0:
+        parser.error("--workers must be non-negative")
+    workers = (os.cpu_count() or 1) if args.workers == 0 else args.workers
     try:
         authority = _capture_run_authority(args.taxonomy)
         if args.dataset == "mfcadpp":
@@ -276,43 +461,101 @@ def main() -> int:
             ids, loader, selection_extra = _mfinstseg_selection(args.root, args.partition_root)
         if args.limit is not None:
             ids = ids[: args.limit]
+        _require_known_invalid_policy(args.dataset, ids, args.allow_invalid)
         taxonomy = load_taxonomy(
             args.taxonomy, args.dataset, contents=authority.taxonomy
         )
+        # Loading truth also fingerprints every selected STEP/label source before costly
+        # recognition. The immutable objects are safe inputs to independent workers.
+        truths = [loader(model_id) for model_id in ids]
+        checkpoint_authority = _checkpoint_authority(
+            authority,
+            dataset=args.dataset,
+            dataset_version=args.dataset_version,
+            ids=ids,
+            truths=truths,
+            selection_limit=args.limit,
+            recognition_frame=args.recognition_frame,
+            allow_invalid=args.allow_invalid,
+        )
+        completed = (
+            _prepare_checkpoint(args.checkpoint_dir, checkpoint_authority)
+            if args.checkpoint_dir is not None
+            else {}
+        )
+        truth_by_id = {truth.model_id: truth for truth in truths}
+        unknown = set(completed) - set(truth_by_id)
+        if unknown:
+            raise EffectivenessDataError("checkpoint contains a model outside the selection")
+        for model_id, payload in completed.items():
+            if payload["source_sha256"] != truth_by_id[model_id].source_sha256:
+                raise EffectivenessDataError(
+                    f"checkpoint source does not match selected model: {model_id}"
+                )
     except EffectivenessDataError as error:
         parser.error(str(error))
 
     from b123d_recognisers import __version__
-    from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
-    from b123d_recognisers.result import _take_inventory
-
     try:
         _verify_run_authority(authority, args.taxonomy)
     except EffectivenessDataError as error:
         parser.error(str(error))
 
-    rows: list[dict[str, Any]] = []
-    invalid = 0
-    for model_id in ids:
-        try:
-            truth = loader(model_id)
-            part = import_step(truth.step_path)
-            started = time.perf_counter()
-            working_part = part
-            if args.recognition_frame == "framed":
-                frame = infer_part_frame(part)
-                if isinstance(frame, RefusedPartFrame):
-                    raise EffectivenessDataError(f"frame refused: {frame.reason.value}")
-                working_part = _normalize_part(part, frame)
-            product = _take_inventory(working_part)
-            seconds = time.perf_counter() - started
-            row = score_inventory(truth, working_part, product, taxonomy, seconds)
-            row["status"] = "evaluated"
-        except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
-            invalid += 1
-            row = {"model_id": model_id, "status": "invalid", "reason": str(error)}
-        rows.append(row)
+    rows_by_id = {model_id: payload["row"] for model_id, payload in completed.items()}
+    pending = [truth for truth in truths if truth.model_id not in rows_by_id]
+    started_run = time.monotonic()
+    progress_every = max(1, len(ids) // 100)
+    print(
+        f"progress {len(rows_by_id)}/{len(ids)} "
+        f"invalid={sum(item.get('status') == 'invalid' for item in rows_by_id.values())} "
+        "elapsed=0.0s",
+        file=sys.stderr,
+        flush=True,
+    )
+
+    def record(truth: DatasetTruth, row: dict[str, Any]) -> None:
+        rows_by_id[truth.model_id] = row
+        if args.checkpoint_dir is not None:
+            _write_checkpoint_row(args.checkpoint_dir, truth, row)
+        done = len(rows_by_id)
+        if done == len(ids) or done == 1 or done % progress_every == 0:
+            invalid_so_far = sum(
+                item.get("status") == "invalid" for item in rows_by_id.values()
+            )
+            print(
+                f"progress {done}/{len(ids)} invalid={invalid_so_far} "
+                f"elapsed={time.monotonic() - started_run:.1f}s",
+                file=sys.stderr,
+                flush=True,
+            )
+
+    if pending and workers == 1:
+        for truth in pending:
+            record(truth, _score_model(_ModelTask(truth, taxonomy, args.recognition_frame)))
+    elif pending:
+        # OCCT may already have native worker threads by this point. Forking that state can
+        # deadlock, so every platform starts workers from a fresh interpreter.
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers, mp_context=multiprocessing.get_context("spawn")
+        ) as executor:
+            futures = {
+                executor.submit(
+                    _score_model, _ModelTask(truth, taxonomy, args.recognition_frame)
+                ): truth
+                for truth in pending
+            }
+            for future in concurrent.futures.as_completed(futures):
+                truth = futures[future]
+                try:
+                    row = future.result()
+                except BaseException:
+                    for other in futures:
+                        other.cancel()
+                    raise
+                record(truth, row)
+
+    rows = [rows_by_id[model_id] for model_id in ids]
+    invalid = sum(row.get("status") == "invalid" for row in rows)
     try:
         _verify_run_authority(authority, args.taxonomy)
     except EffectivenessDataError as error:

@@ -98,8 +98,39 @@ uv run python tools/run_effectiveness_baseline.py \
   mfcadpp /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
   --dataset-version published-test-split \
   --limit 500 \
+  --workers 4 \
+  --checkpoint-dir .cache/effectiveness/mfcadpp-500-current \
   --output docs/benchmarks/effectiveness-mfcadpp-500-0.5.0.json
 ```
+
+Use this 500-model command on both the parent commit and the proposed commit during development,
+with a different checkpoint directory and output filename for each commit. Compare their exact
+score-vector fields; runtime fields are measurements and are expected to differ. Reserve the full
+2,500 selection for a merge candidate:
+
+```bash
+uv run python tools/run_effectiveness_baseline.py \
+  mfcadpp /app/workspaces-codex/datasets/mfcadpp/MFCAD++_dataset/step/test \
+  --dataset-version published-test-split \
+  --limit 2500 \
+  --allow-invalid \
+  --workers 0 \
+  --checkpoint-dir .cache/effectiveness/mfcadpp-2500-COMMIT \
+  --output docs/benchmarks/effectiveness-mfcadpp-2500-COMMIT.json
+```
+
+`--workers 0` uses every available CPU; the default is capped at four to avoid surprising memory
+pressure. Workers use fresh processes because forking an initialized OCCT process is unsafe.
+Completed model rows are written atomically and merged back into lexical model order, so worker
+completion order never changes the report. Progress is emitted on stderr and does not enter the
+canonical JSON.
+
+A checkpoint is reusable only for the exact captured commit, importable-source digest, taxonomy,
+dataset/version, lexical selection and limit, resolved input paths and hashes, recognition frame,
+and invalid-model policy. Any mismatch, foreign row, malformed row, or missing authority manifest
+is refused rather than ignored. Deleting the explicitly named checkpoint directory starts a fresh
+run. The known MFCAD++-2,500 selection is refused before recognition unless `--allow-invalid` is
+present, because its seven invalid IDs and policy are recorded below.
 
 The runner imports production recognition code from the environment that launches it. When an
 existing virtual environment is reused to replay another worktree, put that worktree's `src`
@@ -162,7 +193,9 @@ immediate verification before scoring, and the same verification runs before pub
 mid-run checkout, rebase or tracked edit therefore refuses the report instead of attaching post-run
 provenance to pre-run in-memory code or mapping. Untracked
 output files do not make a commit claim misleading and remain compatible with atomic report
-creation. Issue #405 identified this as a latent provenance race during a cross-version report
+creation. Resumable checkpoints add the same authority plus the selection, input-source, frame and
+invalid-policy hashes; completed rows are never reused under a merely similar run. Issue #405
+identified this as a latent provenance race during a cross-version report
 comparison. A recorded commit and taxonomy hash are necessary but not sufficient to establish that
 the in-memory recogniser stayed at that authority throughout the run. The historical #404 artifact
 has internally consistent taxonomy-v8 metadata, but a source-exact replay does not reproduce its
