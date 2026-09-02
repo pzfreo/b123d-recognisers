@@ -1058,7 +1058,7 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
-        "tests/golden/oriented_slots/expected.json"
+        "tests/golden/oriented_slots/contract.json"
       ],
       "id": "oriented-slot-patterns",
       "introduced_in": "0.5.0",
@@ -1157,7 +1157,7 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
-        "tests/golden/oriented_slots/expected.json"
+        "tests/golden/oriented_slots/contract.json"
       ],
       "id": "oriented-slots",
       "introduced_in": "0.5.0",

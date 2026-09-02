@@ -271,7 +271,8 @@ FAMILIES = {
             ("OrientedSlot", "output", ["RecognitionResult.oriented_slots"]),
         ],
         "census": "oriented_slot",
-        "goldens": ["oriented_slots"],
+        "goldens": [],
+        "golden_paths": ["tests/golden/oriented_slots/contract.json"],
         "introduced": "0.5.0",
         "tests": ["tests/test_oriented_slots.py"],
     },
@@ -290,7 +291,8 @@ FAMILIES = {
             ),
         ],
         "census": None,
-        "goldens": ["oriented_slots"],
+        "goldens": [],
+        "golden_paths": ["tests/golden/oriented_slots/contract.json"],
         "introduced": "0.5.0",
         "tests": ["tests/test_oriented_slots.py"],
     },
@@ -465,7 +467,8 @@ def build_manifest() -> dict[str, object]:
             "census_output": census_output,
             "documentation": ["docs/capabilities.md#proven-recognition-capability"],
             "golden_evidence": sorted(
-                f"tests/golden/{name}/expected.json" for name in spec["goldens"]
+                [f"tests/golden/{name}/expected.json" for name in spec["goldens"]]
+                + spec.get("golden_paths", [])
             ),
             "id": family_id,
             "introduced_in": spec.get("introduced", "0.1.0"),

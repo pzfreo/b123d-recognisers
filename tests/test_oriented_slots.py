@@ -321,7 +321,7 @@ def test_oriented_slot_semantic_golden() -> None:
         "census": {"oriented_slot": feature_census(part)["oriented_slot"]},
     }
     expected = json.loads(
-        Path("tests/golden/oriented_slots/expected.json").read_text(encoding="utf-8")
+        Path("tests/golden/oriented_slots/contract.json").read_text(encoding="utf-8")
     )
 
     assert summary == expected

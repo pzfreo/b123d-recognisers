@@ -16,9 +16,10 @@ across orientation, depth plane, width, length, or ambiguous body ownership. Agg
 reconciliation rejects the generic source Passage only when the successor has the exact same
 non-empty defining wall set.
 
-`tests/golden/oriented_slots` is package-originated semantic evidence rather than a misleading
-reuse of the principal-axis Draftwright golden. It pins the physical records and their source
-passages, aggregate array membership, exact reconciliation dispositions, and census count.
+`tests/golden/oriented_slots/contract.json` is package-originated semantic evidence rather than a
+misleading reuse of the principal-axis Draftwright snapshot schema. It pins the physical records
+and their source passages, aggregate array membership, exact reconciliation dispositions, and
+census count.
 
 ## MFCAD++-500 development transfer
 
