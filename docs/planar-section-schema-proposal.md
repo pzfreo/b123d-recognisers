@@ -1,6 +1,6 @@
 # Planar section schema proposal (version 1)
 
-**Status:** accepted schema v1; published by F4b `SectionPassage`
+**Status:** schema v1 accepted and published by F4b; planar-end schema v2 accepted by ADR 0016
 **Owner:** epic #177, F4a/F4b / issues #179 and #184
 **Publication gate:** satisfied by Draftwright issue #1337 and package issue #184
 
@@ -35,7 +35,12 @@ change; consumer implementation and stable-pin choreography remain consumer-owne
       {"point": [-2.0, 1.0], "bulge": 0.0}
     ]
   },
-  "ends": {"low_capped": false, "high_capped": false}
+  "ends": {
+    "low_capped": false,
+    "high_capped": false,
+    "low_gradient": [0.0, 0.0],
+    "high_gradient": [0.0, 0.0]
+  }
 }
 ```
 
@@ -48,7 +53,8 @@ nonzero bulge is a circular arc with signed sweep `4 * atan(bulge)`; this permit
 semicircles, major arcs, and full circles made from at least two arcs. Boundary winding is positive
 in `(u,v)` and its start is the lexicographically least complete serialized cyclic sequence.
 
-Positions and spans use three decimal places, directions six, and dimensionless bulges twelve.
+Frame positions and run spans use three decimal places, schema-v2 intrinsic section points use
+four, directions and planar-end gradients six, and dimensionless bulges twelve.
 Canonicalisation occurs before serialization at full precision. Projection refuses non-finite or
 self-intersecting boundaries, collapsed vertices, a nonzero bulge rounded to zero, or reconstruction
 movement beyond the named bounds: `0.0008` for the intrinsic 2-D boundary and `0.002` for the whole
@@ -68,7 +74,12 @@ A point on the placed boundary is reconstructed from serialized values exactly a
 world(t, x, y) = origin + t * run + x * u + y * v
 ```
 
-where `t` lies in the closed increasing `run_interval`. A positive bulge and positive sweep are
+For perpendicular ends, `t` lies in the closed increasing `run_interval`. Schema v2 interprets
+those two values as the termination intersections on the section-centroid run line. At an
+intrinsic point `(x, y)`, the exact physical limits are `low + low_gradient[0]*x +
+low_gradient[1]*y` and `high + high_gradient[0]*x + high_gradient[1]*y`. Both gradients are
+dimensionless and use six decimal places; the v1 geometry is exactly the all-zero case. The low
+limit must remain strictly below the high limit over the complete section. A positive bulge and positive sweep are
 counter-clockwise in the right-handed `(u, v)` plane when viewed along positive `run`.
 
 A reader uses the rounded basis exactly as serialized. It must not re-orthonormalize or otherwise
@@ -92,7 +103,9 @@ serialize identically cannot select different in-plane gauges.
 These are serialization-validation bounds, not recognition tolerances. Every vector and point is
 an exact-length JSON array (three and two elements respectively). Every numeric member must be a
 finite JSON number and not a boolean. `run_interval` contains exactly two numbers with
-`low < high`; end flags are actual JSON booleans; the boundary contains at least two vertices,
+`low < high`; each end gradient contains exactly two finite six-decimal numbers, and its two
+planes must not cross over the boundary. End flags are actual JSON booleans. A nonzero gradient
+currently requires a line-only boundary. The boundary contains at least two vertices,
 has distinct adjacent points, is simple, has positive signed line-and-arc area, and follows the
 canonical winding/start rules. Its analytic serialized centroid must be within `0.0008 mm` of
 `(0, 0)`. The rounded placement must satisfy

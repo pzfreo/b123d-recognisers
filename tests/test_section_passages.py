@@ -22,6 +22,7 @@ from build123d import (
     RegularPolygon,
     Rot,
     Shell,
+    Wedge,
     export_step,
     extrude,
     import_step,
@@ -177,6 +178,103 @@ def _polygonal_tool(sides_or_points):
     return tool.part
 
 
+def test_six_sided_passage_uses_wall_run_and_exact_sloped_termination_planes() -> None:
+    stock = Wedge(60, 50, 20, 0, -10, 60, 5)
+    part = stock - _polygonal_tool(6)
+
+    (record,) = recognise_section_passages(part)
+
+    assert record.frame.run == (0.0, 0.0, 1.0)
+    assert len(record.section.boundary) == 6
+    assert record.run_interval == pytest.approx((-10.0, 7.5), abs=0.001)
+    assert record.ends.low_gradient == pytest.approx((0.0, -0.2), abs=1e-6)
+    assert record.ends.high_gradient == pytest.approx((0.0, -0.3), abs=1e-6)
+    assert recognise_passages(part) == []
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+@pytest.mark.parametrize(
+    ("wedge", "expected"),
+    (
+        ((60, 50, 20, 0, -8, 60, 7), ((0.0, -0.16), (0.0, -0.26))),
+        ((60, 50, 24, 0, -10, 60, 8), ((0.0, -0.2), (0.0, -0.32))),
+    ),
+)
+def test_authored_polygonal_passages_cover_distinct_planar_terminations(
+    sides: int,
+    wedge: tuple[float, float, float, float, float, float, float],
+    expected: tuple[tuple[float, float], tuple[float, float]],
+) -> None:
+    (record,) = recognise_section_passages(Wedge(*wedge) - _polygonal_tool(sides))
+
+    assert len(record.section.boundary) == sides
+    assert record.ends.low_gradient == pytest.approx(expected[0], abs=1e-6)
+    assert record.ends.high_gradient == pytest.approx(expected[1], abs=1e-6)
+
+
+def test_sloped_passage_is_covariant_and_scale_preserves_end_gradients() -> None:
+    source = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    original = recognise_section_passages(source)[0]
+    rotated = Rot(17, 23, 31) * source
+    moved = Pos(17, -9, 4) * rotated
+    scaled = rotated.scale(2.5)
+
+    rotated_record = recognise_section_passages(rotated)[0]
+    moved_record = recognise_section_passages(moved)[0]
+    scaled_record = recognise_section_passages(scaled)[0]
+
+    assert moved_record.ends == rotated_record.ends
+    assert scaled_record.ends == rotated_record.ends
+    assert sorted(
+        math.hypot(*value)
+        for value in (moved_record.ends.low_gradient, moved_record.ends.high_gradient)
+    ) == pytest.approx(
+        sorted(
+            math.hypot(*value)
+            for value in (original.ends.low_gradient, original.ends.high_gradient)
+        ),
+        abs=1e-6,
+    )
+    assert scaled_record.run_interval == pytest.approx(
+        tuple(value * 2.5 for value in rotated_record.run_interval),
+        abs=0.002,
+    )
+
+
+def test_sloped_passage_publishes_walls_only_as_defining_and_constituent_evidence() -> None:
+    part = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    ledger = ClaimLedger(FaceGraph(part))
+
+    records = recognise_section_passages(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    evidence = ledger.snapshot_index()
+
+    assert candidate.record is records[0]
+    assert len(evidence.defining_of(candidate)) == 6
+    assert evidence.constituent_of(candidate) == evidence.defining_of(candidate)
+
+
+def test_sloped_passages_preserve_compound_multiplicity_and_presentation_order() -> None:
+    first = Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6)
+    compound = Compound([first, Pos(100, 0, 0) * first])
+
+    expected = recognise_section_passages(compound)
+    reordered = recognise_section_passages(_ReversedFacesPart(compound))  # type: ignore[arg-type]
+
+    assert len(expected) == len(reordered) == 2
+    assert reordered == expected
+
+
+def test_sloped_passage_survives_step_round_trip(tmp_path) -> None:
+    source = Rot(17, 23, 31) * (Wedge(60, 50, 20, 0, -10, 60, 5) - _polygonal_tool(6))
+    path = tmp_path / "sloped-end-passage.step"
+
+    assert export_step(source, path)
+    imported = import_step(path)
+
+    assert recognise_section_passages(imported) == recognise_section_passages(source)
+
+
 @dataclass(frozen=True)
 class _RawPassageOracle:
     walls: tuple[Face, ...]
@@ -261,7 +359,12 @@ def test_public_nested_schema_and_json_shape() -> None:
     )
     payload = json.loads(json.dumps(record.to_dict()))
     assert list(payload) == ["frame", "run_interval", "section", "ends"]
-    assert payload["ends"] == {"low_capped": False, "high_capped": False}
+    assert payload["ends"] == {
+        "low_capped": False,
+        "high_capped": False,
+        "low_gradient": [0.0, 0.0],
+        "high_gradient": [0.0, 0.0],
+    }
 
 
 def test_rich_api_is_the_exact_passages_candidate_authority() -> None:
@@ -366,9 +469,7 @@ def test_same_legacy_defining_set_cannot_issue_competing_rich_records(monkeypatc
     from b123d_recognisers._section_passages import section_ring_proposals
 
     part = Rot(17, 23, 31) * (
-        Box(80, 40, 20)
-        - Pos(-20, 0, 0) * Box(8, 8, 60)
-        - Pos(20, 0, 0) * Box(12, 6, 60)
+        Box(80, 40, 20) - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
     )
     graph = FaceGraph(part)
     first, second = section_ring_proposals(part, graph)
@@ -795,4 +896,78 @@ def test_public_frame_refuses_direction_beyond_six_decimal_rounding_bound() -> N
             (0.0, 0.0, 1.0),
             (1.000002, 0.0, 0.0),
             (0.0, 1.0, 0.0),
+        )
+
+
+def test_public_passage_ends_accept_planar_local_gradients() -> None:
+    ends = PassageEnds(False, False, (-0.25, 0.125), (0.5, -0.375))
+
+    assert ends.low_gradient == (-0.25, 0.125)
+    assert ends.high_gradient == (0.5, -0.375)
+
+
+def test_public_passage_ends_refuse_unserialized_gradient() -> None:
+    with pytest.raises(ValueError, match="low_gradient must use at most 6 decimal places"):
+        PassageEnds(False, False, (0.0000001, 0.0), (0.0, 0.0))
+
+
+def test_schema_v2_section_point_precision_is_bounded_at_four_decimals() -> None:
+    section = PassageSection(
+        (
+            PassageSectionVertex((-1.0001, -1.0), 0.0),
+            PassageSectionVertex((1.0001, -1.0), 0.0),
+            PassageSectionVertex((0.0, 2.0), 0.0),
+        )
+    )
+    assert section.boundary[0].point == (-1.0001, -1.0)
+
+    with pytest.raises(ValueError, match="point must use at most 4 decimal places"):
+        PassageSectionVertex((0.00001, 0.0), 0.0)
+
+
+def test_public_section_passage_refuses_crossing_termination_planes() -> None:
+    section = PassageSection(
+        (
+            PassageSectionVertex((-2.0, -1.0), 0.0),
+            PassageSectionVertex((2.0, -1.0), 0.0),
+            PassageSectionVertex((2.0, 1.0), 0.0),
+            PassageSectionVertex((-2.0, 1.0), 0.0),
+        )
+    )
+    frame = PassageFrame(
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+    with pytest.raises(ValueError, match="termination planes must not cross"):
+        SectionPassage(
+            frame,
+            (-1.0, 1.0),
+            section,
+            PassageEnds(False, False, (1.0, 0.0), (-1.0, 0.0)),
+        )
+
+
+def test_public_section_passage_refuses_curved_section_with_sloped_ends() -> None:
+    section = PassageSection(
+        (
+            PassageSectionVertex((-1.0, 0.0), 1.0),
+            PassageSectionVertex((1.0, 0.0), 1.0),
+        )
+    )
+    frame = PassageFrame(
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+    with pytest.raises(ValueError, match="sloped passage terminations require a line-only"):
+        SectionPassage(
+            frame,
+            (-1.0, 1.0),
+            section,
+            PassageEnds(False, False, (0.1, 0.0), (0.0, 0.0)),
         )

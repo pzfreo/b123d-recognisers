@@ -405,6 +405,12 @@ derives each corner from the shared topological vertex of consecutive ordered wi
 construction of the same neutral section value, not Passage policy, and introduces no dependency
 or public API.
 
+Issue #453 keeps nonparallel planar termination support in that producer. Wall junctions prove the
+run, mouth planes provide local termination gradients, and the clipped-prism classifier proves
+void/open geometry before one proposal is issued. `passages` still performs the only public
+schema projection and Candidate issuance; no second Passage authority or graph dependency is
+introduced.
+
 F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
 below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
 only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,

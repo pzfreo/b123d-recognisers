@@ -228,7 +228,7 @@ class PassageSectionVertex(Record):
 
     def __post_init__(self) -> None:
         point = _numbers(self.point, 2, name="point")
-        _serialized(point, 3, name="point")
+        _serialized(point, 4, name="point")
         if isinstance(self.bulge, bool) or not isinstance(self.bulge, int | float):
             raise ValueError("bulge must be a finite number")
         bulge = float(self.bulge)
@@ -266,10 +266,22 @@ class PassageSection(Record):
 class PassageEnds(Record):
     low_capped: bool
     high_capped: bool
+    low_gradient: tuple[float, float] = (0.0, 0.0)
+    high_gradient: tuple[float, float] = (0.0, 0.0)
 
     def __post_init__(self) -> None:
         if type(self.low_capped) is not bool or type(self.high_capped) is not bool:
             raise ValueError("passage end conditions must be booleans")
+        low_gradient = cast(
+            tuple[float, float], _numbers(self.low_gradient, 2, name="low_gradient")
+        )
+        high_gradient = cast(
+            tuple[float, float], _numbers(self.high_gradient, 2, name="high_gradient")
+        )
+        _serialized(low_gradient, 6, name="low_gradient")
+        _serialized(high_gradient, 6, name="high_gradient")
+        object.__setattr__(self, "low_gradient", low_gradient)
+        object.__setattr__(self, "high_gradient", high_gradient)
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -288,8 +300,23 @@ class SectionPassage(Record):
             raise ValueError("run_interval must be increasing")
         if not isinstance(self.section, PassageSection):
             raise ValueError("section must be a PassageSection")
-        if not isinstance(self.ends, PassageEnds) or self.ends != PassageEnds(False, False):
+        if not isinstance(self.ends, PassageEnds) or self.ends.low_capped or self.ends.high_capped:
             raise ValueError("SectionPassage must be open at both ends")
+        if (self.ends.low_gradient != (0.0, 0.0) or self.ends.high_gradient != (0.0, 0.0)) and any(
+            vertex.bulge != 0.0 for vertex in self.section.boundary
+        ):
+            raise ValueError("sloped passage terminations require a line-only section")
+        if any(
+            interval[0]
+            + self.ends.low_gradient[0] * vertex.point[0]
+            + self.ends.low_gradient[1] * vertex.point[1]
+            >= interval[1]
+            + self.ends.high_gradient[0] * vertex.point[0]
+            + self.ends.high_gradient[1] * vertex.point[1]
+            - 1e-9
+            for vertex in self.section.boundary
+        ):
+            raise ValueError("passage termination planes must not cross the section")
         object.__setattr__(self, "run_interval", interval)
 
 
@@ -357,13 +384,18 @@ def _section_passage_record(proposal: SectionRingProposal) -> SectionPassage:
         PassageSection(
             tuple(
                 PassageSectionVertex(
-                    (round(vertex.point[0], 3), round(vertex.point[1], 3)),
+                    (round(vertex.point[0], 4), round(vertex.point[1], 4)),
                     round(vertex.bulge, 12),
                 )
                 for vertex in proposal.section.boundary
             )
         ),
-        PassageEnds(False, False),
+        PassageEnds(
+            False,
+            False,
+            tuple(round(value, 6) for value in proposal.low_gradient),  # type: ignore[arg-type]
+            tuple(round(value, 6) for value in proposal.high_gradient),  # type: ignore[arg-type]
+        ),
     )
     if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
         raise ValueError("section passage serialization exceeds the displacement bound")
@@ -436,8 +468,7 @@ def _discover_section_passages(
             )
             if proposal.solid is other_solid and same_nodes:
                 if record != other_record or (
-                    compatibility.issued_snapshot()
-                    != other_compatibility.issued_snapshot()
+                    compatibility.issued_snapshot() != other_compatibility.issued_snapshot()
                 ):
                     raise ValueError("one passage defining set produced competing records")
                 duplicate = True
@@ -488,7 +519,23 @@ def _section_projection_displacement(
     for source_vertex, serialized_vertex in zip(
         proposal.section.boundary, record.section.boundary, strict=True
     ):
-        for source_t, serialized_t in zip(proposal.run_interval, record.run_interval, strict=True):
+        source_ts = (
+            proposal.run_interval[0]
+            + proposal.low_gradient[0] * source_vertex.point[0]
+            + proposal.low_gradient[1] * source_vertex.point[1],
+            proposal.run_interval[1]
+            + proposal.high_gradient[0] * source_vertex.point[0]
+            + proposal.high_gradient[1] * source_vertex.point[1],
+        )
+        serialized_ts = (
+            record.run_interval[0]
+            + record.ends.low_gradient[0] * serialized_vertex.point[0]
+            + record.ends.low_gradient[1] * serialized_vertex.point[1],
+            record.run_interval[1]
+            + record.ends.high_gradient[0] * serialized_vertex.point[0]
+            + record.ends.high_gradient[1] * serialized_vertex.point[1],
+        )
+        for source_t, serialized_t in zip(source_ts, serialized_ts, strict=True):
             source = tuple(
                 proposal.frame.origin[index]
                 + source_t * proposal.frame.run[index]
@@ -515,7 +562,11 @@ def _section_projection_displacement(
 def _legacy_projection(record: SectionPassage) -> Passage | None:
     """Return the exact historical principal line-polygon view when representable."""
 
-    if any(vertex.bulge != 0.0 for vertex in record.section.boundary):
+    if (
+        record.ends.low_gradient != (0.0, 0.0)
+        or record.ends.high_gradient != (0.0, 0.0)
+        or any(vertex.bulge != 0.0 for vertex in record.section.boundary)
+    ):
         return None
     projection = principal_projection(
         record.frame.origin,
@@ -535,7 +586,11 @@ def _legacy_projection(record: SectionPassage) -> Passage | None:
 def _proposal_legacy_projection(proposal: SectionRingProposal) -> PrincipalProjection | None:
     """Derive the principal compatibility fact from full-precision occurrence geometry."""
 
-    if any(vertex.bulge != 0.0 for vertex in proposal.section.boundary):
+    if (
+        proposal.low_gradient != (0.0, 0.0)
+        or proposal.high_gradient != (0.0, 0.0)
+        or any(vertex.bulge != 0.0 for vertex in proposal.section.boundary)
+    ):
         return None
     return principal_projection(
         proposal.frame.origin,

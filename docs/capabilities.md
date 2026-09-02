@@ -461,7 +461,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `HoleSpec` | A normalized grouping key derived from `HoleRecord`; through depth is intentionally absent. |
 | `LinearArray` | At least three same-spec holes on one constant-pitch line, ordered along `direction`. |
 | `Passage` | One closed uncapped ring of walls; `sides` is the polygon, so a triangular passage reports 3, and `section` gives its corners so the shape can be dimensioned rather than only named. |
-| `PassageEnds` | Nested explicit low/high cap state; `SectionPassage` requires the canonical open/open value. |
+| `PassageEnds` | Nested explicit low/high cap state plus local planar end gradients; `SectionPassage` requires open/open ends and non-crossing planes. |
 | `PassageFrame` | Nested canonical right-handed run/u/v frame and perpendicular origin for rich section geometry. Six-decimal direction validation includes the analytically bounded component-rounding error, so valid arbitrary rigid transforms remain representable. |
 | `PassageSection` | Nested canonical, origin-centred immutable line/arc boundary. |
 | `PassageSectionVertex` | One nested 2-D section vertex whose bulge describes the edge to the next vertex. |
@@ -478,7 +478,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `RepeatingRadialProfile` | Geometry-only proof of complete outer-profile rotational repetition, defined by its two original opposed extremal planar source faces; not gear semantics. |
 | `RoundBottomBlindSlot` | One edge-open, one-cap constant U-section blind slot; `axis` and `open_sign` locate its run, `width_axis`, `depth_axis` and `depth_sign` orient the section opening, and `flat_width` plus `radius` define its exact profile. |
 | `RiserEvidence` | One body-local full-span candidate riser before consumer-specific projection; `body_levels` retains the complete same-solid FaceLevel occurrences (`null` only for hand-built legacy records). `project_step_shoulders(..., levels_by_riser=...)` provides explicit occurrence-aligned selection when separate bodies have value-identical levels. |
-| `SectionPassage` | The sole attributed PASSAGES output: canonical frame, run interval, intrinsic section and explicit open ends. |
+| `SectionPassage` | The sole attributed PASSAGES output: canonical frame, centroid-line run interval, intrinsic section and exact planar open ends. |
 | `OrientedSlot` | One rectangular through-slot with free width/long direction vectors; its nested `SectionPassage` retains the exact run frame, span, section and open-end proof. |
 | `OrientedSlotArray` | At least three identical compatible oriented through-slots on one constant-pitch line. |
 | `OrientedSlotGrid` | A complete rectangular lattice of identical compatible oriented through-slots. |
