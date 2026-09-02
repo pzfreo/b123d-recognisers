@@ -19,8 +19,7 @@ from typing import Any, cast
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from build123d import import_step  # noqa: E402
-
+from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
 from b123d_recognisers._adjacency import FaceGraph  # noqa: E402
 from b123d_recognisers._candidates import FamilyId  # noqa: E402
 from b123d_recognisers._geometry import AXIS_ZERO_COS  # noqa: E402

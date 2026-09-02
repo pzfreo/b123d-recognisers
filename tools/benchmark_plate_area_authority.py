@@ -106,8 +106,7 @@ def _acceptable(report: dict[str, Any]) -> bool:
 
 
 def _framed(path: Path) -> Any:
-    from build123d import import_step
-
+    from b123d_recognisers import import_step_geometry as import_step
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
 
     part = import_step(path)

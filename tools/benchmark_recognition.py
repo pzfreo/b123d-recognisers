@@ -58,7 +58,7 @@ CENSUS_CORPORA = ("nist", "gramel")
 
 
 def _census_parts():
-    from build123d import import_step
+    from b123d_recognisers import import_step_geometry as import_step
 
     paths = sorted(
         path

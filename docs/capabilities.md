@@ -16,6 +16,20 @@ Downstream CI can export the identical deterministic JSON with
 `b123d-recognisers-capabilities --format-version 2`. Unknown format versions fail closed. This
 page remains the human explanation of the machine-readable boundary.
 
+## Geometry-only STEP input
+
+`import_step_geometry(path)` is the supported package loader for recognition inputs. It transfers
+all STEP roots through OCCT's plain geometry reader and returns the corresponding build123d shape.
+It deliberately flattens assembly structure and omits names, colours, and layers: recognition uses
+topology and geometry only, while the metadata-aware XCAF importer can terminate the process when
+an assembly component has no name attribute.
+
+The loader does not alter recognition or face identity after loading. On inputs accepted by both
+paths, face count and ordered geometric face signatures must match build123d's importer; compounds
+retain their separate solids for body-local ownership. Read failure, no transferable roots, a null
+transfer, and an unsupported topological wrapper fail explicitly. This additive public operation
+requires a future minor release under ADR 0005; Epic #290 does not publish beyond v0.4.12.
+
 ## Declared-feature inspection API
 
 The recognition-family manifest above remains format 2 and describes recognisers, records, and

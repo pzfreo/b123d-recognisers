@@ -36,7 +36,6 @@ sys.path.insert(0, str(ROOT))
 
 import OCP  # noqa: E402
 import OCP.BRepAdaptor  # noqa: E402
-from build123d import import_step  # noqa: E402
 from OCP.BRepAdaptor import BRepAdaptor_Surface  # noqa: E402
 from OCP.GeomAbs import (  # noqa: E402
     GeomAbs_BezierSurface,
@@ -49,6 +48,7 @@ from OCP.GeomAbs import (  # noqa: E402
 from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Sphere  # noqa: E402
 from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition  # noqa: E402
 
+from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
 from b123d_recognisers._adjacency import FaceGraph, GraphRunToken  # noqa: E402
 from b123d_recognisers._effective_surfaces import (  # noqa: E402
     AnalyticSurfaceFact,

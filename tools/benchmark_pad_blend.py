@@ -88,9 +88,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from build123d import import_step
-
     from b123d_recognisers import feature_census
+    from b123d_recognisers import import_step_geometry as import_step
     from b123d_recognisers.result import _take_inventory
 
     if args.workload == "mfcadpp":

@@ -89,8 +89,9 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from build123d import import_step
     from OCP.BRepAdaptor import BRepAdaptor_Surface
+
+    from b123d_recognisers import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"), key=lambda path: path.name)[: args.limit]
     if not paths:

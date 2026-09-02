@@ -21,9 +21,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from build123d import Axis, Pos, import_step  # noqa: E402
+from build123d import Axis, Pos  # noqa: E402
 
 from b123d_recognisers import __version__  # noqa: E402
+from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
 from b123d_recognisers.frames import (  # noqa: E402
     PartFrame,
     RefusedPartFrame,
