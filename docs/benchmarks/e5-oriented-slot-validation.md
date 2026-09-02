@@ -7,11 +7,18 @@ its original defining walls. Principal-axis occurrences remain legacy `Slot`.
 
 ## Authored boundary
 
-`tests/test_oriented_slots.py` covers non-special internal angles, the unchanged principal-axis
-control, whole-part rotation and translation, scale, STEP round-trip equality, exact direct and
-aggregate evidence parity, square/curved/blind/edge-open refusals, and pattern grouping that fails
-closed across size or ambiguous body ownership. Aggregate reconciliation rejects the generic
-source Passage only when the successor has the exact same non-empty defining wall set.
+`tests/test_oriented_slots.py` covers non-special internal angles; unchanged x/y/z principal-axis
+controls; raw and framed whole-part presentation; mirrors; translation; scale; STEP and reversed
+face traversal; exact direct/aggregate evidence parity; real linear and grid patterns; and
+same-body versus compound ownership. Negative fixtures cover square, curved, tapered, blind,
+edge-open, material-obstructed, and competing-orientation geometry. Pattern grouping fails closed
+across orientation, depth plane, width, length, or ambiguous body ownership. Aggregate
+reconciliation rejects the generic source Passage only when the successor has the exact same
+non-empty defining wall set.
+
+`tests/golden/oriented_slots` is package-originated semantic evidence rather than a misleading
+reuse of the principal-axis Draftwright golden. It pins the physical records and their source
+passages, aggregate array membership, exact reconciliation dispositions, and census count.
 
 ## MFCAD++-500 development transfer
 

@@ -213,6 +213,7 @@ def recognise_oriented_slots(
 
 
 def _pattern_key(slot: OrientedSlot) -> tuple[object, ...]:
+    depth_plane = round(_dot(slot.center, slot.source.frame.run), 3)
     return (
         slot.width_direction,
         slot.long_direction,
@@ -220,6 +221,7 @@ def _pattern_key(slot: OrientedSlot) -> tuple[object, ...]:
         round(slot.length, 3),
         slot.source.frame.run,
         slot.source.run_interval,
+        depth_plane,
         slot.body_key,
     )
 

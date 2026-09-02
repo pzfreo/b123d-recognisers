@@ -3,20 +3,35 @@
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
-from build123d import Align, Box, Cylinder, Pos, Rot, export_step, import_step
+from build123d import (
+    Align,
+    Box,
+    Compound,
+    Cone,
+    Cylinder,
+    Pos,
+    Rot,
+    Solid,
+    export_step,
+    import_step,
+)
 
 from b123d_recognisers import (
     build_recognition_result,
+    feature_census,
     recognise_oriented_slot_patterns,
     recognise_oriented_slots,
     recognise_section_passages,
 )
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome, ReasonCode
+from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
 from b123d_recognisers.result import _take_inventory
 
 
@@ -28,6 +43,15 @@ def _rectangular_through_slot(angle: float = 30.0):
         align=(Align.CENTER, Align.CENTER, Align.CENTER),
     )
     return Box(100, 70, 10) - tool
+
+
+def _oriented_slot_pattern(points, *, angle: float = 30.0):
+    part = Box(120, 90, 10)
+    for x, y in points:
+        part -= Pos(x, y, 0) * Rot(0, 0, angle) * Box(
+            24, 6, 20, align=(Align.CENTER, Align.CENTER, Align.CENTER)
+        )
+    return part
 
 
 @pytest.mark.parametrize("angle", [17.0, 30.0, 45.0])
@@ -73,8 +97,11 @@ def test_aggregate_reconciles_the_generic_source_passage() -> None:
     )
 
 
-def test_principal_rectangle_stays_in_legacy_slot_family() -> None:
-    result = build_recognition_result(_rectangular_through_slot(0.0), rotational=False)
+@pytest.mark.parametrize("presentation", [Rot(), Rot(90, 0, 0), Rot(0, 90, 0)])
+def test_principal_rectangle_stays_in_legacy_slot_family(presentation) -> None:
+    result = build_recognition_result(
+        presentation * _rectangular_through_slot(0.0), rotational=False
+    )
 
     assert len(result.slots) == 1
     assert result.oriented_slots == ()
@@ -94,6 +121,14 @@ def test_square_and_curved_passages_are_not_oriented_slots() -> None:
     assert recognise_oriented_slots(round_hole) == []
 
 
+def test_tapered_nonplanar_passage_is_not_an_oriented_slot() -> None:
+    tapered = Box(100, 70, 10) - Rot(0, 0, 30) * Cone(
+        3, 8, 20, align=(Align.CENTER, Align.CENTER, Align.CENTER)
+    )
+
+    assert recognise_oriented_slots(tapered) == []
+
+
 def test_record_directions_follow_a_rotated_whole_part() -> None:
     base = recognise_oriented_slots(_rectangular_through_slot(30.0))[0]
     rotated = recognise_oriented_slots(Rot(90, 0, 0) * _rectangular_through_slot(30.0))[0]
@@ -104,6 +139,32 @@ def test_record_directions_follow_a_rotated_whole_part() -> None:
     assert math.isclose(abs(rotated.width_direction[0]), abs(base.width_direction[0]), abs_tol=2e-6)
     assert math.isclose(abs(rotated.width_direction[2]), abs(base.width_direction[1]), abs_tol=2e-6)
     assert abs(rotated.width_direction[1]) < 2e-6
+
+
+def test_framed_result_preserves_oriented_array_under_arbitrary_presentation() -> None:
+    part = _oriented_slot_pattern(((-30, 0), (0, 0), (30, 0)))
+
+    baseline = build_framed_recognition_result(part)
+    presented = build_framed_recognition_result(Pos(13, -7, 5) * Rot(17, 29, 11) * part)
+
+    assert isinstance(baseline, FramedRecognitionResult)
+    assert isinstance(presented, FramedRecognitionResult)
+    assert presented.result.oriented_slots == baseline.result.oriented_slots
+    assert presented.result.oriented_slot_patterns == baseline.result.oriented_slot_patterns
+
+
+def test_mirror_and_reversed_face_traversal_preserve_records(monkeypatch) -> None:
+    part = Pos(11, 0, 0) * _rectangular_through_slot(23)
+    expected = recognise_oriented_slots(part)
+    mirrored = recognise_oriented_slots(part.mirror())
+    solid_faces = Solid.faces
+
+    monkeypatch.setattr(Solid, "faces", lambda self: list(reversed(solid_faces(self))))
+
+    assert len(mirrored) == 1
+    assert mirrored[0].width == expected[0].width
+    assert mirrored[0].length == expected[0].length
+    assert recognise_oriented_slots(part) == expected
 
 
 def test_step_round_trip_preserves_oriented_slot(tmp_path) -> None:
@@ -174,5 +235,93 @@ def test_patterns_require_matching_geometry_plane_orientation_and_body() -> None
         [members[0], members[1], replace(members[2], width=9.0)]
     ) == []
     assert recognise_oriented_slot_patterns(
+        [members[0], members[1], replace(members[2], length=31.0)]
+    ) == []
+    assert recognise_oriented_slot_patterns(
+        [members[0], members[1], replace(members[2], center=(20.0, 0.0, 2.0))]
+    ) == []
+    assert recognise_oriented_slot_patterns(
         [members[0], members[1], replace(members[2], body_key=None)]
     ) == []
+
+
+def test_real_array_and_grid_are_derived_from_aggregate_occurrences() -> None:
+    array = build_recognition_result(
+        _oriented_slot_pattern(((-30, 0), (0, 0), (30, 0))), rotational=False
+    )
+    grid = build_recognition_result(
+        _oriented_slot_pattern(
+            ((-30, -20), (0, -20), (30, -20), (-30, 20), (0, 20), (30, 20))
+        ),
+        rotational=False,
+    )
+
+    assert len(array.oriented_slots) == 3
+    assert type(array.oriented_slot_patterns[0]).__name__ == "OrientedSlotArray"
+    assert len(grid.oriented_slots) == 6
+    assert type(grid.oriented_slot_patterns[0]).__name__ == "OrientedSlotGrid"
+
+
+def test_compound_ownership_prevents_cross_body_patterns() -> None:
+    body = _rectangular_through_slot(30)
+    part = Compound(children=[Pos(-80, 0, 0) * body, Pos(80, 0, 0) * body])
+
+    result = build_recognition_result(part, rotational=False)
+
+    assert len(result.oriented_slots) == 2
+    assert len({slot.body_key for slot in result.oriented_slots}) == 2
+    assert result.oriented_slot_patterns == ()
+
+
+def test_competing_orientation_and_material_obstruction_refuse_false_patterns() -> None:
+    mixed = Box(120, 90, 10)
+    for x, angle in ((-30, 30), (0, 30), (30, 45)):
+        mixed -= Pos(x, 0, 0) * Rot(0, 0, angle) * Box(
+            24, 6, 20, align=(Align.CENTER, Align.CENTER, Align.CENTER)
+        )
+    obstructed = _rectangular_through_slot(30) + Box(
+        2, 20, 10, align=(Align.CENTER, Align.CENTER, Align.CENTER)
+    )
+
+    result = build_recognition_result(mixed, rotational=False)
+    assert len(result.oriented_slots) == 3
+    assert result.oriented_slot_patterns == ()
+    assert recognise_oriented_slots(obstructed) == []
+
+
+def test_oriented_slot_semantic_golden() -> None:
+    from tests.golden.oriented_slots.fixture import build_fixture
+
+    part = build_fixture()
+    product = _take_inventory(part)
+    pattern = product.result.oriented_slot_patterns[0]
+    summary = {
+        "fixture": "oriented_slots",
+        "physical": [
+            {
+                "center": list(slot.center),
+                "width": slot.width,
+                "length": slot.length,
+                "depth": slot.depth,
+                "has_source": slot.source in recognise_section_passages(part),
+            }
+            for slot in product.result.oriented_slots
+        ],
+        "aggregate": {
+            "pattern_type": type(pattern).__name__,
+            "member_centers": [list(slot.center) for slot in pattern.slots],
+            "pitch": pattern.pitch,
+            "section_passages": len(product.result.section_passages),
+        },
+        "reconciliation": sorted(
+            decision.reason.value
+            for decision in product.reconciliation.for_family(FamilyId.PASSAGES)
+            if decision.reason is ReasonCode.PASSAGE_SUPERSEDED_BY_ORIENTED_SLOT
+        ),
+        "census": {"oriented_slot": feature_census(part)["oriented_slot"]},
+    }
+    expected = json.loads(
+        Path("tests/golden/oriented_slots/expected.json").read_text(encoding="utf-8")
+    )
+
+    assert summary == expected
