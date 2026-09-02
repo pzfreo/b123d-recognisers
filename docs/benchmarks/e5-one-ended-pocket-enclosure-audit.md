@@ -45,14 +45,42 @@ geometric runs and remain correctly outside the six-sided family.
 
 ## Full development result
 
-The merge-candidate full-corpus result and immutable machine report will be recorded here after the
-audit source is committed on top of the Passage merge.
+The immutable report is
+[`mfcadpp-one-ended-pocket-audit-f06a470.json`](mfcadpp-one-ended-pocket-audit-f06a470.json),
+SHA-256 `4599d22fa8886df47de38f7b4ccec99b1d1d646a09a18e02833238e410e83232`. It
+records audit source `f06a470307035dfb2a3787478ff40969e628cdca`, on top of the #455 merge,
+the published dataset identity, all 2,500 selected model/source hashes, and the exact seven-invalid
+policy shared with the effectiveness runner. All seven IDs and the expected
+`Hole cylindrical evidence does not prove one valid solid` reason match.
+
+```console
+uv run python tools/audit_mfcadpp_one_ended_pockets.py \
+  /path/to/MFCAD++_dataset/step/test \
+  --limit 2500 --workers 4 --allow-invalid \
+  --output /tmp/mfcadpp-one-ended-pocket-audit.json
+```
+
+Across 2,493 valid models, the audit evaluates 10,108 cavity regions. The exact rule accepts 647;
+every accepted region is class-15-pure. They reach 4,529 class-15 faces, but once again **zero are
+new** relative to accepted aggregate constituent evidence.
+
+| First result | All regions | Regions touching class 15 |
+| --- | ---: | ---: |
+| accepted geometry, already covered | 647 | 647 |
+| bounded-prism/floor proof failed | 39 | 36 |
+| effective boundary was not six-sided | 2,288 | 71 |
+| mouth was not an all-line polygon | 2,994 | 43 |
+| no unique mouth | 3,923 | 0 |
+| no unique floor plane | 217 | 0 |
+
+Four workers complete the run in 541.60 seconds. This is audit-cycle latency, not a production
+recogniser performance result.
 
 ## Decision
 
-Unless the full development denominator contradicts the decision slice, close #456 without a
-production recogniser change. The exact one-ended architecture is geometrically coherent but adds
-no downstream coverage; shipping it would violate Epic #290's consumer-with-substrate rule. The
+Close #456 without a production recogniser change. The full development denominator confirms the
+decision slice: the exact one-ended architecture is geometrically coherent but adds no downstream
+coverage, so shipping it would violate Epic #290's consumer-with-substrate rule. The
 remaining class-15 misses require interrupted/chamfered membership or different feature semantics,
 not relaxation of a constant-section six-sided Pocket.
 
