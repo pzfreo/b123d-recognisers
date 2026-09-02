@@ -1,5 +1,36 @@
 # E5 paired-ramp miss audit
 
+## Current-production correction (0.4.12)
+
+The original audit below described the four-edge ramp boundary that existed at `ddc1ac6`.
+Production issue #397 subsequently removed that presentation gate, but the audit mirror retained
+it and continued to report 17 current misses as `fragmented_ramp_boundary`. That was stale
+instrumentation, not a remaining recognition opportunity.
+
+The corrected audit at [`1bf652e`](paired-ramp-step-current-audit-mfcadpp-500-1bf652e.json)
+continues every subdivided ramp pair through the ordinary production proofs. On the identical
+lexical 500-model selection, current 0.4.12 recognition matches 270/592 defining faces and 88/171
+component proxies. The 83 wholly unrecalled proxies stop at:
+
+| current first failed gate | components |
+| --- | ---: |
+| Top-opening thickness direction | 40 |
+| No adjacent bevel pair | 22 |
+| Missing one linear shared ridge | 10 |
+| Not exactly two common-axis terminals | 9 |
+| Incomplete shared run | 1 |
+| Not one exterior and one internal terminal | 1 |
+
+The legacy boundary-bypass projection is now correctly empty. The largest bucket remains the
+deliberate top-opening triangular-pocket boundary; the next lacks the defining two-ramp anatomy.
+The remaining ridge, terminal and span refusals are heterogeneous missing proofs, not one bounded
+motif. No further `PairedRampStep` relaxation is justified by this queue.
+
+The corrected artifact SHA-256 is
+`bef4cafef276f3fc82963329d609d31052948d8607d81ed146553a53e2188cda`. Two complete runs were
+byte-identical. It was generated with the reproduction command below, replacing the output name
+with `paired-ramp-step-current-audit-mfcadpp-500-1bf652e.json`.
+
 Issue [#362](https://github.com/pzfreo/b123d-recognisers/issues/362) reconciles every
 MFCAD++ class-9 component proxy against the current `PairedRampStep` contract. The audit identifies
 one focused next increment: retain every existing material, opening, symmetry, ridge, terminal and

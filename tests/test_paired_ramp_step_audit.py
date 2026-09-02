@@ -113,7 +113,7 @@ def test_drilled_terminal_reaches_the_final_gate_with_full_run() -> None:
     assert terminal[0].internal_terminal_edges not in (3, 5)
 
 
-def test_ramp_boundary_bypass_changes_only_the_four_edge_gate(monkeypatch) -> None:
+def test_subdivided_ramp_uses_the_ordinary_production_path(monkeypatch) -> None:
     graph = FaceGraph(_side_cut())
     bevels = {}
     for node in graph.nodes:
@@ -142,12 +142,8 @@ def test_ramp_boundary_bypass_changes_only_the_four_edge_gate(monkeypatch) -> No
         graph, tuple(set((left, right, *graph.neighbours(left))))
     )
 
-    assert ordinary.first_failed_gate == "fragmented_ramp_boundary"
-    assert len(bypass) == 1
-    assert bypass[0]["left_index"] == left.index
-    assert bypass[0]["right_index"] == right.index
-    assert bypass[0]["result"]["first_failed_gate"] == "recognisable"
-    assert len(bypass[0]["projected_defining_indices"]) == 3
+    assert ordinary.first_failed_gate == "recognisable"
+    assert bypass == ()
 
 
 @pytest.mark.parametrize(
@@ -210,7 +206,7 @@ def test_ramp_boundary_bypass_retains_downstream_refusals(
     assert result.first_failed_gate == expected
 
 
-def test_ramp_boundary_bypass_retains_multiplicity_and_node_order(monkeypatch) -> None:
+def test_subdivided_ramp_multiplicity_needs_no_legacy_bypass(monkeypatch) -> None:
     graph = FaceGraph(Compound([_side_cut(), Pos(100, 0, 0) * _side_cut()]))
     bevels = {}
     for node in graph.nodes:
@@ -244,9 +240,7 @@ def test_ramp_boundary_bypass_retains_multiplicity_and_node_order(monkeypatch) -
     reverse = _ramp_boundary_bypass_pairs(graph, tuple(reversed(graph.nodes)))
 
     assert forward == reverse
-    assert len(forward) == 2
-    assert all(row["result"]["first_failed_gate"] == "recognisable" for row in forward)
-    assert len({tuple(row["projected_defining_indices"]) for row in forward}) == 2
+    assert forward == ()
 
 
 def test_reconciliation_retains_residual_faces_in_touched_components() -> None:
