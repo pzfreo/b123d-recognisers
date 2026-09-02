@@ -3,8 +3,8 @@
 
 Dataset labels select faces to describe. They never participate in recognition or weaken the
 production predicate. A component is the documented non-native shared-edge same-class proxy.
-The boundary-bypass arm changes only the four-edge ramp gate and continues through every other
-production gate; it is a projection, not production acceptance.
+The legacy boundary-bypass fields remain in format version 2 but are empty: production has no
+four-edge ramp gate since #397, so the ordinary probe must continue through subdivided boundaries.
 """
 
 from __future__ import annotations
@@ -202,14 +202,10 @@ def _probe_pair(
     if len(shared) != 1 or shared[0].geom_type != GeomType.LINE:
         return _failed(4, axis=axis, mirror_delta=mirror_delta, shared_edges=len(shared))
     ramp_edges = (len(graph.edges(left)), len(graph.edges(right)))
-    if ramp_edges != (4, 4) and not bypass_ramp_boundary:
-        return _failed(
-            5,
-            axis=axis,
-            mirror_delta=mirror_delta,
-            shared_edges=1,
-            ramp_edges=ramp_edges,
-        )
+    # Production deliberately has no ramp edge-count gate: independent straight, curved and
+    # inner-wire interruptions are B-Rep presentation details when the shared ridge, terminal,
+    # material side and complete run remain proved. ``bypass_ramp_boundary`` is retained only so
+    # format-v2 callers fail compatibly while the legacy projection fields drain to zero.
     try:
         tangent = shared[0].tangent_at()
     except Exception:  # pragma: no cover - defensive imported-kernel boundary
@@ -343,7 +339,7 @@ def _ramp_boundary_bypass_pairs(
     other_claims: dict[FaceNode, set[str]] | None = None,
     accepted_claims: tuple[tuple[str, frozenset[FaceNode]], ...] = (),
 ) -> tuple[dict[str, Any], ...]:
-    """Continue only boundary-gated pairs through every otherwise unchanged gate."""
+    """Return no legacy bypass projections now that production has no four-edge ramp gate."""
 
     ordered = tuple(sorted(set(nodes), key=lambda node: node.index))
     bevels: dict[FaceNode, tuple[Any, ...]] = {}
