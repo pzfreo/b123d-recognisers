@@ -775,3 +775,24 @@ def test_open_shell_cannot_supply_body_authority() -> None:
 def test_public_schema_refuses_noncanonical_values(record) -> None:
     with pytest.raises(ValueError):
         record()
+
+
+def test_public_frame_accepts_six_decimal_unit_rounding_bound() -> None:
+    frame = PassageFrame(
+        (0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (0.999999, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+    assert frame.u == (0.999999, 0.0, 0.0)
+
+
+def test_public_frame_refuses_direction_beyond_six_decimal_rounding_bound() -> None:
+    with pytest.raises(ValueError, match="frame directions must be unit length"):
+        PassageFrame(
+            (0.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (1.000002, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+        )

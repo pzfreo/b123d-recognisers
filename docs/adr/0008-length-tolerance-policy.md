@@ -10,6 +10,12 @@ queries use `1e-6 mm` and end probes start at `2e-5 mm`. Public rounding is not 
 tolerance: the complete source occurrence is reconstructed from the exact serialized basis and
 refuses when any boundary point at either run end moves by more than `0.002 mm`.
 
+Issue #451 corrects implementation of the already-published serialized-frame contract. The
+contract permits Euclidean norm within `1e-6` of one, but the constructor had applied `1e-6` to
+the squared norm instead. It now validates `abs(sqrt(dot(direction, direction)) - 1) <= 1e-6`
+directly. This changes no documented allowance, discovery rule, or independent `0.002 mm`
+reconstructed-section displacement bound.
+
 ## Context
 
 Recognition gates are written in fixed millimetres: `_MERGE_TOL = 0.5`, `_HOLE_DIA_TOL = 0.2`,
