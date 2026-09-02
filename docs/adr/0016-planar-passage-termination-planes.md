@@ -1,4 +1,4 @@
-# ADR 0015 — Represent planar Passage terminations in the section frame
+# ADR 0016 — Represent planar Passage terminations in the section frame
 
 - **Status:** Accepted
 - **Date:** 2026-09-02

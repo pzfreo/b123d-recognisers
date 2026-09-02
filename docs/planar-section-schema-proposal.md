@@ -1,6 +1,6 @@
 # Planar section schema proposal (version 1)
 
-**Status:** schema v1 accepted and published by F4b; planar-end schema v2 accepted by ADR 0015
+**Status:** schema v1 accepted and published by F4b; planar-end schema v2 accepted by ADR 0016
 **Owner:** epic #177, F4a/F4b / issues #179 and #184
 **Publication gate:** satisfied by Draftwright issue #1337 and package issue #184
 
