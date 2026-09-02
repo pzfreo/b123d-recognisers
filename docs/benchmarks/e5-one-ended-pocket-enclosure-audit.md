@@ -89,8 +89,11 @@ there is no public record, Candidate, evidence, ownership, reconciliation, schem
 change; no label participates in geometry; and no post-acceptance adjacency traversal becomes
 recognition authority. MFInstSeg was not run or inspected because this is not a transfer milestone.
 
-After a negative decision, the next effectiveness audit returns to the residual Passage refusal
-buckets. The first-500 census favours the 34 class-4 faces behind planar-mouth seeding over the
-72-face mouth-congruence bucket: four seed-failure regions are class-pure, while none of the
-congruence failures are, so the former presents the cleaner corpus-independent hypothesis despite
-the smaller raw count.
+The negative result retires the complete-mouth template rather than the broader Pocket priority.
+Issue #460 follows with a different geometric hypothesis: interruption-tolerant propagation from
+an inner-loop seed across one same-solid physical cavity, with explicit termination and branching
+refusals. That work measures newly detected occurrences separately from wider membership on
+existing occurrences; rectangular Pocket membership remains a distinct residual because its
+aggregate transfer miss is predominantly partial rather than undetected. Passage improvements may
+resume after this higher-value Pocket test, but are no longer the immediate conclusion of this
+audit.

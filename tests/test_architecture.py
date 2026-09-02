@@ -369,6 +369,7 @@ ARC_READER_SITES = {
     "tools/audit_mfcadpp_component_overlap:_internal_arcs:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_expand:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_convex_mouth:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_one_ended_pockets:_mouth_wires:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/experimental_geometry:arc:arc:1": "facade-projection",
     "src/b123d_recognisers/experimental_geometry:smooth_side:smooth_side:1": "facade-projection",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:1": "legacy-contract",
