@@ -3,6 +3,7 @@ from build123d import Align, Box, Pos, Rot
 from tests.golden._common import originated_here
 
 PROVENANCE = originated_here("tests/test_oriented_slots.py")
+LEGACY_SNAPSHOT = False
 
 
 def build_fixture():

@@ -40,7 +40,11 @@ def capture(draftwright: Path, manifest_path: Path, *, overwrite: bool) -> list[
     sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(draftwright / "src"))
 
-    fixture_paths = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
+    fixture_paths = [
+        path
+        for path in sorted(GOLDEN_ROOT.glob("*/fixture.py"))
+        if getattr(_load_fixture(path), "LEGACY_SNAPSHOT", True)
+    ]
     outputs = [path.with_name("expected.json") for path in fixture_paths]
     if not overwrite:
         existing = [path for path in outputs if path.exists()]
