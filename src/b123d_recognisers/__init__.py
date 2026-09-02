@@ -87,7 +87,12 @@ from b123d_recognisers.angled_steps import (
     AngledStep,
     recognise_angled_steps,
 )
-from b123d_recognisers.blends import Blend, recognise_blends
+from b123d_recognisers.blends import (
+    Blend,
+    CircularBlendPath,
+    StraightBlendPath,
+    recognise_blends,
+)
 from b123d_recognisers.chamfers import Chamfer, recognise_chamfers
 from b123d_recognisers.circular_blind_steps import (
     CircularBlindStep,
@@ -252,6 +257,7 @@ __all__ = [
     "OrientedSlotGrid",
     "BoltCircle",
     "Blend",
+    "CircularBlendPath",
     "Chamfer",
     "Channel",
     "Fillet",
@@ -301,6 +307,7 @@ __all__ = [
     "SlotGrid",
     "RiserEvidence",
     "StepShoulder",
+    "StraightBlendPath",
     "TurnedProfile",
     "TurnedProfileKey",
     "TurnedStep",
