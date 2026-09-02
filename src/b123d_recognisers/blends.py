@@ -23,11 +23,14 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
-from b123d_recognisers._analytic_surfaces import SurfaceKind
 from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
-from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
+from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
+    EffectiveSurfaceIndex,
+    SurfaceKind,
+)
 from b123d_recognisers._geometry import SMOOTH_ARC_GAP, _canonical_axis_direction
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
