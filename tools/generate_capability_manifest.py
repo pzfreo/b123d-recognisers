@@ -329,6 +329,7 @@ FAMILIES = {
 }
 
 RECORD_SCHEMA_VERSIONS = {
+    "Blend": 2,
     "Chamfer": 2,
     "Fillet": 2,
     "RaisedPad": 2,

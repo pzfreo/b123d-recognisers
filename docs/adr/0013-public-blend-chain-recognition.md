@@ -93,3 +93,32 @@ The aggregate and census gain an additive `blend` family, and the capability man
 with `Blend` schema version 1. Concave chains remain private evidence rather than duplicate
 top-level occurrences. The initial family is intentionally cylindrical rather than a claim of
 complete vertex- or turned-blend coverage.
+
+## Amendment — proved concave chains (issue #440)
+
+Public `Blend` includes complete concave chains satisfying the same cylindrical rolling-ball
+contract as convex chains. `side` now admits both values already established by the neutral index:
+`"convex"` for an external round and `"concave"` for an internal round. This changes the admitted
+values and documented meaning of an existing field. Under ADR 0005 that is `Blend` schema version
+2 even though the field names and serialized types are unchanged. It requires a future minor
+package release and explicit consumer acceptance; this epic does not publish beyond v0.4.12.
+
+The earlier decision treated overlap with Pocket constituent evidence as a reason to keep concave
+chains private. That conflated two compatible descriptions. A Pocket describes a manufacturing
+recess and may include its rounded interior transition as constituent evidence. A Blend describes
+the rolling-ball geometry itself and owns the curved patches that establish it. Constituent overlap
+does not create a defining-claim conflict under ADR 0003, so both occurrences remain accepted.
+`Fillet` precedence remains limited to its existing external convex interpretation.
+
+The neutral discovery predicate does not change. Public concave projection adds one intrinsic
+edge-blend condition: when both complete supports prove parallel planes, refuse the chain because
+those surfaces have no intersection edge to round. This distinguishes a semicircular obround-slot
+end from an internal corner treatment without consulting feature labels. `BlendCollapseIndex`
+still requires one same-solid, nonbranching, same-cylinder/radius chain, a consistently proved
+material side, exactly two unambiguous support regions and complete spring, internal and terminal
+boundaries. Ordinary sharp concave transitions, parallel-wall round ends, incomplete or ambiguous
+chains, mixed radii/sides, toroidal and other unsupported surfaces remain outside the public result.
+
+The change is motivated by downstream access to internal-round radius and face identity and by the
+aggregate transfer gap recorded on issue #440. Individual MFInstSeg geometry remains uninspected;
+MFCAD++ labels measure the result but do not decide whether proved rolling-ball geometry exists.
