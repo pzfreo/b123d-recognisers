@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, replace
+from types import SimpleNamespace
 
 import pytest
 from build123d import (
@@ -50,7 +51,8 @@ from b123d_recognisers._section_passages import (
     _pair_line,
     _parallel_pair_candidates,
 )
-from b123d_recognisers._sections import LocalFrame
+from b123d_recognisers._sections import LocalFrame, PlanarSection, SectionVertex
+from b123d_recognisers.passages import _section_passage_record
 from b123d_recognisers.result import _discover_all
 
 
@@ -923,6 +925,38 @@ def test_schema_v2_section_point_precision_is_bounded_at_four_decimals() -> None
 
     with pytest.raises(ValueError, match="point must use at most 4 decimal places"):
         PassageSectionVertex((0.00001, 0.0), 0.0)
+
+
+def test_section_is_recanonicalized_after_public_coordinate_rounding() -> None:
+    section = PlanarSection(
+        tuple(
+            SectionVertex(point)
+            for point in (
+                (-0.9998444103843976, 0.9999182634638213),
+                (-0.9994589537203384, -0.9999207651031005),
+                (1.000720579557841, -1.000535647743874),
+                (1.0000275433263752, 1.0009049347765366),
+            )
+        )
+    )
+
+    serialized = _section_passage_record(
+        SimpleNamespace(
+            frame=LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0)),
+            run_interval=(-1.0, 1.0),
+            section=section,
+            low_gradient=(0.0, 0.0),
+            high_gradient=(0.0, 0.0),
+        )
+    ).section
+
+    assert serialized.boundary[0].point == (-0.9995, -0.9999)
+    assert tuple(vertex.point for vertex in serialized.boundary) == (
+        (-0.9995, -0.9999),
+        (1.0007, -1.0005),
+        (1.0, 1.0009),
+        (-0.9998, 0.9999),
+    )
 
 
 def test_public_section_passage_refuses_crossing_termination_planes() -> None:
