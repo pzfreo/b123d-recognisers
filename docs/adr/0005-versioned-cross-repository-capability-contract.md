@@ -398,3 +398,9 @@ behavior evidence plus an exact parity guard between them. It does not advance a
 manifest format. Consumers must not infer drafting semantics from the reason; they may display or
 persist the new aggregate explanation value. Removing or changing a reason value remains a public
 compatibility event.
+
+## Free-axis Slot capability event (issue #310)
+
+The successor records, entry points, aggregate fields, census key and reconciliation reason are
+an additive capability, not a patch correction to axis-letter `Slot`. They begin the `0.5.0`
+development line. Legacy principal Slot values remain unchanged; consumers opt in explicitly.

@@ -46,6 +46,7 @@ CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
     ("groove", "grooves"),
     ("flat", "flats"),
     ("slot", "slots"),
+    ("oriented_slot", "oriented_slots"),
     ("rectangular_blind_slot", "rectangular_blind_slots"),
     ("round_bottom_blind_slot", "round_bottom_blind_slots"),
     ("channel", "channels"),

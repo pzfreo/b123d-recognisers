@@ -1051,6 +1051,179 @@
       ]
     },
     {
+      "census_name": null,
+      "census_output": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/oriented_slots/contract.json"
+      ],
+      "id": "oriented-slot-patterns",
+      "introduced_in": "0.5.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_oriented_slot_patterns",
+          "kind": "derived",
+          "role": "derived"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.oriented_slot_patterns"
+          ],
+          "fields": {
+            "direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "slots": {
+              "required": true,
+              "type": "list[record:OrientedSlot]",
+              "units": "none"
+            }
+          },
+          "name": "OrientedSlotArray",
+          "qualified_name": "b123d_recognisers.OrientedSlotArray",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.oriented_slot_patterns"
+          ],
+          "fields": {
+            "angle": {
+              "required": true,
+              "type": "float",
+              "units": "deg"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "col_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "cols": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "row_pitch": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "rows": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "slots": {
+              "required": true,
+              "type": "list[record:OrientedSlot]",
+              "units": "none"
+            }
+          },
+          "name": "OrientedSlotGrid",
+          "qualified_name": "b123d_recognisers.OrientedSlotGrid",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_oriented_slots.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
+      "census_name": "oriented_slot",
+      "census_output": "RecognitionResult.oriented_slots",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/oriented_slots/contract.json"
+      ],
+      "id": "oriented-slots",
+      "introduced_in": "0.5.0",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_oriented_slots",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.oriented_slots"
+          ],
+          "fields": {
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
+            "center": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "mm"
+            },
+            "length": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "long_direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            },
+            "source": {
+              "required": true,
+              "type": "record:SectionPassage",
+              "units": "none"
+            },
+            "width": {
+              "required": true,
+              "type": "float",
+              "units": "mm"
+            },
+            "width_direction": {
+              "required": true,
+              "type": "tuple[float,3]",
+              "units": "unit-vector"
+            }
+          },
+          "name": "OrientedSlot",
+          "qualified_name": "b123d_recognisers.OrientedSlot",
+          "role": "output",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_oriented_slots.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "paired_ramp_step",
       "census_output": "RecognitionResult.paired_ramp_steps",
       "documentation": [
@@ -2574,6 +2747,6 @@
   "format_version": 2,
   "package": {
     "name": "b123d-recognisers",
-    "version": "0.4.12.dev0"
+    "version": "0.5.0.dev0"
   }
 }

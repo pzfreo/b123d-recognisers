@@ -1062,4 +1062,4 @@ def test_all_existing_golden_polygonal_recess_records_round_trip() -> None:
                     == pocket.to_dict()
                 )
                 checked += 1
-    assert checked == 22
+    assert checked == 25

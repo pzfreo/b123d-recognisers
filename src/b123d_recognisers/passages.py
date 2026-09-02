@@ -342,6 +342,33 @@ def recognise_section_passages(
     return _discover_section_passages(part, graph, None if ledger is None else ledger.sink)
 
 
+def _section_passage_record(proposal: SectionRingProposal) -> SectionPassage:
+    """Project one validated neutral proposal into its public serialized value."""
+
+    record = SectionPassage(
+        PassageFrame(
+            tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
+            tuple(round(value, 6) for value in proposal.frame.run),  # type: ignore[arg-type]
+            tuple(round(value, 6) for value in proposal.frame.u),  # type: ignore[arg-type]
+            tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
+        ),
+        tuple(round(value, 3) for value in proposal.run_interval),  # type: ignore[arg-type]
+        PassageSection(
+            tuple(
+                PassageSectionVertex(
+                    (round(vertex.point[0], 3), round(vertex.point[1], 3)),
+                    round(vertex.bulge, 12),
+                )
+                for vertex in proposal.section.boundary
+            )
+        ),
+        PassageEnds(False, False),
+    )
+    if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
+        raise ValueError("section passage serialization exceeds the displacement bound")
+    return record
+
+
 def _discover_section_passages(
     part: Part, graph: FaceGraph, sink: EvidenceSink | None
 ) -> list[SectionPassage]:
@@ -368,27 +395,7 @@ def _discover_section_passages(
             if full_precision_projection is not None
             else None
         )
-        record = SectionPassage(
-            PassageFrame(
-                tuple(round(value, 3) for value in proposal.frame.origin),  # type: ignore[arg-type]
-                tuple(round(value, 6) for value in proposal.frame.run),  # type: ignore[arg-type]
-                tuple(round(value, 6) for value in proposal.frame.u),  # type: ignore[arg-type]
-                tuple(round(value, 6) for value in proposal.frame.v),  # type: ignore[arg-type]
-            ),
-            tuple(round(value, 3) for value in proposal.run_interval),  # type: ignore[arg-type]
-            PassageSection(
-                tuple(
-                    PassageSectionVertex(
-                        (round(vertex.point[0], 3), round(vertex.point[1], 3)),
-                        round(vertex.bulge, 12),
-                    )
-                    for vertex in proposal.section.boundary
-                )
-            ),
-            PassageEnds(False, False),
-        )
-        if _section_projection_displacement(proposal, record) > _SECTION_SERIALIZATION_LIMIT:
-            raise ValueError("section passage serialization exceeds the displacement bound")
+        record = _section_passage_record(proposal)
         if graph.common_valid_solid(proposal.nodes) is not proposal.solid:
             raise ValueError("section passage body authority changed before issuance")
         proposal.body_adapter.validate(proposal.solid, proposal.occurrence)

@@ -265,6 +265,37 @@ FAMILIES = {
         "census": None,
         "goldens": ["straight_and_obround_slots"],
     },
+    "oriented-slots": {
+        "recognisers": [("recognise_oriented_slots", "part")],
+        "records": [
+            ("OrientedSlot", "output", ["RecognitionResult.oriented_slots"]),
+        ],
+        "census": "oriented_slot",
+        "goldens": [],
+        "golden_paths": ["tests/golden/oriented_slots/contract.json"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_oriented_slots.py"],
+    },
+    "oriented-slot-patterns": {
+        "recognisers": [("recognise_oriented_slot_patterns", "derived")],
+        "records": [
+            (
+                "OrientedSlotArray",
+                "output",
+                ["RecognitionResult.oriented_slot_patterns"],
+            ),
+            (
+                "OrientedSlotGrid",
+                "output",
+                ["RecognitionResult.oriented_slot_patterns"],
+            ),
+        ],
+        "census": None,
+        "goldens": [],
+        "golden_paths": ["tests/golden/oriented_slots/contract.json"],
+        "introduced": "0.5.0",
+        "tests": ["tests/test_oriented_slots.py"],
+    },
     "slots": {
         "recognisers": [("recognise_slots", "part")],
         "records": [("Slot", "output", ["RecognitionResult.slots"])],
@@ -356,11 +387,14 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         return "deg"
     if name in {
         "axis_direction",
+        "depth_direction",
         "flat_direction",
         "flat_directions",
+        "long_direction",
         "run",
         "u",
         "v",
+        "width_direction",
     }:
         return "unit-vector"
     if name == "direction" and rendered.startswith("tuple[float,3]"):
@@ -433,7 +467,8 @@ def build_manifest() -> dict[str, object]:
             "census_output": census_output,
             "documentation": ["docs/capabilities.md#proven-recognition-capability"],
             "golden_evidence": sorted(
-                f"tests/golden/{name}/expected.json" for name in spec["goldens"]
+                [f"tests/golden/{name}/expected.json" for name in spec["goldens"]]
+                + spec.get("golden_paths", [])
             ),
             "id": family_id,
             "introduced_in": spec.get("introduced", "0.1.0"),

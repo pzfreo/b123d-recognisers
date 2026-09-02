@@ -49,7 +49,9 @@ from recognition_snapshot import recognition_snapshot  # noqa: E402
 
 from tests.golden._common import load_fixture  # noqa: E402
 
-CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
+CASES = sorted(
+    path for path in GOLDEN_ROOT.glob("*/fixture.py") if path.with_name("expected.json").is_file()
+)
 
 
 def _through_step(part, tmp_path: Path, name: str) -> Shape:

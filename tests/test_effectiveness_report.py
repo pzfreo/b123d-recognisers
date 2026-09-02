@@ -51,6 +51,7 @@ TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
 TAXONOMY_V9 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v9.json"
+TAXONOMY_V10 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v10.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -390,6 +391,18 @@ def test_taxonomy_v9_adds_only_blend_to_round() -> None:
         "status": "supported",
     }
     assert load_taxonomy(TAXONOMY_V9, "mfinstseg") == current
+
+
+def test_taxonomy_v10_adds_only_oriented_slot_to_rectangular_passage() -> None:
+    historical = load_taxonomy(TAXONOMY_V9, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V10, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 3} == {
+        key: value for key, value in historical.items() if key != 3
+    }
+    assert historical[3]["families"] == ["passages"]
+    assert current[3]["families"] == ["oriented-slots", "passages"]
+    assert load_taxonomy(TAXONOMY_V10, "mfinstseg") == current
 
 
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(

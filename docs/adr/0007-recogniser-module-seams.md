@@ -447,3 +447,10 @@ projection with no Part, graph, Candidate or evidence access. The registry decla
 RISERS' completed predecessor and the adapter groups those already-issued FaceLevel occurrences by
 their opaque SolidRef; aggregate discovery therefore does not rescan horizontal faces or infer
 ownership from equal Z values.
+
+## Amendment (oriented Slot facade, issue #310)
+
+`oriented_slots` is the public facade above neutral section-ring and pattern-geometry substrate.
+It does not import orchestration or reconciliation. `_registry` owns the completed-occurrence
+adapter and `_reconcile` alone owns Passage precedence; the import guard records those one-way
+edges.

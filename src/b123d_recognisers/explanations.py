@@ -53,6 +53,7 @@ class ReconciliationReason(Enum):
     SLOT_SUPERSEDED_BY_PRISMATIC = "recess.slot_superseded_by_prismatic"
     SLOT_SUPERSEDED_BY_PASSAGE = "recess.slot_superseded_by_passage"
     PASSAGE_SUPERSEDED_BY_SLOT = "recess.passage_superseded_by_slot"
+    PASSAGE_SUPERSEDED_BY_ORIENTED_SLOT = "recess.passage_superseded_by_oriented_slot"
     CHAMFER_SUPERSEDED_BY_ANGLED_STEP = "bevel.chamfer_superseded_by_angled_step"
     FILLET_SUPERSEDED_BY_CIRCULAR_BLIND_STEP = (
         "blend.fillet_superseded_by_circular_blind_step"

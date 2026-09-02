@@ -143,6 +143,11 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
     monkeypatch.setattr(
         registry_module, "recognise_slot_patterns", derived("slot_patterns", slots, [])
     )
+    monkeypatch.setattr(
+        registry_module,
+        "recognise_oriented_slot_patterns",
+        derived("oriented_slot_patterns", [], []),
+    )
     monkeypatch.setattr(registry_module, "recognise_grooves", cyl_consumer("grooves", []))
     monkeypatch.setattr(registry_module, "_discover_flats", cyl_consumer("flats", []))
     monkeypatch.setattr(registry_module, "_discover_pockets", counted("pockets", pockets))
@@ -285,6 +290,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         "channels",
         "slots",
         "slot_patterns",
+        "oriented_slot_patterns",
         "grooves",
         "flats",
         "pockets",
@@ -350,6 +356,7 @@ def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> No
         "rotational",
         "hole_patterns",
         "slot_patterns",
+        "oriented_slot_patterns",
         "pocket_patterns",
         "passages",
     }

@@ -25,7 +25,11 @@ def _load_fixture(path):
     return module
 
 
-CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
+# Only pinned Draftwright snapshots carry ``expected.json``. Package-originated semantic
+# contracts share the executable fixture corpus but have their own contract test and schema.
+CASES = sorted(
+    path for path in GOLDEN_ROOT.glob("*/fixture.py") if path.with_name("expected.json").is_file()
+)
 TRAVERSAL_CASES = [path for path in CASES if path.parent.name == "traversal_order"]
 
 

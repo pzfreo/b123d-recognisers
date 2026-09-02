@@ -1,0 +1,20 @@
+{
+  "fixture": "oriented_slots",
+  "physical": [
+    {"center": [-30.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true},
+    {"center": [0.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true},
+    {"center": [30.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true}
+  ],
+  "aggregate": {
+    "pattern_type": "OrientedSlotArray",
+    "member_centers": [[-30.0, 0.0, 0.0], [0.0, 0.0, 0.0], [30.0, 0.0, 0.0]],
+    "pitch": 30.0,
+    "section_passages": 0
+  },
+  "reconciliation": [
+    "recess.passage_superseded_by_oriented_slot",
+    "recess.passage_superseded_by_oriented_slot",
+    "recess.passage_superseded_by_oriented_slot"
+  ],
+  "census": {"oriented_slot": 3}
+}
