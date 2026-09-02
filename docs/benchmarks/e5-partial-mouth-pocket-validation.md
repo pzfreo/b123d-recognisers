@@ -34,7 +34,7 @@ recognition, Python 3.12.14, build123d 0.11.1, OCP 7.9.3.1, taxonomy v10 SHA-256
 `ad92768788d88e3c4e3866bc2a614e7a345fea7fc52463dfc9f0b9b9e850058e`. Both evaluate 2,493
 models, preserve the same seven known invalid dispositions, and return no empty aggregate result.
 
-| Measure | Parent `c1f1368` | Partial mouths `3342038` | Change |
+| Measure | Parent `c1f1368` | Partial mouths `b2e63f8` | Change |
 | --- | ---: | ---: | ---: |
 | accepted physical Prismatic Pockets | 1,626 | 1,659 | +33 |
 | class-13 mapped records | 821 | 831 | +10 |
@@ -57,8 +57,8 @@ precedence correctly drops. Every other physical-family count is identical. No c
 coverage, and no mismatch or unmapped-record total increases.
 
 Machine evidence:
-[`effectiveness-mfcadpp-2500-pocket-mouth-3342038.json`](effectiveness-mfcadpp-2500-pocket-mouth-3342038.json),
-SHA-256 `2eaedb3f30f1e49ab7cae8778e446cfcc1dae919489590f57d3aecf33bbc12a2`.
+[`effectiveness-mfcadpp-2500-pocket-mouth-b2e63f8.json`](effectiveness-mfcadpp-2500-pocket-mouth-b2e63f8.json),
+SHA-256 `1601e17facb357ad4a93fc6980232addd11670550e97144419a5192d081b8457`.
 
 MFInstSeg is not rerun for this increment. It remains the pseudo-blind aggregate transfer corpus;
 no individual MFInstSeg model was inspected.
@@ -77,7 +77,7 @@ uv run python tools/run_effectiveness_baseline.py \
   --limit 2500 \
   --workers 4 \
   --allow-invalid \
-  --output docs/benchmarks/effectiveness-mfcadpp-2500-pocket-mouth-3342038.json
+  --output docs/benchmarks/effectiveness-mfcadpp-2500-pocket-mouth-b2e63f8.json
 ```
 
 ## Remaining Pocket work
