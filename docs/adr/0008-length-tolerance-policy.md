@@ -255,7 +255,6 @@ negative boundary.
 
 | Site | Value | What it gates |
 | --- | --- | --- |
-| `chamfers._MIN_LEG` | 0.3 | minimum chamfer leg; the smallest dimensioned real-part edge treatment in the corpus |
 | `fillets._MIN_RADIUS` | 0.6 | minimum blend radius |
 | `plates._TOL` | 0.5 | minimum slab thickness |
 | `pads._TOL` | 0.2 | minimum pad footprint |
@@ -277,6 +276,16 @@ question it asks. Grep does not distinguish a threshold from a tolerance; only t
 `RiserEvidence.tol` is a **public record field** whose value appears in the pinned goldens. A
 derived tolerance changes that value for every fixture containing a riser. This is a visible record
 change, not only a classification change, and the release note must say so.
+
+### Amendment (chamfer evidence, issue #438)
+
+Chamfer recognition no longer applies the former 0.3 mm minimum leg by default. Unlike the
+remaining minimum-evidence gates, that value was calibrated to the smallest treatment considered
+worth dimensioning in one corpus, not to a geometric boundary between chamfers and non-chamfers.
+ADR 0001 assigns that significance decision to consumers. The recogniser therefore defaults to a
+zero floor and remains scale-free; its existing explicit ``tol=`` argument still provides a
+literal caller-owned minimum when wanted. The four independent geometry gates—surface kind,
+two-plane support, convex material side, and maximum relative span—remain unchanged.
 
 ## Consequences
 

@@ -27,7 +27,6 @@ from build123d import Axis, Box, chamfer
 
 from b123d_recognisers import recognise_chamfers
 from b123d_recognisers._geometry import AXIS_ALIGNED_COS
-from b123d_recognisers.chamfers import _MIN_LEG
 
 #: The tilt from an axis at which a face stops counting as aligned with it: 8.11°.
 BOUNDARY = math.degrees(math.acos(AXIS_ALIGNED_COS))
@@ -72,22 +71,13 @@ def test_the_draft_boundary_does_not_move_with_the_size_of_the_part():
     assert len(recognise_chamfers(_drafted(BOUNDARY + MARGIN, scale=100.0))) == 1
 
 
-def test_under_the_absolute_minimum_leg_no_angle_recovers_the_chamfer():
-    """Where the dimensionless gate meets the absolute one, and the absolute one wins.
-
-    ``_MIN_LEG`` is deliberately not scaled (ADR 0008): it is minimum *evidence*, and scaling
-    it would make a small feature's existence depend on what surrounds it. The consequence is
-    visible here rather than left as a remark — modelled twenty times smaller, the same
-    geometry that reports a chamfer at full size reports none on either side of the draft
-    boundary, because its short leg is 0.03 mm and the family will not call that a chamfer.
-
-    Not a scale-invariance failure. The angle gate still decides the same way; there is simply
-    nothing left for it to decide about.
-    """
+def test_small_chamfers_follow_geometry_unless_the_caller_sets_a_size_floor():
+    """Recognition has no default callout-size policy; an explicit ``tol`` remains literal."""
 
     tiny = 0.05
     short_leg = 4.0 * tiny * math.tan(math.radians(BOUNDARY + MARGIN))
-    assert short_leg < _MIN_LEG, "the premise: this fixture must be under the evidence floor"
+    assert short_leg < 0.3, "the premise: this fixture must be under the caller's example floor"
 
     assert recognise_chamfers(_drafted(BOUNDARY - MARGIN, scale=tiny)) == []
-    assert recognise_chamfers(_drafted(BOUNDARY + MARGIN, scale=tiny)) == []
+    assert len(recognise_chamfers(_drafted(BOUNDARY + MARGIN, scale=tiny))) == 1
+    assert recognise_chamfers(_drafted(BOUNDARY + MARGIN, scale=tiny), tol=0.3) == []

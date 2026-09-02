@@ -81,9 +81,17 @@ def test_real_turned_inventory_keeps_dimensioned_three_tenths_chamfers():
     ]
 
 
-def test_two_tenths_turned_edge_break_stays_below_evidence_floor():
-    unattributed_run(
+def test_two_tenths_turned_edge_break_is_geometry_by_default_but_obeys_a_caller_floor():
+    _ledger, found = attributed_run(
         _chamfered_stepped_shaft(0.2), FamilyId.CHAMFERS, recognise_chamfers
+    )
+    assert found
+
+    unattributed_run(
+        _chamfered_stepped_shaft(0.2),
+        FamilyId.CHAMFERS,
+        recognise_chamfers,
+        kwargs={"tol": 0.3},
     )
 
 

@@ -12,10 +12,9 @@ Coverage is partial and deliberately so. Families gated by a *minimum-evidence t
 "is this big enough to be a feature?" — are excluded, because 0.2.4 makes those thresholds
 absolute again after 0.2.3 scaled them and erased small features on large parts (issue #72).
 
-That exclusion is not a defect being deferred. A 1 mm chamfer shrunk to 0.05 mm genuinely is a
-deburr, and whether it is worth reporting is consumer policy under ADR 0001. What must not happen
-is the *surrounding part* deciding it, which is what 0.2.3 did and what
-``tests/test_large_part_small_features.py`` now pins.
+Whether a very small geometric feature is worth reporting is consumer policy under ADR 0001.
+Chamfers therefore have no default size floor and remain in the scale-free census; callers may
+still pass an explicit ``tol`` when they intentionally want a reporting threshold.
 """
 
 from __future__ import annotations
@@ -54,7 +53,7 @@ FACTORS = (0.05, 5.0, 100.0)
 # but an accepted thresholded Fillet deliberately supersedes the same complete chain. Its direct
 # scale contract is pinned in ``tests/test_blends.py`` rather than erased from that ownership rule.
 NOT_YET_SCALE_FREE = frozenset(
-    {"blend", "chamfer", "fillet", "flat", "plate", "pocket", "channel"}
+    {"blend", "fillet", "flat", "plate", "pocket", "channel"}
 )
 
 
