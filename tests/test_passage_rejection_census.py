@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 
 import pytest
 from build123d import (
@@ -106,3 +107,29 @@ def test_line_section_uses_edge_incidence_not_unique_vertex_enumeration(sides: i
     assert result is not None
     assert len(result[0].boundary) == sides
     assert result[0].area > 0.0
+
+
+@pytest.mark.parametrize(
+    "edges",
+    (
+        (),
+        (SimpleNamespace(geom_type=SimpleNamespace(name="CIRCLE")),),
+        (
+            SimpleNamespace(
+                geom_type=SimpleNamespace(name="LINE"),
+                vertices=lambda: (object(), object()),
+            ),
+            SimpleNamespace(
+                geom_type=SimpleNamespace(name="LINE"),
+                vertices=lambda: (object(), object()),
+            ),
+        ),
+    ),
+    ids=("fewer-than-three-edges", "curved-edge", "disconnected-edges"),
+)
+def test_line_section_refuses_unsupported_or_malformed_boundaries(edges) -> None:
+    wire = SimpleNamespace(edges=lambda: edges)
+
+    assert _line_section(  # type: ignore[arg-type]
+        wire, LocalFrame.canonical((0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
+    ) is None
