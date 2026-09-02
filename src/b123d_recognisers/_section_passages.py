@@ -39,6 +39,7 @@ class SectionRingProposal:
     nodes: tuple[FaceNode, ...]
     solid: SolidRef
     body_adapter: _BodyAdapter
+    constituent: frozenset[FaceNode] = frozenset()
 
     @property
     def frame(self) -> LocalFrame:
@@ -149,6 +150,151 @@ def _face_interval(graph: FaceGraph, node: FaceNode, run: Vector3) -> tuple[floa
     except (AttributeError, RuntimeError, TypeError, ValueError):
         return None
     return (min(values), max(values)) if values else None
+
+
+def _wire_seed(graph: FaceGraph, opening: FaceNode, wire: Wire) -> frozenset[FaceNode]:
+    edges = tuple(wire.edges())
+    return frozenset(
+        neighbour
+        for neighbour in graph.neighbours(opening)
+        if any(
+            occurrence.edge == edge
+            for occurrence in graph.shared_occurrences(opening, neighbour)
+            for edge in edges
+        )
+    )
+
+
+def _bounded_inner_region(
+    graph: FaceGraph, opening: FaceNode, seed: frozenset[FaceNode]
+) -> frozenset[FaceNode]:
+    region = set(seed)
+    pending = list(seed)
+    while pending:
+        current = pending.pop()
+        for neighbour in graph.neighbours(current):
+            if neighbour is opening or neighbour in region:
+                continue
+            if graph.arc(current, neighbour) not in ("concave", "smooth"):
+                continue
+            region.add(neighbour)
+            pending.append(neighbour)
+    return frozenset(region)
+
+
+def _mouth_regions(
+    graph: FaceGraph,
+) -> tuple[tuple[frozenset[FaceNode], tuple[tuple[FaceNode, Wire, frozenset[FaceNode]], ...]], ...]:
+    by_region: dict[
+        frozenset[FaceNode], list[tuple[FaceNode, Wire, frozenset[FaceNode]]]
+    ] = defaultdict(list)
+    for opening in graph.nodes:
+        if not graph.is_planar(opening):
+            continue
+        for wire in graph.face(opening).inner_wires():
+            seed = _wire_seed(graph, opening, wire)
+            if (
+                len(seed) < 3
+                or any(not graph.is_planar(node) for node in seed)
+                or any(graph.arc(opening, node) != "convex" for node in seed)
+            ):
+                continue
+            by_region[_bounded_inner_region(graph, opening, seed)].append(
+                (opening, wire, seed)
+            )
+    return tuple(
+        (region, tuple(sorted(mouths, key=lambda item: item[0].index)))
+        for region, mouths in sorted(
+            by_region.items(),
+            key=lambda item: tuple(sorted(node.index for node in item[0])),
+        )
+    )
+
+
+def _line_section(wire: Wire, base: LocalFrame) -> tuple[PlanarSection, Vector3] | None:
+    try:
+        if any(edge.geom_type.name != "LINE" for edge in wire.edges()):
+            return None
+        points = tuple(_point(vertex) for vertex in wire.vertices())
+        if len(points) < 3:
+            return None
+        raw = PlanarSection(
+            tuple(SectionVertex((_dot(point, base.u), _dot(point, base.v))) for point in points)
+        )
+        centre = raw.centroid
+        world_centre = tuple(
+            centre[0] * base.u[index] + centre[1] * base.v[index]
+            for index in range(3)
+        )
+        section = PlanarSection(
+            tuple(
+                SectionVertex((vertex.point[0] - centre[0], vertex.point[1] - centre[1]))
+                for vertex in raw.boundary
+            )
+        )
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return None
+    return section, cast(Vector3, world_centre)
+
+
+def _same_section(left: PlanarSection, right: PlanarSection) -> bool:
+    return len(left.boundary) == len(right.boundary) and all(
+        math.dist(a.point, b.point) <= _INTERVAL_TOL
+        for a, b in zip(left.boundary, right.boundary, strict=True)
+    )
+
+
+def _enclosure_proposals(
+    graph: FaceGraph, bodies: _BodyAdapter
+) -> tuple[SectionRingProposal, ...]:
+    proposals = []
+    for region, mouths in _mouth_regions(graph):
+        if len(mouths) != 2:
+            continue
+        (first_opening, first_wire, first_seed), (second_opening, second_wire, second_seed) = mouths
+        first_normal = graph.normal(first_opening)
+        second_normal = graph.normal(second_opening)
+        solid = graph.common_valid_solid(region | {first_opening, second_opening})
+        if (
+            first_normal is None
+            or second_normal is None
+            or not _parallel(first_normal, second_normal)
+            or _dot(first_normal, second_normal) > 0.0
+            or solid is None
+        ):
+            continue
+        base = LocalFrame.canonical(first_normal, (0.0, 0.0, 0.0))
+        first = _line_section(first_wire, base)
+        second = _line_section(second_wire, base)
+        if first is None or second is None or not _same_section(first[0], second[0]):
+            continue
+        section, centre = first
+        frame = LocalFrame.canonical(base.run, centre)
+        interval = tuple(
+            sorted(
+                (
+                    _dot(_point(first_wire.vertices()[0]), frame.run),
+                    _dot(_point(second_wire.vertices()[0]), frame.run),
+                )
+            )
+        )
+        if interval[1] - interval[0] <= _COORD_FLOOR or not _void_and_open(
+            graph.solid_shape(solid), frame, cast(tuple[float, float], interval), section
+        ):
+            continue
+        defining = tuple(sorted(first_seed | second_seed, key=lambda node: node.index))
+        occurrence = SectionOccurrence(
+            bodies.body(solid),
+            frame,
+            cast(tuple[float, float], interval),
+            section,
+            SectionEnds(False, False),
+        )
+        bodies.validate(solid, occurrence)
+        proposals.append(
+            SectionRingProposal(occurrence, defining, solid, bodies, constituent=region)
+        )
+    return tuple(proposals)
 
 
 def _world(frame: LocalFrame, t: float, point: tuple[float, float]) -> Vector3:
@@ -395,5 +541,11 @@ def section_ring_proposals(part: Part, graph: FaceGraph) -> tuple[SectionRingPro
                     bodies,
                 )
             )
+    for proposal in _enclosure_proposals(graph, bodies):
+        identity = frozenset(proposal.nodes)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        proposals.append(proposal)
     proposals.sort(key=lambda item: (item.frame.run, item.run_interval, item.frame.origin))
     return tuple(proposals)

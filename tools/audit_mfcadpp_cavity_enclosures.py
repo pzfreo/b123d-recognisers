@@ -141,6 +141,40 @@ def _candidate_regions(graph: Any) -> tuple[tuple[frozenset[Any], frozenset[Any]
     return tuple((region, frozenset(owners)) for region, owners in sorted(raw.items(), key=key))
 
 
+def _convex_mouth(graph: Any, opening: Any, region: frozenset[Any]) -> bool:
+    """Whether one opening contributes a complete convex-only inner-wire boundary.
+
+    The exact wire occurrences, rather than all neighbours of the opening face, define the
+    boundary.  Requiring its entire seed to belong to ``region`` prevents an unrelated inner
+    loop on the same face from acting as a terminal.
+    """
+
+    return any(
+        seed
+        and seed <= region
+        and all(graph.arc(opening, neighbour) == "convex" for neighbour in seed)
+        for wire in graph.face(opening).inner_wires()
+        if (seed := _wire_seed(graph, opening, wire))
+    )
+
+
+def _two_ended_regions(graph: Any) -> tuple[tuple[frozenset[Any], tuple[Any, Any]], ...]:
+    """Return enclosure regions proved by exactly two convex-only inner-wire mouths."""
+
+    found = []
+    for region, owners in _candidate_regions(graph):
+        mouths = tuple(
+            sorted(
+                (owner for owner in owners if _convex_mouth(graph, owner, region)),
+                key=lambda node: node.index,
+            )
+        )
+        if len(mouths) != 2 or graph.common_valid_solid(region | set(mouths)) is None:
+            continue
+        found.append((region, (mouths[0], mouths[1])))
+    return tuple(found)
+
+
 def _ratio(numerator: int, denominator: int) -> dict[str, int | float | None]:
     return {
         "numerator": numerator,
