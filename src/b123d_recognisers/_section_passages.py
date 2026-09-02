@@ -175,7 +175,8 @@ def _bounded_inner_region(
         for neighbour in graph.neighbours(current):
             if neighbour is opening or neighbour in region:
                 continue
-            if graph.arc(current, neighbour) not in ("concave", "smooth"):
+            kind = graph.arc(current, neighbour)
+            if kind not in ("concave", "smooth"):
                 continue
             region.add(neighbour)
             pending.append(neighbour)
@@ -196,7 +197,7 @@ def _mouth_regions(
             if (
                 len(seed) < 3
                 or any(not graph.is_planar(node) for node in seed)
-                or any(graph.arc(opening, node) != "convex" for node in seed)
+                or not all(graph.arc(opening, node) == "convex" for node in seed)
             ):
                 continue
             by_region[_bounded_inner_region(graph, opening, seed)].append(
