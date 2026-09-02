@@ -49,6 +49,13 @@ from b123d_recognisers.frames import (
     FramedRecognitionResult,
     build_framed_recognition_result,
 )
+from b123d_recognisers.prismatic_pockets import (
+    SPAN_EPS,
+    _axis_for_opening,
+    _material_fraction,
+    _section_prism,
+    _void_open_and_floored,
+)
 
 
 def _prism(*corners, height=14):
@@ -96,6 +103,41 @@ def _through():
     return Box(120, 80, 20) - Pos(0, 0, -20) * _prism(
         (-12, -9), (12, -9), (0, 12), height=60
     )
+
+
+def test_partial_mouth_probe_helpers_fail_closed_at_their_kernel_boundaries() -> None:
+    section = ((-2.0, -2.0), (2.0, -2.0), (0.0, 2.0))
+
+    with pytest.raises(ValueError, match="too short"):
+        _section_prism(section, 2, 0.0, 2 * SPAN_EPS)
+
+    class RaisedKernelError:
+        def intersect(self, _probe):
+            raise RuntimeError("forced kernel refusal")
+
+    assert not _void_open_and_floored(RaisedKernelError(), section, 2, 10.0, 2.0)
+
+
+def test_partial_mouth_probe_accepts_a_single_shape_intersection_value() -> None:
+    class Intersection:
+        volume = 3.0
+
+    class Part:
+        def intersect(self, _probe):
+            return Intersection()
+
+    class Probe:
+        volume = 12.0
+
+    assert _material_fraction(Part(), Probe()) == pytest.approx(0.25)
+
+
+def test_opening_without_a_surface_normal_has_no_principal_axis() -> None:
+    class Graph:
+        def normal(self, _node):
+            return None
+
+    assert _axis_for_opening(Graph(), object()) is None
 
 
 def _claimed(part):

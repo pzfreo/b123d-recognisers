@@ -227,9 +227,12 @@ def _plane_at(graph: FaceGraph, node: FaceNode, axis: int) -> float | None:
 def _one_ended_regions(part: Part, graph: FaceGraph) -> tuple[_RecoveredPocket, ...]:
     """Recover unique principal-axis polygonal cavities whose wall spans are interrupted."""
 
-    raw: dict[frozenset[FaceNode], list[tuple[FaceNode, frozenset[FaceNode]]]] = defaultdict(list)
+    raw: dict[
+        frozenset[FaceNode], list[tuple[FaceNode, frozenset[FaceNode], int]]
+    ] = defaultdict(list)
     for opening in graph.nodes:
-        if not graph.is_planar(opening) or _axis_for_opening(graph, opening) is None:
+        axis = _axis_for_opening(graph, opening) if graph.is_planar(opening) else None
+        if axis is None:
             continue
         for wire in graph.face(opening).inner_wires():
             seed = _wire_seed(graph, opening, wire)
@@ -244,7 +247,7 @@ def _one_ended_regions(part: Part, graph: FaceGraph) -> tuple[_RecoveredPocket, 
                 or "convex" not in mouth_arcs
             ):
                 continue
-            raw[_inner_region(graph, opening, seed)].append((opening, seed))
+            raw[_inner_region(graph, opening, seed)].append((opening, seed, axis))
 
     intersecting = {
         region
@@ -255,10 +258,7 @@ def _one_ended_regions(part: Part, graph: FaceGraph) -> tuple[_RecoveredPocket, 
     for region, mouths in raw.items():
         if region in intersecting or len(mouths) != 1:
             continue
-        opening, seed = mouths[0]
-        axis = _axis_for_opening(graph, opening)
-        if axis is None:
-            continue
+        opening, seed, axis = mouths[0]
         mouth_at = _plane_at(graph, opening, axis)
         floor_planes = []
         for node in region:
