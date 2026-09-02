@@ -18,7 +18,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from build123d import Vector, extrude, import_step
+from build123d import Vector, extrude
+
+from b123d_recognisers import import_step_geometry as import_step
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))

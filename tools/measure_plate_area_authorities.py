@@ -14,11 +14,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from build123d import Axis, Face, import_step
+from build123d import Axis, Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
+
+from b123d_recognisers import import_step_geometry as import_step
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))

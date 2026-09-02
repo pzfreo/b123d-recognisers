@@ -760,9 +760,10 @@ def audit_model(files: ModelFiles, *, annotations_only: bool = False) -> JsonObj
     if annotations_only:
         return result
 
-    from build123d import import_step
     from OCP.BRepCheck import BRepCheck_Analyzer
     from OCP.Standard import Standard_Failure
+
+    from b123d_recognisers import import_step_geometry as import_step
 
     try:
         part = import_step(files.step)

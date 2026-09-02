@@ -112,12 +112,12 @@ def test_readme_examples_only_use_api_the_package_actually_exports() -> None:
 def test_readme_shows_the_step_entry_point_the_package_is_for() -> None:
     """One claim worth pinning: the README demonstrates recognition from an imported file.
 
-    Not a wording assertion — it checks the example calls ``import_step`` and feeds the result to
-    a recogniser, which is the workflow the package exists to serve. A README that stopped
-    showing it would be documenting a different library.
+    Not a wording assertion — it checks the example calls the supported geometry-only STEP loader
+    and feeds the result to a recogniser, which is the workflow the package exists to serve. A
+    README that stopped showing it would be documenting a different library.
     """
 
     readme = README.read_text(encoding="utf-8")
 
-    assert re.search(r"import_step\(", readme)
+    assert re.search(r"import_step_geometry\(", readme)
     assert re.search(r"build_framed_recognition_result\(\s*part\s*\)", readme)

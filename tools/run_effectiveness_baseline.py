@@ -282,9 +282,8 @@ def main() -> int:
     except EffectivenessDataError as error:
         parser.error(str(error))
 
-    from build123d import import_step
-
     from b123d_recognisers import __version__
+    from b123d_recognisers import import_step_geometry as import_step
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
 

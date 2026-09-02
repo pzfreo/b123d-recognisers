@@ -44,6 +44,7 @@ PUBLIC_MODULES = {
     "round_bottom_slots",
     "result",
     "slots",
+    "step_io",
     "turned",
 }
 

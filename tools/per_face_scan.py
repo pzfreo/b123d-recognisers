@@ -166,7 +166,7 @@ def scan_part(part, labels):
 def scan(corpus: Path):
     """Every model in *corpus*, skipping any whose label count and face count disagree."""
 
-    from build123d import import_step
+    from b123d_recognisers import import_step_geometry as import_step
 
     claimed: dict[str, Counter] = defaultdict(Counter)
     records: Counter = Counter()

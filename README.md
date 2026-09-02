@@ -37,20 +37,27 @@ whose construction history is not available.
 
 ## Recognise an imported model
 
-Import a STEP file with build123d, then run the shared recognition orchestration to obtain one
-consistent feature inventory:
+Load a STEP file through the package's geometry-only reader, then run the shared recognition
+orchestration to obtain one consistent feature inventory:
 
 ```python
-from build123d import import_step
-from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
+from b123d_recognisers import FramedRecognitionResult
+from b123d_recognisers import build_framed_recognition_result
+from b123d_recognisers import import_step_geometry
 
-part = import_step("gearbox-housing.step")
+part = import_step_geometry("gearbox-housing.step")
 framed = build_framed_recognition_result(part)
 
 if isinstance(framed, FramedRecognitionResult):
     for hole in framed.result.holes:
         print(hole.location, hole.axis, hole.diameter, hole.depth, hole.bottom)
 ```
+
+`import_step_geometry()` deliberately loads only B-Rep geometry. It flattens STEP assembly
+structure and does not retain product names, colours, or layers, none of which recognition reads.
+This avoids the XCAF metadata path that can terminate Python on an unnamed assembly component.
+Applications that need assembly metadata may continue to use their own metadata-aware loader and
+pass the resulting build123d shape to the recognisers.
 
 `build_framed_recognition_result()` shares intermediate geometric analysis across recognisers and
 is the ordinary entry point for a CAD application. Retain its frame and exact local working shape

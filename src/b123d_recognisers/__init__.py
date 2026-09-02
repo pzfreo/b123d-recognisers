@@ -207,6 +207,7 @@ from b123d_recognisers.slots import (
     recognise_slot_patterns,
     recognise_slots,
 )
+from b123d_recognisers.step_io import import_step_geometry
 from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import (
     TurnedProfile,
@@ -320,6 +321,7 @@ __all__ = [
     "step_level_zs",
     "feature_diameters",
     "feature_census",
+    "import_step_geometry",
     "capability_manifest",
     "capability_manifest_json",
     "validate_capability_manifest",

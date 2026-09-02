@@ -24,6 +24,7 @@ the record stays a decision rather than a status report.
 | [0011](0011-explicit-part-relative-recognition-frame.md) | Pair local recognition with an explicit part frame | Accepted |
 | [0013](0013-public-blend-chain-recognition.md) | Publish complete blend chains separately from dimension-worthy Fillets | Accepted |
 | [0012](0012-bounded-recognition-explanations.md) | Publish bounded explanations beside recognition results | Accepted |
+| [0014](0014-geometry-only-step-loading.md) | Load recognition inputs without STEP assembly metadata | Accepted |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
