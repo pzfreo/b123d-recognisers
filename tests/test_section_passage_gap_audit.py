@@ -19,7 +19,10 @@ from build123d import (
 )
 
 from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._section_passages import section_ring_proposals
+from b123d_recognisers.passages import recognise_section_passages
 from tools.audit_mfcadpp_section_passage_gaps import (
     _probe_component,
     _relation,
@@ -116,6 +119,22 @@ def test_two_mouth_fallback_preserves_equal_compound_occurrences() -> None:
     assert len(proposals) == 2
     assert all(proposal.constituent for proposal in proposals)
     assert proposals[0].solid is not proposals[1].solid
+
+
+def test_two_mouth_fallback_publishes_exact_constituent_membership() -> None:
+    part = _interrupted_polygonal_passage(6)
+    graph = FaceGraph(part)
+    ledger = ClaimLedger(graph)
+    (proposal,) = section_ring_proposals(part, graph)
+
+    (record,) = recognise_section_passages(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.PASSAGES).candidates
+    evidence = ledger.snapshot_index()
+
+    assert candidate.record is record
+    assert evidence.defining_of(candidate) == frozenset(proposal.nodes)
+    assert evidence.constituent_of(candidate) == proposal.constituent
+    assert evidence.defining_of(candidate) <= evidence.constituent_of(candidate)
 
 
 def test_two_mouth_fallback_refuses_blind_circular_and_branched_voids() -> None:
