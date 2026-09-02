@@ -41,11 +41,9 @@ Load a STEP file through the package's geometry-only reader, then run the shared
 orchestration to obtain one consistent feature inventory:
 
 ```python
-from b123d_recognisers import (
-    FramedRecognitionResult,
-    build_framed_recognition_result,
-    import_step_geometry,
-)
+from b123d_recognisers import FramedRecognitionResult
+from b123d_recognisers import build_framed_recognition_result
+from b123d_recognisers import import_step_geometry
 
 part = import_step_geometry("gearbox-housing.step")
 framed = build_framed_recognition_result(part)
