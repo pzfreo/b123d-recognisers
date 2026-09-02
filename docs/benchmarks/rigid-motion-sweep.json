@@ -462,6 +462,50 @@
         }
       }
     },
+    "oriented_slots": {
+      "baseline_records": 3,
+      "rotations": {
+        "X30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "oriented_slot": 3
+          },
+          "transitions": {}
+        },
+        "X90": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "oriented_slot": 3
+          },
+          "transitions": {}
+        },
+        "Z30": {
+          "absent": 0,
+          "absent_by_family": {},
+          "baseline_records": 3,
+          "introduced": 0,
+          "introduced_by_family": {},
+          "reclassified": 0,
+          "retained_same_family": 3,
+          "same_family": {
+            "oriented_slot": 3
+          },
+          "transitions": {}
+        }
+      }
+    },
     "paired_ramp_step": {
       "baseline_records": 1,
       "rotations": {
@@ -1006,7 +1050,7 @@
           "retained_same_family": 0,
           "same_family": {},
           "transitions": {
-            "slot->passage": 4
+            "slot->oriented_slot": 4
           }
         },
         "X90": {
@@ -1034,7 +1078,7 @@
           "retained_same_family": 0,
           "same_family": {},
           "transitions": {
-            "slot->passage": 4
+            "slot->oriented_slot": 4
           }
         }
       }
@@ -1054,7 +1098,7 @@
           "retained_same_family": 0,
           "same_family": {},
           "transitions": {
-            "slot->passage": 3
+            "slot->oriented_slot": 3
           }
         },
         "X90": {
@@ -1083,7 +1127,7 @@
           "retained_same_family": 0,
           "same_family": {},
           "transitions": {
-            "slot->passage": 3
+            "slot->oriented_slot": 3
           }
         }
       }
@@ -1193,24 +1237,24 @@
   "totals": {
     "X30": {
       "absent": 40,
-      "baseline_records": 85,
+      "baseline_records": 88,
       "introduced": 0,
       "reclassified": 11,
-      "retained_same_family": 34
+      "retained_same_family": 37
     },
     "X90": {
       "absent": 0,
-      "baseline_records": 85,
+      "baseline_records": 88,
       "introduced": 0,
       "reclassified": 0,
-      "retained_same_family": 85
+      "retained_same_family": 88
     },
     "Z30": {
       "absent": 27,
-      "baseline_records": 85,
+      "baseline_records": 88,
       "introduced": 0,
       "reclassified": 18,
-      "retained_same_family": 40
+      "retained_same_family": 43
     }
   }
 }

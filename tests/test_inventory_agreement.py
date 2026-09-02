@@ -53,6 +53,7 @@ SHARED = {
     "hole_pattern": "hole_patterns",
     "boss": "bosses",
     "slot": "slots",
+    "oriented_slot": "oriented_slots",
     "rectangular_blind_slot": "rectangular_blind_slots",
     "round_bottom_blind_slot": "round_bottom_blind_slots",
     "groove": "grooves",
@@ -138,6 +139,7 @@ RESULT_ONLY = {
     # Pattern families: the census counts hole patterns and not these. A scope decision about
     # what a distinct machined feature is, and one worth revisiting rather than inheriting.
     "slot_patterns": "census counts hole patterns only",
+    "oriented_slot_patterns": "census counts hole patterns only",
     "pocket_patterns": "census counts hole patterns only",
     "passages": "accepted-only compatibility projection; section_passages is counted",
     # Families with no census key at all. Each is a gap rather than a decision, and naming

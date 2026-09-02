@@ -45,22 +45,22 @@ def test_checked_in_rigid_motion_evidence_is_current(report) -> None:
 def test_rigid_motion_baseline_separates_absence_from_reclassification(report) -> None:
     assert report["totals"] == {
         "Z30": {
-            "baseline_records": 85,
-            "retained_same_family": 40,
+            "baseline_records": 88,
+            "retained_same_family": 43,
             "reclassified": 18,
             "absent": 27,
             "introduced": 0,
         },
         "X30": {
-            "baseline_records": 85,
-            "retained_same_family": 34,
+            "baseline_records": 88,
+            "retained_same_family": 37,
             "reclassified": 11,
             "absent": 40,
             "introduced": 0,
         },
         "X90": {
-            "baseline_records": 85,
-            "retained_same_family": 85,
+            "baseline_records": 88,
+            "retained_same_family": 88,
             "reclassified": 0,
             "absent": 0,
             "introduced": 0,
@@ -71,5 +71,5 @@ def test_rigid_motion_baseline_separates_absence_from_reclassification(report) -
         "pocket->prismatic_pocket": 6
     }
     assert fixtures["straight_and_obround_slots"]["rotations"]["Z30"]["transitions"] == {
-        "slot->passage": 4
+        "slot->oriented_slot": 4
     }
