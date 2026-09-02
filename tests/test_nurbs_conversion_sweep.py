@@ -43,7 +43,16 @@ def test_conversion_sweep_proves_face_and_raised_pad_precision(report) -> None:
     assert report["excluded_fixtures"] == EXCLUDED_FIXTURES == {
         "circular_blind_step": (
             "whole-solid conversion changes the quarter-cylinder edge signature"
-        )
+        ),
+        "toroidal_blend_compound": (
+            "effective-surface recovery deliberately excludes native tori"
+        ),
+        "toroidal_blend_internal": (
+            "effective-surface recovery deliberately excludes native tori"
+        ),
+        "toroidal_blends_turned": (
+            "effective-surface recovery deliberately excludes native tori"
+        ),
     }
     assert report["totals"] == {
         "fixtures": 26,
