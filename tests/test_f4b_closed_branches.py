@@ -186,7 +186,7 @@ def test_body_adapter_revalidates_the_occurrence_mapping() -> None:
         adapter.validate(object(), occurrence)  # type: ignore[arg-type]
 
 
-def test_section_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatch) -> None:
+def test_cycle_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatch) -> None:
     import b123d_recognisers._section_passages as module
     from tests.test_section_passages import _square
 
@@ -195,17 +195,19 @@ def test_section_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatc
     assert proposal.ends.low_capped is False
     assert proposal.ends.high_capped is False
 
+    monkeypatch.setattr(module, "_enclosure_proposals", lambda *_args: ())
     monkeypatch.setattr(module, "_face_interval", lambda *_args: None)
     assert module.section_ring_proposals(part, FaceGraph(part)) == ()
 
 
-def test_section_proposal_refuses_disagreeing_complete_wall_spans(monkeypatch) -> None:
+def test_cycle_proposal_refuses_disagreeing_complete_wall_spans(monkeypatch) -> None:
     import b123d_recognisers._section_passages as module
     from tests.test_section_passages import _square
 
     part = _square()
     graph = FaceGraph(part)
     first = module.section_ring_proposals(part, graph)[0].nodes[0]
+    monkeypatch.setattr(module, "_enclosure_proposals", lambda *_args: ())
     monkeypatch.setattr(
         module,
         "_face_interval",
