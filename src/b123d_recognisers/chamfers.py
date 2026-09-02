@@ -81,12 +81,6 @@ from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 from b123d_recognisers.countersinks import cone_rims
 
-#: **A minimum-evidence threshold, not a tolerance — deliberately absolute (ADR 0008).**
-#: Scaling it to the part makes a feature's existence depend on what surrounds it, so a small
-#: feature on a large part disappears. Whether such a feature is worth dimensioning is consumer
-#: policy, and ADR 0001 puts policy with the consumer; recognition reports it either way.
-_MIN_LEG = 0.3
-
 #: A chamfer runs *along* one principal axis, so its normal has essentially no component on
 #: that axis. Looser than the package's AXIS_ZERO_COS because a chamfer face carries more
 #: angular noise than a plane that is nominally perpendicular to an axis.
@@ -159,7 +153,9 @@ def recognise_chamfers(
     the ledger ``recognise_angled_steps`` wrote into and
     :func:`b123d_recognisers._reconcile.chamfers_that_are_not_angled_steps` removes it."""
     bb = part.bounding_box()
-    tol = _MIN_LEG if tol is None else tol
+    # Geometry, rather than callout significance, decides the default answer. A caller that
+    # deliberately wants a minimum reportable leg may still supply it through ``tol``.
+    tol = 0.0 if tol is None else tol
     ext = {0: bb.max.X - bb.min.X, 1: bb.max.Y - bb.min.Y, 2: bb.max.Z - bb.min.Z}
     all_faces = list(part.faces())
     edge_faces = edge_face_map(all_faces, face_edges=face_edges)

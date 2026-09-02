@@ -327,7 +327,7 @@ def test_no_chamfer_record_lands_on_a_labelled_angled_step(corpus):
 
     # Without this the test passes when attribution stops resolving entirely: replacing the
     # lookup key with one that can never match left it green, which would make "the direct
-    # regression guard" a silent no-op. All 14 chamfer records resolve today.
+    # regression guard" a silent no-op. All 17 chamfer records resolve today.
     assert resolved, "no chamfer record resolved to a labelled face; attribution is broken"
     assert stolen == [], f"chamfer records on faces labelled a blind step: {stolen}"
 
@@ -395,7 +395,7 @@ _OBSERVED_RECORDS = {
         "angled_steps": 1
     },
     "10077.step": {
-        "chamfers": 2
+        "chamfers": 3
     },
     "1008.step": {
         "chamfers": 1
@@ -412,6 +412,9 @@ _OBSERVED_RECORDS = {
     "10119.step": {
         "angled_steps": 1
     },
+    "1013.step": {
+        "chamfers": 1
+    },
     "10131.step": {
         "chamfers": 1
     },
@@ -419,7 +422,7 @@ _OBSERVED_RECORDS = {
         "angled_steps": 2
     },
     "10146.step": {
-        "chamfers": 1
+        "chamfers": 2
     },
     "10163.step": {
         "chamfers": 1
@@ -692,7 +695,7 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     - **Angled steps and passages are exact**, and should stay exact. Every face either claims
       is labelled the feature it says it is -- for passages across all three shape variants,
       which the family deliberately does not distinguish.
-    - **Chamfer at 11 of 14** is the same 79% ``test_chamfer_precision_does_not_regress``
+    - **Chamfer at 14 of 17** is the same 82% ``test_chamfer_precision_does_not_regress``
       measures from record centroids, arrived at independently through the ledger. The two
       disagreeing would mean one of the attribution methods is wrong.
     - **Slot is the accepted aggregate inventory.** Boundary reconciliation has removed the
@@ -714,7 +717,7 @@ def test_what_the_claiming_families_actually_claim_matches_the_reviewed_f4b_base
     assert ring == Counter({4: 42, 3: 40, 2: 18})
 
     bevels = claimed["Chamfer"]
-    assert bevels[CHAMFER] == 11 and sum(bevels.values()) == 14
+    assert bevels[CHAMFER] == 14 and sum(bevels.values()) == 17
 
     slots = claimed["Slot"]
     # Exact prism and curved-depth closure evidence remove material-crossing and alternate-depth
