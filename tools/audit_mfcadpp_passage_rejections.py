@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import subprocess
 import sys
 import time
@@ -19,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
 from b123d_recognisers._section_passages import (  # noqa: E402
     _COORD_FLOOR,
+    _INTERVAL_TOL,
     _BodyAdapter,
     _dot,
     _enclosure_proposals,
@@ -27,7 +29,10 @@ from b123d_recognisers._section_passages import (  # noqa: E402
     _parallel,
     _point,
     _same_section,
+    _termination_plane,
     _void_and_open,
+    _void_and_planar_open,
+    _wall_run,
     section_ring_proposals,
 )
 from b123d_recognisers._sections import LocalFrame  # noqa: E402
@@ -82,13 +87,47 @@ def _classify_region(
     first_normal = graph.normal(first_opening)
     second_normal = graph.normal(second_opening)
     solid = graph.common_valid_solid(region | {first_opening, second_opening})
-    if (
-        first_normal is None
-        or second_normal is None
-        or not _parallel(first_normal, second_normal)
-        or _dot(first_normal, second_normal) > 0.0
-        or solid is None
-    ):
+    if first_normal is None or second_normal is None or solid is None:
+        return "opposed_openings_or_solid"
+    if not _parallel(first_normal, second_normal):
+        run = _wall_run(graph, region)
+        if run is None:
+            return "opposed_openings_or_solid"
+        base = LocalFrame.canonical(run, (0.0, 0.0, 0.0))
+        first = _line_section(first_wire, base)
+        second = _line_section(second_wire, base)
+        if first is None or second is None:
+            return "straight_polygonal_sections"
+        if (
+            not _same_section(first[0], second[0])
+            or math.dist(first[1], second[1]) > _INTERVAL_TOL
+        ):
+            return "mouth_congruence"
+        section, centre = first
+        frame = LocalFrame.canonical(base.run, centre)
+        planes = (
+            _termination_plane(first_normal, first_wire, frame),
+            _termination_plane(second_normal, second_wire, frame),
+        )
+        if any(plane is None for plane in planes):
+            return "axial_interval"
+        low, high = sorted(
+            cast(tuple[tuple[float, tuple[float, float]], ...], planes),
+            key=lambda item: item[0],
+        )
+        if high[0] - low[0] <= _COORD_FLOOR:
+            return "axial_interval"
+        if not _void_and_planar_open(graph.solid_shape(solid), frame, low, high, section):
+            return "material_or_open_ends"
+        fallback = fallback_by_region.get(region)
+        if fallback is None:
+            raise RuntimeError("production fallback disagrees with rejection census")
+        return (
+            "accepted_fallback"
+            if region in final_fallback_regions
+            else "duplicate_or_existing_cycle"
+        )
+    if _dot(first_normal, second_normal) > 0.0:
         return "opposed_openings_or_solid"
     base = LocalFrame.canonical(first_normal, (0.0, 0.0, 0.0))
     first = _line_section(first_wire, base)
