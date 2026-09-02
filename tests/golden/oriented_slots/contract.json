@@ -1,9 +1,9 @@
 {
   "fixture": "oriented_slots",
   "physical": [
-    {"center": [-30.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true},
-    {"center": [0.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true},
-    {"center": [30.0, 0.0, 0.0], "width": 6.0, "length": 23.999, "depth": 10.0, "has_source": true}
+    {"center": [-30.0, 0.0, 0.0], "width": 6.0, "length": 24.0, "depth": 10.0, "has_source": true},
+    {"center": [0.0, 0.0, 0.0], "width": 6.0, "length": 24.0, "depth": 10.0, "has_source": true},
+    {"center": [30.0, 0.0, 0.0], "width": 6.0, "length": 24.0, "depth": 10.0, "has_source": true}
   ],
   "aggregate": {
     "pattern_type": "OrientedSlotArray",

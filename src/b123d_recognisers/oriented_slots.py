@@ -21,9 +21,9 @@ from b123d_recognisers.passages import SectionPassage, _section_passage_record
 
 _body_signature = body_signature
 
-# PassageSection coordinates are serialized to 0.001 model units.  These bounds cover the
-# maximum independent endpoint displacement introduced by that public projection; they are not a
-# feature-size tolerance and never admit a section that lacks the exact neutral ring proof.
+# OrientedSlot dimensions are serialized to 0.001 model units. These established projection bounds
+# remain conservative after PassageSection schema v2 increases its point precision to 0.0001; they
+# are not a feature-size tolerance and never admit a section without the exact neutral ring proof.
 _SERIALIZATION_QUANTUM = 1e-3
 _VECTOR_ERROR = 4.0 * _SERIALIZATION_QUANTUM
 
