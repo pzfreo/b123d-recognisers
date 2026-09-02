@@ -122,7 +122,7 @@
           "name": "Blend",
           "qualified_name": "b123d_recognisers.Blend",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",

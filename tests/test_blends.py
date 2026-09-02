@@ -7,7 +7,19 @@ from __future__ import annotations
 import math
 
 import pytest
-from build123d import Axis, Box, Compound, Cylinder, Pos, Rot, fillet
+from build123d import (
+    Axis,
+    Box,
+    BuildPart,
+    BuildSketch,
+    Compound,
+    Cylinder,
+    Pos,
+    Rot,
+    SlotOverall,
+    extrude,
+    fillet,
+)
 
 from b123d_recognisers import Blend, feature_census, recognise_blends
 from b123d_recognisers._adjacency import FaceGraph
@@ -46,6 +58,14 @@ def _annular_boss():
     return (Box(40, 40, 10) + Pos(20, 20, 10) * Cylinder(10, 8)) - (
         Pos(20, 20, 0) * Cylinder(5, 18)
     )
+
+
+def _obround_passage():
+    with BuildPart() as tool:
+        with BuildSketch():
+            SlotOverall(30, 10)
+        extrude(amount=20, both=True)
+    return Box(50, 40, 20) - tool.part
 
 
 def _rounded_signature(part) -> list[tuple]:
@@ -118,12 +138,33 @@ def test_small_convex_chains_remain_public_with_exact_face_evidence() -> None:
         assert face.geom_type.name == "CYLINDER"
 
 
-def test_internal_rounds_remain_private_concave_index_evidence() -> None:
-    product = _take_inventory(_internal())
+def test_internal_rounds_are_public_concave_chains_with_exact_evidence() -> None:
+    part = _internal()
+    direct = recognise_blends(part)
+    view = build_recognition_evidence(part)
+    blend_refs = [feature for feature in view.features if view.family(feature) == "blends"]
 
-    assert recognise_blends(_internal()) == []
-    assert product.result.blends == ()
+    assert len(direct) == len(view.result.blends) == len(blend_refs) == 4
+    assert all(record.side == "concave" and record.radius == 2 for record in direct)
+    assert feature_census(part)["blend"] == 4
+    for feature in blend_refs:
+        assert view.constituent_faces(feature) == view.defining_faces(feature)
+        assert len(view.defining_faces(feature)) == 1
+        assert view.face(next(iter(view.defining_faces(feature)))).geom_type.name == "CYLINDER"
+
+    pocket_ref = next(
+        feature for feature in view.features if view.family(feature) == "prismatic_pockets"
+    )
+    pocket_faces = view.constituent_faces(pocket_ref)
+    assert all(view.constituent_faces(feature) <= pocket_faces for feature in blend_refs)
+
+    product = _take_inventory(part)
     assert product.result.fillets == ()
+
+
+def test_blend_side_rejects_values_without_proved_material_semantics() -> None:
+    with pytest.raises(ValueError, match="convex or concave"):
+        Blend("z", 2, (0, 0, 0), "neutral", (0, 0, 1))
 
 
 def test_circular_blind_step_is_not_a_complete_blend_chain() -> None:
@@ -145,6 +186,13 @@ def test_annular_boss_and_hole_decomposition_is_not_a_blend() -> None:
     assert product.result.holes
 
 
+def test_parallel_wall_circular_slot_ends_are_not_edge_blends() -> None:
+    part = _obround_passage()
+
+    assert recognise_blends(part) == []
+    assert _take_inventory(part).result.blends == ()
+
+
 def test_oblique_chain_retains_canonical_free_axis_and_rigid_translation() -> None:
     rotated = Rot(20, 30, 40) * _external(0.2)
     shifted = Pos(13, -7, 5) * rotated
@@ -158,6 +206,23 @@ def test_oblique_chain_retains_canonical_free_axis_and_rigid_translation() -> No
         assert left.side == right.side == "convex"
         assert left.axis_direction == pytest.approx(right.axis_direction, abs=1e-12)
         assert math.hypot(*left.axis_direction) == pytest.approx(1.0)
+        assert right.at == pytest.approx(
+            (left.at[0] + 13, left.at[1] - 7, left.at[2] + 5),
+            abs=1e-3,
+        )
+
+
+def test_concave_chains_retain_side_radius_and_direction_under_rigid_motion() -> None:
+    rotated = Rot(20, 30, 40) * _internal()
+    shifted = Pos(13, -7, 5) * rotated
+    before = recognise_blends(rotated)
+    after = recognise_blends(shifted)
+
+    assert len(before) == len(after) == 4
+    for left, right in zip(before, after, strict=True):
+        assert left.side == right.side == "concave"
+        assert left.radius == right.radius == 2
+        assert left.axis_direction == pytest.approx(right.axis_direction, abs=1e-12)
         assert right.at == pytest.approx(
             (left.at[0] + 13, left.at[1] - 7, left.at[2] + 5),
             abs=1e-3,
@@ -182,12 +247,34 @@ def test_uniform_scale_preserves_occurrences_and_scales_dimensions(factor: float
         )
 
 
+@pytest.mark.parametrize("factor", (0.05, 5.0, 100.0))
+def test_uniform_scale_preserves_concave_occurrences(factor: float) -> None:
+    base = recognise_blends(_internal())
+    scaled = recognise_blends(_internal().scale(factor))
+
+    assert len(base) == len(scaled) == 4
+    for left, right in zip(base, scaled, strict=True):
+        assert right.side == left.side == "concave"
+        assert right.axis_direction == pytest.approx(left.axis_direction, abs=1e-12)
+        assert right.radius == pytest.approx(left.radius * factor)
+
+
 def test_compound_keeps_equal_looking_chains_body_local() -> None:
     part = Compound(children=[Pos(-60, 0, 0) * _external(0.2), Pos(60, 0, 0) * _external(0.2)])
     view = build_recognition_evidence(part)
     blend_refs = [feature for feature in view.features if view.family(feature) == "blends"]
 
     assert len(view.result.blends) == len(blend_refs) == 8
+    assert len({frozenset(view.defining_faces(feature)) for feature in blend_refs}) == 8
+
+
+def test_compound_keeps_equal_looking_concave_chains_body_local() -> None:
+    part = Compound(children=[Pos(-60, 0, 0) * _internal(), Pos(60, 0, 0) * _internal()])
+    view = build_recognition_evidence(part)
+    blend_refs = [feature for feature in view.features if view.family(feature) == "blends"]
+
+    assert len(view.result.blends) == len(blend_refs) == 8
+    assert all(view.record(feature).side == "concave" for feature in blend_refs)
     assert len({frozenset(view.defining_faces(feature)) for feature in blend_refs}) == 8
 
 

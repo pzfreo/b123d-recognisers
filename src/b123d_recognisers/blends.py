@@ -2,12 +2,12 @@
 # Copyright 2024-2026 Paul Fremantle
 """Complete cylindrical rolling-ball blend-chain recognition.
 
-A :class:`Blend` is one connected, same-solid convex chain of native cylindrical patches with
-one radius and exactly two complete support regions. The private index also proves concave chains,
-but those usually belong to a larger pocket, slot or step and are not yet independent public
-occurrences. The narrower :class:`~b123d_recognisers.fillets.Fillet` family remains the
+A :class:`Blend` is one connected, same-solid chain of native cylindrical patches with one radius,
+one proved material side and exactly two complete support regions. Convex chains describe external
+rounds; concave chains describe internal rounds and may coexist with the Pocket, Slot or Step whose
+interior contains them. The narrower :class:`~b123d_recognisers.fillets.Fillet` family remains the
 dimension-worthy external edge treatment; aggregate reconciliation prefers that family when it
-describes the complete curved chain.
+describes a complete convex chain.
 
 The recogniser consumes the immutable :class:`._blend_view.BlendCollapseIndex`.  It never copies
 Analysis Situs rules, consults a corpus label, or infers membership after recognition.  Every
@@ -26,8 +26,12 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._blend_view import BlendChain, BlendCollapseIndex
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
-from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
-from b123d_recognisers._geometry import _canonical_axis_direction
+from b123d_recognisers._effective_surfaces import (
+    AnalyticSurfaceFact,
+    EffectiveSurfaceIndex,
+    SurfaceKind,
+)
+from b123d_recognisers._geometry import SMOOTH_ARC_GAP, _canonical_axis_direction
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import Part
 
@@ -36,9 +40,10 @@ from b123d_recognisers._typing import Part
 class Blend(Record):
     """One complete cylindrical rolling-ball chain.
 
-    The initial public contract always reports ``side="convex"``. ``axis`` names the dominant
-    component of the canonical unit ``axis_direction``. ``at`` is a subdivision-invariant leader
-    point on the chain's common analytic cylinder.
+    ``side`` is the proved material-side relation, ``"convex"`` for an external round or
+    ``"concave"`` for an internal round. ``axis`` names the dominant component of the canonical
+    unit ``axis_direction``. ``at`` is a subdivision-invariant leader point on the chain's common
+    analytic cylinder.
     """
 
     axis: str
@@ -48,8 +53,8 @@ class Blend(Record):
     axis_direction: tuple[float, float, float]
 
     def __post_init__(self) -> None:
-        if self.side != "convex":
-            raise ValueError("public blend side must be convex")
+        if self.side not in ("convex", "concave"):
+            raise ValueError("public blend side must be convex or concave")
         object.__setattr__(
             self,
             "axis_direction",
@@ -61,6 +66,50 @@ class Blend(Record):
 class _BlendProposal:
     record: Blend
     nodes: tuple[FaceNode, ...]
+
+
+def _parallel_planar_supports(
+    chain: BlendChain,
+    surfaces: EffectiveSurfaceIndex,
+) -> bool:
+    """Whether both spring supports prove parallel planes rather than an intersecting edge.
+
+    A circular end joining two parallel slot walls is a constant-radius tangent cylinder, but it
+    is not a rolling-ball treatment of an edge: the two support surfaces have no edge to round.
+    Refuse only when both complete support regions prove this exact case. Curved or unavailable
+    support geometry cannot establish the exclusion and remains governed by the complete chain
+    contract.
+    """
+
+    normals: list[tuple[float, float, float]] = []
+    for support in chain.supports:
+        spring_nodes = {
+            node
+            for arc in chain.spring_arcs
+            for node in arc.endpoints
+            if node in support
+        }
+        facts = [surfaces.fact(node) for node in spring_nodes]
+        if not facts or any(
+            not isinstance(fact, AnalyticSurfaceFact) or fact.kind is not SurfaceKind.PLANE
+            for fact in facts
+        ):
+            return False
+        support_normals = [
+            fact.parameters[:3] for fact in facts if isinstance(fact, AnalyticSurfaceFact)
+        ]
+        first = (support_normals[0][0], support_normals[0][1], support_normals[0][2])
+        if any(
+            1.0 - abs(math.fsum(a * b for a, b in zip(first, other, strict=True)))
+            > SMOOTH_ARC_GAP
+            for other in support_normals[1:]
+        ):
+            return False
+        normals.append(first)
+    return (
+        1.0 - abs(math.fsum(a * b for a, b in zip(normals[0], normals[1], strict=True)))
+        <= SMOOTH_ARC_GAP
+    )
 
 
 def _chain_anchor(
@@ -113,6 +162,8 @@ def _proposal(
     graph: FaceGraph,
     surfaces: EffectiveSurfaceIndex,
 ) -> _BlendProposal | None:
+    if chain.side == "concave" and _parallel_planar_supports(chain, surfaces):
+        return None
     nodes = tuple(sorted(chain.blend_nodes, key=lambda node: node.index))
     if not nodes:
         return None
@@ -161,7 +212,6 @@ def _discover_blends(
     proposals = [
         proposal
         for chain in BlendCollapseIndex(graph, surfaces).chains()
-        if chain.side == "convex"
         if (proposal := _proposal(chain, graph, surfaces)) is not None
     ]
     proposals.sort(
