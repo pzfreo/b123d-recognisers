@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
 import re
 import subprocess
 import sys
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -34,10 +37,20 @@ from tools.effectiveness_report import (
 )
 from tools.run_effectiveness_baseline import (
     _capture_run_authority,
+    _checkpoint_authority,
+    _checkpoint_key,
     _display_path,
     _mfcadpp_selection,
     _mfinstseg_selection,
+    _ModelTask,
+    _prepare_checkpoint,
+    _require_known_invalid_policy,
+    _RunAuthority,
+    _score_model,
+    _source_selection_hash,
+    _unreadable_truth,
     _verify_run_authority,
+    _write_checkpoint_row,
     _write_new_report,
 )
 
@@ -855,6 +868,193 @@ def test_corpus_run_authority_refuses_a_commit_transition_during_verification(
 
     with pytest.raises(EffectivenessDataError, match="changed during corpus run"):
         _verify_run_authority(authority, taxonomy)
+
+
+def _checkpoint_fixture(tmp_path: Path) -> tuple[_RunAuthority, list[DatasetTruth]]:
+    step = tmp_path / "one.step"
+    step.write_text("ADVANCED_FACE('24'", encoding="ascii")
+    truth = DatasetTruth("one", step, (24,), (), None, "1" * 64)
+    authority = _RunAuthority("a" * 40, "b" * 64, b"mapping", "c" * 64)
+    return authority, [truth]
+
+
+def test_checkpoint_authority_pins_every_run_input(tmp_path: Path) -> None:
+    authority, truths = _checkpoint_fixture(tmp_path)
+    base = _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="published",
+        ids=["one"],
+        truths=truths,
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+
+    assert base["selected_sources_sha256"] == _source_selection_hash(truths)
+    changed_truth = DatasetTruth(
+        "one", truths[0].step_path, (24,), (), None, "2" * 64
+    )
+    assert base != _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="published",
+        ids=["one"],
+        truths=[changed_truth],
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+    moved_truth = replace(truths[0], step_path=tmp_path / "moved.step")
+    assert _source_selection_hash(truths) != _source_selection_hash([moved_truth])
+    for changed_authority in (
+        replace(authority, commit="d" * 40),
+        replace(authority, source_sha256="d" * 64),
+        replace(authority, taxonomy_sha256="d" * 64),
+    ):
+        assert base != _checkpoint_authority(
+            changed_authority,
+            dataset="mfcadpp",
+            dataset_version="published",
+            ids=["one"],
+            truths=truths,
+            selection_limit=1,
+            recognition_frame="raw",
+            allow_invalid=False,
+        )
+    assert base["recognition_frame"] == "raw"
+    assert base["allow_invalid"] is False
+    assert base["selection_limit"] == 1
+    variants = (
+        {**base, "dataset_version": "changed"},
+        {**base, "selected_ids_sha256": "0" * 64},
+        {**base, "selection_limit": None},
+        {**base, "recognition_frame": "framed"},
+        {**base, "allow_invalid": True},
+    )
+    checkpoint = tmp_path / "authority-checkpoint"
+    _prepare_checkpoint(checkpoint, base)
+    for variant in variants:
+        with pytest.raises(EffectivenessDataError, match="authority does not match"):
+            _prepare_checkpoint(checkpoint, variant)
+
+
+def test_checkpoint_round_trip_and_authority_refusal(tmp_path: Path) -> None:
+    authority, truths = _checkpoint_fixture(tmp_path)
+    captured = _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="published",
+        ids=["one"],
+        truths=truths,
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+    checkpoint = tmp_path / "checkpoint"
+    assert _prepare_checkpoint(checkpoint, captured) == {}
+    row = {"model_id": "one", "status": "invalid", "reason": "fixture"}
+    _write_checkpoint_row(checkpoint, truths[0], row)
+
+    assert _prepare_checkpoint(checkpoint, captured)["one"]["row"] == row
+    assert (checkpoint / "rows" / f"{_checkpoint_key('one')}.json").is_file()
+    with pytest.raises(EffectivenessDataError, match="authority does not match"):
+        _prepare_checkpoint(checkpoint, {**captured, "recognition_frame": "framed"})
+
+
+@pytest.mark.parametrize("contents", ("not json", "{}"))
+def test_checkpoint_refuses_corrupt_or_partial_rows(
+    tmp_path: Path, contents: str
+) -> None:
+    authority, truths = _checkpoint_fixture(tmp_path)
+    captured = _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="published",
+        ids=["one"],
+        truths=truths,
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+    checkpoint = tmp_path / "checkpoint"
+    _prepare_checkpoint(checkpoint, captured)
+    rows = checkpoint / "rows"
+    rows.mkdir()
+    (rows / "broken.json").write_text(contents, encoding="utf-8")
+
+    with pytest.raises(EffectivenessDataError, match="checkpoint row"):
+        _prepare_checkpoint(checkpoint, captured)
+
+
+def test_known_full_selection_refuses_invalid_policy_before_scoring() -> None:
+    ids = sorted(
+        baseline_runner._KNOWN_MFCADPP_2500_INVALID
+        | {f"valid-{index}" for index in range(2493)}
+    )
+
+    with pytest.raises(EffectivenessDataError, match="before recognition"):
+        _require_known_invalid_policy("mfcadpp", ids, False)
+    _require_known_invalid_policy("mfcadpp", ids, True)
+    _require_known_invalid_policy("mfcadpp", ids[:500], False)
+
+
+def test_malformed_truth_remains_an_invalid_model_task(tmp_path: Path) -> None:
+    step = tmp_path / "broken.step"
+    step.write_text("ISO-10303-21;", encoding="ascii")
+    truth = _unreadable_truth("mfcadpp", tmp_path, "broken")
+    task = _ModelTask(truth, {}, "raw", "no ADVANCED_FACE labels")
+
+    assert len(truth.source_sha256) == 64
+    assert _score_model(task) == {
+        "model_id": "broken",
+        "status": "invalid",
+        "reason": "no ADVANCED_FACE labels",
+    }
+    empty_hash = truth.source_sha256
+    step.unlink()
+    assert _unreadable_truth("mfcadpp", tmp_path, "broken").source_sha256 != empty_hash
+
+
+def test_model_scoring_is_worker_count_independent_except_runtime(tmp_path: Path) -> None:
+    step = tmp_path / "box.step"
+    export_step(Box(7, 11, 13), step)
+    labelled = re.sub(
+        r"ADVANCED_FACE\('[^']*'",
+        "ADVANCED_FACE('24'",
+        step.read_text(encoding="utf-8"),
+    )
+    step.write_text(labelled, encoding="utf-8")
+    truth = load_mfcadpp_truth(step)
+    taxonomy = load_taxonomy(TAXONOMY_V10, "mfcadpp")
+    task = _ModelTask(truth, taxonomy, "raw")
+
+    serial = _score_model(task)
+    with ProcessPoolExecutor(
+        max_workers=2, mp_context=multiprocessing.get_context("spawn")
+    ) as executor:
+        parallel = executor.submit(_score_model, task).result(timeout=30)
+
+    assert serial.pop("seconds") >= 0
+    assert parallel.pop("seconds") >= 0
+    assert serial == parallel
+
+    checkpoint = tmp_path / "valid-checkpoint"
+    authority = _RunAuthority("a" * 40, "b" * 64, b"mapping", "c" * 64)
+    captured = _checkpoint_authority(
+        authority,
+        dataset="mfcadpp",
+        dataset_version="fixture",
+        ids=[truth.model_id],
+        truths=[truth],
+        selection_limit=1,
+        recognition_frame="raw",
+        allow_invalid=False,
+    )
+    _prepare_checkpoint(checkpoint, captured)
+    parallel["seconds"] = 0.0
+    _write_checkpoint_row(checkpoint, truth, parallel)
+    assert _prepare_checkpoint(checkpoint, captured)[truth.model_id]["row"] == parallel
 
 
 def test_command_refuses_to_write_a_partial_report(tmp_path: Path) -> None:
