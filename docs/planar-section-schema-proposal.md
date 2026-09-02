@@ -53,7 +53,8 @@ nonzero bulge is a circular arc with signed sweep `4 * atan(bulge)`; this permit
 semicircles, major arcs, and full circles made from at least two arcs. Boundary winding is positive
 in `(u,v)` and its start is the lexicographically least complete serialized cyclic sequence.
 
-Positions and spans use three decimal places, directions six, and dimensionless bulges twelve.
+Frame positions and run spans use three decimal places, schema-v2 intrinsic section points use
+four, directions and planar-end gradients six, and dimensionless bulges twelve.
 Canonicalisation occurs before serialization at full precision. Projection refuses non-finite or
 self-intersecting boundaries, collapsed vertices, a nonzero bulge rounded to zero, or reconstruction
 movement beyond the named bounds: `0.0008` for the intrinsic 2-D boundary and `0.002` for the whole

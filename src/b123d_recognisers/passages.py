@@ -228,7 +228,7 @@ class PassageSectionVertex(Record):
 
     def __post_init__(self) -> None:
         point = _numbers(self.point, 2, name="point")
-        _serialized(point, 3, name="point")
+        _serialized(point, 4, name="point")
         if isinstance(self.bulge, bool) or not isinstance(self.bulge, int | float):
             raise ValueError("bulge must be a finite number")
         bulge = float(self.bulge)
@@ -384,7 +384,7 @@ def _section_passage_record(proposal: SectionRingProposal) -> SectionPassage:
         PassageSection(
             tuple(
                 PassageSectionVertex(
-                    (round(vertex.point[0], 3), round(vertex.point[1], 3)),
+                    (round(vertex.point[0], 4), round(vertex.point[1], 4)),
                     round(vertex.bulge, 12),
                 )
                 for vertex in proposal.section.boundary

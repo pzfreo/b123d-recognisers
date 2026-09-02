@@ -28,9 +28,12 @@ low  + low_gradient.u  * x + low_gradient.v  * y <= t
 t <= high + high_gradient.u * x + high_gradient.v * y
 ```
 
-The existing flat case has both gradients `(0, 0)` and therefore keeps its exact v1 geometry and
-values. The gradients are dimensionless, serialized to six decimal places, and are part of the
-immutable public record. The producer must prove that the low plane remains strictly below the
+The existing flat case has both gradients `(0, 0)` and therefore keeps its exact v1 geometry.
+Schema v2 permits four decimal places for intrinsic section points: three-decimal input remains
+valid and existing exactly representable values do not change, while the extra digit prevents a
+steep termination gradient from amplifying section rounding beyond the established `0.002 mm`
+whole-occurrence displacement bound. The gradients are dimensionless, serialized to six decimal
+places, and are part of the immutable public record. The producer must prove that the low plane remains strictly below the
 high plane over the whole section and that the clipped prism is empty and open through both
 termination planes. Recognition refuses a termination plane parallel to the run, a curved or
 nonplanar termination, crossing end planes, and any wall set that does not independently prove one

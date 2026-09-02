@@ -911,6 +911,20 @@ def test_public_passage_ends_refuse_unserialized_gradient() -> None:
         PassageEnds(False, False, (0.0000001, 0.0), (0.0, 0.0))
 
 
+def test_schema_v2_section_point_precision_is_bounded_at_four_decimals() -> None:
+    section = PassageSection(
+        (
+            PassageSectionVertex((-1.0001, -1.0), 0.0),
+            PassageSectionVertex((1.0001, -1.0), 0.0),
+            PassageSectionVertex((0.0, 2.0), 0.0),
+        )
+    )
+    assert section.boundary[0].point == (-1.0001, -1.0)
+
+    with pytest.raises(ValueError, match="point must use at most 4 decimal places"):
+        PassageSectionVertex((0.00001, 0.0), 0.0)
+
+
 def test_public_section_passage_refuses_crossing_termination_planes() -> None:
     section = PassageSection(
         (

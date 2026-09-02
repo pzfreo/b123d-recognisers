@@ -343,6 +343,7 @@ RECORD_SCHEMA_VERSIONS = {
     "Fillet": 2,
     "RaisedPad": 2,
     "PassageEnds": 2,
+    "PassageSection": 2,
     "RiserEvidence": 2,
     "TurnedProfile": 2,
     "TurnedStep": 2,
