@@ -68,7 +68,8 @@ SHA-256 `3e1dd81094bd00366d83810dbb6f88f00b12b4c75ab25757341a3f1da60f030e`.
 ## Next priority
 
 This closes the high-value nonparallel-termination hypothesis without weakening the residual
-gates. The next effectiveness increment should be #368: reuse bounded-region traversal to publish
-complete constituent evidence for already-detected pockets. That addresses the measured
-membership gap across four pocket families; the remaining Passage audit buckets require different
-geometry and are smaller than that cross-family opportunity.
+gates. Pocket constituent publication is already complete under #368/#420, so the comparison's
+remaining pocket deficit must not be treated as the same solved problem. The next effectiveness
+increment should audit six-sided Pocket residuals, the largest remaining pocket family, and split
+missed discovery from incomplete evidence before proposing another rule. The remaining Passage
+audit buckets require different geometry and are now smaller than that measured opportunity.
