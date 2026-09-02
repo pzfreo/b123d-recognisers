@@ -39,6 +39,13 @@ def _polygonal_passage(sides: int = 6):
     return Box(60, 40, 20) - _polygonal_tool(sides)
 
 
+def _interrupted_polygonal_passage(sides: int):
+    passage = Box(60, 50, 20) - _polygonal_tool(sides)
+    if sides == 3:
+        return passage - Pos(15, 3, 5) * Box(30, 8, 6)
+    return passage - Pos(15, -8, 0) * Box(30, 6, 6)
+
+
 def _vertical_inner_walls(graph: FaceGraph):
     return frozenset(
         node
@@ -63,6 +70,39 @@ def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) 
     assert probe.planar_walls == probe.collinear_pairs == probe.interval_pairs == sides
     assert probe.cycle_faces == sides
     assert component == frozenset(proposal.nodes)
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+def test_two_mouth_enclosure_recovers_interrupted_polygonal_passage(
+    sides: int, monkeypatch
+) -> None:
+    import b123d_recognisers._section_passages as module
+
+    part = _interrupted_polygonal_passage(sides)
+    graph = FaceGraph(part)
+    (proposal,) = section_ring_proposals(part, graph)
+
+    assert len(proposal.section.boundary) == sides
+    assert proposal.constituent == frozenset(proposal.nodes)
+    assert graph.common_valid_solid(proposal.constituent) is proposal.solid
+
+    monkeypatch.setattr(module, "_enclosure_proposals", lambda *_args: ())
+    assert module.section_ring_proposals(part, FaceGraph(part)) == ()
+
+
+@pytest.mark.parametrize("sides", (3, 4, 6))
+def test_two_mouth_enclosure_is_rigid_transform_covariant(sides: int) -> None:
+    part = _interrupted_polygonal_passage(sides)
+    moved = Pos(17, -11, 9) * Rot(31, 17, 23) * part
+
+    base = section_ring_proposals(part, FaceGraph(part))
+    transformed = section_ring_proposals(moved, FaceGraph(moved))
+
+    assert len(base) == len(transformed) == 1
+    assert len(base[0].section.boundary) == len(transformed[0].section.boundary) == sides
+    assert base[0].run_interval[1] - base[0].run_interval[0] == pytest.approx(
+        transformed[0].run_interval[1] - transformed[0].run_interval[0]
+    )
 
 
 @pytest.mark.parametrize("sides", (3, 4, 6))
