@@ -399,6 +399,12 @@ seed one same-solid concave-or-smooth enclosure. Matching straight-edged polygon
 and the existing empty-prism/open-end classifier must still pass. The producer retains the exact
 traversed region; `passages` remains the sole record and evidence issuer.
 
+Issue #450 corrects how that producer reads a mouth boundary. `Wire.vertices()` is an unordered
+unique-vertex enumeration, so it cannot define a polygon section. `_section_passages` instead
+derives each corner from the shared topological vertex of consecutive ordered wire edges. This is
+construction of the same neutral section value, not Passage policy, and introduces no dependency
+or public API.
+
 F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
 below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
 only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,

@@ -13,6 +13,10 @@ Issue #446 keeps the polygonal-domain filters in the Passage producer: two oppos
 at least three planar wall seeds, matching line-only sections, one valid solid, and an empty open
 prism. The underlying enclosure walk is not a generic cavity admission filter and does not create
 Pocket, Hole, or other-family Candidates.
+
+Issue #450 leaves those filters unchanged. Recovering a line-only section from consecutive wire
+edge incidence is a topological ordering correction, not a new shared reduction, tolerance, or
+taxonomy rule. Passage still owns every admission decision after the neutral section is built.
 - **Evidence:** [epic 0002](../epics/0002-one-substrate-before-more-recognisers.md), item 0
 
 ## Context
