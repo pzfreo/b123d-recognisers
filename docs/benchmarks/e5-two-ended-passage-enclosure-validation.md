@@ -1,17 +1,15 @@
 # E5 — two-ended Passage enclosure validation
 
-Issue #
+## Why
 
-Issue #Why
-
-IssueThisEnded Passage detection required every planar wall to form one equal-span cycle. Feature
-intersections can shorten or split a wall while leaving an unamb through-passage with an unchanged
-polygonal mouth at each end. Issue #The reference comparison identifies passages as 9,186 of the
+Passage detection required every planar wall to form one equal-span cycle. Feature intersections
+can shorten or split a wall while leaving an unambiguous through-passage with an unchanged
+polygonal mouth at each end. The reference comparison identifies passages as 9,186 of the
 remaining in-scope face gap, led by six-sided passages.
 
-IssueState
+## State
 
-WHY This validation is pinned to implementation commit `40eeac48dc052b1ae4759816f2c9db8df4f29d02`.
+This validation is pinned to implementation commit `40eeac48dc052b1ae4759816f2c9db8df4f29d02`.
 MFCAD++ labels are evaluation evidence only and never participate in proposal construction.
 
 ## Rule
