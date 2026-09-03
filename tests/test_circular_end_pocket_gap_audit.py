@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from build123d import Box, Compound, Cylinder, Pos, Rot
+from build123d import Box, Compound, Cylinder, Plane, Polygon, Pos, Rot, chamfer, extrude, fillet
 
+from b123d_recognisers import recognise_pockets
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._recess_core import _pocket_proposals_one
 from b123d_recognisers._recess_faces import _cylinder_faces
@@ -24,6 +25,42 @@ def _obround(length: float = 6, width: float = 10, depth: float = 8):
 def _blind_pocket(*, angle: float = 0):
     tool = Rot(0, 0, angle) * _obround()
     return Box(60, 40, 12) - Pos(0, 0, 4) * tool
+
+
+def _mouth_edges(part):
+    return [
+        edge
+        for edge in part.edges()
+        if abs(edge.bounding_box().min.Z - 6) < 0.01
+        and abs(edge.bounding_box().max.Z - 6) < 0.01
+        and edge.length < 20
+    ]
+
+
+def _partial_chamfered_mouth():
+    part = _blind_pocket()
+    wedge = Pos(-2, 0, 0) * extrude(
+        Plane.YZ * Polygon((5, 6), (6, 6), (5, 5)),
+        4,
+    )
+    return part - wedge
+
+
+def _partial_filleted_mouth():
+    # A shallow local bevel breaks the otherwise tangent-connected obround mouth into distinct
+    # edge occurrences, allowing one bounded straight segment to receive a rolling treatment.
+    part = _blind_pocket()
+    breaker = Pos(-2, 0, 0) * extrude(
+        Plane.YZ * Polygon((5, 6), (5.2, 6), (5, 5.8)),
+        4,
+    )
+    interrupted = part - breaker
+    segment = next(
+        edge
+        for edge in _mouth_edges(interrupted)
+        if edge.geom_type.name == "LINE" and 3 < edge.length < 5
+    )
+    return fillet([segment], 0.1)
 
 
 def _component(part, graph: FaceGraph):
@@ -57,6 +94,53 @@ def test_semicircular_blind_pocket_reaches_current_proposal() -> None:
     assert probe.cylinder_faces == probe.individually_supported_ends == 2
     assert probe.principal_side_walls == 2
     assert sorted(probe.floor_counts or ()) == [0, 1]
+
+
+def test_partial_chamfer_does_not_explain_the_detection_gap() -> None:
+    part = _partial_chamfered_mouth()
+    graph = FaceGraph(part)
+    proposals = _pocket_proposals_one(part, graph=graph)
+
+    assert [(record.width, record.length, record.depth) for record in recognise_pockets(part)] == [
+        (10.0, 16.0, 6.0)
+    ]
+    assert len(proposals) == 1
+    assert len(proposals[0].constituent) > 5
+
+
+def test_partial_fillet_does_not_explain_the_detection_gap() -> None:
+    part = _partial_filleted_mouth()
+    graph = FaceGraph(part)
+    proposals = _pocket_proposals_one(part, graph=graph)
+
+    assert [(record.width, record.length, record.depth) for record in recognise_pockets(part)] == [
+        (10.0, 16.0, 6.0)
+    ]
+    assert len(proposals) == 1
+    assert len(proposals[0].constituent) > 5
+
+
+def test_complete_chamfer_and_fillet_are_existing_detection_controls() -> None:
+    sharp = _blind_pocket()
+    for treated in (chamfer(_mouth_edges(sharp), 1.0), fillet(_mouth_edges(sharp), 1.0)):
+        assert len(recognise_pockets(treated)) == 1
+
+
+def test_through_obround_is_not_a_pocket() -> None:
+    through = Box(60, 40, 12) - Pos(0, 0, 0) * _obround(depth=20)
+
+    assert recognise_pockets(through) == []
+
+
+def test_incompatible_rounded_ends_do_not_false_extend_a_rectangular_pocket() -> None:
+    tool = (
+        Box(12, 10, 8)
+        + Pos(-6, 0, 0) * Cylinder(5, 8)
+        + Pos(6, 0, 0) * Cylinder(4, 8)
+    )
+    part = Box(60, 40, 12) - Pos(0, 0, 4) * tool
+
+    assert [(record.width, record.length) for record in recognise_pockets(part)] == [(10.0, 12.0)]
 
 
 def test_internally_oblique_pocket_is_not_called_a_ratio_failure() -> None:
