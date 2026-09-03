@@ -184,6 +184,29 @@ serialize references or create a second attribution authority. Like the rest of 
 view, it remains raw/caller-coordinate only until framed evidence can map explicitly back to the
 caller's faces.
 
+## Amendment (paired framed recognition evidence, issue #463)
+
+The raw-only exclusion above is superseded by a paired framed evidence lifecycle. A successful
+framed evidence product owns the inferred `PartFrame`, the exact topology-preserving local working
+shape, the original caller part and one `RecognitionEvidence` projected from the same completed
+aggregate run. Its `FaceRef` values name working-shape faces in local coordinates; an explicitly
+named caller-face resolver maps the same references back to borrowed faces of the caller part.
+
+The mapping authority is exact OCCT topology identity after applying the same retained rigid
+`TopLoc` placement used by ADR 0011's normalization to each caller face, never face order,
+coordinate proximity, a kernel hash or
+geometric correspondence. This distinguishes separate placed occurrences that deliberately share
+one underlying TShape while retaining topology-partner provenance. The
+relation must be a bijection over every original face in both directions before recognition runs;
+absence, duplication, concurrent mutation or a manually constructed prepared value without its
+caller authority returns a typed mapping refusal. Raw evidence behavior and reference semantics
+remain unchanged.
+
+`PreparedFramedPart` retains the caller part privately and offers the evidence operation after the
+consumer has selected its local classification. This preserves the prepared lifecycle's one
+cylinder scan and one aggregate run. The framed evidence projection does not call the raw evidence
+entry point, build a second graph, expose graph nodes, or publish durable cross-run identity.
+
 ## Amendment (Pocket bounded-region membership, issue #420)
 
 The prohibition on reconstructing wider membership later by adjacency flood-fill remains. A narrow

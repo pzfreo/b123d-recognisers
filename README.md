@@ -139,9 +139,8 @@ of the exact input part. Defining faces prove acceptance; constituent faces are 
 physical membership and do not participate in reconciliation. These opaque references are valid
 only with their issuing view, cannot be
 serialized, and are not persistent names across imports, transforms, edits, or separate runs.
-The caller must not mutate the part while using the view. The initial API is caller-coordinate
-only; it does not return references to a framed working shape as though they belonged to the
-original part.
+The caller must not mutate the part while using the view. This entry point is explicitly
+caller-coordinate/raw.
 
 `view.association` accounts for the union of accepted constituent faces against every original
 face. It reports face-count and surface-area totals, associated and unassociated values,
@@ -149,6 +148,24 @@ per-family union contributions, and the exact within-run references left unassoc
 contributions may overlap and are not additive. This is not an accuracy or recall score: accepted
 classifications may be wrong, stock faces may intentionally remain unassociated, and incomplete
 constituent publication produces incomplete association.
+
+For the ordinary framed lifecycle, use the paired view rather than running raw evidence after
+framed recognition:
+
+```python
+from b123d_recognisers import FramedRecognitionEvidence
+from b123d_recognisers import build_framed_recognition_evidence
+
+framed = build_framed_recognition_evidence(part)
+if isinstance(framed, FramedRecognitionEvidence):
+    for ref in framed.association.unassociated_faces:
+        local_face = framed.face(ref)          # exact face of framed.part
+        original_face = framed.caller_face(ref)  # exact topology partner in part
+```
+
+The framed view owns its frame, exact local working part, caller part, result and evidence from
+one aggregate run. Caller mapping applies the exact retained rigid placement to each caller face and
+requires an `IsSame` topology bijection; it never matches by coordinate proximity or face order.
 
 ### Recognise independently of STEP placement
 

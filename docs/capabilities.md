@@ -108,8 +108,17 @@ proved wider set publish constituent equal to defining rather than infer members
 This is deliberately not persistent face naming. References from equivalent imports or rigidly
 transformed parts are not interchangeable, and symmetry is never broken with traversal order.
 The format-1 `evidence_api.json` document versions this namespace independently of the recognition
-and inspection manifests. The initial raw-coordinate API resolves caller-part faces; framed
-working-shape evidence remains excluded until it can be mapped back explicitly.
+and inspection manifests. `build_recognition_evidence()` is the explicit raw-coordinate route.
+`build_framed_recognition_evidence()` pairs the inferred frame, exact local working part, original
+caller part and one evidence/result projection from the same aggregate run. Its `face(ref)` resolves
+in local working coordinates; `caller_face(ref)` resolves the exact topology-partner face in the
+caller part. Applying the exact retained rigid placement to each caller face must produce a complete
+`IsSame` topology bijection and otherwise
+returns `RefusedFramedEvidence`; coordinate proximity and face ordering are never fallbacks.
+
+Consumers whose rotational/prismatic classification depends on the normalized shape use
+`PreparedFramedPart.recognise_evidence(rotational=...)`. Preparation still derives cylinders once,
+and the evidence operation executes the aggregate once after the consumer's classification.
 
 The same view exposes an immutable `association` summary derived from those already-published
 constituent sets. Face-count and surface-area measures each state total, associated and

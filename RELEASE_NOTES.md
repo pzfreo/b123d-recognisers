@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased
+
+- **Paired framed recognition with exact caller-face evidence.**
+  `build_framed_recognition_evidence()` and
+  `PreparedFramedPart.recognise_evidence()` return accepted occurrence, constituent and geometry
+  association evidence from the same local aggregate run. Each working-face `FaceRef` can resolve
+  separately to its exact caller-part topology partner under the published rigid placement.
+  Missing or non-bijective mapping refuses explicitly; there is no raw rerun, coordinate-proximity
+  matching, face-order fallback or persistent ID.
+
 ## 0.4.12
 
 - **Added free-axis rectangular through-slot recognition.**
