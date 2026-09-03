@@ -36,16 +36,15 @@ def body_signature(solid: Part) -> BodyKey:
 def _stable_body_signature(solid: Part) -> BodyKey:
     """Return a public ownership key stable across neutral-format round trips.
 
-    Twelve significant figures retain far more separation than the modelling kernel's
-    coincidence floor while absorbing harmless last-bit changes in mass properties after a STEP
-    round trip. Decimal-place rounding is unsuitable because volume and area scale differently.
+    Coordinates use the package's 1e-6 kernel-noise grid. Volume and area use twelve significant
+    figures: they scale with different powers of the model units, so decimal-place rounding is
+    unsuitable for them, while that precision still absorbs harmless last-bit STEP changes.
     """
 
     values = body_signature(solid)
-    return tuple(
-        0.0 if index < 6 and abs(value) < 1e-6 else float(f"{value:.12g}")
-        for index, value in enumerate(values)
-    )
+    coordinates = tuple(round(value, 6) or 0.0 for value in values[:6])
+    mass_properties = tuple(float(f"{value:.12g}") for value in values[6:])
+    return (*coordinates, *mass_properties)
 
 
 def unambiguous_body_keys(
