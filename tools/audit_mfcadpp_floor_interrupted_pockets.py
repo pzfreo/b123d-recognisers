@@ -94,7 +94,10 @@ def _raw_regions(
             continue
         for wire in graph.face(opening).inner_wires():
             seed = _wire_seed(graph, opening, wire)
-            arcs = tuple(graph.arc(opening, node) for node in seed)
+            arcs = []
+            for node in seed:
+                kind = graph.arc(opening, node)
+                arcs.append(kind)
             if (
                 seed
                 and all(kind in ("convex", "smooth") for kind in arcs)
