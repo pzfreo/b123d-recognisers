@@ -20,15 +20,17 @@ evidence; the exact floor is additional constituent evidence.
 `tests/test_edge_open_prismatic_recesses.py` pins the immutable schema and serialized payload,
 one authored positive, a dedicated golden, axis covariance, STEP round-trip, equal geometry on
 separate bodies, exact defining/constituent evidence, and refusals for a closed pocket, a
-floorless passage, and the adjacent five- and seven-wall subsets.
+floorless passage, the adjacent five- and seven-wall subsets, a perforated wall, repeated
+exterior contact, and parallel endpoint supports. A shallow five-degree endpoint angle is a
+positive control, so the parallel-support refusal does not silently narrow the public domain.
 
 ## Complete MFCAD++ development result
 
 The machine report is
-[`effectiveness-mfcadpp-2500-edge-open-12853aa.json`](effectiveness-mfcadpp-2500-edge-open-12853aa.json),
-SHA-256 `76fdde4fd532fb6e00b5f2f717bef9d7db1457f4dccb1a8f2c05f6afe39c5525`.
+[`effectiveness-mfcadpp-2500-edge-open-7a47cb0.json`](effectiveness-mfcadpp-2500-edge-open-7a47cb0.json),
+SHA-256 `3b13abe43953b589524b8c120ddb43a221920420034a340233f408c4710d97cb`.
 It evaluates the complete published 2,500-model test split in raw coordinates at clean commit
-`12853aa6530438bd549b46302b9046c06ee5b78f`, using taxonomy v11. Seven published malformed inputs
+`7a47cb0b0faa52599116c63df00765e7711c88d5`, using taxonomy v11. Seven published malformed inputs
 remain explicit invalid dispositions.
 
 The exact parent comparison is
