@@ -31,13 +31,13 @@ The public profile contains:
 
 - an ordered open chain of the exact section vertices at the physical planar wall junctions;
 - both exact endpoints where the chain meets one planar exterior opening face; and
-- an explicit opening segment joining those endpoints, identified as an opening rather than a
-  wall.
+- an explicit opening gap naming those endpoints, identified as absent wall rather than as a
+  geometric segment between them.
 
-The opening segment is serialized even though its endpoints repeat the chain endpoints. That
+The opening gap is serialized even though its endpoints repeat the chain endpoints. That
 redundancy makes the semantic distinction machine-readable: consumers must not infer that the
-last-to-first segment is another wall. Construction validates that the opening endpoints equal
-the chain endpoints in the declared direction.
+last-to-first span is another wall or even a straight boundary. Construction validates that the
+opening endpoints equal the chain endpoints in the declared direction.
 
 The occurrence additionally carries the principal run axis, floor-to-mouth interval and axial
 opening sign in the supplied recognition frame. Section coordinates remain in the two other axes,
@@ -46,9 +46,10 @@ as for `PrismaticPocket`; they are not translated to a fictional closed-profile 
 Recognition requires one valid solid, one nonbranching chain of at least three original planar
 wall supports, exactly one planar exterior opening face joining its endpoints, one exact floor,
 one axial mouth, an empty physical sweep and complete material backing behind the exact surviving
-floor face. The exterior face and opening segment are consulted context. Original wall supports
+floor face. The exterior face and opening gap are consulted context. Original wall supports
 are defining evidence; the exact walls and floor are constituent evidence. No inferred closing
-corner, exterior air, graph node or durable face identity enters the public record.
+corner, closing segment, exterior air, graph node or durable face identity enters the public
+record.
 
 The open chain has one deterministic orientation. Compare the serialized forward and reversed
 chains, with the opening direction reversed correspondingly, and retain the lexicographically

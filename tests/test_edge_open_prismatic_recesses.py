@@ -41,10 +41,10 @@ def test_open_chain_direction_is_canonical() -> None:
         OpenPolygonalSection(reverse, OpenSectionOpening(reverse[-1], reverse[0]))
 
 
-def test_open_chain_and_opening_must_bound_a_simple_profile() -> None:
+def test_open_wall_chain_must_be_simple() -> None:
     chain = ((-2.0, 1.0), (2.0, -1.0), (-2.0, -1.0), (2.0, 1.0))
 
-    with pytest.raises(ValueError, match="simple profile"):
+    with pytest.raises(ValueError, match="wall chain must be simple"):
         OpenPolygonalSection(chain, OpenSectionOpening(chain[-1], chain[0]))
 
 

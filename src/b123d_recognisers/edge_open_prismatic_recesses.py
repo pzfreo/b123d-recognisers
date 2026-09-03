@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from itertools import pairwise
 
 from b123d_recognisers._record import Record
 
@@ -42,17 +43,17 @@ def _crosses(
 
 
 def _validate_simple(chain: tuple[tuple[float, float], ...]) -> None:
-    edges = tuple(zip(chain, (*chain[1:], chain[0]), strict=True))
+    edges = tuple(pairwise(chain))
     for index, edge in enumerate(edges):
         for other_index in range(index + 1, len(edges)):
-            adjacent = other_index == index + 1 or (index == 0 and other_index == len(edges) - 1)
+            adjacent = other_index == index + 1
             if not adjacent and _crosses(edge, edges[other_index]):
-                raise ValueError("wall chain and opening must bound a simple profile")
+                raise ValueError("wall chain must be simple")
 
 
 @dataclass(frozen=True, order=True, slots=True)
 class OpenSectionOpening(Record):
-    """The non-material side joining the endpoints of an open wall chain."""
+    """The physical endpoints of an absent wall, with no implied joining segment."""
 
     start: tuple[float, float]
     end: tuple[float, float]
