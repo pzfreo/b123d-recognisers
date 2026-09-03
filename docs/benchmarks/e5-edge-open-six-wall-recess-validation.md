@@ -9,7 +9,8 @@ not contain an inferred closing edge and does not claim an exterior-air footprin
 
 The first implementation deliberately recognizes only the high-value six-wall subset. It
 requires one single-wire planar floor, six planar concave wall supports forming one non-branching
-open path, a wholly convex residual floor boundary, exactly one common principal-axis mouth,
+open path, exact uninterrupted single-wire wall faces, non-parallel endpoint supports, a wholly
+convex residual floor boundary, exactly one common principal-axis mouth,
 an empty extrusion of the exact floor toward that mouth, material behind that exact floor, and
 one valid solid owner. The six walls are defining
 evidence; the exact floor is additional constituent evidence.
@@ -38,15 +39,14 @@ branch's pre-change main for the measured recognition paths.
 | class | parent defining | current defining | delta | parent coverage | current coverage | delta |
 |---|---:|---:|---:|---:|---:|---:|
 | 6-sided pocket | 4,242 | 4,380 | +138 | 5,022 / 5,707 (0.8800) | 5,173 / 5,707 (0.9064) | +151 |
-| Rectangular pocket | 2,186 | 2,186 | 0 | 4,503 / 4,895 | 4,504 / 4,895 | +1 |
+| Rectangular pocket | 2,186 | 2,186 | 0 | 4,503 / 4,895 | 4,503 / 4,895 | 0 |
 | every other class | unchanged | unchanged | 0 | unchanged | unchanged | 0 |
 
-The run returns 24 edge-open records. Twenty-three contribute exactly 138 class-15 defining
-faces (six each). The remaining record, model `23645`, is not a geometric false positive: its
-truthful six-wall open chain consists of five faces labelled Rectangular pocket and one face
-labelled Chamfer. It contributes no class-15 defining face and one additional class-14 constituent
-coverage face. We retain it rather than make a label-derived exclusion. Thus the class-15 claim
-purity of this increment alone is 138 / 144 = 0.9583, with 23 / 24 occurrence alignment.
+The final run returns 23 edge-open records, all contributing exactly 138 class-15 defining faces
+(six each): increment claim purity is 138 / 138 = 1.0. An earlier candidate in model `23645`
+contained an internally interrupted eight-edge wall face; the independent contract review exposed
+that the floor extrusion alone could not prove wall completeness. The final rule refuses it by
+geometry, without consulting its five Rectangular-pocket and one Chamfer labels.
 
 ## Interpretation
 

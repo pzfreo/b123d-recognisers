@@ -361,6 +361,11 @@ MODULE_SEAM_EDGES = {
 ARC_READER_SITES = {
     **{
         f"src/b123d_recognisers/edge_open_prismatic_recesses:"
+        f"_complete_wall_boundaries:arc:{ordinal}": "exact-nonsmooth"
+        for ordinal in (1, 2)
+    },
+    **{
+        f"src/b123d_recognisers/edge_open_prismatic_recesses:"
         f"recognise_edge_open_prismatic_recesses:arc:{ordinal}": disposition
         for ordinal, disposition in enumerate(
             ("exact-nonsmooth", "exact-nonsmooth", "legacy-contract"), start=1

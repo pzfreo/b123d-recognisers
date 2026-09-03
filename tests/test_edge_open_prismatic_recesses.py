@@ -8,8 +8,10 @@ from build123d import (
     BuildPart,
     BuildSketch,
     Compound,
+    Cylinder,
     Locations,
     Plane,
+    Polygon,
     Pos,
     RegularPolygon,
     Rot,
@@ -153,6 +155,25 @@ def test_floorless_edge_open_passage_is_refused() -> None:
         with BuildSketch(Plane.XY.offset(-5)), Locations((0, 14)):
             RegularPolygon(8, 7)
         extrude(amount=30)
+
+    assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+
+
+def test_a_cross_bore_interrupting_a_wall_is_refused() -> None:
+    bore = Plane(origin=(-4.49, 8.36, 15), z_dir=(-0.625, -0.78, 0)) * Cylinder(
+        1, 10, align=(Align.CENTER, Align.CENTER, Align.CENTER)
+    )
+    perforated = _edge_open_hexagon() - bore
+
+    assert recognise_edge_open_prismatic_recesses(perforated) == []
+
+
+def test_parallel_endpoint_wall_supports_are_refused() -> None:
+    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY.offset(10)):
+            Polygon((-6, 20), (-6, 15), (-8, 12), (0, 6), (8, 12), (6, 15), (6, 20))
+        extrude(amount=15)
 
     assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
 

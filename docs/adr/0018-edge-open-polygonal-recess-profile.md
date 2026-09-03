@@ -44,7 +44,8 @@ opening sign in the supplied recognition frame. Section coordinates remain in th
 as for `PrismaticPocket`; they are not translated to a fictional closed-profile centroid.
 
 Recognition requires one valid solid, one nonbranching chain of at least three original planar
-wall supports, one unambiguous exterior opening context along the remaining convex boundary of an
+wall supports whose exact faces contain no inner wire or unaccounted boundary interruption, one
+unambiguous exterior opening context along the remaining convex boundary of an
 exact single-wire floor, one axial mouth, an empty physical sweep and complete material backing
 behind the exact surviving floor face. The exterior boundary may route through several planar or
 curved stock/intersection faces and is not serialized as a segment or polygon. Those context faces
@@ -63,7 +64,7 @@ not change the record.
 Recognition refuses multiple or concave lateral opening contexts, branches, missing or parallel
 endpoint supports, self-intersecting chains, multiple-wire or multiple floors, multiple axial
 mouths, through or enclosed regions, floor breaches, whole-body capture, ambiguous shared
-cavities and cross-solid walks. It does not infer historical design intent beyond the observed
+cavities, parallel endpoint supports and cross-solid walks. It does not infer historical design intent beyond the observed
 physical open profile.
 
 ## Consequences

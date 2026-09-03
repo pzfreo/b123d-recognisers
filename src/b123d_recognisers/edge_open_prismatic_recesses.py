@@ -199,6 +199,47 @@ def _ordered_open_chain(
     return tuple(ordered) if set(ordered) == wall_set else None
 
 
+def _complete_wall_boundaries(
+    graph: FaceGraph,
+    floor: FaceNode,
+    walls: tuple[FaceNode, ...],
+    mouth: FaceNode,
+    exterior: tuple[FaceNode, ...],
+) -> bool:
+    """Prove that no side wall contains a hole, branch, or unaccounted interruption."""
+
+    exterior_set = set(exterior)
+    for index, wall in enumerate(walls):
+        if len(tuple(graph.face(wall).wires())) != 1:
+            return False
+        required = {floor, mouth}
+        if index:
+            required.add(walls[index - 1])
+        if index + 1 < len(walls):
+            required.add(walls[index + 1])
+        neighbours = set(graph.neighbours(wall))
+        if not required <= neighbours:
+            return False
+        extra = neighbours - required
+        if 0 < index < len(walls) - 1:
+            if extra:
+                return False
+            continue
+        if not extra or not all(graph.arc(wall, node) == "convex" for node in extra):
+            return False
+        pending = list(extra & exterior_set)
+        reached = set(pending)
+        while pending:
+            current = pending.pop()
+            for node in extra - reached:
+                if node in graph.neighbours(current) and graph.arc(current, node) == "convex":
+                    reached.add(node)
+                    pending.append(node)
+        if reached != extra:
+            return False
+    return True
+
+
 def _section_from_walls(
     graph: FaceGraph, floor: FaceNode, walls: tuple[FaceNode, ...], axis: int
 ) -> OpenPolygonalSection | None:
@@ -315,6 +356,19 @@ def recognise_edge_open_prismatic_recesses(
                 and all(graph.arc(node, wall) in ("convex", "smooth") for wall in ordered)
             )
             if len(mouths) != 1:
+                continue
+            mouth = mouths[0]
+            first_normal = graph.normal(ordered[0])
+            last_normal = graph.normal(ordered[-1])
+            if (
+                first_normal is None
+                or last_normal is None
+                or abs(
+                    sum(left * right for left, right in zip(first_normal, last_normal, strict=True))
+                )
+                >= 1.0 - AXIS_ZERO_COS
+                or not _complete_wall_boundaries(graph, floor, ordered, mouth, exterior)
+            ):
                 continue
             owner = graph.common_valid_solid((*ordered, floor))
             section = _section_from_walls(graph, floor, ordered, axis)
