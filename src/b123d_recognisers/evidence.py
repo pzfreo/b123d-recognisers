@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import copy
 import json
+import math
+from dataclasses import dataclass
 from importlib.resources import files
-from typing import NoReturn, Protocol, SupportsIndex, cast
+from typing import Generic, NoReturn, Protocol, SupportsIndex, TypeVar, cast
 
 from b123d_recognisers import __version__
 from b123d_recognisers._adjacency import FaceNode
@@ -32,6 +34,52 @@ class RecognitionRecord(Protocol):
     """Common serializable surface of every physical recognition record."""
 
     def to_dict(self) -> dict[str, object]: ...
+
+
+MeasureValue = TypeVar("MeasureValue", int, float)
+
+
+@dataclass(frozen=True, slots=True)
+class AssociationMeasure(Generic[MeasureValue]):
+    """One explicit total and its associated/unassociated partition.
+
+    ``ratio`` is undefined when ``total`` is zero. It is association coverage, never an
+    accuracy, recall or correctness score.
+    """
+
+    total: MeasureValue
+    associated: MeasureValue
+    unassociated: MeasureValue
+
+    @property
+    def ratio(self) -> float | None:
+        """Return ``associated / total``, or ``None`` for a zero denominator."""
+
+        if self.total == 0:
+            return None
+        return float(self.associated) / float(self.total)
+
+
+@dataclass(frozen=True, slots=True)
+class FamilyAssociation:
+    """Union contribution from one emitted physical family.
+
+    Contributions from different families may overlap and therefore are not additive.
+    """
+
+    family: str
+    face_count: int
+    surface_area: float
+
+
+@dataclass(frozen=True, slots=True)
+class GeometryAssociation:
+    """Bounded accounting of accepted constituent evidence against original faces."""
+
+    face_count: AssociationMeasure[int]
+    surface_area: AssociationMeasure[float]
+    families: tuple[FamilyAssociation, ...]
+    unassociated_faces: frozenset[FaceRef]
 
 
 class FaceRef:
@@ -76,6 +124,7 @@ class RecognitionEvidence:
         "__node_refs",
         "__node_faces",
         "__evidence",
+        "__association",
     )
     __authority: object
     __result: RecognitionResult
@@ -87,6 +136,7 @@ class RecognitionEvidence:
     __node_refs: dict[FaceNode, FaceRef]
     __node_faces: dict[FaceNode, FaceLike]
     __evidence: EvidenceIndex
+    __association: GeometryAssociation
 
     def __init__(self) -> None:
         raise TypeError("recognition evidence is created by build_recognition_evidence")
@@ -108,6 +158,17 @@ class RecognitionEvidence:
         """All original faces in the exact input part, as unordered opaque references."""
 
         return self.__faces
+
+    @property
+    def association(self) -> GeometryAssociation:
+        """Account for faces associated with accepted constituent evidence.
+
+        This does not establish that a feature classification is correct or that an
+        unassociated face is a missed feature. Intentional stock/background faces are included
+        in the denominator.
+        """
+
+        return self.__association
 
     def family(self, feature: FeatureRef) -> str:
         """Return the stable package family identifier for *feature*."""
@@ -220,6 +281,44 @@ def build_recognition_evidence(
     object.__setattr__(result, "_RecognitionEvidence__node_refs", node_refs)
     object.__setattr__(result, "_RecognitionEvidence__node_faces", node_faces)
     object.__setattr__(result, "_RecognitionEvidence__evidence", product.evidence)
+    family_nodes: dict[str, set[FaceNode]] = {}
+    associated_nodes: set[FaceNode] = set()
+    for candidate, family in zip(candidates, families, strict=True):
+        constituent = set(product.evidence.constituent_of(candidate))
+        family_nodes.setdefault(family, set()).update(constituent)
+        associated_nodes.update(constituent)
+    all_nodes = set(node_refs)
+    unassociated_nodes = all_nodes - associated_nodes
+
+    def area(nodes: set[FaceNode]) -> float:
+        ordered = sorted(nodes, key=lambda node: node.index)
+        return math.fsum(float(node_faces[node].area) for node in ordered)
+
+    associated_area = area(associated_nodes)
+    unassociated_area = area(unassociated_nodes)
+    association = GeometryAssociation(
+        face_count=AssociationMeasure(
+            total=len(all_nodes),
+            associated=len(associated_nodes),
+            unassociated=len(unassociated_nodes),
+        ),
+        surface_area=AssociationMeasure(
+            total=associated_area + unassociated_area,
+            associated=associated_area,
+            unassociated=unassociated_area,
+        ),
+        families=tuple(
+            FamilyAssociation(
+                family=definition.family.value,
+                face_count=len(nodes),
+                surface_area=area(nodes),
+            )
+            for definition in PHYSICAL_DEFINITIONS
+            if (nodes := family_nodes.get(definition.family.value))
+        ),
+        unassociated_faces=frozenset(node_refs[node] for node in unassociated_nodes),
+    )
+    object.__setattr__(result, "_RecognitionEvidence__association", association)
     return result
 
 
@@ -269,8 +368,11 @@ def _validate_manifest(manifest: object) -> None:
             "EVIDENCE_API_FORMAT",
             "EVIDENCE_API_FORMAT_VERSION",
             "EvidenceApiManifestError",
+            "AssociationMeasure",
+            "FamilyAssociation",
             "FaceRef",
             "FeatureRef",
+            "GeometryAssociation",
             "RecognitionEvidence",
             "RecognitionRecord",
             "build_recognition_evidence",
@@ -297,11 +399,14 @@ def evidence_api_manifest_json(*, format_version: int = EVIDENCE_API_FORMAT_VERS
 
 
 __all__ = [
+    "AssociationMeasure",
     "EVIDENCE_API_FORMAT",
     "EVIDENCE_API_FORMAT_VERSION",
     "EvidenceApiManifestError",
+    "FamilyAssociation",
     "FaceRef",
     "FeatureRef",
+    "GeometryAssociation",
     "RecognitionEvidence",
     "RecognitionRecord",
     "build_recognition_evidence",

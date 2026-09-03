@@ -7,11 +7,14 @@
       "FeatureRef": "opaque identity for one accepted physical occurrence within one view"
     },
     "symbols": [
+      "AssociationMeasure",
       "EVIDENCE_API_FORMAT",
       "EVIDENCE_API_FORMAT_VERSION",
       "EvidenceApiManifestError",
       "FaceRef",
+      "FamilyAssociation",
       "FeatureRef",
+      "GeometryAssociation",
       "RecognitionEvidence",
       "RecognitionRecord",
       "build_recognition_evidence",

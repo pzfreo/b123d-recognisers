@@ -124,6 +124,10 @@ evidence view:
 from b123d_recognisers.evidence import build_recognition_evidence
 
 view = build_recognition_evidence(part)
+coverage = view.association
+print(coverage.face_count.associated, coverage.face_count.total)
+print(coverage.surface_area.ratio)  # None only when the total area is zero
+remaining_faces = [view.face(ref) for ref in coverage.unassociated_faces]
 for feature in view.features:
     print(view.family(feature), view.record(feature).to_dict())
     proof_faces = [view.face(ref) for ref in view.defining_faces(feature)]
@@ -138,6 +142,13 @@ serialized, and are not persistent names across imports, transforms, edits, or s
 The caller must not mutate the part while using the view. The initial API is caller-coordinate
 only; it does not return references to a framed working shape as though they belonged to the
 original part.
+
+`view.association` accounts for the union of accepted constituent faces against every original
+face. It reports face-count and surface-area totals, associated and unassociated values,
+per-family union contributions, and the exact within-run references left unassociated. Family
+contributions may overlap and are not additive. This is not an accuracy or recall score: accepted
+classifications may be wrong, stock faces may intentionally remain unassociated, and incomplete
+constituent publication produces incomplete association.
 
 ### Recognise independently of STEP placement
 
