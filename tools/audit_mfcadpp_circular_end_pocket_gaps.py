@@ -37,10 +37,12 @@ from b123d_recognisers._recess_records import Slot  # noqa: E402
 from b123d_recognisers.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
+from tools.run_effectiveness_baseline import _KNOWN_MFCADPP_2500_INVALID  # noqa: E402
 
 _PUBLISHED_VERSION = (
     "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
 )
+_KNOWN_INVALID_REASON = "Hole cylindrical evidence does not prove one valid solid"
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +193,7 @@ def main() -> int:
     parser.add_argument("root", type=Path)
     parser.add_argument("--class-id", type=int, default=16)
     parser.add_argument("--limit", type=int, default=500)
+    parser.add_argument("--allow-invalid", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -200,6 +203,8 @@ def main() -> int:
     if not paths:
         parser.error("the selected workload contains no STEP files")
     rows: list[dict[str, Any]] = []
+    invalid: list[dict[str, str]] = []
+    class_model_ids: set[str] = set()
     sources: list[tuple[str, str]] = []
     for path in paths:
         truth = load_mfcadpp_truth(path)
@@ -209,11 +214,31 @@ def main() -> int:
         }
         if not labelled:
             continue
+        class_model_ids.add(truth.model_id)
         part = import_step(path)
         faces = tuple(part.faces())
         if len(faces) != len(truth.semantic):
             raise RuntimeError(f"{truth.model_id}: imported face count does not match labels")
-        product = _take_inventory(part)
+        try:
+            product = _take_inventory(part)
+        except (RuntimeError, ValueError) as error:
+            if (
+                truth.model_id not in _KNOWN_MFCADPP_2500_INVALID
+                or str(error) != _KNOWN_INVALID_REASON
+            ):
+                raise
+            if not args.allow_invalid:
+                parser.error(
+                    f"{truth.model_id} is a documented invalid model; supply --allow-invalid"
+                )
+            invalid.append(
+                {
+                    "model_id": truth.model_id,
+                    "source_sha256": truth.source_sha256,
+                    "reason": str(error),
+                }
+            )
+            continue
         graph = product.context.graph
         components = _components(graph, {graph.require_node(faces[index]) for index in labelled})
         accepted = _accepted_evidence(product)
@@ -252,6 +277,15 @@ def main() -> int:
             )
 
     untouched = [row for row in rows if row["untouched"]]
+    selected_ids = {path.stem for path in paths}
+    full_known_selection = (
+        len(paths) == 2500 and selected_ids >= _KNOWN_MFCADPP_2500_INVALID
+    )
+    expected_invalid = _KNOWN_MFCADPP_2500_INVALID & class_model_ids
+    if full_known_selection and {
+        item["model_id"] for item in invalid
+    } != expected_invalid:
+        parser.error("the full-corpus invalid-model set differs from the documented policy")
     gates = Counter(row["probe"]["first_failed_gate"] for row in untouched)
     report = {
         "format": "b123d-recognisers-mfcadpp-circular-end-pocket-gap-audit",
@@ -271,8 +305,17 @@ def main() -> int:
         "native_instance_labels": False,
         "selection": {
             "limit": args.limit,
+            "selected_models": len(paths),
+            "class_models": len(class_model_ids),
+            "evaluated_class_models": len(class_model_ids) - len(invalid),
+            "allow_invalid": args.allow_invalid,
             "selected_ids_sha256": _selection_hash([path.stem for path in paths]),
             "selected_sources_sha256": _source_selection_hash(sources),
+        },
+        "invalid_models": invalid,
+        "invalid_policy": {
+            "expected_ids": sorted(expected_invalid),
+            "expected_reason": _KNOWN_INVALID_REASON,
         },
         "summary": {
             "models_with_class": len({row["model_id"] for row in rows}),
