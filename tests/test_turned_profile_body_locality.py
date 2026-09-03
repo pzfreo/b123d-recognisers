@@ -129,13 +129,31 @@ def test_equal_value_records_with_distinct_keys_are_not_merged() -> None:
         TurnedProfile.from_steps(steps)
 
 
+def test_refused_and_legacy_profile_keys_remain_sortable_and_groupable() -> None:
+    legacy = TurnedProfileKey("x", (0.0, 0.0, 0.0), (0.0, 20.0, -10.0, 10.0, -10.0, 10.0))
+    refused = TurnedProfileKey(
+        "x", (0.0, 0.0, 0.0), (0.0, 20.0, -10.0, 10.0, -10.0, 10.0), None
+    )
+    steps = [
+        TurnedStep("x", 0, 10, 20, legacy),
+        TurnedStep("x", 10, 20, 10, refused),
+    ]
+
+    assert sorted((legacy, refused)) == [refused, legacy]
+    assert len(TurnedProfile.grouped_from_steps(steps)) == 2
+    assert TurnedProfileKey.__lt__(legacy, object()) is NotImplemented
+
+
 def test_step_round_trip_preserves_parallel_profile_grouping(tmp_path: Path) -> None:
     source = Compound(children=[_shaft(y=-30), _shaft(y=30)])
+    source_steps = recognise_turned_steps(source)
     path = tmp_path / "parallel-shafts.step"
     assert export_step(source, path)
 
-    profiles = TurnedProfile.grouped_from_steps(recognise_turned_steps(import_step(path)))
+    imported_steps = recognise_turned_steps(import_step(path))
+    profiles = TurnedProfile.grouped_from_steps(imported_steps)
 
+    assert imported_steps == source_steps
     assert len(profiles) == 2
     assert [profile.profile.axis_origin for profile in profiles if profile.profile] == [
         (0.0, -30.0, 0.0),

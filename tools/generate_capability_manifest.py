@@ -360,6 +360,7 @@ RECORD_SCHEMA_VERSIONS = {
     "Channel": 2,
     "Blend": 3,
     "Chamfer": 2,
+    "FaceLevel": 2,
     "Fillet": 2,
     "Groove": 2,
     "RaisedPad": 2,
@@ -368,6 +369,7 @@ RECORD_SCHEMA_VERSIONS = {
     "PassageSection": 2,
     "RiserEvidence": 2,
     "TurnedProfile": 2,
+    "TurnedProfileKey": 2,
     "TurnedStep": 2,
     "SectionPassage": 2,
 }

@@ -23,6 +23,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._body_identity import BodyKey, unambiguous_body_keys
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
@@ -35,7 +36,8 @@ from b123d_recognisers._record import Record
 from b123d_recognisers._typing import FaceLike, Part
 
 
-@dataclass(frozen=True, order=True)
+@total_ordering
+@dataclass(frozen=True)
 class FaceLevel(Record):
     """A recognised horizontal face level and its in-plane supporting extent.
 
@@ -49,6 +51,25 @@ class FaceLevel(Record):
     z: float
     x_span: tuple[float, float] | None = None
     y_span: tuple[float, float] | None = None
+    # Comparable source-body membership. Empty retains hand-built legacy values; ``None``
+    # refuses an unavailable or colliding physical-body signature.
+    body_key: BodyKey | None = ()
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, FaceLevel):
+            return NotImplemented
+        return self._order_key() < other._order_key()
+
+    def _order_key(self) -> tuple[object, ...]:
+        return (
+            self.z,
+            self.x_span is not None,
+            self.x_span or (),
+            self.y_span is not None,
+            self.y_span or (),
+            self.body_key is not None,
+            self.body_key or (),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,9 +186,10 @@ def recognise_face_levels(
     """
     tol = _TOL if tol is None else tol
     scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
     return sorted(
-        proposal.record
-        for scope in scopes
+        replace(proposal.record, body_key=body_key)
+        for scope, body_key in zip(scopes, body_keys, strict=True)
         for proposal in _face_level_proposals_one(scope, tol=tol, min_area_frac=min_area_frac)
     )
 
@@ -259,11 +281,13 @@ def bounded_end_margin(span: float) -> float:
 def step_level_records(part: Part, *, tol: float | None = None) -> list[FaceLevel]:
     """Area-filtered interior face-level records, retaining their support bounds."""
     records: list[FaceLevel] = []
-    for scope in list(part.solids()) or [part]:
+    scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
+    for scope, body_key in zip(scopes, body_keys, strict=True):
         bb = scope.bounding_box()
         scope_tol = bounded_end_margin(bb.max.Z - bb.min.Z) if tol is None else tol
         records.extend(
-            proposal.record
+            replace(proposal.record, body_key=body_key)
             for proposal in _face_level_proposals_one(
                 scope, tol=_TOL, min_area_frac=_STEP_MIN_AREA_FRAC
             )
@@ -276,11 +300,13 @@ def _discover_step_levels(part: Part, *, writer: EvidenceWriter) -> list[FaceLev
     """Return aggregate levels and publish their exact body-local horizontal faces."""
 
     accepted: list[_FaceLevelProposal] = []
-    for scope in list(part.solids()) or [part]:
+    scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
+    for scope, body_key in zip(scopes, body_keys, strict=True):
         bb = scope.bounding_box()
         scope_tol = bounded_end_margin(bb.max.Z - bb.min.Z)
         accepted.extend(
-            proposal
+            replace(proposal, record=replace(proposal.record, body_key=body_key))
             for proposal in _face_level_proposals_one(
                 scope, tol=_TOL, min_area_frac=_STEP_MIN_AREA_FRAC
             )
@@ -403,16 +429,26 @@ def recognise_risers(
     (partial/filleted-end steps are a future refinement).
     """
     tol = _TOL if tol is None else tol
-    proposals = [
-        proposal
-        for scope in list(part.solids()) or [part]
-        for proposal in _riser_proposals_one(
-            scope,
-            min_area_frac=min_area_frac,
-            tol=tol,
-            body_levels=tuple(step_level_records(scope, tol=tol)),
+    scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
+    proposals: list[_RiserProposal] = []
+    for scope, body_key in zip(scopes, body_keys, strict=True):
+        bb = scope.bounding_box()
+        body_levels = tuple(
+            replace(proposal.record, body_key=body_key)
+            for proposal in _face_level_proposals_one(
+                scope, tol=_TOL, min_area_frac=_STEP_MIN_AREA_FRAC
+            )
+            if bb.min.Z + tol < proposal.record.z < bb.max.Z - tol
         )
-    ]
+        proposals.extend(
+            _riser_proposals_one(
+                scope,
+                min_area_frac=min_area_frac,
+                tol=tol,
+                body_levels=body_levels,
+            )
+        )
     return sorted(proposal.record for proposal in proposals)
 
 

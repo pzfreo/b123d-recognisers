@@ -222,7 +222,7 @@ def test_equal_profile_keys_cannot_claim_two_source_solids(
     monkeypatch.setattr(
         groove_module,
         "profile_key_from_bands",
-        lambda _part, _axis, _bands: profile,
+        lambda _part, _axis, _bands, *, body_key=(): profile,
     )
 
     with pytest.raises(ValueError, match="profile key identifies multiple"):
