@@ -610,6 +610,7 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
         "channel": 0,
         "pocket": 2,
         "prismatic_pocket": 0,
+        "edge_open_prismatic_recess": 0,
         "passage": 1,
         "chamfer": 0,
         "angled_step": 0,

@@ -65,6 +65,23 @@ FAMILIES = {
         "introduced": "0.2.6",
         "tests": ["tests/test_prismatic_pockets.py"],
     },
+    "edge-open-prismatic-recesses": {
+        "recognisers": [("recognise_edge_open_prismatic_recesses", "part")],
+        "records": [
+            (
+                "EdgeOpenPrismaticRecess",
+                "output",
+                ["RecognitionResult.edge_open_prismatic_recesses"],
+            ),
+            ("OpenPolygonalSection", "nested", []),
+            ("OpenSectionOpening", "nested", []),
+        ],
+        "census": "edge_open_prismatic_recess",
+        "goldens": [],
+        "golden_paths": ["tests/edge_open_prismatic_recess_expected.json"],
+        "introduced": "0.4.15",
+        "tests": ["tests/test_edge_open_prismatic_recesses.py"],
+    },
     "passages": {
         "recognisers": [
             ("recognise_passages", "part", "compatibility"),
@@ -364,6 +381,8 @@ NO_MEMBERSHIP_RATIONALE = {
     "PassageFrame": "Nested only in SectionPassage.",
     "PassageSection": "Nested only in SectionPassage.",
     "PassageSectionVertex": "Nested only in PassageSection.",
+    "OpenPolygonalSection": "Nested only in EdgeOpenPrismaticRecess.",
+    "OpenSectionOpening": "Nested only in OpenPolygonalSection.",
 }
 
 

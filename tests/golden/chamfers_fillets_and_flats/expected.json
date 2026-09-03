@@ -184,6 +184,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_prismatic_recesses": [],
         "fillets": [
           {
             "_type": "Fillet",
@@ -472,6 +473,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_prismatic_recesses": [],
         "fillets": [],
         "flats": [
           {
@@ -530,6 +532,7 @@
       "channel": 0,
       "circular_blind_step": 0,
       "countersink": 0,
+      "edge_open_prismatic_recess": 0,
       "fillet": 4,
       "flat": 1,
       "groove": 0,

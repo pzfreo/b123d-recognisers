@@ -41,7 +41,7 @@ from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionRes
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
-    assert len(PHYSICAL_DEFINITIONS) == 29
+    assert len(PHYSICAL_DEFINITIONS) == 30
     assert len(DERIVED_DEFINITIONS) == 5
     assert tuple(item.family for item in PHYSICAL_DEFINITIONS) == PHYSICAL_FAMILIES
     assert set(PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
@@ -54,6 +54,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         if isinstance(item.attribution, FullyAttributed)
     } == {
         FamilyId.PRISMATIC_POCKETS,
+        FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
         FamilyId.PASSAGES,
         FamilyId.ORIENTED_SLOTS,
         FamilyId.GROOVES,
@@ -102,6 +103,7 @@ def test_registry_is_the_closed_ordered_internal_roster() -> None:
         FamilyId.FLATS,
         FamilyId.POCKETS,
         FamilyId.PRISMATIC_POCKETS,
+        FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
         FamilyId.PADS,
         FamilyId.REPEATING_RADIAL_PROFILES,
         FamilyId.TURNED_STEPS,

@@ -21,6 +21,7 @@ PUBLIC_MODULES = {
     "chamfers",
     "circular_blind_steps",
     "countersinks",
+    "edge_open_prismatic_recesses",
     "evidence",
     "experimental_geometry",
     "explanations",
@@ -61,6 +62,15 @@ MODULE_SEAM_EDGES = {
     "_analytic_surfaces": {"_geometry"},
     "_body_geometry": set(),
     "_adjacency": {"_analytic_surfaces", "_body_geometry", "_geometry", "_typing"},
+    "edge_open_prismatic_recesses": {
+        "_adjacency",
+        "_candidates",
+        "_claims",
+        "_geometry",
+        "_record",
+        "_rings",
+        "_typing",
+    },
     # Interpretation depends on geometric fact; the reverse edge is what keeps `FaceGraph`
     # immutable, so it must stay absent.
     # Three recognisers begin with the same two questions of a face. Naming the layer is
@@ -169,6 +179,7 @@ MODULE_SEAM_EDGES = {
         "_record",
         "_typing",
         "countersinks",
+        "edge_open_prismatic_recesses",
     },
     "_pattern_geometry": {"_geometry"},
     "profiled_bores": {
@@ -265,6 +276,7 @@ MODULE_SEAM_EDGES = {
         "chamfers",
         "circular_blind_steps",
         "countersinks",
+        "edge_open_prismatic_recesses",
         "fillets",
         "flats",
         "grooves",
@@ -347,6 +359,18 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    **{
+        f"src/b123d_recognisers/edge_open_prismatic_recesses:"
+        f"_complete_wall_boundaries:arc:{ordinal}": "exact-nonsmooth"
+        for ordinal in (1, 2)
+    },
+    **{
+        f"src/b123d_recognisers/edge_open_prismatic_recesses:"
+        f"recognise_edge_open_prismatic_recesses:arc:{ordinal}": disposition
+        for ordinal, disposition in enumerate(
+            ("exact-nonsmooth", "exact-nonsmooth", "legacy-contract"), start=1
+        )
+    },
     "src/b123d_recognisers/circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
     "src/b123d_recognisers/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
@@ -1011,7 +1035,7 @@ def test_neutral_blend_view_has_exactly_the_reviewed_consumers() -> None:
     graph = _package_import_graph()
     assert {module for module, dependencies in graph.items() if "_blend_view" in dependencies} == {
         "blends",
-        "experimental_geometry"
+        "experimental_geometry",
     }
     assert {
         module for module, dependencies in graph.items() if "experimental_geometry" in dependencies
