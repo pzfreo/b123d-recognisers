@@ -41,7 +41,11 @@ def _stable_body_signature(solid: Part) -> BodyKey:
     round trip. Decimal-place rounding is unsuitable because volume and area scale differently.
     """
 
-    return tuple(float(f"{value:.12g}") for value in body_signature(solid))
+    values = body_signature(solid)
+    return tuple(
+        0.0 if index < 6 and abs(value) < 1e-6 else float(f"{value:.12g}")
+        for index, value in enumerate(values)
+    )
 
 
 def unambiguous_body_keys(

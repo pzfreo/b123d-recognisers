@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 
-from build123d import Box, Compound, Pos, Rot
+from build123d import Box, Compound, Pos, Rot, export_step, import_step
 
 from b123d_recognisers import (
     FramedRecognitionResult,
@@ -120,3 +121,14 @@ def test_nested_single_solid_wrapper_uses_the_same_physical_scope() -> None:
 
     assert channel.body_key not in ((), None)
     assert {plate.body_key for plate in plates} == {channel.body_key}
+
+
+def test_body_join_is_exact_after_step_round_trip(tmp_path: Path) -> None:
+    source = Rot(17, 23, 31) * _u_channel()
+    path = tmp_path / "rotated-channel.step"
+    assert export_step(source, path)
+
+    imported = import_step(path)
+
+    assert recognise_channels(imported) == recognise_channels(source)
+    assert recognise_plates(imported) == recognise_plates(source)
