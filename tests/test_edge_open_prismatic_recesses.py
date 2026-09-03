@@ -20,13 +20,14 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     OpenPolygonalSection,
     OpenSectionOpening,
+    _complete_wall_boundaries,
     recognise_edge_open_prismatic_recesses,
 )
 
@@ -168,6 +169,48 @@ def test_a_cross_bore_interrupting_a_wall_is_refused() -> None:
     assert recognise_edge_open_prismatic_recesses(perforated) == []
 
 
+def test_repeated_exterior_contact_on_an_endpoint_wall_is_refused() -> None:
+    floor, *walls, mouth, exterior = (FaceNode(index) for index in range(9))
+    wall_tuple = tuple(walls)
+
+    class OneWire:
+        @staticmethod
+        def wires():
+            return (object(),)
+
+    class RepeatedBoundaryGraph:
+        @staticmethod
+        def face(_node):
+            return OneWire()
+
+        @staticmethod
+        def neighbours(node):
+            if node not in wall_tuple:
+                return ()
+            index = wall_tuple.index(node)
+            adjacent = [floor, mouth]
+            if index:
+                adjacent.append(wall_tuple[index - 1])
+            if index + 1 < len(wall_tuple):
+                adjacent.append(wall_tuple[index + 1])
+            if index in (0, len(wall_tuple) - 1):
+                adjacent.append(exterior)
+            return tuple(adjacent)
+
+        @staticmethod
+        def shared_edges(left, right):
+            repeated = left is wall_tuple[0] and right is exterior
+            return (object(), object()) if repeated else (object(),)
+
+        @staticmethod
+        def arc(_left, _right):
+            return "convex"
+
+    assert not _complete_wall_boundaries(
+        RepeatedBoundaryGraph(), floor, wall_tuple, mouth, (exterior,)
+    )
+
+
 def test_parallel_endpoint_wall_supports_are_refused() -> None:
     stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
     with BuildPart() as cutter:
@@ -176,6 +219,18 @@ def test_parallel_endpoint_wall_supports_are_refused() -> None:
         extrude(amount=15)
 
     assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+
+
+def test_shallow_nonparallel_endpoint_wall_supports_are_retained() -> None:
+    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY.offset(10)):
+            Polygon(
+                (-6, 20), (-5.56, 15), (-8, 12), (0, 6), (8, 12), (6, 15), (6, 20)
+            )
+        extrude(amount=15)
+
+    assert len(recognise_edge_open_prismatic_recesses(stock - cutter.part)) == 1
 
 
 def test_edge_open_recognition_is_axis_covariant_and_body_local() -> None:

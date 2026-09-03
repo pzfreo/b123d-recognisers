@@ -220,6 +220,12 @@ def _complete_wall_boundaries(
         neighbours = set(graph.neighbours(wall))
         if not required <= neighbours:
             return False
+        # A neighbour is a topological occurrence, not merely a face identity.  A second
+        # breakout can meet an endpoint wall again through the same exterior face; the set
+        # above deliberately loses that information, so prove the expected single boundary
+        # occurrence for every adjacent face before using it for membership checks.
+        if any(len(graph.shared_edges(wall, node)) != 1 for node in neighbours):
+            return False
         extra = neighbours - required
         if 0 < index < len(walls) - 1:
             if extra:
@@ -363,10 +369,17 @@ def recognise_edge_open_prismatic_recesses(
             if (
                 first_normal is None
                 or last_normal is None
-                or abs(
-                    sum(left * right for left, right in zip(first_normal, last_normal, strict=True))
+                or math.isclose(
+                    abs(
+                        sum(
+                            left * right
+                            for left, right in zip(first_normal, last_normal, strict=True)
+                        )
+                    ),
+                    1.0,
+                    rel_tol=0.0,
+                    abs_tol=1e-9,
                 )
-                >= 1.0 - AXIS_ZERO_COS
                 or not _complete_wall_boundaries(graph, floor, ordered, mouth, exterior)
             ):
                 continue
