@@ -13,7 +13,7 @@
     "opening_plane": 3,
     "wall_not_mouth_rooted": 10
   },
-  "implementation_commit": "91dc69e86218d5ea4654d56459079d3b9aa714ab",
+  "implementation_commit": "46b779786b4792bccd2ed66234609dc823107bde",
   "invalid_models": [],
   "invalid_policy": {
     "expected_ids": [
@@ -163,7 +163,7 @@
       "target_faces_new_if_accepted": 3
     }
   ],
-  "runtime_seconds": 160.08248824591283,
+  "runtime_seconds": 165.69483343197498,
   "selection": {
     "evaluated_models": 500,
     "limit": 500,
