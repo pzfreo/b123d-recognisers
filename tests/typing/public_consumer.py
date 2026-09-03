@@ -32,8 +32,11 @@ from b123d_recognisers import (
     recognise_plates,
 )
 from b123d_recognisers.evidence import (
+    AssociationMeasure,
     FaceRef,
+    FamilyAssociation,
     FeatureRef,
+    GeometryAssociation,
     RecognitionEvidence,
     RecognitionRecord,
     build_recognition_evidence,
@@ -79,6 +82,12 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     assert_type(evidence.result, RecognitionResult)
     assert_type(evidence.features, tuple[FeatureRef, ...])
     assert_type(evidence.faces, frozenset[FaceRef])
+    assert_type(evidence.association, GeometryAssociation)
+    assert_type(evidence.association.face_count, AssociationMeasure[int])
+    assert_type(evidence.association.surface_area, AssociationMeasure[float])
+    assert_type(evidence.association.face_count.ratio, float | None)
+    assert_type(evidence.association.families, tuple[FamilyAssociation, ...])
+    assert_type(evidence.association.unassociated_faces, frozenset[FaceRef])
     for feature in evidence.features:
         assert_type(evidence.family(feature), str)
         assert_type(evidence.record(feature), RecognitionRecord)

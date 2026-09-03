@@ -165,6 +165,25 @@ coordinate rematching or adjacency expansion after recognition. Passages and rej
 cavities publish no Prismatic Pocket evidence. Non-exclusive membership remains valid when an
 accepted cap patch is also constituent to another occurrence.
 
+## Amendment (within-run geometry association summary, issue #462)
+
+The same run-local evidence view may expose one immutable accounting projection over the
+constituent evidence already retained by the completed run. The overall associated face set is
+the union of every accepted physical occurrence's constituent faces, so overlapping occurrences
+never count an original face twice. Per-family contributions are separate unions in closed
+registry order and may overlap one another. Total, associated and unassociated face counts and
+surface areas retain explicit numerators and denominators; a ratio with a zero denominator is
+undefined rather than reported as an invented zero or complete score.
+
+This is **association coverage**, not recognition accuracy, feature recall or proof that any
+accepted classification is correct. The denominator is every original caller-part face, including
+intentional stock/background geometry, and partial constituent publication produces partial
+association. Exact unassociated faces remain opaque within-run `FaceRef` values. The projection
+does not rescan topology, traverse residual geometry, classify leftovers, call a recogniser,
+serialize references or create a second attribution authority. Like the rest of the evidence
+view, it remains raw/caller-coordinate only until framed evidence can map explicitly back to the
+caller's faces.
+
 ## Amendment (Pocket bounded-region membership, issue #420)
 
 The prohibition on reconstructing wider membership later by adjacency flood-fill remains. A narrow

@@ -14,9 +14,11 @@ import b123d_recognisers.evidence as evidence_module
 from b123d_recognisers.evidence import (
     EVIDENCE_API_FORMAT,
     EVIDENCE_API_FORMAT_VERSION,
+    AssociationMeasure,
     EvidenceApiManifestError,
     FaceRef,
     FeatureRef,
+    GeometryAssociation,
     RecognitionEvidence,
     build_recognition_evidence,
     evidence_api_manifest,
@@ -162,6 +164,104 @@ def test_public_prismatic_pocket_projection_includes_its_proved_floor() -> None:
     assert len(defining) == 3
     assert len(constituent) == 4
     assert defining < constituent <= view.faces
+
+
+def test_no_accepted_features_leave_every_original_face_unassociated() -> None:
+    part = Box(10, 20, 5)
+    view = build_recognition_evidence(part)
+    summary = view.association
+
+    assert summary.face_count == AssociationMeasure(total=6, associated=0, unassociated=6)
+    assert summary.face_count.ratio == 0.0
+    assert summary.surface_area.associated == 0.0
+    assert summary.surface_area.total == summary.surface_area.unassociated
+    assert summary.surface_area.ratio == 0.0
+    assert summary.families == ()
+    assert summary.unassociated_faces == view.faces
+
+
+def test_every_face_can_be_associated_without_inventing_background() -> None:
+    part = extrude(RegularPolygon(10, 6), 20)
+    view = build_recognition_evidence(part)
+    summary = view.association
+
+    assert summary.face_count == AssociationMeasure(total=8, associated=8, unassociated=0)
+    assert summary.face_count.ratio == 1.0
+    assert summary.surface_area.unassociated == 0.0
+    assert summary.surface_area.associated == summary.surface_area.total
+    assert summary.surface_area.ratio == 1.0
+    assert len(summary.families) == 1
+    assert summary.families[0].family == "polygonal_stock"
+    assert summary.families[0].face_count == 8
+    assert summary.families[0].surface_area == pytest.approx(part.area)
+    assert summary.unassociated_faces == frozenset()
+
+
+def test_overlapping_family_contributions_do_not_double_count_overall_association() -> None:
+    part = Box(100, 80, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(20, 6), 30)
+    view = build_recognition_evidence(part)
+    summary = view.association
+    constituent_union = frozenset().union(
+        *(view.constituent_faces(feature) for feature in view.features)
+    )
+
+    assert summary.face_count.associated == len(constituent_union)
+    assert summary.face_count.total == (
+        summary.face_count.associated + summary.face_count.unassociated
+    )
+    assert summary.surface_area.total == (
+        summary.surface_area.associated + summary.surface_area.unassociated
+    )
+    assert sum(item.face_count for item in summary.families) > summary.face_count.associated
+    assert summary.unassociated_faces == view.faces - constituent_union
+    assert all(view.face(reference) for reference in summary.unassociated_faces)
+    expected_families = tuple(dict.fromkeys(view.family(feature) for feature in view.features))
+    assert tuple(item.family for item in summary.families) == expected_families
+    for item in summary.families:
+        family_faces = frozenset().union(
+            *(
+                view.constituent_faces(feature)
+                for feature in view.features
+                if view.family(feature) == item.family
+            )
+        )
+        assert item.face_count == len(family_faces)
+        assert item.surface_area == pytest.approx(
+            sum(float(view.face(reference).area) for reference in family_faces)
+        )
+
+
+def test_compound_association_preserves_separate_body_faces_in_one_family_union() -> None:
+    body = Box(100, 80, 10) + Pos(0, 0, 5) * extrude(RegularPolygon(20, 6), 30)
+    first = Pos(-120, 0, 0) * body
+    second = Pos(120, 0, 0) * copy.deepcopy(body)
+    view = build_recognition_evidence(Compound([first, second]))
+
+    bosses = tuple(
+        feature for feature in view.features if view.family(feature) == "polygonal_bosses"
+    )
+    boss_summary = next(
+        item for item in view.association.families if item.family == "polygonal_bosses"
+    )
+    assert len(bosses) == 2
+    assert all(len(view.constituent_faces(feature)) == 7 for feature in bosses)
+    assert boss_summary.face_count == 14
+    assert view.association.face_count.total == 26
+    assert view.association.face_count.associated == 18
+    assert view.association.face_count.unassociated == 8
+
+
+def test_empty_input_has_explicit_undefined_zero_denominator_ratios() -> None:
+    view = build_recognition_evidence(Compound(children=[]))
+
+    assert view.association == GeometryAssociation(
+        face_count=AssociationMeasure(total=0, associated=0, unassociated=0),
+        surface_area=AssociationMeasure(total=0.0, associated=0.0, unassociated=0.0),
+        families=(),
+        unassociated_faces=frozenset(),
+    )
+    assert view.association.face_count.ratio is None
+    assert view.association.surface_area.ratio is None
 
 
 def test_projection_preserves_inventory_order_and_transformed_face_binding() -> None:

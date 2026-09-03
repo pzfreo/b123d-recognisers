@@ -85,6 +85,8 @@ recognition consumer:
 from b123d_recognisers.evidence import build_recognition_evidence
 
 view = build_recognition_evidence(part)
+coverage = view.association
+remaining = [view.face(reference) for reference in coverage.unassociated_faces]
 for feature in view.features:
     record = view.record(feature)
     proof = [view.face(reference) for reference in view.defining_faces(feature)]
@@ -108,6 +110,20 @@ transformed parts are not interchangeable, and symmetry is never broken with tra
 The format-1 `evidence_api.json` document versions this namespace independently of the recognition
 and inspection manifests. The initial raw-coordinate API resolves caller-part faces; framed
 working-shape evidence remains excluded until it can be mapped back explicitly.
+
+The same view exposes an immutable `association` summary derived from those already-published
+constituent sets. Face-count and surface-area measures each state total, associated and
+unassociated values; `ratio` is `associated / total`, or `None` when the denominator is zero.
+Surface-area values use squared model-length units.
+Overall association is a union, so overlapping accepted occurrences count each original face
+once. Per-family contributions are separately unioned in registry order and may overlap. Exact
+unassociated `FaceRef` values let a caller highlight the remaining geometry without a second
+recognition or topology pass.
+
+Association does not mean correctness, recall or complete feature understanding. Every original
+face is in the denominator, including intentional stock/background geometry, and a family's
+constituent publication may still be partial. The projection neither classifies leftovers nor
+changes any recognition result.
 
 ## Defining-face attribution status
 
