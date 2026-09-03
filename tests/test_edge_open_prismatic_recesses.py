@@ -139,15 +139,27 @@ def test_closed_polygonal_pocket_is_not_edge_open() -> None:
     assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
 
 
-@pytest.mark.parametrize("sides", [6, 8])
-def test_non_six_wall_edge_open_profiles_are_refused(sides: int) -> None:
+@pytest.mark.parametrize(
+    "chain",
+    [
+        ((-6, 20), (-6, 12), (0, 6), (6, 20)),
+        ((-6, 20), (-7, 12), (0, 6), (6, 12), (6, 20)),
+        ((-6, 20), (-8, 15), (-4, 8), (4, 8), (8, 15), (6, 20)),
+        ((-6, 20), (-8, 15), (-6, 10), (0, 6), (6, 10), (8, 15), (6, 20)),
+    ],
+)
+def test_polygonal_edge_open_profiles_retain_every_physical_wall(
+    chain: tuple[tuple[int, int], ...],
+) -> None:
     stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
     with BuildPart() as cutter:
-        with BuildSketch(Plane.XY.offset(10)), Locations((0, 14)):
-            RegularPolygon(8, sides)
+        with BuildSketch(Plane.XY.offset(10)):
+            Polygon(*chain)
         extrude(amount=15)
 
-    assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+    (found,) = recognise_edge_open_prismatic_recesses(stock - cutter.part)
+
+    assert len(found.section.wall_chain) == len(chain)
 
 
 def test_floorless_edge_open_passage_is_refused() -> None:

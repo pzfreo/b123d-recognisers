@@ -309,7 +309,7 @@ def recognise_edge_open_prismatic_recesses(
     face_edges: FaceEdges | None = None,
     ledger: ClaimLedger | EvidenceWriter | None = None,
 ) -> list[EdgeOpenPrismaticRecess]:
-    """Recognise the proved six-wall, one-side-open polygonal recess subset."""
+    """Recognise proved one-side-open polygonal recesses with at least three physical walls."""
     graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
     found: list[tuple[EdgeOpenPrismaticRecess, tuple[FaceNode, ...], FaceNode]] = []
     for floor in graph.nodes:
@@ -330,7 +330,7 @@ def recognise_edge_open_prismatic_recesses(
                 key=lambda node: node.index,
             )
         )
-        if len(walls) != 6 or (ordered := _ordered_open_chain(graph, walls)) is None:
+        if len(walls) < 3 or (ordered := _ordered_open_chain(graph, walls)) is None:
             continue
         exterior = tuple(node for node in graph.neighbours(floor) if node not in walls)
         if (
