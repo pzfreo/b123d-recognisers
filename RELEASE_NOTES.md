@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased
+## 0.4.14
 
 - **Paired framed recognition with exact caller-face evidence.**
   `build_framed_recognition_evidence()` and
@@ -9,6 +9,35 @@
   separately to its exact caller-part topology partner under the published rigid placement.
   Missing or non-bijective mapping refuses explicitly; there is no raw rerun, coordinate-proximity
   matching, face-order fallback or persistent ID.
+
+- **Reported associated and unassociated geometry explicitly.**
+  `RecognitionEvidence.association` provides overlap-safe face-count and surface-area partitions,
+  per-family contributions and exact run-local references for unassociated faces. These values
+  describe evidence coverage, not recognition accuracy or residual-geometry classification.
+
+- **Release-level exception.**
+  ADR 0005 ordinarily reserves additive public API for a minor release. The project owner
+  explicitly directed these evidence additions to ship as patch release 0.4.14 so Draftwright can
+  consume them. Existing result/report and raw-evidence behavior remains compatible; consumers
+  must still adopt the new API deliberately.
+
+## 0.4.13
+
+- **Recovered interrupted passages and treated-mouth prismatic pockets.**
+  Passage recognition gained two-ended enclosure traversal, edge-incidence mouth recovery and
+  nonparallel planar termination while preserving exact constituent evidence and fail-closed
+  ownership. Prismatic pockets can recover a bounded polygonal cavity through a partial chamfer or
+  blend treatment when the direct wall cycle, unique floor and material/void proof are complete.
+
+- **Expanded truthful blend and chamfer coverage.**
+  Concave edge-blend chains and native toroidal blend paths are now public alongside the existing
+  convex cylindrical chains. Geometric chamfers below the drawing-callout floor remain recognised
+  as physical evidence without becoming dimension callouts.
+
+- **Added safer STEP ingestion and hardened Passage serialization.**
+  The geometry-only STEP loader avoids metadata-dependent assembly failure modes. Passage frames
+  accept valid serialized values and section canonicalization now occurs after numeric rounding,
+  keeping reports reproducible.
 
 ## 0.4.12
 
