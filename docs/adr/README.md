@@ -25,6 +25,8 @@ the record stays a decision rather than a status report.
 | [0013](0013-public-blend-chain-recognition.md) | Publish complete blend chains separately from dimension-worthy Fillets | Accepted |
 | [0012](0012-bounded-recognition-explanations.md) | Publish bounded explanations beside recognition results | Accepted |
 | [0014](0014-geometry-only-step-loading.md) | Load recognition inputs without STEP assembly metadata | Accepted |
+| [0016](0016-planar-passage-termination-planes.md) | Represent planar Passage terminations in the section frame | Accepted |
+| [0017](0017-edge-open-polygonal-recess-profile.md) | Preserve an edge-open polygonal recess as an open profile | Accepted |
 
 Draftwright ADRs 0007, 0013, 0015 and 0017 are historical inputs, not normative records for this
 project. Consumer-specific requirements, annotation provenance, lint and placement remain owned
