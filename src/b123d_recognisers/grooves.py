@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from build123d import GeomType
 
 from b123d_recognisers._adjacency import FaceEdges, edge_face_map, neighbours
+from b123d_recognisers._body_identity import unambiguous_body_keys
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
@@ -280,13 +281,19 @@ def recognise_grooves(
     has_tori = any(f.geom_type == GeomType.TORUS for f in all_faces)
     edge_faces = edge_face_map(all_faces, face_edges=face_edges) if has_tori else None
     scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
     out: list[tuple[Groove, FaceLike]] = []
     for shaft, bands in shafts.items():
         bands = sorted(bands, key=lambda c: c["s_lo"])
         solid_idx = shaft[1]
         if not isinstance(solid_idx, int) or not 0 <= solid_idx < len(scopes):
             raise ValueError("groove cylinder inventory has no owning solid")
-        profile = profile_key_from_bands(scopes[solid_idx], bands[0]["axis"], bands)
+        profile = profile_key_from_bands(
+            scopes[solid_idx],
+            bands[0]["axis"],
+            bands,
+            body_key=body_keys[solid_idx],
+        )
         for i in range(1, len(bands) - 1):
             prev, cur, nxt = bands[i - 1], bands[i], bands[i + 1]
             # The neighbours must be the groove's own walls — contiguous with the floor band,

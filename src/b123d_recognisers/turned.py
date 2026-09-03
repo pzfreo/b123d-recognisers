@@ -34,7 +34,9 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import total_ordering
 
+from b123d_recognisers._body_identity import BodyKey, unambiguous_body_keys
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._features import analyse_cylinders
@@ -81,7 +83,8 @@ _SQUARENESS_TOL = 0.15
 _OD_FILL_MIN = 0.6
 
 
-@dataclass(frozen=True, order=True)
+@total_ordering
+@dataclass(frozen=True)
 class TurnedProfileKey(Record):
     """Serializable body-local membership for one turned profile.
 
@@ -93,6 +96,22 @@ class TurnedProfileKey(Record):
     axis: str
     axis_origin: tuple[float, float, float]
     body_bounds: tuple[float, float, float, float, float, float]
+    # Exact public join to other records discovered on this physical body.
+    body_key: BodyKey | None = ()
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, TurnedProfileKey):
+            return NotImplemented
+        return self._order_key() < other._order_key()
+
+    def _order_key(self) -> tuple[object, ...]:
+        return (
+            self.axis,
+            self.axis_origin,
+            self.body_bounds,
+            self.body_key is not None,
+            self.body_key or (),
+        )
 
 
 @dataclass(frozen=True)
@@ -188,7 +207,11 @@ class TurnedProfile(Record):
 
 
 def profile_key_from_bands(
-    part: Part, axis: str, bands: list[CylinderEvidence]
+    part: Part,
+    axis: str,
+    bands: list[CylinderEvidence],
+    *,
+    body_key: BodyKey | None = (),
 ) -> TurnedProfileKey:
     """Return the public profile membership proved by one body's cylinder bands.
 
@@ -216,7 +239,7 @@ def profile_key_from_bands(
         round(float(bounds.min.Z), 8),
         round(float(bounds.max.Z), 8),
     )
-    return TurnedProfileKey(axis, origin, body_bounds)
+    return TurnedProfileKey(axis, origin, body_bounds, body_key)
 
 
 def recognise_turned_steps(
@@ -245,13 +268,14 @@ def recognise_turned_steps(
     """
     inventory = cyls if cyls is not None else analyse_cylinders(part)
     scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
     proposals: list[tuple[TurnedStep, list[CylinderEvidence]]] = []
-    for solid_idx, scope in enumerate(scopes):
+    for solid_idx, (scope, body_key) in enumerate(zip(scopes, body_keys, strict=True)):
         scoped = (
             [item for item in inventory[0] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
             [item for item in inventory[1] if len(scopes) == 1 or item["solid_idx"] == solid_idx],
         )
-        proposals.extend(_turned_step_proposals_one(scope, cyls=scoped))
+        proposals.extend(_turned_step_proposals_one(scope, cyls=scoped, body_key=body_key))
     if ledger is not None:
         # Bind and validate the complete family before publishing any occurrence. A malformed
         # cylinder inventory must not leave a partial candidate prefix in the aggregate run.
@@ -291,6 +315,7 @@ def _turned_step_proposals_one(
     part: Part,
     *,
     cyls: CylinderInventory,
+    body_key: BodyKey | None,
 ) -> list[tuple[TurnedStep, list[CylinderEvidence]]]:
     """Propose one valid-solid turned profile from prepartitioned cylinder evidence."""
 
@@ -320,7 +345,7 @@ def _turned_step_proposals_one(
     ):
         return []
 
-    profile = profile_key_from_bands(part, axis, bands)
+    profile = profile_key_from_bands(part, axis, bands, body_key=body_key)
 
     def bands_over(pos: float) -> list[CylinderEvidence]:
         """The widest external bands covering *pos* -- what sets the OD there, and therefore

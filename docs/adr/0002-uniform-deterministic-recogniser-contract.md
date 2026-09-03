@@ -338,3 +338,13 @@ records produced by one recognition coordinate system. Separate solids with an e
 receive `None`; traversal order, kernel handles and nearest-coordinate inference never break that
 ambiguity. Hand-built legacy records retain the empty-tuple default. This changes no geometric
 candidate, evidence role, count or reconciliation decision.
+
+## Amendment (FaceLevel/turned-profile body correlation, issue #385)
+
+`FaceLevel` and `TurnedProfileKey` schema version 2 append the same optional, opaque `body_key`
+used by other body-owned records. Recogniser-produced records derive it once from the complete
+valid-solid roster, so levels embedded in `RiserEvidence`, standalone level results, `TurnedStep`
+profiles and `Groove` profiles agree by equality. Equal signatures on separate solids publish
+`None`; legacy hand-built records retain the empty-tuple default. This lets a consumer distinguish
+a disconnected stair enclosed by a shaft's AABB from a blind-bore floor physically owned by that
+shaft without rescanning topology or treating containment as identity.

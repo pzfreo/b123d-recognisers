@@ -415,3 +415,12 @@ recogniser-produced non-null key may be compared only with another record's key 
 or framed result; consumers treat `None` and the legacy empty tuple as ineligible for ownership
 joins. Draftwright must explicitly accept schema 2 before replacing its global Plate support gate
 with the body-local join.
+
+## FaceLevel/TurnedProfileKey body-correlation schema event (issue #385)
+
+`FaceLevel` and `TurnedProfileKey` advance from schema 1 to schema 2 by appending optional
+`body_key`. A recogniser-produced non-null key may be compared only with another record from the
+same raw or framed result; `None` and the legacy empty tuple are ineligible for ownership joins.
+Because `TurnedProfileKey` is nested in `TurnedStep`, `TurnedProfile` and `Groove`, consumers must
+accept its schema 2 before using those nested records for the new join. The containing record field
+contracts do not change and therefore retain their existing schema versions.
