@@ -44,6 +44,7 @@ from tools.run_effectiveness_baseline import (
     _mfinstseg_selection,
     _ModelTask,
     _prepare_checkpoint,
+    _reported_commit,
     _require_known_invalid_policy,
     _RunAuthority,
     _score_model,
@@ -786,7 +787,7 @@ def test_corpus_run_authority_captures_mapping_and_refuses_drift(
     taxonomy = tmp_path / "taxonomy.json"
     taxonomy.write_bytes(b"first")
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: "a" * 40)
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: None)
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     authority = _capture_run_authority(taxonomy)
@@ -811,12 +812,14 @@ def test_taxonomy_loader_scores_from_captured_bytes(tmp_path: Path) -> None:
     assert loaded[7]["status"] == "supported"
 
 
-@pytest.mark.parametrize(("commit", "clean"), [("b" * 40, True), ("a" * 40, False)])
+@pytest.mark.parametrize(
+    ("commit", "worktree_sha256"), (("b" * 40, None), ("a" * 40, "dirty"))
+)
 def test_corpus_run_authority_refuses_source_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     commit: str,
-    clean: bool,
+    worktree_sha256: str | None,
 ) -> None:
     taxonomy = tmp_path / "taxonomy.json"
     taxonomy.write_bytes(b"mapping")
@@ -827,22 +830,45 @@ def test_corpus_run_authority_refuses_source_drift(
         taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
     )
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: clean)
+    monkeypatch.setattr(
+        baseline_runner, "_git_worktree_sha256", lambda _commit: worktree_sha256
+    )
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="source authority changed"):
         _verify_run_authority(authority, taxonomy)
 
 
-def test_corpus_run_authority_refuses_a_dirty_start(
+def test_corpus_run_authority_discloses_a_dirty_exploratory_start(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     taxonomy = tmp_path / "taxonomy.json"
     taxonomy.write_bytes(b"mapping")
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: False)
+    monkeypatch.setattr(baseline_runner, "_git_commit", lambda: "a" * 40)
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: "b" * 64)
+    monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "c" * 64)
 
-    with pytest.raises(EffectivenessDataError, match="package commit misleading"):
-        _capture_run_authority(taxonomy)
+    authority = _capture_run_authority(taxonomy)
+
+    assert authority.worktree_sha256 == "b" * 64
+    assert _reported_commit(authority) == f"{'a' * 40}+dirty.{'b' * 64}"
+
+
+def test_reported_commit_is_unchanged_for_a_clean_run() -> None:
+    authority = _RunAuthority("a" * 40, "b" * 64, b"mapping", "c" * 64)
+
+    assert _reported_commit(authority) == "a" * 40
+
+
+def test_corpus_run_authority_refuses_a_dirty_canonical_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy = tmp_path / "taxonomy.json"
+    taxonomy.write_bytes(b"mapping")
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: "dirty")
+
+    with pytest.raises(EffectivenessDataError, match="canonical reports require"):
+        _capture_run_authority(taxonomy, canonical=True)
 
 
 def test_corpus_run_authority_refuses_a_commit_transition_during_capture(
@@ -852,7 +878,7 @@ def test_corpus_run_authority_refuses_a_commit_transition_during_capture(
     taxonomy.write_bytes(b"mapping")
     commits = iter(("a" * 40, "b" * 40))
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: None)
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="changed while it was captured"):
@@ -872,7 +898,7 @@ def test_corpus_run_authority_refuses_a_commit_transition_during_verification(
     )
     commits = iter(("a" * 40, "b" * 40))
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: next(commits))
-    monkeypatch.setattr(baseline_runner, "_git_tree_is_clean", lambda _commit: True)
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: None)
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="changed during corpus run"):
@@ -918,6 +944,7 @@ def test_checkpoint_authority_pins_every_run_input(tmp_path: Path) -> None:
         replace(authority, commit="d" * 40),
         replace(authority, source_sha256="d" * 64),
         replace(authority, taxonomy_sha256="d" * 64),
+        replace(authority, worktree_sha256="d" * 64),
     ):
         assert base != _checkpoint_authority(
             changed_authority,
