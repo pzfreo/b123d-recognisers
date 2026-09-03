@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 from build123d import (
@@ -37,6 +38,23 @@ def _edge_open_hexagon():
     with BuildPart() as cutter:
         with BuildSketch(Plane.XY.offset(10)), Locations((0, 14)):
             RegularPolygon(8, 7)
+        extrude(amount=15)
+    return stock - cutter.part
+
+
+_OPEN_CHAINS = (
+    ((-6, 20), (-6, 12), (0, 6), (6, 20)),
+    ((-6, 20), (-7, 12), (0, 6), (6, 12), (6, 20)),
+    ((-6, 20), (-8, 15), (-4, 8), (4, 8), (8, 15), (6, 20)),
+    ((-6, 20), (-8, 15), (-6, 10), (0, 6), (6, 10), (8, 15), (6, 20)),
+)
+
+
+def _edge_open_polygon(chain: tuple[tuple[int, int], ...]):
+    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY.offset(10)):
+            Polygon(*chain)
         extrude(amount=15)
     return stock - cutter.part
 
@@ -139,15 +157,36 @@ def test_closed_polygonal_pocket_is_not_edge_open() -> None:
     assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
 
 
-@pytest.mark.parametrize("sides", [6, 8])
-def test_non_six_wall_edge_open_profiles_are_refused(sides: int) -> None:
-    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
-    with BuildPart() as cutter:
-        with BuildSketch(Plane.XY.offset(10)), Locations((0, 14)):
-            RegularPolygon(8, sides)
-        extrude(amount=15)
+@pytest.mark.parametrize(
+    "chain",
+    _OPEN_CHAINS,
+)
+def test_polygonal_edge_open_profiles_retain_every_physical_wall(
+    chain: tuple[tuple[int, int], ...],
+) -> None:
+    (found,) = recognise_edge_open_prismatic_recesses(_edge_open_polygon(chain))
 
-    assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+    assert len(found.section.wall_chain) == len(chain)
+
+
+def test_two_wall_open_profile_is_refused() -> None:
+    assert recognise_edge_open_prismatic_recesses(
+        _edge_open_polygon(((-6, 20), (0, 6), (6, 20)))
+    ) == []
+
+
+@pytest.mark.parametrize("chain", _OPEN_CHAINS)
+def test_every_supported_wall_count_is_axis_covariant(chain) -> None:
+    part = _edge_open_polygon(chain)
+
+    (baseline,) = recognise_edge_open_prismatic_recesses(part)
+    (rotated,) = recognise_edge_open_prismatic_recesses(Rot(90, 0, 0) * part)
+
+    assert baseline.axis != rotated.axis
+    assert baseline.run_interval[1] - baseline.run_interval[0] == (
+        rotated.run_interval[1] - rotated.run_interval[0]
+    )
+    assert baseline.section == rotated.section
 
 
 def test_floorless_edge_open_passage_is_refused() -> None:
@@ -207,7 +246,7 @@ def test_repeated_exterior_contact_on_an_endpoint_wall_is_refused() -> None:
             return "convex"
 
     assert not _complete_wall_boundaries(
-        RepeatedBoundaryGraph(), floor, wall_tuple, mouth, (exterior,)
+        cast(FaceGraph, RepeatedBoundaryGraph()), floor, wall_tuple, mouth, (exterior,)
     )
 
 
