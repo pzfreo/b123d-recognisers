@@ -11,6 +11,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._recess_core import _pocket_proposals_one
 from b123d_recognisers._recess_faces import _cylinder_faces
 from tools.audit_mfcadpp_circular_end_pocket_gaps import (
+    _cylinder_end_result,
     _probe_component,
     _selection_hash,
     _source_selection_hash,
@@ -94,6 +95,16 @@ def test_semicircular_blind_pocket_reaches_current_proposal() -> None:
     assert probe.cylinder_faces == probe.individually_supported_ends == 2
     assert probe.principal_side_walls == 2
     assert sorted(probe.floor_counts or ()) == [0, 1]
+    assert probe.cylinder_end_results == ("accepted", "accepted")
+
+
+def test_full_cylinder_explains_why_a_round_hole_is_not_an_obround_end() -> None:
+    part = Box(30, 30, 12) - Pos(0, 0, 4) * Cylinder(5, 10)
+    graph = FaceGraph(part)
+    cylinders = [cap for cap in _cylinder_faces(part, graph) if cap[4]]
+
+    assert len(cylinders) == 1
+    assert _cylinder_end_result(cylinders[0]) == "not_one_diameter_extent"
 
 
 def test_partial_chamfer_does_not_explain_the_detection_gap() -> None:

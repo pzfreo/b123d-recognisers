@@ -22,6 +22,7 @@ from b123d_recognisers._dispositions import Outcome  # noqa: E402
 from b123d_recognisers._geometry import length_tol  # noqa: E402
 from b123d_recognisers._recess_core import _pocket_proposals_one  # noqa: E402
 from b123d_recognisers._recess_faces import (  # noqa: E402
+    _AXES,
     _MERGE_TOL,
     _cylinder_faces,
     _floor_end_faces,
@@ -30,6 +31,7 @@ from b123d_recognisers._recess_faces import (  # noqa: E402
 )
 from b123d_recognisers._recess_obround import (  # noqa: E402
     _END_RADIUS_FRAC,
+    _OBROUND_RATIO_TOL,
     _obround_end,
     _obround_ends,
 )
@@ -56,6 +58,7 @@ class GapProbe:
     end_centerline_delta: float | None = None
     side_walls: bool | None = None
     floor_counts: tuple[int, int] | None = None
+    cylinder_end_results: tuple[str, ...] = ()
 
 
 def _commit() -> str:
@@ -101,6 +104,42 @@ def _overlap(component: frozenset[FaceNode], groups: tuple[frozenset[FaceNode], 
     return max((len(component & group) for group in groups), default=0)
 
 
+def _cylinder_end_result(cap: tuple) -> str:
+    """Explain one production ``_obround_end`` decision without changing its authority."""
+
+    radius, axis, _location, bounds, concave, _node = cap
+    if not concave:
+        return "not_concave"
+    if radius <= 0:
+        return "non_positive_radius"
+    other_axes = [candidate for candidate in "xyz" if candidate != axis]
+    extents = {
+        candidate: (
+            getattr(bounds.max, "XYZ"[_AXES[candidate]])
+            - getattr(bounds.min, "XYZ"[_AXES[candidate]])
+        )
+        / radius
+        for candidate in other_axes
+    }
+    across = [
+        candidate
+        for candidate in other_axes
+        if abs(extents[candidate] - 2.0) <= _OBROUND_RATIO_TOL
+    ]
+    bulge = [
+        candidate
+        for candidate in other_axes
+        if abs(extents[candidate] - 1.0) <= _OBROUND_RATIO_TOL
+    ]
+    if len(across) != 1:
+        return "not_one_diameter_extent"
+    if len(bulge) != 1:
+        return "not_one_radius_extent"
+    if across[0] == bulge[0]:
+        return "ambiguous_in_plane_axes"
+    return "accepted"
+
+
 def _probe_component(
     part: Any,
     graph: FaceGraph,
@@ -125,12 +164,13 @@ def _probe_component(
         len(supported),
         len(production_ends),
     )
+    end_results = tuple(sorted(_cylinder_end_result(cap) for cap in cylinders))
     if len(cylinders) != 2 or len(planes) != 3:
-        return GapProbe("fragmented_anatomy", *common)
+        return GapProbe("fragmented_anatomy", *common, cylinder_end_results=end_results)
     if len(side_walls) != 2 or len({face.axis for face in side_walls}) != 1:
-        return GapProbe("non_principal_side_walls", *common)
+        return GapProbe("non_principal_side_walls", *common, cylinder_end_results=end_results)
     if len(supported) != 2 or len(production_ends) != 2:
-        return GapProbe("not_two_semicircular_ends", *common)
+        return GapProbe("not_two_semicircular_ends", *common, cylinder_end_results=end_results)
 
     low, high = sorted(production_ends, key=lambda end: end[5])
     compatible = (
@@ -141,9 +181,19 @@ def _probe_component(
     )
     centerline_delta = abs(low[4] - high[4])
     if not compatible:
-        return GapProbe("incompatible_end_pair", *common, end_centerline_delta=centerline_delta)
+        return GapProbe(
+            "incompatible_end_pair",
+            *common,
+            end_centerline_delta=centerline_delta,
+            cylinder_end_results=end_results,
+        )
     if not (low[6] == -1 and high[6] == 1 and high[5] - low[5] > _MERGE_TOL):
-        return GapProbe("ends_do_not_bound_void", *common, end_centerline_delta=centerline_delta)
+        return GapProbe(
+            "ends_do_not_bound_void",
+            *common,
+            end_centerline_delta=centerline_delta,
+            cylinder_end_results=end_results,
+        )
 
     record = Slot(
         width_axis=low[0],
@@ -164,6 +214,7 @@ def _probe_component(
             *common,
             end_centerline_delta=centerline_delta,
             side_walls=False,
+            cylinder_end_results=end_results,
         )
     floors = _floor_end_faces(planar, record)
     floor_counts = (len(floors[0]), len(floors[1]))
@@ -174,6 +225,7 @@ def _probe_component(
             end_centerline_delta=centerline_delta,
             side_walls=True,
             floor_counts=floor_counts,
+            cylinder_end_results=end_results,
         )
     if _overlap(component, proposal_groups):
         gate = "current_proposal"
@@ -185,6 +237,7 @@ def _probe_component(
         end_centerline_delta=centerline_delta,
         side_walls=True,
         floor_counts=floor_counts,
+        cylinder_end_results=end_results,
     )
 
 
@@ -287,9 +340,25 @@ def main() -> int:
     } != expected_invalid:
         parser.error("the full-corpus invalid-model set differs from the documented policy")
     gates = Counter(row["probe"]["first_failed_gate"] for row in untouched)
+    anatomy_complete = [
+        row
+        for row in rows
+        if row["probe"]["cylinder_faces"] == 2 and row["probe"]["planar_faces"] == 3
+    ]
+    anatomy_declined = [
+        row for row in anatomy_complete if row["probe"]["first_failed_gate"] != "current_proposal"
+    ]
+    anatomy_declined_gates = Counter(
+        row["probe"]["first_failed_gate"] for row in anatomy_declined
+    )
+    anatomy_end_results = Counter(
+        result
+        for row in anatomy_declined
+        for result in row["probe"]["cylinder_end_results"]
+    )
     report = {
         "format": "b123d-recognisers-mfcadpp-circular-end-pocket-gap-audit",
-        "format_version": 1,
+        "format_version": 2,
         "implementation_commit": _commit(),
         "production_sources": {
             path: _sha256(ROOT / path)
@@ -326,6 +395,23 @@ def main() -> int:
             "untouched_failure_gates": dict(sorted(gates.items())),
             "untouched_pocket_proposal_overlaps": sum(
                 row["pocket_proposal_overlap_faces"] > 0 for row in untouched
+            ),
+            "anatomy_complete_components": len(anatomy_complete),
+            "anatomy_complete_faces": sum(row["face_count"] for row in anatomy_complete),
+            "anatomy_complete_current_proposals": len(anatomy_complete)
+            - len(anatomy_declined),
+            "anatomy_complete_declined_components": len(anatomy_declined),
+            "anatomy_complete_declined_faces": sum(
+                row["face_count"] for row in anatomy_declined
+            ),
+            "anatomy_complete_declined_untouched_components": sum(
+                row["untouched"] for row in anatomy_declined
+            ),
+            "anatomy_complete_declined_failure_gates": dict(
+                sorted(anatomy_declined_gates.items())
+            ),
+            "anatomy_complete_declined_cylinder_end_results": dict(
+                sorted(anatomy_end_results.items())
             ),
         },
         "components": rows,
