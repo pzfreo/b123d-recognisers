@@ -264,6 +264,24 @@ Smooth mouth incidence is accepted only alongside at least one convex incidence 
 physical proof, allowing a partial rolling treatment without turning arbitrary tangent openings
 into seeds.
 
+Issue #460 additionally permits a floor-seeded proof when a deeper side opening has broken that
+mouth-side support cycle. One straight-edged principal-plane floor wire must meet exactly one
+concave original planar wall support per edge, all supports must share one principal run direction
+and one valid solid, and the floor wire itself defines the non-four-sided polygonal section. A
+broken-mouth four-sided floor is ambiguous with the more specific Pocket and rectangular blind-slot
+contracts and remains with those producers rather than being widened into a generic record. The
+complete section must be void from the floor to one exterior termination and completely material
+immediately behind the floor. The exact floor-adjacent wall supports remain defining evidence and
+those supports plus the floor are constituent evidence; faces belonging to the intersecting side
+opening are neither claimed nor absorbed merely because they touch the cavity.
+
+This narrowly supersedes the deeper-interruption refusal only where the intact floor independently
+proves the original prismatic section. Curved or multiply wired floors, missing/duplicate supports,
+non-principal or tapered walls, inconsistent run directions, zero depth, a breached floor,
+enclosed topology, invalid ownership and competing wall assignments still refuse. The proof stays
+before Candidate issuance inside `prismatic_pockets`; it publishes no floor-seeded traversal API
+and reads no labels, sibling Candidates, reconciliation or completed evidence.
+
 ## Amendment (public oriented Slot projection, issue #310)
 
 `OrientedSlot.source` does not expose the private section graph. It nests the already supported

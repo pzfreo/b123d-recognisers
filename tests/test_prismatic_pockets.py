@@ -52,6 +52,7 @@ from b123d_recognisers.frames import (
 from b123d_recognisers.prismatic_pockets import (
     SPAN_EPS,
     _axis_for_opening,
+    _floor_seeded_regions,
     _material_fraction,
     _section_prism,
     _void_open_and_floored,
@@ -95,6 +96,12 @@ def _with_one_treated_mouth_edge(part, treatment):
     ]
     assert opening_edges
     return treatment([opening_edges[0]], 1.0)
+
+
+def _with_deep_side_opening(part, *, width: float = 12.0):
+    """Interrupt a wall pair below the mouth while leaving the original floor intact."""
+
+    return part - Pos(0, 20, 8) * Box(width, 50, 4)
 
 
 def _through():
@@ -260,6 +267,73 @@ def test_partial_mouth_recovery_survives_step_round_trip(tmp_path: Path) -> None
 
     (record,) = r.recognise_prismatic_pockets(imported)
     assert (record.axis, record.sides, record.depth, record.open_sign) == ("x", 3, 8.0, 1)
+
+
+def test_an_intact_floor_recovers_a_six_sided_pocket_through_a_deep_side_opening() -> None:
+    part = _with_deep_side_opening(_hexagonal())
+    ledger = ClaimLedger(FaceGraph(part))
+
+    direct = r.recognise_prismatic_pockets(part)
+    attributed = r.recognise_prismatic_pockets(part, ledger=ledger)
+    (pocket,) = attributed
+    (candidate,) = ledger.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates
+    evidence = ledger.snapshot_index()
+
+    assert direct == attributed
+    assert candidate.record is pocket
+    assert (pocket.axis, pocket.sides, pocket.depth, pocket.open_sign) == ("z", 6, 8.0, 1)
+    assert len(evidence.defining_of(candidate)) == 6
+    assert len(evidence.constituent_of(candidate)) == 7
+
+
+def test_floor_seeded_recovery_is_covariant_and_body_local() -> None:
+    interrupted = _with_deep_side_opening(_hexagonal())
+    first = Pos(-90, 0, 0) * interrupted.rotate(Axis.X, -90)
+    second = Pos(90, 0, 0) * interrupted.rotate(Axis.X, -90)
+
+    records = r.recognise_prismatic_pockets(Compound([second, first]))
+
+    assert len(records) == 2
+    assert all(
+        (record.axis, record.sides, record.depth, record.open_sign) == ("y", 6, 8.0, 1)
+        for record in records
+    )
+    assert [record.at[0] for record in records] == [-90.0, 90.0]
+
+
+def test_floor_seeded_recovery_refuses_a_breached_floor() -> None:
+    interrupted = _with_deep_side_opening(_hexagonal())
+    breached = interrupted - Pos(0, -7, -5) * Cylinder(1, 30)
+
+    assert r.recognise_prismatic_pockets(breached) == []
+
+
+def test_floor_seeded_recovery_leaves_four_sided_cavities_to_specific_families() -> None:
+    interrupted = _with_deep_side_opening(_rectangular())
+    graph = FaceGraph(interrupted)
+
+    assert _floor_seeded_regions(interrupted, graph) == ()
+    assert r.recognise_pockets(interrupted)
+
+
+@pytest.mark.parametrize("scale", (0.1, 10.0))
+def test_floor_seeded_recovery_is_scale_independent(scale: float) -> None:
+    interrupted = _with_deep_side_opening(_hexagonal()).scale(scale)
+
+    (record,) = r.recognise_prismatic_pockets(interrupted)
+
+    assert (record.sides, record.depth) == (6, 8.0 * scale)
+
+
+def test_floor_seeded_recovery_survives_step_round_trip(tmp_path: Path) -> None:
+    interrupted = _with_deep_side_opening(_hexagonal()).rotate(Axis.Y, 90)
+    path = tmp_path / "floor-seeded-six-sided-pocket.step"
+
+    assert export_step(interrupted, path)
+    imported = import_step(path)
+
+    (record,) = r.recognise_prismatic_pockets(imported)
+    assert (record.axis, record.sides, record.depth, record.open_sign) == ("x", 6, 8.0, 1)
 
 
 def test_every_selected_blended_cap_patch_is_constituent_but_not_defining() -> None:
