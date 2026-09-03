@@ -25,10 +25,10 @@ floorless passage, and the adjacent five- and seven-wall subsets.
 ## Complete MFCAD++ development result
 
 The machine report is
-[`effectiveness-mfcadpp-2500-edge-open-7a0a763.json`](effectiveness-mfcadpp-2500-edge-open-7a0a763.json),
-SHA-256 `760df4e5c2d5a7c4bec39714de5baf68bb69946a3e0ddb9e7f525d8deca8ba96`.
+[`effectiveness-mfcadpp-2500-edge-open-12853aa.json`](effectiveness-mfcadpp-2500-edge-open-12853aa.json),
+SHA-256 `76fdde4fd532fb6e00b5f2f717bef9d7db1457f4dccb1a8f2c05f6afe39c5525`.
 It evaluates the complete published 2,500-model test split in raw coordinates at clean commit
-`7a0a763e6ff53b12266f9b434966b280654ee0b4`, using taxonomy v11. Seven published malformed inputs
+`12853aa6530438bd549b46302b9046c06ee5b78f`, using taxonomy v11. Seven published malformed inputs
 remain explicit invalid dispositions.
 
 The exact parent comparison is
