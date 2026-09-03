@@ -59,6 +59,7 @@ def test_correspondence_matcher_remains_private_and_result_neutral() -> None:
 
 MODULE_SEAM_EDGES = {
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
+    "_body_identity": {"_typing"},
     "_analytic_surfaces": {"_geometry"},
     "_body_geometry": set(),
     "_adjacency": {"_analytic_surfaces", "_body_geometry", "_geometry", "_typing"},
@@ -213,6 +214,7 @@ MODULE_SEAM_EDGES = {
     "_recess_faces": {"_adjacency", "_recess_records", "_typing", "_volume_probe"},
     "_recess_reduce": {
         "_adjacency",
+        "_body_identity",
         "_geometry",
         "_recess_faces",
         "_recess_records",
@@ -238,6 +240,7 @@ MODULE_SEAM_EDGES = {
     },
     "_recess_features": {
         "_adjacency",
+        "_body_identity",
         "_candidates",
         "_claims",
         "_recess_core",

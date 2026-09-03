@@ -329,3 +329,12 @@ consumer join a groove to exactly one public turned profile without rescanning t
 coordinate proximity. Before attributed publication, all Groove floor evidence must resolve to one
 valid solid and one profile key must not identify two solids; ambiguity refuses the family before
 any partial prefix is written.
+
+## Amendment (cross-family body correlation, issue #390)
+
+`Channel` and `Plate` schema version 2 append the same opaque, serializable `body_key`. The key is
+derived from the source solid's frame-local bounds, volume and area and exists only to compare
+records produced by one recognition coordinate system. Separate solids with an equal signature
+receive `None`; traversal order, kernel handles and nearest-coordinate inference never break that
+ambiguity. Hand-built legacy records retain the empty-tuple default. This changes no geometric
+candidate, evidence role, count or reconciliation decision.

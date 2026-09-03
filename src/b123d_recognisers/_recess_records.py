@@ -166,6 +166,9 @@ class Channel(Record):
     d_lo: float
     d_hi: float
     open_sign: int = 1
+    # Source-body correlation only. Empty is retained for hand-built legacy records; ``None``
+    # means recognised ownership collided and must not be used for a cross-family join.
+    body_key: tuple[float, ...] | None = ()
 
     @property
     def depth_axis(self) -> str:

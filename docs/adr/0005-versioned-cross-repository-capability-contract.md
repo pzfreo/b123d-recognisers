@@ -407,3 +407,11 @@ them to a minor release. The project owner explicitly overrode that release leve
 their schema and consumer opt-in requirements remain additive-contract requirements despite the
 patch number. Legacy principal Slot values remain unchanged; consumers opt in explicitly. This is
 a recorded exception, not a general change to the transition table above.
+
+## Channel/Plate body-correlation schema event (issue #390)
+
+`Channel` and `Plate` advance from schema 1 to schema 2 by appending optional `body_key`. A
+recogniser-produced non-null key may be compared only with another record's key from the same raw
+or framed result; consumers treat `None` and the legacy empty tuple as ineligible for ownership
+joins. Draftwright must explicitly accept schema 2 before replacing its global Plate support gate
+with the body-local join.

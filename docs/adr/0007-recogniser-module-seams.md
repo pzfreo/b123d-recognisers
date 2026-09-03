@@ -500,3 +500,10 @@ oriented surface differential directly: `_effective_surfaces` deliberately offer
 torus, while ADR 0013 requires those three facts to prove a complete circular path and its material
 side. The reader roster names each call site. No recovery, fitting or second topology scan is
 introduced by this edge.
+
+## Amendment (body-correlation leaf, issue #390)
+
+`_body_identity` is a private geometry-value leaf over shared part typing. It may be consumed by
+family projection modules but imports no recogniser, graph, orchestration or reconciliation layer.
+The recess reducer and facade use it for existing and Channel body keys; Plate consumes the same
+leaf directly. This keeps cross-family ownership correlation below feature policy.

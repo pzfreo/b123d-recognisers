@@ -225,3 +225,10 @@ An internally slanted slot does not redefine the part frame. `OrientedSlot` expr
 long, run and centre in the one coordinate system supplied to recognition: raw for raw calls and
 the selected local frame for framed calls. Whole-part covariance transforms them together; no
 family-specific reframing or world-axis fallback is permitted.
+
+## Amendment (framed body correlation, issue #390)
+
+Body keys are derived after framing, from the exact working solids that produce the records. A key
+therefore belongs to the returned local coordinate system and is shared coherently by Channel and
+Plate; it is not promised equal to the corresponding raw/world key. Consumers compare keys only
+within one result and do not use them as cross-run persistent identity.

@@ -472,7 +472,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `BoltCircle` | At least three same-spec holes, equally spaced on one circle. |
 | `BossRecord` | One external full-cylinder segment; its vector axis is not restricted to a world-axis string. |
 | `Chamfer` | One qualifying external, single-principal-axis planar or conical bevel; `turned` is true only for the conical shaft treatment. |
-| `Channel` | One floored rectangular recess open at both ends of its longitudinal solid envelope. |
+| `Channel` | One floored rectangular recess open at both ends of its longitudinal solid envelope. Recogniser-produced records carry an opaque comparable `body_key` for joining only to Plate evidence from the same source body; `null` refuses an ambiguous signature. |
 | `CounterBore` | One coaxial cylindrical hole step used as either the `cbore` or `spotface` field of `HoleRecord`. |
 | `CounterSink` | One proved conical seat at a matching cylindrical bore mouth. |
 | `DoubleDBore` | One constant principal-axis through double-D void; recogniser output always has `through=True`. |
@@ -491,7 +491,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `PassageFrame` | Nested canonical right-handed run/u/v frame and perpendicular origin for rich section geometry. Six-decimal direction validation includes the analytically bounded component-rounding error, so valid arbitrary rigid transforms remain representable. |
 | `PassageSection` | Nested canonical, origin-centred immutable line/arc boundary. |
 | `PassageSectionVertex` | One nested 2-D section vertex whose bulge describes the edge to the next vertex. |
-| `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. |
+| `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. Recogniser-produced records carry an opaque comparable `body_key` for same-body joins; `null` refuses an ambiguous signature. |
 | `PrismaticPocket` | One floored recess of constant planar cross-section, open at one end; `sides` and `section` carry the shape that `width`/`length` cannot. The fallback for a wall ring broken by a deeper side opening requires an intact straight-edged non-four-sided floor plus exact cap, void, material and body-local ownership proof; four-sided ambiguity remains with `Pocket` and `RectangularBlindSlot`. |
 | `EdgeOpenPrismaticRecess` | One blind prismatic recess with at least three observed planar walls and one side open to the stock exterior; it carries the physical run interval and a truthful open section rather than a fabricated closed footprint. |
 | `OpenPolygonalSection` | The canonical open chain of physical wall vertices plus its explicit opening endpoint pair. |
