@@ -272,6 +272,8 @@ def _audit_model(
 
     # Labels evaluate an already complete geometric roster; they never author candidates.
     truth = load_mfcadpp_truth(path)
+    if len(part.faces()) != len(truth.semantic):
+        raise RuntimeError(f"{truth.model_id}: imported face count does not match labels")
     rows = []
     gates: Counter[str] = Counter()
     for region, probe, candidate in probes:
