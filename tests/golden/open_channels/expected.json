@@ -123,6 +123,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              -30.0,
+              -25.0,
+              -5.0,
+              30.0,
+              25.0,
+              21.0,
+              49200.0,
+              12680.0
+            ],
             "body_levels": [
               {
                 "_type": "FaceLevel",
@@ -162,6 +172,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              -30.0,
+              -25.0,
+              -5.0,
+              30.0,
+              25.0,
+              21.0,
+              49200.0,
+              12680.0
+            ],
             "body_levels": [
               {
                 "_type": "FaceLevel",
@@ -288,6 +308,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              -30.0,
+              -25.0,
+              -5.0,
+              30.0,
+              25.0,
+              21.0,
+              49200.0,
+              12680.0
+            ],
             "body_levels": [
               {
                 "_type": "FaceLevel",
@@ -327,6 +357,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              -30.0,
+              -25.0,
+              -5.0,
+              30.0,
+              25.0,
+              21.0,
+              49200.0,
+              12680.0
+            ],
             "body_levels": [
               {
                 "_type": "FaceLevel",
@@ -596,6 +636,16 @@
         {
           "_type": "RiserEvidence",
           "axis": "y",
+          "body_key": [
+            -30.0,
+            -25.0,
+            -5.0,
+            30.0,
+            25.0,
+            21.0,
+            49200.0,
+            12680.0
+          ],
           "body_levels": [
             {
               "_type": "FaceLevel",
@@ -635,6 +685,16 @@
         {
           "_type": "RiserEvidence",
           "axis": "y",
+          "body_key": [
+            -30.0,
+            -25.0,
+            -5.0,
+            30.0,
+            25.0,
+            21.0,
+            49200.0,
+            12680.0
+          ],
           "body_levels": [
             {
               "_type": "FaceLevel",

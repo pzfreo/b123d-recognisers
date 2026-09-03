@@ -2390,6 +2390,11 @@
               "type": "str",
               "units": "none"
             },
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
             "body_levels": {
               "required": false,
               "type": "list[record:FaceLevel]|null",
@@ -2444,7 +2449,7 @@
           "name": "RiserEvidence",
           "qualified_name": "b123d_recognisers.RiserEvidence",
           "role": "evidence",
-          "schema_version": 2
+          "schema_version": 3
         },
         {
           "aggregate_membership": [],
@@ -2776,6 +2781,11 @@
               "type": "str",
               "units": "none"
             },
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
             "length": {
               "required": true,
               "type": "float",
@@ -2790,7 +2800,7 @@
           "name": "ThroughStep",
           "qualified_name": "b123d_recognisers.ThroughStep",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",

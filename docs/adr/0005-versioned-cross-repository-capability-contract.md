@@ -424,3 +424,10 @@ same raw or framed result; `None` and the legacy empty tuple are ineligible for 
 Because `TurnedProfileKey` is nested in `TurnedStep`, `TurnedProfile` and `Groove`, consumers must
 accept its schema 2 before using those nested records for the new join. The containing record field
 contracts do not change and therefore retain their existing schema versions.
+
+## RiserEvidence/ThroughStep body-correlation schema event (issue #388)
+
+`RiserEvidence` advances from schema 2 to 3 and `ThroughStep` from schema 1 to 2 by appending
+optional `body_key`. Consumers may replace coordinate/extent ownership heuristics only after
+accepting these versions, and may join records only when both keys are non-null and nonempty within
+the same raw or framed result. Existing `body_levels` and open-section fields retain their meaning.

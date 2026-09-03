@@ -367,10 +367,11 @@ RECORD_SCHEMA_VERSIONS = {
     "PassageEnds": 2,
     "Plate": 2,
     "PassageSection": 2,
-    "RiserEvidence": 2,
+    "RiserEvidence": 3,
     "TurnedProfile": 2,
     "TurnedProfileKey": 2,
     "TurnedStep": 2,
+    "ThroughStep": 2,
     "SectionPassage": 2,
 }
 

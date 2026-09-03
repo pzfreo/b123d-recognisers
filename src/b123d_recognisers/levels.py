@@ -137,6 +137,8 @@ class RiserEvidence(Record):
     #: matching occurrence from another solid in a compound. Keeping the full record, rather than
     #: only Z, lets a caller select one of two equal-Z levels by its body-local support evidence.
     body_levels: tuple[FaceLevel, ...] | None = None
+    #: Public same-solid join shared with other structural records in this result.
+    body_key: BodyKey | None = ()
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, RiserEvidence):
@@ -157,6 +159,8 @@ class RiserEvidence(Record):
             self.tol,
             self.body_levels is not None,
             self.body_levels or (),
+            self.body_key is not None,
+            self.body_key or (),
         )
 
 
@@ -442,7 +446,8 @@ def recognise_risers(
             if bb.min.Z + tol < proposal.record.z < bb.max.Z - tol
         )
         proposals.extend(
-            _riser_proposals_one(
+            replace(proposal, record=replace(proposal.record, body_key=body_key))
+            for proposal in _riser_proposals_one(
                 scope,
                 min_area_frac=min_area_frac,
                 tol=tol,
@@ -560,7 +565,9 @@ def _discover_risers(
     """Return body-local risers using completed FaceLevel authority from this run."""
 
     pending: list[tuple[RiserEvidence, tuple[FaceNode, ...]]] = []
-    for scope in list(part.solids()) or [part]:
+    scopes = list(part.solids()) or [part]
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
+    for scope, body_key in zip(scopes, body_keys, strict=True):
         for proposal in _riser_proposals_one(
             scope, min_area_frac=0.15, tol=_TOL, body_levels=()
         ):
@@ -571,6 +578,7 @@ def _discover_risers(
             record = replace(
                 proposal.record,
                 body_levels=tuple(sorted(body_levels.get(solid, ()))),
+                body_key=body_key,
             )
             pending.append((record, nodes))
     pending.sort(key=lambda item: item[0])
