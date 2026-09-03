@@ -27,7 +27,7 @@ sys.path.insert(0, str(ROOT))
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
 from b123d_recognisers._geometry import AXIS_ZERO_COS  # noqa: E402
-from b123d_recognisers._rings import SPAN_EPS, _cross_section, _is_void  # noqa: E402
+from b123d_recognisers._rings import SPAN_EPS, _cross_section  # noqa: E402
 from b123d_recognisers.prismatic_pockets import (  # noqa: E402
     _END_PROBE,
     _MATERIAL_VOL_FRAC,
@@ -35,6 +35,7 @@ from b123d_recognisers.prismatic_pockets import (  # noqa: E402
     _inner_region,
     _material_fraction,
     _plane_at,
+    _section_prism,
     _section_slab,
     _wire_seed,
 )
@@ -206,24 +207,27 @@ def _probe_region(
     solid = graph.common_valid_solid(region | {opening})
     clear_at = min(far_by_wall.values()) if direction > 0 else max(far_by_wall.values())
     low, high = sorted((mouth_at, clear_at))
-    if (
-        section is None
-        or solid is None
-        or high - low <= SPAN_EPS
-        or not _is_void(graph.solid_shape(solid), section, axis, low, high)
-    ):
+    if section is None or solid is None or high - low <= SPAN_EPS:
         return RegionProbe(
             "not_clear_nominal_section", len(walls), len(shortened), len(interruptions)
         ), None
     thickness = max(_END_PROBE, abs(floor_at - mouth_at) * 1e-4)
     try:
+        body = graph.solid_shape(solid)
+        interior_fraction = _material_fraction(
+            body, _section_prism(section, axis, low, high)
+        )
         backed = _material_fraction(
-            graph.solid_shape(solid),
+            body,
             _section_slab(section, axis, floor_at, direction, thickness),
         )
     except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return RegionProbe(
             "floor_probe_failed", len(walls), len(shortened), len(interruptions)
+        ), None
+    if interior_fraction > _MATERIAL_VOL_FRAC:
+        return RegionProbe(
+            "not_clear_nominal_section", len(walls), len(shortened), len(interruptions)
         ), None
     if backed < 1.0 - _MATERIAL_VOL_FRAC:
         return RegionProbe(

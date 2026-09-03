@@ -341,8 +341,13 @@ def _audit_model(
     graph = product.context.graph
     accepted_constituent = _accepted_constituent(product)
     candidate_regions = _candidate_regions(graph)
+    expected_sides = _TARGET_SIDES[class_id]
+    probes = tuple(
+        (region, owners, *_probe_region(graph, region, owners, expected_sides))
+        for region, owners in candidate_regions
+    )
 
-    # Labels score the complete neutral/aggregate candidate roster; they never author it.
+    # Labels score the complete, fully probed geometric roster; they never author a candidate.
     truth = load_mfcadpp_truth(path)
     faces = tuple(part.faces())
     if len(faces) != len(truth.semantic):
@@ -355,9 +360,7 @@ def _audit_model(
     components = _components(graph, labelled) if labelled else ()
     rows: list[dict[str, Any]] = []
     gates: Counter[str] = Counter()
-    expected_sides = _TARGET_SIDES[class_id]
-    for region, owners in candidate_regions:
-        probe, candidate = _probe_region(graph, region, owners, expected_sides)
+    for region, owners, probe, candidate in probes:
         gates[probe.first_failed_gate] += 1
         labels = Counter(truth.semantic[node.index] for node in region)
         overlaps = [len(region & component) for component in components]

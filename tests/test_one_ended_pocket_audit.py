@@ -1,5 +1,8 @@
 """Authored controls for the one-ended polygonal Pocket audit."""
 
+import ast
+import inspect
+
 from build123d import (
     Box,
     BuildPart,
@@ -16,9 +19,33 @@ from build123d import (
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._sections import PlanarSection, SectionVertex
 from tools.audit_mfcadpp_one_ended_pockets import (
+    _audit_model,
     _one_ended_regions,
     _without_collinear_subdivisions,
 )
+
+
+def test_full_geometric_probe_roster_precedes_normal_path_label_read() -> None:
+    tree = ast.parse(inspect.getsource(_audit_model))
+    assignments = {
+        target.id: node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+        for target in (
+            node.targets if isinstance(node, ast.Assign) else (node.target,)
+        )
+        if isinstance(target, ast.Name)
+    }
+    label_reads = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "load_mfcadpp_truth"
+    ]
+
+    assert len(label_reads) == 2
+    assert assignments["probes"] < max(label_reads)
 
 
 def _hexagonal_tool(*, depth: float, both: bool = False, z: float = 0.0):

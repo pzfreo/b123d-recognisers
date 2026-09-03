@@ -1,0 +1,9219 @@
+{
+  "candidate_pure_target_regions": 130,
+  "candidate_regions": 130,
+  "candidate_target_touching_regions": 130,
+  "class_id": 15,
+  "dataset_version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+  "first_failed_gates": {
+    "candidate": 130,
+    "not_bounded_prismatic_void": 7,
+    "not_one_floor_plane": 40,
+    "not_one_mouth": 812,
+    "straight_polygonal_mouth": 622,
+    "unexpected_side_count": 457
+  },
+  "format": "b123d-recognisers-mfcadpp-one-ended-pocket-audit",
+  "format_version": 1,
+  "implementation_commit": "370fe9f0c0e908e956a03ff05ca5e5122ef977e0",
+  "invalid_models": [],
+  "invalid_policy": {
+    "expected_ids": [
+      "12939",
+      "13975",
+      "14052",
+      "14307",
+      "18628",
+      "22386",
+      "22439"
+    ],
+    "expected_reason": "Hole cylindrical evidence does not prove one valid solid"
+  },
+  "new_target_faces_if_accepted": 0,
+  "regions": 2068,
+  "reported_rows": 161,
+  "row_policy": "target-touching or accepted candidate regions",
+  "rows": [
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        35
+      ],
+      "candidate_opening_face": 0,
+      "depth": 2.104027065851,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1000",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        35
+      ],
+      "source_sha256": "669d2c5e678a84b216eb877101f87875a32d3cb9869d473391f85d57099ea180",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        16
+      ],
+      "candidate_opening_face": 2,
+      "depth": 12.898135924674,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10015",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16
+      ],
+      "source_sha256": "e1fba150be55796697fd617762df4a42c6316b29ff85cbec1f00f5f325596f29",
+      "target_components": 1,
+      "target_face_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16
+      ],
+      "target_face_indices_already_covered": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "15": 8
+      },
+      "largest_component_overlap": 8,
+      "model_id": "10020",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 2,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        49,
+        52
+      ],
+      "source_sha256": "88310a9fa7901ff2eff93ce8467f29e7298c86315d8f8b1f76b741c0f90f2087",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        49,
+        52
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        49,
+        52
+      ],
+      "target_faces": 8,
+      "target_faces_already_covered": 8,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "3": 4,
+        "15": 4
+      },
+      "largest_component_overlap": 4,
+      "model_id": "10027",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 8,
+        "section_sides": 8
+      },
+      "pure_target": false,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        21
+      ],
+      "source_sha256": "ae7b12ea02a330366fc5a3644ee6069791bd537cc211dd05150383b86ec567d2",
+      "target_components": 1,
+      "target_face_indices": [
+        11,
+        12,
+        13,
+        21
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        13,
+        21
+      ],
+      "target_faces": 4,
+      "target_faces_already_covered": 4,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        23
+      ],
+      "candidate_opening_face": 12,
+      "depth": 10.600061998207,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10033",
+      "opening_faces": [
+        12
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "source_sha256": "d3501c8c991affa2393435a2aecdcae20f151d0b584089bbc25d191a16868bc6",
+      "target_components": 1,
+      "target_face_indices": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "target_face_indices_already_covered": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        50
+      ],
+      "candidate_opening_face": 17,
+      "depth": 27.13085339634601,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10038",
+      "opening_faces": [
+        17
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50
+      ],
+      "source_sha256": "23517c641de281f5ec22c016ef006e00ffc77a3b28b0cb6bd7a8fea57701a90f",
+      "target_components": 1,
+      "target_face_indices": [
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50
+      ],
+      "target_face_indices_already_covered": [
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        20
+      ],
+      "candidate_opening_face": 3,
+      "depth": 4.452053528183,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10044",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20
+      ],
+      "source_sha256": "b50b0662f0e9ac4b7e2ac53c21793aab3c9040442adc54a7574d064e8eea88f9",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 11,
+      "depth": 3.111641850457,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10047",
+      "opening_faces": [
+        11
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        32
+      ],
+      "source_sha256": "c92969cd4eac72e5e9efb2ee8e8bf0d62a3571a77a1413a77387253d466e7f86",
+      "target_components": 1,
+      "target_face_indices": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 5,
+      "depth": 5.722877649051,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10063",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        40
+      ],
+      "source_sha256": "b3c3ca453dc2e3b49e0c6a452ac2b34635e4d89f8e874de94158a3909468759b",
+      "target_components": 1,
+      "target_face_indices": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 0,
+      "depth": 3.1465770100739996,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10070",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        31
+      ],
+      "source_sha256": "d7d26d2cc4a709205dd76d762b5268f9db790b5fb07244ee15be1b16af6bb2e5",
+      "target_components": 1,
+      "target_face_indices": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 0,
+      "depth": 3.5261185905569996,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10070",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        32
+      ],
+      "source_sha256": "d7d26d2cc4a709205dd76d762b5268f9db790b5fb07244ee15be1b16af6bb2e5",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "15": 10
+      },
+      "largest_component_overlap": 10,
+      "model_id": "10101",
+      "opening_faces": [
+        15
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 9,
+        "section_sides": 9
+      },
+      "pure_target": true,
+      "region_faces": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30,
+        31
+      ],
+      "source_sha256": "4071566f601d289e9987213a8fd56c4281506b3f44c78a171d02939f86c91f49",
+      "target_components": 1,
+      "target_face_indices": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        28
+      ],
+      "target_faces": 10,
+      "target_faces_already_covered": 2,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        23
+      ],
+      "candidate_opening_face": 7,
+      "depth": 2.289112245565,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10118",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23
+      ],
+      "source_sha256": "de47c4048d877a3cff40ebddc1ef882ee105b730242dacd8388031ea7023e252",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 9,
+      "depth": 9.959333001806998,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10127",
+      "opening_faces": [
+        9
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "source_sha256": "477412d7adc7c5a61048c6485bb3f42396dd44aca23761c60b3215470e67f5d8",
+      "target_components": 1,
+      "target_face_indices": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 1,
+      "depth": 2.131402270482,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10138",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        30
+      ],
+      "source_sha256": "1f3ee4cdb9690bbae4635a5b976550295d38c40687905d95d8022b55b91c456e",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 4,
+      "depth": 10.541511690664999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10191",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        24
+      ],
+      "source_sha256": "ca90932a84342b4032cdf10749fdf4f714e4c781685aeb7e653add5df3fa9749",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        39
+      ],
+      "candidate_opening_face": 4,
+      "depth": 21.139419376413997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10240",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        39
+      ],
+      "source_sha256": "d3d56e22bc972b89dd673c88d29e49c1a23e24c5c53112c47b6ddeff2fee9233",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        39
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        39
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 8,
+      "depth": 11.025832118790001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10240",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "source_sha256": "d3d56e22bc972b89dd673c88d29e49c1a23e24c5c53112c47b6ddeff2fee9233",
+      "target_components": 1,
+      "target_face_indices": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "11": 3,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10255",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        30,
+        31,
+        34
+      ],
+      "source_sha256": "324d912c89adbe25a94669454d756c8fbbaa0aa37d76b90333d4f9e8e84160d9",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        16,
+        17,
+        18,
+        19,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        16,
+        17,
+        18,
+        19,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10285",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 8,
+        "section_sides": 6
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        13,
+        14
+      ],
+      "source_sha256": "95ba6427a4f5e8033615810d0abc61ea3a3eef89acc95ac8c348cad5cfe2b52e",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        13,
+        14
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        13,
+        14
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 5,
+      "depth": 4.54795736007,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10317",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        29
+      ],
+      "source_sha256": "40f9241cd3485478c651ce48bb1cfa739b246b0d8a639a49548cdf42dd0f63e2",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 0,
+      "depth": 7.945375248136,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10347",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        29
+      ],
+      "source_sha256": "674fc595bb395a73421b1aad428f2d16d125b58d5d07b564d3afd3842fa15609",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        21
+      ],
+      "candidate_opening_face": 0,
+      "depth": 9.735591036023,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10356",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        21
+      ],
+      "source_sha256": "7432bb1bcf34917a6dc35130bf27129c2064fb5ed47ef4ef66b112629ff153dd",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        21
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        21
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        22
+      ],
+      "candidate_opening_face": 1,
+      "depth": 34.920154042627004,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10376",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        22
+      ],
+      "source_sha256": "304033bbc1f766635b471855d350ff758b2f46bdfb74eec5f94585569059efb8",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        22
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        22
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 15,
+      "depth": 2.7738136516510004,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10376",
+      "opening_faces": [
+        15
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "source_sha256": "304033bbc1f766635b471855d350ff758b2f46bdfb74eec5f94585569059efb8",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 15,
+      "depth": 7.802906542652,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10410",
+      "opening_faces": [
+        15
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "source_sha256": "fa68f202bf1460f5bea967a1606ccd8ec73114a404bdb4c57ed263425ecf4cb9",
+      "target_components": 1,
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 3,
+      "depth": 6.148973368683997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10428",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "source_sha256": "95e6209e5cdbe8a6400413c9cdfc6296a03b108b13afaea48c50448e0a0e7d14",
+      "target_components": 1,
+      "target_face_indices": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 5,
+      "depth": 11.700323199194,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10428",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        30
+      ],
+      "source_sha256": "95e6209e5cdbe8a6400413c9cdfc6296a03b108b13afaea48c50448e0a0e7d14",
+      "target_components": 1,
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 0,
+      "depth": 7.686066563051,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10433",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        33
+      ],
+      "source_sha256": "4b3438ae78da96fcc6ae125d69fc14b9cae2f7e818c062bb01234b9ef9602ed9",
+      "target_components": 1,
+      "target_face_indices": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        23
+      ],
+      "candidate_opening_face": 5,
+      "depth": 2.989449046709,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10463",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        23
+      ],
+      "source_sha256": "cbb761f3eb48aacb047f00e716fb817c235c47532ac8dc77bf6f56b74ea67e04",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        23
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        23
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        26
+      ],
+      "candidate_opening_face": 3,
+      "depth": 5.8804666632960005,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10490",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        26
+      ],
+      "source_sha256": "957dc8d70e565f7ea39527163bd7e26a9fd4bddb576654da183f53976e6e6a20",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        26
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        26
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 4,
+      "depth": 8.117880026142,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10526",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        40
+      ],
+      "source_sha256": "92cd0a990240c244aeb867def617b5b8c795333518b4cf439f56e284a8583a25",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "4": 6,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10550",
+      "opening_faces": [
+        16
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 11,
+        "section_sides": 11
+      },
+      "pure_target": false,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        24,
+        25,
+        26,
+        28,
+        29,
+        30,
+        31
+      ],
+      "source_sha256": "146a41a1f0bc396a99d671c379d4a2226b152e574cf66b2fa5b62a410fe501e7",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        28,
+        29,
+        30,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        28,
+        29,
+        30,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        19
+      ],
+      "candidate_opening_face": 6,
+      "depth": 5.306312024762999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10568",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "source_sha256": "642635d208e23cf4a6899dff50aff54b656df44ad09e9e42eebab100e7fbd14d",
+      "target_components": 1,
+      "target_face_indices": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 7,
+      "depth": 2.672049214739,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10600",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        40
+      ],
+      "source_sha256": "c9c471303db1583a68bd14bcc11d343233ba08334070fdf852086c2abc5cb2cf",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 12,
+      "depth": 4.131841917917001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10600",
+      "opening_faces": [
+        12
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        41
+      ],
+      "source_sha256": "c9c471303db1583a68bd14bcc11d343233ba08334070fdf852086c2abc5cb2cf",
+      "target_components": 1,
+      "target_face_indices": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 6,
+      "depth": 2.486520727178002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10601",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "source_sha256": "ca5b186d1d16cf7b38adebb8c32114ac0eb1fe210072f33470a9ec058e346c15",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        26
+      ],
+      "candidate_opening_face": 0,
+      "depth": 10.339330597426,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10650",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        26
+      ],
+      "source_sha256": "225d354ff0bc8105e1ecd9b0e88aa15e6032b616fdf70059044da5e025877cbf",
+      "target_components": 1,
+      "target_face_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        26
+      ],
+      "target_face_indices_already_covered": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        26
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 0,
+      "depth": 6.759256954913,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10650",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        27
+      ],
+      "source_sha256": "225d354ff0bc8105e1ecd9b0e88aa15e6032b616fdf70059044da5e025877cbf",
+      "target_components": 1,
+      "target_face_indices": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10653",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 7,
+        "section_sides": 7
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        20
+      ],
+      "source_sha256": "ea56e5d814a79c7e80c69947e39b6c934b2ffc045867321abd032301c32a7956",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        20
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        20
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10656",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 7,
+        "section_sides": 7
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11
+      ],
+      "source_sha256": "a51a66cb029f5c00c73a09b0089485cc058606a3d9e011df2270c0c4a014dde2",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        25
+      ],
+      "candidate_opening_face": 0,
+      "depth": 17.610772381643,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10727",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "source_sha256": "73f35c0a7c55c5a6f42ddce6129bb93ca3ad5f00e93b6e83baa49aa96c2119e1",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 1,
+      "depth": 4.726412785983001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10737",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        28
+      ],
+      "source_sha256": "939d9eb7b4749ca3b60c65dccd6473d5a04e21c1a053d81905bceeb0c90fdaaf",
+      "target_components": 1,
+      "target_face_indices": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 7,
+      "depth": 2.471631165638998,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10746",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        32
+      ],
+      "source_sha256": "bba32aef63a4516aeb3cd408635061f399b9e5f297bd58d123a871641d3abc54",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 0,
+      "depth": 6.209218906121,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10761",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        27
+      ],
+      "source_sha256": "14a924b4b4102ddba38039f65f8616e6008a5575e1fcbf42a51dab071e901e1c",
+      "target_components": 1,
+      "target_face_indices": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 3,
+      "depth": 6.932146848525,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10841",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "source_sha256": "6f0e1d93f4235e445ebf507e88ff16f62c8eaee61d09fd1cec7eafb35fc4002a",
+      "target_components": 1,
+      "target_face_indices": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 0,
+      "depth": 27.722498931806,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10847",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        33
+      ],
+      "source_sha256": "93f3293a47532bfc39570a0972d0891ab865d50d35dd926e74514576227ae551",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        35
+      ],
+      "candidate_opening_face": 0,
+      "depth": 2.72958710617,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10847",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        35
+      ],
+      "source_sha256": "93f3293a47532bfc39570a0972d0891ab865d50d35dd926e74514576227ae551",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 24,
+      "depth": 8.623696572613,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10849",
+      "opening_faces": [
+        24
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "source_sha256": "1b47c90f209ba542bc8d9cd2027fe48745ff524a1300a5af020e7723e92fdca5",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 1,
+      "depth": 8.409468097545997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10881",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        33
+      ],
+      "source_sha256": "24ef2792e9be24159bd07f3e8b3b33a75e6b21dfc7a408ab69ef3e7e15b5dd4d",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 5,
+      "depth": 15.381775543958,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10893",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        31
+      ],
+      "source_sha256": "5b605292548f200c6ddd2e627cc361e52d37fa264c4b6a1f232adf8d3135b244",
+      "target_components": 1,
+      "target_face_indices": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 10,
+      "depth": 10.427318337571,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10893",
+      "opening_faces": [
+        10
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        33
+      ],
+      "source_sha256": "5b605292548f200c6ddd2e627cc361e52d37fa264c4b6a1f232adf8d3135b244",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 1,
+      "depth": 15.332723173105999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10902",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        32
+      ],
+      "source_sha256": "dbf5c13a0399b5e5d0f89885ac331da4ffa856c1654df5e9131387dbf93a9062",
+      "target_components": 1,
+      "target_face_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        34
+      ],
+      "candidate_opening_face": 6,
+      "depth": 6.236702287434001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10902",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        34
+      ],
+      "source_sha256": "dbf5c13a0399b5e5d0f89885ac331da4ffa856c1654df5e9131387dbf93a9062",
+      "target_components": 1,
+      "target_face_indices": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        34
+      ],
+      "target_face_indices_already_covered": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        34
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 3,
+      "depth": 6.632427472489997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10908",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        41
+      ],
+      "source_sha256": "4083ab7cf1c392065eac55e1b32020db65ae83f21aab4548b152c4463aa0336d",
+      "target_components": 1,
+      "target_face_indices": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        42
+      ],
+      "candidate_opening_face": 3,
+      "depth": 2.393581179502,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10908",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        42
+      ],
+      "source_sha256": "4083ab7cf1c392065eac55e1b32020db65ae83f21aab4548b152c4463aa0336d",
+      "target_components": 1,
+      "target_face_indices": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        42
+      ],
+      "target_face_indices_already_covered": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        42
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 1,
+      "depth": 7.311789944527,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10923",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        27
+      ],
+      "source_sha256": "e6e198e2a19f0944fc8ebeaff1654d1f0bb2fba6f2e9734c7c254db9583255a8",
+      "target_components": 1,
+      "target_face_indices": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        25
+      ],
+      "candidate_opening_face": 3,
+      "depth": 8.394878393171002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10929",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "source_sha256": "2f0643639278544914162f9c0837804798080bfdf41b314a57d9385fa69fb58b",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        25
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 5,
+      "depth": 2.803537098984,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10929",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        27
+      ],
+      "source_sha256": "2f0643639278544914162f9c0837804798080bfdf41b314a57d9385fa69fb58b",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "13": 4,
+        "15": 10
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10948",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 12,
+        "section_sides": 12
+      },
+      "pure_target": false,
+      "region_faces": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        25,
+        26,
+        27
+      ],
+      "source_sha256": "0b5ec4ade093c71d8500e1b591df7d82971ad26a3c8be902d4c255ae2b4dbb7a",
+      "target_components": 2,
+      "target_face_indices": [
+        11,
+        12,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+        25,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        14,
+        16,
+        18,
+        20,
+        25
+      ],
+      "target_faces": 10,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 0,
+      "depth": 4.360234358282,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10966",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        29
+      ],
+      "source_sha256": "386aad54bf16a0c78339c40ee203e84c27541a512501ebcf11a40728799efd52",
+      "target_components": 1,
+      "target_face_indices": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        36
+      ],
+      "candidate_opening_face": 4,
+      "depth": 3.158571427862,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10968",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        36
+      ],
+      "source_sha256": "29902667f78ea90f759a79b4ee1deafa134f10d2ef54f4a016391e90d45180a1",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        36
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        36
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 5,
+      "depth": 2.454921398772001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "10968",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        37
+      ],
+      "source_sha256": "29902667f78ea90f759a79b4ee1deafa134f10d2ef54f4a016391e90d45180a1",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        34
+      ],
+      "candidate_opening_face": 4,
+      "depth": 2.403786606372,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11038",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        34
+      ],
+      "source_sha256": "af31c503f81857e2614d11c47e5bbe43483d6bd7571d90edeaa0db322699f0f7",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        34
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        34
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 1,
+      "depth": 10.121134257916,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11051",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        32
+      ],
+      "source_sha256": "7dfd8cb293ad6eddbdf22bc47f0e34644b5304b10c9299dff67a82010096adb8",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        25
+      ],
+      "candidate_opening_face": 8,
+      "depth": 5.482664292360999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11097",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25
+      ],
+      "source_sha256": "b1834a4ee844bbc58470d2ff1268195d750e7b9afa7c6007105dc37ce7b03321",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        38
+      ],
+      "candidate_opening_face": 11,
+      "depth": 19.56331013518,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11108",
+      "opening_faces": [
+        11
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        38
+      ],
+      "source_sha256": "99d0c58d24c33505699546ee0b1abe092194daf902976a066874df6373a83dcf",
+      "target_components": 1,
+      "target_face_indices": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        38
+      ],
+      "target_face_indices_already_covered": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        38
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 2,
+      "depth": 8.698251353076,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11120",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        40
+      ],
+      "source_sha256": "fa44035c473076f4fe5cad851b2d9f56d365b58b2f1a17974d18cafe05d94fb4",
+      "target_components": 1,
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 21,
+      "depth": 13.065581385294001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11120",
+      "opening_faces": [
+        21
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        41
+      ],
+      "source_sha256": "fa44035c473076f4fe5cad851b2d9f56d365b58b2f1a17974d18cafe05d94fb4",
+      "target_components": 1,
+      "target_face_indices": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        19
+      ],
+      "candidate_opening_face": 6,
+      "depth": 3.588694900605999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11133",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "source_sha256": "978842e90f221d4487932778313162936b36db86e96d526d8eebc08892a21c3d",
+      "target_components": 1,
+      "target_face_indices": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 1,
+      "depth": 17.89049112487,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11134",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        24
+      ],
+      "source_sha256": "9962203fa3503154921c6203cd4d9deedf31177e4eefd61d28c960c72c3291bb",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 5,
+      "depth": 4.839919172781,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11149",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        30
+      ],
+      "source_sha256": "e173a3409a6805ced8fa43d51eaa581b6fcb1a502ebe0804e7ae68e7954e05e2",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 2,
+      "depth": 5.224733456610998,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11161",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        31
+      ],
+      "source_sha256": "8936499a6011b6961263493e4222971c80c9000abaf0652860e17d0dadb2be8e",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 1,
+      "depth": 10.071488372529,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11183",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        32
+      ],
+      "source_sha256": "b7bb183fd17e4af2cc1027ac5a2c1b2edfb275ff350f98aca0c5333cbfc0b060",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 7,
+      "depth": 5.900305502606,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11186",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "source_sha256": "1e2f76457670dcc242abd6a312a8ae8c41b1604c079bec8811a40e5484d28fd9",
+      "target_components": 1,
+      "target_face_indices": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "3": 4,
+        "15": 5
+      },
+      "largest_component_overlap": 5,
+      "model_id": "11188",
+      "opening_faces": [
+        22
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 9,
+        "section_sides": 9
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        3,
+        5,
+        6,
+        23,
+        24,
+        25,
+        29,
+        30
+      ],
+      "source_sha256": "a96e5ace3dbe365e5981329f0b3c02a77e288381208aac32acfc3a7235b23c11",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        29,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        24
+      ],
+      "target_faces": 5,
+      "target_faces_already_covered": 1,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        26
+      ],
+      "candidate_opening_face": 1,
+      "depth": 11.664947542961,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11189",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        26
+      ],
+      "source_sha256": "653c35db4279a1f9881ba36944764c4a868174c76f5ad080385c5058e413ef7d",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        26
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        26
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 5,
+      "depth": 4.100787441697,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11201",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        29
+      ],
+      "source_sha256": "1c9d39f250b0c2fb90790d85d8e7a31d76f8869ef3bb60c029d5cbd98a73f666",
+      "target_components": 1,
+      "target_face_indices": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 3,
+      "depth": 14.843452772128998,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1129",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "source_sha256": "1c409219ba907e0a6293b1c80ed2e4dbb88a7988d8dcb9da57728fad77c0071e",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "14": 10,
+        "15": 6,
+        "16": 2
+      },
+      "largest_component_overlap": 6,
+      "model_id": "11314",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "source_sha256": "dc69cf7c204766d3d2935511a269fc0eb01ccbcb83cb25c7b7e3d4c274f8b652",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        32
+      ],
+      "target_face_indices_already_covered": [],
+      "target_faces": 6,
+      "target_faces_already_covered": 0,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 2,
+      "depth": 3.1857828035830003,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11318",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "source_sha256": "d92835b8158736c237aa2c1aed57f17f6400b3ceca360466f8a312d90cdf0788",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 2,
+      "depth": 2.0967969668469983,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11346",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        27
+      ],
+      "source_sha256": "b111d58836edc039662413a948af1e1b8aad6cb5a540c4fa2a4dff577274ddf3",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        20
+      ],
+      "candidate_opening_face": 0,
+      "depth": 11.635801155699,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11377",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        20
+      ],
+      "source_sha256": "2d0acad69d783918b9571bb0a916bc4c300d2681ccc97657cf8441a474c900fe",
+      "target_components": 1,
+      "target_face_indices": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        20
+      ],
+      "target_face_indices_already_covered": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        20
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 12,
+      "depth": 2.05783172506,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1139",
+      "opening_faces": [
+        12
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        33
+      ],
+      "source_sha256": "5e668e8f7509ada88546fb71c3893ae67960a7ced9a7fea45b7c667092ae33e9",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        25
+      ],
+      "candidate_opening_face": 4,
+      "depth": 7.559213107831,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11408",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        25
+      ],
+      "source_sha256": "ee74b9928b8287eaa3925ab562b1a2c015f50bb65191986c930b6dbc6c9feb77",
+      "target_components": 1,
+      "target_face_indices": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        25
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "11": 3,
+        "15": 4
+      },
+      "largest_component_overlap": 4,
+      "model_id": "11430",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        36,
+        37,
+        38
+      ],
+      "source_sha256": "4c204038a79ff4adad100f03c805497332f063e2169013c0b527b7a28bfd8587",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        36
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        36
+      ],
+      "target_faces": 4,
+      "target_faces_already_covered": 4,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        33
+      ],
+      "candidate_opening_face": 1,
+      "depth": 7.800995314434,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11455",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        33
+      ],
+      "source_sha256": "12c85069785dacfbc2765f94c52e0441bfe7ea20204bd98030a4526bfa2442ff",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        33
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        33
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        35
+      ],
+      "candidate_opening_face": 4,
+      "depth": 6.348947859219,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11455",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "source_sha256": "12c85069785dacfbc2765f94c52e0441bfe7ea20204bd98030a4526bfa2442ff",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 15,
+      "depth": 3.287855419623999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "115",
+      "opening_faces": [
+        15
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "source_sha256": "f50cbaf4fd497db6b1b5f330efb37977db3d59bf8759a01bc36c5ccc8cc22dd0",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 1,
+      "depth": 28.031043843522,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11532",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        30
+      ],
+      "source_sha256": "ab69732926e7d3d3f2c104d760d445842aa669fe0abf62a37ce9d7d16eb71ce9",
+      "target_components": 1,
+      "target_face_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "13": 4,
+        "15": 4,
+        "16": 4
+      },
+      "largest_component_overlap": 4,
+      "model_id": "11532",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31,
+        32,
+        33
+      ],
+      "source_sha256": "ab69732926e7d3d3f2c104d760d445842aa669fe0abf62a37ce9d7d16eb71ce9",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        28,
+        32
+      ],
+      "target_face_indices_already_covered": [],
+      "target_faces": 4,
+      "target_faces_already_covered": 0,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 13,
+      "depth": 9.328611252035,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11542",
+      "opening_faces": [
+        13
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27
+      ],
+      "source_sha256": "be991bbb584e875ecbc2c6f18c06f5596feffa7c764f24091064d12cae286db1",
+      "target_components": 1,
+      "target_face_indices": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        34
+      ],
+      "candidate_opening_face": 8,
+      "depth": 13.037666046342999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11639",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        34
+      ],
+      "source_sha256": "31a28d50cc51fce6f885a38c752cbb55bc0466cdaff269d053bd707867e5d778",
+      "target_components": 1,
+      "target_face_indices": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        34
+      ],
+      "target_face_indices_already_covered": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        34
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "4": 6,
+        "15": 6
+      },
+      "largest_component_overlap": 6,
+      "model_id": "11645",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 11,
+        "section_sides": 11
+      },
+      "pure_target": false,
+      "region_faces": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        40
+      ],
+      "source_sha256": "26bb8b2c2ef5545b8074764e75b0e8e8cbd77899292b81c679080b228addb3ac",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        15,
+        17,
+        19,
+        21,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        15,
+        17,
+        19,
+        21,
+        40
+      ],
+      "target_faces": 6,
+      "target_faces_already_covered": 6,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 8,
+      "depth": 2.8144058780600005,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11645",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        41
+      ],
+      "source_sha256": "26bb8b2c2ef5545b8074764e75b0e8e8cbd77899292b81c679080b228addb3ac",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        32
+      ],
+      "candidate_opening_face": 12,
+      "depth": 2.7441048420259997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11654",
+      "opening_faces": [
+        12
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        32
+      ],
+      "source_sha256": "b2184afa3cb90596f2e784be0c9c617d0ebc5ca8065cd1035b14c34230eca5a4",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        32
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        32
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        38
+      ],
+      "candidate_opening_face": 0,
+      "depth": 18.436926740073,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11662",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        38
+      ],
+      "source_sha256": "12e0a42b1cd7aaf623a1f6dfd0e1ffa4303367d1c5bb5ac3b61861b380f02882",
+      "target_components": 1,
+      "target_face_indices": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        38
+      ],
+      "target_face_indices_already_covered": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        38
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 2,
+      "depth": 2.0338551414479937,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11662",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        40
+      ],
+      "source_sha256": "12e0a42b1cd7aaf623a1f6dfd0e1ffa4303367d1c5bb5ac3b61861b380f02882",
+      "target_components": 1,
+      "target_face_indices": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 3,
+      "depth": 11.499782696624,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11662",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        41
+      ],
+      "source_sha256": "12e0a42b1cd7aaf623a1f6dfd0e1ffa4303367d1c5bb5ac3b61861b380f02882",
+      "target_components": 1,
+      "target_face_indices": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 2,
+      "depth": 3.5893252172390016,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11694",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        29
+      ],
+      "source_sha256": "76307868869838a6f395205d242772afc4c56ff0283d3a25cfe875535933b17e",
+      "target_components": 1,
+      "target_face_indices": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11698",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 8,
+        "section_sides": 6
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "source_sha256": "8662369cf681ebaf263985fe8e12255e9fbfe600f03240f15b84237669409d27",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 4,
+      "depth": 7.123395669404001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11776",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        29
+      ],
+      "source_sha256": "2f5a54c0cc587e8589d967a52dddda8893e5e0a24d9692acd5ad46fac3087678",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        44
+      ],
+      "candidate_opening_face": 4,
+      "depth": 6.617801575245,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11872",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        44
+      ],
+      "source_sha256": "5b96ae51cb62dd7536d782cec24faa913102f9204a2c72562d8839eabaec5c64",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        44
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        44
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 2,
+      "depth": 18.291630124134002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11896",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        37
+      ],
+      "source_sha256": "b3c70411d72f2363cf0b9dbedf0859dfe832b7b634ba073a2d3166517ff7b139",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        34
+      ],
+      "candidate_opening_face": 7,
+      "depth": 9.861301107815,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11905",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        34
+      ],
+      "source_sha256": "f4df2f0ad4247301664780320ccf0f53c3bb8f4b14fe3c090ac7d722c1d0f5b0",
+      "target_components": 1,
+      "target_face_indices": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        34
+      ],
+      "target_face_indices_already_covered": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        34
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        35
+      ],
+      "candidate_opening_face": 12,
+      "depth": 10.910558452600004,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11905",
+      "opening_faces": [
+        12
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35
+      ],
+      "source_sha256": "f4df2f0ad4247301664780320ccf0f53c3bb8f4b14fe3c090ac7d722c1d0f5b0",
+      "target_components": 1,
+      "target_face_indices": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "1": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11906",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        15,
+        16
+      ],
+      "source_sha256": "a6f3e0c38a8698ffa6c0dabf49023b0753d810059186e28182d2217f9abf5b8a",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        6,
+        7,
+        15,
+        16
+      ],
+      "target_face_indices_already_covered": [],
+      "target_faces": 7,
+      "target_faces_already_covered": 0,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11917",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 7,
+        "section_sides": 7
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12
+      ],
+      "source_sha256": "632932e703885ba15a97c0b114162f1f190b30a09183d6597bc8b712618b4d7e",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        41
+      ],
+      "candidate_opening_face": 2,
+      "depth": 9.986816257486,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11956",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        41
+      ],
+      "source_sha256": "3e75e4d8d41422bcd6d7179d435c13202428d534c394f588758cd36dd79b0676",
+      "target_components": 1,
+      "target_face_indices": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        41
+      ],
+      "target_face_indices_already_covered": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        41
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "4": 6,
+        "15": 3
+      },
+      "largest_component_overlap": 3,
+      "model_id": "11971",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 9,
+        "section_sides": 9
+      },
+      "pure_target": false,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        19
+      ],
+      "source_sha256": "5447cded86e062d0e6feb37ac872909ba1b743c0f17bf3b374f802bff445528e",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        19
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16
+      ],
+      "target_faces": 3,
+      "target_faces_already_covered": 2,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        54
+      ],
+      "candidate_opening_face": 3,
+      "depth": 2.490537417131,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11974",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        54
+      ],
+      "source_sha256": "bd0125a132b284f6894198cbf99f5a457c3323b9c607c7d3e152735c66a9925a",
+      "target_components": 1,
+      "target_face_indices": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        54
+      ],
+      "target_face_indices_already_covered": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        54
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        55
+      ],
+      "candidate_opening_face": 19,
+      "depth": 3.9956414159049976,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "11974",
+      "opening_faces": [
+        19
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        55
+      ],
+      "source_sha256": "bd0125a132b284f6894198cbf99f5a457c3323b9c607c7d3e152735c66a9925a",
+      "target_components": 1,
+      "target_face_indices": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        55
+      ],
+      "target_face_indices_already_covered": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        55
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12013",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 8,
+        "section_sides": 6
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "source_sha256": "b0889df2e9f8cf96e3323eac3a4824f7c6d3636d6015a78fe0e3da6c4707672c",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        11,
+        12
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 9,
+      "depth": 3.227820432884,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12013",
+      "opening_faces": [
+        9
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "source_sha256": "b0889df2e9f8cf96e3323eac3a4824f7c6d3636d6015a78fe0e3da6c4707672c",
+      "target_components": 1,
+      "target_face_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        38
+      ],
+      "candidate_opening_face": 10,
+      "depth": 18.798229656204,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12013",
+      "opening_faces": [
+        10
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        38
+      ],
+      "source_sha256": "b0889df2e9f8cf96e3323eac3a4824f7c6d3636d6015a78fe0e3da6c4707672c",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        38
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        38
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        39
+      ],
+      "candidate_opening_face": 3,
+      "depth": 3.695435809658001,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12042",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        39
+      ],
+      "source_sha256": "fe9ee3eaa56d21abe2781b43d0071a726153274f9ba5130a51039cb5f480b755",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        39
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        39
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        17
+      ],
+      "candidate_opening_face": 9,
+      "depth": 22.185804161317,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12058",
+      "opening_faces": [
+        9
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "source_sha256": "7ae81971c1be5cf9d4212c4e5aa59d2ee1f89fdb2eb78af7338fe96316386ade",
+      "target_components": 1,
+      "target_face_indices": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "target_face_indices_already_covered": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        40
+      ],
+      "candidate_opening_face": 6,
+      "depth": 6.260198159334998,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12062",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        40
+      ],
+      "source_sha256": "e5df9d92973cc24981077c3d468b7fddd27f9da8a29424ceef2c63035930530b",
+      "target_components": 1,
+      "target_face_indices": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "15": 7,
+        "16": 4
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12083",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        32,
+        33
+      ],
+      "source_sha256": "974084eefc9c536cf77f95052ada785bfcaf6257bacefe16df928be30f51d7ef",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        22,
+        23,
+        32
+      ],
+      "target_face_indices_already_covered": [],
+      "target_faces": 7,
+      "target_faces_already_covered": 0,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "4": 8,
+        "15": 8
+      },
+      "largest_component_overlap": 5,
+      "model_id": "12118",
+      "opening_faces": [
+        9
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 12,
+        "section_sides": 12
+      },
+      "pure_target": false,
+      "region_faces": [
+        17,
+        18,
+        21,
+        22,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        41,
+        54
+      ],
+      "source_sha256": "a2578ea01fac190f85b6e436397b6ec029aca98839f6c78448a2385aa689aaca",
+      "target_components": 2,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        41,
+        54
+      ],
+      "target_face_indices_already_covered": [],
+      "target_faces": 8,
+      "target_faces_already_covered": 0,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        56
+      ],
+      "candidate_opening_face": 24,
+      "depth": 12.072902833037,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12118",
+      "opening_faces": [
+        24
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        56
+      ],
+      "source_sha256": "a2578ea01fac190f85b6e436397b6ec029aca98839f6c78448a2385aa689aaca",
+      "target_components": 1,
+      "target_face_indices": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        56
+      ],
+      "target_face_indices_already_covered": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        56
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        29
+      ],
+      "candidate_opening_face": 1,
+      "depth": 2.055372479576,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1214",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        29
+      ],
+      "source_sha256": "744d9fb59f4dd896af24305dcd06f005e2433c3f05bc3bf6f2f1f4c84d1e0a74",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        29
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        29
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 4,
+      "depth": 2.6828468472269997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12141",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "source_sha256": "e09864ee6089000459759c9782cca463dd135f234ef6a445623d7e9c2885d22c",
+      "target_components": 1,
+      "target_face_indices": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12161",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 7,
+        "section_sides": 7
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        16
+      ],
+      "source_sha256": "64c4c77e8cc2641bc089428d4b8a046fac700b1cd2e0653ea26c3f3b19635038",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        16
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        16
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        49
+      ],
+      "candidate_opening_face": 2,
+      "depth": 2.7473458138999973,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12214",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        49
+      ],
+      "source_sha256": "604dab4f5fcc472074865bb3f7cdea1f9fe99a24c381a21536be96fe584307b8",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        49
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        49
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        22
+      ],
+      "candidate_opening_face": 7,
+      "depth": 3.104916028026004,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12269",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "source_sha256": "2f9bb91f821d2612390f0b3f945765fb4c6ffe8794193ce96a2d55d97069b451",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        43
+      ],
+      "candidate_opening_face": 6,
+      "depth": 16.03871283184,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12317",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        43
+      ],
+      "source_sha256": "00d9e982d069e08b57ed23888a834463f65004575266fcf84150e5e799fe54ed",
+      "target_components": 1,
+      "target_face_indices": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        43
+      ],
+      "target_face_indices_already_covered": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        43
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12328",
+      "opening_faces": [
+        10
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "source_sha256": "fadbea1f5727e8d4756f42404e7586d6a6d702d57295e3cd327b414539bf0f69",
+      "target_components": 1,
+      "target_face_indices": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        31
+      ],
+      "candidate_opening_face": 5,
+      "depth": 3.7794608478639997,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12345",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "source_sha256": "bfc5817beded410158a7dc56f1d93801a52a97e25a46fdd0599393bd37bcdc1e",
+      "target_components": 1,
+      "target_face_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        51
+      ],
+      "candidate_opening_face": 3,
+      "depth": 2.2658103895699995,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12354",
+      "opening_faces": [
+        3
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        51
+      ],
+      "source_sha256": "7b9f9723cf9483722a0e8769980eaa5e14d9a99e952e5609ff28b5fa0cd01bd2",
+      "target_components": 1,
+      "target_face_indices": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        51
+      ],
+      "target_face_indices_already_covered": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        51
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        52
+      ],
+      "candidate_opening_face": 14,
+      "depth": 14.037439975399002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12354",
+      "opening_faces": [
+        14
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        52
+      ],
+      "source_sha256": "7b9f9723cf9483722a0e8769980eaa5e14d9a99e952e5609ff28b5fa0cd01bd2",
+      "target_components": 1,
+      "target_face_indices": [
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        52
+      ],
+      "target_face_indices_already_covered": [
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        52
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "3": 4,
+        "15": 7,
+        "16": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12355",
+      "opening_faces": [
+        8
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "source_sha256": "ea911683c92de40ddaf4761e1a9997a14d39849e4d2d65ae9c937c96e1c34397",
+      "target_components": 1,
+      "target_face_indices": [
+        31,
+        32,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "target_face_indices_already_covered": [
+        31,
+        32,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        25
+      ],
+      "candidate_opening_face": 5,
+      "depth": 3.2312853905530012,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12369",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        25
+      ],
+      "source_sha256": "f26bcff1ef31aa20536813f0d28e9377bc6638be97592d939508c3c1ac9971cd",
+      "target_components": 1,
+      "target_face_indices": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        25
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        44
+      ],
+      "candidate_opening_face": 1,
+      "depth": 7.171465476044,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12419",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        44
+      ],
+      "source_sha256": "a3ccf4e8067b19f7a5a37a4e7657e446f84ac04a9fabf73f16d7d3123a8c51ed",
+      "target_components": 1,
+      "target_face_indices": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        44
+      ],
+      "target_face_indices_already_covered": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        44
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        46
+      ],
+      "candidate_opening_face": 10,
+      "depth": 2.2179434818080015,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12419",
+      "opening_faces": [
+        10
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        46
+      ],
+      "source_sha256": "a3ccf4e8067b19f7a5a37a4e7657e446f84ac04a9fabf73f16d7d3123a8c51ed",
+      "target_components": 1,
+      "target_face_indices": [
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        46
+      ],
+      "target_face_indices_already_covered": [
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        46
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12454",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "not_bounded_prismatic_void",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 8,
+        "section_sides": 6
+      },
+      "pure_target": false,
+      "region_faces": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        20,
+        21
+      ],
+      "source_sha256": "e346c4ab26aeccc810be27ddf08822dd9b03b5f35974468fcd78e06e0dbaff0a",
+      "target_components": 1,
+      "target_face_indices": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        20,
+        21
+      ],
+      "target_face_indices_already_covered": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        20,
+        21
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 1,
+      "depth": 17.876794438849,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12517",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        24
+      ],
+      "source_sha256": "89edaf9687d783e3ebd5c7487834649fb5735b6f9f5a1d5585a0a8643897fd13",
+      "target_components": 1,
+      "target_face_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 1,
+      "depth": 9.161646498779,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12520",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        24
+      ],
+      "source_sha256": "643a22c317e907e31440cbce63b02c706c81d240ce0fdb8740a9e9830cf0d889",
+      "target_components": 1,
+      "target_face_indices": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        37
+      ],
+      "candidate_opening_face": 6,
+      "depth": 14.713651413874002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12540",
+      "opening_faces": [
+        6
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        37
+      ],
+      "source_sha256": "100e625a2d3881a7f9798c5816fc5501fe18b43f5db8f48854cde778fb4af22b",
+      "target_components": 1,
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        37
+      ],
+      "target_face_indices_already_covered": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        37
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        38
+      ],
+      "candidate_opening_face": 17,
+      "depth": 2.234813399387999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12540",
+      "opening_faces": [
+        17
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38
+      ],
+      "source_sha256": "100e625a2d3881a7f9798c5816fc5501fe18b43f5db8f48854cde778fb4af22b",
+      "target_components": 1,
+      "target_face_indices": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38
+      ],
+      "target_face_indices_already_covered": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "13": 4,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12555",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 10,
+        "section_sides": 10
+      },
+      "pure_target": false,
+      "region_faces": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        14,
+        15,
+        16
+      ],
+      "source_sha256": "c3ab7c7781f85f381d65a65bdb6d7f58e29cc19f60a6f7098a6280619b8d3716",
+      "target_components": 1,
+      "target_face_indices": [
+        3,
+        7,
+        8,
+        9,
+        14,
+        15,
+        16
+      ],
+      "target_face_indices_already_covered": [
+        3,
+        7,
+        8,
+        9,
+        14,
+        15,
+        16
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 21,
+      "depth": 2.225093194734999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12555",
+      "opening_faces": [
+        21
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "source_sha256": "c3ab7c7781f85f381d65a65bdb6d7f58e29cc19f60a6f7098a6280619b8d3716",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "1": 1,
+        "15": 5
+      },
+      "largest_component_overlap": 5,
+      "model_id": "1258",
+      "opening_faces": [
+        13
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        7,
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "source_sha256": "b00bbbbb2e969e722dfc50bf92af35778d3a2d99851729e048a8e601db53f1a1",
+      "target_components": 1,
+      "target_face_indices": [
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "target_face_indices_already_covered": [
+        24
+      ],
+      "target_faces": 5,
+      "target_faces_already_covered": 1,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "15": 7,
+        "16": 6
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12603",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        31,
+        32
+      ],
+      "source_sha256": "0bdda08cabb24ea81c1e1d7abfeaed4875c6bcf69bcbc2475d95b73315933784",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        20,
+        31
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        20,
+        31
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 1,
+      "depth": 16.594334697953993,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12643",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        27
+      ],
+      "source_sha256": "d8f2f37809eab78d124e13e653a2f2595cddbaf8e8074916b7c252a35b101945",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "1": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1267",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        5,
+        16,
+        17,
+        18,
+        32,
+        33,
+        34,
+        35
+      ],
+      "source_sha256": "3306a491792e799ad3b881f80427f1f7e848345c556eb6283c8c793bcf619aa9",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        32,
+        33,
+        34,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        32,
+        33,
+        34,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "1": 1,
+        "14": 5,
+        "15": 6
+      },
+      "largest_component_overlap": 6,
+      "model_id": "1267",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "straight_polygonal_mouth",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": null,
+        "section_sides": null
+      },
+      "pure_target": false,
+      "region_faces": [
+        6,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        36,
+        37,
+        38,
+        39,
+        40
+      ],
+      "source_sha256": "3306a491792e799ad3b881f80427f1f7e848345c556eb6283c8c793bcf619aa9",
+      "target_components": 1,
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        37,
+        39,
+        40
+      ],
+      "target_face_indices_already_covered": [
+        22,
+        23,
+        24,
+        37,
+        39,
+        40
+      ],
+      "target_faces": 6,
+      "target_faces_already_covered": 6,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        42
+      ],
+      "candidate_opening_face": 7,
+      "depth": 10.431784440513,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1267",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        42
+      ],
+      "source_sha256": "3306a491792e799ad3b881f80427f1f7e848345c556eb6283c8c793bcf619aa9",
+      "target_components": 1,
+      "target_face_indices": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        42
+      ],
+      "target_face_indices_already_covered": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        42
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        27
+      ],
+      "candidate_opening_face": 0,
+      "depth": 3.336464106171,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12671",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        27
+      ],
+      "source_sha256": "dbfe8a53dc57dd1c3d8c4a2c0160302ba6b45330485da8e21c01ac03c940ac25",
+      "target_components": 1,
+      "target_face_indices": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        27
+      ],
+      "target_face_indices_already_covered": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        27
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 1,
+      "depth": 19.262557558576,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12671",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        28
+      ],
+      "source_sha256": "dbfe8a53dc57dd1c3d8c4a2c0160302ba6b45330485da8e21c01ac03c940ac25",
+      "target_components": 1,
+      "target_face_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        30
+      ],
+      "candidate_opening_face": 13,
+      "depth": 5.185553310277999,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1269",
+      "opening_faces": [
+        13
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "source_sha256": "58790ac249ab7542476d5a1432af81af5992e3cca70432247148811b144e0d17",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        35
+      ],
+      "candidate_opening_face": 0,
+      "depth": 5.493597117363,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12726",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        35
+      ],
+      "source_sha256": "17f8952dbef564f6fa769eab2edc0c8c20215e0d7a1775e59be9754acc1b795e",
+      "target_components": 1,
+      "target_face_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        35
+      ],
+      "target_face_indices_already_covered": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        35
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": false,
+      "candidate_floor_faces": [],
+      "candidate_opening_face": null,
+      "depth": null,
+      "labels": {
+        "0": 1,
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1274",
+      "opening_faces": [
+        7
+      ],
+      "probe": {
+        "first_failed_gate": "unexpected_side_count",
+        "floor_faces": 0,
+        "floor_planes": null,
+        "mouths": 1,
+        "raw_section_sides": 7,
+        "section_sides": 7
+      },
+      "pure_target": false,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        36
+      ],
+      "source_sha256": "d3c31606838d2532af8ae52ef384450e0233205d85195ae3570f8b86adabc22d",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        36
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        36
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        26
+      ],
+      "candidate_opening_face": 0,
+      "depth": 3.3189346448840005,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1276",
+      "opening_faces": [
+        0
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        26
+      ],
+      "source_sha256": "fe842afc2b1f63d6d1b3da36a73e5b6d30794cdf3432d8c05304e9656539ba2d",
+      "target_components": 1,
+      "target_face_indices": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        26
+      ],
+      "target_face_indices_already_covered": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        26
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        46
+      ],
+      "candidate_opening_face": 2,
+      "depth": 26.510474469036996,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1276",
+      "opening_faces": [
+        2
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        46
+      ],
+      "source_sha256": "fe842afc2b1f63d6d1b3da36a73e5b6d30794cdf3432d8c05304e9656539ba2d",
+      "target_components": 1,
+      "target_face_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        46
+      ],
+      "target_face_indices_already_covered": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        46
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        48
+      ],
+      "candidate_opening_face": 11,
+      "depth": 6.704071325306003,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1276",
+      "opening_faces": [
+        11
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        48
+      ],
+      "source_sha256": "fe842afc2b1f63d6d1b3da36a73e5b6d30794cdf3432d8c05304e9656539ba2d",
+      "target_components": 1,
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        48
+      ],
+      "target_face_indices_already_covered": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        48
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        49
+      ],
+      "candidate_opening_face": 11,
+      "depth": 11.774571830106002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1276",
+      "opening_faces": [
+        11
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        49
+      ],
+      "source_sha256": "fe842afc2b1f63d6d1b3da36a73e5b6d30794cdf3432d8c05304e9656539ba2d",
+      "target_components": 1,
+      "target_face_indices": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        49
+      ],
+      "target_face_indices_already_covered": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        49
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        28
+      ],
+      "candidate_opening_face": 4,
+      "depth": 2.3761822773980015,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12777",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        28
+      ],
+      "source_sha256": "4e4bf62b58e6209632d97a4f8432cd41b6f3faf12ec6335f3e711084972baa9e",
+      "target_components": 1,
+      "target_face_indices": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        28
+      ],
+      "target_face_indices_already_covered": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        28
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        23
+      ],
+      "candidate_opening_face": 4,
+      "depth": 21.357595675893002,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12783",
+      "opening_faces": [
+        4
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        23
+      ],
+      "source_sha256": "4daef1800b3fb8ae794343a590a2ef325eddefcd8f7b4e7c557749fcbee434f1",
+      "target_components": 1,
+      "target_face_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        23
+      ],
+      "target_face_indices_already_covered": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        23
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        24
+      ],
+      "candidate_opening_face": 5,
+      "depth": 9.189451906717,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "12783",
+      "opening_faces": [
+        5
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24
+      ],
+      "source_sha256": "4daef1800b3fb8ae794343a590a2ef325eddefcd8f7b4e7c557749fcbee434f1",
+      "target_components": 1,
+      "target_face_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24
+      ],
+      "target_face_indices_already_covered": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "candidate_floor_faces": [
+        58
+      ],
+      "candidate_opening_face": 1,
+      "depth": 15.586196962068,
+      "labels": {
+        "15": 7
+      },
+      "largest_component_overlap": 7,
+      "model_id": "1282",
+      "opening_faces": [
+        1
+      ],
+      "probe": {
+        "first_failed_gate": "candidate",
+        "floor_faces": 1,
+        "floor_planes": 1,
+        "mouths": 1,
+        "raw_section_sides": 6,
+        "section_sides": 6
+      },
+      "pure_target": true,
+      "region_faces": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        58
+      ],
+      "source_sha256": "4663a36c9cf9adef8d1aff2d85c6c927d6ac50e17ceaf1dcb8b4b95ad50f3956",
+      "target_components": 1,
+      "target_face_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        58
+      ],
+      "target_face_indices_already_covered": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        58
+      ],
+      "target_faces": 7,
+      "target_faces_already_covered": 7,
+      "target_faces_new_if_accepted": 0
+    }
+  ],
+  "runtime_seconds": 186.94981438899413,
+  "selection": {
+    "allow_invalid": false,
+    "evaluated_models": 500,
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+    "selected_models": 500,
+    "selected_sources_sha256": "1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331"
+  },
+  "target_faces_reached": 910,
+  "target_first_failed_gates": {
+    "candidate": 130,
+    "not_bounded_prismatic_void": 6,
+    "straight_polygonal_mouth": 11,
+    "unexpected_side_count": 14
+  },
+  "target_touching_regions": 161
+}
