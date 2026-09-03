@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Supported within-run references from accepted recognition to caller faces.
+"""Supported within-run references from accepted recognition to source faces.
 
 References issued here are deliberately not persistent names. They are valid only with the
-exact :class:`RecognitionEvidence` that issued them and while its input part remains unchanged.
+exact :class:`RecognitionEvidence` that issued them and while its source part remains unchanged.
 """
 
 from __future__ import annotations
@@ -12,15 +12,18 @@ import copy
 import json
 import math
 from dataclasses import dataclass
+from enum import Enum
 from importlib.resources import files
 from typing import Generic, NoReturn, Protocol, SupportsIndex, TypeVar, cast
 
-from b123d_recognisers import __version__
+from build123d import Shape
+from OCP.TopoDS import TopoDS_Shape
+
 from b123d_recognisers._adjacency import FaceNode
 from b123d_recognisers._candidates import Candidate, EvidenceIndex
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
-from b123d_recognisers.result import RecognitionResult, _take_inventory
+from b123d_recognisers.result import InventoryProduct, RecognitionResult, _take_inventory
 
 EVIDENCE_API_FORMAT = "b123d-recognisers-evidence-api"
 EVIDENCE_API_FORMAT_VERSION = 1
@@ -37,6 +40,7 @@ class RecognitionRecord(Protocol):
 
 
 MeasureValue = TypeVar("MeasureValue", int, float)
+FrameValue = TypeVar("FrameValue")
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,14 +86,27 @@ class GeometryAssociation:
     unassociated_faces: frozenset[FaceRef]
 
 
+class FramedEvidenceRefusalReason(Enum):
+    """Why accepted evidence cannot be paired back to caller faces."""
+
+    CALLER_FACE_MAPPING_UNAVAILABLE = "caller-face-mapping-unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class RefusedFramedEvidence:
+    """Typed refusal produced before framed evidence can escape."""
+
+    reason: FramedEvidenceRefusalReason
+
+
 class FaceRef:
-    """Opaque identity for one original face within one recognition-evidence view."""
+    """Opaque identity for one source face within one recognition-evidence view."""
 
     __slots__ = ("__authority",)
     __authority: object
 
     def __init__(self) -> None:
-        raise TypeError("face references are issued by build_recognition_evidence")
+        raise TypeError("face references are issued by a recognition evidence lifecycle")
 
     def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
         del protocol
@@ -111,7 +128,7 @@ class FeatureRef:
 
 
 class RecognitionEvidence:
-    """One immutable projection of accepted occurrences and exact caller-part faces."""
+    """One immutable projection of accepted occurrences and exact source-part faces."""
 
     __slots__ = (
         "__authority",
@@ -139,7 +156,7 @@ class RecognitionEvidence:
     __association: GeometryAssociation
 
     def __init__(self) -> None:
-        raise TypeError("recognition evidence is created by build_recognition_evidence")
+        raise TypeError("recognition evidence is created by a recognition evidence lifecycle")
 
     @property
     def result(self) -> RecognitionResult:
@@ -201,7 +218,7 @@ class RecognitionEvidence:
         )
 
     def face(self, reference: FaceRef) -> FaceLike:
-        """Resolve *reference* to its borrowed original build123d face."""
+        """Resolve *reference* to its borrowed source build123d face."""
 
         node = self.__face_node(reference)
         return self.__node_faces[node]
@@ -228,6 +245,99 @@ class RecognitionEvidence:
         return node
 
 
+class FramedRecognitionEvidence(Generic[FrameValue]):
+    """One framed result with exact working- and caller-face evidence projections.
+
+    The caller must not mutate either retained part while using this view.
+    """
+
+    __slots__ = ("__frame", "__part", "__caller_part", "__evidence", "__caller_faces")
+    __frame: FrameValue
+    __part: Shape[TopoDS_Shape]
+    __caller_part: Part
+    __evidence: RecognitionEvidence
+    __caller_faces: tuple[tuple[FaceRef, FaceLike], ...]
+
+    def __init__(self) -> None:
+        raise TypeError("framed recognition evidence is created by the framed evidence lifecycle")
+
+    @property
+    def frame(self) -> FrameValue:
+        """The caller-space placement of this view's local recognition frame."""
+
+        return self.__frame
+
+    @property
+    def part(self) -> Shape[TopoDS_Shape]:
+        """The exact local working part used by recognition and :meth:`face`."""
+
+        return self.__part
+
+    @property
+    def caller_part(self) -> Part:
+        """The exact caller part used by :meth:`caller_face`."""
+
+        return self.__caller_part
+
+    @property
+    def result(self) -> RecognitionResult:
+        """The existing local-coordinate result from this view's one recognition run."""
+
+        return self.__evidence.result
+
+    @property
+    def features(self) -> tuple[FeatureRef, ...]:
+        """Accepted occurrences in stable registry/source order."""
+
+        return self.__evidence.features
+
+    @property
+    def faces(self) -> frozenset[FaceRef]:
+        """Opaque references to every face of the exact local working part."""
+
+        return self.__evidence.faces
+
+    @property
+    def association(self) -> GeometryAssociation:
+        """Association coverage over this view's local working faces."""
+
+        return self.__evidence.association
+
+    def family(self, feature: FeatureRef) -> str:
+        """Return the stable package family identifier for *feature*."""
+
+        return self.__evidence.family(feature)
+
+    def record(self, feature: FeatureRef) -> RecognitionRecord:
+        """Return the existing local-coordinate record for *feature*."""
+
+        return self.__evidence.record(feature)
+
+    def defining_faces(self, feature: FeatureRef) -> frozenset[FaceRef]:
+        """Return exact local working faces that establish *feature*."""
+
+        return self.__evidence.defining_faces(feature)
+
+    def constituent_faces(self, feature: FeatureRef) -> frozenset[FaceRef]:
+        """Return exact local working faces physically belonging to *feature*."""
+
+        return self.__evidence.constituent_faces(feature)
+
+    def face(self, reference: FaceRef) -> FaceLike:
+        """Resolve *reference* to its borrowed local working face."""
+
+        return self.__evidence.face(reference)
+
+    def caller_face(self, reference: FaceRef) -> FaceLike:
+        """Resolve *reference* to its exact topology-partner face in the caller part."""
+
+        self.__evidence.face(reference)  # validates type, issuer and exact issued identity
+        for issued, face in self.__caller_faces:
+            if issued is reference:
+                return face
+        raise ValueError("face reference is foreign, copied, forged, or stale")
+
+
 def _issue_reference(
     reference_type: type[FaceRef] | type[FeatureRef], authority: object
 ) -> FaceRef | FeatureRef:
@@ -236,20 +346,27 @@ def _issue_reference(
     return reference
 
 
-def build_recognition_evidence(
-    part: Part,
-    *,
-    cylinders: CylinderInventory | None = None,
-    rotational: bool = False,
-) -> RecognitionEvidence:
-    """Recognise *part* once and project accepted occurrences to its exact original faces.
+def _issue_framed_recognition_evidence(
+    frame: FrameValue,
+    part: Shape[TopoDS_Shape],
+    caller_part: Part,
+    evidence: RecognitionEvidence,
+    caller_faces: tuple[tuple[FaceRef, FaceLike], ...],
+) -> FramedRecognitionEvidence[FrameValue]:
+    """Issue one paired carrier after the frame layer proves exact face mapping."""
 
-    The caller must not mutate *part* while using the returned view. This raw-coordinate API is
-    intentionally separate from framed recognition until framed evidence can be mapped back to
-    faces of the caller's part.
-    """
+    result = object.__new__(FramedRecognitionEvidence)
+    object.__setattr__(result, "_FramedRecognitionEvidence__frame", frame)
+    object.__setattr__(result, "_FramedRecognitionEvidence__part", part)
+    object.__setattr__(result, "_FramedRecognitionEvidence__caller_part", caller_part)
+    object.__setattr__(result, "_FramedRecognitionEvidence__evidence", evidence)
+    object.__setattr__(result, "_FramedRecognitionEvidence__caller_faces", caller_faces)
+    return result
 
-    product = _take_inventory(part, cylinders=cylinders, rotational=rotational)
+
+def _project_recognition_evidence(product: InventoryProduct) -> RecognitionEvidence:
+    """Project one already-completed inventory without running recognition again."""
+
     authority = object()
     result = object.__new__(RecognitionEvidence)
     node_refs: dict[FaceNode, FaceRef] = {}
@@ -322,6 +439,24 @@ def build_recognition_evidence(
     return result
 
 
+def build_recognition_evidence(
+    part: Part,
+    *,
+    cylinders: CylinderInventory | None = None,
+    rotational: bool = False,
+) -> RecognitionEvidence:
+    """Recognise *part* once and project accepted occurrences to its exact original faces.
+
+    The caller must not mutate *part* while using the returned view. This is the explicit
+    raw/caller-coordinate route; use :func:`build_framed_recognition_evidence` for the ordinary
+    part-relative lifecycle.
+    """
+
+    return _project_recognition_evidence(
+        _take_inventory(part, cylinders=cylinders, rotational=rotational)
+    )
+
+
 def evidence_api_manifest(
     *, format_version: int = EVIDENCE_API_FORMAT_VERSION
 ) -> dict[str, object]:
@@ -336,6 +471,8 @@ def evidence_api_manifest(
 
 
 def _validate_manifest(manifest: object) -> None:
+    from b123d_recognisers import __version__
+
     if not isinstance(manifest, dict) or set(manifest) != {
         "api",
         "format",
@@ -372,7 +509,10 @@ def _validate_manifest(manifest: object) -> None:
             "FamilyAssociation",
             "FaceRef",
             "FeatureRef",
+            "FramedEvidenceRefusalReason",
+            "FramedRecognitionEvidence",
             "GeometryAssociation",
+            "RefusedFramedEvidence",
             "RecognitionEvidence",
             "RecognitionRecord",
             "build_recognition_evidence",
@@ -406,7 +546,10 @@ __all__ = [
     "FamilyAssociation",
     "FaceRef",
     "FeatureRef",
+    "FramedEvidenceRefusalReason",
+    "FramedRecognitionEvidence",
     "GeometryAssociation",
+    "RefusedFramedEvidence",
     "RecognitionEvidence",
     "RecognitionRecord",
     "build_recognition_evidence",

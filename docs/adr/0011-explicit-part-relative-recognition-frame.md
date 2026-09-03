@@ -158,6 +158,23 @@ existing explicit-boolean framed function delegates through the prepared lifecyc
 source-compatible; typed frame refusal still occurs before any aggregate and permits an explicit
 legacy fallback. FULL, ORTHOGONAL and AXIAL gauges all preserve the caller's local classification.
 
+## Amendment (paired framed recognition evidence, issue #463)
+
+The prepared lifecycle also supports one evidence-bearing aggregate result. The successful value
+pairs its frame and exact local working shape with the original caller part and the public
+accepted-occurrence evidence projected from that same run. Records and `face(ref)` remain local to
+the working shape. `caller_face(ref)` is a separate exact projection to the caller part, authorized
+only when applying the exact retained rigid placement to each caller face produces a complete bijection
+under OCCT `IsSame` identity. This retains topology-partner provenance while distinguishing
+separate located occurrences of one shared TShape.
+
+Frame inference refusal remains `RefusedPartFrame`. A missing or non-bijective caller-face relation
+returns a separate typed evidence-mapping refusal before aggregate recognition; it never falls
+back to raw recognition or approximate matching. Preparation still scans cylinders once, and the
+consumer still selects `rotational` from the prepared local substrate before the one aggregate
+call. Existing result/report operations, raw evidence, frame gauges and recognition outcomes are
+unchanged.
+
 ## Amendment (principal-axis rectangular recesses, issue #320)
 
 An `ORTHOGONAL` frame may assign any equivalent physical direction to local X, Y or Z. Existing

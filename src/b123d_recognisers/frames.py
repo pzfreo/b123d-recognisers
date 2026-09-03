@@ -10,7 +10,7 @@ needed to interpret them.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import cast
 
@@ -23,9 +23,21 @@ from OCP.GProp import GProp_GProps
 from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._cylinder_substrate import analyse_cylinders
-from b123d_recognisers._typing import FrozenCylinderInventory, Part, Vector3
+from b123d_recognisers._typing import FaceLike, FrozenCylinderInventory, Part, Vector3
+from b123d_recognisers.evidence import (
+    FaceRef,
+    FramedEvidenceRefusalReason,
+    FramedRecognitionEvidence,
+    RefusedFramedEvidence,
+    _issue_framed_recognition_evidence,
+    _project_recognition_evidence,
+)
 from b123d_recognisers.explanations import RecognitionReport, build_raw_recognition_report
-from b123d_recognisers.result import RecognitionResult, build_raw_recognition_result
+from b123d_recognisers.result import (
+    RecognitionResult,
+    _take_inventory,
+    build_raw_recognition_result,
+)
 
 _PARALLEL_COS = 0.999
 _ORTHOGONAL_COS = 1.0 - _PARALLEL_COS
@@ -137,6 +149,8 @@ class PreparedFramedPart:
     frame: PartFrame
     part: Shape[TopoDS_Shape]
     cylinders: FrozenCylinderInventory
+    _caller_part: Part | None = field(default=None, repr=False, compare=False)
+    _placement: Location | None = field(default=None, repr=False, compare=False)
 
     def recognise(self, *, rotational: bool = False) -> FramedRecognitionResult:
         """Run the aggregate once using the supplied local-frame classification."""
@@ -168,11 +182,19 @@ class PreparedFramedPart:
             ),
         )
 
+    def recognise_evidence(
+        self, *, rotational: bool = False
+    ) -> FramedRecognitionEvidence[PartFrame] | RefusedFramedEvidence:
+        """Run the aggregate once and pair accepted evidence to local and caller faces."""
+
+        return _build_prepared_framed_recognition_evidence(self, rotational=rotational)
+
 
 FrameInference = PartFrame | RefusedPartFrame
 FramedPreparation = PreparedFramedPart | RefusedPartFrame
 FramedRecognition = FramedRecognitionResult | RefusedPartFrame
 FramedReport = FramedRecognitionReport | RefusedPartFrame
+FramedEvidence = FramedRecognitionEvidence[PartFrame] | RefusedFramedEvidence | RefusedPartFrame
 
 
 @dataclass(slots=True)
@@ -353,7 +375,7 @@ def infer_part_frame(part: Part) -> FrameInference:
     return RefusedPartFrame(FrameRefusalReason.NO_ANALYTIC_DIRECTION)
 
 
-def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
+def _normalization_location(frame: PartFrame) -> Location:
     transform = gp_Trsf()
     axes = (frame.x, frame.y, frame.z)
     values = tuple(component for axis in axes for component in axis)
@@ -372,6 +394,12 @@ def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
         values[8],
         offsets[2],
     )
+    return Location(gp_trsf=transform)
+
+
+def _normalize_part(
+    part: Part, frame: PartFrame, *, placement: Location | None = None
+) -> Shape[TopoDS_Shape]:
     if not part.solids():
         # Material-origin inference already excludes this, so reaching it means the caller
         # changed the shape concurrently between inference and normalization.
@@ -379,7 +407,76 @@ def _normalize_part(part: Part, frame: PartFrame) -> Shape[TopoDS_Shape]:
     # A rigid TopLoc placement changes evaluated coordinates without rebuilding topology. A
     # BRepBuilderAPI copied transform perturbs body ancestry and threshold geometry differently
     # across OCCT platforms (most visibly Plate attribution on macOS).
-    return Location(gp_trsf=transform) * part
+    exact_placement = placement if placement is not None else _normalization_location(frame)
+    return exact_placement * part
+
+
+def _caller_face_bijection(
+    caller_part: Part, working_part: Shape[TopoDS_Shape], placement: Location
+) -> tuple[tuple[FaceLike, FaceLike], ...] | None:
+    caller_faces = tuple(caller_part.faces())
+    working_faces = tuple(working_part.faces())
+    if len(caller_faces) != len(working_faces):
+        return None
+    placed_callers = tuple(placement * caller for caller in caller_faces)
+    matched: list[int] = []
+    for working in working_faces:
+        exact = tuple(
+            index
+            for index, placed in enumerate(placed_callers)
+            if working.wrapped.IsSame(placed.wrapped)
+        )
+        if len(exact) != 1:
+            return None
+        matched.append(exact[0])
+    if len(set(matched)) != len(caller_faces):
+        return None
+    return tuple(
+        (working, caller_faces[index])
+        for working, index in zip(working_faces, matched, strict=True)
+    )
+
+
+def _build_prepared_framed_recognition_evidence(
+    prepared: PreparedFramedPart,
+    *,
+    rotational: bool = False,
+) -> FramedRecognitionEvidence[PartFrame] | RefusedFramedEvidence:
+    caller_part = prepared._caller_part
+    placement = prepared._placement
+    if caller_part is None or placement is None:
+        return RefusedFramedEvidence(FramedEvidenceRefusalReason.CALLER_FACE_MAPPING_UNAVAILABLE)
+    bijection = _caller_face_bijection(caller_part, prepared.part, placement)
+    if bijection is None:
+        return RefusedFramedEvidence(FramedEvidenceRefusalReason.CALLER_FACE_MAPPING_UNAVAILABLE)
+    cylinders = (list(prepared.cylinders[0]), list(prepared.cylinders[1]))
+    evidence = _project_recognition_evidence(
+        _take_inventory(cast(Part, prepared.part), cylinders=cylinders, rotational=rotational)
+    )
+    pairs: list[tuple[FaceRef, FaceLike]] = []
+    matched: set[int] = set()
+    for reference in evidence.faces:
+        working = evidence.face(reference)
+        exact = tuple(
+            (index, caller)
+            for index, (mapped_working, caller) in enumerate(bijection)
+            if working.wrapped.IsSame(mapped_working.wrapped)
+        )
+        if len(exact) != 1 or exact[0][0] in matched:
+            return RefusedFramedEvidence(
+                FramedEvidenceRefusalReason.CALLER_FACE_MAPPING_UNAVAILABLE
+            )
+        matched.add(exact[0][0])
+        pairs.append((reference, exact[0][1]))
+    if len(matched) != len(bijection):
+        return RefusedFramedEvidence(FramedEvidenceRefusalReason.CALLER_FACE_MAPPING_UNAVAILABLE)
+    return _issue_framed_recognition_evidence(
+        prepared.frame,
+        prepared.part,
+        caller_part,
+        evidence,
+        tuple(pairs),
+    )
 
 
 def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> FramedRecognition:
@@ -389,6 +486,20 @@ def build_framed_recognition_result(part: Part, *, rotational: bool = False) -> 
     if isinstance(prepared, RefusedPartFrame):
         return prepared
     return prepared.recognise(rotational=rotational)
+
+
+def build_framed_recognition_evidence(
+    part: Part, *, rotational: bool = False
+) -> FramedEvidence:
+    """Recognise once in an inferred local frame with exact caller-face evidence.
+
+    The caller must not mutate *part* while using a successful returned view.
+    """
+
+    prepared = prepare_framed_part(part)
+    if isinstance(prepared, RefusedPartFrame):
+        return prepared
+    return prepared.recognise_evidence(rotational=rotational)
 
 
 def build_framed_recognition_report(part: Part, *, rotational: bool = False) -> FramedReport:
@@ -406,12 +517,15 @@ def prepare_framed_part(part: Part) -> FramedPreparation:
     frame = infer_part_frame(part)
     if isinstance(frame, RefusedPartFrame):
         return frame
-    normalized = _normalize_part(part, frame)
+    placement = _normalization_location(frame)
+    normalized = _normalize_part(part, frame, placement=placement)
     cylinders = analyse_cylinders(normalized)
     return PreparedFramedPart(
         frame,
         normalized,
         (tuple(cylinders[0]), tuple(cylinders[1])),
+        _caller_part=part,
+        _placement=placement,
     )
 
 
@@ -420,6 +534,9 @@ __all__ = [
     "FrameInference",
     "FrameRefusalReason",
     "FramedPreparation",
+    "FramedEvidence",
+    "FramedEvidenceRefusalReason",
+    "FramedRecognitionEvidence",
     "FramedRecognition",
     "FramedRecognitionResult",
     "FramedRecognitionReport",
@@ -427,7 +544,9 @@ __all__ = [
     "PartFrame",
     "PreparedFramedPart",
     "RefusedPartFrame",
+    "RefusedFramedEvidence",
     "build_framed_recognition_result",
+    "build_framed_recognition_evidence",
     "build_framed_recognition_report",
     "infer_part_frame",
     "prepare_framed_part",

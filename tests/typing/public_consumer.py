@@ -2,21 +2,27 @@
 
 from typing import Literal
 
-from build123d import BoundBox, Edge, Face, Shape, Solid
+from build123d import BoundBox, Compound, Edge, Face, Shape, Solid
 from OCP.TopoDS import TopoDS_Shape
 from typing_extensions import assert_type
 
 from b123d_recognisers import (
     BossRecord,
+    FramedEvidence,
+    FramedEvidenceRefusalReason,
+    FramedRecognitionEvidence,
     FramedRecognitionReport,
     FramedRecognitionResult,
     HoleRecord,
     PairedRampStep,
+    PartFrame,
     Plate,
     PreparedFramedPart,
     RaisedPad,
     RecognitionReport,
     RecognitionResult,
+    RefusedFramedEvidence,
+    build_framed_recognition_evidence,
     build_framed_recognition_report,
     build_framed_recognition_result,
     build_raw_recognition_report,
@@ -68,6 +74,7 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
     raw_result = build_raw_recognition_result(part)
     raw_report = build_raw_recognition_report(part)
     evidence = build_recognition_evidence(part)
+    framed_evidence: FramedEvidence = build_framed_recognition_evidence(part)
 
     assert_type(holes, list[HoleRecord])
     assert_type(bosses, list[BossRecord])
@@ -95,6 +102,17 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
         assert_type(evidence.constituent_faces(feature), frozenset[FaceRef])
     for reference in evidence.faces:
         assert_type(evidence.face(reference), Face)
+    if isinstance(framed_evidence, FramedRecognitionEvidence):
+        assert_type(framed_evidence.frame, PartFrame)
+        assert_type(framed_evidence.part, Shape[TopoDS_Shape])
+        assert_type(framed_evidence.caller_part, Solid | Compound)
+        assert_type(framed_evidence.result, RecognitionResult)
+        assert_type(framed_evidence.features, tuple[FeatureRef, ...])
+        for reference in framed_evidence.faces:
+            assert_type(framed_evidence.face(reference), Face)
+            assert_type(framed_evidence.caller_face(reference), Face)
+    if isinstance(framed_evidence, RefusedFramedEvidence):
+        assert_type(framed_evidence.reason, FramedEvidenceRefusalReason)
     assert_type(result.holes, tuple[HoleRecord, ...])
     assert_type(result.bosses, tuple[BossRecord, ...])
     assert_type(result.paired_ramp_steps, tuple[PairedRampStep, ...])
@@ -115,6 +133,9 @@ def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
         assert_type(prepared.part, Shape[TopoDS_Shape])
         assert_type(prepared.recognise(rotational=True), FramedRecognitionResult)
         assert_type(prepared.recognise_report(rotational=True), FramedRecognitionReport)
+        prepared_evidence = prepared.recognise_evidence(rotational=True)
+        if isinstance(prepared_evidence, FramedRecognitionEvidence):
+            assert_type(prepared_evidence.result, RecognitionResult)
     assert_type(result.step_ladder_for_z_span(0.0, 10.0), list[float])
     assert_type(result.step_ladder(bounds), list[float])
     assert_type(feature_census(part), dict[str, int])
