@@ -358,6 +358,7 @@ RECORD_SCHEMA_VERSIONS = {
     "Blend": 3,
     "Chamfer": 2,
     "Fillet": 2,
+    "Groove": 2,
     "RaisedPad": 2,
     "PassageEnds": 2,
     "PassageSection": 2,
@@ -375,7 +376,7 @@ NO_MEMBERSHIP_RATIONALE = {
     "StepShoulder": "Pure consumer projection from RiserEvidence plus a caller-supplied level set.",
     "TurnedProfile": "Consumer aggregate built on demand from RecognitionResult.turned_steps.",
     "TurnedProfileKey": (
-        "Nested physical-profile membership retained by TurnedStep and TurnedProfile."
+        "Nested physical-profile membership retained by Groove, TurnedStep and TurnedProfile."
     ),
     "PassageEnds": "Nested only in SectionPassage; retained to preserve explicit end topology.",
     "PassageFrame": "Nested only in SectionPassage.",

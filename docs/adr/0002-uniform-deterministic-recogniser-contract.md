@@ -319,3 +319,13 @@ is refused rather than resolved by XYZ iteration order. Competing values or role
 selected orientation still reach the normal identity and one-solid validation and cannot be
 silently arbitrated away. Sharp and complete four-corner convex-blend routes retain exactly one
 top and four original wall roles as defining evidence.
+
+## Amendment (Groove turned-profile membership, issue #354)
+
+`Groove` schema version 2 appends an optional `profile: TurnedProfileKey`. Recogniser-produced
+records always derive it from the same body-partitioned cylinder inventory and physical solid
+bounds as `TurnedStep`; the `None` default preserves hand-built schema-v1 records. This lets a
+consumer join a groove to exactly one public turned profile without rescanning topology or using
+coordinate proximity. Before attributed publication, all Groove floor evidence must resolve to one
+valid solid and one profile key must not identify two solids; ambiguity refuses the family before
+any partial prefix is written.

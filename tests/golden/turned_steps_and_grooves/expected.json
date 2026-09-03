@@ -138,6 +138,23 @@
             ],
             "axis": "z",
             "diameter": 24.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            },
             "width": 5.0
           }
         ],
@@ -389,6 +406,23 @@
             ],
             "axis": "z",
             "diameter": 24.0,
+            "profile": {
+              "_type": "TurnedProfileKey",
+              "axis": "z",
+              "axis_origin": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "body_bounds": [
+                -15.0,
+                15.0,
+                -15.0,
+                15.0,
+                -35.0,
+                35.0
+              ]
+            },
             "width": 5.0
           }
         ],
@@ -655,6 +689,23 @@
           ],
           "axis": "z",
           "diameter": 24.0,
+          "profile": {
+            "_type": "TurnedProfileKey",
+            "axis": "z",
+            "axis_origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "body_bounds": [
+              -15.0,
+              15.0,
+              -15.0,
+              15.0,
+              -35.0,
+              35.0
+            ]
+          },
           "width": 5.0
         }
       ],

@@ -39,6 +39,7 @@ from b123d_recognisers._features import analyse_cylinders
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._record import Record
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
+from b123d_recognisers.turned import TurnedProfileKey, profile_key_from_bands
 
 #: A conical face as ``(axis direction, ((rim centre, rim radius), ...))``.
 ConeJoin = tuple[
@@ -218,6 +219,7 @@ class Groove(Record):
     width: float
     diameter: float
     at: tuple[float, float, float]
+    profile: TurnedProfileKey | None = None
 
 
 def floor_face_anchor(face: FaceLike) -> tuple[float, float, float]:
@@ -277,9 +279,14 @@ def recognise_grooves(
     # adjacency walk necessary: ordinary and conical grooves need only their rim evidence.
     has_tori = any(f.geom_type == GeomType.TORUS for f in all_faces)
     edge_faces = edge_face_map(all_faces, face_edges=face_edges) if has_tori else None
+    scopes = list(part.solids()) or [part]
     out: list[tuple[Groove, FaceLike]] = []
-    for bands in shafts.values():
+    for shaft, bands in shafts.items():
         bands = sorted(bands, key=lambda c: c["s_lo"])
+        solid_idx = shaft[1]
+        if not isinstance(solid_idx, int) or not 0 <= solid_idx < len(scopes):
+            raise ValueError("groove cylinder inventory has no owning solid")
+        profile = profile_key_from_bands(scopes[solid_idx], bands[0]["axis"], bands)
         for i in range(1, len(bands) - 1):
             prev, cur, nxt = bands[i - 1], bands[i], bands[i + 1]
             # The neighbours must be the groove's own walls — contiguous with the floor band,
@@ -318,16 +325,29 @@ def recognise_grooves(
                         width=round(cur["s_hi"] - cur["s_lo"], 3),
                         diameter=round(cur["diameter"], 3),
                         at=at,
+                        profile=profile,
                     ),
                     cur["face"],
                 )
             )
     out.sort(key=lambda pair: (pair[0].axis, pair[0].at))
     if ledger is not None:
+        profile_owners: dict[TurnedProfileKey, object] = {}
+        pending = []
         for groove, face in out:
+            node = ledger.graph.require_node(face)
+            owner = ledger.graph.common_valid_solid((node,))
+            if owner is None:
+                raise ValueError("groove evidence has no common valid solid")
+            assert groove.profile is not None
+            previous = profile_owners.setdefault(groove.profile, owner)
+            if previous != owner:
+                raise ValueError("turned profile key identifies multiple valid solids")
+            pending.append((groove, node))
+        for groove, node in pending:
             ledger.add_defining(
                 groove,
-                [ledger.graph.require_node(face)],
+                [node],
                 family=FamilyId.GROOVES,
             )
     return [groove for groove, _ in out]

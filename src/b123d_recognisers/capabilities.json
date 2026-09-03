@@ -901,6 +901,11 @@
               "type": "float",
               "units": "mm"
             },
+            "profile": {
+              "required": false,
+              "type": "record:TurnedProfileKey|null",
+              "units": "none"
+            },
             "width": {
               "required": true,
               "type": "float",
@@ -910,7 +915,7 @@
           "name": "Groove",
           "qualified_name": "b123d_recognisers.Groove",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
@@ -2824,7 +2829,7 @@
         },
         {
           "aggregate_membership": [],
-          "aggregate_membership_rationale": "Nested physical-profile membership retained by TurnedStep and TurnedProfile.",
+          "aggregate_membership_rationale": "Nested physical-profile membership retained by Groove, TurnedStep and TurnedProfile.",
           "fields": {
             "axis": {
               "required": true,
