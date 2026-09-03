@@ -30,7 +30,7 @@
         "23": {"families": ["blends", "fillets"], "name": "Round", "status": "supported"},
         "24": {"families": [], "name": "Stock", "status": "incomparable"}
       },
-      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 12 retains version 11 and maps the physical EdgeOpenPrismaticRecess family to the triangular, rectangular and six-sided Pocket classes whose open physical profiles it can represent. This is a vocabulary translation for scoring, not a geometry predicate; family-specific occurrence counts and cross-taxonomy evidence remain separate. Earlier versions remain immutable for historical reports."
+      "notes": "Single-assignment face labels compare with defining evidence but never decide candidate ownership. Version 12 retains version 11 and maps the physical EdgeOpenPrismaticRecess family to triangular, rectangular and six-sided Pocket classes according to its observed wall count. This is a vocabulary translation for scoring, not a geometry predicate; family-specific occurrence counts remain separate. Earlier versions remain immutable for historical reports."
     },
     "mfinstseg": {
       "classes_from": "mfcadpp",
