@@ -185,15 +185,17 @@ runtime, or a malformed taxonomy fail closed. By default, any invalid selected m
 output file. `--allow-invalid` exists only when a written benchmark policy names the expected
 invalid cases; the report then preserves each invalid model and reason.
 
-A long corpus run also freezes its source authority before importing the first model. The runner
-requires tracked files to equal `HEAD`, captures that commit, a digest of importable Python source,
-and the exact taxonomy bytes/hash before importing production recognisers. Capture and verification
-sandwich those values between repeated commit/tree/source checks; production imports receive an
-immediate verification before scoring, and the same verification runs before publication. A
-mid-run checkout, rebase or tracked edit therefore refuses the report instead of attaching post-run
-provenance to pre-run in-memory code or mapping. Untracked
-output files do not make a commit claim misleading and remain compatible with atomic report
-creation. Resumable checkpoints add the same authority plus the selection, input-source, frame and
+A long corpus run also freezes its source authority before importing the first model. By default,
+the runner permits exploratory runs with tracked changes and records the package commit as
+`<HEAD>+dirty.<tracked-diff-sha256>`. Pass `--canonical` for publishable evidence; that mode
+requires tracked files to equal `HEAD` and records the unchanged commit hash. Both modes capture a
+digest of importable Python source and the exact taxonomy bytes/hash before importing production
+recognisers. Capture and verification sandwich the commit, tracked-diff fingerprint, source, and
+taxonomy between repeated checks; production imports receive an immediate verification before
+scoring, and the same verification runs before publication. A mid-run checkout, rebase, or tracked
+edit therefore refuses the report instead of attaching post-run provenance to pre-run in-memory
+code or mapping. Untracked output files remain compatible with atomic report creation. Resumable
+checkpoints add the same authority plus the selection, input-source, frame and
 invalid-policy hashes; completed rows are never reused under a merely similar run. Issue #405
 identified this as a latent provenance race during a cross-version report
 comparison. A recorded commit and taxonomy hash are necessary but not sufficient to establish that

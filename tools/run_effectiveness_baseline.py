@@ -50,17 +50,16 @@ def _git_commit() -> str:
     ).stdout.strip()
 
 
-def _git_tree_is_clean(commit: str) -> bool:
-    """Whether tracked files still equal the commit named by this report."""
-
+def _git_worktree_sha256(commit: str) -> str | None:
+    """Fingerprint tracked changes relative to *commit*, or ``None`` when clean."""
     completed = subprocess.run(
-        ["git", "diff", "--quiet", commit, "--"],
+        ["git", "diff", "--binary", commit, "--"],
         cwd=ROOT,
-        check=False,
+        capture_output=True,
     )
-    if completed.returncode not in (0, 1):
+    if completed.returncode != 0:
         raise EffectivenessDataError("could not verify corpus-run source authority")
-    return completed.returncode == 0
+    return hashlib.sha256(completed.stdout).hexdigest() if completed.stdout else None
 
 
 def _source_digest() -> str:
@@ -87,6 +86,7 @@ class _RunAuthority:
     source_sha256: str
     taxonomy: bytes
     taxonomy_sha256: str
+    worktree_sha256: str | None = None
 
 
 _KNOWN_MFCADPP_2500_INVALID = frozenset(
@@ -196,8 +196,9 @@ def _checkpoint_authority(
 ) -> dict[str, Any]:
     return {
         "format": "b123d-recognisers-effectiveness-checkpoint",
-        "format_version": 1,
+        "format_version": 2,
         "commit": authority.commit,
+        "worktree_sha256": authority.worktree_sha256,
         "source_sha256": authority.source_sha256,
         "taxonomy_sha256": authority.taxonomy_sha256,
         "dataset": dataset,
@@ -330,25 +331,29 @@ def _write_checkpoint_row(root: Path, truth: DatasetTruth, row: dict[str, Any]) 
     )
 
 
-def _capture_run_authority(taxonomy_path: Path) -> _RunAuthority:
+def _capture_run_authority(
+    taxonomy_path: Path, *, canonical: bool = False
+) -> _RunAuthority:
     """Freeze the authority a long corpus run will claim in its metadata."""
 
     commit = _git_commit()
-    if not _git_tree_is_clean(commit):
+    worktree_sha256 = _git_worktree_sha256(commit)
+    if canonical and worktree_sha256 is not None:
         raise EffectivenessDataError(
-            "tracked worktree changes would make the package commit misleading"
+            "canonical reports require tracked files to equal HEAD"
         )
     source_sha256 = _source_digest()
     try:
         taxonomy = taxonomy_path.read_bytes()
     except OSError as error:
         raise EffectivenessDataError("taxonomy is unreadable") from error
-    if _git_commit() != commit or not _git_tree_is_clean(commit):
+    if _git_commit() != commit or _git_worktree_sha256(commit) != worktree_sha256:
         raise EffectivenessDataError("source authority changed while it was captured")
     if _source_digest() != source_sha256:
         raise EffectivenessDataError("source authority changed while it was captured")
     return _RunAuthority(
         commit=commit,
+        worktree_sha256=worktree_sha256,
         source_sha256=source_sha256,
         taxonomy=taxonomy,
         taxonomy_sha256=hashlib.sha256(taxonomy).hexdigest(),
@@ -359,7 +364,7 @@ def _verify_run_authority(authority: _RunAuthority, taxonomy_path: Path) -> None
     """Refuse a report if its source or mapping changed while models were running."""
 
     commit_before = _git_commit()
-    clean_before = _git_tree_is_clean(authority.commit)
+    worktree_before = _git_worktree_sha256(authority.commit)
     source_before = _source_digest()
     try:
         taxonomy = taxonomy_path.read_bytes()
@@ -367,11 +372,11 @@ def _verify_run_authority(authority: _RunAuthority, taxonomy_path: Path) -> None
         raise EffectivenessDataError("taxonomy changed during corpus run") from error
     if (
         commit_before != authority.commit
-        or not clean_before
+        or worktree_before != authority.worktree_sha256
         or source_before != authority.source_sha256
         or taxonomy != authority.taxonomy
         or _source_digest() != authority.source_sha256
-        or not _git_tree_is_clean(authority.commit)
+        or _git_worktree_sha256(authority.commit) != authority.worktree_sha256
         or _git_commit() != authority.commit
     ):
         raise EffectivenessDataError("source authority changed during corpus run")
@@ -389,6 +394,14 @@ def _display_path(path: Path) -> str:
         return str(resolved.relative_to(ROOT))
     except ValueError:
         return str(resolved)
+
+
+def _reported_commit(authority: _RunAuthority) -> str:
+    """Keep clean report metadata stable and make exploratory source explicit."""
+
+    if authority.worktree_sha256 is None:
+        return authority.commit
+    return f"{authority.commit}+dirty.{authority.worktree_sha256}"
 
 
 def _mfcadpp_selection(
@@ -509,6 +522,11 @@ def main() -> int:
     )
     parser.add_argument("--allow-invalid", action="store_true")
     parser.add_argument(
+        "--canonical",
+        action="store_true",
+        help="require tracked files to equal HEAD before publishing",
+    )
+    parser.add_argument(
         "--workers",
         type=int,
         default=min(4, os.cpu_count() or 1),
@@ -526,7 +544,7 @@ def main() -> int:
         parser.error("--workers must be non-negative")
     workers = (os.cpu_count() or 1) if args.workers == 0 else args.workers
     try:
-        authority = _capture_run_authority(args.taxonomy)
+        authority = _capture_run_authority(args.taxonomy, canonical=args.canonical)
         if args.dataset == "mfcadpp":
             ids, loader, selection_extra = _mfcadpp_selection(args.root)
         else:
@@ -665,7 +683,7 @@ def main() -> int:
         "package": {
             "name": "b123d-recognisers",
             "version": __version__,
-            "commit": authority.commit,
+            "commit": _reported_commit(authority),
         },
         "environment": _environment(),
         "selection": {
