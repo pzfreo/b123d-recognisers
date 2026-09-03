@@ -25,6 +25,7 @@ from attribution_audit import attributed_run
 from build123d import Axis, Compound, Cylinder, Pos, Rotation
 
 import b123d_recognisers as r
+import b123d_recognisers.grooves as groove_module
 import b123d_recognisers.result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -194,6 +195,38 @@ def test_all_groove_ownership_validates_before_any_candidate_is_published(
     with pytest.raises(ValueError, match="no common valid solid"):
         r.recognise_grooves(part, ledger=ledger)
     assert calls == 2
+    assert ledger.claims == ()
+
+
+@pytest.mark.parametrize("invalid_solid_idx", (1, "not-an-index"))
+def test_injected_groove_inventory_must_name_a_real_owning_solid(
+    invalid_solid_idx,
+) -> None:
+    part = _grooved_shaft()
+    z_cyls, cross_cyls = r.analyse_cylinders(part)
+    invalid = [dict(cylinder, solid_idx=invalid_solid_idx) for cylinder in z_cyls]
+
+    with pytest.raises(ValueError, match="no owning solid"):
+        r.recognise_grooves(part, cyls=(invalid, cross_cyls))
+
+
+def test_equal_profile_keys_cannot_claim_two_source_solids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    left = Pos(-30, 0, 0) * _grooved_shaft()
+    right = Pos(30, 0, 0) * _grooved_shaft()
+    part = Compound(children=[left, right])
+    ledger = ClaimLedger(FaceGraph(part))
+    profile = r.recognise_grooves(left)[0].profile
+    assert profile is not None
+    monkeypatch.setattr(
+        groove_module,
+        "profile_key_from_bands",
+        lambda _part, _axis, _bands: profile,
+    )
+
+    with pytest.raises(ValueError, match="profile key identifies multiple"):
+        r.recognise_grooves(part, ledger=ledger)
     assert ledger.claims == ()
 
 
