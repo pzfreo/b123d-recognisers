@@ -135,6 +135,7 @@ FAMILIES = {
         "records": [("Channel", "output", ["RecognitionResult.channels"])],
         "census": "channel",
         "goldens": ["open_channels"],
+        "tests": ["tests/test_channel_plate_body_identity.py"],
     },
     "countersinks": {
         "recognisers": [("recognise_countersinks", "part")],
@@ -208,6 +209,7 @@ FAMILIES = {
         "records": [("Plate", "output", ["RecognitionResult.plates"])],
         "census": "plate",
         "goldens": ["plates_pads_levels_and_slanted_steps"],
+        "tests": ["tests/test_channel_plate_body_identity.py"],
     },
     "pocket-patterns": {
         "recognisers": [("recognise_pocket_patterns", "derived")],
@@ -355,12 +357,14 @@ FAMILIES = {
 }
 
 RECORD_SCHEMA_VERSIONS = {
+    "Channel": 2,
     "Blend": 3,
     "Chamfer": 2,
     "Fillet": 2,
     "Groove": 2,
     "RaisedPad": 2,
     "PassageEnds": 2,
+    "Plate": 2,
     "PassageSection": 2,
     "RiserEvidence": 2,
     "TurnedProfile": 2,

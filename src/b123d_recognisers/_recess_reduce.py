@@ -20,11 +20,11 @@ Reduction only. Nothing here reads a face; it works on candidates that
 from __future__ import annotations
 
 import math
-from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Generic, TypeVar
 
 from b123d_recognisers._adjacency import FaceNode
+from b123d_recognisers._body_identity import body_signature, unambiguous_body_keys
 from b123d_recognisers._recess_faces import _MERGE_TOL
 from b123d_recognisers._recess_records import Pocket, Slot
 from b123d_recognisers._typing import Part
@@ -116,25 +116,8 @@ def _absorb(claims: _Claims | None, into: Slot | Pocket, *from_: Slot | Pocket) 
         nodes |= claims.get(record, set())
 
 
-def _body_signature(solid) -> tuple[float, ...]:
-    """Exact geometry-derived correspondence key for one physical solid.
-
-    Position, envelope, volume, and area are independent of compound traversal order.  The key
-    is deliberately not a traversal index or an OCP object/hash, so it remains serializable
-    under package ADR 0002. Callers treat duplicate signatures across separate solids as
-    ambiguous and fail closed rather than using the signature as proof of shared ownership.
-    """
-    bb = solid.bounding_box()
-    return (
-        float(bb.min.X),
-        float(bb.min.Y),
-        float(bb.min.Z),
-        float(bb.max.X),
-        float(bb.max.Y),
-        float(bb.max.Z),
-        float(solid.volume),
-        float(solid.area),
-    )
+# Backward-compatible private import used by the aggregate registry and tests.
+_body_signature = body_signature
 
 
 def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) -> list[tuple]:
@@ -148,14 +131,13 @@ def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) ->
     reappeared in the claims.
     """
 
-    signatures = [_body_signature(solid) for solid in sources]
-    counts = Counter(signatures)
+    keys = unambiguous_body_keys(sources)
     out: list[tuple] = []
-    for solid, signature in zip(sources, signatures, strict=True):
+    for solid, body_key in zip(sources, keys, strict=True):
         if claims is not None:
             claims.clear()
         for record in recognise_one(solid):
-            keyed = replace(record, body_key=signature if counts[signature] == 1 else None)
+            keyed = replace(record, body_key=body_key)
             nodes = frozenset() if claims is None else frozenset(claims.get(record, ()))
             out.append((keyed, nodes))
     return out
@@ -164,14 +146,13 @@ def _body_scoped_pairs(sources, recognise_one, claims: _Claims | None = None) ->
 def _body_scoped_proposals(sources, recognise_one) -> list[_RecessProposal]:
     """Body-scope exact occurrences without using record values as provenance authority."""
 
-    signatures = [_body_signature(solid) for solid in sources]
-    counts = Counter(signatures)
+    keys = unambiguous_body_keys(sources)
     out: list[_RecessProposal] = []
-    for solid, signature in zip(sources, signatures, strict=True):
+    for solid, body_key in zip(sources, keys, strict=True):
         for proposal in recognise_one(solid):
             keyed = replace(
                 proposal.record,
-                body_key=signature if counts[signature] == 1 else None,
+                body_key=body_key,
             )
             out.append(_replace_proposal(proposal, keyed))
     return out

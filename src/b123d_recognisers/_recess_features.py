@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import partial
 
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode, SolidRef
+from b123d_recognisers._body_identity import unambiguous_body_keys
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._recess_core import (
@@ -324,9 +326,13 @@ def _discover_channels(
         raise ValueError("Channel graph and writer must share one authority")
     owner = writer.graph if writer is not None else graph
     solids = list(part.solids())
-    sources = solids if len(solids) > 1 else [part]
+    # Use the physical solid even through a one-solid Compound wrapper. Plate uses the same
+    # scope, so signing the wrapper here (whose aggregate volume can be zero) would make two
+    # records from one body carry different keys.
+    sources = solids or [part]
     retained: list[_ChannelProposal] = []
-    for solid in sources:
+    body_keys = unambiguous_body_keys(sources, require_valid_solid=True)
+    for solid, body_key in zip(sources, body_keys, strict=True):
         proposals = _channel_proposals_one(solid, face_edges, owner)
         by_record: dict[Channel, list[_ChannelProposal]] = {}
         for proposal in proposals:
@@ -337,7 +343,8 @@ def _discover_channels(
                 unique[(proposal.low_wall, proposal.high_wall)] = proposal
             if writer is not None and len(unique) != 1:
                 raise ValueError("Channel value has ambiguous opposed-wall occurrences")
-            retained.append(next(iter(unique.values())))
+            proposal = next(iter(unique.values()))
+            retained.append(replace(proposal, record=replace(proposal.record, body_key=body_key)))
 
     retained.sort(key=lambda proposal: _channel_sort_key(proposal.record))
     if writer is not None:

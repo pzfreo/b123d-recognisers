@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import copy
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -198,7 +198,9 @@ def _claimed(part, **kwargs):
     )
     public = recognise_plates(part, **kwargs)
     records = _discover_plates(part, writer=ledger.writer, **kwargs)
-    assert [item.record.to_dict() for item in expected] == [record.to_dict() for record in records]
+    assert [item.record.to_dict() for item in expected] == [
+        replace(record, body_key=()).to_dict() for record in records
+    ]
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     candidates = ledger.candidate_set(FamilyId.PLATES).candidates
     for item, record, candidate in zip(expected, records, candidates, strict=True):
@@ -614,7 +616,7 @@ def test_blocks_oblique_slabs_and_cavities_do_not_leak_plate_evidence(part) -> N
 
 def test_open_shell_keeps_public_geometry_but_refuses_attribution() -> None:
     part = Shell(build_fixture().faces())
-    assert recognise_plates(part)
+    assert all(plate.body_key is None for plate in recognise_plates(part))
     ledger = ClaimLedger(FaceGraph(part))
     with pytest.raises(_PlateAttributionError):
         _discover_plates(part, writer=ledger.writer)

@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from build123d import Axis, Face
 from OCP.BRepAdaptor import BRepAdaptor_Surface
@@ -45,6 +45,7 @@ from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
 from b123d_recognisers._adjacency import FaceNode, SolidRef
+from b123d_recognisers._body_identity import unambiguous_body_keys
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._geometry import (
@@ -81,6 +82,8 @@ class Plate(Record):
     hi: float
     u: float
     v: float
+    # See Channel.body_key. Appended for positional compatibility.
+    body_key: tuple[float, ...] | None = ()
 
     @property
     def thickness(self) -> float:
@@ -336,14 +339,19 @@ def _discover_plates(
     """Discover Plates and optionally issue complete low/high planar groups atomically."""
 
     tol = _TOL if tol is None else tol
+    scopes = _plate_scopes(part)
+    body_keys = unambiguous_body_keys(scopes, require_valid_solid=True)
     proposal_groups = [
-        _plate_proposals(
-            scope,
-            min_area_frac=min_area_frac,
-            max_thick_frac=max_thick_frac,
-            tol=tol,
-        )
-        for scope in _plate_scopes(part)
+        [
+            replace(proposal, record=replace(proposal.record, body_key=body_key))
+            for proposal in _plate_proposals(
+                scope,
+                min_area_frac=min_area_frac,
+                max_thick_frac=max_thick_frac,
+                tol=tol,
+            )
+        ]
+        for scope, body_key in zip(scopes, body_keys, strict=True)
     ]
     ordered = sorted(
         (proposal for proposals in proposal_groups for proposal in proposals),

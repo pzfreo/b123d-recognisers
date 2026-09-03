@@ -323,6 +323,11 @@
             "RecognitionResult.channels"
           ],
           "fields": {
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
             "d_hi": {
               "required": true,
               "type": "float",
@@ -372,12 +377,13 @@
           "name": "Channel",
           "qualified_name": "b123d_recognisers.Channel",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
       "test_evidence": [
         "tests/test_capability_claims.py",
+        "tests/test_channel_plate_body_identity.py",
         "tests/test_recogniser_contract.py"
       ]
     },
@@ -1651,6 +1657,11 @@
               "type": "str",
               "units": "none"
             },
+            "body_key": {
+              "required": false,
+              "type": "list[float]|null",
+              "units": "none"
+            },
             "hi": {
               "required": true,
               "type": "float",
@@ -1675,12 +1686,13 @@
           "name": "Plate",
           "qualified_name": "b123d_recognisers.Plate",
           "role": "output",
-          "schema_version": 1
+          "schema_version": 2
         }
       ],
       "status": "supported",
       "test_evidence": [
         "tests/test_capability_claims.py",
+        "tests/test_channel_plate_body_identity.py",
         "tests/test_recogniser_contract.py"
       ]
     },

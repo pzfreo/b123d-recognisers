@@ -280,7 +280,7 @@ def _assert_roles(part, **kwargs):
     public = recognise_channels(part, **kwargs)
     records = _discover_channels(part, writer=ledger.writer, **kwargs)
     assert [record.to_dict() for record, _nodes in expected] == [
-        record.to_dict() for record in records
+        replace(record, body_key=()).to_dict() for record in records
     ]
     assert [record.to_dict() for record in records] == [record.to_dict() for record in public]
     candidates = ledger.candidate_set(FamilyId.CHANNELS).candidates
@@ -288,7 +288,7 @@ def _assert_roles(part, **kwargs):
     for (expected_record, expected_nodes), record, candidate in zip(
         expected, records, candidates, strict=True
     ):
-        assert record == expected_record
+        assert replace(record, body_key=()) == expected_record
         assert candidate.record is record
         nodes = ledger.defining_of(candidate)
         assert nodes == expected_nodes
@@ -353,7 +353,9 @@ def test_record_only_compatibility_wrapper_preserves_value_and_order() -> None:
     records = [record for solid in part.solids() for record in _recognise_channels_one(solid)]
     assert records
     assert [record.to_dict() for record in records] == [
-        record.to_dict() for solid in part.solids() for record in recognise_channels(solid)
+        replace(record, body_key=()).to_dict()
+        for solid in part.solids()
+        for record in recognise_channels(solid)
     ]
 
 
@@ -620,7 +622,9 @@ def test_equal_serialized_value_public_first_wins_writer_refuses(monkeypatch) ->
 
     monkeypatch.setattr(feature_module, "_channel_proposals_one", collision)
     # Geometry-only compatibility retains the first occurrence for an equal 2dp record.
-    assert _discover_channels(part, graph=graph) == [proposal.record]
+    projected = _discover_channels(part, graph=graph)
+    assert [replace(record, body_key=()) for record in projected] == [proposal.record]
+    assert projected[0].body_key is not None
     ledger = ClaimLedger(graph)
     with pytest.raises(ValueError, match="ambiguous"):
         _discover_channels(part, writer=ledger.writer)
