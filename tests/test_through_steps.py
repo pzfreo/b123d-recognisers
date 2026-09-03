@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 from build123d import (
     Box,
@@ -44,6 +46,10 @@ def _step(scale: float = 1.0):
     stock = Box(40 * scale, 30 * scale, 20 * scale)
     removal = Pos(15 * scale, 10 * scale, 0) * Box(20 * scale, 20 * scale, 30 * scale)
     return stock - removal
+
+
+def _geometry_only(records):
+    return [replace(record, body_key=()) for record in records]
 
 
 def _split_face_at_z(part, wall, at: float = 0.0) -> Solid:
@@ -89,7 +95,7 @@ def test_rectangular_through_step_has_one_canonical_open_section_and_claim():
     part = _step()
     ledger = ClaimLedger(FaceGraph(part))
 
-    assert recognise_through_steps(part, ledger=ledger) == [
+    assert _geometry_only(recognise_through_steps(part, ledger=ledger)) == [
         ThroughStep(
             axis="z",
             length=20.0,
@@ -144,10 +150,10 @@ def test_rectangular_step_is_rotation_mirror_scale_and_step_roundtrip_stable(tmp
     ):
         assert [step.axis for step in recognise_through_steps(part)] == [axis]
 
-    assert recognise_through_steps(Rot(90, 0, 0) * base) == [
+    assert _geometry_only(recognise_through_steps(Rot(90, 0, 0) * base)) == [
         ThroughStep("y", 20.0, (12.5, 0.0, 7.5), ((5.0, 15.0), (5.0, -0.0), (20.0, -0.0)))
     ]
-    assert recognise_through_steps(Rot(0, 90, 0) * base) == [
+    assert _geometry_only(recognise_through_steps(Rot(0, 90, 0) * base)) == [
         ThroughStep("x", 20.0, (0.0, 7.5, -12.5), ((0.0, -20.0), (0.0, -5.0), (15.0, -5.0)))
     ]
     mirrored = recognise_through_steps(base.mirror(Plane.YZ))
@@ -228,7 +234,9 @@ def test_a_convex_straight_boundary_notch_preserves_the_step_proof():
 
     assert len(defining_wall.wires()) == 1
     assert len(defining_wall.edges()) == 8
-    assert recognise_through_steps(part) == recognise_through_steps(_step())
+    assert _geometry_only(recognise_through_steps(part)) == _geometry_only(
+        recognise_through_steps(_step())
+    )
 
 
 def test_a_tapered_defining_wall_is_not_a_constant_section_step():
@@ -262,9 +270,11 @@ def test_a_curved_boundary_interruption_preserves_the_step_proof():
     scallop = Pos(6, 15, 0) * Rot(0, 90, 0) * Cylinder(10, 4)
     part = _step() - scallop
 
-    assert recognise_through_steps(part) == recognise_through_steps(_step())
-    assert recognise_through_steps(Rot(0, 0, 180) * part) == recognise_through_steps(
-        Rot(0, 0, 180) * _step()
+    assert _geometry_only(recognise_through_steps(part)) == _geometry_only(
+        recognise_through_steps(_step())
+    )
+    assert _geometry_only(recognise_through_steps(Rot(0, 0, 180) * part)) == _geometry_only(
+        recognise_through_steps(Rot(0, 0, 180) * _step())
     )
 
 
@@ -275,14 +285,18 @@ def test_an_inner_wire_interruption_is_rotation_scale_and_step_stable(tmp_path):
 
     for scale in (0.05, 1.0, 100.0):
         part = pierced(scale)
-        assert recognise_through_steps(part) == recognise_through_steps(_step(scale))
-        assert recognise_through_steps(Rot(90, 0, 0) * part) == recognise_through_steps(
-            Rot(90, 0, 0) * _step(scale)
+        assert _geometry_only(recognise_through_steps(part)) == _geometry_only(
+            recognise_through_steps(_step(scale))
+        )
+        assert _geometry_only(recognise_through_steps(Rot(90, 0, 0) * part)) == _geometry_only(
+            recognise_through_steps(Rot(90, 0, 0) * _step(scale))
         )
 
     path = tmp_path / "pierced.step"
     export_step(pierced(1.0), path)
-    assert recognise_through_steps(import_step(path)) == recognise_through_steps(_step())
+    assert _geometry_only(recognise_through_steps(import_step(path))) == _geometry_only(
+        recognise_through_steps(_step())
+    )
 
 
 def test_an_interrupted_wall_keeps_exact_graph_owned_evidence_and_aggregate_parity():

@@ -348,3 +348,12 @@ profiles and `Groove` profiles agree by equality. Equal signatures on separate s
 `None`; legacy hand-built records retain the empty-tuple default. This lets a consumer distinguish
 a disconnected stair enclosed by a shaft's AABB from a blind-bore floor physically owned by that
 shaft without rescanning topology or treating containment as identity.
+
+## Amendment (Riser/ThroughStep body correlation, issue #388)
+
+`RiserEvidence` schema version 3 and `ThroughStep` schema version 2 append the shared optional
+`body_key`. The complete source-solid roster resolves keys before either family publishes records;
+equal signatures refuse with `None`, and legacy constructors retain the empty tuple. A consumer can
+therefore reconcile a structural riser with a ThroughStep only when their non-null keys agree,
+without allowing a nearby or touching-but-disconnected solid to steal the riser. The field changes
+ownership correlation only, not either family's geometric acceptance or defining evidence.

@@ -88,6 +88,7 @@ MODULE_SEAM_EDGES = {
     },
     "through_steps": {
         "_adjacency",
+        "_body_identity",
         "_candidates",
         "_claims",
         "_geometry",

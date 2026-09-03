@@ -12,11 +12,13 @@ tapered or curved walls, seam interruptions and partial-run steps remain outside
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import total_ordering
 from typing import Any
 
 from build123d import GeomType, Wire
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode, axis_aligned_axis
+from b123d_recognisers._body_identity import BodyKey, unambiguous_body_keys
 from b123d_recognisers._candidates import EvidenceSink, FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._geometry import COORD_FLOOR, SMOOTH_ARC_GAP
@@ -28,7 +30,8 @@ _AXES = "xyz"
 SPAN_EPS = COORD_FLOOR
 
 
-@dataclass(frozen=True, order=True)
+@total_ordering
+@dataclass(frozen=True)
 class ThroughStep(Record):
     """One principal-axis rectangular open-profile step spanning a source solid.
 
@@ -48,6 +51,22 @@ class ThroughStep(Record):
         tuple[float, float],
         tuple[float, float],
     ]
+    body_key: BodyKey | None = ()
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, ThroughStep):
+            return NotImplemented
+        return self._order_key() < other._order_key()
+
+    def _order_key(self) -> tuple[object, ...]:
+        return (
+            self.axis,
+            self.length,
+            self.at,
+            self.section,
+            self.body_key is not None,
+            self.body_key or (),
+        )
 
 
 @dataclass(frozen=True)
@@ -280,6 +299,7 @@ def _recognise_one(
     solid: Any,
     graph: FaceGraph,
     planes: dict[FaceNode, tuple[int, float] | None],
+    body_key: BodyKey | None,
 ) -> list[tuple[ThroughStep, tuple[FaceNode, ...]]]:
     solid_nodes = {graph.require_node(face) for face in solid.faces()}
     regions = _regions(graph, solid_nodes, planes)
@@ -343,6 +363,7 @@ def _recognise_one(
                 round(high - low, 3),
                 (round(at[0], 3), round(at[1], 3), round(at[2], 3)),
                 (rounded[0], rounded[1], rounded[2]),
+                body_key,
             )
             out.append((record, ordered))
     return out
@@ -356,8 +377,12 @@ def recognise_through_steps(
     graph = FaceGraph(part) if ledger is None else ledger.graph
     sink: EvidenceSink | None = None if ledger is None else ledger.sink
     planes = {node: axis_aligned_axis(graph.face(node).wrapped) for node in graph.nodes}
+    solids = list(part.solids())
+    body_keys = unambiguous_body_keys(solids, require_valid_solid=True)
     proposals = [
-        proposal for solid in part.solids() for proposal in _recognise_one(solid, graph, planes)
+        proposal
+        for solid, body_key in zip(solids, body_keys, strict=True)
+        for proposal in _recognise_one(solid, graph, planes, body_key)
     ]
     proposals.sort(key=lambda proposal: proposal[0])
     if sink is not None:

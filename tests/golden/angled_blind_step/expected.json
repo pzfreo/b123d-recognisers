@@ -73,6 +73,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_key": [
+              0.0,
+              0.0,
+              0.0,
+              50.0,
+              50.0,
+              25.0,
+              61374.9618875,
+              9819.45614477
+            ],
             "body_levels": [],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
@@ -91,6 +101,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              0.0,
+              0.0,
+              0.0,
+              50.0,
+              50.0,
+              25.0,
+              61374.9618875,
+              9819.45614477
+            ],
             "body_levels": [],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
@@ -148,6 +168,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "x",
+            "body_key": [
+              0.0,
+              0.0,
+              0.0,
+              50.0,
+              50.0,
+              25.0,
+              61374.9618875,
+              9819.45614477
+            ],
             "body_levels": [],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
@@ -166,6 +196,16 @@
           {
             "_type": "RiserEvidence",
             "axis": "y",
+            "body_key": [
+              0.0,
+              0.0,
+              0.0,
+              50.0,
+              50.0,
+              25.0,
+              61374.9618875,
+              9819.45614477
+            ],
             "body_levels": [],
             "hi_at_envelope": true,
             "lo_at_envelope": false,
@@ -330,6 +370,16 @@
         {
           "_type": "RiserEvidence",
           "axis": "x",
+          "body_key": [
+            0.0,
+            0.0,
+            0.0,
+            50.0,
+            50.0,
+            25.0,
+            61374.9618875,
+            9819.45614477
+          ],
           "body_levels": [],
           "hi_at_envelope": true,
           "lo_at_envelope": false,
@@ -348,6 +398,16 @@
         {
           "_type": "RiserEvidence",
           "axis": "y",
+          "body_key": [
+            0.0,
+            0.0,
+            0.0,
+            50.0,
+            50.0,
+            25.0,
+            61374.9618875,
+            9819.45614477
+          ],
           "body_levels": [],
           "hi_at_envelope": true,
           "lo_at_envelope": false,
