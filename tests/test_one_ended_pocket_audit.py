@@ -29,8 +29,12 @@ def _hexagonal_tool(*, depth: float, both: bool = False, z: float = 0.0):
     return tool.part
 
 
-def _candidates(part):
-    return tuple(candidate for probe, candidate in _one_ended_regions(FaceGraph(part)) if candidate)
+def _candidates(part, *, expected_sides: int = 6):
+    return tuple(
+        candidate
+        for probe, candidate in _one_ended_regions(FaceGraph(part), expected_sides)
+        if candidate
+    )
 
 
 def test_blind_hexagonal_pocket_has_one_mouth_and_one_floor() -> None:
@@ -58,12 +62,16 @@ def test_floor_breach_is_not_a_bounded_one_ended_pocket() -> None:
     assert _candidates(breached) == ()
 
 
-def test_other_polygon_side_counts_are_not_six_sided_candidates() -> None:
+def test_polygonal_mouth_audit_uses_the_selected_dataset_family_side_count() -> None:
     triangular = Box(60, 40, 20) - _polygon_tool(3)
     rectangular = Box(60, 40, 20) - Pos(0, 0, 5) * Box(12, 8, 10)
 
     assert _candidates(triangular) == ()
     assert _candidates(rectangular) == ()
+    (triangle,) = _candidates(triangular, expected_sides=3)
+    (rectangle,) = _candidates(rectangular, expected_sides=4)
+    assert len(triangle.section.boundary) == 3
+    assert len(rectangle.section.boundary) == 4
 
 
 def _polygon_tool(sides: int):

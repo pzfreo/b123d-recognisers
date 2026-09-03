@@ -56,6 +56,7 @@ _PUBLISHED_VERSION = (
     "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823"
 )
 _KNOWN_INVALID_REASON = "Hole cylindrical evidence does not prove one valid solid"
+_TARGET_SIDES = {13: 3, 14: 4, 15: 6}
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,7 +157,8 @@ def _void_and_closed(
 ) -> bool:
     """Prove void inside, exterior at the mouth, and material behind the floor."""
 
-    interval = tuple(sorted((mouth_at, floor_at)))
+    low, high = sorted((mouth_at, floor_at))
+    interval = (low, high)
     try:
         if _material_fraction(solid, _probe_prism(frame, interval, section)) > _MATERIAL_VOL_FRAC:
             return False
@@ -214,7 +216,10 @@ def _without_collinear_subdivisions(section: PlanarSection) -> PlanarSection | N
 
 
 def _probe_region(
-    graph: FaceGraph, region: frozenset[FaceNode], owners: frozenset[FaceNode]
+    graph: FaceGraph,
+    region: frozenset[FaceNode],
+    owners: frozenset[FaceNode],
+    expected_sides: int,
 ) -> tuple[RegionProbe, OneEndedRegion | None]:
     mouths = _mouth_wires(graph, region, owners)
     if len(mouths) != 1:
@@ -233,44 +238,65 @@ def _probe_region(
         return RegionProbe(
             "degenerate_polygonal_mouth", 1, raw_section_sides=len(raw_section.boundary)
         ), None
-    if len(section.boundary) != 6:
+    if len(section.boundary) != expected_sides:
         return RegionProbe(
-            "not_six_sided", 1, len(section.boundary), len(raw_section.boundary)
+            "unexpected_side_count", 1, len(section.boundary), len(raw_section.boundary)
         ), None
     frame = LocalFrame.canonical(base.run, centre)
     mouth_at = _plane_at(graph, opening, frame.run)
     if mouth_at is None:
-        return RegionProbe("opening_run", 1, 6, len(raw_section.boundary)), None
+        return RegionProbe(
+            "opening_run", 1, expected_sides, len(raw_section.boundary)
+        ), None
     floors = _floor_clusters(graph, region, frame.run, mouth_at)
     if len(floors) != 1:
         return RegionProbe(
-            "not_one_floor_plane", 1, 6, len(raw_section.boundary), len(floors)
+            "not_one_floor_plane",
+            1,
+            expected_sides,
+            len(raw_section.boundary),
+            len(floors),
         ), None
     floor_at, floor = floors[0]
     if abs(floor_at - mouth_at) <= _COORD_FLOOR:
-        return RegionProbe("zero_depth", 1, 6, len(raw_section.boundary), 1, len(floor)), None
+        return RegionProbe(
+            "zero_depth", 1, expected_sides, len(raw_section.boundary), 1, len(floor)
+        ), None
     solid = graph.common_valid_solid(region | owners | floor)
     if solid is None:
         return RegionProbe(
-            "not_one_valid_solid", 1, 6, len(raw_section.boundary), 1, len(floor)
+            "not_one_valid_solid",
+            1,
+            expected_sides,
+            len(raw_section.boundary),
+            1,
+            len(floor),
         ), None
     if not _void_and_closed(
         graph.solid_shape(solid), frame, mouth_at, floor_at, section
     ):
         return RegionProbe(
-            "not_bounded_prismatic_void", 1, 6, len(raw_section.boundary), 1, len(floor)
+            "not_bounded_prismatic_void",
+            1,
+            expected_sides,
+            len(raw_section.boundary),
+            1,
+            len(floor),
         ), None
     return (
-        RegionProbe("candidate", 1, 6, len(raw_section.boundary), 1, len(floor)),
+        RegionProbe(
+            "candidate", 1, expected_sides, len(raw_section.boundary), 1, len(floor)
+        ),
         OneEndedRegion(region, opening, floor, section, frame.run, mouth_at, floor_at),
     )
 
 
 def _one_ended_regions(
-    graph: FaceGraph,
+    graph: FaceGraph, expected_sides: int = 6
 ) -> tuple[tuple[RegionProbe, OneEndedRegion | None], ...]:
     return tuple(
-        _probe_region(graph, region, owners) for region, owners in _candidate_regions(graph)
+        _probe_region(graph, region, owners, expected_sides)
+        for region, owners in _candidate_regions(graph)
     )
 
 
@@ -292,14 +318,11 @@ def _audit_model(
 
     from b123d_recognisers import import_step_geometry
 
-    truth = load_mfcadpp_truth(path)
     part = import_step_geometry(path)
-    faces = tuple(part.faces())
-    if len(faces) != len(truth.semantic):
-        raise RuntimeError(f"{truth.model_id}: imported face count does not match labels")
     try:
         product = _take_inventory(part)
     except (RuntimeError, ValueError) as error:
+        truth = load_mfcadpp_truth(path)
         if (
             truth.model_id not in _KNOWN_MFCADPP_2500_INVALID
             or str(error) != _KNOWN_INVALID_REASON
@@ -317,6 +340,13 @@ def _audit_model(
         )
     graph = product.context.graph
     accepted_constituent = _accepted_constituent(product)
+    candidate_regions = _candidate_regions(graph)
+
+    # Labels score the complete neutral/aggregate candidate roster; they never author it.
+    truth = load_mfcadpp_truth(path)
+    faces = tuple(part.faces())
+    if len(faces) != len(truth.semantic):
+        raise RuntimeError(f"{truth.model_id}: imported face count does not match labels")
     labelled = {
         graph.require_node(faces[index])
         for index, label in enumerate(truth.semantic)
@@ -325,8 +355,9 @@ def _audit_model(
     components = _components(graph, labelled) if labelled else ()
     rows: list[dict[str, Any]] = []
     gates: Counter[str] = Counter()
-    for region, owners in _candidate_regions(graph):
-        probe, candidate = _probe_region(graph, region, owners)
+    expected_sides = _TARGET_SIDES[class_id]
+    for region, owners in candidate_regions:
+        probe, candidate = _probe_region(graph, region, owners, expected_sides)
         gates[probe.first_failed_gate] += 1
         labels = Counter(truth.semantic[node.index] for node in region)
         overlaps = [len(region & component) for component in components]
@@ -388,6 +419,11 @@ def main() -> int:
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+
+    if args.class_id not in _TARGET_SIDES:
+        parser.error(
+            "--class-id must identify a polygonal Pocket class: 13, 14, or 15"
+        )
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
