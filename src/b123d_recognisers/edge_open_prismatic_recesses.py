@@ -8,7 +8,15 @@ import math
 from dataclasses import dataclass
 from itertools import pairwise
 
+from build123d import Solid, Vector
+
+from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
+from b123d_recognisers._geometry import AXIS_ZERO_COS
 from b123d_recognisers._record import Record
+from b123d_recognisers._rings import SPAN_EPS
+from b123d_recognisers._typing import Part
 
 _AXES = "xyz"
 _EPS = 1e-9
@@ -39,6 +47,13 @@ def _crosses(
 ) -> bool:
     a, b = first
     c, d = second
+    if (
+        max(a[0], b[0]) + _EPS < min(c[0], d[0])
+        or max(c[0], d[0]) + _EPS < min(a[0], b[0])
+        or max(a[1], b[1]) + _EPS < min(c[1], d[1])
+        or max(c[1], d[1]) + _EPS < min(a[1], b[1])
+    ):
+        return False
     return _turn(a, b, c) * _turn(a, b, d) <= _EPS and _turn(c, d, a) * _turn(c, d, b) <= _EPS
 
 
@@ -127,3 +142,191 @@ class EdgeOpenPrismaticRecess(Record):
         if not isinstance(self.section, OpenPolygonalSection):
             raise ValueError("section must be an OpenPolygonalSection")
         object.__setattr__(self, "run_interval", interval)
+
+
+def _principal_plane(graph: FaceGraph, node: FaceNode) -> tuple[int, float] | None:
+    normal = graph.normal(node)
+    if normal is None:
+        return None
+    axes = [axis for axis in range(3) if abs(normal[axis]) >= 1.0 - AXIS_ZERO_COS]
+    if len(axes) != 1:
+        return None
+    axis = axes[0]
+    low, high = graph.bounds(node)[axis]
+    return (axis, 0.5 * (low + high)) if high - low <= SPAN_EPS else None
+
+
+def _shared_segment(
+    graph: FaceGraph, floor: FaceNode, wall: FaceNode, axis: int
+) -> tuple[tuple[float, float], tuple[float, float]] | None:
+    others = [other for other in range(3) if other != axis]
+    found = []
+    for occurrence in graph.shared_occurrences(floor, wall):
+        edge = occurrence.edge
+        vertices = tuple(edge.vertices())
+        if edge.geom_type.name != "LINE" or len(vertices) != 2:
+            continue
+        points = []
+        for vertex in vertices:
+            values = (float(vertex.X), float(vertex.Y), float(vertex.Z))
+            points.append((values[others[0]], values[others[1]]))
+        found.append(tuple(points))
+    return found[0] if len(found) == 1 else None  # type: ignore[return-value]
+
+
+def _ordered_open_chain(
+    graph: FaceGraph, walls: tuple[FaceNode, ...]
+) -> tuple[FaceNode, ...] | None:
+    wall_set = set(walls)
+    adjacent = {
+        wall: tuple(other for other in graph.neighbours(wall) if other in wall_set)
+        for wall in walls
+    }
+    ends = sorted((wall for wall in walls if len(adjacent[wall]) == 1), key=lambda node: node.index)
+    if len(ends) != 2 or any(len(adjacent[wall]) not in (1, 2) for wall in walls):
+        return None
+    ordered = [ends[0]]
+    while len(ordered) < len(walls):
+        choices = [node for node in adjacent[ordered[-1]] if node not in ordered]
+        if len(choices) != 1:
+            return None
+        ordered.append(choices[0])
+    return tuple(ordered) if set(ordered) == wall_set else None
+
+
+def _section_from_walls(
+    graph: FaceGraph, floor: FaceNode, walls: tuple[FaceNode, ...], axis: int
+) -> OpenPolygonalSection | None:
+    segments = tuple(_shared_segment(graph, floor, wall, axis) for wall in walls)
+    if any(segment is None for segment in segments):
+        return None
+    physical = tuple(segment for segment in segments if segment is not None)
+    joins: list[tuple[float, float]] = []
+    for left, right in pairwise(physical):
+        shared = [a for a in left for b in right if math.dist(a, b) <= SPAN_EPS]
+        if len(shared) != 1:
+            return None
+        joins.append(shared[0])
+    first = next((point for point in physical[0] if math.dist(point, joins[0]) > SPAN_EPS), None)
+    last = next((point for point in physical[-1] if math.dist(point, joins[-1]) > SPAN_EPS), None)
+    if first is None or last is None:
+        return None
+    chain = tuple((round(u, 4), round(v, 4)) for u, v in (first, *joins, last))
+    if tuple(reversed(chain)) < chain:
+        chain = tuple(reversed(chain))
+    try:
+        return OpenPolygonalSection(chain, OpenSectionOpening(chain[-1], chain[0]))
+    except ValueError:
+        return None
+
+
+def _material_fraction(part: Part, probe: Solid) -> float:
+    result = part.intersect(probe)
+    if result is None:
+        return 0.0
+    volume = (
+        float(result.volume)
+        if hasattr(result, "volume")
+        else sum(float(item.volume) for item in result)
+    )
+    return volume / float(probe.volume)
+
+
+def _exact_floor_proof(
+    part: Part, graph: FaceGraph, floor: FaceNode, axis: int, floor_at: float, mouth_at: float
+) -> bool:
+    distance = mouth_at - floor_at
+    thickness = max(2e-5, abs(distance) * 1e-4)
+    toward, behind = [0.0] * 3, [0.0] * 3
+    toward[axis] = distance
+    behind[axis] = -math.copysign(thickness, distance)
+    try:
+        cavity = Solid.extrude(graph.face(floor), Vector(*toward))
+        backing = Solid.extrude(graph.face(floor), Vector(*behind))
+        return (
+            _material_fraction(part, cavity) <= 1e-9
+            and _material_fraction(part, backing) >= 1 - 1e-9
+        )
+    except (AttributeError, RuntimeError, TypeError, ValueError, ZeroDivisionError):
+        return False
+
+
+def recognise_edge_open_prismatic_recesses(
+    part: Part,
+    *,
+    face_edges: FaceEdges | None = None,
+    ledger: ClaimLedger | EvidenceWriter | None = None,
+) -> list[EdgeOpenPrismaticRecess]:
+    """Recognise the proved six-wall, one-side-open polygonal recess subset."""
+    graph = FaceGraph(part, face_edges=face_edges) if ledger is None else ledger.graph
+    found: list[tuple[EdgeOpenPrismaticRecess, tuple[FaceNode, ...], FaceNode]] = []
+    for floor in graph.nodes:
+        plane = _principal_plane(graph, floor) if graph.is_planar(floor) else None
+        if plane is None:
+            continue
+        axis, floor_at = plane
+        walls = tuple(
+            sorted(
+                (
+                    node
+                    for node in graph.neighbours(floor)
+                    if graph.is_planar(node)
+                    and graph.arc(floor, node) == "concave"
+                    and (normal := graph.normal(node)) is not None
+                    and abs(normal[axis]) <= AXIS_ZERO_COS
+                ),
+                key=lambda node: node.index,
+            )
+        )
+        if len(walls) != 6 or (ordered := _ordered_open_chain(graph, walls)) is None:
+            continue
+        far = []
+        for wall in ordered:
+            low, high = graph.bounds(wall)[axis]
+            if abs(low - floor_at) <= SPAN_EPS:
+                far.append(high)
+            elif abs(high - floor_at) <= SPAN_EPS:
+                far.append(low)
+            else:
+                break
+        else:
+            if max(far) - min(far) > SPAN_EPS or abs(far[0] - floor_at) <= SPAN_EPS:
+                continue
+            mouth_at = sum(far) / len(far)
+            shared_context = set(graph.neighbours(ordered[0])) & set(graph.neighbours(ordered[-1]))
+            if not any(
+                _principal_plane(graph, node) == (axis, mouth_at)
+                and graph.arc(node, ordered[0]) in ("convex", "smooth")
+                and graph.arc(node, ordered[-1]) in ("convex", "smooth")
+                for node in shared_context
+            ):
+                continue
+            owner = graph.common_valid_solid((*ordered, floor))
+            section = _section_from_walls(graph, floor, ordered, axis)
+            if (
+                owner is None
+                or section is None
+                or not _exact_floor_proof(
+                    graph.solid_shape(owner), graph, floor, axis, floor_at, mouth_at
+                )
+            ):
+                continue
+            low, high = sorted((floor_at, mouth_at))
+            record = EdgeOpenPrismaticRecess(
+                _AXES[axis],
+                (round(low, 3), round(high, 3)),
+                1 if mouth_at > floor_at else -1,
+                section,
+            )
+            found.append((record, ordered, floor))
+    found.sort(key=lambda item: item[0])
+    if ledger is not None:
+        writer = ledger.writer if isinstance(ledger, ClaimLedger) else ledger
+        for record, walls, floor in found:
+            writer.add_defining(
+                record,
+                walls,
+                family=FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
+                constituent=(*walls, floor),
+            )
+    return [record for record, _walls, _floor in found]

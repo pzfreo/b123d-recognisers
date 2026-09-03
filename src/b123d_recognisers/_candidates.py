@@ -51,6 +51,7 @@ class FamilyId(Enum):
     CIRCULAR_BLIND_STEPS = "circular_blind_steps"
     COUNTERSINKS = "countersinks"
     DOUBLE_D_BORES = "double_d_bores"
+    EDGE_OPEN_PRISMATIC_RECESSES = "edge_open_prismatic_recesses"
     FILLETS = "fillets"
     FLATS = "flats"
     GROOVES = "grooves"
@@ -948,9 +949,7 @@ class _CandidateIssuer:
         object.__setattr__(
             result,
             "_by_constituent",
-            MappingProxyType(
-                {key: tuple(value) for key, value in self._by_constituent.items()}
-            ),
+            MappingProxyType({key: tuple(value) for key, value in self._by_constituent.items()}),
         )
         object.__setattr__(result, "_observations", tuple(self._observations))
         object.__setattr__(

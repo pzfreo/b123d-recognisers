@@ -104,6 +104,12 @@ from b123d_recognisers.countersinks import (
     countersink_matches_hole,
     recognise_countersinks,
 )
+from b123d_recognisers.edge_open_prismatic_recesses import (
+    EdgeOpenPrismaticRecess,
+    OpenPolygonalSection,
+    OpenSectionOpening,
+    recognise_edge_open_prismatic_recesses,
+)
 from b123d_recognisers.explanations import (
     DispositionExplanation,
     ExplanationCoverage,
@@ -348,11 +354,15 @@ __all__ = [
     "ThroughStep",
     "recognise_through_steps",
     "PrismaticPocket",
+    "EdgeOpenPrismaticRecess",
+    "OpenPolygonalSection",
+    "OpenSectionOpening",
     "recognise_passages",
     "recognise_section_passages",
     "recognise_oriented_slots",
     "recognise_oriented_slot_patterns",
     "recognise_prismatic_pockets",
+    "recognise_edge_open_prismatic_recesses",
     "recognise_bosses",
     "recognise_blends",
     "recognise_chamfers",

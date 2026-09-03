@@ -50,6 +50,10 @@ from b123d_recognisers.circular_blind_steps import (
     _discover_circular_blind_steps,
 )
 from b123d_recognisers.countersinks import CounterSink, _discover_countersinks
+from b123d_recognisers.edge_open_prismatic_recesses import (
+    EdgeOpenPrismaticRecess,
+    recognise_edge_open_prismatic_recesses,
+)
 from b123d_recognisers.fillets import Fillet, _discover_fillets
 from b123d_recognisers.flats import Flat, _discover_flats
 from b123d_recognisers.grooves import Groove, recognise_grooves
@@ -608,15 +612,9 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_rectangular_blind_slots",
         (),
         prismatic,
-        _simple(
-            lambda s: list(
-                recognise_rectangular_blind_slots(s.context.part, ledger=s.writer)
-            )
-        ),
+        _simple(lambda s: list(recognise_rectangular_blind_slots(s.context.part, ledger=s.writer))),
         Counted("rectangular_blind_slot"),
-        FullyAttributed(
-            "every returned rectangular blind slot owns its two sides, floor, and cap"
-        ),
+        FullyAttributed("every returned rectangular blind slot owns its two sides, floor, and cap"),
     ),
     PhysicalDefinition(
         FamilyId.ROUND_BOTTOM_BLIND_SLOTS,
@@ -626,9 +624,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         (),
         prismatic,
         _simple(
-            lambda s: list(
-                recognise_round_bottom_blind_slots(s.context.part, ledger=s.writer)
-            )
+            lambda s: list(recognise_round_bottom_blind_slots(s.context.part, ledger=s.writer))
         ),
         Counted("round_bottom_blind_slot"),
         FullyAttributed(
@@ -706,6 +702,23 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("prismatic_pocket"),
         FullyAttributed("every returned prismatic pocket claims its defining boundary faces"),
+    ),
+    PhysicalDefinition(
+        FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
+        (EdgeOpenPrismaticRecess,),
+        "edge_open_prismatic_recesses",
+        "recognise_edge_open_prismatic_recesses",
+        (),
+        always,
+        _simple(
+            lambda s: list(
+                recognise_edge_open_prismatic_recesses(
+                    s.context.part, ledger=s.writer, face_edges=s.context.face_edges
+                )
+            )
+        ),
+        Counted("edge_open_prismatic_recess"),
+        FullyAttributed("every returned edge-open recess claims its physical wall supports"),
     ),
     PhysicalDefinition(
         FamilyId.PADS,
