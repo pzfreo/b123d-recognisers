@@ -433,7 +433,7 @@ what a new family adopts, and this is where the existing names are reconciled to
 | Rectangular through slot | Channel; Slot (partial) | the dominant three-wall, longitudinally open U-section satisfies Channel; a smaller enclosed/intersected principal-axis subset satisfies Slot, while free-axis and split variants remain outside both contracts |
 | Circular through slot | — | **unsupported**; MFCAD++/MFInstSeg use this label for a semicylindrical groove, which the current `Slot` record cannot express |
 | Rectangular pocket | Pocket | blind by definition here |
-| Triangular pocket; 6-sided pocket | PrismaticPocket | any planar cross-section, found by walking the ring; `Pocket` cannot express a non-rectangular footprint |
+| Triangular pocket; 6-sided pocket | PrismaticPocket | a non-rectangular planar cross-section, normally found by walking the wall ring; an intact straight-edged floor can recover it through a deeper side interruption after complete cap, void, material and ownership proof |
 | **Circular end pocket** | Pocket | an obround blind recess; direct recognisers may propose competing paired walls, but aggregate boundary reconciliation keeps the floored pocket |
 | Rectangular blind slot | RectangularBlindSlot | conservative principal-axis, edge-open, one-cap constant rectangular U-section subset |
 | Rectangular blind step | Pocket | a floored recess open at one edge reads as a corner notch |
@@ -491,7 +491,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `PassageSection` | Nested canonical, origin-centred immutable line/arc boundary. |
 | `PassageSectionVertex` | One nested 2-D section vertex whose bulge describes the edge to the next vertex. |
 | `Plate` | One qualifying thin prismatic slab represented by its thickness axis and bounds. |
-| `PrismaticPocket` | One floored recess of constant planar cross-section, open at one end; `sides` and `section` carry the shape that `width`/`length` cannot. |
+| `PrismaticPocket` | One floored recess of constant planar cross-section, open at one end; `sides` and `section` carry the shape that `width`/`length` cannot. The fallback for a wall ring broken by a deeper side opening requires an intact straight-edged non-four-sided floor plus exact cap, void, material and body-local ownership proof; four-sided ambiguity remains with `Pocket` and `RectangularBlindSlot`. |
 | `Pocket` | One floored bounded rectangular recess; elongated blind slots intentionally use this same class. |
 | `PocketArray` | At least three identical compatible pockets on one constant-pitch line. |
 | `PocketGrid` | A complete rectangular lattice of identical compatible pockets. |

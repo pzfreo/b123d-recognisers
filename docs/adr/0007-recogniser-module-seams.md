@@ -422,6 +422,14 @@ Candidates, reconciliation or completed evidence, and it does not create a share
 The same module retains the exact traversed nodes and remains the sole issuer of
 `PrismaticPocket` defining and constituent evidence.
 
+The issue-#460 floor-seeded extension remains inside that same producer. It reads an intact
+non-four-sided original floor wire and its exact concave planar wall neighbours, then applies the
+module's own void/open/material proof before issuing the same `PrismaticPocket` record. Four-sided
+floors remain with the more specific Pocket and rectangular blind-slot producers. The extension
+does not call the mouth-region fallback, a sibling recogniser or a shared post-recognition
+traversal. Intersecting side-opening faces remain outside the selected defining and constituent
+sets, so the extension does not create a second ownership authority for the neighbouring feature.
+
 F6b2 adds `_correspondence_partition` as a pure geometry-value leaf above `_body_geometry` and
 below `_correspondence_match`. It derives bounded prism facts from immutable schema-three values
 only: it imports no product/snapshot authority, kernel wrapper, graph, recogniser, Candidate,

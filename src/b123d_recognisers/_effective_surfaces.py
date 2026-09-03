@@ -410,6 +410,18 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "wall-cycle reconstruction uses original planar supports",
     ),
+    "prismatic_pockets:_floor_section:geom_type:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "straight original floor boundary gate",
+    ),
+    "prismatic_pockets:_floor_seeded_regions:is_planar:1": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "principal-plane intact floor seed",
+    ),
+    "prismatic_pockets:_floor_seeded_regions:is_planar:2": (
+        SurfaceReaderDisposition.PENDING_MIGRATION,
+        "original planar wall support at each floor edge",
+    ),
     "angled_steps:_effective_linear_sides:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "edge curve kind, not a face surface",

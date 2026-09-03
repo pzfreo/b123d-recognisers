@@ -55,7 +55,15 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
 from b123d_recognisers._geometry import AXIS_ZERO_COS
 from b123d_recognisers._record import Record
-from b123d_recognisers._rings import SPAN_EPS, _centroid, _cross_section, _is_void, rings
+from b123d_recognisers._rings import (
+    SPAN_EPS,
+    _canonical,
+    _capped_ends,
+    _centroid,
+    _cross_section,
+    _is_void,
+    rings,
+)
 from b123d_recognisers._typing import Part
 
 
@@ -224,6 +232,123 @@ def _plane_at(graph: FaceGraph, node: FaceNode, axis: int) -> float | None:
     return 0.5 * (low + high) if high - low <= SPAN_EPS else None
 
 
+def _floor_section(wire: Wire, axis: int) -> tuple[tuple[float, float], ...] | None:
+    """Read one straight-edged floor boundary in exact wire order."""
+
+    try:
+        edges = tuple(wire.edges())
+        if len(edges) < 3 or any(edge.geom_type.name != "LINE" for edge in edges):
+            return None
+        others = [other for other in range(3) if other != axis]
+        corners = []
+        for index, edge in enumerate(edges):
+            shared = tuple(
+                left
+                for left in edges[index - 1].vertices()
+                for right in edge.vertices()
+                if left == right
+            )
+            if len(shared) != 1:
+                return None
+            point = shared[0]
+            values = (float(point.X), float(point.Y), float(point.Z))
+            corners.append((values[others[0]], values[others[1]]))
+        return _canonical(corners)
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return None
+
+
+def _floor_seeded_regions(part: Part, graph: FaceGraph) -> tuple[_RecoveredPocket, ...]:
+    """Recover a prismatic Pocket whose intact floor outlives a corrupted mouth-side cycle.
+
+    The floor boundary is recognition evidence, not a label-derived reconstruction. Every edge
+    must meet one concave planar wall support on one principal run, and the resulting complete
+    section must remain void through one exterior termination with material immediately behind
+    the floor. Extra side openings may interrupt wall adjacency but cannot change that proof.
+    """
+
+    recovered = []
+    for floor in graph.nodes:
+        if not graph.is_planar(floor):
+            continue
+        normal = graph.normal(floor)
+        if normal is None:
+            continue
+        axes = [axis for axis in range(3) if abs(normal[axis]) >= 1.0 - AXIS_ZERO_COS]
+        if len(axes) != 1:
+            continue
+        axis = axes[0]
+        wires = tuple(graph.face(floor).wires())
+        if len(wires) != 1:
+            continue
+        wire = wires[0]
+        section = _floor_section(wire, axis)
+        # Once its mouth-side cycle is broken, a four-sided floor cannot by itself distinguish
+        # an interrupted Pocket from a rectangular blind-slot run.  Those shapes retain their
+        # more specific producers; this fallback is the non-rectangular proof they cannot make.
+        if section is None or len(section) == 4:
+            continue
+        walls = tuple(sorted(_wire_seed(graph, floor, wire), key=lambda node: node.index))
+        floor_arcs = {}
+        for node in walls:
+            floor_arcs[node] = graph.arc(floor, node)
+        if len(walls) != len(section) or any(
+            not graph.is_planar(node)
+            or floor_arcs[node] != "concave"
+            or (wall_normal := graph.normal(node)) is None
+            or abs(wall_normal[axis]) > AXIS_ZERO_COS
+            for node in walls
+        ):
+            continue
+        floor_at = _plane_at(graph, floor, axis)
+        if floor_at is None:
+            continue
+        far = []
+        for wall in walls:
+            low, high = graph.bounds(wall)[axis]
+            if abs(low - floor_at) <= SPAN_EPS:
+                far.append(high)
+            elif abs(high - floor_at) <= SPAN_EPS:
+                far.append(low)
+            else:
+                break
+        else:
+            directions = {1 if value > floor_at else -1 for value in far}
+            if len(directions) != 1:
+                continue
+            direction = directions.pop()
+            mouth_at = max(far) if direction > 0 else min(far)
+            if abs(mouth_at - floor_at) <= SPAN_EPS:
+                continue
+            owner = graph.common_valid_solid((*walls, floor))
+            low, high = sorted((mouth_at, floor_at))
+            caps = _capped_ends(graph, walls, set(walls), axis, low, high)
+            floor_index = 0 if floor_at == low else 1
+            mouth_index = 1 - floor_index
+            if (
+                caps[floor_index] != frozenset({floor})
+                or caps[mouth_index]
+                or owner is None
+                or not _void_open_and_floored(
+                graph.solid_shape(owner), section, axis, mouth_at, floor_at
+                )
+            ):
+                continue
+            recovered.append(
+                _RecoveredPocket(
+                    axis,
+                    low,
+                    high,
+                    direction,
+                    section,
+                    walls,
+                    frozenset((*walls, floor)),
+                )
+            )
+    recovered.sort(key=lambda item: (item.axis, _centroid(item.section), item.low, item.high))
+    return tuple(recovered)
+
+
 def _one_ended_regions(part: Part, graph: FaceGraph) -> tuple[_RecoveredPocket, ...]:
     """Recover unique principal-axis polygonal cavities whose wall spans are interrupted."""
 
@@ -378,9 +503,11 @@ def recognise_prismatic_pockets(
         )
 
     existing_walls = {frozenset(nodes) for _record, nodes, _constituent in found}
-    for recovered in _one_ended_regions(part, graph):
-        if frozenset(recovered.walls) in existing_walls:
+    for recovered in (*_one_ended_regions(part, graph), *_floor_seeded_regions(part, graph)):
+        wall_set = frozenset(recovered.walls)
+        if wall_set in existing_walls:
             continue
+        existing_walls.add(wall_set)
         others = [axis for axis in range(3) if axis != recovered.axis]
         centre = _centroid(recovered.section)
         at = [0.0, 0.0, 0.0]
