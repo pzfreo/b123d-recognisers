@@ -1,4 +1,4 @@
-# ADR 0017 — Preserve an edge-open polygonal recess as an open profile
+# ADR 0018 — Preserve an edge-open polygonal recess as an open profile
 
 - **Status:** Accepted
 - **Date:** 2026-09-03

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 from build123d import (
     Align,
@@ -10,9 +13,14 @@ from build123d import (
     Pos,
     RegularPolygon,
     Rot,
+    export_step,
     extrude,
+    import_step,
 )
 
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     OpenPolygonalSection,
@@ -99,12 +107,52 @@ def test_recognises_six_physical_walls_without_inventing_a_closing_wall() -> Non
     assert found.section.opening.start[1] == found.section.opening.end[1] == 20.0
 
 
+def test_edge_open_payload_matches_dedicated_golden() -> None:
+    expected = json.loads(
+        (
+            Path(__file__).parent / "golden" / "edge_open_prismatic_recess" / "expected.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    actual = json.loads(
+        json.dumps(
+            [
+                record.to_dict()
+                for record in recognise_edge_open_prismatic_recesses(_edge_open_hexagon())
+            ]
+        )
+    )
+
+    assert actual == expected
+
+
 def test_closed_polygonal_pocket_is_not_edge_open() -> None:
     stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
     with BuildPart() as cutter:
         with BuildSketch(Plane.XY.offset(10)):
             RegularPolygon(8, 7)
         extrude(amount=15)
+
+    assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+
+
+@pytest.mark.parametrize("sides", [6, 8])
+def test_non_six_wall_edge_open_profiles_are_refused(sides: int) -> None:
+    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY.offset(10)), Locations((0, 14)):
+            RegularPolygon(8, sides)
+        extrude(amount=15)
+
+    assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
+
+
+def test_floorless_edge_open_passage_is_refused() -> None:
+    stock = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    with BuildPart() as cutter:
+        with BuildSketch(Plane.XY.offset(-5)), Locations((0, 14)):
+            RegularPolygon(8, 7)
+        extrude(amount=30)
 
     assert recognise_edge_open_prismatic_recesses(stock - cutter.part) == []
 
@@ -123,3 +171,29 @@ def test_edge_open_recognition_is_axis_covariant_and_body_local() -> None:
         covariant.run_interval[1] - covariant.run_interval[0]
     )
     assert len(separate) == 2
+
+
+def test_edge_open_recess_survives_step_round_trip(tmp_path: Path) -> None:
+    path = tmp_path / "edge-open-prismatic-recess.step"
+    assert export_step(_edge_open_hexagon(), path)
+
+    (record,) = recognise_edge_open_prismatic_recesses(import_step(path))
+
+    assert (
+        record.to_dict()
+        == recognise_edge_open_prismatic_recesses(_edge_open_hexagon())[0].to_dict()
+    )
+
+
+def test_edge_open_recess_publishes_exact_body_local_evidence() -> None:
+    part = _edge_open_hexagon()
+    ledger = ClaimLedger(FaceGraph(part))
+
+    (record,) = recognise_edge_open_prismatic_recesses(part, ledger=ledger)
+    (candidate,) = ledger.candidate_set(FamilyId.EDGE_OPEN_PRISMATIC_RECESSES).candidates
+    evidence = ledger.snapshot_index()
+
+    assert candidate.record == record
+    assert len(evidence.defining_of(candidate)) == 6
+    assert len(evidence.constituent_of(candidate)) == 7
+    assert ledger.graph.common_valid_solid(evidence.constituent_of(candidate)) is not None

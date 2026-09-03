@@ -586,6 +586,104 @@
       ]
     },
     {
+      "census_name": "edge_open_prismatic_recess",
+      "census_output": "RecognitionResult.edge_open_prismatic_recesses",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/golden/edge_open_prismatic_recess/expected.json"
+      ],
+      "id": "edge-open-prismatic-recesses",
+      "introduced_in": "0.4.15",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_edge_open_prismatic_recesses",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.edge_open_prismatic_recesses"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "open_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "run_interval": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "section": {
+              "required": true,
+              "type": "record:OpenPolygonalSection",
+              "units": "none"
+            }
+          },
+          "name": "EdgeOpenPrismaticRecess",
+          "qualified_name": "b123d_recognisers.EdgeOpenPrismaticRecess",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in EdgeOpenPrismaticRecess.",
+          "fields": {
+            "opening": {
+              "required": true,
+              "type": "record:OpenSectionOpening",
+              "units": "none"
+            },
+            "wall_chain": {
+              "required": true,
+              "type": "list[tuple[float,2]]",
+              "units": "mm"
+            }
+          },
+          "name": "OpenPolygonalSection",
+          "qualified_name": "b123d_recognisers.OpenPolygonalSection",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in OpenPolygonalSection.",
+          "fields": {
+            "end": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "start": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            }
+          },
+          "name": "OpenSectionOpening",
+          "qualified_name": "b123d_recognisers.OpenSectionOpening",
+          "role": "nested",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_edge_open_prismatic_recesses.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": null,
       "census_output": null,
       "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",

@@ -258,7 +258,8 @@
               ]
             }
           }
-        ]
+        ],
+        "edge_open_prismatic_recesses": []
       },
       "rotational": {
         "_type": "RecognitionResult",
@@ -508,7 +509,8 @@
               ]
             }
           }
-        ]
+        ],
+        "edge_open_prismatic_recesses": []
       }
     },
     "feature_census": {
@@ -533,7 +535,8 @@
       "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 2,
-      "through_step": 0
+      "through_step": 0,
+      "edge_open_prismatic_recess": 0
     },
     "individual": {
       "recognise_angled_steps": [],

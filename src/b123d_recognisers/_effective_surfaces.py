@@ -203,12 +203,28 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "native planar rectangular U-section grammar; recovered surfaces are not accepted",
     ),
+    "edge_open_prismatic_recesses": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "truthful open-chain recognition requires original planar walls and straight edges",
+    ),
 }
 
 # Function/role/ordinal identities freeze every decision without depending on source line numbers.
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "edge_open_prismatic_recesses:_shared_segment:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "require exact physical straight floor-to-wall boundary segments",
+    ),
+    "edge_open_prismatic_recesses:recognise_edge_open_prismatic_recesses:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "floor seed is deliberately restricted to an original planar face",
+    ),
+    "edge_open_prismatic_recesses:recognise_edge_open_prismatic_recesses:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "wall supports are deliberately restricted to original planar faces",
+    ),
     "blends:_native_torus:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "read native torus parameters for the ADR 0013 circular-path contract",

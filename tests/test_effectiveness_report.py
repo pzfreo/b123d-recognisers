@@ -65,6 +65,7 @@ TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
 TAXONOMY_V9 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v9.json"
 TAXONOMY_V10 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v10.json"
+TAXONOMY_V11 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v11.json"
 
 
 def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
@@ -76,16 +77,12 @@ def _mfinstseg(root: Path, *, inst: list[list[int]] | None = None) -> None:
         "inst": inst or [[1, 1, 0], [1, 1, 0], [0, 0, 1]],
         "bottom": {"0": 0, "1": 1, "2": 0},
     }
-    (root / "labels" / "part.json").write_text(
-        json.dumps([["part", labels]]), encoding="utf-8"
-    )
+    (root / "labels" / "part.json").write_text(json.dumps([["part", labels]]), encoding="utf-8")
 
 
 def test_mfcadpp_adapter_reads_only_advanced_face_names(tmp_path: Path) -> None:
     step = tmp_path / "42.step"
-    step.write_bytes(
-        b"#1=ADVANCED_FACE('1',(),$,.T.);\n#2=ADVANCED_FACE('24',(),$,.T.);\n"
-    )
+    step.write_bytes(b"#1=ADVANCED_FACE('1',(),$,.T.);\n#2=ADVANCED_FACE('24',(),$,.T.);\n")
 
     truth = load_mfcadpp_truth(step)
 
@@ -255,9 +252,7 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
         "status": "supported",
     }
     assert mfcadpp[24] == {"families": [], "name": "Stock", "status": "incomparable"}
-    manifest = json.loads(
-        (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text()
-    )
+    manifest = json.loads((ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text())
     public_families = {family["id"] for family in manifest["families"]}
     assert {family for row in mfcadpp.values() for family in row["families"]} <= public_families
 
@@ -418,6 +413,20 @@ def test_taxonomy_v10_adds_only_oriented_slot_to_rectangular_passage() -> None:
     assert load_taxonomy(TAXONOMY_V10, "mfinstseg") == current
 
 
+def test_taxonomy_v11_adds_only_truthful_edge_open_six_sided_recesses() -> None:
+    historical = load_taxonomy(TAXONOMY_V10, "mfcadpp")
+    current = load_taxonomy(TAXONOMY_V11, "mfcadpp")
+
+    assert {key: value for key, value in current.items() if key != 15} == {
+        key: value for key, value in historical.items() if key != 15
+    }
+    assert current[15]["families"] == [
+        "edge-open-prismatic-recesses",
+        "prismatic-pockets",
+    ]
+    assert load_taxonomy(TAXONOMY_V11, "mfinstseg") == current
+
+
 def test_corpus_selections_are_lexical_unique_and_disclose_mfinstseg_leaks(
     tmp_path: Path,
 ) -> None:
@@ -449,9 +458,7 @@ def test_one_inventory_scores_records_faces_instances_and_reconciliation() -> No
     part = Box(30, 30, 10) - Cylinder(3, 10)
     faces = tuple(part.faces())
     semantic = tuple(1 if face.geom_type is GeomType.CYLINDER else 24 for face in faces)
-    through_hole_faces = frozenset(
-        index for index, label in enumerate(semantic) if label == 1
-    )
+    through_hole_faces = frozenset(index for index, label in enumerate(semantic) if label == 1)
     truth = DatasetTruth(
         "through-hole",
         Path("through-hole.step"),
@@ -572,13 +579,15 @@ def test_partial_support_preserves_supported_scorer_semantics() -> None:
     )
     supported_mismatch = scored("supported", ["slots"], wrong_family_truth)
     partial_mismatch = scored("partial", ["slots"], wrong_family_truth)
-    assert partial_mismatch["mapped_dataset_class_records"] == supported_mismatch[
-        "mapped_dataset_class_records"
-    ]
+    assert (
+        partial_mismatch["mapped_dataset_class_records"]
+        == supported_mismatch["mapped_dataset_class_records"]
+    )
     assert partial_mismatch["classes"]["1"]["matched_defining_faces"] == 0
-    assert partial_mismatch["taxonomy_mismatch_defining_faces"] == supported_mismatch[
-        "taxonomy_mismatch_defining_faces"
-    ]
+    assert (
+        partial_mismatch["taxonomy_mismatch_defining_faces"]
+        == supported_mismatch["taxonomy_mismatch_defining_faces"]
+    )
     assert partial_mismatch["taxonomy_mismatch_defining_faces"] > 0
 
 
@@ -892,9 +901,7 @@ def test_checkpoint_authority_pins_every_run_input(tmp_path: Path) -> None:
     )
 
     assert base["selected_sources_sha256"] == _source_selection_hash(truths)
-    changed_truth = DatasetTruth(
-        "one", truths[0].step_path, (24,), (), None, "2" * 64
-    )
+    changed_truth = DatasetTruth("one", truths[0].step_path, (24,), (), None, "2" * 64)
     assert base != _checkpoint_authority(
         authority,
         dataset="mfcadpp",
@@ -963,9 +970,7 @@ def test_checkpoint_round_trip_and_authority_refusal(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("contents", ("not json", "{}"))
-def test_checkpoint_refuses_corrupt_or_partial_rows(
-    tmp_path: Path, contents: str
-) -> None:
+def test_checkpoint_refuses_corrupt_or_partial_rows(tmp_path: Path, contents: str) -> None:
     authority, truths = _checkpoint_fixture(tmp_path)
     captured = _checkpoint_authority(
         authority,
@@ -989,8 +994,7 @@ def test_checkpoint_refuses_corrupt_or_partial_rows(
 
 def test_known_full_selection_refuses_invalid_policy_before_scoring() -> None:
     ids = sorted(
-        baseline_runner._KNOWN_MFCADPP_2500_INVALID
-        | {f"valid-{index}" for index in range(2493)}
+        baseline_runner._KNOWN_MFCADPP_2500_INVALID | {f"valid-{index}" for index in range(2493)}
     )
 
     with pytest.raises(EffectivenessDataError, match="before recognition"):
