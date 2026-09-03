@@ -30,7 +30,7 @@ extend or weaken `PrismaticPocket`.
 The public profile contains:
 
 - an ordered open chain of the exact section vertices at the physical planar wall junctions;
-- both exact endpoints where the chain meets one planar exterior opening face; and
+- both exact endpoints where the chain meets the observed exterior boundary context; and
 - an explicit opening gap naming those endpoints, identified as absent wall rather than as a
   geometric segment between them.
 
@@ -44,9 +44,11 @@ opening sign in the supplied recognition frame. Section coordinates remain in th
 as for `PrismaticPocket`; they are not translated to a fictional closed-profile centroid.
 
 Recognition requires one valid solid, one nonbranching chain of at least three original planar
-wall supports, exactly one planar exterior opening face joining its endpoints, one exact floor,
-one axial mouth, an empty physical sweep and complete material backing behind the exact surviving
-floor face. The exterior face and opening gap are consulted context. Original wall supports
+wall supports, one unambiguous exterior opening context along the remaining convex boundary of an
+exact single-wire floor, one axial mouth, an empty physical sweep and complete material backing
+behind the exact surviving floor face. The exterior boundary may route through several planar or
+curved stock/intersection faces and is not serialized as a segment or polygon. Those context faces
+and the opening gap are consulted context. Original wall supports
 are defining evidence; the exact walls and floor are constituent evidence. No inferred closing
 corner, closing segment, exterior air, graph node or durable face identity enters the public
 record.
@@ -58,10 +60,11 @@ not change the record.
 
 ## Refusals
 
-Recognition refuses multiple lateral openings, curved or nonplanar openings, branches, missing or
-parallel endpoint supports, self-intersecting chains, multiple floors or axial mouths, through or
-enclosed regions, floor breaches, whole-body capture, ambiguous shared cavities and cross-solid
-walks. It does not infer historical design intent beyond the observed physical open profile.
+Recognition refuses multiple or concave lateral opening contexts, branches, missing or parallel
+endpoint supports, self-intersecting chains, multiple-wire or multiple floors, multiple axial
+mouths, through or enclosed regions, floor breaches, whole-body capture, ambiguous shared
+cavities and cross-solid walks. It does not infer historical design intent beyond the observed
+physical open profile.
 
 ## Consequences
 

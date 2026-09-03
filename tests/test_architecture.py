@@ -363,7 +363,7 @@ ARC_READER_SITES = {
         f"src/b123d_recognisers/edge_open_prismatic_recesses:"
         f"recognise_edge_open_prismatic_recesses:arc:{ordinal}": disposition
         for ordinal, disposition in enumerate(
-            ("exact-nonsmooth", "legacy-contract", "legacy-contract"), start=1
+            ("exact-nonsmooth", "exact-nonsmooth", "legacy-contract"), start=1
         )
     },
     "src/b123d_recognisers/circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",

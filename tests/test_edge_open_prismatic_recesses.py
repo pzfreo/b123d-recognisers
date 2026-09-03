@@ -109,9 +109,9 @@ def test_recognises_six_physical_walls_without_inventing_a_closing_wall() -> Non
 
 def test_edge_open_payload_matches_dedicated_golden() -> None:
     expected = json.loads(
-        (
-            Path(__file__).parent / "golden" / "edge_open_prismatic_recess" / "expected.json"
-        ).read_text(encoding="utf-8")
+        (Path(__file__).parent / "edge_open_prismatic_recess_expected.json").read_text(
+            encoding="utf-8"
+        )
     )
 
     actual = json.loads(

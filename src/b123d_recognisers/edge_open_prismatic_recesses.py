@@ -156,6 +156,11 @@ def _principal_plane(graph: FaceGraph, node: FaceNode) -> tuple[int, float] | No
     return (axis, 0.5 * (low + high)) if high - low <= SPAN_EPS else None
 
 
+def _at_principal_plane(graph: FaceGraph, node: FaceNode, axis: int, at: float) -> bool:
+    plane = _principal_plane(graph, node)
+    return plane is not None and plane[0] == axis and abs(plane[1] - at) <= SPAN_EPS
+
+
 def _shared_segment(
     graph: FaceGraph, floor: FaceNode, wall: FaceNode, axis: int
 ) -> tuple[tuple[float, float], tuple[float, float]] | None:
@@ -280,6 +285,13 @@ def recognise_edge_open_prismatic_recesses(
         )
         if len(walls) != 6 or (ordered := _ordered_open_chain(graph, walls)) is None:
             continue
+        exterior = tuple(node for node in graph.neighbours(floor) if node not in walls)
+        if (
+            len(tuple(graph.face(floor).wires())) != 1
+            or not exterior
+            or not all(graph.arc(floor, node) == "convex" for node in exterior)
+        ):
+            continue
         far = []
         for wall in ordered:
             low, high = graph.bounds(wall)[axis]
@@ -293,13 +305,16 @@ def recognise_edge_open_prismatic_recesses(
             if max(far) - min(far) > SPAN_EPS or abs(far[0] - floor_at) <= SPAN_EPS:
                 continue
             mouth_at = sum(far) / len(far)
-            shared_context = set(graph.neighbours(ordered[0])) & set(graph.neighbours(ordered[-1]))
-            if not any(
-                _principal_plane(graph, node) == (axis, mouth_at)
-                and graph.arc(node, ordered[0]) in ("convex", "smooth")
-                and graph.arc(node, ordered[-1]) in ("convex", "smooth")
-                for node in shared_context
-            ):
+            mouth_context = set(graph.neighbours(ordered[0]))
+            for wall in ordered[1:]:
+                mouth_context &= set(graph.neighbours(wall))
+            mouths = tuple(
+                node
+                for node in mouth_context
+                if _at_principal_plane(graph, node, axis, mouth_at)
+                and all(graph.arc(node, wall) in ("convex", "smooth") for wall in ordered)
+            )
+            if len(mouths) != 1:
                 continue
             owner = graph.common_valid_solid((*ordered, floor))
             section = _section_from_walls(graph, floor, ordered, axis)

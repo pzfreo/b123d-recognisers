@@ -24,6 +24,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_prismatic_recesses": [],
         "fillets": [],
         "flats": [],
         "grooves": [],
@@ -296,8 +297,7 @@
             ]
           }
         ],
-        "turned_steps": [],
-        "edge_open_prismatic_recesses": []
+        "turned_steps": []
       },
       "rotational": {
         "_type": "RecognitionResult",
@@ -313,6 +313,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_prismatic_recesses": [],
         "fillets": [],
         "flats": [],
         "grooves": [],
@@ -543,8 +544,7 @@
           }
         ],
         "through_steps": [],
-        "turned_steps": [],
-        "edge_open_prismatic_recesses": []
+        "turned_steps": []
       }
     },
     "feature_census": {
@@ -555,6 +555,7 @@
       "channel": 0,
       "circular_blind_step": 0,
       "countersink": 0,
+      "edge_open_prismatic_recess": 0,
       "fillet": 0,
       "flat": 0,
       "groove": 0,
@@ -569,8 +570,7 @@
       "round_bottom_blind_slot": 0,
       "slot": 0,
       "step": 0,
-      "through_step": 1,
-      "edge_open_prismatic_recess": 0
+      "through_step": 1
     },
     "individual": {
       "recognise_angled_steps": [],

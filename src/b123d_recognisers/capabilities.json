@@ -592,7 +592,7 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
-        "tests/golden/edge_open_prismatic_recess/expected.json"
+        "tests/edge_open_prismatic_recess_expected.json"
       ],
       "id": "edge-open-prismatic-recesses",
       "introduced_in": "0.4.15",

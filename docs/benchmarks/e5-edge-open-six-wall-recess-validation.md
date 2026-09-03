@@ -8,9 +8,10 @@ ordered chain of physical wall segments plus the two physical endpoints of its o
 not contain an inferred closing edge and does not claim an exterior-air footprint.
 
 The first implementation deliberately recognizes only the high-value six-wall subset. It
-requires one planar floor, six planar concave wall supports forming one non-branching open path,
-a common principal-axis run and mouth context, an empty extrusion of the exact floor toward the
-mouth, material behind that exact floor, and one valid solid owner. The six walls are defining
+requires one single-wire planar floor, six planar concave wall supports forming one non-branching
+open path, a wholly convex residual floor boundary, exactly one common principal-axis mouth,
+an empty extrusion of the exact floor toward that mouth, material behind that exact floor, and
+one valid solid owner. The six walls are defining
 evidence; the exact floor is additional constituent evidence.
 
 ## Corpus-independent controls
