@@ -271,7 +271,7 @@ def _audit_model(
         gates[probe.first_failed_gate] += 1
         labels = Counter(truth.semantic[node.index] for node in region)
         target = frozenset(node for node in region if truth.semantic[node.index] in _TARGET_CLASSES)
-        if target or candidate is not None:
+        if candidate is not None:
             rows.append({
                 "model_id": truth.model_id,
                 "source_sha256": truth.source_sha256,
@@ -367,6 +367,7 @@ def main() -> int:
         "new_target_faces_if_accepted": sum(
             row["target_faces_new_if_accepted"] for row in candidates
         ),
+        "row_policy": "accepted geometric candidates only",
         "rows": rows,
         "runtime_seconds": time.perf_counter() - started,
     }
