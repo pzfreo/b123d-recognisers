@@ -187,7 +187,14 @@ class TurnedProfile(Record):
         return tuple(sorted({p for s in self.steps for p in (s.lo, s.hi)}))
 
 
-def _profile_key(part: Part, axis: str, bands: list[CylinderEvidence]) -> TurnedProfileKey:
+def profile_key_from_bands(
+    part: Part, axis: str, bands: list[CylinderEvidence]
+) -> TurnedProfileKey:
+    """Return the public profile membership proved by one body's cylinder bands.
+
+    This is shared by the step ladder and other turned features that must publish the exact
+    same body/profile join.  Callers must pass bands already partitioned to *part*.
+    """
     idx = "xyz".index(axis)
 
     def axis_origin(band: CylinderEvidence) -> tuple[float, float, float]:
@@ -313,7 +320,7 @@ def _turned_step_proposals_one(
     ):
         return []
 
-    profile = _profile_key(part, axis, bands)
+    profile = profile_key_from_bands(part, axis, bands)
 
     def bands_over(pos: float) -> list[CylinderEvidence]:
         """The widest external bands covering *pos* -- what sets the OD there, and therefore

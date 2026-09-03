@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import pytest
 from attribution_audit import attributed_run
-from build123d import Cylinder, Pos
+from build123d import Axis, Compound, Cylinder, Pos, Rotation
 
 import b123d_recognisers as r
+import b123d_recognisers.grooves as groove_module
 import b123d_recognisers.result as result_module
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -130,6 +131,9 @@ def test_the_rule_finds_the_rung_the_groove_is():
     ledger, grooves, steps = _claimed(_grooved_shaft())
     (groove,) = grooves
 
+    assert groove.profile is not None
+    assert {step.profile for step in steps} == {groove.profile}
+
     kept = steps_that_are_not_grooves(steps, grooves, ledger.snapshot_index())
     assert len(kept) == len(steps) - 1
     assert [step for step in steps if step not in kept][0].diameter == groove.diameter
@@ -141,6 +145,140 @@ def test_the_rule_finds_the_rung_the_groove_is():
             plain_steps, plain_grooves, plain_ledger.snapshot_index()
         )
         == plain_steps
+    )
+
+
+def test_parallel_grooved_shafts_publish_distinct_matching_profile_keys() -> None:
+    left = Pos(-30, 0, 0) * _grooved_shaft()
+    right = Pos(30, 0, 0) * _grooved_shaft()
+    part = Compound(children=[right, left])
+
+    grooves = r.recognise_grooves(part)
+    steps = r.recognise_turned_steps(part)
+
+    assert len(grooves) == 2
+    assert all(groove.profile is not None for groove in grooves)
+    assert len({groove.profile for groove in grooves}) == 2
+    for groove in grooves:
+        matching = [step for step in steps if step.profile == groove.profile]
+        assert matching
+        assert any(step.diameter == groove.diameter for step in matching)
+        assert all(
+            step.profile != groove.profile
+            for other in grooves
+            if other is not groove
+            for step in steps
+            if step.profile == other.profile
+        )
+
+    reversed_grooves = r.recognise_grooves(Compound(children=[left, right]))
+    assert reversed_grooves == grooves
+
+
+def test_all_groove_ownership_validates_before_any_candidate_is_published(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    part = Compound(
+        children=[Pos(-30, 0, 0) * _grooved_shaft(), Pos(30, 0, 0) * _grooved_shaft()]
+    )
+    ledger = ClaimLedger(FaceGraph(part))
+    original = FaceGraph.common_valid_solid
+    calls = 0
+
+    def fail_later_proposal(graph: FaceGraph, nodes):
+        nonlocal calls
+        calls += 1
+        return None if calls == 2 else original(graph, nodes)
+
+    monkeypatch.setattr(FaceGraph, "common_valid_solid", fail_later_proposal)
+
+    with pytest.raises(ValueError, match="no common valid solid"):
+        r.recognise_grooves(part, ledger=ledger)
+    assert calls == 2
+    assert ledger.claims == ()
+
+
+@pytest.mark.parametrize("invalid_solid_idx", (1, "not-an-index"))
+def test_injected_groove_inventory_must_name_a_real_owning_solid(
+    invalid_solid_idx,
+) -> None:
+    part = _grooved_shaft()
+    z_cyls, cross_cyls = r.analyse_cylinders(part)
+    invalid = [dict(cylinder, solid_idx=invalid_solid_idx) for cylinder in z_cyls]
+
+    with pytest.raises(ValueError, match="no owning solid"):
+        r.recognise_grooves(part, cyls=(invalid, cross_cyls))
+
+
+def test_equal_profile_keys_cannot_claim_two_source_solids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    left = Pos(-30, 0, 0) * _grooved_shaft()
+    right = Pos(30, 0, 0) * _grooved_shaft()
+    part = Compound(children=[left, right])
+    ledger = ClaimLedger(FaceGraph(part))
+    profile = r.recognise_grooves(left)[0].profile
+    assert profile is not None
+    monkeypatch.setattr(
+        groove_module,
+        "profile_key_from_bands",
+        lambda _part, _axis, _bands: profile,
+    )
+
+    with pytest.raises(ValueError, match="profile key identifies multiple"):
+        r.recognise_grooves(part, ledger=ledger)
+    assert ledger.claims == ()
+
+
+def test_nested_coaxial_bodies_do_not_share_the_outer_groove_membership() -> None:
+    outer = _grooved_shaft() - Cylinder(6, 80)
+    inner = Cylinder(5, 40) + Pos(0, 0, 40) * Cylinder(4, 40)
+    part = Compound(children=[outer, inner])
+
+    (groove,) = r.recognise_grooves(part)
+    profiles = r.TurnedProfile.grouped_from_steps(r.recognise_turned_steps(part))
+
+    assert len(profiles) == 2
+    assert groove.profile is not None
+    assert [profile.profile == groove.profile for profile in profiles].count(True) == 1
+    owner = next(profile for profile in profiles if profile.profile == groove.profile)
+    sibling = next(profile for profile in profiles if profile.profile != groove.profile)
+    assert any(step.diameter == groove.diameter for step in owner.steps)
+    assert all(step.profile != groove.profile for step in sibling.steps)
+
+
+@pytest.mark.parametrize(
+    ("rotation", "axis"),
+    (
+        (Rotation(0, 0, 0), "z"),
+        (Rotation(0, 90, 0), "x"),
+        (Rotation(90, 0, 0), "y"),
+    ),
+)
+def test_groove_profile_membership_is_principal_axis_covariant(rotation, axis) -> None:
+    part = rotation * _grooved_shaft()
+
+    (groove,) = r.recognise_grooves(part)
+    matching_steps = [
+        step for step in r.recognise_turned_steps(part) if step.profile == groove.profile
+    ]
+
+    assert groove.axis == axis
+    assert groove.profile is not None
+    assert groove.profile.axis == axis
+    assert any(step.diameter == groove.diameter for step in matching_steps)
+
+
+def test_framed_groove_and_step_keep_one_profile_membership() -> None:
+    part = Pos(13, -7, 5) * _grooved_shaft().rotate(Axis.X, 30)
+    framed = r.build_framed_recognition_result(part, rotational=True)
+
+    assert isinstance(framed, r.FramedRecognitionResult)
+    (groove,) = framed.result.grooves
+    assert groove.profile is not None
+    assert any(
+        step.profile == groove.profile and step.diameter == groove.diameter
+        for step in framed.result.turned_steps
     )
 
 

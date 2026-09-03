@@ -162,13 +162,19 @@ CASES = (
 
 def _records(part) -> dict[str, list[dict[str, Any]]]:
     result = _take_inventory(part).result
-    return {
-        family: [
-            json.loads(json.dumps(record.to_dict(), sort_keys=True))
-            for record in getattr(result, family)
-        ]
-        for family in _FAMILIES
-    }
+    records: dict[str, list[dict[str, Any]]] = {}
+    for family in _FAMILIES:
+        projected = []
+        for record in getattr(result, family):
+            value = json.loads(json.dumps(record.to_dict(), sort_keys=True))
+            if family == "grooves":
+                # This historical sweep compares the feature geometry changed by each authored
+                # blend boundary. Public turned-profile ownership is an orthogonal schema field
+                # with its own contract tests and must not rewrite the #277 geometry evidence.
+                value.pop("profile", None)
+            projected.append(value)
+        records[family] = projected
+    return records
 
 
 def _outcome(
