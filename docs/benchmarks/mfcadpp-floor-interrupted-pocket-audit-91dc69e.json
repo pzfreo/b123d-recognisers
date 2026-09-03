@@ -1,0 +1,176 @@
+{
+  "candidate_pure_target_plus_interruption_regions": 3,
+  "candidate_regions": 4,
+  "dataset_version": "MFCAD++ published test split; DOI 10.17034/d1fec5a0-8c10-4630-b02e-b92dc81df823",
+  "format": "b123d-recognisers-mfcadpp-floor-interrupted-pocket-audit",
+  "format_version": 1,
+  "gates": {
+    "candidate": 4,
+    "not_complete_wall_cycle": 485,
+    "not_one_floor": 243,
+    "not_one_mouth": 548,
+    "not_planar_floor_interruption": 435,
+    "opening_plane": 3,
+    "wall_not_mouth_rooted": 10
+  },
+  "implementation_commit": "91dc69e86218d5ea4654d56459079d3b9aa714ab",
+  "invalid_models": [],
+  "invalid_policy": {
+    "expected_ids": [
+      "12939",
+      "13975",
+      "14052",
+      "14307",
+      "18628",
+      "22386",
+      "22439"
+    ],
+    "expected_reason": "Hole cylindrical evidence does not prove one valid solid"
+  },
+  "labels_read_after_candidate_construction": true,
+  "new_target_faces_if_accepted": 10,
+  "row_policy": "accepted geometric candidates only",
+  "rows": [
+    {
+      "accepted_as_candidate": true,
+      "labels": {
+        "0": 1,
+        "13": 4
+      },
+      "model_id": "10092",
+      "probe": {
+        "first_failed_gate": "candidate",
+        "interruption_faces": 1,
+        "shortened_walls": 1,
+        "wall_count": 3
+      },
+      "pure_target_plus_interruption": true,
+      "region_faces": [
+        30,
+        31,
+        32,
+        34,
+        35
+      ],
+      "source_sha256": "b9470b92ad910bc9eb37bea723737cfe29dc29a7d2b90ccf115ed246d499d461",
+      "target_face_indices": [
+        30,
+        31,
+        32,
+        35
+      ],
+      "target_faces": 4,
+      "target_faces_new_if_accepted": 4
+    },
+    {
+      "accepted_as_candidate": true,
+      "labels": {
+        "0": 2,
+        "14": 5
+      },
+      "model_id": "10131",
+      "probe": {
+        "first_failed_gate": "candidate",
+        "interruption_faces": 1,
+        "shortened_walls": 1,
+        "wall_count": 5
+      },
+      "pure_target_plus_interruption": false,
+      "region_faces": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        7
+      ],
+      "source_sha256": "90e9260ef6847751b9285314229bc18b593c44f9dfaff154604efe96e90c84cc",
+      "target_face_indices": [
+        0,
+        1,
+        4,
+        5,
+        6
+      ],
+      "target_faces": 5,
+      "target_faces_new_if_accepted": 0
+    },
+    {
+      "accepted_as_candidate": true,
+      "labels": {
+        "0": 1,
+        "14": 5
+      },
+      "model_id": "10286",
+      "probe": {
+        "first_failed_gate": "candidate",
+        "interruption_faces": 1,
+        "shortened_walls": 1,
+        "wall_count": 4
+      },
+      "pure_target_plus_interruption": true,
+      "region_faces": [
+        22,
+        23,
+        24,
+        25,
+        32,
+        33
+      ],
+      "source_sha256": "4b03ef91657f17960ec2707d8b72a76a30065d45794fb03980a26e8614b7a302",
+      "target_face_indices": [
+        22,
+        23,
+        24,
+        25,
+        33
+      ],
+      "target_faces": 5,
+      "target_faces_new_if_accepted": 3
+    },
+    {
+      "accepted_as_candidate": true,
+      "labels": {
+        "0": 1,
+        "14": 5
+      },
+      "model_id": "10520",
+      "probe": {
+        "first_failed_gate": "candidate",
+        "interruption_faces": 1,
+        "shortened_walls": 1,
+        "wall_count": 4
+      },
+      "pure_target_plus_interruption": true,
+      "region_faces": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6
+      ],
+      "source_sha256": "1d63c615250f5980c4994c4571263c6d707d3771e231ee1b00dfcd60094ad988",
+      "target_face_indices": [
+        0,
+        1,
+        4,
+        5,
+        6
+      ],
+      "target_faces": 5,
+      "target_faces_new_if_accepted": 3
+    }
+  ],
+  "runtime_seconds": 160.08248824591283,
+  "selection": {
+    "evaluated_models": 500,
+    "limit": 500,
+    "selected_ids_sha256": "323c956889bf6018f37d8411367c6b30b95ffac8011b13a69f06e189568401df",
+    "selected_models": 500,
+    "selected_sources_sha256": "1cdff5b52c85478a32c2308c5f8163180d079bc893debd24413d809b14be9331",
+    "workers": 4
+  },
+  "target_faces_reached": 19
+}
