@@ -18,7 +18,7 @@ BodyKey = tuple[float, ...]
 
 
 def body_signature(solid: Part) -> BodyKey:
-    """Return the coordinate-frame-local geometric signature of one physical solid."""
+    """Return the legacy exact geometric signature of one physical solid."""
 
     bb = solid.bounding_box()
     return (
@@ -33,6 +33,17 @@ def body_signature(solid: Part) -> BodyKey:
     )
 
 
+def _stable_body_signature(solid: Part) -> BodyKey:
+    """Return a public ownership key stable across neutral-format round trips.
+
+    Twelve significant figures retain far more separation than the modelling kernel's
+    coincidence floor while absorbing harmless last-bit changes in mass properties after a STEP
+    round trip. Decimal-place rounding is unsuitable because volume and area scale differently.
+    """
+
+    return tuple(float(f"{value:.12g}") for value in body_signature(solid))
+
+
 def unambiguous_body_keys(
     sources: Sequence[Part], *, require_valid_solid: bool = False
 ) -> tuple[BodyKey | None, ...]:
@@ -45,7 +56,7 @@ def unambiguous_body_keys(
 
     signatures = tuple(
         (
-            body_signature(source)
+            (_stable_body_signature(source) if require_valid_solid else body_signature(source))
             if not require_valid_solid or (source.solids() and source.is_valid)
             else None
         )
