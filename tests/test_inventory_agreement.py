@@ -60,6 +60,7 @@ SHARED = {
     "channel": "channels",
     "pocket": "pockets",
     "prismatic_pocket": "prismatic_pockets",
+    "edge_open_circular_pocket": "edge_open_circular_pockets",
     "edge_open_prismatic_recess": "edge_open_prismatic_recesses",
     "passage": "section_passages",
     "chamfer": "chamfers",
