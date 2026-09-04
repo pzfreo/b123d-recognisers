@@ -60,6 +60,8 @@ from b123d_recognisers._registry import (
     validate_result_fields,
 )
 from b123d_recognisers._run import RecognitionContext, start
+from b123d_recognisers._section_adapters import prismatic_pocket_to_occurrence
+from b123d_recognisers._sections import BodyRefIssuer
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.blends import Blend
@@ -79,7 +81,13 @@ from b123d_recognisers.levels import (
 from b123d_recognisers.oriented_slots import OrientedSlot, OrientedSlotArray, OrientedSlotGrid
 from b123d_recognisers.pads import RaisedPad
 from b123d_recognisers.paired_ramp_steps import PairedRampStep
-from b123d_recognisers.passages import Passage, SectionPassage
+from b123d_recognisers.passages import (
+    Passage,
+    PassageFrame,
+    PassageSection,
+    PassageSectionVertex,
+    SectionPassage,
+)
 from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -90,7 +98,15 @@ from b123d_recognisers.profiled_bores import DoubleDBore
 from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
-from b123d_recognisers.section_recesses import SectionRecess
+from b123d_recognisers.section_recesses import (
+    ClosedSectionProfile,
+    SectionEnd,
+    SectionRecess,
+    SectionRecessClassification,
+    SectionRecessEnds,
+    SectionRecessEvidence,
+    SectionRecessGeometry,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -507,7 +523,7 @@ def _take_inventory(
             ProjectionInputs(passage_definition.projected(context)),
         ),
     )
-    result = _project_result(context, accepted, derived)
+    result = _project_result(context, accepted, derived, evidence)
     correspondence = _CorrespondenceSnapshotAuthority()
     product = InventoryProduct(
         context=context,
@@ -673,16 +689,233 @@ def _derive_passage_compat(
     return cast(tuple[Passage, ...], tuple(records))
 
 
+def _section_passage_recess(
+    record: SectionPassage,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    """Project one accepted passage without rediscovering or weakening its physical proof."""
+
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted section passage lost its body authority")
+    side_count = len(record.section.boundary)
+    line_only = all(vertex.bulge == 0.0 for vertex in record.section.boundary)
+    section_shape = (
+        {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(side_count, "polygonal")
+        if line_only
+        else "general"
+    )
+    geometry = SectionRecessGeometry(
+        "section_recess",
+        record.frame,
+        record.run_interval,
+        ClosedSectionProfile("closed", record.section.boundary),
+        SectionRecessEnds(
+            SectionEnd("open", record.ends.low_gradient),
+            SectionEnd("open", record.ends.high_gradient),
+        ),
+    )
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        geometry,
+        SectionRecessClassification("passage", section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _prismatic_pocket_recess(
+    record: PrismaticPocket,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    """Project one accepted principal pocket through its already-proven exact section adapter."""
+
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted prismatic pocket lost its body authority")
+    issuer = BodyRefIssuer()
+    occurrence = prismatic_pocket_to_occurrence(
+        record,
+        body_ref=issuer.issue(),
+        body_refs=issuer,
+    )
+    section_shape = {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(
+        record.sides, "polygonal"
+    )
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        _legacy_prismatic_geometry(occurrence, body_refs=issuer),
+        SectionRecessClassification("pocket", section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _legacy_prismatic_geometry(
+    occurrence: object, *, body_refs: BodyRefIssuer
+) -> SectionRecessGeometry:
+    """Serialize a legacy polygonal occurrence and prove its actual vertex displacement.
+
+    The general occurrence projector sums independent worst-case rounding errors. Legacy records
+    already contain correlated rounded world vertices, so that conservative sum can exceed its
+    bound even when every reconstructed vertex remains within it. This adapter measures the
+    resulting world points directly and retains the same 0.002 mm contract.
+    """
+
+    from b123d_recognisers._sections import SectionOccurrence, validate_occurrence
+
+    if not isinstance(occurrence, SectionOccurrence):
+        raise TypeError("legacy prismatic projection requires a SectionOccurrence")
+    validate_occurrence(occurrence, body_refs=body_refs)
+    frame = PassageFrame(
+        cast(
+            tuple[float, float, float],
+            tuple(round(value, 3) for value in occurrence.frame.origin),
+        ),
+        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.run)),
+        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.u)),
+        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.v)),
+    )
+    interval = cast(
+        tuple[float, float], tuple(round(value, 3) for value in occurrence.run_interval)
+    )
+    boundary = tuple(
+        PassageSectionVertex(
+            cast(tuple[float, float], tuple(round(value, 4) for value in vertex.point)),
+            round(vertex.bulge, 12),
+        )
+        for vertex in occurrence.section.boundary
+    )
+
+    def world(
+        origin: tuple[float, float, float],
+        u: tuple[float, float, float],
+        v: tuple[float, float, float],
+        point: tuple[float, float],
+    ) -> tuple[float, float, float]:
+        return cast(
+            tuple[float, float, float],
+            tuple(origin[i] + u[i] * point[0] + v[i] * point[1] for i in range(3)),
+        )
+
+    displacement = max(
+        math.dist(
+            world(
+                occurrence.frame.origin,
+                occurrence.frame.u,
+                occurrence.frame.v,
+                source.point,
+            ),
+            world(frame.origin, frame.u, frame.v, projected.point),
+        )
+        for source, projected in zip(occurrence.section.boundary, boundary, strict=True)
+    )
+    displacement = max(
+        displacement,
+        *(
+            abs(source - projected)
+            for source, projected in zip(occurrence.run_interval, interval, strict=True)
+        ),
+    )
+    if displacement > 0.002:
+        raise ValueError("legacy prismatic serialization moves geometry beyond local tolerance")
+    low_capped, high_capped = occurrence.ends.low_capped, occurrence.ends.high_capped
+    return SectionRecessGeometry(
+        "section_recess",
+        frame,
+        interval,
+        ClosedSectionProfile("closed", PassageSection(boundary).boundary),
+        SectionRecessEnds(
+            SectionEnd("capped" if low_capped else "open"),
+            SectionEnd("capped" if high_capped else "open"),
+        ),
+    )
+
+
+def _unique_section_recesses(records: Iterable[SectionRecess]) -> tuple[SectionRecess, ...]:
+    """Prefer the first truthful projection of one body-local physical face region."""
+
+    unique: list[SectionRecess] = []
+    seen: set[tuple[int, tuple[int, ...]]] = set()
+    for record in records:
+        key = (record.body, record.evidence.constituent_faces)
+        if key not in seen:
+            seen.add(key)
+            unique.append(replace(record, index=len(unique)))
+    return tuple(unique)
+
+
+def _accepted_region_key(
+    record: object, *, context: RecognitionContext, evidence: EvidenceIndex
+) -> tuple[int, tuple[int, ...]]:
+    defining = evidence.defining_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted section feature lost its body authority")
+    return (
+        owner.ordinal,
+        tuple(sorted(node.index for node in evidence.constituent_of(record))),
+    )
+
+
 def _project_result(
     context: RecognitionContext,
     accepted: CandidateInventory,
     derived: DerivedInventory,
+    evidence: EvidenceIndex,
 ) -> RecognitionResult:
     """Project accepted and derived inventories without discovery or reconciliation."""
 
     z_cyls, cross_cyls = context.cylinders
     passage_definition = next(
         definition for definition in PHYSICAL_DEFINITIONS if definition.family is FamilyId.PASSAGES
+    )
+    native_section_recesses = tuple(
+        _records(accepted, FamilyId.SECTION_RECESSES, SectionRecess)
+    )
+    native_regions = {
+        (record.body, record.evidence.constituent_faces) for record in native_section_recesses
+    }
+    uncovered_prismatic = tuple(
+        record
+        for record in _records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
+        if _accepted_region_key(record, context=context, evidence=evidence) not in native_regions
+    )
+    prismatic_recesses = tuple(
+        _prismatic_pocket_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(uncovered_prismatic)
+    )
+    passage_recesses = tuple(
+        _section_passage_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(
+            _records(accepted, FamilyId.PASSAGES, SectionPassage)
+        )
     )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
@@ -714,8 +947,8 @@ def _project_result(
         ),
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
-        section_recesses=tuple(
-            _records(accepted, FamilyId.SECTION_RECESSES, SectionRecess)
+        section_recesses=_unique_section_recesses(
+            (*native_section_recesses, *prismatic_recesses, *passage_recesses)
         ),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
         prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),

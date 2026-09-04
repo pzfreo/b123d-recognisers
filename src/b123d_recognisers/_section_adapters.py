@@ -49,7 +49,10 @@ def _validate_record(
     raw = PlanarSection(tuple(SectionVertex((point[0], point[1])) for point in section))
     centroid = raw.centroid
     expected = (at[transverse[0]], at[transverse[1]])
-    if any(round(left, 3) != right for left, right in zip(centroid, expected, strict=True)):
+    # Both values are independently serialized at three decimal places.  The neutral section
+    # contract already publishes 0.0008 mm as the analytic-centroid displacement allowance for
+    # that double rounding; use the same bound rather than requiring identical rounded values.
+    if any(abs(left - right) > 0.0008 for left, right in zip(centroid, expected, strict=True)):
         raise ValueError("legacy centre disagrees with the section's analytic centroid")
     local = PlanarSection(
         tuple(

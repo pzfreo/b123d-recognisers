@@ -60,9 +60,14 @@ def _discover_section_recesses(
 
 
 def recognise_section_recesses(part: Part) -> list[SectionRecess]:
-    """Recognise truthful one-ended constant-section recesses in *part*."""
+    """Return every accepted unified constant-section recess in *part*."""
 
-    return _discover_section_recesses(part)
+    # Aggregate orchestration calls the private discovery core from the registry.  The public
+    # unified view instead projects its completed inventory so specialised passage/recess proofs
+    # converge here without sibling recognition or a second reconciliation path.
+    from b123d_recognisers.result import build_raw_recognition_result
+
+    return list(build_raw_recognition_result(part).section_recesses)
 
 
 def build_section_recess_document(part: Part) -> SectionRecessDocument:

@@ -296,13 +296,59 @@ def test_polygonal_proof_is_stable_after_step_round_trip(tmp_path) -> None:
     assert occurrence.classification.section_shape == "triangular"
 
 
-def test_polygonal_proof_rejects_through_cut_and_boss() -> None:
+def test_unified_inventory_classifies_through_cut_and_rejects_boss() -> None:
     points = ((-4.0, -3.0), (4.0, -3.0), (0.0, 5.0))
     through = Box(60, 50, 12) - Pos(0, 0, -7) * _polygonal_cutter(points, depth=14)
     boss = Box(60, 50, 6) + Pos(0, 0, 7) * _polygonal_cutter(points)
 
-    assert build_section_recess_document(through).occurrences == ()
+    through_document = build_section_recess_document(through)
+
+    assert [item.classification.feature_kind for item in through_document.occurrences] == [
+        "passage"
+    ]
     assert build_section_recess_document(boss).occurrences == ()
+
+
+def test_passage_projection_preserves_geometry_evidence_and_body() -> None:
+    points = ((-4.0, -3.0), (4.0, -3.0), (0.0, 5.0))
+    untouched = Pos(-100, 0, 0) * Box(10, 10, 10)
+    passage = Pos(100, 0, 0) * (
+        Box(60, 50, 12) - Pos(0, 0, -7) * _polygonal_cutter(points, depth=14)
+    )
+
+    document = build_section_recess_document(Compound([untouched, passage]))
+
+    (record,) = document.occurrences
+    assert record.body == 1
+    assert record.classification.to_dict() == {
+        "feature_kind": "passage",
+        "section_shape": "triangular",
+    }
+    assert record.geometry.profile.closure == "closed"
+    assert record.geometry.ends.low.condition == "open"
+    assert record.geometry.ends.high.condition == "open"
+    assert record.evidence.defining_faces
+    assert set(record.evidence.defining_faces) <= set(record.evidence.constituent_faces)
+
+
+def test_prismatic_pocket_projection_uses_one_unified_occurrence() -> None:
+    points = ((-4.0, -3.0), (4.0, -3.0), (0.0, 5.0))
+    part = _polygonal_pocket(points, placement=Pos(0, 0, 0))
+
+    result = build_raw_recognition_result(part)
+
+    assert len(result.prismatic_pockets) == 1
+    assert len(result.section_recesses) == 1
+    (record,) = result.section_recesses
+    assert record.classification.to_dict() == {
+        "feature_kind": "pocket",
+        "section_shape": "triangular",
+    }
+    assert record.geometry.profile.closure == "closed"
+    assert {record.geometry.ends.low.condition, record.geometry.ends.high.condition} == {
+        "capped",
+        "open",
+    }
 
 
 def test_equal_polygonal_pockets_on_separate_bodies_keep_ownership() -> None:

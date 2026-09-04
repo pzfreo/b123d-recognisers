@@ -801,6 +801,24 @@ def test_legacy_centroid_double_rounding_keeps_exact_record_projection() -> None
     assert occurrence_to_passage(occurrence, body_refs=issuer) == record
 
 
+def test_legacy_centroid_accepts_published_serialization_displacement() -> None:
+    record = PrismaticPocket(
+        "x",
+        3,
+        3.114,
+        1,
+        (1.557, 9.413, 16.738),
+        ((8.616, 17.431), (9.0, 15.552), (10.624, 17.233)),
+    )
+    issuer = BodyRefIssuer()
+
+    occurrence = prismatic_pocket_to_occurrence(
+        record, body_ref=issuer.issue(), body_refs=issuer
+    )
+
+    assert occurrence.section.centroid == pytest.approx((0.0, 0.0), abs=1e-12)
+
+
 def test_free_axis_frame_sign_and_dominant_tie_are_deterministic() -> None:
     positive = LocalFrame.canonical((1.0, 1.0, 1.0), (2.0, 3.0, 4.0))
     reversed_run = LocalFrame.canonical((-1.0, -1.0, -1.0), (2.0, 3.0, 4.0))
