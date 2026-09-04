@@ -50,6 +50,10 @@ from b123d_recognisers.circular_blind_steps import (
     _discover_circular_blind_steps,
 )
 from b123d_recognisers.countersinks import CounterSink, _discover_countersinks
+from b123d_recognisers.edge_open_circular_recesses import (
+    EdgeOpenCircularPocket,
+    recognise_edge_open_circular_pockets,
+)
 from b123d_recognisers.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     recognise_edge_open_prismatic_recesses,
@@ -702,6 +706,23 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("prismatic_pocket"),
         FullyAttributed("every returned prismatic pocket claims its defining boundary faces"),
+    ),
+    PhysicalDefinition(
+        FamilyId.EDGE_OPEN_CIRCULAR_POCKETS,
+        (EdgeOpenCircularPocket,),
+        "edge_open_circular_pockets",
+        "recognise_edge_open_circular_pockets",
+        (),
+        always,
+        _simple(
+            lambda s: list(
+                recognise_edge_open_circular_pockets(
+                    s.context.part, ledger=s.writer, face_edges=s.context.face_edges
+                )
+            )
+        ),
+        Counted("edge_open_circular_pocket"),
+        FullyAttributed("every returned open circular pocket claims its physical wall chain"),
     ),
     PhysicalDefinition(
         FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,

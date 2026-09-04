@@ -592,6 +592,124 @@
       ]
     },
     {
+      "census_name": "edge_open_circular_pocket",
+      "census_output": "RecognitionResult.edge_open_circular_pockets",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
+        "tests/edge_open_circular_pocket_expected.json"
+      ],
+      "id": "edge-open-circular-pockets",
+      "introduced_in": "0.4.15",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_edge_open_circular_pockets",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [
+            "RecognitionResult.edge_open_circular_pockets"
+          ],
+          "fields": {
+            "axis": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "open_sign": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "run_interval": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "section": {
+              "required": true,
+              "type": "record:OpenCircularSection",
+              "units": "none"
+            }
+          },
+          "name": "EdgeOpenCircularPocket",
+          "qualified_name": "b123d_recognisers.EdgeOpenCircularPocket",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in EdgeOpenCircularPocket.",
+          "fields": {
+            "opening": {
+              "required": true,
+              "type": "tuple[tuple[float,2],2]",
+              "units": "mm"
+            },
+            "segments": {
+              "required": true,
+              "type": "list[record:OpenCircularSectionSegment]",
+              "units": "none"
+            }
+          },
+          "name": "OpenCircularSection",
+          "qualified_name": "b123d_recognisers.OpenCircularSection",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in OpenCircularSection.",
+          "fields": {
+            "center": {
+              "required": false,
+              "type": "tuple[float,2]|null",
+              "units": "mm"
+            },
+            "end": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "kind": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "radius": {
+              "required": false,
+              "type": "float|null",
+              "units": "mm"
+            },
+            "start": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "sweep": {
+              "required": false,
+              "type": "float|null",
+              "units": "rad"
+            }
+          },
+          "name": "OpenCircularSectionSegment",
+          "qualified_name": "b123d_recognisers.OpenCircularSectionSegment",
+          "role": "nested",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_edge_open_circular_recesses.py",
+        "tests/test_recogniser_contract.py"
+      ]
+    },
+    {
       "census_name": "edge_open_prismatic_recess",
       "census_output": "RecognitionResult.edge_open_prismatic_recesses",
       "documentation": [

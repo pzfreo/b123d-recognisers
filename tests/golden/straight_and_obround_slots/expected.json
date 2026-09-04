@@ -61,6 +61,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_circular_pockets": [],
         "edge_open_prismatic_recesses": [],
         "fillets": [],
         "flats": [],
@@ -349,6 +350,7 @@
           []
         ],
         "double_d_bores": [],
+        "edge_open_circular_pockets": [],
         "edge_open_prismatic_recesses": [],
         "fillets": [],
         "flats": [],
@@ -595,6 +597,7 @@
       "channel": 0,
       "circular_blind_step": 0,
       "countersink": 0,
+      "edge_open_circular_pocket": 0,
       "edge_open_prismatic_recess": 0,
       "fillet": 0,
       "flat": 0,

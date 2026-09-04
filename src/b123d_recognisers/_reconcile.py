@@ -59,6 +59,7 @@ def reconcile_recess_candidates(
     evidence: EvidenceIndex,
     *,
     rectangular_blind_slots: CandidateSet[object] | None = None,
+    edge_open_circular_pockets: CandidateSet[object] | None = None,
 ) -> tuple[Disposition, ...]:
     """Disposition form of the existing cascading recess precedence policy."""
 
@@ -69,6 +70,13 @@ def reconcile_recess_candidates(
             evidence.candidate_set_for(FamilyId.RECTANGULAR_BLIND_SLOTS, ())
             if rectangular_blind_slots is None
             else rectangular_blind_slots
+        ).candidates
+    )
+    edge_open_circular_candidates = list(
+        (
+            evidence.candidate_set_for(FamilyId.EDGE_OPEN_CIRCULAR_POCKETS, ())
+            if edge_open_circular_pockets is None
+            else edge_open_circular_pockets
         ).candidates
     )
     passage_candidates = list(passages.candidates)
@@ -108,11 +116,18 @@ def reconcile_recess_candidates(
             continue
         pocket_members = evidence.constituent_of(pocket)
         winners = tuple(
-            blind_slot
-            for blind_slot in rectangular_blind_candidates
-            if pocket_members and pocket_members <= evidence.defining_of(blind_slot)
+            open_pocket
+            for open_pocket in edge_open_circular_candidates
+            if pocket_evidence <= evidence.defining_of(open_pocket)
         )
-        reason = ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
+        reason = ReasonCode.POCKET_SUPERSEDED_BY_EDGE_OPEN_CIRCULAR_POCKET
+        if not winners:
+            winners = tuple(
+                blind_slot
+                for blind_slot in rectangular_blind_candidates
+                if pocket_members and pocket_members <= evidence.defining_of(blind_slot)
+            )
+            reason = ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
         if not winners:
             winners = tuple(
                 passage

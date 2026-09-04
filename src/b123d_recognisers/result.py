@@ -66,6 +66,7 @@ from b123d_recognisers.blends import Blend
 from b123d_recognisers.chamfers import Chamfer
 from b123d_recognisers.circular_blind_steps import CircularBlindStep
 from b123d_recognisers.countersinks import CounterSink
+from b123d_recognisers.edge_open_circular_recesses import EdgeOpenCircularPocket
 from b123d_recognisers.edge_open_prismatic_recesses import EdgeOpenPrismaticRecess
 from b123d_recognisers.fillets import Fillet
 from b123d_recognisers.flats import Flat
@@ -293,6 +294,7 @@ class RecognitionResult:
     flats: tuple[Flat, ...]
     pockets: tuple[Pocket, ...]
     prismatic_pockets: tuple[PrismaticPocket, ...]
+    edge_open_circular_pockets: tuple[EdgeOpenCircularPocket, ...]
     edge_open_prismatic_recesses: tuple[EdgeOpenPrismaticRecess, ...]
     pocket_patterns: tuple[PocketArray | PocketGrid, ...]
     pads: tuple[RaisedPad, ...]
@@ -581,6 +583,7 @@ def _reconcile_existing(
         physical.candidate_set(FamilyId.PASSAGES),
         evidence,
         rectangular_blind_slots=physical.candidate_set(FamilyId.RECTANGULAR_BLIND_SLOTS),
+        edge_open_circular_pockets=physical.candidate_set(FamilyId.EDGE_OPEN_CIRCULAR_POCKETS),
     )
     decisions += reconcile_bevel_candidates(
         physical.candidate_set(FamilyId.CHAMFERS),
@@ -710,6 +713,13 @@ def _project_result(
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
         prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),
+        edge_open_circular_pockets=tuple(
+            _records(
+                accepted,
+                FamilyId.EDGE_OPEN_CIRCULAR_POCKETS,
+                EdgeOpenCircularPocket,
+            )
+        ),
         edge_open_prismatic_recesses=tuple(
             _records(
                 accepted,

@@ -65,6 +65,7 @@ def recognition_snapshot(recognition, feature_census, part):
     # This legacy snapshot deliberately stays byte-identical to the Draftwright-era surface.
     post_baseline = {
         "recognise_section_passages",
+        "recognise_edge_open_circular_pockets",
         "recognise_edge_open_prismatic_recesses",
         "recognise_oriented_slots",
         "recognise_oriented_slot_patterns",

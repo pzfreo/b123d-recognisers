@@ -21,6 +21,7 @@ PUBLIC_MODULES = {
     "chamfers",
     "circular_blind_steps",
     "countersinks",
+    "edge_open_circular_recesses",
     "edge_open_prismatic_recesses",
     "evidence",
     "experimental_geometry",
@@ -64,6 +65,15 @@ MODULE_SEAM_EDGES = {
     "_body_geometry": set(),
     "_adjacency": {"_analytic_surfaces", "_body_geometry", "_geometry", "_typing"},
     "edge_open_prismatic_recesses": {
+        "_adjacency",
+        "_candidates",
+        "_claims",
+        "_geometry",
+        "_record",
+        "_rings",
+        "_typing",
+    },
+    "edge_open_circular_recesses": {
         "_adjacency",
         "_candidates",
         "_claims",
@@ -280,6 +290,7 @@ MODULE_SEAM_EDGES = {
         "chamfers",
         "circular_blind_steps",
         "countersinks",
+        "edge_open_circular_recesses",
         "edge_open_prismatic_recesses",
         "fillets",
         "flats",
@@ -363,6 +374,14 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
+    "src/b123d_recognisers/edge_open_circular_recesses:_ordered_chain:arc:1": ("legacy-contract"),
+    **{
+        f"src/b123d_recognisers/edge_open_circular_recesses:"
+        f"recognise_edge_open_circular_pockets:arc:{ordinal}": disposition
+        for ordinal, disposition in enumerate(
+            ("exact-nonsmooth", "legacy-contract", "legacy-contract"), start=1
+        )
+    },
     **{
         f"src/b123d_recognisers/edge_open_prismatic_recesses:"
         f"_complete_wall_boundaries:arc:{ordinal}": "exact-nonsmooth"

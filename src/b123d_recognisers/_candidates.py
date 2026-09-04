@@ -51,6 +51,7 @@ class FamilyId(Enum):
     CIRCULAR_BLIND_STEPS = "circular_blind_steps"
     COUNTERSINKS = "countersinks"
     DOUBLE_D_BORES = "double_d_bores"
+    EDGE_OPEN_CIRCULAR_POCKETS = "edge_open_circular_pockets"
     EDGE_OPEN_PRISMATIC_RECESSES = "edge_open_prismatic_recesses"
     FILLETS = "fillets"
     FLATS = "flats"
