@@ -137,9 +137,9 @@ def test_proposal_projection_is_primitive_only_and_omits_run_identity() -> None:
 
 
 def test_schema_proposal_pins_the_normative_consumer_contract() -> None:
-    proposal = (
-        Path(__file__).parents[1] / "docs" / "planar-section-schema-proposal.md"
-    ).read_text(encoding="utf-8")
+    proposal = (Path(__file__).parents[1] / "docs" / "planar-section-schema-proposal.md").read_text(
+        encoding="utf-8"
+    )
     for contract in (
         "world(t, x, y) = origin + t * run + x * u + y * v",
         "counter-clockwise in the right-handed `(u, v)` plane",
@@ -267,6 +267,24 @@ def test_area_and_centroid_are_stable_under_large_translation(offset: float) -> 
     assert polygon.centroid == pytest.approx((offset, offset), abs=1e-6)
     assert arc.area == pytest.approx(math.pi / 2)
     assert arc.centroid == pytest.approx((offset, offset + 4 / (3 * math.pi)), abs=1e-4)
+
+
+def test_mixed_line_arc_centroid_is_translation_invariant() -> None:
+    """Line and arc moment contributions must use one compatible Green field."""
+
+    boundary = (
+        SectionVertex((-6.0, -3.0)),
+        SectionVertex((6.0, -3.0), 1.0),
+        SectionVertex((6.0, 3.0)),
+        SectionVertex((-6.0, 3.0), 1.0),
+    )
+    translated = tuple(
+        SectionVertex((vertex.point[0] + 17.0, vertex.point[1] - 11.0), vertex.bulge)
+        for vertex in boundary
+    )
+
+    assert PlanarSection(boundary).centroid == pytest.approx((0.0, 0.0), abs=1e-12)
+    assert PlanarSection(translated).centroid == pytest.approx((17.0, -11.0), abs=1e-12)
 
 
 def test_equivalent_arc_subdivision_preserves_area_and_centroid() -> None:
@@ -556,9 +574,7 @@ def test_equivalent_noncanonical_occurrence_encodings_fail_closed() -> None:
     issuer = BodyRefIssuer()
     body = issuer.issue()
     ends = SectionEnds(False, False)
-    offset_section = PlanarSection(
-        tuple(SectionVertex((x + 2.0, y - 3.0)) for x, y in _square())
-    )
+    offset_section = PlanarSection(tuple(SectionVertex((x + 2.0, y - 3.0)) for x, y in _square()))
     with pytest.raises(ValueError, match="origin-centred"):
         SectionOccurrence(
             body,
@@ -588,8 +604,7 @@ def test_rotated_in_plane_frame_gauge_fails_closed() -> None:
     issuer = BodyRefIssuer()
     rotated_section = PlanarSection(
         tuple(
-            SectionVertex(point)
-            for point in ((-1.0, -2.0), (1.0, -2.0), (1.0, 2.0), (-1.0, 2.0))
+            SectionVertex(point) for point in ((-1.0, -2.0), (1.0, -2.0), (1.0, 2.0), (-1.0, 2.0))
         )
     )
     with pytest.raises(ValueError, match="canonical run and in-plane basis"):

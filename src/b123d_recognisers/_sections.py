@@ -165,7 +165,14 @@ def _arc(a: SectionVertex, b: SectionVertex) -> _Arc | None:
 
 def _line_moments(a: Vector2, b: Vector2) -> tuple[float, float, float]:
     cross = a[0] * b[1] - b[0] * a[1]
-    return (0.5 * cross, (a[0] + b[0]) * cross / 6.0, (a[1] + b[1]) * cross / 6.0)
+    # Use the same Green-theorem fields as ``_arc_moments``.  The familiar polygon
+    # centroid formula is equivalent only after summing a wholly linear closed loop;
+    # mixing its per-edge contributions with curved-edge integrals is not translation
+    # invariant.
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    mx = dy * (a[0] * a[0] + a[0] * b[0] + b[0] * b[0]) / 6.0
+    my = -dx * (a[1] * a[1] + a[1] * b[1] + b[1] * b[1]) / 6.0
+    return (0.5 * cross, mx, my)
 
 
 def _arc_moments(arc: _Arc) -> tuple[float, float, float]:
@@ -577,8 +584,7 @@ def _validate_occurrence_value(occurrence: SectionOccurrence) -> None:
     try:
         rebuilt_section = PlanarSection(
             tuple(
-                SectionVertex(vertex.point, vertex.bulge)
-                for vertex in occurrence.section.boundary
+                SectionVertex(vertex.point, vertex.bulge) for vertex in occurrence.section.boundary
             )
         )
     except (AttributeError, TypeError) as exc:

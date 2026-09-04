@@ -254,6 +254,34 @@ the old JSON records or maintain a deprecation window.
 Development and authored fixtures establish the schema. MFInstSeg remains a pseudo-blind aggregate
 transfer corpus and must not be inspected or used to tune the representation.
 
+### Prototype promotion gate
+
+PR #496 carries a deliberately private vertical slice rather than a production API. It emits
+closed obround pockets through this document contract, including free in-plane orientation, and
+does not appear in the package root or capability manifest. Export one STEP file with:
+
+```console
+uv run python tools/export_section_recess_prototype.py part.step --output recesses.json
+```
+
+The companion Draftwright branch `prototype/section-recess-consumer` consumes that JSON without
+importing provider record classes and derives drawing length, width and depth from the profile and
+run interval. Promotion requires both its fail-closed consumer tests and the provider's covariance,
+reconstruction, ownership and rejection tests to pass.
+
+The transfer runner overlays the prototype on the unchanged production inventory. It emits only
+aggregate counts and baseline-versus-combined metrics—never model identifiers or model rows:
+
+```console
+uv run python tools/evaluate_section_recess_prototype.py mfinstseg /path/to/mfinstseg \
+  --partition-root /path/to/partitions --output /tmp/section-recess-transfer.json
+```
+
+The developer may use MFCAD++ repeatedly. A person outside the implementation loop runs MFInstSeg
+once after the branch and test command are frozen and returns only the aggregate JSON. A favourable
+result permits production integration; an unfavourable result rejects or narrows the recognition
+hypothesis but does not authorize inspecting holdout models or tuning against them.
+
 ## Consequences
 
 - New section shapes and free orientations do not require new foundational JSON records.

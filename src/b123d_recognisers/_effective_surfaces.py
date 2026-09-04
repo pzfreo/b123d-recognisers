@@ -190,6 +190,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "original planar opening, wall and floor roles in the bounded cavity proof",
     ),
+    "_section_recess_prototype": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "experimental obround proof intentionally matches the audited original-face anatomy",
+    ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
     "repeating_profiles": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -217,6 +221,30 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_section_recess_prototype:_cylinder:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype reads native cylinder parameters from the audited obround wall",
+    ),
+    "_section_recess_prototype:_edge_sweep:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype requires the original semicircular floor boundary",
+    ),
+    "_section_recess_prototype:_one_candidate:graph_surface:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype classifies the two original cylindrical walls",
+    ),
+    "_section_recess_prototype:_one_candidate:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype classifies the two original planar walls",
+    ),
+    "_section_recess_prototype:_one_candidate:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype requires an original planar mouth",
+    ),
+    "_section_recess_prototype:_candidates:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype seeds only from an original planar floor",
+    ),
     "edge_open_circular_recesses:_segment:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "retain the exact physical floor-to-wall boundary curve kind",
