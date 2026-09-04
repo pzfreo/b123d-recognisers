@@ -2777,6 +2777,21 @@
         },
         {
           "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessDocument.",
+          "fields": {
+            "index": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessBodyRef",
+          "qualified_name": "b123d_recognisers.SectionRecessBodyRef",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
           "aggregate_membership_rationale": "Nested only in SectionRecess.",
           "fields": {
             "feature_kind": {
@@ -2793,6 +2808,41 @@
           "name": "SectionRecessClassification",
           "qualified_name": "b123d_recognisers.SectionRecessClassification",
           "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Public JSON envelope built outside RecognitionResult.",
+          "fields": {
+            "bodies": {
+              "required": true,
+              "type": "list[record:SectionRecessBodyRef]",
+              "units": "none"
+            },
+            "faces": {
+              "required": true,
+              "type": "list[record:SectionRecessFaceRef]",
+              "units": "none"
+            },
+            "occurrences": {
+              "required": true,
+              "type": "list[record:SectionRecess]",
+              "units": "none"
+            },
+            "reference_scope": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "schema_version": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessDocument",
+          "qualified_name": "b123d_recognisers.SectionRecessDocument",
+          "role": "aggregate",
           "schema_version": 1
         },
         {
@@ -2832,6 +2882,21 @@
           },
           "name": "SectionRecessEvidence",
           "qualified_name": "b123d_recognisers.SectionRecessEvidence",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessDocument.",
+          "fields": {
+            "index": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessFaceRef",
+          "qualified_name": "b123d_recognisers.SectionRecessFaceRef",
           "role": "nested",
           "schema_version": 1
         },

@@ -180,7 +180,7 @@ class SectionRecessFaceRef(Record):
 
 
 @dataclass(frozen=True, order=True, slots=True)
-class SectionRecessOccurrence(Record):
+class SectionRecess(Record):
     index: int
     body: int
     geometry: SectionRecessGeometry
@@ -206,7 +206,7 @@ class SectionRecessDocument(Record):
     reference_scope: str
     bodies: tuple[SectionRecessBodyRef, ...]
     faces: tuple[SectionRecessFaceRef, ...]
-    occurrences: tuple[SectionRecessOccurrence, ...]
+    occurrences: tuple[SectionRecess, ...]
 
     def __post_init__(self) -> None:
         if self.schema_version != 1 or self.reference_scope != "result":
@@ -663,7 +663,7 @@ def _candidates(graph: FaceGraph) -> tuple[_Candidate, ...]:
     )
 
 
-def build_section_recess(part: Part) -> SectionRecessDocument:
+def build_section_recess_document(part: Part) -> SectionRecessDocument:
     """Build one deterministic, JSON-safe section-recess document for *part*."""
 
     graph = FaceGraph(part)
@@ -673,7 +673,7 @@ def build_section_recess(part: Part) -> SectionRecessDocument:
     # would make the same occurrence name a different body through the Python and JSON APIs.
     bodies = tuple(part.solids())
     occurrences = tuple(
-        SectionRecessOccurrence(
+        SectionRecess(
             index,
             candidate.body,
             candidate.geometry,
@@ -700,8 +700,8 @@ __all__ = [
     "SectionRecessEvidence",
     "SectionRecessEnds",
     "SectionRecessGeometry",
-    "SectionRecessOccurrence",
+    "SectionRecess",
     "SectionRecessDocument",
-    "build_section_recess",
+    "build_section_recess_document",
     "project_section_recess_geometry",
 ]

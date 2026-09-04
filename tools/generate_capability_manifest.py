@@ -39,9 +39,12 @@ FAMILIES = {
             ("ClosedSectionProfile", "nested", []),
             ("SectionEnd", "nested", []),
             ("SectionRecess", "output", ["RecognitionResult.section_recesses"]),
+            ("SectionRecessBodyRef", "nested", []),
             ("SectionRecessClassification", "nested", []),
+            ("SectionRecessDocument", "aggregate", []),
             ("SectionRecessEnds", "nested", []),
             ("SectionRecessEvidence", "nested", []),
+            ("SectionRecessFaceRef", "nested", []),
             ("SectionRecessGeometry", "nested", []),
         ],
         "census": None,
@@ -412,9 +415,12 @@ RECORD_SCHEMA_VERSIONS = {
 NO_MEMBERSHIP_RATIONALE = {
     "ClosedSectionProfile": "Nested only in SectionRecessGeometry.",
     "SectionEnd": "Nested only in SectionRecessEnds.",
+    "SectionRecessBodyRef": "Nested only in SectionRecessDocument.",
     "SectionRecessClassification": "Nested only in SectionRecess.",
+    "SectionRecessDocument": "Public JSON envelope built outside RecognitionResult.",
     "SectionRecessEnds": "Nested only in SectionRecessGeometry.",
     "SectionRecessEvidence": "Nested only in SectionRecess.",
+    "SectionRecessFaceRef": "Nested only in SectionRecessDocument.",
     "SectionRecessGeometry": "Nested only in SectionRecess.",
     "HoleSpec": (
         "Derived grouping key; it is computed from HoleRecord and is not retained by "

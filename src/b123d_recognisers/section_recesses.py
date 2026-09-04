@@ -9,27 +9,24 @@ they are meaningful only within the recognition result produced for that part.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._section_recess import (
     ClosedSectionProfile,
     SectionEnd,
+    SectionRecess,
+    SectionRecessBodyRef,
     SectionRecessClassification,
+    SectionRecessDocument,
     SectionRecessEnds,
     SectionRecessEvidence,
+    SectionRecessFaceRef,
     SectionRecessGeometry,
-    SectionRecessOccurrence,
     _candidates,
+    build_section_recess_document,
 )
 from b123d_recognisers._typing import Part
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class SectionRecess(SectionRecessOccurrence):
-    """One indexed, reconstructible constant-section recess occurrence."""
 
 
 def _discover_section_recesses(
@@ -70,9 +67,13 @@ __all__ = [
     "ClosedSectionProfile",
     "SectionEnd",
     "SectionRecess",
+    "SectionRecessBodyRef",
     "SectionRecessClassification",
+    "SectionRecessDocument",
     "SectionRecessEnds",
     "SectionRecessEvidence",
+    "SectionRecessFaceRef",
     "SectionRecessGeometry",
+    "build_section_recess_document",
     "recognise_section_recesses",
 ]

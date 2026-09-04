@@ -11,9 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers import import_step_geometry  # noqa: E402
-from b123d_recognisers._section_recess import (  # noqa: E402
-    build_section_recess,
+from b123d_recognisers import (  # noqa: E402
+    build_section_recess_document,
+    import_step_geometry,
 )
 
 
@@ -23,7 +23,7 @@ def main() -> int:
     parser.add_argument("--output", "-o", type=Path, help="write JSON here instead of stdout")
     args = parser.parse_args()
 
-    document = build_section_recess(import_step_geometry(args.step))
+    document = build_section_recess_document(import_step_geometry(args.step))
     encoded = json.dumps(document.to_dict(), indent=2, sort_keys=True) + "\n"
     if args.output is None:
         sys.stdout.write(encoded)

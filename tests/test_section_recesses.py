@@ -17,17 +17,17 @@ from build123d import (
     Rot,
     export_step,
     extrude,
-import_step,
+    import_step,
 )
 
 from b123d_recognisers import (
     SectionRecess,
     build_raw_recognition_result,
+    build_section_recess_document,
     recognise_section_recesses,
 )
 from b123d_recognisers._section_recess import (
     SectionRecessClassification,
-    build_section_recess,
     project_section_recess_geometry,
 )
 from b123d_recognisers._sections import (
@@ -69,7 +69,7 @@ def _polygonal_pocket(points, *, placement=None):
 
 
 def test_section_recess_emits_reconstructible_indexed_json() -> None:
-    document = build_section_recess(_blind_pocket())
+    document = build_section_recess_document(_blind_pocket())
 
     assert [body.index for body in document.bodies] == [0]
     assert [face.index for face in document.faces] == list(range(11))
@@ -94,7 +94,7 @@ def test_section_recess_emits_reconstructible_indexed_json() -> None:
 
 
 def test_section_recess_output_matches_committed_golden() -> None:
-    document = build_section_recess(_blind_pocket())
+    document = build_section_recess_document(_blind_pocket())
     actual = document.to_dict()
     occurrence = actual["occurrences"][0]
     projection = {
@@ -128,7 +128,7 @@ def test_section_recess_output_matches_committed_golden() -> None:
     [Rot(90, 0, 0), Rot(0, 90, 0), Rot(17, 31, 43) * Pos(11, -7, 5)],
 )
 def test_section_recess_is_covariant_under_rigid_presentation(placement) -> None:
-    document = build_section_recess(placement * _blind_pocket())
+    document = build_section_recess_document(placement * _blind_pocket())
 
     (occurrence,) = document.occurrences
     span = occurrence.geometry.run_interval[1] - occurrence.geometry.run_interval[0]
@@ -140,7 +140,7 @@ def test_section_recess_is_covariant_under_rigid_presentation(placement) -> None
 def test_section_recess_does_not_publish_a_boss_as_a_pocket() -> None:
     boss = Box(60, 50, 6) + Pos(0, 0, 7) * Rot(0, 0, 30) * _obround()
 
-    assert build_section_recess(boss).occurrences == ()
+    assert build_section_recess_document(boss).occurrences == ()
 
 
 def test_section_recess_is_a_public_aggregate_family() -> None:
@@ -196,7 +196,7 @@ def test_unified_contract_projects_free_axis_polygonal_sections(shape, points) -
     ],
 )
 def test_free_frame_floor_proof_recognises_polygonal_pockets(shape, points) -> None:
-    document = build_section_recess(_polygonal_pocket(points))
+    document = build_section_recess_document(_polygonal_pocket(points))
 
     (occurrence,) = document.occurrences
     assert occurrence.classification.section_shape == shape
@@ -208,7 +208,7 @@ def test_polygonal_proof_is_stable_after_step_round_trip(tmp_path) -> None:
     path = tmp_path / "oriented-triangle.step"
     export_step(_polygonal_pocket(((-4, -3), (4, -3), (0, 5))), path)
 
-    (occurrence,) = build_section_recess(import_step(path)).occurrences
+    (occurrence,) = build_section_recess_document(import_step(path)).occurrences
 
     assert occurrence.classification.section_shape == "triangular"
 
@@ -218,8 +218,8 @@ def test_polygonal_proof_rejects_through_cut_and_boss() -> None:
     through = Box(60, 50, 12) - Pos(0, 0, -7) * _polygonal_cutter(points, depth=14)
     boss = Box(60, 50, 6) + Pos(0, 0, 7) * _polygonal_cutter(points)
 
-    assert build_section_recess(through).occurrences == ()
-    assert build_section_recess(boss).occurrences == ()
+    assert build_section_recess_document(through).occurrences == ()
+    assert build_section_recess_document(boss).occurrences == ()
 
 
 def test_equal_polygonal_pockets_on_separate_bodies_keep_ownership() -> None:
@@ -227,7 +227,7 @@ def test_equal_polygonal_pockets_on_separate_bodies_keep_ownership() -> None:
     first = _polygonal_pocket(points)
     second = Pos(100, 0, 0) * _polygonal_pocket(points)
 
-    document = build_section_recess(Compound([first, second]))
+    document = build_section_recess_document(Compound([first, second]))
 
     assert len(document.occurrences) == 2
     assert {occurrence.body for occurrence in document.occurrences} == {0, 1}
@@ -238,7 +238,7 @@ def test_document_preserves_unrecognised_body_in_reference_roster() -> None:
     recognised = Pos(100, 0, 0) * _blind_pocket()
     part = Compound([untouched, recognised])
 
-    document = build_section_recess(part)
+    document = build_section_recess_document(part)
     direct = recognise_section_recesses(part)
 
     assert [body.index for body in document.bodies] == [0, 1]
