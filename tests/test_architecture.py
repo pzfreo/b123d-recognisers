@@ -285,6 +285,8 @@ MODULE_SEAM_EDGES = {
         "_hole_features",
         "_recess_features",
         "_run",
+        "_section_recess",
+        "_section_recess_discovery",
         "_typing",
         "angled_steps",
         "blends",
@@ -781,7 +783,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         "diagnose_residuals": {"reconciliation", "evidence", "return"},
         "_derive_patterns": {"accepted", "return"},
         "_derive_passage_compat": {"inputs", "projection", "return"},
-        "_project_result": {"context", "accepted", "derived", "return"},
+        "_project_result": {"context", "accepted", "derived", "evidence", "return"},
     }
     for name, parameters in expected.items():
         assert set(typing.get_type_hints(getattr(module, name))) == parameters
@@ -864,7 +866,7 @@ def test_only_result_orchestration_may_create_restricted_completed_inputs() -> N
     assert constructors == []
 
 
-def test_private_section_adapters_are_not_used_by_production_orchestration() -> None:
+def test_private_section_adapters_are_only_used_by_the_unified_projection() -> None:
     importers: list[str] = []
     for path in PACKAGE.glob("*.py"):
         if path.name in {"_section_adapters.py", "_sections.py"}:
@@ -876,7 +878,7 @@ def test_private_section_adapters_are_not_used_by_production_orchestration() -> 
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
-    assert importers == []
+    assert importers == ["result.py"]
 
 
 def test_projection_family_bindings_match_the_registry() -> None:
@@ -904,10 +906,15 @@ def test_projection_family_bindings_match_the_registry() -> None:
             projected[typing.cast(str, keyword.arg)] = families.pop()
 
     registry = importlib.import_module("b123d_recognisers._registry")
-    assert projected == {
+    expected = {
         definition.result_field: definition.family.name
         for definition in registry.PHYSICAL_DEFINITIONS
     }
+    # ADR 0019 intentionally converges multiple independently discovered physical families into
+    # this one public result field; its native binding is therefore not visible in the constructor
+    # expression inspected above.
+    expected.pop("section_recesses")
+    assert projected == expected
 
 
 def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:

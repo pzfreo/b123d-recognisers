@@ -61,6 +61,16 @@ from b123d_recognisers._registry import (
 )
 from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._section_adapters import prismatic_pocket_to_occurrence
+from b123d_recognisers._section_recess import (
+    ClosedSectionProfile,
+    OpenSectionProfile,
+    SectionEnd,
+    SectionRecess,
+    SectionRecessClassification,
+    SectionRecessEnds,
+    SectionRecessEvidence,
+    SectionRecessGeometry,
+)
 from b123d_recognisers._sections import BodyRefIssuer, LocalFrame
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
@@ -98,16 +108,6 @@ from b123d_recognisers.profiled_bores import DoubleDBore
 from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
-from b123d_recognisers.section_recesses import (
-    ClosedSectionProfile,
-    OpenSectionProfile,
-    SectionEnd,
-    SectionRecess,
-    SectionRecessClassification,
-    SectionRecessEnds,
-    SectionRecessEvidence,
-    SectionRecessGeometry,
-)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,

@@ -41,6 +41,8 @@ from b123d_recognisers._recess_features import (
     _discover_slots,
 )
 from b123d_recognisers._run import RecognitionContext
+from b123d_recognisers._section_recess import SectionRecess
+from b123d_recognisers._section_recess_discovery import discover_section_recesses
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.blends import Blend, _discover_blends
@@ -105,7 +107,6 @@ from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
     recognise_round_bottom_blind_slots,
 )
-from b123d_recognisers.section_recesses import SectionRecess, _discover_section_recesses
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -749,7 +750,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         "recognise_section_recesses",
         (),
         always,
-        _simple(lambda s: list(_discover_section_recesses(s.context.part, writer=s.writer))),
+        _simple(lambda s: list(discover_section_recesses(s.context.part, writer=s.writer))),
         NotCounted("unified recess geometry replaces several legacy census categories"),
         FullyAttributed(
             "every SectionRecess publishes its original wall faces and complete constituent set"
