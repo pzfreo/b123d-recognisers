@@ -34,7 +34,7 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.evidence import build_recognition_evidence
 from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
-from b123d_recognisers.result import build_recognition_result
+from b123d_recognisers.result import build_raw_recognition_result, build_recognition_result
 from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
     _alternating_profile_runs,
@@ -116,6 +116,17 @@ def test_round_bottom_blind_slot_has_truthful_dimensions_and_evidence():
     (feature,) = tuple(ref for ref in evidence.features if evidence.record(ref) == actual[0])
     assert evidence.constituent_faces(feature) == evidence.defining_faces(feature)
     assert len(evidence.defining_faces(feature)) == 4
+
+    (unified,) = build_raw_recognition_result(part).section_recesses
+    assert unified.classification.feature_kind == "edge_open_recess"
+    assert unified.classification.section_shape == "general"
+    assert unified.geometry.profile.closure == "open"
+    assert [vertex.bulge != 0.0 for vertex in unified.geometry.profile.boundary] == [
+        True,
+        False,
+        True,
+        False,
+    ]
 
 
 def test_axis_open_sign_scale_and_step_roundtrip_are_stable(tmp_path):

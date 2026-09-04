@@ -912,6 +912,137 @@ def _principal_open_geometry(
     )
 
 
+def _principal_local_point(
+    axis: str, offsets: Mapping[str, float]
+) -> tuple[float, float]:
+    """Express principal-axis transverse offsets in ``LocalFrame.principal`` coordinates."""
+
+    transverse = {"x": ("y", "z"), "y": ("z", "x"), "z": ("x", "y")}[axis]
+    return (round(offsets.get(transverse[0], 0.0), 4), round(offsets.get(transverse[1], 0.0), 4))
+
+
+def _legacy_section_recess(
+    record: object,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+    geometry: SectionRecessGeometry,
+    feature_kind: str,
+    section_shape: str,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted legacy section recess lost its body authority")
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        geometry,
+        SectionRecessClassification(feature_kind, section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _rectangular_blind_slot_recess(
+    record: RectangularBlindSlot,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    half_width, half_depth = record.width / 2, record.depth / 2
+    opening = record.depth_sign * half_depth
+    floor = -opening
+    chain = tuple(
+        PassageSectionVertex(
+            _principal_local_point(
+                record.axis,
+                {record.width_axis: width, record.depth_axis: depth},
+            ),
+            0.0,
+        )
+        for width, depth in (
+            (-half_width, opening),
+            (-half_width, floor),
+            (half_width, floor),
+            (half_width, opening),
+        )
+    )
+    geometry = _principal_open_geometry(
+        axis=record.axis,
+        run_interval=(
+            round(record.at["xyz".index(record.axis)] - record.length / 2, 3),
+            round(record.at["xyz".index(record.axis)] + record.length / 2, 3),
+        ),
+        open_sign=record.open_sign,
+        boundary=chain,
+    )
+    return _legacy_section_recess(
+        record,
+        context=context,
+        evidence=evidence,
+        index=index,
+        geometry=geometry,
+        feature_kind="edge_open_recess",
+        section_shape="rectangular",
+    )
+
+
+def _round_bottom_blind_slot_recess(
+    record: RoundBottomBlindSlot,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    half_width = record.width / 2
+    half_flat = record.flat_width / 2
+    half_depth = record.radius / 2
+    opening = record.depth_sign * half_depth
+    floor = -opening
+
+    def point(width: float, depth: float) -> tuple[float, float]:
+        return _principal_local_point(
+            record.axis,
+            {record.width_axis: width, record.depth_axis: depth},
+        )
+
+    width_vector = point(1.0, 0.0)
+    depth_vector = point(0.0, 1.0)
+    determinant = width_vector[0] * depth_vector[1] - width_vector[1] * depth_vector[0]
+    orientation = 1 if determinant > 0 else -1
+    arc_bulge = round(math.tan(record.depth_sign * orientation * math.pi / 8), 12)
+    chain = (
+        PassageSectionVertex(point(-half_width, opening), arc_bulge),
+        PassageSectionVertex(point(-half_flat, floor), 0.0),
+        PassageSectionVertex(point(half_flat, floor), arc_bulge),
+        PassageSectionVertex(point(half_width, opening), 0.0),
+    )
+    geometry = _principal_open_geometry(
+        axis=record.axis,
+        run_interval=(
+            round(record.at["xyz".index(record.axis)] - record.length / 2, 3),
+            round(record.at["xyz".index(record.axis)] + record.length / 2, 3),
+        ),
+        open_sign=record.open_sign,
+        boundary=chain,
+    )
+    return _legacy_section_recess(
+        record,
+        context=context,
+        evidence=evidence,
+        index=index,
+        geometry=geometry,
+        feature_kind="edge_open_recess",
+        section_shape="general",
+    )
+
+
 def _edge_open_prismatic_recess(
     record: EdgeOpenPrismaticRecess,
     *,
@@ -1082,6 +1213,22 @@ def _project_result(
             )
         )
     )
+    rectangular_blind_recesses = tuple(
+        _rectangular_blind_slot_recess(
+            record, context=context, evidence=evidence, index=index
+        )
+        for index, record in enumerate(
+            _records(accepted, FamilyId.RECTANGULAR_BLIND_SLOTS, RectangularBlindSlot)
+        )
+    )
+    round_bottom_recesses = tuple(
+        _round_bottom_blind_slot_recess(
+            record, context=context, evidence=evidence, index=index
+        )
+        for index, record in enumerate(
+            _records(accepted, FamilyId.ROUND_BOTTOM_BLIND_SLOTS, RoundBottomBlindSlot)
+        )
+    )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
@@ -1119,6 +1266,8 @@ def _project_result(
                 *passage_recesses,
                 *open_prismatic_recesses,
                 *open_circular_recesses,
+                *rectangular_blind_recesses,
+                *round_bottom_recesses,
             )
         ),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),

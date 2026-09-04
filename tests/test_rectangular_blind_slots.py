@@ -79,6 +79,12 @@ def test_rectangular_blind_slot_has_truthful_dimensions_and_complete_evidence():
     assert evidence.constituent_faces(feature) == evidence.defining_faces(feature)
     assert len(evidence.defining_faces(feature)) == 4
 
+    (unified,) = build_raw_recognition_result(part).section_recesses
+    assert unified.classification.feature_kind == "edge_open_recess"
+    assert unified.classification.section_shape == "rectangular"
+    assert unified.geometry.profile.closure == "open"
+    assert unified.evidence.defining_faces == unified.evidence.constituent_faces
+
 
 def test_axis_sign_scale_translation_frame_and_step_roundtrip_are_stable(tmp_path):
     base = _slot()
