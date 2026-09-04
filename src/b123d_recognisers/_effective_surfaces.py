@@ -229,21 +229,33 @@ SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prototype requires the original semicircular floor boundary",
     ),
-    "_section_recess_prototype:_one_candidate:graph_surface:1": (
+    "_section_recess_prototype:_one_obround_candidate:graph_surface:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prototype classifies the two original cylindrical walls",
     ),
-    "_section_recess_prototype:_one_candidate:is_planar:1": (
+    "_section_recess_prototype:_one_obround_candidate:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prototype classifies the two original planar walls",
     ),
-    "_section_recess_prototype:_one_candidate:is_planar:2": (
+    "_section_recess_prototype:_one_obround_candidate:is_planar:2": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prototype requires an original planar mouth",
     ),
     "_section_recess_prototype:_candidates:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prototype seeds only from an original planar floor",
+    ),
+    "_section_recess_prototype:_polygonal_section:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype requires the observed polygonal floor boundary to be straight",
+    ),
+    "_section_recess_prototype:_one_polygonal_candidate:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype requires original planar polygonal wall supports",
+    ),
+    "_section_recess_prototype:_one_polygonal_candidate:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prototype requires one original planar exterior mouth",
     ),
     "edge_open_circular_recesses:_segment:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,

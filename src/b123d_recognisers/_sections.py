@@ -705,9 +705,12 @@ def occurrence_geometry_dict(
         + interval_error * math.sqrt(sum(value * value for value in projected_run))
         + transverse_extent * (u_error + v_error)
         + _projection_bound(occurrence.section.boundary)
-        * (
-            math.sqrt(sum(value * value for value in projected_u))
-            + math.sqrt(sum(value * value for value in projected_v))
+        # A section coordinate error is one 2-D Euclidean vector, not two independent
+        # full-size errors.  The Frobenius norm safely bounds its mapping through the
+        # rounded (u, v) basis without falsely adding orthogonal components as collinear.
+        * math.sqrt(
+            sum(value * value for value in projected_u)
+            + sum(value * value for value in projected_v)
         )
     )
     if world_bound > _OCCURRENCE_TOL:

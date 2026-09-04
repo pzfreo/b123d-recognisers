@@ -20,6 +20,7 @@ from b123d_recognisers._adjacency import FaceGraph, FaceNode, frame_points_outwa
 from b123d_recognisers._geometry import length_tol
 from b123d_recognisers._recess_obround import _END_RADIUS_FRAC
 from b123d_recognisers._record import Record
+from b123d_recognisers._section_passages import _end_slab, _material_fraction, _probe_prism
 from b123d_recognisers._sections import (
     BodyRefIssuer,
     LocalFrame,
@@ -232,20 +233,12 @@ class SectionRecessPrototypeDocument(Record):
 
 @dataclass(frozen=True, slots=True)
 class _Candidate:
-    floor: int
-    cylinders: tuple[int, int]
-    sides: tuple[int, int]
+    defining_faces: tuple[int, ...]
+    constituent_faces: tuple[int, ...]
     mouth: int
     body: int
     geometry: SectionRecessGeometry
-
-    @property
-    def defining(self) -> tuple[int, ...]:
-        return tuple(sorted((*self.cylinders, *self.sides)))
-
-    @property
-    def constituent(self) -> tuple[int, ...]:
-        return tuple(sorted((*self.defining, self.floor)))
+    section_shape: str
 
 
 def _dot(left: Vector3, right: Vector3) -> float:
@@ -322,6 +315,42 @@ def _node_interval(
 def _project(point: Vector3, frame: LocalFrame) -> Vector2:
     relative = _subtract(point, frame.origin)
     return (_dot(relative, frame.u), _dot(relative, frame.v))
+
+
+def _polygonal_section(
+    graph: FaceGraph, floor: FaceNode, frame: LocalFrame
+) -> PlanarSection | None:
+    """Read one physical straight-edged floor wire into the free section frame."""
+
+    try:
+        wires = tuple(graph.face(floor).wires())
+        if len(wires) != 1:
+            return None
+        edges = tuple(wires[0].edges())
+        if len(edges) < 3 or any(edge.geom_type.name != "LINE" for edge in edges):
+            return None
+        points = []
+        for index, edge in enumerate(edges):
+            shared = tuple(
+                left
+                for left in edges[index - 1].vertices()
+                for right in edge.vertices()
+                if left == right
+            )
+            if len(shared) != 1:
+                return None
+            point = shared[0]
+            points.append(_project((float(point.X), float(point.Y), float(point.Z)), frame))
+        raw = PlanarSection(tuple(SectionVertex(point) for point in points))
+        centre = raw.centroid
+        return PlanarSection(
+            tuple(
+                SectionVertex((vertex.point[0] - centre[0], vertex.point[1] - centre[1]))
+                for vertex in raw.boundary
+            )
+        )
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return None
 
 
 def _public_geometry(
@@ -409,7 +438,7 @@ def project_section_recess_geometry(
     )
 
 
-def _one_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
+def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
     floor_normal = graph.normal(floor)
     if floor_normal is None:
         return None
@@ -510,22 +539,129 @@ def _one_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
     except ValueError:
         return None
     return _Candidate(
-        floor.index,
-        cast(tuple[int, int], tuple(sorted(node.index for node in cylinders))),
-        cast(tuple[int, int], tuple(sorted(node.index for node in sides))),
+        tuple(sorted(node.index for node in (*cylinders, *sides))),
+        tuple(sorted((floor.index, *(node.index for node in (*cylinders, *sides))))),
         mouths[0].index,
         owner.ordinal,
         geometry,
+        "obround",
+    )
+
+
+def _one_polygonal_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
+    normal = graph.normal(floor)
+    if normal is None:
+        return None
+    depth = _canonical(normal)
+    walls = tuple(
+        node
+        for node in graph.neighbours(floor)
+        if graph.arc(floor, node) == "concave" and graph.is_planar(node)
+    )
+    if len(walls) < 3 or any(
+        (wall_normal := graph.normal(wall)) is None
+        or abs(_dot(wall_normal, depth)) > _DIRECTION_TOL
+        for wall in walls
+    ):
+        return None
+    intervals = tuple(_node_interval(graph, wall, depth) for wall in walls)
+    if any(interval is None for interval in intervals):
+        return None
+    spans = tuple(interval for interval in intervals if interval is not None)
+    low = min(interval[0] for interval in spans)
+    high = max(interval[1] for interval in spans)
+    tolerance = length_tol(high - low, rel=_END_RADIUS_FRAC)
+    if high - low <= tolerance or any(
+        abs(interval[0] - low) > tolerance or abs(interval[1] - high) > tolerance
+        for interval in spans
+    ):
+        return None
+    floor_interval = _node_interval(graph, floor, depth)
+    if floor_interval is None:
+        return None
+    floor_at = sum(floor_interval) / 2.0
+    if min(abs(floor_at - low), abs(floor_at - high)) > tolerance:
+        return None
+    mouth_at = high if abs(floor_at - low) <= tolerance else low
+    context = set(graph.neighbours(walls[0]))
+    for wall in walls[1:]:
+        context &= set(graph.neighbours(wall))
+    mouths = []
+    for node in context - {floor}:
+        mouth_normal = graph.normal(node) if graph.is_planar(node) else None
+        interval = _node_interval(graph, node, depth)
+        if (
+            mouth_normal is not None
+            and _parallel(_canonical(mouth_normal), depth)
+            and interval is not None
+            and abs(sum(interval) / 2.0 - mouth_at) <= tolerance
+            and all(graph.arc(node, wall) in ("convex", "smooth") for wall in walls)
+        ):
+            mouths.append(node)
+    owner = graph.common_valid_solid((*walls, floor))
+    if len(mouths) != 1 or owner is None:
+        return None
+    centre = graph.face(floor).center()
+    frame = LocalFrame.canonical(depth, (float(centre.X), float(centre.Y), float(centre.Z)))
+    section = _polygonal_section(graph, floor, frame)
+    if section is None or len(section.boundary) != len(walls):
+        return None
+    try:
+        solid = graph.solid_shape(owner)
+        scale = max(1.0, high - low)
+        radius = max(math.hypot(*vertex.point) for vertex in section.boundary)
+        thickness = max(2e-5, scale * 1e-4, radius * 1e-4)
+        floor_sign = -1.0 if abs(floor_at - low) <= tolerance else 1.0
+        mouth_sign = -floor_sign
+        if (
+            _material_fraction(solid, _probe_prism(frame, (low, high), section)) > 1e-9
+            or _material_fraction(solid, _end_slab(frame, mouth_at, mouth_sign, thickness, section))
+            > 1e-9
+            or _material_fraction(solid, _end_slab(frame, floor_at, floor_sign, thickness, section))
+            < 1.0 - 1e-9
+        ):
+            return None
+    except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
+        return None
+    issuer = BodyRefIssuer()
+    occurrence = SectionOccurrence(
+        issuer.issue(),
+        frame,
+        (low, high),
+        section,
+        SectionEnds(
+            low_capped=abs(floor_at - low) <= abs(floor_at - high),
+            high_capped=abs(floor_at - high) < abs(floor_at - low),
+        ),
+    )
+    try:
+        geometry = project_section_recess_geometry(occurrence, body_refs=issuer)
+    except ValueError:
+        return None
+    sides = len(section.boundary)
+    shape = {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(sides, "polygonal")
+    defining = tuple(sorted(node.index for node in walls))
+    return _Candidate(
+        defining,
+        tuple(sorted((floor.index, *defining))),
+        mouths[0].index,
+        owner.ordinal,
+        geometry,
+        shape,
     )
 
 
 def _candidates(graph: FaceGraph) -> tuple[_Candidate, ...]:
-    found = tuple(
+    found = {
         candidate
         for node in graph.nodes
-        if graph.is_planar(node) and (candidate := _one_candidate(graph, node)) is not None
+        if graph.is_planar(node)
+        for recogniser in (_one_obround_candidate, _one_polygonal_candidate)
+        if (candidate := recogniser(graph, node)) is not None
+    }
+    return tuple(
+        sorted(found, key=lambda item: (item.constituent_faces, item.section_shape, item.mouth))
     )
-    return tuple(sorted(set(found), key=lambda item: (item.floor, item.cylinders, item.sides)))
 
 
 def build_section_recess_prototype(part: Part) -> SectionRecessPrototypeDocument:
@@ -540,8 +676,8 @@ def build_section_recess_prototype(part: Part) -> SectionRecessPrototypeDocument
             index,
             body_remap[candidate.body],
             candidate.geometry,
-            SectionRecessClassification("pocket", "obround"),
-            SectionRecessEvidence(candidate.defining, candidate.constituent),
+            SectionRecessClassification("pocket", candidate.section_shape),
+            SectionRecessEvidence(candidate.defining_faces, candidate.constituent_faces),
         )
         for index, candidate in enumerate(candidates)
     )

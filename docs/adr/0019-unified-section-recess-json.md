@@ -275,6 +275,11 @@ adapter suite round-trips all 25 golden polygonal recess records. Polygonal reca
 separate detector-covariance question: adopting this value removes the schema obstacle but does not
 turn principal-axis discoveries into free-axis discoveries.
 
+The subsequent complete MFCAD++ six-sided-pocket overlay answers that question narrowly: an intact
+free-frame floor proof is perfectly pure but adds only 49 net faces, raising coverage from 0.9320 to
+0.9406. Orientation covariance is therefore a valid substrate, not the main polygonal residual.
+Treatment-interrupted cavity propagation is separate recognition work and remains the next gate.
+
 The transfer runner overlays the prototype on the unchanged production inventory. It emits only
 aggregate counts and baseline-versus-combined metrics—never model identifiers or model rows:
 

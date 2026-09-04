@@ -22,6 +22,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+_TARGET_SHAPES = {13: "triangular", 14: "rectangular", 15: "hexagonal", 16: "obround"}
+
 from tools.effectiveness_report import (  # noqa: E402
     DatasetTruth,
     EffectivenessDataError,
@@ -98,10 +100,14 @@ def _evaluate(task: _Task) -> _Counts:
         )
 
     document = build_section_recess_prototype(part)
-    prototype_claims = [frozenset(item.evidence.defining_faces) for item in document.occurrences]
-    prototype_constituents = [
-        frozenset(item.evidence.constituent_faces) for item in document.occurrences
-    ]
+    expected_shape = _TARGET_SHAPES.get(task.target_class)
+    occurrences = tuple(
+        item
+        for item in document.occurrences
+        if expected_shape is None or item.classification.section_shape == expected_shape
+    )
+    prototype_claims = [frozenset(item.evidence.defining_faces) for item in occurrences]
+    prototype_constituents = [frozenset(item.evidence.constituent_faces) for item in occurrences]
     target = frozenset(
         index for index, value in enumerate(task.truth.semantic) if value == task.target_class
     )
@@ -132,7 +138,7 @@ def _evaluate(task: _Task) -> _Counts:
         target_instances=len(truth_instances),
         baseline_instances=recalled(truth_instances, baseline_claims),
         combined_instances=recalled(truth_instances, [*baseline_claims, *prototype_claims]),
-        prototype_occurrences=len(document.occurrences),
+        prototype_occurrences=len(occurrences),
         prototype_defining=sum(map(len, prototype_claims)),
         prototype_target_defining=sum(len(target & claim) for claim in prototype_claims),
         prototype_constituent=sum(map(len, prototype_constituents)),
