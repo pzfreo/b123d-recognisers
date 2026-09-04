@@ -693,7 +693,7 @@
             "sweep": {
               "required": false,
               "type": "float|null",
-              "units": "mm"
+              "units": "rad"
             }
           },
           "name": "OpenCircularSectionSegment",

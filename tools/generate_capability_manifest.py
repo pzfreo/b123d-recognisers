@@ -442,6 +442,8 @@ def _type_name(annotation: object) -> str:
 def _units(field: dataclasses.Field, annotation: object) -> str:
     name = field.name
     rendered = _type_name(annotation)
+    if name == "sweep":
+        return "rad"
     if name in {"angle", "included_angle"}:
         return "deg"
     if name in {

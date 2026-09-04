@@ -98,6 +98,38 @@ def test_record_serializes_only_the_physical_chain_and_explicit_gap() -> None:
     }
 
 
+def test_public_section_refuses_contradictory_arc_geometry() -> None:
+    segments = list(_section().segments)
+    arc = segments[0]
+    with pytest.raises(ValueError, match="arc sweep must connect"):
+        OpenCircularSectionSegment(
+            "arc", arc.start, arc.end, arc.center, arc.radius, -arc.sweep
+        )
+
+
+def test_public_section_refuses_unequal_radii_and_missing_intact_end() -> None:
+    segments = list(_section().segments)
+    intact = segments[2]
+    segments[2] = OpenCircularSectionSegment(
+        "arc",
+        (4.0, 5.0),
+        (2.0, 5.0),
+        (3.0, 5.0),
+        1.0001,
+        intact.sweep,
+    )
+    with pytest.raises(ValueError, match="one equal radius"):
+        OpenCircularSection(tuple(segments), (segments[-1].end, segments[0].start))
+
+    segments = list(_section().segments)
+    segments[2] = OpenCircularSectionSegment(
+        "arc", (4.0, 5.0), (3.0, 6.0), (3.0, 5.0), 1.0, 1.5707963
+    )
+    segments[3] = OpenCircularSectionSegment("line", (3.0, 6.0), (2.0, 2.0))
+    with pytest.raises(ValueError, match="exactly one intact semicircle"):
+        OpenCircularSection(tuple(segments), (segments[-1].end, segments[0].start))
+
+
 def test_recognises_an_authored_partial_arc_without_fabricating_its_closure() -> None:
     (found,) = recognise_edge_open_circular_pockets(_open_circular_pocket())
 

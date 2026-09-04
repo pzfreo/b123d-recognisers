@@ -20,7 +20,7 @@ CapabilityManifest: TypeAlias = dict[str, JSONValue]
 _FAMILY_ID = re.compile(r"^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$")
 _ROLES = {"aggregate", "evidence", "nested", "output", "projection"}
 _STATUSES = {"deferred", "supported", "unsupported"}
-_UNITS = {"deg", "mm", "none", "unit-vector"}
+_UNITS = {"deg", "mm", "none", "rad", "unit-vector"}
 _RECORD_TYPE = re.compile(r"^record:[A-Z][A-Za-z0-9]*$")
 _VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:[.+-][A-Za-z0-9.-]+)?$")
 

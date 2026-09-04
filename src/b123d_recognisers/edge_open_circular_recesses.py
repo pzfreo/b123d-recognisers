@@ -13,7 +13,7 @@ from build123d import GeomType, Solid, Vector
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger, EvidenceWriter
-from b123d_recognisers._geometry import AXIS_ZERO_COS, length_tol
+from b123d_recognisers._geometry import AXIS_ZERO_COS
 from b123d_recognisers._record import Record
 from b123d_recognisers._rings import SPAN_EPS
 from b123d_recognisers._typing import Part
@@ -85,6 +85,15 @@ class OpenCircularSectionSegment(Record):
                 for point in (start, end)
             ):
                 raise ValueError("arc endpoints must lie on its circle")
+            start_vector = (start[0] - center[0], start[1] - center[1])
+            cosine = math.cos(float(self.sweep))
+            sine = math.sin(float(self.sweep))
+            swept_end = (
+                center[0] + start_vector[0] * cosine - start_vector[1] * sine,
+                center[1] + start_vector[0] * sine + start_vector[1] * cosine,
+            )
+            if math.dist(swept_end, end) > radial_tol:
+                raise ValueError("arc sweep must connect its start to its end")
             object.__setattr__(self, "center", center)
             object.__setattr__(self, "radius", float(self.radius))
             object.__setattr__(self, "sweep", float(self.sweep))
@@ -125,6 +134,11 @@ class OpenCircularSection(Record):
             raise ValueError("open circular section segments must alternate arcs and lines")
         if any(left.end != right.start for left, right in pairwise(self.segments)):
             raise ValueError("open circular section segments must form one continuous chain")
+        arcs = tuple(item for item in self.segments if item.kind == "arc")
+        if arcs[0].radius != arcs[1].radius:
+            raise ValueError("open circular section arcs must have one equal radius")
+        if sum(abs(abs(item.sweep or 0.0) - math.pi) <= 1e-4 for item in arcs) != 1:
+            raise ValueError("open circular section requires exactly one intact semicircle")
         opening = (
             _point(self.opening[0], name="opening start"),
             _point(self.opening[1], name="opening end"),
@@ -392,7 +406,7 @@ def recognise_edge_open_circular_pockets(
             len(arcs) != 2
             or arcs[0].radius is None
             or arcs[1].radius is None
-            or abs(arcs[0].radius - arcs[1].radius) > length_tol(arcs[0].radius, rel=0.0375)
+            or arcs[0].radius != arcs[1].radius
             or sum(abs(abs(item.sweep or 0.0) - math.pi) <= 1e-4 for item in arcs) != 1
             or not all(0 < abs(item.sweep or 0.0) <= math.pi + 1e-6 for item in arcs)
         ):
