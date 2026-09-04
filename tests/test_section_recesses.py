@@ -23,7 +23,11 @@ from build123d import (
 )
 
 from b123d_recognisers import (
+    OpenSectionProfile,
+    PassageSectionVertex,
+    SectionEnd,
     SectionRecess,
+    SectionRecessEnds,
     build_raw_recognition_result,
     build_section_recess_document,
     recognise_section_recesses,
@@ -176,6 +180,61 @@ def test_document_projects_completed_aggregate_inventory(monkeypatch) -> None:
     document = build_section_recess_document(part)
 
     assert document.occurrences == (replace(sentinel, index=0),)
+
+
+def test_unified_contract_admits_only_decided_profile_and_end_combinations() -> None:
+    (base,) = recognise_section_recesses(_blind_pocket())
+    closed = base.geometry.profile
+    open_profile = OpenSectionProfile(
+        "open",
+        (
+            PassageSectionVertex((-2.0, 1.0), 0.0),
+            PassageSectionVertex((-2.0, -1.0), 0.0),
+            PassageSectionVertex((2.0, -1.0), 0.0),
+            PassageSectionVertex((2.0, 1.0), 0.0),
+        ),
+        ((2.0, 1.0), (-2.0, 1.0)),
+    )
+    one_cap = SectionRecessEnds(SectionEnd("capped"), SectionEnd("open"))
+    no_caps = SectionRecessEnds(SectionEnd("open"), SectionEnd("open"))
+    two_caps = SectionRecessEnds(SectionEnd("capped"), SectionEnd("capped"))
+
+    def occurrence(kind, profile, ends):
+        return replace(
+            base,
+            geometry=replace(base.geometry, profile=profile, ends=ends),
+            classification=SectionRecessClassification(kind, "rectangular"),
+        )
+
+    assert occurrence("pocket", closed, one_cap)
+    assert occurrence("edge_open_recess", open_profile, one_cap)
+    assert occurrence("passage", closed, no_caps)
+    for kind, profile, ends in (
+        ("pocket", open_profile, one_cap),
+        ("edge_open_recess", closed, one_cap),
+        ("passage", closed, one_cap),
+        ("pocket", closed, two_caps),
+    ):
+        with pytest.raises(ValueError, match="profile closure and end topology"):
+            occurrence(kind, profile, ends)
+
+
+def test_open_profile_refuses_an_implied_or_misdirected_closure() -> None:
+    vertices = (
+        PassageSectionVertex((-2.0, 1.0), 0.0),
+        PassageSectionVertex((-2.0, -1.0), 0.0),
+        PassageSectionVertex((2.0, -1.0), 0.0),
+        PassageSectionVertex((2.0, 1.0), 0.0),
+    )
+
+    with pytest.raises(ValueError, match="final open-profile vertex"):
+        OpenSectionProfile(
+            "open",
+            (*vertices[:-1], PassageSectionVertex(vertices[-1].point, 0.5)),
+            ((2.0, 1.0), (-2.0, 1.0)),
+        )
+    with pytest.raises(ValueError, match="physical chain end"):
+        OpenSectionProfile("open", vertices, ((-2.0, 1.0), (2.0, 1.0)))
 
 
 @pytest.mark.parametrize(

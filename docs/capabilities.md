@@ -514,6 +514,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `RiserEvidence` | One body-local full-span candidate riser before consumer-specific projection; `body_levels` retains the complete same-solid FaceLevel occurrences (`null` only for hand-built legacy records). `project_step_shoulders(..., levels_by_riser=...)` provides explicit occurrence-aligned selection when separate bodies have value-identical levels. |
 | `SectionPassage` | The sole attributed PASSAGES output: canonical frame, centroid-line run interval, intrinsic section and exact planar open ends. |
 | `ClosedSectionProfile` | Canonical closed line/arc boundary nested in a `SectionRecessGeometry`. |
+| `OpenSectionProfile` | Canonical physical line/arc chain plus the explicit gap between its loose endpoints. |
 | `SectionEnd` | One explicit open or capped end with its local planar gradient. |
 | `SectionRecess` | One indexed constant-section recess occurrence with geometry, classification and result-local evidence. |
 | `SectionRecessBodyRef` | One dense document-local entry in the complete input-solid roster. |

@@ -16,6 +16,7 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
 from b123d_recognisers._section_recess import (
     ClosedSectionProfile,
+    OpenSectionProfile,
     SectionEnd,
     SectionRecess,
     SectionRecessBodyRef,
@@ -90,6 +91,7 @@ def build_section_recess_document(part: Part) -> SectionRecessDocument:
 
 __all__ = [
     "ClosedSectionProfile",
+    "OpenSectionProfile",
     "SectionEnd",
     "SectionRecess",
     "SectionRecessBodyRef",

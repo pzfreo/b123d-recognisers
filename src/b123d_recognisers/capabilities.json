@@ -2721,6 +2721,31 @@
         },
         {
           "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessGeometry.",
+          "fields": {
+            "boundary": {
+              "required": true,
+              "type": "list[record:PassageSectionVertex]",
+              "units": "none"
+            },
+            "closure": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "opening": {
+              "required": true,
+              "type": "tuple[tuple[float,2],2]",
+              "units": "mm"
+            }
+          },
+          "name": "OpenSectionProfile",
+          "qualified_name": "b123d_recognisers.OpenSectionProfile",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
           "aggregate_membership_rationale": "Nested only in SectionRecessEnds.",
           "fields": {
             "condition": {
@@ -2916,7 +2941,7 @@
             },
             "profile": {
               "required": true,
-              "type": "record:ClosedSectionProfile",
+              "type": "record:ClosedSectionProfile|record:OpenSectionProfile",
               "units": "none"
             },
             "run_interval": {

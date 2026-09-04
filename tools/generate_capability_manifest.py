@@ -37,6 +37,7 @@ FAMILIES = {
         "recognisers": [("recognise_section_recesses", "part")],
         "records": [
             ("ClosedSectionProfile", "nested", []),
+            ("OpenSectionProfile", "nested", []),
             ("SectionEnd", "nested", []),
             ("SectionRecess", "output", ["RecognitionResult.section_recesses"]),
             ("SectionRecessBodyRef", "nested", []),
@@ -414,6 +415,7 @@ RECORD_SCHEMA_VERSIONS = {
 
 NO_MEMBERSHIP_RATIONALE = {
     "ClosedSectionProfile": "Nested only in SectionRecessGeometry.",
+    "OpenSectionProfile": "Nested only in SectionRecessGeometry.",
     "SectionEnd": "Nested only in SectionRecessEnds.",
     "SectionRecessBodyRef": "Nested only in SectionRecessDocument.",
     "SectionRecessClassification": "Nested only in SectionRecess.",

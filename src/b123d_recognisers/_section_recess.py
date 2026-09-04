@@ -34,7 +34,7 @@ from b123d_recognisers.passages import PassageFrame, PassageSection, PassageSect
 
 _DIRECTION_TOL = 1e-6
 _SEMICIRCLE_TOL = 1e-4
-_FEATURE_KINDS = frozenset({"pocket"})
+_FEATURE_KINDS = frozenset({"pocket", "edge_open_recess", "passage"})
 _SECTION_SHAPES = frozenset(
     {
         "rectangular",
@@ -77,6 +77,48 @@ class ClosedSectionProfile(Record):
 
 
 @dataclass(frozen=True, order=True, slots=True)
+class OpenSectionProfile(Record):
+    """One canonical physical open line/arc chain plus its explicitly absent boundary."""
+
+    closure: str
+    boundary: tuple[PassageSectionVertex, ...]
+    opening: tuple[Vector2, Vector2]
+
+    def __post_init__(self) -> None:
+        if self.closure != "open":
+            raise ValueError("open section profile closure must be 'open'")
+        if (
+            not isinstance(self.boundary, tuple)
+            or len(self.boundary) < 2
+            or not all(isinstance(vertex, PassageSectionVertex) for vertex in self.boundary)
+        ):
+            raise ValueError("open section profile requires at least two physical vertices")
+        if self.boundary[-1].bulge != 0.0:
+            raise ValueError("the final open-profile vertex cannot imply a closing segment")
+        if len({vertex.point for vertex in self.boundary}) != len(self.boundary):
+            raise ValueError("open section profile vertices must be distinct")
+        opening = cast(
+            tuple[Vector2, Vector2],
+            tuple(
+                cast(Vector2, _numbers(point, 2, name="opening endpoint"))
+                for point in self.opening
+            ),
+        )
+        if opening != (self.boundary[-1].point, self.boundary[0].point):
+            raise ValueError("opening must run from the physical chain end to its start")
+        reversed_boundary = tuple(
+            PassageSectionVertex(
+                self.boundary[-1 - index].point,
+                -self.boundary[-2 - index].bulge if index < len(self.boundary) - 1 else 0.0,
+            )
+            for index in range(len(self.boundary))
+        )
+        if reversed_boundary < self.boundary:
+            raise ValueError("open section profile must use its canonical direction")
+        object.__setattr__(self, "opening", opening)
+
+
+@dataclass(frozen=True, order=True, slots=True)
 class SectionEnd(Record):
     """One physical end condition in the section frame."""
 
@@ -100,8 +142,6 @@ class SectionRecessEnds(Record):
     def __post_init__(self) -> None:
         if not isinstance(self.low, SectionEnd) or not isinstance(self.high, SectionEnd):
             raise ValueError("section recess ends must contain SectionEnd values")
-        if (self.low.condition == "capped") == (self.high.condition == "capped"):
-            raise ValueError("section recess requires exactly one capped end")
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -111,7 +151,7 @@ class SectionRecessGeometry(Record):
     type: str
     frame: PassageFrame
     run_interval: tuple[float, float]
-    profile: ClosedSectionProfile
+    profile: ClosedSectionProfile | OpenSectionProfile
     ends: SectionRecessEnds
 
     def __post_init__(self) -> None:
@@ -122,8 +162,8 @@ class SectionRecessGeometry(Record):
         interval = cast(tuple[float, float], _numbers(self.run_interval, 2, name="run_interval"))
         if interval[1] - interval[0] <= 1e-9 or any(round(value, 3) != value for value in interval):
             raise ValueError("run_interval must increase and serialize at three decimals")
-        if not isinstance(self.profile, ClosedSectionProfile):
-            raise ValueError("a section recess requires a closed section profile")
+        if not isinstance(self.profile, ClosedSectionProfile | OpenSectionProfile):
+            raise ValueError("a section recess requires a closed or open section profile")
         if not isinstance(self.ends, SectionRecessEnds):
             raise ValueError("section recess requires explicit ends")
         object.__setattr__(self, "run_interval", interval)
@@ -198,6 +238,18 @@ class SectionRecess(Record):
             raise ValueError("occurrence requires authoritative classification")
         if not isinstance(self.evidence, SectionRecessEvidence):
             raise ValueError("occurrence requires face evidence")
+        capped = sum(
+            end.condition == "capped" for end in (self.geometry.ends.low, self.geometry.ends.high)
+        )
+        admitted = {
+            "pocket": isinstance(self.geometry.profile, ClosedSectionProfile) and capped == 1,
+            "edge_open_recess": (
+                isinstance(self.geometry.profile, OpenSectionProfile) and capped == 1
+            ),
+            "passage": isinstance(self.geometry.profile, ClosedSectionProfile) and capped == 0,
+        }
+        if not admitted[self.classification.feature_kind]:
+            raise ValueError("classification, profile closure and end topology are inconsistent")
 
 
 @dataclass(frozen=True, slots=True)
@@ -665,6 +717,7 @@ def _candidates(graph: FaceGraph) -> tuple[_Candidate, ...]:
 
 __all__ = [
     "ClosedSectionProfile",
+    "OpenSectionProfile",
     "SectionRecessBodyRef",
     "SectionRecessFaceRef",
     "SectionEnd",

@@ -217,6 +217,7 @@ from b123d_recognisers.round_bottom_slots import (
 )
 from b123d_recognisers.section_recesses import (
     ClosedSectionProfile,
+    OpenSectionProfile,
     SectionEnd,
     SectionRecess,
     SectionRecessBodyRef,
@@ -390,6 +391,7 @@ __all__ = [
     "recognise_passages",
     "recognise_section_passages",
     "recognise_section_recesses",
+    "OpenSectionProfile",
     "build_section_recess_document",
     "SectionRecessBodyRef",
     "SectionRecessDocument",
