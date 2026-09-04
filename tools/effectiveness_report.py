@@ -217,7 +217,7 @@ def score_inventory(
     taxonomy: dict[int, dict[str, Any]],
     seconds: float,
     *,
-    additional_claims: tuple[tuple[str, tuple[int, ...], tuple[int, ...]], ...] = (),
+    additional_claims: tuple[tuple[str, str, tuple[int, ...], tuple[int, ...]], ...] = (),
 ) -> dict[str, Any]:
     """Score one inventory plus any explicitly supplied experimental face claims."""
 
@@ -261,9 +261,11 @@ def score_inventory(
             )
         )
 
-    for family, defining, constituent in additional_claims:
-        if not isinstance(family, str) or not family:
-            raise EffectivenessDataError("additional claim family must be a nonempty string")
+    for record_family, scoring_family, defining, constituent in additional_claims:
+        if not all(
+            isinstance(family, str) and family for family in (record_family, scoring_family)
+        ):
+            raise EffectivenessDataError("additional claim families must be nonempty strings")
         if (
             any(type(index) is not int or index < 0 or index >= len(faces) for index in defining)
             or any(
@@ -272,9 +274,9 @@ def score_inventory(
             or not set(defining) <= set(constituent)
         ):
             raise EffectivenessDataError("additional claim face indices are invalid")
-        records[family] = records.get(family, 0) + 1
+        records[record_family] = records.get(record_family, 0) + 1
         if defining:
-            claims.append((family, frozenset(defining)))
+            claims.append((scoring_family, frozenset(defining)))
         constituents.append(frozenset(constituent))
 
     accepted_constituent_faces = set().union(*constituents) if constituents else set()

@@ -571,10 +571,10 @@ def test_full_scorer_includes_experimental_face_claims() -> None:
         product,
         load_taxonomy(TAXONOMY, "mfcadpp"),
         0.0,
-        additional_claims=(("prismatic-pockets", (0,), (0, 1)),),
+        additional_claims=(("section-recess", "prismatic-pockets", (0,), (0, 1)),),
     )
 
-    assert row["physical_records"] == {"prismatic-pockets": 1}
+    assert row["physical_records"] == {"section-recess": 1}
     assert row["classes"]["13"]["matched_defining_faces"] == 1
     assert row["classes"]["13"]["covered_faces"] == 2
     assert row["classes"]["13"]["recalled_instances"] == 1

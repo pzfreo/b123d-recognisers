@@ -131,6 +131,7 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
         seconds = time.perf_counter() - started
         additional_claims = tuple(
             (
+                "section-recess",
                 (
                     "pockets"
                     if occurrence.classification.section_shape in {"obround", "circular"}
