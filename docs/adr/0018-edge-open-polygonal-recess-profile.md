@@ -80,3 +80,26 @@ may map the family to a dataset Pocket class, but family-specific occurrence cou
 separate so taxonomy agreement cannot hide the physical distinction.
 
 ADRs 0002, 0003, 0004, 0007, 0008, 0009, 0010 and 0011 remain in force.
+
+## Amendment — interrupted circular-ended recesses (#487)
+
+The truthful-open principle also admits a separate `EdgeOpenCircularPocket` family when exactly
+two equal-radius original cylindrical supports and two original planar supports form one
+alternating, nonbranching open chain at a proved blind floor. Exactly one circular segment must be
+a complete semicircle; the other is serialized only over its surviving physical sweep. The nested
+section records each line or arc with its physical endpoints, records an arc's centre, radius and
+signed sweep, and repeats the loose endpoint pair as an explicit opening gap.
+
+This is a sibling contract, not an expansion of the polygonal record or `Pocket`. It publishes no
+fabricated closing arc, closed footprint, full obround length or inferred historical tool shape.
+All four supports must share one run span, mouth, valid-solid owner and materially empty
+floor-to-mouth extrusion. The exact supports are defining evidence and the supports plus floor are
+constituent evidence. Closed obrounds, through cavities, unequal radii, doubly incomplete ends,
+ambiguous chains and cross-solid evidence refuse.
+
+The record direction is the lexicographically smaller of the forward chain and the reversed chain;
+reversing an arc also reverses its signed sweep. Coordinates use the supplied raw or framed
+principal-axis system and the independent ADR-0008 reconstruction allowance. This additive family
+receives its own manifest ID, aggregate field and census key under ADRs 0002, 0003 and 0005. The
+within-run evidence facade remains only a projection of evidence retained before Candidate
+issuance; no adjacency or durable face identity is published.

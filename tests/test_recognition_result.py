@@ -206,6 +206,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         evidence,
         *,
         rectangular_blind_slots,
+        edge_open_circular_pockets,
     ):
         calls["reconcile_recesses"] = calls.get("reconcile_recesses", 0) + 1
         assert same_records(
@@ -213,6 +214,7 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
         ) and same_records([candidate.record for candidate in found_pockets.candidates], pockets)
         assert same_records([candidate.record for candidate in found_passages.candidates], passages)
         assert rectangular_blind_slots.candidates == ()
+        assert edge_open_circular_pockets.candidates == ()
         assert isinstance(evidence, EvidenceIndex)
         return ()
 

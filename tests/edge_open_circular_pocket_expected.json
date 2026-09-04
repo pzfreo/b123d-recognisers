@@ -1,0 +1,86 @@
+[
+  {
+    "axis": "z",
+    "open_sign": 1,
+    "run_interval": [
+      4.0,
+      12.0
+    ],
+    "section": {
+      "opening": [
+        [
+          25.0,
+          15.0
+        ],
+        [
+          30.0,
+          7.0
+        ]
+      ],
+      "segments": [
+        {
+          "center": [
+            26.0,
+            10.0
+          ],
+          "end": [
+            26.0,
+            5.0
+          ],
+          "kind": "arc",
+          "radius": 5.0,
+          "start": [
+            30.0,
+            7.0
+          ],
+          "sweep": -0.9272952
+        },
+        {
+          "center": null,
+          "end": [
+            6.0,
+            5.0
+          ],
+          "kind": "line",
+          "radius": null,
+          "start": [
+            26.0,
+            5.0
+          ],
+          "sweep": null
+        },
+        {
+          "center": [
+            6.0,
+            10.0
+          ],
+          "end": [
+            6.0,
+            15.0
+          ],
+          "kind": "arc",
+          "radius": 5.0,
+          "start": [
+            6.0,
+            5.0
+          ],
+          "sweep": -3.1415927
+        },
+        {
+          "center": null,
+          "end": [
+            25.0,
+            15.0
+          ],
+          "kind": "line",
+          "radius": null,
+          "start": [
+            6.0,
+            15.0
+          ],
+          "sweep": null
+        }
+      ]
+    }
+  }
+]

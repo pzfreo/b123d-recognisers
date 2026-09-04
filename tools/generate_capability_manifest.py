@@ -82,6 +82,23 @@ FAMILIES = {
         "introduced": "0.4.15",
         "tests": ["tests/test_edge_open_prismatic_recesses.py"],
     },
+    "edge-open-circular-pockets": {
+        "recognisers": [("recognise_edge_open_circular_pockets", "part")],
+        "records": [
+            (
+                "EdgeOpenCircularPocket",
+                "output",
+                ["RecognitionResult.edge_open_circular_pockets"],
+            ),
+            ("OpenCircularSection", "nested", []),
+            ("OpenCircularSectionSegment", "nested", []),
+        ],
+        "census": "edge_open_circular_pocket",
+        "goldens": [],
+        "golden_paths": ["tests/edge_open_circular_pocket_expected.json"],
+        "introduced": "0.4.15",
+        "tests": ["tests/test_edge_open_circular_recesses.py"],
+    },
     "passages": {
         "recognisers": [
             ("recognise_passages", "part", "compatibility"),
@@ -391,6 +408,8 @@ NO_MEMBERSHIP_RATIONALE = {
     "PassageSectionVertex": "Nested only in PassageSection.",
     "OpenPolygonalSection": "Nested only in EdgeOpenPrismaticRecess.",
     "OpenSectionOpening": "Nested only in OpenPolygonalSection.",
+    "OpenCircularSection": "Nested only in EdgeOpenCircularPocket.",
+    "OpenCircularSectionSegment": "Nested only in OpenCircularSection.",
 }
 
 

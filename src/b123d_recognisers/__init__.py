@@ -104,6 +104,12 @@ from b123d_recognisers.countersinks import (
     countersink_matches_hole,
     recognise_countersinks,
 )
+from b123d_recognisers.edge_open_circular_recesses import (
+    EdgeOpenCircularPocket,
+    OpenCircularSection,
+    OpenCircularSectionSegment,
+    recognise_edge_open_circular_pockets,
+)
 from b123d_recognisers.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     OpenPolygonalSection,
@@ -354,6 +360,9 @@ __all__ = [
     "ThroughStep",
     "recognise_through_steps",
     "PrismaticPocket",
+    "EdgeOpenCircularPocket",
+    "OpenCircularSection",
+    "OpenCircularSectionSegment",
     "EdgeOpenPrismaticRecess",
     "OpenPolygonalSection",
     "OpenSectionOpening",
@@ -362,6 +371,7 @@ __all__ = [
     "recognise_oriented_slots",
     "recognise_oriented_slot_patterns",
     "recognise_prismatic_pockets",
+    "recognise_edge_open_circular_pockets",
     "recognise_edge_open_prismatic_recesses",
     "recognise_bosses",
     "recognise_blends",

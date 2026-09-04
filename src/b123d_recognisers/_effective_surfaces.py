@@ -207,12 +207,40 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "truthful open-chain recognition requires original planar walls and straight edges",
     ),
+    "edge_open_circular_recesses": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "truthful open-chain recognition requires original planar, cylindrical and edge curves",
+    ),
 }
 
 # Function/role/ordinal identities freeze every decision without depending on source line numbers.
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "edge_open_circular_recesses:_segment:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "retain the exact physical floor-to-wall boundary curve kind",
+    ),
+    "edge_open_circular_recesses:_segment:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "project an original circular boundary without reconstructing a missing arc",
+    ),
+    "edge_open_circular_recesses:recognise_edge_open_circular_pockets:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "require the two physically present original cylindrical supports",
+    ),
+    "edge_open_circular_recesses:recognise_edge_open_circular_pockets:geom_type:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "verify the alternating original planar/cylindrical chain",
+    ),
+    "edge_open_circular_recesses:recognise_edge_open_circular_pockets:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "floor seed is deliberately restricted to an original planar face",
+    ),
+    "edge_open_circular_recesses:recognise_edge_open_circular_pockets:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "straight wall supports are deliberately restricted to original planar faces",
+    ),
     "edge_open_prismatic_recesses:_shared_segment:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "require exact physical straight floor-to-wall boundary segments",
