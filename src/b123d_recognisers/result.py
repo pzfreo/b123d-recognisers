@@ -61,7 +61,7 @@ from b123d_recognisers._registry import (
 )
 from b123d_recognisers._run import RecognitionContext, start
 from b123d_recognisers._section_adapters import prismatic_pocket_to_occurrence
-from b123d_recognisers._sections import BodyRefIssuer
+from b123d_recognisers._sections import BodyRefIssuer, LocalFrame
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.blends import Blend
@@ -100,6 +100,7 @@ from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
 from b123d_recognisers.section_recesses import (
     ClosedSectionProfile,
+    OpenSectionProfile,
     SectionEnd,
     SectionRecess,
     SectionRecessClassification,
@@ -848,6 +849,140 @@ def _legacy_prismatic_geometry(
     )
 
 
+def _canonical_open_profile(
+    boundary: tuple[PassageSectionVertex, ...],
+) -> OpenSectionProfile:
+    reversed_boundary = tuple(
+        PassageSectionVertex(
+            boundary[-1 - index].point,
+            -boundary[-2 - index].bulge if index < len(boundary) - 1 else 0.0,
+        )
+        for index in range(len(boundary))
+    )
+    canonical = min(boundary, reversed_boundary)
+    return OpenSectionProfile(
+        "open",
+        canonical,
+        (canonical[-1].point, canonical[0].point),
+    )
+
+
+def _principal_open_geometry(
+    *,
+    axis: str,
+    run_interval: tuple[float, float],
+    open_sign: int,
+    boundary: tuple[PassageSectionVertex, ...],
+) -> SectionRecessGeometry:
+    axis_index = "xyz".index(axis)
+    transverse = tuple(index for index in range(3) if index != axis_index)
+    points = tuple(vertex.point for vertex in boundary)
+    center2 = cast(
+        tuple[float, float],
+        tuple(
+            0.5 * (min(point[i] for point in points) + max(point[i] for point in points))
+            for i in range(2)
+        ),
+    )
+    center3 = [0.0, 0.0, 0.0]
+    center3[transverse[0]], center3[transverse[1]] = center2
+    local = tuple(
+        PassageSectionVertex(
+            (round(vertex.point[0] - center2[0], 4), round(vertex.point[1] - center2[1], 4)),
+            vertex.bulge,
+        )
+        for vertex in boundary
+    )
+    frame_value = LocalFrame.principal(axis, cast(tuple[float, float, float], tuple(center3)))
+    frame = PassageFrame(
+        cast(tuple[float, float, float], tuple(round(value, 3) for value in frame_value.origin)),
+        frame_value.run,
+        frame_value.u,
+        frame_value.v,
+    )
+    return SectionRecessGeometry(
+        "section_recess",
+        frame,
+        run_interval,
+        _canonical_open_profile(local),
+        SectionRecessEnds(
+            SectionEnd("capped" if open_sign == -1 else "open"),
+            SectionEnd("open" if open_sign == -1 else "capped"),
+        ),
+    )
+
+
+def _edge_open_prismatic_recess(
+    record: EdgeOpenPrismaticRecess,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted edge-open prismatic recess lost its body authority")
+    boundary = tuple(
+        PassageSectionVertex(point, 0.0) for point in record.section.wall_chain
+    )
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        _principal_open_geometry(
+            axis=record.axis,
+            run_interval=record.run_interval,
+            open_sign=record.open_sign,
+            boundary=boundary,
+        ),
+        SectionRecessClassification(
+            "edge_open_recess",
+            "rectangular" if len(boundary) == 4 else "polygonal",
+        ),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _edge_open_circular_recess(
+    record: EdgeOpenCircularPocket,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted edge-open circular recess lost its body authority")
+    vertices = tuple(
+        PassageSectionVertex(
+            segment.start,
+            0.0 if segment.kind == "line" else round(math.tan(cast(float, segment.sweep) / 4), 12),
+        )
+        for segment in record.section.segments
+    ) + (PassageSectionVertex(record.section.segments[-1].end, 0.0),)
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        _principal_open_geometry(
+            axis=record.axis,
+            run_interval=record.run_interval,
+            open_sign=record.open_sign,
+            boundary=vertices,
+        ),
+        SectionRecessClassification("edge_open_recess", "obround"),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
 def _unique_section_recesses(records: Iterable[SectionRecess]) -> tuple[SectionRecess, ...]:
     """Prefer the first truthful projection of one body-local physical face region."""
 
@@ -917,6 +1052,36 @@ def _project_result(
             _records(accepted, FamilyId.PASSAGES, SectionPassage)
         )
     )
+    open_prismatic_recesses = tuple(
+        _edge_open_prismatic_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(
+            _records(
+                accepted,
+                FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
+                EdgeOpenPrismaticRecess,
+            )
+        )
+    )
+    open_circular_recesses = tuple(
+        _edge_open_circular_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(
+            _records(
+                accepted,
+                FamilyId.EDGE_OPEN_CIRCULAR_POCKETS,
+                EdgeOpenCircularPocket,
+            )
+        )
+    )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
@@ -948,7 +1113,13 @@ def _project_result(
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
         section_recesses=_unique_section_recesses(
-            (*native_section_recesses, *prismatic_recesses, *passage_recesses)
+            (
+                *native_section_recesses,
+                *prismatic_recesses,
+                *passage_recesses,
+                *open_prismatic_recesses,
+                *open_circular_recesses,
+            )
         ),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
         prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),

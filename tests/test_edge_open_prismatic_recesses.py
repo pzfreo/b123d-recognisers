@@ -21,6 +21,7 @@ from build123d import (
     import_step,
 )
 
+from b123d_recognisers import build_raw_recognition_result
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -126,6 +127,24 @@ def test_recognises_six_physical_walls_without_inventing_a_closing_wall() -> Non
         found.section.wall_chain[-1], found.section.wall_chain[0]
     )
     assert found.section.opening.start[1] == found.section.opening.end[1] == 20.0
+
+
+def test_accepted_open_prismatic_recess_projects_to_unified_contract() -> None:
+    result = build_raw_recognition_result(_edge_open_hexagon())
+
+    projected = [
+        record
+        for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    ]
+    assert len(result.edge_open_prismatic_recesses) == len(projected) == 1
+    (record,) = projected
+    assert record.classification.section_shape == "polygonal"
+    assert record.geometry.profile.closure == "open"
+    assert record.geometry.profile.opening == (
+        record.geometry.profile.boundary[-1].point,
+        record.geometry.profile.boundary[0].point,
+    )
 
 
 def test_edge_open_payload_matches_dedicated_golden() -> None:

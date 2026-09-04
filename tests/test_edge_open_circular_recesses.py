@@ -16,6 +16,7 @@ from build123d import (
     extrude,
 )
 
+from b123d_recognisers import build_raw_recognition_result
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -159,6 +160,21 @@ def test_authored_open_circular_payload_matches_independent_golden() -> None:
     )
 
     assert actual == expected
+
+
+def test_accepted_open_circular_recess_projects_to_unified_contract() -> None:
+    result = build_raw_recognition_result(_open_circular_pocket())
+
+    projected = [
+        record
+        for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    ]
+    assert len(result.edge_open_circular_pockets) == len(projected) == 1
+    (record,) = projected
+    assert record.classification.section_shape == "obround"
+    assert record.geometry.profile.closure == "open"
+    assert any(vertex.bulge != 0.0 for vertex in record.geometry.profile.boundary)
 
 
 @pytest.mark.parametrize(("x", "y"), ((14, 12), (16, 10), (18, 8)))
