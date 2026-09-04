@@ -105,6 +105,7 @@ from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
     recognise_round_bottom_blind_slots,
 )
+from b123d_recognisers.section_recesses import SectionRecess, _discover_section_recesses
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -740,6 +741,19 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         ),
         Counted("edge_open_prismatic_recess"),
         FullyAttributed("every returned edge-open recess claims its physical wall supports"),
+    ),
+    PhysicalDefinition(
+        FamilyId.SECTION_RECESSES,
+        (SectionRecess,),
+        "section_recesses",
+        "recognise_section_recesses",
+        (),
+        always,
+        _simple(lambda s: list(_discover_section_recesses(s.context.part, writer=s.writer))),
+        NotCounted("unified recess geometry replaces several legacy census categories"),
+        FullyAttributed(
+            "every SectionRecess publishes its original wall faces and complete constituent set"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.PADS,

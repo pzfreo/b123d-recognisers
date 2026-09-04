@@ -90,6 +90,7 @@ from b123d_recognisers.profiled_bores import DoubleDBore
 from b123d_recognisers.rectangular_blind_slots import RectangularBlindSlot
 from b123d_recognisers.repeating_profiles import RepeatingRadialProfile
 from b123d_recognisers.round_bottom_slots import RoundBottomBlindSlot
+from b123d_recognisers.section_recesses import SectionRecess
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -292,6 +293,8 @@ class RecognitionResult:
     round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
     grooves: tuple[Groove, ...]
     flats: tuple[Flat, ...]
+    #: Constant-section recesses with result-local body and face references (ADR 0019).
+    section_recesses: tuple[SectionRecess, ...]
     pockets: tuple[Pocket, ...]
     prismatic_pockets: tuple[PrismaticPocket, ...]
     edge_open_circular_pockets: tuple[EdgeOpenCircularPocket, ...]
@@ -711,6 +714,9 @@ def _project_result(
         ),
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
+        section_recesses=tuple(
+            _records(accepted, FamilyId.SECTION_RECESSES, SectionRecess)
+        ),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
         prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),
         edge_open_circular_pockets=tuple(

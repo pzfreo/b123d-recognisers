@@ -13,7 +13,7 @@ CANONICALIZER_VERSION = 1
 FLOAT_DIGITS = 8
 _OMIT_MAPPING_KEYS = frozenset({"face", "solid_idx", "oriented_slot"})
 _POST_BASELINE_RESULT_FIELDS = frozenset(
-    {"section_passages", "oriented_slots", "oriented_slot_patterns"}
+    {"section_passages", "section_recesses", "oriented_slots", "oriented_slot_patterns"}
 )
 
 

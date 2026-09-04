@@ -2687,6 +2687,205 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
+        "tests/section_recess_expected.json"
+      ],
+      "id": "section-recesses",
+      "introduced_in": "0.4.15",
+      "recognisers": [
+        {
+          "entry_point": "b123d_recognisers.recognise_section_recesses",
+          "kind": "part",
+          "role": "physical"
+        }
+      ],
+      "records": [
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessGeometry.",
+          "fields": {
+            "boundary": {
+              "required": true,
+              "type": "list[record:PassageSectionVertex]",
+              "units": "none"
+            },
+            "closure": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "ClosedSectionProfile",
+          "qualified_name": "b123d_recognisers.ClosedSectionProfile",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessEnds.",
+          "fields": {
+            "condition": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "gradient": {
+              "required": false,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            }
+          },
+          "name": "SectionEnd",
+          "qualified_name": "b123d_recognisers.SectionEnd",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [
+            "RecognitionResult.section_recesses"
+          ],
+          "fields": {
+            "body": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            },
+            "classification": {
+              "required": true,
+              "type": "record:SectionRecessClassification",
+              "units": "none"
+            },
+            "evidence": {
+              "required": true,
+              "type": "record:SectionRecessEvidence",
+              "units": "none"
+            },
+            "geometry": {
+              "required": true,
+              "type": "record:SectionRecessGeometry",
+              "units": "none"
+            },
+            "index": {
+              "required": true,
+              "type": "int",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecess",
+          "qualified_name": "b123d_recognisers.SectionRecess",
+          "role": "output",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecess.",
+          "fields": {
+            "feature_kind": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            },
+            "section_shape": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessClassification",
+          "qualified_name": "b123d_recognisers.SectionRecessClassification",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecessGeometry.",
+          "fields": {
+            "high": {
+              "required": true,
+              "type": "record:SectionEnd",
+              "units": "none"
+            },
+            "low": {
+              "required": true,
+              "type": "record:SectionEnd",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessEnds",
+          "qualified_name": "b123d_recognisers.SectionRecessEnds",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecess.",
+          "fields": {
+            "constituent_faces": {
+              "required": true,
+              "type": "list[int]",
+              "units": "none"
+            },
+            "defining_faces": {
+              "required": true,
+              "type": "list[int]",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessEvidence",
+          "qualified_name": "b123d_recognisers.SectionRecessEvidence",
+          "role": "nested",
+          "schema_version": 1
+        },
+        {
+          "aggregate_membership": [],
+          "aggregate_membership_rationale": "Nested only in SectionRecess.",
+          "fields": {
+            "ends": {
+              "required": true,
+              "type": "record:SectionRecessEnds",
+              "units": "none"
+            },
+            "frame": {
+              "required": true,
+              "type": "record:PassageFrame",
+              "units": "none"
+            },
+            "profile": {
+              "required": true,
+              "type": "record:ClosedSectionProfile",
+              "units": "none"
+            },
+            "run_interval": {
+              "required": true,
+              "type": "tuple[float,2]",
+              "units": "mm"
+            },
+            "type": {
+              "required": true,
+              "type": "str",
+              "units": "none"
+            }
+          },
+          "name": "SectionRecessGeometry",
+          "qualified_name": "b123d_recognisers.SectionRecessGeometry",
+          "role": "nested",
+          "schema_version": 1
+        }
+      ],
+      "status": "supported",
+      "test_evidence": [
+        "tests/test_capability_claims.py",
+        "tests/test_recogniser_contract.py",
+        "tests/test_section_recesses.py"
+      ]
+    },
+    {
+      "census_name": null,
+      "census_output": null,
+      "census_rationale": "Geometry evidence is deliberately absent from the feature census; the census is not a completeness denominator.",
+      "documentation": [
+        "docs/capabilities.md#proven-recognition-capability"
+      ],
+      "golden_evidence": [
         "tests/golden/straight_and_obround_slots/expected.json"
       ],
       "id": "slot-patterns",

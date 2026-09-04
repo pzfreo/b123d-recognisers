@@ -215,6 +215,16 @@ from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
     recognise_round_bottom_blind_slots,
 )
+from b123d_recognisers.section_recesses import (
+    ClosedSectionProfile,
+    SectionEnd,
+    SectionRecess,
+    SectionRecessClassification,
+    SectionRecessEnds,
+    SectionRecessEvidence,
+    SectionRecessGeometry,
+    recognise_section_recesses,
+)
 from b123d_recognisers.slots import (
     Channel,
     Pocket,
@@ -269,6 +279,13 @@ __all__ = [
     "PassageSectionVertex",
     "PairedRampStep",
     "SectionPassage",
+    "SectionRecess",
+    "SectionRecessClassification",
+    "SectionRecessEnds",
+    "SectionRecessEvidence",
+    "SectionRecessGeometry",
+    "SectionEnd",
+    "ClosedSectionProfile",
     "OrientedSlot",
     "OrientedSlotArray",
     "OrientedSlotGrid",
@@ -368,6 +385,7 @@ __all__ = [
     "OpenSectionOpening",
     "recognise_passages",
     "recognise_section_passages",
+    "recognise_section_recesses",
     "recognise_oriented_slots",
     "recognise_oriented_slot_patterns",
     "recognise_prismatic_pockets",

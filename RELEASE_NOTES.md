@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased
+
+- **Promoted unified constant-section recess geometry.**
+  `recognise_section_recesses()` and `RecognitionResult.section_recesses` now publish the
+  ADR-0019 `SectionRecess` contract through the normal evidence, inventory and capability
+  surfaces. The production recogniser covers validated closed obround and intact polygonal
+  pockets in arbitrary rigid presentation, with reconstructible line/arc profiles and
+  result-local face/body indices. The effectiveness runner scores these physical records through
+  dataset taxonomy without an experimental overlay.
+
 ## 0.4.14
 
 - **Paired framed recognition with exact caller-face evidence.**

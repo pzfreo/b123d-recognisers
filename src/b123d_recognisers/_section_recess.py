@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Experimental ADR-0019 vertical slice for closed obround section recesses.
+"""Geometry implementation for ADR-0019 constant-section recesses.
 
-This module is intentionally absent from the package root and capability manifest.  It proves the
-new JSON value and one producer-to-consumer path before the specialised production records are
-replaced.  Nothing here is a compatibility API.
+The public records and recogniser live in :mod:`b123d_recognisers.section_recesses`; this module
+keeps the topology and reconstruction machinery private.
 """
 
 from __future__ import annotations
@@ -102,7 +101,7 @@ class SectionRecessEnds(Record):
         if not isinstance(self.low, SectionEnd) or not isinstance(self.high, SectionEnd):
             raise ValueError("section recess ends must contain SectionEnd values")
         if (self.low.condition == "capped") == (self.high.condition == "capped"):
-            raise ValueError("prototype pocket requires exactly one capped end")
+            raise ValueError("section recess requires exactly one capped end")
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -124,7 +123,7 @@ class SectionRecessGeometry(Record):
         if interval[1] - interval[0] <= 1e-9 or any(round(value, 3) != value for value in interval):
             raise ValueError("run_interval must increase and serialize at three decimals")
         if not isinstance(self.profile, ClosedSectionProfile):
-            raise ValueError("prototype requires a closed section profile")
+            raise ValueError("a section recess requires a closed section profile")
         if not isinstance(self.ends, SectionRecessEnds):
             raise ValueError("section recess requires explicit ends")
         object.__setattr__(self, "run_interval", interval)
@@ -137,9 +136,9 @@ class SectionRecessClassification(Record):
 
     def __post_init__(self) -> None:
         if self.feature_kind not in _FEATURE_KINDS:
-            raise ValueError("unsupported prototype feature_kind")
+            raise ValueError("unsupported section recess feature_kind")
         if self.section_shape not in _SECTION_SHAPES:
-            raise ValueError("unsupported prototype section_shape")
+            raise ValueError("unsupported section recess section_shape")
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -163,7 +162,7 @@ class SectionRecessEvidence(Record):
 
 
 @dataclass(frozen=True, order=True, slots=True)
-class PrototypeBodyEntry(Record):
+class SectionRecessBodyRef(Record):
     index: int
 
     def __post_init__(self) -> None:
@@ -172,7 +171,7 @@ class PrototypeBodyEntry(Record):
 
 
 @dataclass(frozen=True, order=True, slots=True)
-class PrototypeFaceEntry(Record):
+class SectionRecessFaceRef(Record):
     index: int
 
     def __post_init__(self) -> None:
@@ -202,16 +201,16 @@ class SectionRecessOccurrence(Record):
 
 
 @dataclass(frozen=True, slots=True)
-class SectionRecessPrototypeDocument(Record):
+class SectionRecessDocument(Record):
     schema_version: int
     reference_scope: str
-    bodies: tuple[PrototypeBodyEntry, ...]
-    faces: tuple[PrototypeFaceEntry, ...]
+    bodies: tuple[SectionRecessBodyRef, ...]
+    faces: tuple[SectionRecessFaceRef, ...]
     occurrences: tuple[SectionRecessOccurrence, ...]
 
     def __post_init__(self) -> None:
         if self.schema_version != 1 or self.reference_scope != "result":
-            raise ValueError("unsupported section-recess prototype document")
+            raise ValueError("unsupported section-recess document")
         if tuple(item.index for item in self.bodies) != tuple(range(len(self.bodies))):
             raise ValueError("body roster must be dense and ordered")
         if tuple(item.index for item in self.faces) != tuple(range(len(self.faces))):
@@ -664,8 +663,8 @@ def _candidates(graph: FaceGraph) -> tuple[_Candidate, ...]:
     )
 
 
-def build_section_recess_prototype(part: Part) -> SectionRecessPrototypeDocument:
-    """Build one deterministic, JSON-safe obround vertical-slice document for *part*."""
+def build_section_recess(part: Part) -> SectionRecessDocument:
+    """Build one deterministic, JSON-safe section-recess document for *part*."""
 
     graph = FaceGraph(part)
     candidates = _candidates(graph)
@@ -681,26 +680,26 @@ def build_section_recess_prototype(part: Part) -> SectionRecessPrototypeDocument
         )
         for index, candidate in enumerate(candidates)
     )
-    return SectionRecessPrototypeDocument(
+    return SectionRecessDocument(
         1,
         "result",
-        tuple(PrototypeBodyEntry(index) for index in range(len(body_indices))),
-        tuple(PrototypeFaceEntry(index) for index, _ in enumerate(part.faces())),
+        tuple(SectionRecessBodyRef(index) for index in range(len(body_indices))),
+        tuple(SectionRecessFaceRef(index) for index, _ in enumerate(part.faces())),
         occurrences,
     )
 
 
 __all__ = [
     "ClosedSectionProfile",
-    "PrototypeBodyEntry",
-    "PrototypeFaceEntry",
+    "SectionRecessBodyRef",
+    "SectionRecessFaceRef",
     "SectionEnd",
     "SectionRecessClassification",
     "SectionRecessEvidence",
     "SectionRecessEnds",
     "SectionRecessGeometry",
     "SectionRecessOccurrence",
-    "SectionRecessPrototypeDocument",
-    "build_section_recess_prototype",
+    "SectionRecessDocument",
+    "build_section_recess",
     "project_section_recess_geometry",
 ]

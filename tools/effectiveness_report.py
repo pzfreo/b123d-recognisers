@@ -210,16 +210,24 @@ def _public_family_id(internal: str) -> str:
     return _PUBLIC_FAMILY_EXCEPTIONS.get(internal, internal.replace("_", "-"))
 
 
+def _scoring_family(candidate: object) -> str:
+    """Map a physical record to benchmark taxonomy without changing its reported identity."""
+
+    family = _public_family_id(candidate.family.value)  # type: ignore[attr-defined]
+    if family != "section-recesses":
+        return family
+    shape = candidate.record.classification.section_shape  # type: ignore[attr-defined]
+    return "pockets" if shape in {"obround", "circular"} else "prismatic-pockets"
+
+
 def score_inventory(
     truth: DatasetTruth,
     part: object,
     product: object,
     taxonomy: dict[int, dict[str, Any]],
     seconds: float,
-    *,
-    additional_claims: tuple[tuple[str, str, tuple[int, ...], tuple[int, ...]], ...] = (),
 ) -> dict[str, Any]:
-    """Score one inventory plus any explicitly supplied experimental face claims."""
+    """Score one production inventory, adapting physical families to dataset taxonomy."""
 
     # Authority is captured before production recognisers are imported by the corpus runner.
     from b123d_recognisers._candidates import FamilyId, PredicateId
@@ -246,38 +254,21 @@ def score_inventory(
     claims: list[tuple[str, frozenset[int]]] = []
     constituents: list[frozenset[int]] = []
     for candidate in accepted:
-        family = _public_family_id(candidate.family.value)
-        records[family] = records.get(family, 0) + 1
+        record_family = _public_family_id(candidate.family.value)
+        scoring_family = _scoring_family(candidate)
+        records[record_family] = records.get(record_family, 0) + 1
         indices = frozenset(
             face_index[graph.face(node)]
             for node in product.evidence.defining_of(candidate)  # type: ignore[attr-defined]
         )
         if indices:
-            claims.append((family, indices))
+            claims.append((scoring_family, indices))
         constituents.append(
             frozenset(
                 face_index[graph.face(node)]
                 for node in product.evidence.constituent_of(candidate)  # type: ignore[attr-defined]
             )
         )
-
-    for record_family, scoring_family, defining, constituent in additional_claims:
-        if not all(
-            isinstance(family, str) and family for family in (record_family, scoring_family)
-        ):
-            raise EffectivenessDataError("additional claim families must be nonempty strings")
-        if (
-            any(type(index) is not int or index < 0 or index >= len(faces) for index in defining)
-            or any(
-                type(index) is not int or index < 0 or index >= len(faces) for index in constituent
-            )
-            or not set(defining) <= set(constituent)
-        ):
-            raise EffectivenessDataError("additional claim face indices are invalid")
-        records[record_family] = records.get(record_family, 0) + 1
-        if defining:
-            claims.append((scoring_family, frozenset(defining)))
-        constituents.append(frozenset(constituent))
 
     accepted_constituent_faces = set().union(*constituents) if constituents else set()
     per_class: dict[str, dict[str, int | str]] = {}
@@ -364,7 +355,7 @@ def score_inventory(
         "seconds": seconds,
         "physical_records": dict(sorted(records.items())),
         "mapped_dataset_class_records": dict(sorted(mapped_classes.items())),
-        "no_physical_records": not accepted and not additional_claims,
+        "no_physical_records": not accepted,
         "taxonomy_mismatch_defining_faces": mismatches,
         "reconciliation_drops": dict(sorted(rejected.items())),
         "unsupported_diagnostics": dict(sorted(diagnostics.items())),

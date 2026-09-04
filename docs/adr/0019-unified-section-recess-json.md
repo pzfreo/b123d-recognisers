@@ -237,14 +237,15 @@ as the provider migration.
 
 This is a coordinated breaking replacement, not an additive compatibility layer:
 
-1. implement the neutral nested frame, profile, end and classification values;
-2. project every currently accepted specialised occurrence into `SectionRecess` without changing
+1. implement the neutral nested frame, profile, end and classification values (completed in
+   #496 for closed constant-section pockets);
+2. project every remaining accepted specialised occurrence into `SectionRecess` without changing
    discovery or reconciliation behavior;
 3. update the JSON manifest and Draftwright consumer together;
 4. verify existing supported occurrences reconstruct the same removal geometry within published
    serialization bounds;
 5. verify every migrated occurrence receives the expected authoritative classifications;
-6. carry the oriented circular-end prototype through the same record and through Draftwright; and
+6. carry the oriented circular-end recogniser through the same record and through Draftwright; and
 7. remove the superseded public records, result fields and consumer paths.
 
 Draftwright may provide a one-time authored-script migration and must report stranded parameter
@@ -254,20 +255,19 @@ the old JSON records or maintain a deprecation window.
 Development and authored fixtures establish the schema. MFInstSeg remains a pseudo-blind aggregate
 transfer corpus and must not be inspected or used to tune the representation.
 
-### Prototype promotion gate
+### Production evidence
 
-PR #496 carries a deliberately private vertical slice rather than a production API. It emits
-closed obround pockets through this document contract, including free in-plane orientation, and
-does not appear in the package root or capability manifest. Export one STEP file with:
+PR #496 promoted the validated vertical slice into the public ``SectionRecess`` record,
+``recognise_section_recesses`` entry point, normal aggregate inventory and capability manifest.
+Export one STEP file with:
 
 ```console
-uv run python tools/export_section_recess_prototype.py part.step --output recesses.json
+uv run python tools/export_section_recesses.py part.step --output recesses.json
 ```
 
-The companion Draftwright branch `prototype/section-recess-consumer` consumes that JSON without
-importing provider record classes and derives drawing length, width and depth from the profile and
-run interval. Promotion requires both its fail-closed consumer tests and the provider's covariance,
-reconstruction, ownership and rejection tests to pass.
+The companion Draftwright work consumes that JSON without importing provider record classes and
+derives drawing length, width and depth from the profile and run interval. Its fail-closed consumer
+tests complement the provider's covariance, reconstruction, ownership and rejection tests.
 
 The contract proof is not obround-specific. The same projector round-trips free-axis triangular,
 rectangular and hexagonal closed profiles using straight boundary segments, and the pre-existing
@@ -280,13 +280,8 @@ free-frame floor proof is perfectly pure but adds only 49 net faces, raising cov
 0.9406. Orientation covariance is therefore a valid substrate, not the main polygonal residual.
 Treatment-interrupted cavity propagation is separate recognition work and remains the next gate.
 
-The transfer runner overlays the prototype on the unchanged production inventory. It emits only
-aggregate counts and baseline-versus-combined metrics—never model identifiers or model rows:
-
-```console
-uv run python tools/evaluate_section_recess_prototype.py mfinstseg /path/to/mfinstseg \
-  --partition-root /path/to/partitions --output /tmp/section-recess-transfer.json
-```
+The normal effectiveness runner now scores ``SectionRecess`` from the production inventory. There
+is no overlay path or second implementation.
 
 The developer may use MFCAD++ repeatedly. A person outside the implementation loop runs MFInstSeg
 once after the branch and test command are frozen and returns only the aggregate JSON. A favourable

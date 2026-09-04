@@ -2,7 +2,7 @@
 
 **Status:** reviewed; superseded as a decision source by ADR 0019
 **Audience:** Draftwright model, planner and rendering maintainers  
-**Related recognisers work:** epic #290, issue #495, prototype PR #496
+**Related recognisers work:** epic #290, issue #495, production PR #496
 
 Draftwright's response accepted the direction and requested authoritative provider classification,
 document-scoped face references, and a fail-closed classification/convention gate. Those decisions,

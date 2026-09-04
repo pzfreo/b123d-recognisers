@@ -190,9 +190,9 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "original planar opening, wall and floor roles in the bounded cavity proof",
     ),
-    "_section_recess_prototype": (
+    "_section_recess": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "experimental obround proof intentionally matches the audited original-face anatomy",
+        "section-recess recognition intentionally requires audited original-face anatomy",
     ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
     "repeating_profiles": (
@@ -221,41 +221,41 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
-    "_section_recess_prototype:_cylinder:adaptor:1": (
+    "_section_recess:_cylinder:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype reads native cylinder parameters from the audited obround wall",
+        "recogniser reads native cylinder parameters from the audited obround wall",
     ),
-    "_section_recess_prototype:_edge_sweep:geom_type:1": (
+    "_section_recess:_edge_sweep:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype requires the original semicircular floor boundary",
+        "recogniser requires the original semicircular floor boundary",
     ),
-    "_section_recess_prototype:_one_obround_candidate:graph_surface:1": (
+    "_section_recess:_one_obround_candidate:graph_surface:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype classifies the two original cylindrical walls",
+        "recogniser classifies the two original cylindrical walls",
     ),
-    "_section_recess_prototype:_one_obround_candidate:is_planar:1": (
+    "_section_recess:_one_obround_candidate:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype classifies the two original planar walls",
+        "recogniser classifies the two original planar walls",
     ),
-    "_section_recess_prototype:_one_obround_candidate:is_planar:2": (
+    "_section_recess:_one_obround_candidate:is_planar:2": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype requires an original planar mouth",
+        "recogniser requires an original planar mouth",
     ),
-    "_section_recess_prototype:_candidates:is_planar:1": (
+    "_section_recess:_candidates:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype seeds only from an original planar floor",
+        "recogniser seeds only from an original planar floor",
     ),
-    "_section_recess_prototype:_polygonal_section:geom_type:1": (
+    "_section_recess:_polygonal_section:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype requires the observed polygonal floor boundary to be straight",
+        "recogniser requires the observed polygonal floor boundary to be straight",
     ),
-    "_section_recess_prototype:_one_polygonal_candidate:is_planar:1": (
+    "_section_recess:_one_polygonal_candidate:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype requires original planar polygonal wall supports",
+        "recogniser requires original planar polygonal wall supports",
     ),
-    "_section_recess_prototype:_one_polygonal_candidate:is_planar:2": (
+    "_section_recess:_one_polygonal_candidate:is_planar:2": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
-        "prototype requires one original planar exterior mouth",
+        "recogniser requires one original planar exterior mouth",
     ),
     "edge_open_circular_recesses:_segment:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,

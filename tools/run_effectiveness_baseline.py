@@ -113,7 +113,6 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
         }
 
     from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers._section_recess_prototype import build_section_recess_prototype
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
 
@@ -127,28 +126,13 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
                 raise EffectivenessDataError(f"frame refused: {frame.reason.value}")
             working_part = _normalize_part(part, frame)
         product = _take_inventory(working_part)
-        prototype = build_section_recess_prototype(working_part)
         seconds = time.perf_counter() - started
-        additional_claims = tuple(
-            (
-                "section-recess",
-                (
-                    "pockets"
-                    if occurrence.classification.section_shape in {"obround", "circular"}
-                    else "prismatic-pockets"
-                ),
-                occurrence.evidence.defining_faces,
-                occurrence.evidence.constituent_faces,
-            )
-            for occurrence in prototype.occurrences
-        )
         row = score_inventory(
             task.truth,
             working_part,
             product,
             task.taxonomy,
             seconds,
-            additional_claims=additional_claims,
         )
         row["status"] = "evaluated"
         return row

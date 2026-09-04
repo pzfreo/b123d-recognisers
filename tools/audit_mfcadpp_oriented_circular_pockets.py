@@ -2,7 +2,8 @@
 """Prototype a coordinate-free closed circular-end Pocket proof on MFCAD++.
 
 Candidate construction is geometry-only and runs before labels are consulted.  Labels are read
-only to measure the resulting defining/constituent sets.  The prototype does not issue a public
+only to measure the resulting defining/constituent sets.  At the time of this historical audit,
+the detector did not issue a public
 record or change aggregate recognition.
 """
 

@@ -26,6 +26,7 @@ from b123d_recognisers.result import _take_inventory
 from tools.effectiveness_report import (
     DatasetTruth,
     EffectivenessDataError,
+    _scoring_family,
     canonical_json,
     load_mfcadpp_truth,
     load_mfinstseg_truth,
@@ -64,6 +65,19 @@ TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
 TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected"),
+    (("obround", "pockets"), ("circular", "pockets"), ("hexagonal", "prismatic-pockets")),
+)
+def test_section_recess_keeps_one_physical_identity_while_scoring_taxonomy(shape, expected) -> None:
+    candidate = SimpleNamespace(
+        family=FamilyId.SECTION_RECESSES,
+        record=SimpleNamespace(classification=SimpleNamespace(section_shape=shape)),
+    )
+
+    assert _scoring_family(candidate) == expected
 TAXONOMY_V9 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v9.json"
 TAXONOMY_V10 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v10.json"
 TAXONOMY_V11 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v11.json"
@@ -545,40 +559,6 @@ def test_face_coverage_counts_constituents_without_changing_defining_semantics()
         "denominator": 0,
         "value": None,
     }
-
-
-def test_full_scorer_includes_experimental_face_claims() -> None:
-    part = Box(1, 1, 1)
-    faces = tuple(part.faces())
-    product = SimpleNamespace(
-        context=SimpleNamespace(graph=SimpleNamespace(face=lambda node: faces[node])),
-        reconciliation=SimpleNamespace(dispositions=()),
-        evidence=SimpleNamespace(observations=lambda *_args: ()),
-        diagnostics=(),
-    )
-    truth = DatasetTruth(
-        "overlay",
-        Path("overlay.step"),
-        (13, 13, *(24 for _face in faces[2:])),
-        (frozenset({0, 1}),),
-        None,
-        "0" * 64,
-    )
-
-    row = score_inventory(
-        truth,
-        part,
-        product,
-        load_taxonomy(TAXONOMY, "mfcadpp"),
-        0.0,
-        additional_claims=(("section-recess", "prismatic-pockets", (0,), (0, 1)),),
-    )
-
-    assert row["physical_records"] == {"section-recess": 1}
-    assert row["classes"]["13"]["matched_defining_faces"] == 1
-    assert row["classes"]["13"]["covered_faces"] == 2
-    assert row["classes"]["13"]["recalled_instances"] == 1
-    assert row["no_physical_records"] is False
 
 
 def test_partial_support_preserves_supported_scorer_semantics() -> None:

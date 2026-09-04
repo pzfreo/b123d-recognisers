@@ -33,6 +33,23 @@ FAMILIES = {
         "introduced": "0.2.5",
         "tests": ["tests/test_angled_steps.py"],
     },
+    "section-recesses": {
+        "recognisers": [("recognise_section_recesses", "part")],
+        "records": [
+            ("ClosedSectionProfile", "nested", []),
+            ("SectionEnd", "nested", []),
+            ("SectionRecess", "output", ["RecognitionResult.section_recesses"]),
+            ("SectionRecessClassification", "nested", []),
+            ("SectionRecessEnds", "nested", []),
+            ("SectionRecessEvidence", "nested", []),
+            ("SectionRecessGeometry", "nested", []),
+        ],
+        "census": None,
+        "goldens": [],
+        "golden_paths": ["tests/section_recess_expected.json"],
+        "introduced": "0.4.15",
+        "tests": ["tests/test_section_recesses.py"],
+    },
     "paired-ramp-steps": {
         "recognisers": [("recognise_paired_ramp_steps", "part")],
         "records": [("PairedRampStep", "output", ["RecognitionResult.paired_ramp_steps"])],
@@ -393,6 +410,12 @@ RECORD_SCHEMA_VERSIONS = {
 }
 
 NO_MEMBERSHIP_RATIONALE = {
+    "ClosedSectionProfile": "Nested only in SectionRecessGeometry.",
+    "SectionEnd": "Nested only in SectionRecessEnds.",
+    "SectionRecessClassification": "Nested only in SectionRecess.",
+    "SectionRecessEnds": "Nested only in SectionRecessGeometry.",
+    "SectionRecessEvidence": "Nested only in SectionRecess.",
+    "SectionRecessGeometry": "Nested only in SectionRecess.",
     "HoleSpec": (
         "Derived grouping key; it is computed from HoleRecord and is not retained by "
         "RecognitionResult."
@@ -464,7 +487,14 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
     if name == "axis" and rendered.startswith("tuple[float,3]"):
         return "unit-vector"
     if (
-        name in {"bulge", "low_gradient", "high_gradient"}
+        name
+        in {
+            "bulge",
+            "constituent_faces",
+            "defining_faces",
+            "low_gradient",
+            "high_gradient",
+        }
         or rendered in {"bool", "int", "str"}
         or rendered.startswith("record:")
     ):

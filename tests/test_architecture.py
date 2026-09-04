@@ -44,6 +44,7 @@ PUBLIC_MODULES = {
     "repeating_profiles",
     "rectangular_blind_slots",
     "round_bottom_slots",
+    "section_recesses",
     "result",
     "slots",
     "step_io",
@@ -308,6 +309,7 @@ MODULE_SEAM_EDGES = {
         "repeating_profiles",
         "rectangular_blind_slots",
         "round_bottom_slots",
+        "section_recesses",
         "slots",
         "turned",
     },
@@ -423,19 +425,19 @@ ARC_READER_SITES = {
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:2": "legacy-contract",
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:3": "legacy-contract",
-    "src/b123d_recognisers/_section_recess_prototype:_one_obround_candidate:arc:1": (
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:1": (
         "exact-nonsmooth"
     ),
-    "src/b123d_recognisers/_section_recess_prototype:_one_obround_candidate:arc:2": (
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:2": (
         "legacy-contract"
     ),
-    "src/b123d_recognisers/_section_recess_prototype:_one_obround_candidate:arc:3": (
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:3": (
         "legacy-contract"
     ),
-    "src/b123d_recognisers/_section_recess_prototype:_one_polygonal_candidate:arc:1": (
+    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:1": (
         "exact-nonsmooth"
     ),
-    "src/b123d_recognisers/_section_recess_prototype:_one_polygonal_candidate:arc:2": (
+    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:2": (
         "legacy-contract"
     ),
     "tools/audit_mfcadpp_floor_interrupted_pockets:_raw_regions:arc:1": "legacy-contract",
