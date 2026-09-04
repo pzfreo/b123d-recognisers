@@ -9,6 +9,8 @@ they are meaningful only within the recognition result produced for that part.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import EvidenceWriter
@@ -24,7 +26,6 @@ from b123d_recognisers._section_recess import (
     SectionRecessFaceRef,
     SectionRecessGeometry,
     _candidates,
-    build_section_recess_document,
 )
 from b123d_recognisers._typing import Part
 
@@ -61,6 +62,30 @@ def recognise_section_recesses(part: Part) -> list[SectionRecess]:
     """Recognise truthful one-ended constant-section recesses in *part*."""
 
     return _discover_section_recesses(part)
+
+
+def build_section_recess_document(part: Part) -> SectionRecessDocument:
+    """Project accepted aggregate recesses into one deterministic JSON-safe document.
+
+    Recognition and reconciliation run exactly once through the ordinary raw/caller-coordinate
+    aggregate.  Occurrence indices are then made dense within this document; body and face indices
+    retain the aggregate run's complete input rosters.
+    """
+
+    # Local to avoid making result.py and this public facade depend on one another at import time.
+    from b123d_recognisers.result import build_raw_recognition_result
+
+    result = build_raw_recognition_result(part)
+    occurrences = tuple(
+        replace(record, index=index) for index, record in enumerate(result.section_recesses)
+    )
+    return SectionRecessDocument(
+        1,
+        "result",
+        tuple(SectionRecessBodyRef(index) for index, _ in enumerate(part.solids())),
+        tuple(SectionRecessFaceRef(index) for index, _ in enumerate(part.faces())),
+        occurrences,
+    )
 
 
 __all__ = [

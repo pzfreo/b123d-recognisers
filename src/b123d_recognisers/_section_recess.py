@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Geometry implementation for ADR-0019 constant-section recesses.
+"""Geometry implementation and record storage for ADR-0019 constant-section recesses.
 
-The public records and recogniser live in :mod:`b123d_recognisers.section_recesses`; this module
-keeps the topology and reconstruction machinery private.
+The stable contract is re-exported by :mod:`b123d_recognisers.section_recesses`; its definitions
+remain here beside the topology and reconstruction machinery so that implementation code does not
+depend back on its public facade.
 """
 
 from __future__ import annotations
@@ -29,7 +30,6 @@ from b123d_recognisers._sections import (
     SectionVertex,
     occurrence_geometry_dict,
 )
-from b123d_recognisers._typing import Part
 from b123d_recognisers.passages import PassageFrame, PassageSection, PassageSectionVertex
 
 _DIRECTION_TOL = 1e-6
@@ -663,34 +663,6 @@ def _candidates(graph: FaceGraph) -> tuple[_Candidate, ...]:
     )
 
 
-def build_section_recess_document(part: Part) -> SectionRecessDocument:
-    """Build one deterministic, JSON-safe section-recess document for *part*."""
-
-    graph = FaceGraph(part)
-    candidates = _candidates(graph)
-    # Candidate body ordinals are issued against the input part's complete solid roster.  Keep
-    # that roster intact in the document: densely remapping only solids with recognised recesses
-    # would make the same occurrence name a different body through the Python and JSON APIs.
-    bodies = tuple(part.solids())
-    occurrences = tuple(
-        SectionRecess(
-            index,
-            candidate.body,
-            candidate.geometry,
-            SectionRecessClassification("pocket", candidate.section_shape),
-            SectionRecessEvidence(candidate.defining_faces, candidate.constituent_faces),
-        )
-        for index, candidate in enumerate(candidates)
-    )
-    return SectionRecessDocument(
-        1,
-        "result",
-        tuple(SectionRecessBodyRef(index) for index in range(len(bodies))),
-        tuple(SectionRecessFaceRef(index) for index, _ in enumerate(part.faces())),
-        occurrences,
-    )
-
-
 __all__ = [
     "ClosedSectionProfile",
     "SectionRecessBodyRef",
@@ -702,6 +674,5 @@ __all__ = [
     "SectionRecessGeometry",
     "SectionRecess",
     "SectionRecessDocument",
-    "build_section_recess_document",
     "project_section_recess_geometry",
 ]

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from build123d import (
@@ -152,6 +154,28 @@ def test_section_recess_is_a_public_aggregate_family() -> None:
     assert direct
     assert all(isinstance(record, SectionRecess) for record in direct)
     assert aggregate.section_recesses == tuple(direct)
+
+
+def test_document_projects_completed_aggregate_inventory(monkeypatch) -> None:
+    import b123d_recognisers.result as result_module
+
+    part = _blind_pocket()
+    (record,) = recognise_section_recesses(part)
+    sentinel = replace(record, index=7)
+
+    def completed_inventory(supplied):
+        assert supplied is part
+        return SimpleNamespace(section_recesses=(sentinel,))
+
+    monkeypatch.setattr(
+        result_module,
+        "build_raw_recognition_result",
+        completed_inventory,
+    )
+
+    document = build_section_recess_document(part)
+
+    assert document.occurrences == (replace(sentinel, index=0),)
 
 
 @pytest.mark.parametrize(

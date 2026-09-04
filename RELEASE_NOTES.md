@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add the public `build_section_recess_document(part)` JSON envelope builder. It projects accepted
+  aggregate `SectionRecess` records using result-local body and face rosters; the export CLI uses
+  this same path rather than running a separate detector.
+
 - **Promoted unified constant-section recess geometry.**
   `recognise_section_recesses()` and `RecognitionResult.section_recesses` now publish the
   ADR-0019 `SectionRecess` contract through the normal evidence, inventory and capability

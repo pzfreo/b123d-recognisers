@@ -241,6 +241,11 @@ During that transition, the neutral records coexist temporarily with specialised
 does not commit the project to preserving both contracts. PR #496 is the first additive production
 slice, covering closed constant-section pockets, while the remaining steps complete the replacement:
 
+The public `build_section_recess_document(part)` entry point runs the ordinary raw/caller-coordinate
+aggregate once and serializes its accepted `RecognitionResult.section_recesses` inventory. It is
+not a second detector and must not bypass aggregate reconciliation. Its body and face tables cover
+the complete input rosters, while occurrence indices are dense within the emitted document.
+
 1. implement the neutral nested frame, profile, end and classification values (completed in
    #496 for closed constant-section pockets);
 2. project every remaining accepted specialised occurrence into `SectionRecess` without changing

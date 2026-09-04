@@ -516,9 +516,12 @@ invitation to construct values outside that evidence and call them recognized.
 | `ClosedSectionProfile` | Canonical closed line/arc boundary nested in a `SectionRecessGeometry`. |
 | `SectionEnd` | One explicit open or capped end with its local planar gradient. |
 | `SectionRecess` | One indexed constant-section recess occurrence with geometry, classification and result-local evidence. |
+| `SectionRecessBodyRef` | One dense document-local entry in the complete input-solid roster. |
 | `SectionRecessClassification` | Authoritative feature kind and geometric section shape for a `SectionRecess`. |
+| `SectionRecessDocument` | Versioned JSON-safe envelope containing complete body/face rosters and accepted aggregate occurrences. |
 | `SectionRecessEnds` | The low/high end conditions of a `SectionRecessGeometry`. |
 | `SectionRecessEvidence` | Sorted result-local defining and constituent face indices. |
+| `SectionRecessFaceRef` | One dense document-local entry in the complete input-face roster. |
 | `SectionRecessGeometry` | Reconstructible free frame, run interval, closed profile and explicit ends. |
 | `OrientedSlot` | One rectangular through-slot with free width/long direction vectors; its nested `SectionPassage` retains the exact run frame, span, section and open-end proof. |
 | `OrientedSlotArray` | At least three identical compatible oriented through-slots on one constant-pitch line. |
@@ -530,6 +533,12 @@ invitation to construct values outside that evidence and call them recognized.
 | `TurnedProfile` | One consumer aggregate for a single physical turned body/profile, grouped from `TurnedStep` values rather than returned by a recogniser. |
 | `TurnedProfileKey` | Serializable body-local membership shared by the steps of one physical turned profile; it records the principal axis line and body bounds without exposing topology identity. |
 | `TurnedStep` | One self-contained shaft segment carrying its physical profile membership; recognition requires a multi-step profile. |
+
+`build_section_recess_document(part)` is the supported JSON-envelope entry point. It runs the
+ordinary raw/caller-coordinate aggregate exactly once and serializes only its accepted
+`RecognitionResult.section_recesses` inventory. Body and face indices address complete input
+rosters; occurrence indices are dense within the document. The function is therefore an export
+projection, not an independent recogniser.
 
 `RecognitionResult` is the frozen orchestration inventory rather than a `Record`
 subclass. It owns every public recogniser family, preserves classification-gated
