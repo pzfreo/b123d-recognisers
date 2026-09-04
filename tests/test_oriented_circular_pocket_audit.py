@@ -59,6 +59,12 @@ def test_through_and_non_obround_cuts_do_not_satisfy_the_proof() -> None:
     assert _candidates(FaceGraph(rectangular_blind)) == ()
 
 
+def test_an_added_obround_boss_is_not_a_blind_pocket() -> None:
+    boss = Box(60, 50, 6) + Pos(0, 0, 7) * Rot(0, 0, 30) * _obround(depth=8)
+
+    assert _candidates(FaceGraph(boss)) == ()
+
+
 def test_interrupted_support_does_not_get_reconstructed() -> None:
     pocket = _blind_pocket()
     interruption = Pos(0, 3, 3) * Cylinder(1, 12)

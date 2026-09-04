@@ -22,7 +22,11 @@ from OCP.GeomAbs import GeomAbs_Cylinder
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
+from b123d_recognisers._adjacency import (  # noqa: E402
+    FaceGraph,
+    FaceNode,
+    frame_points_outward,
+)
 from b123d_recognisers._geometry import length_tol  # noqa: E402
 from b123d_recognisers._recess_faces import _dominant_axis  # noqa: E402
 from b123d_recognisers._recess_obround import _END_RADIUS_FRAC  # noqa: E402
@@ -153,6 +157,8 @@ def _one_candidate(graph: FaceGraph, floor: FaceNode) -> PrototypeCandidate | No
     sides = tuple(node for node in concave if graph.is_planar(node))
     if len(cylinders) != 2 or len(sides) != 2 or len(concave) != 4:
         return None
+    if any(frame_points_outward(graph.face(node)) is not False for node in cylinders):
+        return None
     cylinder_data = tuple(_cylinder(graph, node) for node in cylinders)
     if any(item is None for item in cylinder_data):
         return None
@@ -181,8 +187,8 @@ def _one_candidate(graph: FaceGraph, floor: FaceNode) -> PrototypeCandidate | No
         or any(abs(_dot(normal, depth)) > _DIRECTION_TOL for normal in normals)
     ):
         return None
-    if any(
-        graph.arc(cylinder, side) != "smooth"
+    if not all(
+        graph.arc(cylinder, side) == "smooth"
         for cylinder in cylinders
         for side in sides
     ):

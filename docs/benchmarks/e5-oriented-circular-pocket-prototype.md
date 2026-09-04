@@ -23,10 +23,9 @@ Against the merged-head aggregate evidence:
 | Current state | Occurrences | Candidate faces already covered | New faces available |
 | --- | ---: | ---: | ---: |
 | Wholly untouched | 51 | 0 | 255 |
-| Wholly untouched inside one fused seven-face label component | 1 | 0 | 5 |
 | Partially touched by structural evidence, two of five faces | 6 | 12 | 18 |
 | Partially touched by structural evidence, one of five faces | 6 | 6 | 24 |
-| **Total** | **63** | **18** | **302** |
+| **Total** | **63** | **18** | **297** |
 
 The partial overlaps are nine `FaceLevel` and three `Riser` interpretations; none is an accepted
 `Pocket`. The existing framed aggregate recovers only one of the 54 raw non-principal untouched
@@ -43,14 +42,15 @@ from a planar floor, it requires:
 - two opposed side planes parallel to the derived width direction;
 - every cylinder tangent to both side planes;
 - one observed semicircular floor edge per cylinder, proved by arc length over radius;
+- inward-facing cylindrical supports, excluding the geometrically similar added boss;
 - a common non-zero floor-to-mouth interval across all four supports;
 - exactly one planar mouth meeting every support convexly or smoothly; and
 - one valid-solid owner for the complete support and floor set.
 
 Authored controls cover the oriented positive, X/Y/Z and arbitrary rigid presentation, a principal
 closed Pocket control, through/round/rectangular negatives, an interrupted support and equal
-features on two bodies. Eight focused tests pass. The prototype issues no Candidate or public
-record and changes no aggregate result.
+features on two bodies, plus an added obround boss adversary. Nine focused tests pass. The
+prototype issues no Candidate or public record and changes no aggregate result.
 
 ## Architectural interpretation
 
