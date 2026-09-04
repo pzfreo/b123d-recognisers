@@ -6,8 +6,19 @@ import math
 import pytest
 from build123d import Box, Cylinder, Pos, Rot
 
-from b123d_recognisers._section_recess_prototype import build_section_recess_prototype
-from b123d_recognisers._sections import PlanarSection, SectionVertex
+from b123d_recognisers._section_recess_prototype import (
+    SectionRecessClassification,
+    build_section_recess_prototype,
+    project_section_recess_geometry,
+)
+from b123d_recognisers._sections import (
+    BodyRefIssuer,
+    LocalFrame,
+    PlanarSection,
+    SectionEnds,
+    SectionOccurrence,
+    SectionVertex,
+)
 
 
 def _obround(*, straight: float = 12, width: float = 6, depth: float = 8):
@@ -66,3 +77,33 @@ def test_prototype_does_not_publish_a_boss_as_a_pocket() -> None:
     boss = Box(60, 50, 6) + Pos(0, 0, 7) * Rot(0, 0, 30) * _obround()
 
     assert build_section_recess_prototype(boss).occurrences == ()
+
+
+@pytest.mark.parametrize(
+    ("shape", "points"),
+    [
+        ("triangular", ((-4.0, -2.0), (4.0, -2.0), (0.0, 4.0))),
+        ("rectangular", ((-4.0, -2.0), (4.0, -2.0), (4.0, 2.0), (-4.0, 2.0))),
+        (
+            "hexagonal",
+            ((-4.0, 0.0), (-2.0, -3.0), (2.0, -3.0), (4.0, 0.0), (2.0, 3.0), (-2.0, 3.0)),
+        ),
+    ],
+)
+def test_unified_contract_projects_free_axis_polygonal_sections(shape, points) -> None:
+    issuer = BodyRefIssuer()
+    occurrence = SectionOccurrence(
+        issuer.issue(),
+        LocalFrame.canonical((1.0, 2.0, 3.0), (0.0, 0.0, 0.0)),
+        (-2.0, 5.0),
+        PlanarSection(tuple(SectionVertex(point) for point in points)),
+        SectionEnds(True, False),
+    )
+
+    geometry = project_section_recess_geometry(occurrence, body_refs=issuer)
+    classification = SectionRecessClassification("pocket", shape)
+
+    assert geometry.type == "section_recess"
+    assert geometry.run_interval == (-2.0, 5.0)
+    assert all(vertex.bulge == 0.0 for vertex in geometry.profile.boundary)
+    assert classification.section_shape == shape

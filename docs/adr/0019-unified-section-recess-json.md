@@ -269,6 +269,12 @@ importing provider record classes and derives drawing length, width and depth fr
 run interval. Promotion requires both its fail-closed consumer tests and the provider's covariance,
 reconstruction, ownership and rejection tests to pass.
 
+The contract proof is not obround-specific. The same projector round-trips free-axis triangular,
+rectangular and hexagonal closed profiles using straight boundary segments, and the pre-existing
+adapter suite round-trips all 25 golden polygonal recess records. Polygonal recall remains a
+separate detector-covariance question: adopting this value removes the schema obstacle but does not
+turn principal-axis discoveries into free-axis discoveries.
+
 The transfer runner overlays the prototype on the unchanged production inventory. It emits only
 aggregate counts and baseline-versus-combined metrics—never model identifiers or model rows:
 

@@ -35,7 +35,17 @@ from b123d_recognisers.passages import PassageFrame, PassageSection, PassageSect
 _DIRECTION_TOL = 1e-6
 _SEMICIRCLE_TOL = 1e-4
 _FEATURE_KINDS = frozenset({"pocket"})
-_SECTION_SHAPES = frozenset({"obround"})
+_SECTION_SHAPES = frozenset(
+    {
+        "rectangular",
+        "circular",
+        "obround",
+        "triangular",
+        "hexagonal",
+        "polygonal",
+        "general",
+    }
+)
 Vector2 = tuple[float, float]
 Vector3 = tuple[float, float, float]
 
@@ -361,7 +371,15 @@ def _public_geometry(
             high_capped=abs(floor_at - run_interval[1]) < abs(floor_at - run_interval[0]),
         ),
     )
-    projected = occurrence_geometry_dict(occurrence, body_refs=issuer)
+    return project_section_recess_geometry(occurrence, body_refs=issuer)
+
+
+def project_section_recess_geometry(
+    occurrence: SectionOccurrence, *, body_refs: BodyRefIssuer
+) -> SectionRecessGeometry:
+    """Project any closed private section occurrence into the experimental JSON geometry."""
+
+    projected = occurrence_geometry_dict(occurrence, body_refs=body_refs)
     frame_value = cast(dict[str, list[float]], projected["frame"])
     section_value = cast(dict[str, list[dict[str, object]]], projected["section"])
     ends_value = cast(dict[str, bool], projected["ends"])
@@ -548,4 +566,5 @@ __all__ = [
     "SectionRecessOccurrence",
     "SectionRecessPrototypeDocument",
     "build_section_recess_prototype",
+    "project_section_recess_geometry",
 ]
