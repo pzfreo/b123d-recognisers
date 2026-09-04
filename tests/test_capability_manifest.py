@@ -96,6 +96,13 @@ def test_manifest_query_is_deterministic_isolated_and_versioned() -> None:
         capability_manifest(format_version=1)
 
 
+def test_section_end_gradient_is_published_as_dimensionless() -> None:
+    family = next(item for item in _families() if item["id"] == "section-recesses")
+    record = next(item for item in family["records"] if item["name"] == "SectionEnd")
+
+    assert record["fields"]["gradient"]["units"] == "none"
+
+
 def test_manifest_inventories_are_derived_independently_from_public_runtime() -> None:
     families = _families()
     manifest_recognisers = {

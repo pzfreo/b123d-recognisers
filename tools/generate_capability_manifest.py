@@ -492,6 +492,7 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
             "bulge",
             "constituent_faces",
             "defining_faces",
+            "gradient",
             "low_gradient",
             "high_gradient",
         }

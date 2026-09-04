@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from pathlib import Path
 
 import pytest
 from build123d import (
@@ -90,6 +91,36 @@ def test_section_recess_emits_reconstructible_indexed_json() -> None:
     assert section.centroid == pytest.approx((0.0, 0.0), abs=8e-4)
     assert section.area == pytest.approx(72 + 9 * math.pi, abs=2e-2)
     json.dumps(document.to_dict())
+
+
+def test_section_recess_output_matches_committed_golden() -> None:
+    document = build_section_recess(_blind_pocket())
+    actual = document.to_dict()
+    occurrence = actual["occurrences"][0]
+    projection = {
+        "schema_version": actual["schema_version"],
+        "reference_scope": actual["reference_scope"],
+        "body_indices": [body["index"] for body in actual["bodies"]],
+        "face_count": len(actual["faces"]),
+        "occurrences": [
+            {
+                "index": occurrence["index"],
+                "body": occurrence["body"],
+                "geometry_type": occurrence["geometry"]["type"],
+                "profile_closure": occurrence["geometry"]["profile"]["closure"],
+                "end_conditions": [
+                    occurrence["geometry"]["ends"]["low"]["condition"],
+                    occurrence["geometry"]["ends"]["high"]["condition"],
+                ],
+                "classification": occurrence["classification"],
+                "defining_face_count": len(occurrence["evidence"]["defining_faces"]),
+                "constituent_face_count": len(occurrence["evidence"]["constituent_faces"]),
+            }
+        ],
+    }
+    expected_path = Path(__file__).with_name("section_recess_expected.json")
+
+    assert projection == json.loads(expected_path.read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
@@ -200,3 +231,16 @@ def test_equal_polygonal_pockets_on_separate_bodies_keep_ownership() -> None:
 
     assert len(document.occurrences) == 2
     assert {occurrence.body for occurrence in document.occurrences} == {0, 1}
+
+
+def test_document_preserves_unrecognised_body_in_reference_roster() -> None:
+    untouched = Pos(-100, 0, 0) * Box(10, 10, 10)
+    recognised = Pos(100, 0, 0) * _blind_pocket()
+    part = Compound([untouched, recognised])
+
+    document = build_section_recess(part)
+    direct = recognise_section_recesses(part)
+
+    assert [body.index for body in document.bodies] == [0, 1]
+    assert [occurrence.body for occurrence in document.occurrences] == [1]
+    assert [occurrence.body for occurrence in direct] == [1]

@@ -2731,7 +2731,7 @@
             "gradient": {
               "required": false,
               "type": "tuple[float,2]",
-              "units": "mm"
+              "units": "none"
             }
           },
           "name": "SectionEnd",

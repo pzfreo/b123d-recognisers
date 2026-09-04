@@ -1,17 +1,26 @@
 {
-  "fixture": "section_recess",
-  "provenance": {
-    "license": "Apache-2.0",
-    "source_path": "tests/test_section_recesses.py"
-  },
-  "recognition": {
-    "contract": "SectionRecess",
-    "feature_kind": "pocket",
-    "section_shapes": [
-      "hexagonal",
-      "obround",
-      "rectangular",
-      "triangular"
-    ]
-  }
+  "body_indices": [
+    0
+  ],
+  "face_count": 11,
+  "occurrences": [
+    {
+      "body": 0,
+      "classification": {
+        "feature_kind": "pocket",
+        "section_shape": "obround"
+      },
+      "constituent_face_count": 5,
+      "defining_face_count": 4,
+      "end_conditions": [
+        "capped",
+        "open"
+      ],
+      "geometry_type": "section_recess",
+      "index": 0,
+      "profile_closure": "closed"
+    }
+  ],
+  "reference_scope": "result",
+  "schema_version": 1
 }

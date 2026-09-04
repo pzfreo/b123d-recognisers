@@ -235,7 +235,11 @@ as the provider migration.
 
 ## Migration and evidence
 
-This is a coordinated breaking replacement, not an additive compatibility layer:
+The migration endpoint is a coordinated breaking replacement, not a permanent additive
+compatibility layer. Delivery is staged so each production slice can be validated independently.
+During that transition, the neutral records coexist temporarily with specialised records; this
+does not commit the project to preserving both contracts. PR #496 is the first additive production
+slice, covering closed constant-section pockets, while the remaining steps complete the replacement:
 
 1. implement the neutral nested frame, profile, end and classification values (completed in
    #496 for closed constant-section pockets);

@@ -668,12 +668,14 @@ def build_section_recess(part: Part) -> SectionRecessDocument:
 
     graph = FaceGraph(part)
     candidates = _candidates(graph)
-    body_indices = {candidate.body for candidate in candidates}
-    body_remap = {source: index for index, source in enumerate(sorted(body_indices))}
+    # Candidate body ordinals are issued against the input part's complete solid roster.  Keep
+    # that roster intact in the document: densely remapping only solids with recognised recesses
+    # would make the same occurrence name a different body through the Python and JSON APIs.
+    bodies = tuple(part.solids())
     occurrences = tuple(
         SectionRecessOccurrence(
             index,
-            body_remap[candidate.body],
+            candidate.body,
             candidate.geometry,
             SectionRecessClassification("pocket", candidate.section_shape),
             SectionRecessEvidence(candidate.defining_faces, candidate.constituent_faces),
@@ -683,7 +685,7 @@ def build_section_recess(part: Part) -> SectionRecessDocument:
     return SectionRecessDocument(
         1,
         "result",
-        tuple(SectionRecessBodyRef(index) for index in range(len(body_indices))),
+        tuple(SectionRecessBodyRef(index) for index in range(len(bodies))),
         tuple(SectionRecessFaceRef(index) for index, _ in enumerate(part.faces())),
         occurrences,
     )
