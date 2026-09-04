@@ -113,6 +113,7 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
         }
 
     from b123d_recognisers import import_step_geometry as import_step
+    from b123d_recognisers._section_recess_prototype import build_section_recess_prototype
     from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
     from b123d_recognisers.result import _take_inventory
 
@@ -126,8 +127,28 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
                 raise EffectivenessDataError(f"frame refused: {frame.reason.value}")
             working_part = _normalize_part(part, frame)
         product = _take_inventory(working_part)
+        prototype = build_section_recess_prototype(working_part)
         seconds = time.perf_counter() - started
-        row = score_inventory(task.truth, working_part, product, task.taxonomy, seconds)
+        additional_claims = tuple(
+            (
+                (
+                    "pockets"
+                    if occurrence.classification.section_shape in {"obround", "circular"}
+                    else "prismatic-pockets"
+                ),
+                occurrence.evidence.defining_faces,
+                occurrence.evidence.constituent_faces,
+            )
+            for occurrence in prototype.occurrences
+        )
+        row = score_inventory(
+            task.truth,
+            working_part,
+            product,
+            task.taxonomy,
+            seconds,
+            additional_claims=additional_claims,
+        )
         row["status"] = "evaluated"
         return row
     except (EffectivenessDataError, OSError, RuntimeError, ValueError) as error:
@@ -176,9 +197,7 @@ def _unreadable_truth(dataset: str, root: Path, model_id: str) -> DatasetTruth:
 def _source_selection_hash(truths: Iterable[DatasetTruth]) -> str:
     digest = hashlib.sha256()
     for truth in truths:
-        value = (
-            f"{truth.model_id}\0{truth.step_path.resolve()}\0{truth.source_sha256}\n"
-        ).encode()
+        value = (f"{truth.model_id}\0{truth.step_path.resolve()}\0{truth.source_sha256}\n").encode()
         digest.update(value)
     return digest.hexdigest()
 
@@ -258,9 +277,7 @@ def _checkpoint_key(model_id: str) -> str:
     return hashlib.sha256(model_id.encode("utf-8")).hexdigest()
 
 
-def _require_known_invalid_policy(
-    dataset: str, ids: list[str], allow_invalid: bool
-) -> None:
+def _require_known_invalid_policy(dataset: str, ids: list[str], allow_invalid: bool) -> None:
     if (
         dataset == "mfcadpp"
         and len(ids) == 2500
@@ -331,17 +348,13 @@ def _write_checkpoint_row(root: Path, truth: DatasetTruth, row: dict[str, Any]) 
     )
 
 
-def _capture_run_authority(
-    taxonomy_path: Path, *, canonical: bool = False
-) -> _RunAuthority:
+def _capture_run_authority(taxonomy_path: Path, *, canonical: bool = False) -> _RunAuthority:
     """Freeze the authority a long corpus run will claim in its metadata."""
 
     commit = _git_commit()
     worktree_sha256 = _git_worktree_sha256(commit)
     if canonical and worktree_sha256 is not None:
-        raise EffectivenessDataError(
-            "canonical reports require tracked files to equal HEAD"
-        )
+        raise EffectivenessDataError("canonical reports require tracked files to equal HEAD")
     source_sha256 = _source_digest()
     try:
         taxonomy = taxonomy_path.read_bytes()
@@ -421,9 +434,7 @@ def _partition_ids(path: Path) -> list[str]:
     if not path.is_file():
         raise EffectivenessDataError(f"missing MFInstSeg partition: {path}")
     values = [
-        line.strip()
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     if not values:
         raise EffectivenessDataError(f"empty MFInstSeg partition: {path}")
@@ -434,8 +445,7 @@ def _mfinstseg_selection(
     root: Path, partition_root: Path
 ) -> tuple[list[str], Callable[[str], DatasetTruth], dict[str, Any]]:
     partitions = {
-        split: _partition_ids(partition_root / f"{split}.txt")
-        for split in ("train", "val", "test")
+        split: _partition_ids(partition_root / f"{split}.txt") for split in ("train", "val", "test")
     }
     duplicates = {
         split: sorted(model_id for model_id, count in Counter(values).items() if count > 1)
@@ -554,9 +564,7 @@ def main() -> int:
         if args.limit is not None:
             ids = ids[: args.limit]
         _require_known_invalid_policy(args.dataset, ids, args.allow_invalid)
-        taxonomy = load_taxonomy(
-            args.taxonomy, args.dataset, contents=authority.taxonomy
-        )
+        taxonomy = load_taxonomy(args.taxonomy, args.dataset, contents=authority.taxonomy)
         # Loading truth also fingerprints every selected STEP/label source before costly
         # recognition. The immutable objects are safe inputs to independent workers.
         truths: list[DatasetTruth] = []
@@ -595,6 +603,7 @@ def main() -> int:
         parser.error(str(error))
 
     from b123d_recognisers import __version__
+
     try:
         _verify_run_authority(authority, args.taxonomy)
     except EffectivenessDataError as error:
@@ -618,9 +627,7 @@ def main() -> int:
             _write_checkpoint_row(args.checkpoint_dir, truth, row)
         done = len(rows_by_id)
         if done == len(ids) or done == 1 or done % progress_every == 0:
-            invalid_so_far = sum(
-                item.get("status") == "invalid" for item in rows_by_id.values()
-            )
+            invalid_so_far = sum(item.get("status") == "invalid" for item in rows_by_id.values())
             print(
                 f"progress {done}/{len(ids)} invalid={invalid_so_far} "
                 f"elapsed={time.monotonic() - started_run:.1f}s",

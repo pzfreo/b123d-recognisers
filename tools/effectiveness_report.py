@@ -81,9 +81,7 @@ def _instance_components(value: object, count: int) -> tuple[frozenset[int], ...
             raise EffectivenessDataError("inst must be a binary square face-count matrix")
         rows.append(tuple(int(item) for item in row))
     if any(
-        rows[left][right] != rows[right][left]
-        for left in range(count)
-        for right in range(count)
+        rows[left][right] != rows[right][left] for left in range(count) for right in range(count)
     ):
         raise EffectivenessDataError("inst must be symmetric")
     remaining = set(range(count))
@@ -169,9 +167,7 @@ def load_taxonomy(
 
     try:
         payload = json.loads(
-            path.read_text(encoding="utf-8")
-            if contents is None
-            else contents.decode("utf-8")
+            path.read_text(encoding="utf-8") if contents is None else contents.decode("utf-8")
         )
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise EffectivenessDataError("taxonomy is unreadable") from error
@@ -220,8 +216,10 @@ def score_inventory(
     product: object,
     taxonomy: dict[int, dict[str, Any]],
     seconds: float,
+    *,
+    additional_claims: tuple[tuple[str, tuple[int, ...], tuple[int, ...]], ...] = (),
 ) -> dict[str, Any]:
-    """Score one already-completed inventory without rerunning a recogniser."""
+    """Score one inventory plus any explicitly supplied experimental face claims."""
 
     # Authority is captured before production recognisers are imported by the corpus runner.
     from b123d_recognisers._candidates import FamilyId, PredicateId
@@ -263,9 +261,23 @@ def score_inventory(
             )
         )
 
-    accepted_constituent_faces = (
-        set().union(*constituents) if constituents else set()
-    )
+    for family, defining, constituent in additional_claims:
+        if not isinstance(family, str) or not family:
+            raise EffectivenessDataError("additional claim family must be a nonempty string")
+        if (
+            any(type(index) is not int or index < 0 or index >= len(faces) for index in defining)
+            or any(
+                type(index) is not int or index < 0 or index >= len(faces) for index in constituent
+            )
+            or not set(defining) <= set(constituent)
+        ):
+            raise EffectivenessDataError("additional claim face indices are invalid")
+        records[family] = records.get(family, 0) + 1
+        if defining:
+            claims.append((family, frozenset(defining)))
+        constituents.append(frozenset(constituent))
+
+    accepted_constituent_faces = set().union(*constituents) if constituents else set()
     per_class: dict[str, dict[str, int | str]] = {}
     for class_id, mapping in taxonomy.items():
         labelled = {index for index, value in enumerate(truth.semantic) if value == class_id}
@@ -350,7 +362,7 @@ def score_inventory(
         "seconds": seconds,
         "physical_records": dict(sorted(records.items())),
         "mapped_dataset_class_records": dict(sorted(mapped_classes.items())),
-        "no_physical_records": not accepted,
+        "no_physical_records": not accepted and not additional_claims,
         "taxonomy_mismatch_defining_faces": mismatches,
         "reconciliation_drops": dict(sorted(rejected.items())),
         "unsupported_diagnostics": dict(sorted(diagnostics.items())),
@@ -363,9 +375,7 @@ def canonical_json(value: object) -> str:
     return json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
 
 
-def summarize_rows(
-    rows: list[dict[str, Any]], selected: int, invalid: int
-) -> dict[str, Any]:
+def summarize_rows(rows: list[dict[str, Any]], selected: int, invalid: int) -> dict[str, Any]:
     """Derive every aggregate from the immutable per-model evidence."""
 
     valid = [row for row in rows if row.get("status") == "evaluated"]
@@ -413,12 +423,8 @@ def summarize_rows(
             "defining_face_recall": ratio(
                 aggregate["matched_defining_faces"], aggregate["labelled_faces"]
             ),
-            "face_coverage": ratio(
-                aggregate["covered_faces"], aggregate["labelled_faces"]
-            ),
-            "instance_recall": ratio(
-                aggregate["recalled_instances"], aggregate["truth_instances"]
-            ),
+            "face_coverage": ratio(aggregate["covered_faces"], aggregate["labelled_faces"]),
+            "instance_recall": ratio(aggregate["recalled_instances"], aggregate["truth_instances"]),
         }
     return {
         "selected": selected,
@@ -512,9 +518,7 @@ def validate_report(report: object) -> None:
             raise EffectivenessDataError("every model row needs a string model_id")
         status = row.get("status")
         if status == "invalid":
-            if set(row) != {"model_id", "status", "reason"} or not isinstance(
-                row["reason"], str
-            ):
+            if set(row) != {"model_id", "status", "reason"} or not isinstance(row["reason"], str):
                 raise EffectivenessDataError("invalid model rows need only a reason")
         elif status == "evaluated":
             evaluated_fields = {
@@ -561,11 +565,7 @@ def validate_report(report: object) -> None:
                     or class_row.get("status") not in _CLASS_STATUSES
                 ):
                     raise EffectivenessDataError("evaluated class row has invalid fields")
-                counts = {
-                    field: class_row[field]
-                    for field in class_fields
-                    if field != "status"
-                }
+                counts = {field: class_row[field] for field in class_fields if field != "status"}
                 if any(
                     not isinstance(value, int) or isinstance(value, bool) or value < 0
                     for value in counts.values()
@@ -574,7 +574,8 @@ def validate_report(report: object) -> None:
                         "evaluated class counts must be non-negative integers"
                     )
                 if not (
-                    counts["matched_defining_faces"] <= counts["covered_faces"]
+                    counts["matched_defining_faces"]
+                    <= counts["covered_faces"]
                     <= counts["labelled_faces"]
                     and counts["matched_defining_faces"] <= counts["mapped_defining_faces"]
                     and counts["recalled_instances"] <= counts["truth_instances"]
@@ -585,9 +586,7 @@ def validate_report(report: object) -> None:
         ids.append(row["model_id"])
     if ids != sorted(ids) or len(ids) != len(set(ids)):
         raise EffectivenessDataError("model rows must have unique sorted IDs")
-    expected_selection_hash = hashlib.sha256(
-        ("\n".join(ids) + "\n").encode("utf-8")
-    ).hexdigest()
+    expected_selection_hash = hashlib.sha256(("\n".join(ids) + "\n").encode("utf-8")).hexdigest()
     if selection["selected_ids_sha256"] != expected_selection_hash:
         raise EffectivenessDataError("selection hash does not match model rows")
     summary = report["summary"]

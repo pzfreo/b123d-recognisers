@@ -547,6 +547,40 @@ def test_face_coverage_counts_constituents_without_changing_defining_semantics()
     }
 
 
+def test_full_scorer_includes_experimental_face_claims() -> None:
+    part = Box(1, 1, 1)
+    faces = tuple(part.faces())
+    product = SimpleNamespace(
+        context=SimpleNamespace(graph=SimpleNamespace(face=lambda node: faces[node])),
+        reconciliation=SimpleNamespace(dispositions=()),
+        evidence=SimpleNamespace(observations=lambda *_args: ()),
+        diagnostics=(),
+    )
+    truth = DatasetTruth(
+        "overlay",
+        Path("overlay.step"),
+        (13, 13, *(24 for _face in faces[2:])),
+        (frozenset({0, 1}),),
+        None,
+        "0" * 64,
+    )
+
+    row = score_inventory(
+        truth,
+        part,
+        product,
+        load_taxonomy(TAXONOMY, "mfcadpp"),
+        0.0,
+        additional_claims=(("prismatic-pockets", (0,), (0, 1)),),
+    )
+
+    assert row["physical_records"] == {"prismatic-pockets": 1}
+    assert row["classes"]["13"]["matched_defining_faces"] == 1
+    assert row["classes"]["13"]["covered_faces"] == 2
+    assert row["classes"]["13"]["recalled_instances"] == 1
+    assert row["no_physical_records"] is False
+
+
 def test_partial_support_preserves_supported_scorer_semantics() -> None:
     part = Box(30, 30, 10) - Cylinder(3, 10)
     faces = tuple(part.faces())
@@ -812,9 +846,7 @@ def test_taxonomy_loader_scores_from_captured_bytes(tmp_path: Path) -> None:
     assert loaded[7]["status"] == "supported"
 
 
-@pytest.mark.parametrize(
-    ("commit", "worktree_sha256"), (("b" * 40, None), ("a" * 40, "dirty"))
-)
+@pytest.mark.parametrize(("commit", "worktree_sha256"), (("b" * 40, None), ("a" * 40, "dirty")))
 def test_corpus_run_authority_refuses_source_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -830,9 +862,7 @@ def test_corpus_run_authority_refuses_source_drift(
         taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
     )
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
-    monkeypatch.setattr(
-        baseline_runner, "_git_worktree_sha256", lambda _commit: worktree_sha256
-    )
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: worktree_sha256)
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="source authority changed"):
