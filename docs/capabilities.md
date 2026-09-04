@@ -523,7 +523,7 @@ invitation to construct values outside that evidence and call them recognized.
 | `SectionRecessEnds` | The low/high end conditions of a `SectionRecessGeometry`. |
 | `SectionRecessEvidence` | Sorted result-local defining and constituent face indices. |
 | `SectionRecessFaceRef` | One dense document-local entry in the complete input-face roster. |
-| `SectionRecessGeometry` | Reconstructible free frame, run interval, closed profile and explicit ends. |
+| `SectionRecessGeometry` | Reconstructible free frame, run interval, closed or truthfully open line/arc profile and explicit ends. |
 | `OrientedSlot` | One rectangular through-slot with free width/long direction vectors; its nested `SectionPassage` retains the exact run frame, span, section and open-end proof. |
 | `OrientedSlotArray` | At least three identical compatible oriented through-slots on one constant-pitch line. |
 | `OrientedSlotGrid` | A complete rectangular lattice of identical compatible oriented through-slots. |

@@ -248,8 +248,8 @@ the complete input rosters, while occurrence indices are dense within the emitte
 
 1. implement the neutral nested frame, profile, end and classification values (completed in
    #496 for closed constant-section pockets);
-2. project every remaining accepted specialised occurrence into `SectionRecess` without changing
-   discovery or reconciliation behavior;
+2. project every representable accepted specialised occurrence into `SectionRecess` without
+   changing discovery or reconciliation behavior;
 3. update the JSON manifest and Draftwright consumer together;
 4. verify existing supported occurrences reconstruct the same removal geometry within published
    serialization bounds;
@@ -288,6 +288,14 @@ The subsequent complete MFCAD++ six-sided-pocket overlay answers that question n
 free-frame floor proof is perfectly pure but adds only 49 net faces, raising coverage from 0.9320 to
 0.9406. Orientation covariance is therefore a valid substrate, not the main polygonal residual.
 Treatment-interrupted cavity propagation is separate recognition work and remains the next gate.
+
+The migration also projects accepted passages, prismatic pockets, edge-open polygonal/circular
+recesses, rectangular blind slots and round-bottom blind slots from their existing exact proofs.
+The legacy `Pocket` value is intentionally not projected by itself: despite its historic name and
+rectangular dimensions, some occurrences summarize a non-rectangular boundary by its extents.
+Claiming a rectangular section from that value would fabricate geometry. Such an occurrence enters
+the unified inventory only when a geometry-bearing native or prismatic proof establishes its real
+section.
 
 The normal effectiveness runner now scores ``SectionRecess`` from the production inventory. There
 is no overlay path or second implementation.

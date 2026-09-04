@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Generalise the unified `SectionRecess` geometry to closed and truthfully open line/arc profiles,
+  pocket/edge-open/passage topology, and project accepted passages, prismatic pockets and exact
+  edge-open recess families while retaining their body and face evidence.
+
 - Add the public `build_section_recess_document(part)` JSON envelope builder. It projects accepted
   aggregate `SectionRecess` records using result-local body and face rosters; the export CLI uses
   this same path rather than running a separate detector.
