@@ -1,0 +1,280 @@
+# ADR 0019 — Unify constant-section recesses in one JSON geometry
+
+- **Status:** Accepted
+- **Date:** 2026-09-04
+- **Issues:** #290, #495
+- **Prototype:** #496
+- **Consumer review:**
+  [`docs/draftwright-section-recess-schema-review.md`](../draftwright-section-recess-schema-review.md)
+
+## Context
+
+The package describes closely related subtractive geometry with separate public records:
+`Pocket`, `PrismaticPocket`, `RectangularBlindSlot`, `RoundBottomBlindSlot`,
+`EdgeOpenPrismaticRecess`, `EdgeOpenCircularPocket` and `SectionPassage`. A proposed oriented
+circular-end pocket would require another record because the axis-letter `Pocket` cannot express
+its free in-plane directions.
+
+These divisions partly reflect which recogniser found the geometry rather than a difference in
+the underlying geometric value. Each occurrence has a section placed in 3-D, an extent along a run
+direction, physical section boundaries, and conditions at its two run ends. Shape-specific records
+duplicate that vocabulary and require every consumer to add an adapter and IR type for each new
+section shape.
+
+Draftwright reviewed the proposed unification against its declaration, planner and renderer paths.
+It confirmed that a free-frame line/arc section is sufficient, that convenience dimensions are
+derivable, and that replacing the specialised records is preferable to carrying two encodings of
+one fact. Draftwright also identified two requirements that apply to every consumer: shape
+classification must be issued by the recogniser, and serialized face references must make their
+one-document lifetime explicit.
+
+The package is pre-1.0 and Draftwright is the primary consumer. The two projects will coordinate
+the breaking change. Preserving the old record schemas is not a design goal.
+
+## Decision
+
+### One structural geometry
+
+Replace the specialised constant-section pocket, edge-open recess and passage output schemas with
+one domain-neutral `SectionRecess` JSON geometry. Specialised recognition algorithms remain
+separate and fail closed under their own contracts; accepted occurrences converge only at the
+public value.
+
+A `SectionRecess` contains:
+
+- a right-handed free 3-D `frame` with `origin`, `run`, `u` and `v`;
+- one strictly increasing `run_interval` measured along `run`;
+- one canonical 2-D `profile` in `(u, v)` coordinates; and
+- explicit `low` and `high` end conditions.
+
+The frame and closed line/arc boundary use the existing `PassageFrame` and `PassageSection`
+placement, canonicalisation, precision and reconstruction rules. The final wire encoding may use
+the existing vertex-and-bulge representation or an equivalent canonical line/arc segment list; it
+must have exactly one meaning and must not duplicate derived radius or dimension values.
+
+The profile is one of two tagged variants:
+
+- `closed`: a continuous, simple, closed physical boundary; or
+- `open`: one continuous chain of physical line/arc segments plus the explicit gap between its
+  loose endpoints.
+
+An open-profile gap records missing boundary, not a wall or curve. A consumer may construct a
+temporary closure against stock or body geometry for its own operation, but neither provider nor
+consumer may report that construction as observed source geometry.
+
+Each run end carries a condition of `open` or `capped`. Existing planar termination gradients are
+geometry in the section frame and remain available where proved. `capped` identifies a physical
+termination; it does not encode the detailed bottom shape. Opening direction, cap condition and
+bottom treatment are separate facts.
+
+The initially admitted interpretations are:
+
+| Feature kind | Profile | Run ends |
+| --- | --- | --- |
+| `pocket` | closed | exactly one capped |
+| `edge_open_recess` | open | exactly one capped |
+| `passage` | closed | both open |
+
+An enclosed cavity, open profile with both ends open, or any other combination is refused until a
+recogniser proves it and the schema explicitly admits its `feature_kind`.
+
+### Authoritative classification
+
+Every occurrence carries two required, provider-issued classifications:
+
+- `feature_kind`: the engineering interpretation of profile closure and end topology; and
+- `section_shape`: the proved geometric class of the 2-D profile.
+
+The initial `feature_kind` vocabulary is the admitted table above. The initial `section_shape`
+vocabulary is:
+
+- `rectangular`;
+- `circular`;
+- `obround`;
+- `triangular`;
+- `hexagonal`;
+- `polygonal`; and
+- `general`.
+
+`general` means that the recogniser proved a valid section but no more specific class. It is not an
+invitation to guess. Both vocabularies are closed and versioned with the enclosing schema.
+
+The recogniser has source B-rep geometry and owns tangency, parallelism, curve identity and
+tolerance policy, so it must issue these classifications. Consumers may perform cheap consistency
+validation and must reject a mismatch, but they must not independently reclassify rounded JSON.
+Geometry remains sufficient for reconstruction without switching on classification. Classification
+selects downstream domain convention; it is not a substitute for geometry.
+
+No stored `width`, `length`, `depth`, `radius`, side count or named world axis accompanies the
+profile. Such values are derived views selected by the authoritative classification. A public API
+may provide one implementation of those derivations as convenience functions, but they are not
+second serialized facts.
+
+### Constant-section boundary
+
+`SectionRecess` admits only a physical support profile that is constant over its proved run
+interval, apart from separately proved end or edge treatments. A drafted, tapered, twisted or
+otherwise varying wall set does not become a `SectionRecess` by recording a nominal section.
+
+Chamfers, blends, wall draft and bottom radii do not add optional shape-specific fields to this
+record. Independently proved chamfer and blend occurrences remain separate and may be related to a
+recess occurrence in a future result relationship table. The base recess and related treatment
+must not publish two authoritative values for the same measurement. Wall draft or another variation
+that prevents proof of a constant base support causes refusal; a future lofted or station-based
+geometry requires its own decision.
+
+Islands are excluded from schema version 1 because no current family proves them. A later version
+may add a canonical list of closed inner profiles after recognition and consumer evidence exists.
+
+### JSON occurrence and evidence envelope
+
+Serialized recognition output separates:
+
+1. `geometry`: reconstructible section, placement and end topology;
+2. `classification`: provider-issued feature and section meanings;
+3. `evidence`: source faces that define and physically constitute the occurrence; and
+4. `relationships`: optional links to independently proved occurrences when that facility is
+   introduced.
+
+The contract contains no build123d, OpenCascade, Draftwright IR, CAM strategy or other
+implementation-specific value.
+
+Face evidence uses a document-local indexed table, not random names and not durable identifiers.
+The result document contains a `faces` roster in the exact source-face enumeration used by that
+recognition run. Its zero-based array position is the face index. `defining_faces` and
+`constituent_faces` contain only indices into that roster. Occurrence and body references use the
+same document-local principle.
+
+For example:
+
+```json
+{
+  "schema_version": 1,
+  "reference_scope": "result",
+  "bodies": [
+    {"index": 0}
+  ],
+  "faces": [
+    {"index": 0},
+    {"index": 1}
+  ],
+  "occurrences": [
+    {
+      "index": 0,
+      "body": 0,
+      "geometry": {
+        "type": "section_recess",
+        "frame": {
+          "origin": [10.0, 20.0, 30.0],
+          "run": [0.0, 0.0, -1.0],
+          "u": [1.0, 0.0, 0.0],
+          "v": [0.0, -1.0, 0.0]
+        },
+        "run_interval": [0.0, 8.0],
+        "profile": {
+          "closure": "closed",
+          "boundary": [
+            {"point": [-10.0, -5.0], "bulge": 0.0},
+            {"point": [10.0, -5.0], "bulge": 1.0},
+            {"point": [10.0, 5.0], "bulge": 0.0},
+            {"point": [-10.0, 5.0], "bulge": 1.0}
+          ]
+        },
+        "ends": {
+          "low": {"condition": "capped", "gradient": [0.0, 0.0]},
+          "high": {"condition": "open", "gradient": [0.0, 0.0]}
+        }
+      },
+      "classification": {
+        "feature_kind": "pocket",
+        "section_shape": "obround"
+      },
+      "evidence": {
+        "defining_faces": [1],
+        "constituent_faces": [0, 1]
+      }
+    }
+  ]
+}
+```
+
+Every index must be a non-negative integer within its referenced roster. Rosters are canonical and
+contain no duplicate entry. A consumer can derive reverse face-to-occurrence indices; the format
+does not serialize a second redundant association map.
+
+The face index is neither random nor globally meaningful. It is valid only within its containing
+result document and can be resolved to a source face only while the exact recognition input and its
+face roster are retained. It must never be used as a database key, compared across recognition
+runs, or assumed stable after re-import, editing, healing, framing or tessellation. Applications
+that retain several results must scope every reference through its containing result rather than
+copying a bare integer out of it.
+
+Surface kind, area, centroid, bounds or other geometric descriptors may later accompany a face-table
+entry for inspection or best-effort correspondence. Such descriptors are signatures, can collide
+or change, and do not establish cross-run identity.
+
+The existing Python `RecognitionEvidence` API continues to issue opaque run-local `FaceRef` and
+`FeatureRef` objects until the JSON migration replaces or supplements that surface. Those objects
+remain non-serializable and resolve through their issuing evidence view. Their internal graph index
+is not the JSON contract.
+
+## Consumer contract
+
+A consumer reconstructs geometry from `geometry` and uses `classification` only for domain policy.
+It validates the closed enum vocabulary and fails closed when it has no convention for a
+`feature_kind` × `section_shape` combination. It must not coerce an unsupported general or oriented
+section into the nearest axis-aligned convention.
+
+CAM tool choice, setup, accessibility, feeds, speeds and toolpath strategy are consumer policy and
+do not enter recognition JSON. The neutral record supplies the geometry needed to make those
+decisions without claiming that finished B-rep geometry uniquely determines a machining process.
+
+Draftwright owns its IR, declaration grammar, planning convention and drawing representation. It
+will validate one free-frame oriented obround occurrence end to end in the same development window
+as the provider migration.
+
+## Migration and evidence
+
+This is a coordinated breaking replacement, not an additive compatibility layer:
+
+1. implement the neutral nested frame, profile, end and classification values;
+2. project every currently accepted specialised occurrence into `SectionRecess` without changing
+   discovery or reconciliation behavior;
+3. update the JSON manifest and Draftwright consumer together;
+4. verify existing supported occurrences reconstruct the same removal geometry within published
+   serialization bounds;
+5. verify every migrated occurrence receives the expected authoritative classifications;
+6. carry the oriented circular-end prototype through the same record and through Draftwright; and
+7. remove the superseded public records, result fields and consumer paths.
+
+Draftwright may provide a one-time authored-script migration and must report stranded parameter
+identifiers rather than silently suppressing them. This does not require the provider to preserve
+the old JSON records or maintain a deprecation window.
+
+Development and authored fixtures establish the schema. MFInstSeg remains a pseudo-blind aggregate
+transfer corpus and must not be inspected or used to tune the representation.
+
+## Consequences
+
+- New section shapes and free orientations do not require new foundational JSON records.
+- Rectangular, polygonal, principal obround and oriented obround pockets share one representation.
+- Edge-open records preserve only their real wall chain and explicit absence; the truthful-open
+  principle of ADR 0018 remains in force.
+- Passages share the same structural vocabulary while retaining an authoritative semantic
+  classification and potentially separate recognisers.
+- Consumers receive one reconstructible geometry and one authoritative classification, with no
+  duplicated dimensional source of truth.
+- General CAM and 3-D applications can consume the JSON without importing the provider's geometry
+  kernel or Draftwright concepts.
+- The breaking migration is larger now but removes continuing adapter, IR and schema proliferation.
+- Non-constant sections, islands and durable cross-run topology identity remain deliberately out of
+  scope.
+
+ADR 0018 is superseded where it requires separate public edge-open record families and unchanged
+existing output schemas. Its physical open-chain, explicit-gap and no-fabricated-geometry decisions
+remain normative. The migration matrix in `docs/planar-section-schema-proposal.md` is superseded
+where it retains legacy pocket records as authoritative. ADR 0005's versioned manifest and
+fail-closed consumer declaration remain in force for the coordinated replacement.
+
+ADRs 0001, 0002, 0003, 0004, 0007, 0008, 0009, 0010, 0011, 0012, 0013, 0014 and 0016 otherwise
+remain in force.

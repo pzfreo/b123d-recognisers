@@ -56,15 +56,15 @@ prototype issues no Candidate or public record and changes no aggregate result.
 
 This is not another relaxation of `Pocket` or `EdgeOpenCircularPocket`. The geometry is a complete
 closed obround, but its in-plane directions are free vectors that the current axis-letter `Pocket`
-schema cannot express. The truthful production shape is therefore a narrow sibling such as
-`OrientedCircularPocket`, carrying a free orthonormal section frame, the two observed cap centres,
-radius, floor-to-mouth interval/opening direction and one body owner. Complete ends make overall
-length derivable without fabrication.
+schema cannot express. ADR 0019 therefore uses this prototype as the first free-frame proof for the
+shared `SectionRecess` geometry instead of adding an `OrientedCircularPocket` sibling. Its canonical
+line/arc profile, frame and floor-to-mouth interval carry the observed geometry without a new
+shape-specific schema.
 
-Before production implementation, review the record against ADRs 0002, 0003, 0004, 0005, 0007,
-0008, 0010, 0011 and 0018 and confirm a concrete Draftwright IR/planner/rendering path. Draftwright
-currently has only axis-letter `PocketFeature`; this is not adapter-only. The prototype is strong
-enough to justify that schema/consumer review, but does not pre-approve the final fields.
+Production implementation follows ADR 0019 and still requires the coordinated Draftwright
+IR/planner/rendering path. Draftwright currently has only axis-letter `PocketFeature`; this is not
+adapter-only. The prototype proves the oriented geometry but does not itself implement or validate
+the cross-repository migration.
 
 MFInstSeg was not read, run or inspected during this prototype. Its frozen family-level score set
 the priority only.

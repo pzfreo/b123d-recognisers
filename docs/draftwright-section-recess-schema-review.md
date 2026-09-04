@@ -1,8 +1,15 @@
 # Draftwright review: unified section-recess JSON
 
-**Status:** proposal for consumer review; not an accepted ADR or implementation contract  
+**Status:** reviewed; superseded as a decision source by ADR 0019
 **Audience:** Draftwright model, planner and rendering maintainers  
 **Related recognisers work:** epic #290, issue #495, prototype PR #496
+
+Draftwright's response accepted the direction and requested authoritative provider classification,
+document-scoped face references, and a fail-closed classification/convention gate. Those decisions,
+with the subsequent corrections on face identity, constant-section scope and bottom-condition
+terminology, are recorded normatively in
+[`ADR 0019`](adr/0019-unified-section-recess-json.md). This document remains the original review
+request rather than being rewritten as the decision.
 
 ## Decision requested
 
