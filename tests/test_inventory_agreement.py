@@ -151,6 +151,10 @@ RESULT_ONLY = {
     "polygonal_bosses": "no census key",
     "polygonal_stock": "no census key",
     "repeating_radial_profiles": "no census key",
+    "section_recesses": (
+        "neutral geometry contract; specialised pocket families remain the census authority "
+        "during migration"
+    ),
 }
 
 
