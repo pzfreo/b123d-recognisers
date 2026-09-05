@@ -298,11 +298,22 @@ the unified inventory only when a geometry-bearing native or prismatic proof est
 section.
 
 Legacy polygon vertices can coincide after their three-decimal serialization (for example,
-a sub-micron corner chamfer). The unified projection removes only exact adjacent duplicates
-from that rounded boundary before validation. This does not change its geometric locus or discard
-source-face evidence. A simplified boundary retains `polygonal` classification; it does not prove
-the original feature rectangular. Distinct vertices and other invalid sections remain subject to
-the normal validation and displacement bounds.
+a sub-micron corner chamfer). A shared publication adapter for `Passage` and `PrismaticPocket`
+normalises the recorded boundary once using integer publication-grid coordinates. It removes
+collapsed edges and exact collinear backtracking, validates simplicity, and canonicalises the
+remaining loop. Removed excursions must stay within the existing 0.002 mm displacement bound.
+Non-adjacent repetitions that still imply ambiguous topology, zero-area loops and intersections
+are refused with a bounded `LegacySectionProjectionError` naming the failed condition. Source
+records and face evidence are retained; simplified profiles remain classified as `polygonal`.
+
+The adapter chooses a frame origin on the same grid near the analytic centroid, then subtracts
+integer grid coordinates before constructing the public section. Its analytic local centroid
+remains within the published 0.0008 mm allowance. Distinct grid vertices cannot collapse through
+a second rounding after translation. In particular, production projection does not pass through
+the stricter private `SectionOccurrence`, whose exactly-zero centroid requirement can conflict
+with representability on the publication grid. `PlanarSection` and private exact-occurrence
+invariants are unchanged. The adapter depends on the internal public-record storage solely to
+construct the final JSON geometry; it does not invoke recognition.
 
 The normal effectiveness runner now scores ``SectionRecess`` from the production inventory. There
 is no overlay path or second implementation.

@@ -60,7 +60,7 @@ from b123d_recognisers._registry import (
     validate_result_fields,
 )
 from b123d_recognisers._run import RecognitionContext, start
-from b123d_recognisers._section_adapters import prismatic_pocket_to_occurrence
+from b123d_recognisers._section_adapters import legacy_section_geometry
 from b123d_recognisers._section_recess import (
     ClosedSectionProfile,
     OpenSectionProfile,
@@ -72,7 +72,7 @@ from b123d_recognisers._section_recess import (
     SectionRecessGeometry,
     _polygonal_shape,
 )
-from b123d_recognisers._sections import BodyRefIssuer, LocalFrame
+from b123d_recognisers._sections import LocalFrame
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.blends import Blend
@@ -95,7 +95,6 @@ from b123d_recognisers.paired_ramp_steps import PairedRampStep
 from b123d_recognisers.passages import (
     Passage,
     PassageFrame,
-    PassageSection,
     PassageSectionVertex,
     SectionPassage,
 )
@@ -740,116 +739,25 @@ def _prismatic_pocket_recess(
     evidence: EvidenceIndex,
     index: int,
 ) -> SectionRecess:
-    """Project one accepted principal pocket through its already-proven exact section adapter."""
+    """Project one accepted pocket at the legacy publication grid."""
 
     defining = evidence.defining_of(record)
     constituent = evidence.constituent_of(record)
     owner = context.graph.common_valid_solid(defining)
     if owner is None:
         raise ValueError("accepted prismatic pocket lost its body authority")
-    issuer = BodyRefIssuer()
-    vertices = tuple(
-        point for index, point in enumerate(record.section)
-        if point != record.section[index - 1]
-    )
-    projected_record = replace(record, section=vertices, sides=len(vertices))
-    occurrence = prismatic_pocket_to_occurrence(
-        projected_record,
-        body_ref=issuer.issue(),
-        body_refs=issuer,
-    )
-    section_shape = _polygonal_shape(tuple(vertex.point for vertex in occurrence.section.boundary))
-    if len(vertices) != len(record.section):
+    geometry = legacy_section_geometry(record)
+    section_shape = _polygonal_shape(tuple(vertex.point for vertex in geometry.profile.boundary))
+    if len(geometry.profile.boundary) != len(record.section):
         section_shape = "polygonal"
     return SectionRecess(
         index,
         owner.ordinal,
-        _legacy_prismatic_geometry(occurrence, body_refs=issuer),
+        geometry,
         SectionRecessClassification("pocket", section_shape),
         SectionRecessEvidence(
             tuple(sorted(node.index for node in defining)),
             tuple(sorted(node.index for node in constituent)),
-        ),
-    )
-
-
-def _legacy_prismatic_geometry(
-    occurrence: object, *, body_refs: BodyRefIssuer
-) -> SectionRecessGeometry:
-    """Serialize a legacy polygonal occurrence and prove its actual vertex displacement.
-
-    The general occurrence projector sums independent worst-case rounding errors. Legacy records
-    already contain correlated rounded world vertices, so that conservative sum can exceed its
-    bound even when every reconstructed vertex remains within it. This adapter measures the
-    resulting world points directly and retains the same 0.002 mm contract.
-    """
-
-    from b123d_recognisers._sections import SectionOccurrence, validate_occurrence
-
-    if not isinstance(occurrence, SectionOccurrence):
-        raise TypeError("legacy prismatic projection requires a SectionOccurrence")
-    validate_occurrence(occurrence, body_refs=body_refs)
-    frame = PassageFrame(
-        cast(
-            tuple[float, float, float],
-            tuple(round(value, 3) for value in occurrence.frame.origin),
-        ),
-        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.run)),
-        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.u)),
-        cast(tuple[float, float, float], tuple(round(value, 6) for value in occurrence.frame.v)),
-    )
-    interval = cast(
-        tuple[float, float], tuple(round(value, 3) for value in occurrence.run_interval)
-    )
-    boundary = tuple(
-        PassageSectionVertex(
-            cast(tuple[float, float], tuple(round(value, 4) for value in vertex.point)),
-            round(vertex.bulge, 12),
-        )
-        for vertex in occurrence.section.boundary
-    )
-
-    def world(
-        origin: tuple[float, float, float],
-        u: tuple[float, float, float],
-        v: tuple[float, float, float],
-        point: tuple[float, float],
-    ) -> tuple[float, float, float]:
-        return cast(
-            tuple[float, float, float],
-            tuple(origin[i] + u[i] * point[0] + v[i] * point[1] for i in range(3)),
-        )
-
-    displacement = max(
-        math.dist(
-            world(
-                occurrence.frame.origin,
-                occurrence.frame.u,
-                occurrence.frame.v,
-                source.point,
-            ),
-            world(frame.origin, frame.u, frame.v, projected.point),
-        )
-        for source, projected in zip(occurrence.section.boundary, boundary, strict=True)
-    )
-    displacement = max(
-        displacement,
-        *(
-            abs(source - projected)
-            for source, projected in zip(occurrence.run_interval, interval, strict=True)
-        ),
-    )
-    if displacement > 0.002:
-        raise ValueError("legacy prismatic serialization moves geometry beyond local tolerance")
-    low_capped, high_capped = occurrence.ends.low_capped, occurrence.ends.high_capped
-    return SectionRecessGeometry(
-        "section_recess",
-        frame,
-        interval,
-        ClosedSectionProfile("closed", PassageSection(boundary).boundary),
-        SectionRecessEnds(
-            SectionEnd("capped" if low_capped else "open"),
-            SectionEnd("capped" if high_capped else "open"),
         ),
     )
 

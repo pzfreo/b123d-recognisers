@@ -330,7 +330,7 @@ MODULE_SEAM_EDGES = {
     # Epic 0004's private geometry values are a stdlib-only leaf. The adapter names exactly the
     # two polygonal records whose legacy values round-trip; production recognition does not use it.
     "_sections": set(),
-    "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
+    "_section_adapters": {"_sections", "_section_recess", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry", "_typing"},
     # Neutral opt-in support bridges consume only original graph and effective-surface facts.
