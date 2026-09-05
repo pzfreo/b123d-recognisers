@@ -2,6 +2,10 @@
 
 ## Next release
 
+- Framed evidence mapping refusals now retain an optional completed framed `result` when
+  inventory already ran. Early refusals carry `None`; callers can reuse late results without
+  rerunning recognition. No unproved face mapping or partial evidence is exposed (#493).
+
 - Add `quiddity part.step [-o recognition.json]`, `--capabilities` and `--version`.
   The shared `quiddity.document.build_recognition_document` projects one framed evidence run
   into JSON with unchanged feature records, explicit coordinate placement, document-local face
