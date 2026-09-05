@@ -234,6 +234,8 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
                 "import sys; "
                 f"sys.path.insert(0, {str(target)!r}); "
                 "import quiddity as r; "
+                "from quiddity.cli import main as cli_main; "
+                "from quiddity.document import build_recognition_document; "
                 "import quiddity.experimental_geometry as e; "
                 "import quiddity.evidence as v; "
                 "import quiddity.inspection as i; "

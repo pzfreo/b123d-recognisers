@@ -38,8 +38,22 @@ whose construction history is not available.
 ## Package rename
 
 Quiddity is the new distribution and Python namespace for `b123d-recognisers`.
-This branch prepares the rename; the first Quiddity release is not published yet.
+Quiddity 0.2.0 is published; the old distribution is deprecated.
 See the [migration guide](docs/quiddity-migration.md) for installation and import changes.
+
+### Command line (next release)
+
+```bash
+quiddity part.step
+quiddity part.step -o recognition.json
+quiddity --capabilities
+quiddity --version
+```
+
+Recognition is the default operation. JSON goes to stdout, diagnostics to stderr.
+The CLI uses the same framed recognition and evidence as Python; it does not apply dataset
+taxonomies or score accuracy. `quiddity-capabilities` remains available.
+See [the CLI and document contract](docs/cli.md) for coordinates, face references and exit codes.
 
 ## Recognise an imported model
 
