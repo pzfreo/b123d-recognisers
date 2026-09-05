@@ -325,6 +325,11 @@ independent source-face proof to an L-shaped physical open chain with one capped
 gap is not an observed diagonal wall or a floor outline. No new topology combination or vocabulary
 is needed: they are `edge_open_recess` / `polygonal`.
 
+The source-face proof also excludes owning-body material throughout the entire proved rectangular
+floor support and a thin exterior mouth slab. These closed volumes are internal verification probes,
+not published geometry. Checking only the wall/floor incidence would miss suspended obstructions
+that leave those faces intact. A failed material check refuses the unified projection.
+
 Individual assessment of the other two summaries identifies channel-like regions with lateral
 openings at both ends of a partial support span. Existing structural records are not exact void
 replacements. Open profiles with two open run ends remain excluded pending their own bounded

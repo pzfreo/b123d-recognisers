@@ -126,3 +126,44 @@ def test_remaining_step_summaries_are_laterally_open_not_closed_pockets():
     assert part.is_inside(Vector(37, 0, 2))   # base below
     assert part.is_inside(Vector(-50, 0, 8))  # tall wall beside the second region
     assert part.is_inside(Vector(0, 0, 8))    # lower step on its other side
+
+
+@pytest.mark.parametrize("xy", [(20, 10), (27, 17)])
+@pytest.mark.parametrize("post_z", [8, 10])
+@pytest.mark.parametrize("rotation", [Rot(), Rot(90, 0, 0), Rot(0, 90, 0), Rot(180, 0, 0)])
+def test_suspended_material_in_run_or_mouth_refuses_corner_projection(xy, post_z, rotation):
+    # Both positions lie over the floor. The second is outside the triangle that would result
+    # from wrongly closing the open L chain. z=10 obstructs only the mouth, not the run interior.
+    part = corner() + Pos(-20, -10, 9) * Box(5, 5, 6)
+    part += Pos(0, 0, 13) * Box(60, 40, 2)
+    part += Pos(*xy, post_z) * Box(3, 3, 8)
+    assert len(part.solids()) == 1
+    assert not part.is_inside(Vector(*xy, 2))
+    assert part.is_inside(Vector(*xy, 5)) == (post_z == 8)
+    assert part.is_inside(Vector(*xy, 6.1))
+    product = _take_inventory(Pos(123, -57, 91) * rotation * part)
+    # Discovery is unchanged: the accepted legacy summary must not become an unsupported
+    # constant-section JSON occurrence merely because its three defining faces still exist.
+    assert any(record.edge_anchored for record in product.result.pockets)
+    assert not any(record.classification.feature_kind == "edge_open_recess"
+                   for record in product.result.section_recesses)
+
+
+def test_material_probe_failure_refuses_projection_without_dropping_legacy_record(monkeypatch):
+    import b123d_recognisers._corner_section as adapter
+
+    def failure(*args):
+        raise RuntimeError("authored boolean failure")
+
+    monkeypatch.setattr(adapter, "_material_fraction", failure)
+    product = _take_inventory(corner())
+    assert any(record.edge_anchored for record in product.result.pockets)
+    assert product.result.section_recesses == ()
+
+
+def test_material_probe_uses_only_the_owning_body():
+    part = Compound([corner(), Pos(20, 10, 3) * Box(2, 2, 2)])
+    product = _take_inventory(part)
+    (record,) = product.result.section_recesses
+    assert record.body == 0
+    assert len(record.geometry.profile.boundary) == 3

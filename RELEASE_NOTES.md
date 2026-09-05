@@ -5,6 +5,7 @@
 - Project proved corner notches as two physical wall segments with an explicit gap and one capped
   run end in `SectionRecess`. The independent source-face proof retains body/face ownership and
   refuses non-rectangular, perforated or doubly capped anatomy. No bounding-box closure is invented.
+  Material probes additionally refuse suspended and mouth-only obstructions within the owning body.
 
 - Preserve legacy polygon profiles on their publication grid, including collapsed micro-chamfer
   edges, without changing strict section validation or discarding source face evidence. Explicit

@@ -57,7 +57,12 @@ The two corner notches in `slanted_steps` now have independently proved two-wall
 The proof checks three same-body, mutually adjacent, rectangular planar faces, inward-facing wall
 normals, equal wall run spans, the actual floor at the capped end and exterior planar mouth faces
 at the other end. It reads actual source geometry, not the old Pocket's rounded dimensions. A
-perforated floor or second cap is refused. The opening joins the loose chain endpoints only as an
+perforated floor or second cap is refused. A same-body material-intersection check sweeps the full
+proved floor rectangle through the run and a thin exterior mouth slab, refusing suspended or
+mouth-only obstructions even when the three source faces are intact. The rectangle is only an
+internal probe; it is not published as a physical closure. Boolean failures refuse projection,
+and other solids are not mistaken for material of the owning body.
+The opening joins the loose chain endpoints only as an
 absence of boundary: it does not imply a diagonal wall or the floor's footprint.
 
 Two summaries remain in `plates_pads_levels_and_slanted_steps`; individual source inspection shows:

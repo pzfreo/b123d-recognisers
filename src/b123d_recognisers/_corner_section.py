@@ -15,6 +15,8 @@ from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.GeomAbs import GeomAbs_Line
 
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
+from b123d_recognisers._section_passages import _end_slab, _material_fraction, _probe_prism
+from b123d_recognisers._sections import LocalFrame, PlanarSection, SectionVertex
 
 
 @dataclass(frozen=True)
@@ -31,7 +33,8 @@ def prove_corner_section(
 
     if axis not in "xyz" or len(axis) != 1 or len(nodes) != 3:
         return None
-    if graph.common_valid_solid(nodes) is None:
+    owner = graph.common_valid_solid(nodes)
+    if owner is None:
         return None
     if any(second not in graph.neighbours(first) for first, second in combinations(nodes, 2)):
         return None
@@ -113,6 +116,29 @@ def prove_corner_section(
         return None
     far_u = floor[u][1 if normals[u] > 0 else 0]
     far_v = floor[v][1 if normals[v] > 0 else 0]
+    # The three faces alone do not exclude a suspended same-body obstruction. Sweep the
+    # independently proved *whole floor rectangle*, not a diagonal closure of the L chain.
+    # This rectangle is an internal material probe, never published as an observed wall.
+    try:
+        centre = tuple((lo + hi) / 2 for lo, hi in floor)
+        frame = LocalFrame.principal(axis, (centre[0], centre[1], centre[2]))
+        local_axes = (v, u) if axis == "y" else (u, v)
+        half_u, half_v = ((floor[i][1] - floor[i][0]) / 2 for i in local_axes)
+        section = PlanarSection(tuple(SectionVertex(point) for point in (
+            (-half_u, -half_v), (half_u, -half_v),
+            (half_u, half_v), (-half_u, half_v),
+        )))
+        solid = graph.solid_shape(owner)
+        thickness = max(2e-5, max(1.0, high - low) * 1e-4,
+                        (half_u ** 2 + half_v ** 2) ** 0.5 * 1e-4)
+        if (
+            _material_fraction(solid, _probe_prism(frame, (low, high), section)) > 1e-9
+            or _material_fraction(solid, _end_slab(frame, mouth, sign, thickness, section))
+            > 1e-9
+        ):
+            return None
+    except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
+        return None
     return CornerSectionProof(
         (round(low, 3), round(high, 3)), sign,
         ((first_at, far_v), (first_at, second_at), (far_u, second_at)),
