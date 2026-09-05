@@ -29,11 +29,11 @@ from __future__ import annotations
 from attribution_audit import attributed_run
 from build123d import Box, Pos, Rot
 
-import b123d_recognisers as r
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import (
+import quiddity as r
+from quiddity._adjacency import FaceEdges, FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._reconcile import (
     chamfers_that_are_not_angled_steps as _reconcile_chamfers,
 )
 

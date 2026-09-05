@@ -33,15 +33,15 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers import (
+from quiddity import (
     FramedRecognitionResult,
     build_framed_recognition_result,
     recognise_rectangular_pads,
 )
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._effective_surfaces import (
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
     MaterialSideRefusalReason,
@@ -53,8 +53,8 @@ from b123d_recognisers._effective_surfaces import (
     effective_faces_for_graph,
     effective_faces_for_part,
 )
-from b123d_recognisers.experimental_geometry import GeometryGraph, GeometryProvenance
-from b123d_recognisers.pads import (
+from quiddity.experimental_geometry import GeometryGraph, GeometryProvenance
+from quiddity.pads import (
     _AXIS_INDEX,
     RaisedPad,
     _axial_extent,
@@ -64,7 +64,7 @@ from b123d_recognisers.pads import (
     _tier_suppresses,
     _wall_role,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
 
@@ -490,7 +490,7 @@ def test_later_body_failure_leaves_family_empty(monkeypatch) -> None:
 
 
 def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     part = _pad()
     ledger = ClaimLedger(FaceGraph(part))
@@ -518,7 +518,7 @@ def test_equal_value_role_permutation_refuses_before_publication(monkeypatch) ->
 
 
 def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     part = _pad()
     ledger = ClaimLedger(FaceGraph(part))
@@ -553,7 +553,7 @@ def test_distinct_pad_values_cannot_reuse_one_defining_top(monkeypatch) -> None:
 
 
 def test_repeated_shallow_wrappers_collapse_to_same_ordered_roles(monkeypatch) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     part = _pad()
     original = module._recognise_rectangular_pads_one
@@ -994,7 +994,7 @@ def test_non_z_and_curved_top_shapes_issue_no_pad(part) -> None:
 
 @pytest.mark.parametrize("mode", ["role_alias", "tied_maximum", "deep_top", "stale_top"])
 def test_invalid_role_snapshots_refuse_before_publication(monkeypatch, mode: str) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     part = _pad()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1024,7 +1024,7 @@ def test_invalid_role_snapshots_refuse_before_publication(monkeypatch, mode: str
 
 
 def test_cross_occurrence_role_reuse_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     part = Compound([Pos(-60, 0, 0) * _pad(), Pos(60, 0, 0) * _pad()])
     ledger = ClaimLedger(FaceGraph(part))
@@ -1142,7 +1142,7 @@ def test_signed_principal_pad_step_round_trip_preserves_record(tmp_path: Path) -
 def test_private_core_has_one_production_writer_caller_and_three_record_paths() -> None:
     core_sites: list[tuple[str, ast.Call]] = []
     constructors: list[tuple[str, ast.Call]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for qualified, call in _qualified_calls(tree):
             if qualified.endswith("._discover_rectangular_pads") or qualified == (
@@ -1296,7 +1296,7 @@ def test_non_cylindrical_corner_chain_is_not_selected(monkeypatch) -> None:
 
 
 def test_unexplained_rounded_top_area_is_not_selected(monkeypatch) -> None:
-    import b123d_recognisers.pads as module
+    import quiddity.pads as module
 
     monkeypatch.setattr(module, "_surface_area", lambda _face: 0.0)
     assert recognise_rectangular_pads(_blended_pad()) == []
@@ -1427,7 +1427,7 @@ def test_nurbs_pad_adversaries_preserve_tiers_envelope_and_ownership(part, expec
 
 
 def test_nurbs_pad_refuses_ambiguous_recovery_in_both_entry_points(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as surfaces
+    import quiddity._effective_surfaces as surfaces
 
     converted = _as_nurbs(_pad())
 
@@ -1443,7 +1443,7 @@ def test_nurbs_pad_refuses_ambiguous_recovery_in_both_entry_points(monkeypatch) 
 def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(
     monkeypatch, part_factory
 ) -> None:
-    import b123d_recognisers._effective_surfaces as surfaces
+    import quiddity._effective_surfaces as surfaces
 
     monkeypatch.setattr(
         surfaces._EffectiveFaceSurfaces,
@@ -1455,7 +1455,7 @@ def test_pad_refuses_disagreeing_material_samples_in_both_entry_points(
 
 
 def test_refused_lower_tier_cannot_introduce_the_upper_pad(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as surfaces
+    import quiddity._effective_surfaces as surfaces
 
     original = surfaces._EffectiveFaceSurfaces._certify_plane
 

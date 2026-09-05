@@ -7,7 +7,7 @@ from dataclasses import replace
 import build123d.topology.shape_core as shape_core
 from build123d import Align, Axis, Box, Cylinder, GeomType, Pos, fillet
 
-from b123d_recognisers import (
+from quiddity import (
     Slot,
     SlotArray,
     SlotGrid,
@@ -164,7 +164,7 @@ def test_a_chord_with_no_vertices_reaches_no_od():
     so it is covered here directly, which is also the only place the answer is written down.
     """
 
-    from b123d_recognisers.flats import _both_chord_ends_reach_od
+    from quiddity.flats import _both_chord_ends_reach_od
 
     assert not _both_chord_ends_reach_od(
         [], (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), 10.0
@@ -182,7 +182,7 @@ def test_a_trimmed_cylinder_does_not_crash_the_countersink_bore_search():
 
     from build123d import Cone, Rot
 
-    from b123d_recognisers import recognise_countersinks
+    from quiddity import recognise_countersinks
 
     part = Box(60, 40, 12) + Pos(20, 0, 16) * Cylinder(5, 20)
     part -= Pos(20, 0, 30) * Rot(0, 45, 0) * Box(40, 40, 30)

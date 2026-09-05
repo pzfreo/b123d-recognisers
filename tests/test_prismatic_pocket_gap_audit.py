@@ -17,8 +17,8 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._rings import rings
+from quiddity._adjacency import FaceGraph
+from quiddity._rings import rings
 from tools.audit_mfcadpp_prismatic_pocket_gaps import (
     _probe_component,
     _selection_hash,

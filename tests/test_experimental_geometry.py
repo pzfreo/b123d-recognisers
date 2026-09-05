@@ -26,8 +26,8 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
 from OCP.Geom import Geom_RectangularTrimmedSurface
 from OCP.GeomConvert import GeomConvert
 
-import b123d_recognisers
-from b123d_recognisers.experimental_geometry import (
+import quiddity
+from quiddity.experimental_geometry import (
     AnalyticSurface,
     BlendFact,
     BlendRef,
@@ -80,8 +80,8 @@ def _as_bspline_face(face):
 
 
 def test_facade_is_provisional_not_a_root_export() -> None:
-    assert "GeometryGraph" not in b123d_recognisers.__all__
-    assert not hasattr(b123d_recognisers, "GeometryGraph")
+    assert "GeometryGraph" not in quiddity.__all__
+    assert not hasattr(quiddity, "GeometryGraph")
 
 
 def test_projected_value_schemas_do_not_leak_private_runtime_types() -> None:
@@ -98,7 +98,7 @@ def test_projected_value_schemas_do_not_leak_private_runtime_types() -> None:
     )
 
     assert all(
-        "b123d_recognisers._" not in repr(typing.get_type_hints(value))
+        "quiddity._" not in repr(typing.get_type_hints(value))
         for value in projected
     )
 

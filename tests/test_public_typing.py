@@ -6,7 +6,7 @@ import dataclasses
 import inspect
 from typing import Any
 
-import b123d_recognisers as recognition
+import quiddity as recognition
 
 _BARE = {tuple, list, dict, set, frozenset, Any}
 _BARE_TEXT = {"tuple", "list", "dict", "set", "frozenset", "Any", "typing.Any"}

@@ -18,29 +18,29 @@ from typing import Any, cast
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
-from b123d_recognisers._adjacency import (  # noqa: E402
+from quiddity import import_step_geometry as import_step  # noqa: E402
+from quiddity._adjacency import (  # noqa: E402
     edge_face_map,
     nearest_axis_aligned_planes,
 )
-from b123d_recognisers._bevel import (  # noqa: E402
+from quiddity._bevel import (  # noqa: E402
     BevelReject,
     classify_bevel,
     convex_bevel,
     material_beyond_corner,
 )
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers.angled_steps import (  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity.angled_steps import (  # noqa: E402
     _terminal_read,
     recognise_angled_steps,
 )
-from b123d_recognisers.frames import (  # noqa: E402
+from quiddity.frames import (  # noqa: E402
     PartFrame,
     RefusedPartFrame,
     _normalize_part,
     infer_part_frame,
 )
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 
 MODEL_IDS = ("10492", "10649")
 TOLERANCE = 1e-7

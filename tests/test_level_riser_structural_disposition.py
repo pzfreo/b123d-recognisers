@@ -6,16 +6,16 @@ from copy import deepcopy
 
 from build123d import Box, Compound, Pos
 
-from b123d_recognisers import recognise_risers
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._registry import (
+from quiddity import recognise_risers
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._registry import (
     PHYSICAL_DEFINITIONS,
     FullyAttributed,
     NotCounted,
 )
-from b123d_recognisers.levels import step_level_records
-from b123d_recognisers.result import _take_inventory
+from quiddity.levels import step_level_records
+from quiddity.result import _take_inventory
 
 
 def _step():

@@ -10,8 +10,8 @@ import pytest
 from build123d import Box, Compound, Pos, export_step, import_step
 from OCP.IFSelect import IFSelect_ReturnStatus
 
-import b123d_recognisers.step_io as step_io
-from b123d_recognisers import import_step_geometry
+import quiddity.step_io as step_io
+from quiddity import import_step_geometry
 
 ROOT = Path(__file__).parents[1]
 MFCADPP_FIXTURE = ROOT / "tests/corpus/mfcadpp/1000.step"

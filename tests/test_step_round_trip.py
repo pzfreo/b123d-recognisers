@@ -36,8 +36,8 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_SurfaceType
 from OCP.TopAbs import TopAbs_ShapeEnum
 
-import b123d_recognisers as recognition
-from b123d_recognisers import feature_census
+import quiddity as recognition
+from quiddity import feature_census
 
 ROOT = Path(__file__).parents[1]
 GOLDEN_ROOT = ROOT / "tests" / "golden"

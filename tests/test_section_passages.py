@@ -29,25 +29,25 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import (
+from quiddity import (
     PassageFrame,
     PassageSection,
     PassageSectionVertex,
 )
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-from b123d_recognisers._run import start
-from b123d_recognisers._section_passages import (
+from quiddity._adjacency import FaceEdges, FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._registry import PHYSICAL_DEFINITIONS
+from quiddity._run import start
+from quiddity._section_passages import (
     _DIRECTION_TOL,
     _INTERVAL_TOL,
     _pair_line,
     _parallel_pair_candidates,
 )
-from b123d_recognisers._sections import LocalFrame, PlanarSection, SectionVertex
-from b123d_recognisers.passages import _section_passage_record
-from b123d_recognisers.result import _discover_all
+from quiddity._sections import LocalFrame, PlanarSection, SectionVertex
+from quiddity.passages import _section_passage_record
+from quiddity.result import _discover_all
 from tools._legacy_recognition import (
     PassageCompatibilityError,
     PassageEnds,
@@ -386,7 +386,7 @@ def test_rich_api_is_the_exact_passages_candidate_authority() -> None:
 
 
 def test_legacy_ledger_refuses_before_any_geometry_work(monkeypatch) -> None:
-    import b123d_recognisers.passages as module
+    import quiddity.passages as module
 
     ledger = ClaimLedger(FaceGraph(_square()))
     monkeypatch.setattr(module, "FaceGraph", lambda *args, **kwargs: pytest.fail("geometry ran"))
@@ -405,7 +405,7 @@ def test_aggregate_has_one_rich_authority_and_legacy_projection() -> None:
 
 
 def test_duplicate_legacy_defining_roster_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.passages as passages_module
+    import quiddity.passages as passages_module
 
     part = _square()
     graph = FaceGraph(part)
@@ -419,8 +419,8 @@ def test_duplicate_legacy_defining_roster_refuses_before_publication(monkeypatch
 
 
 def test_graph_identical_duplicate_rich_proposal_collapses_to_one_candidate(monkeypatch) -> None:
-    import b123d_recognisers.passages as passages_module
-    from b123d_recognisers._section_passages import section_ring_proposals
+    import quiddity.passages as passages_module
+    from quiddity._section_passages import section_ring_proposals
 
     part = _square()
     graph = FaceGraph(part)
@@ -438,8 +438,8 @@ def test_graph_identical_duplicate_rich_proposal_collapses_to_one_candidate(monk
 
 
 def test_legacy_roster_assigns_ordinals_after_the_stable_public_sort(monkeypatch) -> None:
-    import b123d_recognisers.passages as passages_module
-    from b123d_recognisers._rings import Ring
+    import quiddity.passages as passages_module
+    from quiddity._rings import Ring
 
     part = _square()
     graph = FaceGraph(part)
@@ -469,8 +469,8 @@ def test_legacy_roster_assigns_ordinals_after_the_stable_public_sort(monkeypatch
 
 
 def test_same_legacy_defining_set_cannot_issue_competing_rich_records(monkeypatch) -> None:
-    import b123d_recognisers.passages as passages_module
-    from b123d_recognisers._section_passages import section_ring_proposals
+    import quiddity.passages as passages_module
+    from quiddity._section_passages import section_ring_proposals
 
     part = Rot(17, 23, 31) * (
         Box(80, 40, 20) - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
@@ -568,7 +568,7 @@ def test_equal_coincident_solids_keep_two_occurrence_identities() -> None:
 def test_material_classification_reads_each_graph_authorized_solid_not_the_compound(
     monkeypatch,
 ) -> None:
-    import b123d_recognisers._section_passages as section_module
+    import quiddity._section_passages as section_module
 
     first = Rot(17, 23, 31) * _square()
     second = Pos(140, 0, 0) * first
@@ -664,8 +664,8 @@ def test_full_discovery_accepts_one_junction_split_into_collinear_occurrences() 
 
 
 def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch) -> None:
-    import b123d_recognisers.passages as passages_module
-    from b123d_recognisers._section_passages import section_ring_proposals
+    import quiddity.passages as passages_module
+    from quiddity._section_passages import section_ring_proposals
 
     part = Rot(17, 23, 31) * _square()
     graph = FaceGraph(part)
@@ -687,8 +687,8 @@ def test_late_foreign_occurrence_refuses_before_any_candidate_prefix(monkeypatch
 def test_aggregate_late_passage_failure_has_no_completion_or_occurrence_capability(
     monkeypatch,
 ) -> None:
-    import b123d_recognisers.passages as passages_module
-    from b123d_recognisers._section_passages import section_ring_proposals
+    import quiddity.passages as passages_module
+    from quiddity._section_passages import section_ring_proposals
 
     first = Rot(17, 23, 31) * _square()
     part = Compound([first, Pos(150, 0, 0) * first])
@@ -727,7 +727,7 @@ def test_aggregate_late_passage_failure_has_no_completion_or_occurrence_capabili
 def test_full_prism_and_both_end_slabs_share_the_closed_material_boundary(
     monkeypatch, fractions: tuple[float, float, float], accepted: bool
 ) -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
 
     part = Rot(17, 23, 31) * _square()
     (proposal,) = module.section_ring_proposals(part, FaceGraph(part))
@@ -740,7 +740,7 @@ def test_full_prism_and_both_end_slabs_share_the_closed_material_boundary(
 
 
 def test_full_prism_coordinate_floor_is_fail_closed_at_equality(monkeypatch) -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
 
     part = Rot(17, 23, 31) * _square()
     (proposal,) = module.section_ring_proposals(part, FaceGraph(part))

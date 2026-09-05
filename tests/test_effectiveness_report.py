@@ -20,9 +20,9 @@ import pytest
 from build123d import Box, Cylinder, GeomType, export_step
 
 import tools.run_effectiveness_baseline as baseline_runner
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity._dispositions import Outcome
+from quiddity.result import _take_inventory
 from tools.effectiveness_report import (
     DatasetTruth,
     EffectivenessDataError,
@@ -161,8 +161,8 @@ def test_runner_import_does_not_load_production_recognisers() -> None:
             sys.executable,
             "-c",
             "import sys; import tools.run_effectiveness_baseline; "
-            "print(any(name == 'b123d_recognisers' or "
-            "name.startswith('b123d_recognisers.') for name in sys.modules))",
+            "print(any(name == 'quiddity' or "
+            "name.startswith('quiddity.') for name in sys.modules))",
         ],
         cwd=ROOT,
         check=True,
@@ -267,8 +267,8 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
         "status": "supported",
     }
     assert mfcadpp[24] == {"families": [], "name": "Stock", "status": "incomparable"}
-    manifest = json.loads((ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text())
-    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+    manifest = json.loads((ROOT / "src" / "quiddity" / "capabilities.json").read_text())
+    from quiddity._registry import PHYSICAL_DEFINITIONS
     from tools.effectiveness_report import _public_family_id
 
     detector_families = {_public_family_id(item.family.value) for item in PHYSICAL_DEFINITIONS}
@@ -644,7 +644,7 @@ def _report() -> dict[str, Any]:
         "format": "b123d-recognisers-effectiveness",
         "format_version": 3,
         "dataset": {"name": "fixture", "version": "1"},
-        "package": {"name": "b123d-recognisers", "version": "1", "commit": "abc"},
+        "package": {"name": "quiddity", "version": "1", "commit": "abc"},
         "environment": {"python": "3", "build123d": "1", "ocp": "1", "os": "test"},
         "selection": {
             "rule": "fixture",

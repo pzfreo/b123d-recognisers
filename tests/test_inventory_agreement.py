@@ -39,8 +39,8 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-import b123d_recognisers as r
-from b123d_recognisers.census import feature_census
+import quiddity as r
+from quiddity.census import feature_census
 from tests.golden._common import load_fixture
 
 GOLDEN = Path(__file__).parent / "golden"

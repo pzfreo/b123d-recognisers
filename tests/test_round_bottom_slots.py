@@ -29,12 +29,12 @@ from build123d import (
     make_face,
 )
 
-import b123d_recognisers.round_bottom_slots as round_bottom_slots
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.evidence import build_recognition_evidence
-from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
-from b123d_recognisers.round_bottom_slots import (
+import quiddity.round_bottom_slots as round_bottom_slots
+from quiddity._adjacency import FaceGraph
+from quiddity._claims import ClaimLedger
+from quiddity.evidence import build_recognition_evidence
+from quiddity.frames import FramedRecognitionResult, build_framed_recognition_result
+from quiddity.round_bottom_slots import (
     RoundBottomBlindSlot,
     _alternating_profile_runs,
     _boundary_runs,

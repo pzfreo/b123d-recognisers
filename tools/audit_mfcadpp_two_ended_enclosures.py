@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
@@ -74,7 +74,7 @@ def main() -> int:
         if len(faces) != len(truth.semantic):
             raise RuntimeError(f"{path.stem}: imported face count does not match labels")
 
-        from b123d_recognisers._adjacency import FaceGraph
+        from quiddity._adjacency import FaceGraph
 
         graph = FaceGraph(part)
         regions = _two_ended_regions(graph)

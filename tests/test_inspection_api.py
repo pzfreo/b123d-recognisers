@@ -32,12 +32,12 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.TopAbs import TopAbs_OUT
 
-import b123d_recognisers as recognition
-import b123d_recognisers.experimental_geometry as experimental
-import b123d_recognisers.inspection as inspection
+import quiddity as recognition
+import quiddity.experimental_geometry as experimental
+import quiddity.inspection as inspection
 
 ROOT = Path(__file__).parents[1]
-MANIFEST = ROOT / "src" / "b123d_recognisers" / "inspection_api.json"
+MANIFEST = ROOT / "src" / "quiddity" / "inspection_api.json"
 
 EXPECTED_KINDS = {
     "AnalyticSurface": "dataclass",
@@ -57,38 +57,38 @@ EXPECTED_KINDS = {
 }
 
 EXPECTED_ALIASES = {
-    "AnalyticSurface": ["b123d_recognisers.experimental_geometry.AnalyticSurface"],
+    "AnalyticSurface": ["quiddity.experimental_geometry.AnalyticSurface"],
     "BevelReject": [
-        "b123d_recognisers.BevelReject",
-        "b123d_recognisers.chamfers.BevelReject",
+        "quiddity.BevelReject",
+        "quiddity.chamfers.BevelReject",
     ],
-    "FaceInspection": ["b123d_recognisers.experimental_geometry.FaceInspection"],
+    "FaceInspection": ["quiddity.experimental_geometry.FaceInspection"],
     "OrientationCapability": [
-        "b123d_recognisers.experimental_geometry.OrientationCapability"
+        "quiddity.experimental_geometry.OrientationCapability"
     ],
-    "RefusedSurface": ["b123d_recognisers.experimental_geometry.RefusedSurface"],
-    "SurfaceFact": ["b123d_recognisers.experimental_geometry.SurfaceFact"],
-    "SurfaceKind": ["b123d_recognisers.experimental_geometry.SurfaceKind"],
+    "RefusedSurface": ["quiddity.experimental_geometry.RefusedSurface"],
+    "SurfaceFact": ["quiddity.experimental_geometry.SurfaceFact"],
+    "SurfaceKind": ["quiddity.experimental_geometry.SurfaceKind"],
     "SurfaceProvenance": [
-        "b123d_recognisers.experimental_geometry.SurfaceProvenance"
+        "quiddity.experimental_geometry.SurfaceProvenance"
     ],
     "SurfaceRefusalReason": [
-        "b123d_recognisers.experimental_geometry.SurfaceRefusalReason"
+        "quiddity.experimental_geometry.SurfaceRefusalReason"
     ],
     "classify_bevel": [
-        "b123d_recognisers.chamfers.classify_bevel",
-        "b123d_recognisers.classify_bevel",
+        "quiddity.chamfers.classify_bevel",
+        "quiddity.classify_bevel",
     ],
     "cone_rims": [
-        "b123d_recognisers.cone_rims",
-        "b123d_recognisers.countersinks.cone_rims",
+        "quiddity.cone_rims",
+        "quiddity.countersinks.cone_rims",
     ],
     "floor_face_anchor": [
-        "b123d_recognisers.floor_face_anchor",
-        "b123d_recognisers.grooves.floor_face_anchor",
+        "quiddity.floor_face_anchor",
+        "quiddity.grooves.floor_face_anchor",
     ],
-    "inspect_face": ["b123d_recognisers.experimental_geometry.inspect_face"],
-    "read_double_d_tool": ["b123d_recognisers.profiled_bores.read_double_d_tool"],
+    "inspect_face": ["quiddity.experimental_geometry.inspect_face"],
+    "read_double_d_tool": ["quiddity.profiled_bores.read_double_d_tool"],
 }
 
 EXPECTED_SURFACE_PARAMETERS = {
@@ -192,7 +192,7 @@ def _type_name(annotation: object) -> str:
         return "null"
     if annotation in {bool, float, int, str}:
         return typing.cast(type, annotation).__name__
-    if inspect.isclass(annotation) and annotation.__module__.startswith("b123d_recognisers"):
+    if inspect.isclass(annotation) and annotation.__module__.startswith("quiddity"):
         return annotation.__name__
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
@@ -216,7 +216,7 @@ def test_manifest_query_is_deterministic_isolated_and_separately_versioned() -> 
     assert first["format"] == inspection.INSPECTION_API_FORMAT
     assert first["format_version"] == inspection.INSPECTION_API_FORMAT_VERSION
     assert first["package"] == {
-        "name": "b123d-recognisers",
+        "name": "quiddity",
         "version": recognition.__version__,
     }
     assert "inspection" not in recognition.capability_manifest()
@@ -658,7 +658,7 @@ def test_committed_manifest_is_the_deterministic_generator_output() -> None:
         (lambda value: value["api"]["symbols"][0].update({"aliases": {}}), "aliases"),
         (
             lambda value: value["api"]["symbols"][0].update(
-                {"aliases": ["b123d_recognisers.bad"] * 2}
+                {"aliases": ["quiddity.bad"] * 2}
             ),
             "aliases",
         ),

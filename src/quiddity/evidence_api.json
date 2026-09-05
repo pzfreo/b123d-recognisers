@@ -1,0 +1,34 @@
+{
+  "api": {
+    "major": 1,
+    "namespace": "quiddity.evidence",
+    "references": {
+      "FaceRef": "opaque identity for one source-part face within one view",
+      "FeatureRef": "opaque identity for one accepted physical occurrence within one view"
+    },
+    "symbols": [
+      "AssociationMeasure",
+      "EVIDENCE_API_FORMAT",
+      "EVIDENCE_API_FORMAT_VERSION",
+      "EvidenceApiManifestError",
+      "FaceRef",
+      "FamilyAssociation",
+      "FeatureRef",
+      "FramedEvidenceRefusalReason",
+      "FramedRecognitionEvidence",
+      "GeometryAssociation",
+      "RecognitionEvidence",
+      "RecognitionRecord",
+      "RefusedFramedEvidence",
+      "build_recognition_evidence",
+      "evidence_api_manifest",
+      "evidence_api_manifest_json"
+    ]
+  },
+  "format": "quiddity-evidence-api",
+  "format_version": 1,
+  "package": {
+    "name": "quiddity",
+    "version": "0.2.0.dev0"
+  }
+}

@@ -9,7 +9,7 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 from build123d import Align, Box, Cylinder, Pos
 
-from b123d_recognisers import (
+from quiddity import (
     STEP_LADDER_BOUNDARY_MARGIN,
     CounterSink,
     FaceLevel,
@@ -19,7 +19,7 @@ from b123d_recognisers import (
     TurnedStep,
     build_recognition_result,
 )
-from b123d_recognisers._candidates import FamilyId
+from quiddity._candidates import FamilyId
 from tools._legacy_recognition import (
     Passage,
     Pocket,
@@ -46,7 +46,7 @@ def test_recognition_result_is_frozen_and_owns_tuple_inventories():
 
 
 def test_projection_rejects_a_record_from_the_wrong_family_contract():
-    import b123d_recognisers.result as result_module
+    import quiddity.result as result_module
 
     class WrongInventory:
         def records(self, family):
@@ -60,10 +60,10 @@ def test_projection_rejects_a_record_from_the_wrong_family_contract():
 
 
 def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
-    import b123d_recognisers._registry as registry_module
-    import b123d_recognisers._run as run_module
-    import b123d_recognisers.result as result_module
-    from b123d_recognisers._candidates import EvidenceIndex
+    import quiddity._registry as registry_module
+    import quiddity._run as run_module
+    import quiddity.result as result_module
+    from quiddity._candidates import EvidenceIndex
 
     calls: dict[str, int] = {}
     cylinders = ([{"axis": "z"}], [{"axis": "x"}])
@@ -317,8 +317,8 @@ def test_orchestrator_injects_each_shared_dependency_once(monkeypatch):
 
 
 def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
-    import b123d_recognisers._run as run_module
-    import b123d_recognisers.result as result_module
+    import quiddity._run as run_module
+    import quiddity.result as result_module
 
     cylinders = ([], [])
 
@@ -331,8 +331,8 @@ def test_supplied_cylinder_inventory_is_not_rediscovered(monkeypatch):
 
 
 def test_aggregate_inventory_has_one_named_candidate_per_physical_output() -> None:
-    import b123d_recognisers.result as result_module
-    from b123d_recognisers._candidates import FamilyId
+    import quiddity.result as result_module
+    from quiddity._candidates import FamilyId
 
     product = result_module._take_inventory(Box(10, 10, 10))
 
@@ -351,8 +351,8 @@ def test_aggregate_inventory_has_one_named_candidate_per_physical_output() -> No
 
 
 def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> None:
-    import b123d_recognisers.result as result_module
-    from b123d_recognisers._candidates import FamilyId
+    import quiddity.result as result_module
+    from quiddity._candidates import FamilyId
 
     assert len(result_module.PHYSICAL_FAMILIES) == len(set(result_module.PHYSICAL_FAMILIES))
     assert set(result_module.PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
@@ -373,7 +373,7 @@ def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> No
 
 
 def test_context_copies_caller_owned_cylinder_lists() -> None:
-    import b123d_recognisers._run as run_module
+    import quiddity._run as run_module
 
     supplied = ([{"axis": "z"}], [{"axis": "x"}])
     context = run_module.start(Box(10, 10, 10), supplied)

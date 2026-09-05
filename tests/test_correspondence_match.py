@@ -24,16 +24,16 @@ from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
 from OCP.BRepGProp import BRepGProp
 from OCP.GProp import GProp_GProps
 
-import b123d_recognisers._correspondence_match as correspondence_match_module
-import b123d_recognisers._correspondence_partition as partition_module
-from b123d_recognisers._body_geometry import (
+import quiddity._correspondence_match as correspondence_match_module
+import quiddity._correspondence_partition as partition_module
+from quiddity._body_geometry import (
     ANGLE_TOL,
     DESCRIPTOR_FLOOR,
     DESCRIPTOR_REL,
     DIRECTION_TOL,
 )
-from b123d_recognisers._correspondence import correspondence_snapshot
-from b123d_recognisers._correspondence_match import (
+from quiddity._correspondence import correspondence_snapshot
+from quiddity._correspondence_match import (
     IDENTITY_ROTATION,
     PROPER_ROTATIONS,
     ChangeKind,
@@ -62,8 +62,8 @@ from b123d_recognisers._correspondence_match import (
     _wire_alignments,
     correspondence_changes,
 )
-from b123d_recognisers._correspondence_partition import prism_fact
-from b123d_recognisers.result import _take_inventory
+from quiddity._correspondence_partition import prism_fact
+from quiddity.result import _take_inventory
 from tests.test_correspondence_snapshot import (
     _line_rrp,
     _proper_signed_permutations,
@@ -2932,7 +2932,7 @@ def test_swapping_a_rotated_resize_uses_the_exact_inverse_witness() -> None:
 
 
 def test_hypothesis_budget_is_inclusive_and_never_truncates(monkeypatch) -> None:
-    import b123d_recognisers._correspondence_match as module
+    import quiddity._correspondence_match as module
 
     edges = {0: (0, 1), 1: (0, 1)}
     monkeypatch.setattr(module, "MATCH_HYPOTHESIS_BUDGET", 7)
@@ -2946,7 +2946,7 @@ def test_hypothesis_budget_is_inclusive_and_never_truncates(monkeypatch) -> None
 
 
 def test_late_global_budget_refusal_returns_no_prefix_or_input_mutation(monkeypatch) -> None:
-    import b123d_recognisers._correspondence_match as module
+    import quiddity._correspondence_match as module
 
     before_product = _take_inventory(_asymmetric_rrp())
     after_product = _take_inventory(Pos(11, -7, 3) * _asymmetric_rrp())
@@ -2960,7 +2960,7 @@ def test_late_global_budget_refusal_returns_no_prefix_or_input_mutation(monkeypa
 
 
 def test_partition_budget_refusal_is_atomic_after_both_snapshots(monkeypatch) -> None:
-    import b123d_recognisers._correspondence_match as module
+    import quiddity._correspondence_match as module
 
     before_product = _take_inventory(_partition_rrp(10.0))
     after_product = _take_inventory(Compound([_partition_rrp(4.0), _partition_rrp(6.0, 4.0)]))
@@ -2974,7 +2974,7 @@ def test_partition_budget_refusal_is_atomic_after_both_snapshots(monkeypatch) ->
 
 
 def test_partition_production_search_hits_inclusive_100000_boundary(monkeypatch) -> None:
-    import b123d_recognisers._correspondence_match as module
+    import quiddity._correspondence_match as module
 
     before = correspondence_snapshot(_take_inventory(_partition_rrp(10.0)))
     after = correspondence_snapshot(
@@ -3009,7 +3009,7 @@ def test_partition_production_search_hits_inclusive_100000_boundary(monkeypatch)
 
 
 def test_reciprocal_scale_identity_boundary_is_inclusive_and_swap_stable() -> None:
-    from b123d_recognisers._correspondence_match import SCALE_TOL
+    from quiddity._correspondence_match import SCALE_TOL
 
     upper = 1.0 + SCALE_TOL
     lower = 1.0 / upper
@@ -3794,7 +3794,7 @@ def test_degenerate_gauges_search_budget_and_schema_gate_refuse_closed_inputs(
 def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
     from pathlib import Path
 
-    path = Path(__file__).parents[1] / "src" / "b123d_recognisers" / "_correspondence_match.py"
+    path = Path(__file__).parents[1] / "src" / "quiddity" / "_correspondence_match.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
     imports = {
         node.module: {alias.name for alias in node.names}
@@ -3802,15 +3802,15 @@ def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
         if isinstance(node, ast.ImportFrom)
         and node.module
         in {
-            "b123d_recognisers._body_geometry",
-            "b123d_recognisers._correspondence",
+            "quiddity._body_geometry",
+            "quiddity._correspondence",
         }
     }
     assert set(imports) == {
-        "b123d_recognisers._body_geometry",
-        "b123d_recognisers._correspondence",
+        "quiddity._body_geometry",
+        "quiddity._correspondence",
     }
-    assert imports["b123d_recognisers._body_geometry"] == {
+    assert imports["quiddity._body_geometry"] == {
         "ANGLE_TOL",
         "DESCRIPTOR_REL",
         "DIRECTION_TOL",
@@ -3821,7 +3821,7 @@ def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
         "MatchingFace",
         "MatchingWire",
     }
-    assert imports["b123d_recognisers._correspondence"] == {
+    assert imports["quiddity._correspondence"] == {
         "AcceptedOccurrenceSnapshot",
         "CorrespondenceSnapshot",
         "CorrespondenceSnapshotError",
@@ -3863,4 +3863,4 @@ def test_matcher_dependency_and_policy_rosters_are_closed() -> None:
         if isinstance(node, ast.FunctionDef) and trusted_calls[0] in tuple(ast.walk(node))
     )
     assert owner.name == "correspondence_changes"
-    assert "correspondence_changes" not in __import__("b123d_recognisers").__all__
+    assert "correspondence_changes" not in __import__("quiddity").__all__

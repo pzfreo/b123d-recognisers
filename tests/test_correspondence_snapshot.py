@@ -54,17 +54,17 @@ from OCP.TopAbs import (
 from OCP.TopExp import TopExp
 from OCP.TopoDS import TopoDS, TopoDS_Vertex
 
-import b123d_recognisers
-from b123d_recognisers import _body_geometry
-from b123d_recognisers import _correspondence as correspondence_module
-from b123d_recognisers._adjacency import BodyGeometryAuthorityError, FaceGraph
-from b123d_recognisers._body_geometry import (
+import quiddity
+from quiddity import _body_geometry
+from quiddity import _correspondence as correspondence_module
+from quiddity._adjacency import BodyGeometryAuthorityError, FaceGraph
+from quiddity._body_geometry import (
     FaceGeometry,
     UnsupportedBodyGeometry,
     matching_boundary_for_solid,
 )
-from b123d_recognisers._candidates import EvidenceIndex, FamilyId
-from b123d_recognisers._correspondence import (
+from quiddity._candidates import EvidenceIndex, FamilyId
+from quiddity._correspondence import (
     CORRESPONDENCE_FAMILIES,
     CorrespondenceSnapshotError,
     MatchingBoundaryGraph,
@@ -75,7 +75,7 @@ from b123d_recognisers._correspondence import (
     MatchingWireVertex,
     correspondence_snapshot,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
 
@@ -4605,13 +4605,13 @@ def test_snapshot_is_private_and_changes_no_public_result() -> None:
 
     assert snapshot.occurrences
     assert before.result is result_before
-    assert "correspondence_snapshot" not in b123d_recognisers.__all__
-    assert not hasattr(b123d_recognisers, "CorrespondenceSnapshot")
+    assert "correspondence_snapshot" not in quiddity.__all__
+    assert not hasattr(quiddity, "CorrespondenceSnapshot")
 
 
 def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
-    lower_path = ROOT / "src/b123d_recognisers/_body_geometry.py"
-    upper_path = ROOT / "src/b123d_recognisers/_correspondence.py"
+    lower_path = ROOT / "src/quiddity/_body_geometry.py"
+    upper_path = ROOT / "src/quiddity/_correspondence.py"
     lower = ast.parse(lower_path.read_text())
     upper = ast.parse(upper_path.read_text())
 
@@ -4650,7 +4650,7 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
     }
     assert body_callers == {"_occurrence"}
 
-    source_paths = tuple((ROOT / "src/b123d_recognisers").glob("*.py"))
+    source_paths = tuple((ROOT / "src/quiddity").glob("*.py"))
     all_body_callers = []
     correspondence_importers = []
     for path in source_paths:
@@ -4659,7 +4659,7 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
         for node in ast.walk(tree):
             if (
                 isinstance(node, ast.ImportFrom)
-                and node.module == "b123d_recognisers._correspondence"
+                and node.module == "quiddity._correspondence"
             ):
                 correspondence_importers.append(path.name)
             if id(node) in body_call_nodes:
@@ -4716,8 +4716,8 @@ def test_private_correspondence_layering_and_handle_guards_are_closed() -> None:
     assert not (
         {"digest", "hash", "unchanged", "moved", "resized", "split", "merged"} & upper_names
     )
-    assert "correspondence_snapshot" not in b123d_recognisers.__all__
-    assert not hasattr(b123d_recognisers, "CorrespondenceSnapshot")
+    assert "correspondence_snapshot" not in quiddity.__all__
+    assert not hasattr(quiddity, "CorrespondenceSnapshot")
 
 
 @pytest.mark.parametrize(
@@ -4853,7 +4853,7 @@ def test_defining_face_authority_failure_is_wrapped(monkeypatch) -> None:
         raise BodyGeometryAuthorityError("controlled missing face")
 
     monkeypatch.setattr(
-        "b123d_recognisers._adjacency.BodyGeometryFact._defining_face",
+        "quiddity._adjacency.BodyGeometryFact._defining_face",
         refuse,
     )
     with pytest.raises(CorrespondenceSnapshotError, match="defining face geometry"):

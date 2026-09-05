@@ -20,15 +20,15 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._blend_view import (  # noqa: E402
+from quiddity._blend_view import (  # noqa: E402
     BlendChain,
     BlendCollapseIndex,
     RefusedBlendComponent,
 )
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._run import start  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._run import start  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
 ROUND_CLASS = 23
@@ -53,11 +53,11 @@ def _selection_hash(values: list[str]) -> str:
 
 
 def _production_source() -> dict[str, Any]:
-    paths = sorted((ROOT / "src" / "b123d_recognisers").rglob("*.py"))
+    paths = sorted((ROOT / "src" / "quiddity").rglob("*.py"))
     entries = [(path.relative_to(ROOT).as_posix(), _sha256(path)) for path in paths]
     value = "".join(f"{path}:{digest}\n" for path, digest in entries)
     return {
-        "root": "src/b123d_recognisers",
+        "root": "src/quiddity",
         "python_files": len(entries),
         "sha256": hashlib.sha256(value.encode()).hexdigest(),
     }
@@ -91,7 +91,7 @@ def main() -> int:
 
     from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"), key=lambda path: path.name)[: args.limit]
     if not paths:

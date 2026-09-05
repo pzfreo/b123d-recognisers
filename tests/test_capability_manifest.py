@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 from build123d import Box
 
-import b123d_recognisers as recognition
-import b123d_recognisers.capabilities as capabilities_module
-from b123d_recognisers import (
+import quiddity as recognition
+import quiddity.capabilities as capabilities_module
+from quiddity import (
     CAPABILITY_FORMAT,
     CAPABILITY_FORMAT_VERSION,
     CapabilityManifestError,
@@ -27,10 +27,10 @@ from b123d_recognisers import (
     feature_census,
     validate_capability_manifest,
 )
-from b123d_recognisers._record import Record
+from quiddity._record import Record
 
 ROOT = Path(__file__).parents[1]
-MANIFEST = ROOT / "src" / "b123d_recognisers" / "capabilities.json"
+MANIFEST = ROOT / "src" / "quiddity" / "capabilities.json"
 
 
 def _families() -> list[dict]:
@@ -89,7 +89,7 @@ def test_manifest_query_is_deterministic_isolated_and_versioned() -> None:
     assert capability_manifest_json() == MANIFEST.read_text(encoding="utf-8")
     assert first["format"] == CAPABILITY_FORMAT
     assert first["format_version"] == CAPABILITY_FORMAT_VERSION
-    assert first["package"] == {"name": "b123d-recognisers", "version": recognition.__version__}
+    assert first["package"] == {"name": "quiddity", "version": recognition.__version__}
     first["families"].clear()
     assert capability_manifest()["families"], "callers must not mutate the cached contract"
     with pytest.raises(CapabilityManifestError, match="unsupported requested"):
@@ -106,7 +106,7 @@ def test_section_end_gradient_is_published_as_dimensionless() -> None:
 def test_manifest_inventories_are_derived_independently_from_public_runtime() -> None:
     families = _families()
     manifest_recognisers = {
-        item["entry_point"].removeprefix("b123d_recognisers.")
+        item["entry_point"].removeprefix("quiddity.")
         for family in families
         for item in family["recognisers"]
     }
@@ -122,7 +122,7 @@ def test_manifest_entry_kinds_and_record_returns_match_runtime_signatures() -> N
     for family in _families():
         family_records = {record["name"] for record in family["records"]}
         for item in family["recognisers"]:
-            name = item["entry_point"].removeprefix("b123d_recognisers.")
+            name = item["entry_point"].removeprefix("quiddity.")
             recogniser = getattr(recognition, name)
             parameters = list(inspect.signature(recogniser).parameters.values())
             actual_kind = "part" if parameters[0].name == "part" else "derived"
@@ -151,7 +151,7 @@ def test_manifest_record_schemas_match_exported_dataclasses() -> None:
                 for name, schema in declared["fields"].items()
             }
             assert projected == actual, declared["name"]
-            assert declared["qualified_name"] == f"b123d_recognisers.{declared['name']}"
+            assert declared["qualified_name"] == f"quiddity.{declared['name']}"
             assert getattr(recognition, declared["name"]) is record_type
 
 
@@ -436,7 +436,7 @@ def test_compatibility_recogniser_contract_fails_closed(changes, message: str) -
     # compatibility declaration rather than keeping a removed public function alive.
     compatibility = manifest["families"][0]["recognisers"][0]
     compatibility.update(role="compatibility", ledger_state="unavailable", remove_in="1.0.0",
-                         replacement="b123d_recognisers.recognise_section_recesses")
+                         replacement="quiddity.recognise_section_recesses")
     if changes.get("role") == "unknown":
         for key in ("ledger_state", "remove_in", "replacement"):
             compatibility.pop(key)

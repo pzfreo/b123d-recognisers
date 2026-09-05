@@ -23,15 +23,15 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import (
+from quiddity import (
     feature_census,
     recognise_oriented_slot_patterns,
     recognise_oriented_slots,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity.frames import FramedRecognitionResult, build_framed_recognition_result
+from quiddity.result import _take_inventory
 from tools._legacy_recognition import (
     build_recognition_result,
     recognise_section_passages,

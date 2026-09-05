@@ -25,27 +25,27 @@ from build123d import (
     import_step,
 )
 
-import b123d_recognisers.polygonal_bosses as polygonal_module
-from b123d_recognisers import (
+import quiddity.polygonal_bosses as polygonal_module
+from quiddity import (
     FramedRecognitionResult,
     PolygonalBoss,
     build_framed_recognition_result,
     recognise_fillets,
     recognise_polygonal_bosses,
 )
-from b123d_recognisers._adjacency import FaceGraph, FaceNode
-from b123d_recognisers._blend_view import (
+from quiddity._adjacency import FaceGraph, FaceNode
+from quiddity._blend_view import (
     BlendCollapseIndex,
     CollapsedGraphView,
     FrozenProvenance,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
-from b123d_recognisers.experimental_geometry import GeometryGraph
-from b123d_recognisers.polygonal_bosses import _discover_polygonal_bosses
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._effective_surfaces import AnalyticSurfaceFact, EffectiveSurfaceIndex
+from quiddity._geometry import AXIS_ALIGNED_COS
+from quiddity.experimental_geometry import GeometryGraph
+from quiddity.polygonal_bosses import _discover_polygonal_bosses
+from quiddity.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
 _ANGLE_TOL = math.radians(2)
@@ -1119,7 +1119,7 @@ def test_excluded_stock_recess_and_nonhex_shapes_never_publish(part) -> None:
 def test_private_core_has_one_production_writer_caller_and_one_boss_constructor() -> None:
     core_sites: list[tuple[str, ast.Call]] = []
     constructors: list[tuple[str, ast.Call]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for qualified, call in _qualified_calls(tree):
             if (

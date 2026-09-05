@@ -74,7 +74,7 @@ jobs:
       - name: Test with authoritative branch coverage
         run: >-
           uv run pytest
-          --cov=b123d_recognisers
+          --cov=quiddity
           --cov-branch
           --cov-report=term-missing
           --cov-report=xml:coverage.xml

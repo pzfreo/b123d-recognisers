@@ -45,7 +45,7 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -108,7 +108,7 @@ def test_only_plate_and_pad_boundary_roles_claim_stock_labelled_faces(scored):
 
 
 def test_holdout_plate_stock_overlap_is_exact_boundary_evidence() -> None:
-    from b123d_recognisers._candidates import FamilyId
+    from quiddity._candidates import FamilyId
 
     expected = {
         "181.step": 1,

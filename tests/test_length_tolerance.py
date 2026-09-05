@@ -15,8 +15,8 @@ import math
 import pytest
 from build123d import Box, Cylinder
 
-from b123d_recognisers._geometry import length_tol, part_scale
-from b123d_recognisers._pattern_geometry import _PATTERN_ABS_TOL, _PATTERN_REL_TOL, _pattern_tol
+from quiddity._geometry import length_tol, part_scale
+from quiddity._pattern_geometry import _PATTERN_ABS_TOL, _PATTERN_REL_TOL, _pattern_tol
 
 
 def test_the_floor_is_the_tolerance_of_a_degenerate_nominal():

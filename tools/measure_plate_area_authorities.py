@@ -20,22 +20,22 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers import import_step_geometry as import_step
+from quiddity import import_step_geometry as import_step
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._geometry import (  # noqa: E402
+from quiddity._geometry import (  # noqa: E402
     AXIS_ALIGNED_COS,
     clears_threshold,
     cluster_coordinates,
 )
-from b123d_recognisers.frames import (  # noqa: E402
+from quiddity.frames import (  # noqa: E402
     RefusedPartFrame,
     _normalize_part,
     infer_part_frame,
 )
-from b123d_recognisers.plates import Plate, recognise_plates  # noqa: E402
+from quiddity.plates import Plate, recognise_plates  # noqa: E402
 
 AXES = {"x": 0, "y": 1, "z": 2}
 MIN_AREA_FRAC = 0.4

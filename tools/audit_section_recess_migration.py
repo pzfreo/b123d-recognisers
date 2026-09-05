@@ -11,9 +11,9 @@ import argparse
 import json
 from pathlib import Path
 
-from b123d_recognisers import import_step_geometry
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers.result import InventoryProduct, _take_inventory
+from quiddity import import_step_geometry
+from quiddity._candidates import FamilyId
+from quiddity.result import InventoryProduct, _take_inventory
 
 EXACT_FAMILIES = (
     FamilyId.PRISMATIC_POCKETS,

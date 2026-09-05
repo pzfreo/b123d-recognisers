@@ -18,12 +18,12 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import b123d_recognisers.inspection as inspection
-from b123d_recognisers import __version__
+import quiddity.inspection as inspection
+from quiddity import __version__
 
 ROOT = Path(__file__).parents[1]
-TARGET = ROOT / "src" / "b123d_recognisers" / "inspection_api.json"
-NAMESPACE = "b123d_recognisers.inspection"
+TARGET = ROOT / "src" / "quiddity" / "inspection_api.json"
+NAMESPACE = "quiddity.inspection"
 
 SURFACE_PARAMETERS = {
     "cone": [
@@ -100,71 +100,71 @@ DOUBLE_D_TOOL_RETURN_MEMBERS = [
 SYMBOLS: dict[str, tuple[str, list[str]]] = {
     "AnalyticSurface": (
         "dataclass",
-        ["b123d_recognisers.experimental_geometry.AnalyticSurface"],
+        ["quiddity.experimental_geometry.AnalyticSurface"],
     ),
     "BevelReject": (
         "exception",
         [
-            "b123d_recognisers.BevelReject",
-            "b123d_recognisers.chamfers.BevelReject",
+            "quiddity.BevelReject",
+            "quiddity.chamfers.BevelReject",
         ],
     ),
     "FaceInspection": (
         "dataclass",
-        ["b123d_recognisers.experimental_geometry.FaceInspection"],
+        ["quiddity.experimental_geometry.FaceInspection"],
     ),
     "OrientationCapability": (
         "enum",
-        ["b123d_recognisers.experimental_geometry.OrientationCapability"],
+        ["quiddity.experimental_geometry.OrientationCapability"],
     ),
     "RefusedSurface": (
         "dataclass",
-        ["b123d_recognisers.experimental_geometry.RefusedSurface"],
+        ["quiddity.experimental_geometry.RefusedSurface"],
     ),
     "SurfaceFact": (
         "type-alias",
-        ["b123d_recognisers.experimental_geometry.SurfaceFact"],
+        ["quiddity.experimental_geometry.SurfaceFact"],
     ),
     "SurfaceKind": (
         "enum",
-        ["b123d_recognisers.experimental_geometry.SurfaceKind"],
+        ["quiddity.experimental_geometry.SurfaceKind"],
     ),
     "SurfaceProvenance": (
         "enum",
-        ["b123d_recognisers.experimental_geometry.SurfaceProvenance"],
+        ["quiddity.experimental_geometry.SurfaceProvenance"],
     ),
     "SurfaceRefusalReason": (
         "enum",
-        ["b123d_recognisers.experimental_geometry.SurfaceRefusalReason"],
+        ["quiddity.experimental_geometry.SurfaceRefusalReason"],
     ),
     "classify_bevel": (
         "function",
         [
-            "b123d_recognisers.chamfers.classify_bevel",
-            "b123d_recognisers.classify_bevel",
+            "quiddity.chamfers.classify_bevel",
+            "quiddity.classify_bevel",
         ],
     ),
     "cone_rims": (
         "function",
         [
-            "b123d_recognisers.cone_rims",
-            "b123d_recognisers.countersinks.cone_rims",
+            "quiddity.cone_rims",
+            "quiddity.countersinks.cone_rims",
         ],
     ),
     "floor_face_anchor": (
         "function",
         [
-            "b123d_recognisers.floor_face_anchor",
-            "b123d_recognisers.grooves.floor_face_anchor",
+            "quiddity.floor_face_anchor",
+            "quiddity.grooves.floor_face_anchor",
         ],
     ),
     "inspect_face": (
         "function",
-        ["b123d_recognisers.experimental_geometry.inspect_face"],
+        ["quiddity.experimental_geometry.inspect_face"],
     ),
     "read_double_d_tool": (
         "function",
-        ["b123d_recognisers.profiled_bores.read_double_d_tool"],
+        ["quiddity.profiled_bores.read_double_d_tool"],
     ),
 }
 
@@ -174,7 +174,7 @@ def _type_name(annotation: object) -> str:
         return "null"
     if annotation in {bool, float, int, str}:
         return typing.cast(type, annotation).__name__
-    if inspect.isclass(annotation) and annotation.__module__.startswith("b123d_recognisers"):
+    if inspect.isclass(annotation) and annotation.__module__.startswith("quiddity"):
         return annotation.__name__
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
@@ -242,7 +242,7 @@ def document() -> dict[str, Any]:
             {
                 "aliases": sorted(aliases),
                 "contract": _contract(name, kind, value),
-                "introduced_in": "0.4.4",
+                "introduced_in": "0.2.0",
                 "kind": kind,
                 "name": name,
                 "qualified_name": f"{NAMESPACE}.{name}",
@@ -260,7 +260,7 @@ def document() -> dict[str, Any]:
         },
         "format": inspection.INSPECTION_API_FORMAT,
         "format_version": inspection.INSPECTION_API_FORMAT_VERSION,
-        "package": {"name": "b123d-recognisers", "version": __version__},
+        "package": {"name": "quiddity", "version": __version__},
     }
 
 

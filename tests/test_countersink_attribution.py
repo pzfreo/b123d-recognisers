@@ -24,12 +24,12 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder
 
-from b123d_recognisers import recognise_countersinks
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.countersinks import _discover_countersinks
-from b123d_recognisers.result import _take_inventory
+from quiddity import recognise_countersinks
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity.countersinks import _discover_countersinks
+from quiddity.result import _take_inventory
 
 
 def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
@@ -476,7 +476,7 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for qualified, node in _qualified_calls(tree):
-            if qualified == "b123d_recognisers.countersinks._discover_countersinks":
+            if qualified == "quiddity.countersinks._discover_countersinks":
                 sites.append(
                     (
                         path.name,
@@ -498,12 +498,12 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
 def test_counter_sink_constructor_roster_is_closed() -> None:
     root = Path(__file__).parents[1]
     sites: list[tuple[str, str]] = []
-    for path in (root / "src" / "b123d_recognisers").glob("*.py"):
+    for path in (root / "src" / "quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for qualified, node in _qualified_calls(tree):
             if (path.name == "countersinks.py" and qualified == "CounterSink") or qualified in {
-                "b123d_recognisers.countersinks.CounterSink",
-                "b123d_recognisers.CounterSink",
+                "quiddity.countersinks.CounterSink",
+                "quiddity.CounterSink",
             }:
                 function = next(
                     (

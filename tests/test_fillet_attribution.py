@@ -30,9 +30,9 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder, GeomAbs_Torus
 
-import b123d_recognisers.fillets as fillets_module
-from b123d_recognisers import recognise_fillets
-from b123d_recognisers._adjacency import (
+import quiddity.fillets as fillets_module
+from quiddity import recognise_fillets
+from quiddity._adjacency import (
     FaceEdges,
     FaceGraph,
     axis_aligned_axis,
@@ -40,12 +40,12 @@ from b123d_recognisers._adjacency import (
     nearest_axis_aligned_planes,
     neighbours,
 )
-from b123d_recognisers._bevel import convex_bevel
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._features import analyse_cylinders
-from b123d_recognisers.fillets import _discover_fillets
-from b123d_recognisers.result import _take_inventory
+from quiddity._bevel import convex_bevel
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._features import analyse_cylinders
+from quiddity.fillets import _discover_fillets
+from quiddity.result import _take_inventory
 
 
 def _prismatic():
@@ -749,7 +749,7 @@ def test_multiple_valid_solids_emit_independent_fillet_occurrences() -> None:
 
 
 def test_registry_is_the_only_production_writer_enabled_fillet_caller() -> None:
-    package = Path(__file__).parents[1] / "src" / "b123d_recognisers"
+    package = Path(__file__).parents[1] / "src" / "quiddity"
     importers = set()
     for path in package.glob("*.py"):
         if path.name == "fillets.py":
@@ -757,7 +757,7 @@ def test_registry_is_the_only_production_writer_enabled_fillet_caller() -> None:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         direct = any(
             isinstance(node, ast.ImportFrom)
-            and node.module == "b123d_recognisers.fillets"
+            and node.module == "quiddity.fillets"
             and any(alias.name == "_discover_fillets" for alias in node.names)
             for node in ast.walk(tree)
         )

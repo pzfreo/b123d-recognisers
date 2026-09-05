@@ -6,7 +6,7 @@ from build123d import BoundBox, Compound, Edge, Face, Shape, Solid
 from OCP.TopoDS import TopoDS_Shape
 from typing_extensions import assert_type
 
-from b123d_recognisers import (
+from quiddity import (
     BossRecord,
     FramedEvidence,
     FramedEvidenceRefusalReason,
@@ -43,7 +43,7 @@ from b123d_recognisers import (
     recognise_paired_ramp_steps,
     recognise_plates,
 )
-from b123d_recognisers.evidence import (
+from quiddity.evidence import (
     AssociationMeasure,
     FaceRef,
     FamilyAssociation,
@@ -53,7 +53,7 @@ from b123d_recognisers.evidence import (
     RecognitionRecord,
     build_recognition_evidence,
 )
-from b123d_recognisers.inspection import (
+from quiddity.inspection import (
     BevelReject,
     FaceInspection,
     cone_rims,

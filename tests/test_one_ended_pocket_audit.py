@@ -16,8 +16,8 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._sections import PlanarSection, SectionVertex
+from quiddity._adjacency import FaceGraph
+from quiddity._sections import PlanarSection, SectionVertex
 from tools.audit_mfcadpp_one_ended_pockets import (
     _audit_model,
     _one_ended_regions,

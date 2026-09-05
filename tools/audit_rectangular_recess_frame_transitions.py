@@ -20,11 +20,11 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
-from b123d_recognisers._adjacency import FaceGraph  # noqa: E402
-from b123d_recognisers._recess_records import Pocket, Slot  # noqa: E402
-from b123d_recognisers._recess_reduce import _region_center  # noqa: E402
-from b123d_recognisers.frames import (  # noqa: E402
+from quiddity import import_step_geometry as import_step  # noqa: E402
+from quiddity._adjacency import FaceGraph  # noqa: E402
+from quiddity._recess_records import Pocket, Slot  # noqa: E402
+from quiddity._recess_reduce import _region_center  # noqa: E402
+from quiddity.frames import (  # noqa: E402
     RefusedPartFrame,
     _normalize_part,
     infer_part_frame,

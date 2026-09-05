@@ -31,17 +31,17 @@ from build123d import (
 )
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-from b123d_recognisers import build_recognition_report, recognise_holes
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers.profiled_bores import (
+from quiddity import build_recognition_report, recognise_holes
+from quiddity._adjacency import FaceEdges, FaceGraph, edge_face_map
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity.profiled_bores import (
     _discover_double_d_bores,
     _valid_wall_chain_facts,
     recognise_double_d_bores,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)
 
@@ -177,7 +177,7 @@ def test_real_face_adapter_retains_three_consecutive_wall_patches_and_refuses_is
     monkeypatch,
 ) -> None:
     """Exercise geometry-to-facts adaptation where OCCT normally heals the wall."""
-    import b123d_recognisers.profiled_bores as module
+    import quiddity.profiled_bores as module
 
     part = _plate()
     bbox = part.bounding_box()
@@ -1004,7 +1004,7 @@ def test_late_binding_failure_leaves_no_prefix(monkeypatch) -> None:
 
 
 def test_cross_occurrence_wall_reuse_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.profiled_bores as module
+    import quiddity.profiled_bores as module
 
     part = Compound([Pos(-30, 0, 0) * _plate(), Pos(30, 0, 0) * _plate()])
     ledger = ClaimLedger(FaceGraph(part))
@@ -1025,7 +1025,7 @@ def test_cross_occurrence_wall_reuse_refuses_before_publication(monkeypatch) -> 
 
 
 def test_incomplete_wall_component_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.profiled_bores as module
+    import quiddity.profiled_bores as module
 
     part = _plate()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1036,7 +1036,7 @@ def test_incomplete_wall_component_refuses_before_publication(monkeypatch) -> No
 
 
 def test_repeated_same_wall_reference_collapses_once(monkeypatch) -> None:
-    import b123d_recognisers.profiled_bores as module
+    import quiddity.profiled_bores as module
 
     part = _plate()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1056,7 +1056,7 @@ def test_repeated_same_wall_reference_collapses_once(monkeypatch) -> None:
 def test_deep_or_translated_wall_clone_refuses_before_publication(
     monkeypatch, translated: bool
 ) -> None:
-    import b123d_recognisers.profiled_bores as module
+    import quiddity.profiled_bores as module
 
     part = _plate()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1102,13 +1102,13 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         if any(
             isinstance(node, ast.ImportFrom)
-            and node.module == "b123d_recognisers.profiled_bores"
+            and node.module == "quiddity.profiled_bores"
             and any(alias.name == "_discover_double_d_bores" for alias in node.names)
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
         for qualified, node in _qualified_calls(tree):
-            if qualified == "b123d_recognisers.profiled_bores._discover_double_d_bores":
+            if qualified == "quiddity.profiled_bores._discover_double_d_bores":
                 sites.append(
                     (
                         path.name,
@@ -1123,7 +1123,7 @@ def test_only_registry_may_call_writer_enabled_core() -> None:
 
 
 def test_constructor_and_void_prism_path_roster_is_closed() -> None:
-    path = Path(__file__).parents[1] / "src/b123d_recognisers/profiled_bores.py"
+    path = Path(__file__).parents[1] / "src/quiddity/profiled_bores.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
     sites: list[tuple[str, str]] = []
     for qualified, node in _qualified_calls(tree):

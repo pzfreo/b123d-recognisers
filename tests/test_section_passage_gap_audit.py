@@ -18,11 +18,11 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._section_passages import section_ring_proposals
-from b123d_recognisers.passages import recognise_section_passages
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._section_passages import section_ring_proposals
+from quiddity.passages import recognise_section_passages
 from tools.audit_mfcadpp_section_passage_gaps import (
     _probe_component,
     _relation,
@@ -80,7 +80,7 @@ def test_intact_polygonal_passage_reaches_exact_production_proposal(sides: int) 
 def test_two_mouth_enclosure_recovers_interrupted_polygonal_passage(
     sides: int, monkeypatch
 ) -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
 
     part = _interrupted_polygonal_passage(sides)
     graph = FaceGraph(part)
@@ -138,7 +138,7 @@ def test_two_mouth_fallback_publishes_exact_constituent_membership() -> None:
 
 
 def test_two_mouth_fallback_refuses_blind_and_circular_voids() -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
 
     blind = Box(60, 50, 20) - _polygonal_tool(6, depth=10)
     circular = Box(60, 50, 20) - Cylinder(7, 60)
@@ -149,7 +149,7 @@ def test_two_mouth_fallback_refuses_blind_and_circular_voids() -> None:
 
 
 def test_two_mouth_fallback_adds_no_occurrence_to_existing_crossed_cycles() -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
 
     branched = Box(60, 50, 20) - Box(16, 12, 60) - Box(60, 8, 6)
     graph = FaceGraph(branched)

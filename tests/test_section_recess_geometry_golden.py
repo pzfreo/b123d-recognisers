@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from build123d import Box, Pos
 
-from b123d_recognisers import build_section_recess_document
+from quiddity import build_section_recess_document
 from tests.test_edge_open_circular_recesses import _open_circular_pocket
 from tests.test_edge_open_prismatic_recesses import _edge_open_hexagon
 from tests.test_rectangular_blind_slots import _slot as rectangular_slot

@@ -13,11 +13,11 @@ import time
 from build123d import Axis, Box, Pos, RegularPolygon, extrude, fillet
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._blend_view import BlendCollapseIndex
-from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
-from b123d_recognisers.experimental_geometry import AnalyticSurface, GeometryGraph, inspect_face
-from b123d_recognisers.fillets import fillet_anchor
+from quiddity._adjacency import FaceGraph
+from quiddity._blend_view import BlendCollapseIndex
+from quiddity._effective_surfaces import EffectiveSurfaceIndex
+from quiddity.experimental_geometry import AnalyticSurface, GeometryGraph, inspect_face
+from quiddity.fillets import fillet_anchor
 
 
 def _blend_part():

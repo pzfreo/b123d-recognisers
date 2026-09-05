@@ -112,9 +112,9 @@ def _score_model(task: _ModelTask) -> dict[str, Any]:
             "reason": task.input_error,
         }
 
-    from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
-    from b123d_recognisers.result import _take_inventory
+    from quiddity import import_step_geometry as import_step
+    from quiddity.frames import RefusedPartFrame, _normalize_part, infer_part_frame
+    from quiddity.result import _take_inventory
 
     try:
         part = import_step(task.truth.step_path)
@@ -587,7 +587,7 @@ def main() -> int:
     except EffectivenessDataError as error:
         parser.error(str(error))
 
-    from b123d_recognisers import __version__
+    from quiddity import __version__
 
     try:
         _verify_run_authority(authority, args.taxonomy)
@@ -673,7 +673,7 @@ def main() -> int:
         "format_version": REPORT_FORMAT_VERSION,
         "dataset": {"name": args.dataset, "version": args.dataset_version},
         "package": {
-            "name": "b123d-recognisers",
+            "name": "quiddity",
             "version": __version__,
             "commit": _reported_commit(authority),
         },

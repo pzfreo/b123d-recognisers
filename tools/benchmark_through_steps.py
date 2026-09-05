@@ -33,8 +33,8 @@ def _summary(values: list[float]) -> dict[str, float]:
 
 
 def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
-    import b123d_recognisers._registry as registry
-    from b123d_recognisers.result import _take_inventory
+    import quiddity._registry as registry
+    from quiddity.result import _take_inventory
 
     original = registry.recognise_through_steps
     if not enabled:
@@ -89,7 +89,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     if args.workload == "mfcadpp":
         if args.root is None:

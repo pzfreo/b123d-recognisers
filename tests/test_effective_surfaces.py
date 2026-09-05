@@ -29,9 +29,9 @@ from OCP.TColgp import TColgp_Array2OfPnt
 from OCP.TopAbs import TopAbs_IN, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._analytic_surfaces import validated_parameters
-from b123d_recognisers._effective_surfaces import (
+from quiddity._adjacency import FaceGraph
+from quiddity._analytic_surfaces import validated_parameters
+from quiddity._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
     MaterialSideRefusalReason,
@@ -45,7 +45,7 @@ from b123d_recognisers._effective_surfaces import (
     recovery_nominal,
     recovery_tolerance,
 )
-from b123d_recognisers._geometry import COORD_FLOOR
+from quiddity._geometry import COORD_FLOOR
 
 
 def test_recovery_nominal_is_width_controlled_and_rotation_invariant() -> None:
@@ -165,7 +165,7 @@ def test_material_side_sampling_does_not_attach_a_mesh_to_the_input_face() -> No
 
 
 def test_material_side_sampling_refuses_uncleared_or_failed_samples(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
     monkeypatch.setattr(module.Vertex, "distance_to", lambda _self, _edge: 0.0)
@@ -186,7 +186,7 @@ def test_material_side_sampling_refuses_uncleared_or_failed_samples(monkeypatch)
 
 
 def test_material_side_sampling_refuses_missing_or_degenerate_triangulation(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
     monkeypatch.setattr(module.BRep_Tool, "Triangulation_s", lambda *_args: None)
@@ -226,7 +226,7 @@ def test_material_side_sampling_refuses_missing_or_degenerate_triangulation(monk
 
 
 def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     class WrongUV:
         def __init__(self, _surface) -> None:
@@ -246,7 +246,7 @@ def test_plane_differential_refuses_uv_that_does_not_recover_the_sample(monkeypa
 
 
 def test_plane_differential_refuses_degenerate_or_failed_kernel_reads(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     top = max(Box(10, 8, 4).faces(), key=lambda face: face.center().Z)
     centre = top.center()
@@ -349,7 +349,7 @@ def test_material_side_refuses_faces_without_one_closed_owner(monkeypatch) -> No
 
 
 def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     part = Box(10, 8, 4)
     top = max(part.faces(), key=lambda face: face.center().Z)
@@ -371,7 +371,7 @@ def test_material_side_kernel_and_differential_failures_refuse(monkeypatch) -> N
 
 
 def test_material_side_propagates_nominal_and_sampling_refusals(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     part = Box(10, 8, 4)
     top = max(part.faces(), key=lambda face: face.center().Z)
@@ -408,7 +408,7 @@ def test_material_side_propagates_nominal_and_sampling_refusals(monkeypatch) -> 
 def test_material_side_refuses_indeterminate_or_disagreeing_probes(
     monkeypatch, states, reason
 ) -> None:
-    import b123d_recognisers._effective_surfaces as module
+    import quiddity._effective_surfaces as module
 
     class ScriptedClassifier:
         def __init__(self, _solid) -> None:
@@ -528,7 +528,7 @@ def test_multiple_passing_fits_refuse_instead_of_using_call_order(monkeypatch) -
             return 0.0
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         AmbiguousRecognition,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
@@ -551,7 +551,7 @@ def test_kernel_errors_fail_closed(monkeypatch) -> None:
         IsSphere = IsPlane
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         FailedRecognition,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
@@ -567,7 +567,7 @@ def test_recogniser_constructor_errors_fail_closed(monkeypatch) -> None:
             raise RuntimeError("constructor failure")
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         FailedConstruction,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
@@ -601,7 +601,7 @@ def test_invalid_accepted_primitive_fails_closed(monkeypatch) -> None:
             return 0.0
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         InvalidPlaneRecognition,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
@@ -634,7 +634,7 @@ def test_over_tolerance_success_uses_residual_refusal(monkeypatch) -> None:
             return 1.0
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         ExcessiveGapRecognition,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
@@ -647,7 +647,7 @@ def test_over_tolerance_success_uses_residual_refusal(monkeypatch) -> None:
 
 
 def test_unpinned_occt_version_disables_recovery_globally(monkeypatch) -> None:
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces.OCP.__version__", "future")
+    monkeypatch.setattr("quiddity._effective_surfaces.OCP.__version__", "future")
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)
     graph = FaceGraph(_as_bspline_face(native))
 
@@ -791,7 +791,7 @@ def test_standard_failure_during_native_primitive_read_refuses(monkeypatch) -> N
     def fail(_kind, _primitive):
         raise Standard_Failure("primitive read failure")
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces.validated_parameters", fail)
+    monkeypatch.setattr("quiddity._effective_surfaces.validated_parameters", fail)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -807,7 +807,7 @@ def test_standard_failure_during_recovered_primitive_read_refuses(monkeypatch) -
     def fail(_kind, _primitive):
         raise Standard_Failure("primitive read failure")
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces.validated_parameters", fail)
+    monkeypatch.setattr("quiddity._effective_surfaces.validated_parameters", fail)
 
     assert (
         EffectiveSurfaceIndex(graph).fact(graph.nodes[0]).reason
@@ -846,7 +846,7 @@ def test_recovery_nominal_refuses_invalid_trimmed_area(area: float) -> None:
 @pytest.mark.parametrize("perimeter", [-1.0, float("nan")])
 def test_recovery_nominal_refuses_invalid_trim_perimeter(monkeypatch, perimeter: float) -> None:
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces._physical_boundary_length",
+        "quiddity._effective_surfaces._physical_boundary_length",
         lambda _face: perimeter,
     )
     face = max(Box(1, 1, 1).faces(), key=lambda item: item.area)
@@ -880,7 +880,7 @@ def test_adaptor_failures_are_closed_invalid_inputs(monkeypatch, failure: Except
         def __init__(self, _shape) -> None:
             raise failure
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor)
+    monkeypatch.setattr("quiddity._effective_surfaces.BRepAdaptor_Surface", FailedAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -897,7 +897,7 @@ def test_unknown_native_surface_kind_is_explicitly_unsupported(monkeypatch) -> N
         def GetType(self) -> int:
             return 999
 
-    monkeypatch.setattr("b123d_recognisers._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor)
+    monkeypatch.setattr("quiddity._effective_surfaces.BRepAdaptor_Surface", UnknownAdaptor)
     graph = FaceGraph(Box(1, 1, 1))
 
     assert (
@@ -927,7 +927,7 @@ def test_one_valid_fit_plus_kernel_failures_refuses_the_partial_result(monkeypat
             return 0.0
 
     monkeypatch.setattr(
-        "b123d_recognisers._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
+        "quiddity._effective_surfaces.ShapeAnalysis_CanonicalRecognition",
         PartialRecognition,
     )
     native = max(Box(10, 5, 2).faces(), key=lambda face: face.area)

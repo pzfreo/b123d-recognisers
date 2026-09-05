@@ -2,10 +2,10 @@ import pytest
 from build123d import Axis, Box, Cylinder
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-import b123d_recognisers._adjacency as adjacency_module
-import b123d_recognisers._analytic_surfaces as analytic_module
-import b123d_recognisers._effective_surfaces as effective_module
-from b123d_recognisers._analytic_surfaces import (
+import quiddity._adjacency as adjacency_module
+import quiddity._analytic_surfaces as analytic_module
+import quiddity._effective_surfaces as effective_module
+from quiddity._analytic_surfaces import (
     SurfaceKind,
     equivalent_parameters,
     native_primitive,

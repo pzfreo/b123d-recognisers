@@ -12,14 +12,14 @@ from pathlib import Path
 import pytest
 from build123d import Box, BuildPart, BuildSketch, Mode, Pos, RegularPolygon, extrude
 
-import b123d_recognisers as public
-import b123d_recognisers._registry as registry_module
-import b123d_recognisers.result as result_module
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._record import Record
-from b123d_recognisers._registry import (
+import quiddity as public
+import quiddity._registry as registry_module
+import quiddity.result as result_module
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._record import Record
+from quiddity._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
     AcceptedInputs,
@@ -36,8 +36,8 @@ from b123d_recognisers._registry import (
     validate_output,
     validate_result_fields,
 )
-from b123d_recognisers.census import CENSUS_BINDINGS, CENSUS_KEYS
-from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, _take_inventory
+from quiddity.census import CENSUS_BINDINGS, CENSUS_KEYS
+from quiddity.result import MIGRATED, PHYSICAL_FAMILIES, _take_inventory
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
@@ -336,7 +336,7 @@ def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> N
         for item in DERIVED_DEFINITIONS
     )
     manifest_entrypoints = {
-        recogniser["entry_point"].removeprefix("b123d_recognisers.")
+        recogniser["entry_point"].removeprefix("quiddity.")
         for family in public.capability_manifest()["families"]
         for recogniser in family["recognisers"]
     }

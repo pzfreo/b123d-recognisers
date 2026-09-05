@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Compound, Cylinder, Pos, Rotation, export_step, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     FramedRecognitionResult,
     TurnedProfile,
     TurnedProfileKey,
@@ -16,10 +16,10 @@ from b123d_recognisers import (
     build_recognition_result,
     recognise_turned_steps,
 )
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity.result import _take_inventory
 
 
 def _shaft(*, x: float = 0.0, y: float = 0.0, scale: float = 1.0):

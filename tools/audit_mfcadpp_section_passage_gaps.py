@@ -21,10 +21,10 @@ from typing import Any, cast
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._section_passages import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._section_passages import (  # noqa: E402
     _DIRECTION_TOL,
     _INTERVAL_TOL,
     _canonical_run,
@@ -36,12 +36,12 @@ from b123d_recognisers._section_passages import (  # noqa: E402
     _void_and_open,
     section_ring_proposals,
 )
-from b123d_recognisers._sections import (  # noqa: E402
+from quiddity._sections import (  # noqa: E402
     LocalFrame,
     PlanarSection,
     SectionVertex,
 )
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
@@ -358,7 +358,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
@@ -402,8 +402,8 @@ def main() -> int:
         "format_version": 2,
         "implementation_commit": _commit(),
         "production_source": {
-            "path": "src/b123d_recognisers/_section_passages.py",
-            "sha256": _sha256(ROOT / "src/b123d_recognisers/_section_passages.py"),
+            "path": "src/quiddity/_section_passages.py",
+            "sha256": _sha256(ROOT / "src/quiddity/_section_passages.py"),
         },
         "dataset": {"name": "mfcadpp", "version": _PUBLISHED_VERSION},
         "class_id": args.class_id,

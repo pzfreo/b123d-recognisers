@@ -7,7 +7,7 @@ from pathlib import Path
 
 from build123d import Box, Compound, Pos, Rot, export_step, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     FramedRecognitionResult,
     build_framed_recognition_result,
     recognise_plates,

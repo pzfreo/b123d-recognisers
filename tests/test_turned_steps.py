@@ -9,13 +9,13 @@ import pytest
 from attribution_audit import attributed_run, unattributed_run
 from build123d import Box, Cylinder, GeomType, Pos, Rotation
 
-from b123d_recognisers import (
+from quiddity import (
     TurnedProfile,
     TurnedStep,
     build_raw_recognition_result,
     recognise_turned_steps,
 )
-from b123d_recognisers._candidates import FamilyId
+from quiddity._candidates import FamilyId
 
 
 def _shaft_x(*sections):

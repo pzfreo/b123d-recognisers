@@ -25,9 +25,9 @@ import random
 
 from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, Pos, Rot, extrude
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import (
+from quiddity._adjacency import FaceGraph
+from quiddity._claims import ClaimLedger
+from quiddity._reconcile import (
     chamfers_that_are_not_angled_steps,
     prismatic_pockets_that_are_not_pockets,
 )

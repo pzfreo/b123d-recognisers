@@ -32,8 +32,8 @@ def _summary(values: list[float]) -> dict[str, float]:
 
 
 def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
-    import b123d_recognisers._registry as registry
-    from b123d_recognisers.result import _take_inventory
+    import quiddity._registry as registry
+    from quiddity.result import _take_inventory
 
     original = registry.recognise_round_bottom_blind_slots
     if not enabled:
@@ -47,7 +47,7 @@ def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
 
 
 def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
-    from b123d_recognisers._candidates import FamilyId
+    from quiddity._candidates import FamilyId
     from tools._legacy_recognition import detector_outputs_equal
 
     rows = []
@@ -98,7 +98,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     if args.workload == "mfcadpp":
         if args.root is None:

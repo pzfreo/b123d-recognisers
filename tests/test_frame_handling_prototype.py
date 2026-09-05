@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from build123d import Axis, Box, Sphere
 
-from b123d_recognisers.frames import (
+from quiddity.frames import (
     FrameRefusalReason,
     PartFrame,
     RefusedPartFrame,

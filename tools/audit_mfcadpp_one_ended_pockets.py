@@ -27,11 +27,11 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._geometry import SMOOTH_ARC_GAP  # noqa: E402
-from b123d_recognisers._section_passages import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._geometry import SMOOTH_ARC_GAP  # noqa: E402
+from quiddity._section_passages import (  # noqa: E402
     _COORD_FLOOR,
     _END_PROBE,
     _MATERIAL_VOL_FRAC,
@@ -41,8 +41,8 @@ from b123d_recognisers._section_passages import (  # noqa: E402
     _parallel,
     _probe_prism,
 )
-from b123d_recognisers._sections import LocalFrame, PlanarSection  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._sections import LocalFrame, PlanarSection  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.audit_mfcadpp_cavity_enclosures import (  # noqa: E402
     _candidate_regions,
     _convex_mouth,
@@ -316,7 +316,7 @@ def _audit_model(
 ) -> tuple[str, list[dict[str, Any]], Counter[str], dict[str, str] | None]:
     """Evaluate one immutable model; the parent retains ordering and report authority."""
 
-    from b123d_recognisers import import_step_geometry
+    from quiddity import import_step_geometry
 
     part = import_step_geometry(path)
     try:

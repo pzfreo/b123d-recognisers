@@ -33,7 +33,7 @@ from build123d import (  # noqa: E402
     fillet,
 )
 
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 
 JSON_REPORT = ROOT / "docs" / "benchmarks" / "blend-boundary-sweep.json"
 MARKDOWN_REPORT = ROOT / "docs" / "benchmarks" / "blend-boundary-sweep.md"

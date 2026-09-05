@@ -71,8 +71,13 @@ one-time pending-publisher records on the two indexes must be:
 
 | Index | Project | Owner | Repository | Workflow | Environment |
 | --- | --- | --- | --- | --- | --- |
-| TestPyPI | `b123d-recognisers` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `testpypi` |
-| PyPI | `b123d-recognisers` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `pypi` |
+| TestPyPI | `quiddity` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `testpypi` |
+| PyPI | `quiddity` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `pypi` |
+
+Before merging the Quiddity rename, configure these new project publishers on both indexes.
+The old project's publisher does not authorize a new distribution name. Main pushes publish
+to TestPyPI automatically; stable PyPI publication still requires an explicit release.
+The GitHub repository is not renamed by this package change.
 
 TestPyPI and PyPI accounts and publisher registrations are independent. Protect the GitHub
 `pypi` environment with required reviewer approval; `testpypi` does not need approval.

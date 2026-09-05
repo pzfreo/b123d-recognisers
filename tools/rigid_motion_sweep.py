@@ -24,8 +24,8 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Axis, Vector  # noqa: E402
 
-from b123d_recognisers.census import _LEGACY_CENSUS_BINDINGS  # noqa: E402
-from b123d_recognisers.result import PHYSICAL_FAMILIES, _take_inventory  # noqa: E402
+from quiddity.census import _LEGACY_CENSUS_BINDINGS  # noqa: E402
+from quiddity.result import PHYSICAL_FAMILIES, _take_inventory  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
 GOLDEN_ROOT = ROOT / "tests" / "golden"

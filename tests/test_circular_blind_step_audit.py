@@ -11,8 +11,8 @@ from types import SimpleNamespace
 import pytest
 from build123d import Box, Cylinder, Pos, Rot
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
+from quiddity._adjacency import FaceGraph
+from quiddity._cylinder_substrate import analyse_cylinders
 from tools import audit_mfcadpp_circular_blind_steps as audit
 from tools.audit_mfcadpp_circular_blind_steps import (
     _QUARTER_TURN_RAD_TOL,

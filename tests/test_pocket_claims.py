@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from build123d import Box, Cylinder, Pos
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
+from quiddity._adjacency import FaceGraph
+from quiddity._claims import ClaimLedger
 from tools._legacy_recognition import namespace
 
 r = namespace()
@@ -117,7 +117,7 @@ def test_the_aggregate_writes_pocket_and_slot_claims_through_one_writer(monkeypa
     both calls proves the two families write through one issuer without weakening that boundary.
     """
 
-    import b123d_recognisers._registry as registry_module
+    import quiddity._registry as registry_module
 
     seen = {}
     real_pockets = registry_module._discover_pockets

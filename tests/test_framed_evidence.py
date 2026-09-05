@@ -8,16 +8,16 @@ from typing import cast
 import pytest
 from build123d import Axis, Box, Compound, Cylinder, Pos, RegularPolygon, extrude
 
-import b123d_recognisers.evidence as evidence_module
-import b123d_recognisers.frames as frames
-from b123d_recognisers._typing import Part
-from b123d_recognisers.evidence import (
+import quiddity.evidence as evidence_module
+import quiddity.frames as frames
+from quiddity._typing import Part
+from quiddity.evidence import (
     FaceRef,
     FramedEvidenceRefusalReason,
     FramedRecognitionEvidence,
     RefusedFramedEvidence,
 )
-from b123d_recognisers.frames import (
+from quiddity.frames import (
     FrameGauge,
     PreparedFramedPart,
     RefusedPartFrame,

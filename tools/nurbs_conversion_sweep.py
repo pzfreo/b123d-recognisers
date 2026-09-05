@@ -25,16 +25,16 @@ from build123d import Part  # noqa: E402
 from OCP.BRep import BRep_Tool  # noqa: E402
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert  # noqa: E402
 
-from b123d_recognisers import recognise_rectangular_pads  # noqa: E402
-from b123d_recognisers._adjacency import FaceGraph  # noqa: E402
-from b123d_recognisers._analytic_surfaces import SurfaceKind  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._effective_surfaces import (  # noqa: E402
+from quiddity import recognise_rectangular_pads  # noqa: E402
+from quiddity._adjacency import FaceGraph  # noqa: E402
+from quiddity._analytic_surfaces import SurfaceKind  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._effective_surfaces import (  # noqa: E402
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
     RefusedSurfaceFact,
 )
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
 GOLDEN_ROOT = ROOT / "tests" / "golden"

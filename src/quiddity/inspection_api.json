@@ -1,0 +1,454 @@
+{
+  "api": {
+    "major": 1,
+    "namespace": "quiddity.inspection",
+    "surface_parameters": {
+      "cone": [
+        {
+          "name": "apex_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "apex_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "apex_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "signed_semi_angle",
+          "unit": "radian"
+        }
+      ],
+      "cylinder": [
+        {
+          "name": "axis_point_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_point_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_point_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "axis_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "axis_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "radius",
+          "unit": "model-length"
+        }
+      ],
+      "plane": [
+        {
+          "name": "normal_x",
+          "unit": "unitless"
+        },
+        {
+          "name": "normal_y",
+          "unit": "unitless"
+        },
+        {
+          "name": "normal_z",
+          "unit": "unitless"
+        },
+        {
+          "name": "offset",
+          "unit": "model-length"
+        }
+      ],
+      "sphere": [
+        {
+          "name": "centre_x",
+          "unit": "model-length"
+        },
+        {
+          "name": "centre_y",
+          "unit": "model-length"
+        },
+        {
+          "name": "centre_z",
+          "unit": "model-length"
+        },
+        {
+          "name": "radius",
+          "unit": "model-length"
+        }
+      ]
+    },
+    "symbols": [
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.AnalyticSurface"
+        ],
+        "contract": {
+          "fields": [
+            {
+              "name": "kind",
+              "type": "SurfaceKind"
+            },
+            {
+              "name": "provenance",
+              "type": "SurfaceProvenance"
+            },
+            {
+              "name": "orientation",
+              "type": "OrientationCapability"
+            },
+            {
+              "name": "parameters",
+              "type": "tuple[float,...]"
+            },
+            {
+              "name": "requested_tolerance",
+              "type": "float"
+            },
+            {
+              "name": "kernel_reported_gap",
+              "type": "float"
+            }
+          ],
+          "frozen": true,
+          "slots": true
+        },
+        "introduced_in": "0.2.0",
+        "kind": "dataclass",
+        "name": "AnalyticSurface",
+        "qualified_name": "quiddity.inspection.AnalyticSurface"
+      },
+      {
+        "aliases": [
+          "quiddity.BevelReject",
+          "quiddity.chamfers.BevelReject"
+        ],
+        "contract": {
+          "attributes": [
+            {
+              "name": "reason",
+              "type": "str",
+              "values": [
+                "nonplanar",
+                "degenerate",
+                "aligned",
+                "compound"
+              ]
+            }
+          ],
+          "base": "ValueError"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "exception",
+        "name": "BevelReject",
+        "qualified_name": "quiddity.inspection.BevelReject"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.FaceInspection"
+        ],
+        "contract": {
+          "fields": [
+            {
+              "name": "surface",
+              "type": "AnalyticSurface|RefusedSurface"
+            },
+            {
+              "name": "anchor",
+              "type": "tuple[float,float,float]|null"
+            }
+          ],
+          "frozen": true,
+          "slots": true
+        },
+        "introduced_in": "0.2.0",
+        "kind": "dataclass",
+        "name": "FaceInspection",
+        "qualified_name": "quiddity.inspection.FaceInspection"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.OrientationCapability"
+        ],
+        "contract": {
+          "members": [
+            {
+              "name": "NATIVE_ORIENTED",
+              "value": "native-oriented"
+            },
+            {
+              "name": "RECOVERED_UNORIENTED",
+              "value": "recovered-unoriented"
+            }
+          ]
+        },
+        "introduced_in": "0.2.0",
+        "kind": "enum",
+        "name": "OrientationCapability",
+        "qualified_name": "quiddity.inspection.OrientationCapability"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.RefusedSurface"
+        ],
+        "contract": {
+          "fields": [
+            {
+              "name": "reason",
+              "type": "SurfaceRefusalReason"
+            }
+          ],
+          "frozen": true,
+          "slots": true
+        },
+        "introduced_in": "0.2.0",
+        "kind": "dataclass",
+        "name": "RefusedSurface",
+        "qualified_name": "quiddity.inspection.RefusedSurface"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.SurfaceFact"
+        ],
+        "contract": {
+          "definition": "AnalyticSurface|RefusedSurface"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "type-alias",
+        "name": "SurfaceFact",
+        "qualified_name": "quiddity.inspection.SurfaceFact"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.SurfaceKind"
+        ],
+        "contract": {
+          "members": [
+            {
+              "name": "PLANE",
+              "value": "plane"
+            },
+            {
+              "name": "CYLINDER",
+              "value": "cylinder"
+            },
+            {
+              "name": "CONE",
+              "value": "cone"
+            },
+            {
+              "name": "SPHERE",
+              "value": "sphere"
+            }
+          ]
+        },
+        "introduced_in": "0.2.0",
+        "kind": "enum",
+        "name": "SurfaceKind",
+        "qualified_name": "quiddity.inspection.SurfaceKind"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.SurfaceProvenance"
+        ],
+        "contract": {
+          "members": [
+            {
+              "name": "NATIVE",
+              "value": "native"
+            },
+            {
+              "name": "RECOVERED",
+              "value": "recovered"
+            }
+          ]
+        },
+        "introduced_in": "0.2.0",
+        "kind": "enum",
+        "name": "SurfaceProvenance",
+        "qualified_name": "quiddity.inspection.SurfaceProvenance"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.SurfaceRefusalReason"
+        ],
+        "contract": {
+          "members": [
+            {
+              "name": "UNSUPPORTED_KIND",
+              "value": "unsupported-kind"
+            },
+            {
+              "name": "UNSUPPORTED_TORUS_RECOVERY",
+              "value": "unsupported-torus-recovery"
+            },
+            {
+              "name": "FIT_UNAVAILABLE",
+              "value": "fit-unavailable"
+            },
+            {
+              "name": "INVALID_INPUT",
+              "value": "invalid-input"
+            },
+            {
+              "name": "INVALID_RESULT",
+              "value": "invalid-result"
+            },
+            {
+              "name": "RESIDUAL_EXCEEDED",
+              "value": "residual-exceeded"
+            },
+            {
+              "name": "AMBIGUOUS_PRIMITIVE",
+              "value": "ambiguous-primitive"
+            },
+            {
+              "name": "UNSUPPORTED_OCCT_CONTRACT",
+              "value": "unsupported-occt-contract"
+            }
+          ]
+        },
+        "introduced_in": "0.2.0",
+        "kind": "enum",
+        "name": "SurfaceRefusalReason",
+        "qualified_name": "quiddity.inspection.SurfaceRefusalReason"
+      },
+      {
+        "aliases": [
+          "quiddity.chamfers.classify_bevel",
+          "quiddity.classify_bevel"
+        ],
+        "contract": {
+          "signature": "(face: 'FaceLike') -> 'tuple[int, Vector3, dict[int, tuple[float, float]], float, float]'"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "function",
+        "name": "classify_bevel",
+        "qualified_name": "quiddity.inspection.classify_bevel"
+      },
+      {
+        "aliases": [
+          "quiddity.cone_rims",
+          "quiddity.countersinks.cone_rims"
+        ],
+        "contract": {
+          "signature": "(face: 'FaceLike') -> 'tuple[EdgeLike, EdgeLike, float] | None'"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "function",
+        "name": "cone_rims",
+        "qualified_name": "quiddity.inspection.cone_rims"
+      },
+      {
+        "aliases": [
+          "quiddity.floor_face_anchor",
+          "quiddity.grooves.floor_face_anchor"
+        ],
+        "contract": {
+          "signature": "(face: 'FaceLike') -> 'tuple[float, float, float]'"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "function",
+        "name": "floor_face_anchor",
+        "qualified_name": "quiddity.inspection.floor_face_anchor"
+      },
+      {
+        "aliases": [
+          "quiddity.experimental_geometry.inspect_face"
+        ],
+        "contract": {
+          "signature": "(face: 'FaceLike') -> 'FaceInspection'"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "function",
+        "name": "inspect_face",
+        "qualified_name": "quiddity.inspection.inspect_face"
+      },
+      {
+        "aliases": [
+          "quiddity.profiled_bores.read_double_d_tool"
+        ],
+        "contract": {
+          "returns": {
+            "kind": "tuple",
+            "members": [
+              {
+                "name": "axis",
+                "type": "str",
+                "unit": null,
+                "values": [
+                  "x",
+                  "y",
+                  "z"
+                ]
+              },
+              {
+                "name": "major_diameter",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "across_flats",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "origin",
+                "type": "tuple[float,float,float]",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "depth",
+                "type": "float",
+                "unit": "model-length",
+                "values": null
+              },
+              {
+                "name": "profile_direction",
+                "type": "tuple[float,float,float]",
+                "unit": "unitless",
+                "values": null
+              }
+            ]
+          },
+          "signature": "(obj: 'Part', *, tol: 'float' = 1e-05) -> 'tuple[str, float, float, Vector3, float, Vector3]'"
+        },
+        "introduced_in": "0.2.0",
+        "kind": "function",
+        "name": "read_double_d_tool",
+        "qualified_name": "quiddity.inspection.read_double_d_tool"
+      }
+    ]
+  },
+  "format": "quiddity-inspection-api",
+  "format_version": 1,
+  "package": {
+    "name": "quiddity",
+    "version": "0.2.0.dev0"
+  }
+}

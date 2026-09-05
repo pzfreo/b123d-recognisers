@@ -39,8 +39,8 @@ from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN, TopAbs_Orientation, TopAbs_OUT
 from OCP.TopLoc import TopLoc_Location
 
-import b123d_recognisers as r
-from b123d_recognisers._adjacency import FaceGraph, frame_points_outward
+import quiddity as r
+from quiddity._adjacency import FaceGraph, frame_points_outward
 
 #: How far off the face to probe. Small against every fixture's thinnest wall (3 mm), so a
 #: probe that lands outside the solid did so because the normal points that way and not

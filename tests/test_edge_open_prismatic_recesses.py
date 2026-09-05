@@ -22,10 +22,10 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers.edge_open_prismatic_recesses import (
+from quiddity._adjacency import FaceGraph, FaceNode
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     OpenPolygonalSection,
     OpenSectionOpening,

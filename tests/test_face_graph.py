@@ -23,7 +23,7 @@ import dataclasses
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, chamfer, fillet
 
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, edge_face_map, neighbours
+from quiddity._adjacency import FaceEdges, FaceGraph, edge_face_map, neighbours
 
 
 def featured_part():

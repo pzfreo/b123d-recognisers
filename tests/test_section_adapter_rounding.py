@@ -1,13 +1,13 @@
 import pytest
 
-from b123d_recognisers._section_adapters import (
+from quiddity._section_adapters import (
     LegacySectionProjectionError,
     _normalise_published_section,
     legacy_section_geometry,
 )
-from b123d_recognisers._sections import PlanarSection, SectionVertex
-from b123d_recognisers.passages import Passage
-from b123d_recognisers.prismatic_pockets import PrismaticPocket
+from quiddity._sections import PlanarSection, SectionVertex
+from quiddity.passages import Passage
+from quiddity.prismatic_pockets import PrismaticPocket
 
 
 @pytest.mark.parametrize("axis", ["x", "y", "z"])

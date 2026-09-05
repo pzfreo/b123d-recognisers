@@ -33,20 +33,20 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-import b123d_recognisers as recognition
-from b123d_recognisers import _recess_core as recess_core
-from b123d_recognisers import recognise_angled_steps, recognise_chamfers, recognise_slots
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers._reconcile import (
+import quiddity as recognition
+from quiddity import _recess_core as recess_core
+from quiddity import recognise_angled_steps, recognise_chamfers, recognise_slots
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity._reconcile import (
     chamfers_that_are_not_angled_steps,
     reconcile_recesses,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-from b123d_recognisers._run import start
-from b123d_recognisers.result import _discover_all, _take_inventory
+from quiddity._registry import PHYSICAL_DEFINITIONS
+from quiddity._run import start
+from quiddity.result import _discover_all, _take_inventory
 from tools import _legacy_recognition as legacy_recognition
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))

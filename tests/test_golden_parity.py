@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-import b123d_recognisers as recognition
-from b123d_recognisers import feature_census
+import quiddity as recognition
+from quiddity import feature_census
 
 ROOT = Path(__file__).parents[1]
 GOLDEN_ROOT = ROOT / "tests" / "golden"

@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "b123d-recognisers"
-version = "0.4.15.dev0"
+name = "quiddity"
+version = "0.2.0.dev0"
 description = "Deterministic, geometry-only feature recognition for build123d solids"
 readme = "README.md"
 license = "Apache-2.0"
@@ -32,7 +32,7 @@ Repository = "https://github.com/pzfreo/b123d-recognisers"
 Issues = "https://github.com/pzfreo/b123d-recognisers/issues"
 
 [project.scripts]
-b123d-recognisers-capabilities = "b123d_recognisers.capabilities:main"
+quiddity-capabilities = "quiddity.capabilities:main"
 
 [dependency-groups]
 dev = [
@@ -50,7 +50,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/b123d_recognisers"]
+packages = ["src/quiddity"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -99,7 +99,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src/b123d_recognisers", "tests/typing/public_consumer.py"]
+files = ["src/quiddity", "tests/typing/public_consumer.py"]
 check_untyped_defs = true
 no_implicit_optional = true
 strict_equality = true

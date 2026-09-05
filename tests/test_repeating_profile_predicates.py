@@ -23,8 +23,8 @@ from types import SimpleNamespace
 import pytest
 from build123d import GeomType
 
-import b123d_recognisers.repeating_profiles as module
-from b123d_recognisers.repeating_profiles import (
+import quiddity.repeating_profiles as module
+from quiddity.repeating_profiles import (
     _BoundaryEvidence,
     _common_circle_centre,
     _CurveEvidence,

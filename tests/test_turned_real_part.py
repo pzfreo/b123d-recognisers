@@ -34,9 +34,9 @@ pytest.importorskip("build123d")
 
 from build123d import import_step  # noqa: E402
 
-from b123d_recognisers import recognise_turned_steps  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._geometry import quantise  # noqa: E402
+from quiddity import recognise_turned_steps  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._geometry import quantise  # noqa: E402
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
 

@@ -10,11 +10,11 @@ from dataclasses import asdict
 import pytest
 from build123d import Box, Compound, Cylinder, Plane, Polygon, Pos, Rot, extrude
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._bevel import BevelReject, classify_bevel
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._bevel import BevelReject, classify_bevel
+from quiddity._candidates import FamilyId
+from quiddity._dispositions import Outcome
+from quiddity.result import _take_inventory
 from tools import audit_mfcadpp_paired_ramp_steps as audit_module
 from tools.audit_mfcadpp_paired_ramp_steps import (
     _describe_component,

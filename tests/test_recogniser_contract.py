@@ -36,7 +36,7 @@ from build123d import (
     fillet,
 )
 
-from b123d_recognisers import (
+from quiddity import (
     BoltCircle,
     BossRecord,
     Chamfer,
@@ -87,7 +87,7 @@ from b123d_recognisers import (
     recognise_through_steps,
     recognise_turned_steps,
 )
-from b123d_recognisers._record import Record
+from quiddity._record import Record
 from tools._legacy_recognition import (
     Channel,
     Pocket,
@@ -523,7 +523,7 @@ def test_riser_evidence_is_constructible_without_a_scan_tolerance():
     constructs but does not project would be no use.
     """
 
-    from b123d_recognisers import RiserEvidence, project_step_shoulders
+    from quiddity import RiserEvidence, project_step_shoulders
 
     riser = RiserEvidence(
         vertical=True,

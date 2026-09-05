@@ -8,10 +8,10 @@ from dataclasses import asdict
 
 from build123d import Box, Pos, Rot
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._dispositions import Outcome
+from quiddity.result import _take_inventory
 from tools.audit_mfcadpp_through_steps import (
     _is_two_wall_boundary_interruption,
     _rank_clusters,

@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from b123d_recognisers._analytic_surfaces import SurfaceKind
+from quiddity._analytic_surfaces import SurfaceKind
 from tools.nurbs_conversion_sweep import (
     EXCLUDED_FIXTURES,
     JSON_REPORT,

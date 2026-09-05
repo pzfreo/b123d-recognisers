@@ -22,11 +22,11 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers._adjacency import FaceNode
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers._passage_compat import PassageCompatibilityView
-from b123d_recognisers._recess_core import _has_smooth_depth_closure
+from quiddity._adjacency import FaceNode
+from quiddity._candidates import FamilyId
+from quiddity._dispositions import Outcome
+from quiddity._passage_compat import PassageCompatibilityView
+from quiddity._recess_core import _has_smooth_depth_closure
 from tools._legacy_recognition import namespace
 
 r = namespace()
@@ -84,8 +84,8 @@ def test_rotational_projection_still_uses_passage_evidence_for_reconciliation():
 def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypatch):
     """Rejected pockets cannot author a pattern after a projection-hidden Passage wins."""
 
-    import b123d_recognisers._registry as registry_module
-    import b123d_recognisers.result as result_module
+    import quiddity._registry as registry_module
+    import quiddity.result as result_module
 
     pocket = r.Pocket("x", "y", 4, 8, 3, 0, -4, 4, -3, 0)
     passage = r.SectionPassage(

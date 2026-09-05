@@ -23,15 +23,15 @@ from build123d import (
     import_step,
 )
 
-import b123d_recognisers.polygonal_bosses as module
-from b123d_recognisers import recognise_polygonal_stock
-from b123d_recognisers._adjacency import FaceGraph, FaceNode
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
-from b123d_recognisers.experimental_geometry import GeometryGraph
-from b123d_recognisers.polygonal_bosses import PolygonalStock, _discover_polygonal_stock
-from b123d_recognisers.result import _take_inventory
+import quiddity.polygonal_bosses as module
+from quiddity import recognise_polygonal_stock
+from quiddity._adjacency import FaceGraph, FaceNode
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
+from quiddity.experimental_geometry import GeometryGraph
+from quiddity.polygonal_bosses import PolygonalStock, _discover_polygonal_stock
+from quiddity.result import _take_inventory
 from tests.golden._common import hex_prism
 from tests.golden.polygonal_stock.fixture import build_fixture
 
@@ -659,7 +659,7 @@ def test_terminal_status_identity_and_not_counted_census_are_truthful() -> None:
 
 
 def test_private_core_constructor_and_cap_identity_paths_are_closed() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     core_sites = []
     constructors = []
     for path in package.glob("*.py"):
@@ -670,7 +670,7 @@ def test_private_core_constructor_and_cap_identity_paths_are_closed() -> None:
         module_aliases = set()
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module == (
-                "b123d_recognisers.polygonal_bosses"
+                "quiddity.polygonal_bosses"
             ):
                 direct_aliases.update(
                     alias.asname or alias.name
@@ -681,7 +681,7 @@ def test_private_core_constructor_and_cap_identity_paths_are_closed() -> None:
                 module_aliases.update(
                     alias.asname or alias.name
                     for alias in statement.names
-                    if alias.name == "b123d_recognisers.polygonal_bosses"
+                    if alias.name == "quiddity.polygonal_bosses"
                 )
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):

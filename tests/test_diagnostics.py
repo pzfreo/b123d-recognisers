@@ -7,21 +7,21 @@ import json
 
 from build123d import Box, Edge, Face, Pos, Rot, Shell, Solid, Wire
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import (
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import (
     FamilyId,
     PredicateId,
     SplitTriangularTerminalFact,
 )
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._diagnostics import (
+from quiddity._claims import ClaimLedger
+from quiddity._diagnostics import (
     DiagnosticCode,
     DiagnosticStatus,
     diagnose_residuals,
 )
-from b123d_recognisers._dispositions import ReconciliationResult
-from b123d_recognisers.chamfers import Chamfer
-from b123d_recognisers.result import _take_inventory
+from quiddity._dispositions import ReconciliationResult
+from quiddity.chamfers import Chamfer
+from quiddity.result import _take_inventory
 
 
 def _diagnostic_run(

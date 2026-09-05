@@ -4,8 +4,8 @@ from collections import Counter
 
 from build123d import Box, Compound, Pos, Rot
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
 from tools.audit_mfcadpp_cavity_enclosures import (
     TARGET_FAMILIES,
     _candidate_regions,

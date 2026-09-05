@@ -37,35 +37,35 @@ def _load():
 
 
 def _project(root: Path, version: str = "0.2.5") -> None:
-    (root / "src" / "b123d_recognisers").mkdir(parents=True)
+    (root / "src" / "quiddity").mkdir(parents=True)
     (root / "pyproject.toml").write_text(f'[project]\nversion = "{version}"\n', encoding="utf-8")
     (root / "uv.lock").write_text(f'version = "{version}"\n', encoding="utf-8")
-    (root / "src/b123d_recognisers/capabilities.json").write_text(
-        json.dumps({"families": [], "package": {"name": "b123d-recognisers", "version": version}},
+    (root / "src/quiddity/capabilities.json").write_text(
+        json.dumps({"families": [], "package": {"name": "quiddity", "version": version}},
                    indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    (root / "src/b123d_recognisers/inspection_api.json").write_text(
+    (root / "src/quiddity/inspection_api.json").write_text(
         json.dumps(
-            {"api": {}, "package": {"name": "b123d-recognisers", "version": version}},
+            {"api": {}, "package": {"name": "quiddity", "version": version}},
             indent=2,
             sort_keys=True,
         )
         + "\n",
         encoding="utf-8",
     )
-    (root / "src/b123d_recognisers/evidence_api.json").write_text(
+    (root / "src/quiddity/evidence_api.json").write_text(
         json.dumps(
-            {"api": {}, "package": {"name": "b123d-recognisers", "version": version}},
+            {"api": {}, "package": {"name": "quiddity", "version": version}},
             indent=2,
             sort_keys=True,
         )
         + "\n",
         encoding="utf-8",
     )
-    (root / "src/b123d_recognisers/__init__.py").write_text(
+    (root / "src/quiddity/__init__.py").write_text(
         'try:\n'
-        '    __version__ = version("b123d-recognisers")\n'
+        '    __version__ = version("quiddity")\n'
         'except PackageNotFoundError:\n'
         f'    __version__ = "{version}"\n',
         encoding="utf-8",
@@ -73,10 +73,10 @@ def _project(root: Path, version: str = "0.2.5") -> None:
 
 
 def _versions(root: Path) -> dict[str, str]:
-    manifest = json.loads((root / "src/b123d_recognisers/capabilities.json").read_text())
-    inspection = json.loads((root / "src/b123d_recognisers/inspection_api.json").read_text())
-    evidence = json.loads((root / "src/b123d_recognisers/evidence_api.json").read_text())
-    init = (root / "src/b123d_recognisers/__init__.py").read_text(encoding="utf-8")
+    manifest = json.loads((root / "src/quiddity/capabilities.json").read_text())
+    inspection = json.loads((root / "src/quiddity/inspection_api.json").read_text())
+    evidence = json.loads((root / "src/quiddity/evidence_api.json").read_text())
+    init = (root / "src/quiddity/__init__.py").read_text(encoding="utf-8")
     return {
         "manifest": manifest["package"]["version"],
         "inspection": inspection["package"]["version"],
@@ -186,16 +186,16 @@ def test_a_source_tree_missing_the_fallback_is_refused_before_writing(tmp_path) 
 
     module = _load()
     _project(tmp_path)
-    (tmp_path / "src/b123d_recognisers/__init__.py").write_text(
+    (tmp_path / "src/quiddity/__init__.py").write_text(
         "__version__ = _resolved_elsewhere()\n", encoding="utf-8"
     )
 
     with pytest.raises(RuntimeError, match="fallback version"):
         module.update(tmp_path, "0.2.6")
 
-    manifest = json.loads((tmp_path / "src/b123d_recognisers/capabilities.json").read_text())
+    manifest = json.loads((tmp_path / "src/quiddity/capabilities.json").read_text())
     assert manifest["package"]["version"] == "0.2.5"
     inspection = json.loads(
-        (tmp_path / "src/b123d_recognisers/inspection_api.json").read_text()
+        (tmp_path / "src/quiddity/inspection_api.json").read_text()
     )
     assert inspection["package"]["version"] == "0.2.5"

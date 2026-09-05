@@ -48,7 +48,7 @@ from OCP.gp import gp_Pnt
 from OCP.TColgp import TColgp_Array2OfPnt
 from OCP.TopoDS import TopoDS
 
-from b123d_recognisers._adjacency import (
+from quiddity._adjacency import (
     FaceEdges,
     FaceGraph,
     _SmoothSideObservation,
@@ -56,7 +56,7 @@ from b123d_recognisers._adjacency import (
     is_opposed_nonsmooth,
     same_arc_kind,
 )
-from b123d_recognisers._geometry import SMOOTH_ARC_GAP
+from quiddity._geometry import SMOOTH_ARC_GAP
 from tests.golden._common import load_fixture
 
 _CORPUS = Path(__file__).parent / "corpus" / "mfcadpp"
@@ -288,7 +288,7 @@ def test_native_continuation_primitive_failure_is_unproven(monkeypatch) -> None:
     graph = FaceGraph(_split_native_solids()[1])
     a, b = _smooth_pairs(graph)[0]
     monkeypatch.setattr(
-        "b123d_recognisers._adjacency.validated_parameters",
+        "quiddity._adjacency.validated_parameters",
         lambda *_: (_ for _ in ()).throw(ValueError("invalid primitive")),
     )
 
@@ -540,7 +540,7 @@ def test_normal_curvature_kernel_failure_is_unproven(monkeypatch) -> None:
     a, b = _smooth_pairs(graph)[0]
     edge = graph.shared_edges(a, b)[0]
     monkeypatch.setattr(
-        "b123d_recognisers._adjacency.BRepAdaptor_Curve",
+        "quiddity._adjacency.BRepAdaptor_Curve",
         lambda *_: (_ for _ in ()).throw(RuntimeError("curve adaptor failed")),
     )
 

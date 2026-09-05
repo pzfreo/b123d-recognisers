@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from build123d import Box, Compound, Cylinder, Pos, Rot
 
-from b123d_recognisers._adjacency import FaceGraph
+from quiddity._adjacency import FaceGraph
 from tools.audit_mfcadpp_oriented_circular_pockets import _candidates
 
 

@@ -11,13 +11,13 @@ machine-readable capability contract specified by
 exposes the implemented format-2 document without requiring access to package internals:
 
 ```python
-from b123d_recognisers import capability_manifest
+from quiddity import capability_manifest
 
 manifest = capability_manifest(format_version=2)
 ```
 
 Downstream CI can export the identical deterministic JSON with
-`b123d-recognisers-capabilities --format-version 2`. Unknown format versions fail closed. This
+`quiddity-capabilities --format-version 2`. Unknown format versions fail closed. This
 page remains the human explanation of the machine-readable boundary.
 
 ## Geometry-only STEP input
@@ -41,12 +41,12 @@ aggregate membership only. A separate format-1 document freezes the smaller API 
 ends when a user selects geometry and declares a feature:
 
 ```python
-from b123d_recognisers.inspection import inspection_api_manifest
+from quiddity.inspection import inspection_api_manifest
 
 inspection_contract = inspection_api_manifest(format_version=1)
 ```
 
-Its primary namespace is `b123d_recognisers.inspection`. The consumer-proven operation roster is
+Its primary namespace is `quiddity.inspection`. The consumer-proven operation roster is
 `inspect_face`, `classify_bevel` / `BevelReject`, `cone_rims`, `read_double_d_tool`, and
 `floor_face_anchor`, together with the closed analytic result and refusal value types required by
 `inspect_face`. The manifest records exact signatures, enum values, dataclass fields, introduction
@@ -86,7 +86,7 @@ Issue #375 separately publishes the smaller identity operation now required by a
 recognition consumer:
 
 ```python
-from b123d_recognisers.evidence import build_recognition_evidence
+from quiddity.evidence import build_recognition_evidence
 
 view = build_recognition_evidence(part)
 coverage = view.association

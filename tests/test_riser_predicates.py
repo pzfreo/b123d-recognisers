@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from b123d_recognisers.levels import _ramp_positions, _riser_orientation
+from quiddity.levels import _ramp_positions, _riser_orientation
 
 EXT = {"x": 100.0, "y": 80.0, "z": 40.0}
 

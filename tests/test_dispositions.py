@@ -6,19 +6,19 @@ from dataclasses import dataclass
 import pytest
 from build123d import Box
 
-import b123d_recognisers.result as result_module
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import Candidate, CandidateSet, Evidence, FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import (
+import quiddity.result as result_module
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import Candidate, CandidateSet, Evidence, FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import (
     Disposition,
     Outcome,
     ReasonCode,
     ReconciliationResult,
 )
-from b123d_recognisers._reconcile import reconcile_recess_candidates
-from b123d_recognisers.passages import SectionPassage, recognise_section_passages
-from b123d_recognisers.prismatic_pockets import PrismaticPocket
+from quiddity._reconcile import reconcile_recess_candidates
+from quiddity.passages import SectionPassage, recognise_section_passages
+from quiddity.prismatic_pockets import PrismaticPocket
 
 
 @dataclass(frozen=True)

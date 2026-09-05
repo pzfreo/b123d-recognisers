@@ -3,9 +3,9 @@
 import pytest
 from build123d import Box, Compound, Cylinder, Pos, Rot, Vertex, export_step, import_step
 
-import b123d_recognisers._open_channel_section as proof_module
-from b123d_recognisers import build_section_recess_document
-from b123d_recognisers._adjacency import FaceGraph
+import quiddity._open_channel_section as proof_module
+from quiddity import build_section_recess_document
+from quiddity._adjacency import FaceGraph
 from tools._legacy_recognition import recognise_channels
 
 

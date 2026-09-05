@@ -26,7 +26,7 @@ from __future__ import annotations
 import pytest
 from build123d import Box, GeomType, Pos, chamfer, fillet
 
-from b123d_recognisers import (
+from quiddity import (
     recognise_chamfers,
     recognise_fillets,
     recognise_flats,

@@ -28,22 +28,22 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import feature_census
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers._effective_surfaces import (
+from quiddity import feature_census
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._cylinder_substrate import analyse_cylinders
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity._effective_surfaces import (
     SurfaceKind,
     SurfaceProvenance,
 )
-from b123d_recognisers.circular_blind_steps import (
+from quiddity.circular_blind_steps import (
     QUARTER_TURN_RAD_TOL,
     CircularBlindStep,
     recognise_circular_blind_steps,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 
 def _step(scale: float = 1.0):

@@ -22,15 +22,15 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._section_passages import (
+from quiddity._adjacency import FaceGraph
+from quiddity._section_passages import (
     _BodyAdapter,
     _enclosure_proposals,
     _line_section,
     _mouth_regions,
     section_ring_proposals,
 )
-from b123d_recognisers._sections import LocalFrame
+from quiddity._sections import LocalFrame
 from tools.audit_mfcadpp_cavity_enclosures import _two_ended_regions
 from tools.audit_mfcadpp_passage_rejections import _classify_region
 

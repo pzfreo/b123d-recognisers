@@ -6,8 +6,8 @@ import json
 import pytest
 from build123d import Box, Compound, Pos, Rot
 
-import b123d_recognisers as public
-from b123d_recognisers.evidence import build_recognition_evidence
+import quiddity as public
+from quiddity.evidence import build_recognition_evidence
 from tests.golden.blind_pockets_and_pocket_patterns.fixture import build_fixture as pocket_grid
 from tests.golden.plates_pads_levels_and_slanted_steps.fixture import build_fixture as channels
 
