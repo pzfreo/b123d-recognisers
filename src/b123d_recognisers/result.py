@@ -13,13 +13,14 @@ from __future__ import annotations
 import math
 import warnings
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from enum import Enum
 from types import MappingProxyType
 from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._corner_section import prove_corner_section
 from b123d_recognisers._correspondence import _CorrespondenceSnapshotAuthority
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
@@ -36,6 +37,8 @@ from b123d_recognisers._features import (
     LinearArray,
     RectGrid,
 )
+from b123d_recognisers._geometry import plane_axes
+from b123d_recognisers._open_channel_section import prove_open_channel
 from b123d_recognisers._reconcile import (
     reconcile_bevel_candidates,
     reconcile_blend_candidates,
@@ -48,6 +51,7 @@ from b123d_recognisers._reconcile import (
 from b123d_recognisers._registry import (
     DERIVED_DEFINITIONS,
     PHYSICAL_DEFINITIONS,
+    RECESS_SOURCE_FAMILIES,
     AcceptedInputs,
     AcceptedProjectionInputs,
     DerivedId,
@@ -60,6 +64,22 @@ from b123d_recognisers._registry import (
     validate_result_fields,
 )
 from b123d_recognisers._run import RecognitionContext, start
+from b123d_recognisers._section_adapters import legacy_section_geometry
+from b123d_recognisers._section_recess import (
+    ClosedSectionProfile,
+    OpenSectionProfile,
+    SectionEnd,
+    SectionRecess,
+    SectionRecessArray,
+    SectionRecessClassification,
+    SectionRecessEnds,
+    SectionRecessEvidence,
+    SectionRecessGeometry,
+    SectionRecessGrid,
+    SectionRecessRefusal,
+    _polygonal_shape,
+)
+from b123d_recognisers._sections import LocalFrame
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
 from b123d_recognisers.angled_steps import AngledStep
 from b123d_recognisers.blends import Blend
@@ -79,7 +99,12 @@ from b123d_recognisers.levels import (
 from b123d_recognisers.oriented_slots import OrientedSlot, OrientedSlotArray, OrientedSlotGrid
 from b123d_recognisers.pads import RaisedPad
 from b123d_recognisers.paired_ramp_steps import PairedRampStep
-from b123d_recognisers.passages import Passage, SectionPassage
+from b123d_recognisers.passages import (
+    Passage,
+    PassageFrame,
+    PassageSectionVertex,
+    SectionPassage,
+)
 from b123d_recognisers.plates import Plate
 from b123d_recognisers.polygonal_bosses import (
     PolygonalBoss,
@@ -104,11 +129,14 @@ from b123d_recognisers.turned import TurnedProfile, TurnedStep
 
 #: The families this aggregate runs, exactly once, per orchestration.
 MIGRATED: frozenset[str] = frozenset(
-    definition.public_entrypoint for definition in PHYSICAL_DEFINITIONS
+    definition.public_entrypoint
+    for definition in PHYSICAL_DEFINITIONS
+    if definition.family not in RECESS_SOURCE_FAMILIES
 ) | frozenset(
     definition.public_entrypoint
     for definition in DERIVED_DEFINITIONS
     if definition.public_entrypoint is not None
+    and definition.identifier not in {DerivedId.POCKET_PATTERNS, DerivedId.PASSAGES_COMPAT}
 )
 
 
@@ -234,6 +262,7 @@ class InventoryProduct:
     diagnostics: tuple[ResidualDiagnostic, ...]
     derived: DerivedInventory
     result: RecognitionResult
+    _legacy_result: _LegacyRecognitionResult
     _correspondence_authority: object | None = field(default=None, repr=False, compare=False)
 
     @property
@@ -280,23 +309,19 @@ class RecognitionResult:
     bosses: tuple[BossRecord, ...]
     polygonal_bosses: tuple[PolygonalBoss, ...]
     polygonal_stock: tuple[PolygonalStock, ...]
-    channels: tuple[Channel, ...]
+
     slots: tuple[Slot, ...]
     #: Rectangular through slots whose in-plane axes are not principal in the supplied frame.
     oriented_slots: tuple[OrientedSlot, ...]
     slot_patterns: tuple[SlotArray | SlotGrid, ...]
     oriented_slot_patterns: tuple[OrientedSlotArray | OrientedSlotGrid, ...]
-    #: Edge-open, one-cap blind slots with a constant rectangular U section.
-    rectangular_blind_slots: tuple[RectangularBlindSlot, ...]
-    #: Edge-open, one-cap blind slots with a constant flat-plus-quarter-cylinder U section.
-    round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
     grooves: tuple[Groove, ...]
     flats: tuple[Flat, ...]
-    pockets: tuple[Pocket, ...]
-    prismatic_pockets: tuple[PrismaticPocket, ...]
-    edge_open_circular_pockets: tuple[EdgeOpenCircularPocket, ...]
-    edge_open_prismatic_recesses: tuple[EdgeOpenPrismaticRecess, ...]
-    pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+    #: Constant-section recesses with result-local body and face references (ADR 0019).
+    section_recesses: tuple[SectionRecess, ...]
+    section_recess_refusals: tuple[SectionRecessRefusal, ...]
+    section_recess_patterns: tuple[SectionRecessArray | SectionRecessGrid, ...]
+
     pads: tuple[RaisedPad, ...]
     #: Complete outer-wire cyclic correspondence.  Geometry-only: consumers may compare a
     #: declared axis/count, but this inventory never manufactures gear semantics.
@@ -331,11 +356,6 @@ class RecognitionResult:
     through_steps: tuple[ThroughStep, ...]
     #: Prismatic-only quarter-cylindrical corner cuts with one interior blind terminal.
     circular_blind_steps: tuple[CircularBlindStep, ...]
-    #: Prismatic voids running through the material, one record per closed ring. Discovery still
-    #: runs on a rotational-classified part so Passage evidence can reconcile overlapping recess
-    #: proposals, but this public tuple is then projected as ``()``.
-    section_passages: tuple[SectionPassage, ...]
-    passages: tuple[Passage, ...]
     #: Complete straight or circular rolling-ball paths not superseded by a specific family.
     blends: tuple[Blend, ...]
     fillets: tuple[Fillet, ...]
@@ -411,8 +431,25 @@ class RecognitionResult:
         return self.step_ladder_for_z_span(float(bb.min.Z), float(bb.max.Z))
 
 
+@dataclass(frozen=True)
+class _LegacyRecognitionResult(RecognitionResult):
+    """Internal detector inventory for scoring and frozen migration measurements only."""
+
+    channels: tuple[Channel, ...]
+    rectangular_blind_slots: tuple[RectangularBlindSlot, ...]
+    round_bottom_blind_slots: tuple[RoundBottomBlindSlot, ...]
+    pockets: tuple[Pocket, ...]
+    prismatic_pockets: tuple[PrismaticPocket, ...]
+    edge_open_circular_pockets: tuple[EdgeOpenCircularPocket, ...]
+    edge_open_prismatic_recesses: tuple[EdgeOpenPrismaticRecess, ...]
+    pocket_patterns: tuple[PocketArray | PocketGrid, ...]
+    section_passages: tuple[SectionPassage, ...]
+    passages: tuple[Passage, ...]
+
+
 validate_result_fields(
-    frozenset(RecognitionResult.__dataclass_fields__) - {"cylinders", "rotational"}
+    frozenset(_LegacyRecognitionResult.__dataclass_fields__)
+    - {"cylinders", "rotational", "section_recess_refusals", "section_recess_patterns"}
 )
 
 
@@ -504,7 +541,7 @@ def _take_inventory(
             ProjectionInputs(passage_definition.projected(context)),
         ),
     )
-    result = _project_result(context, accepted, derived)
+    result = _project_result(context, accepted, derived, evidence)
     correspondence = _CorrespondenceSnapshotAuthority()
     product = InventoryProduct(
         context=context,
@@ -513,7 +550,10 @@ def _take_inventory(
         reconciliation=reconciliation,
         diagnostics=diagnostics,
         derived=derived,
-        result=result,
+        result=RecognitionResult(
+            **{item.name: getattr(result, item.name) for item in fields(RecognitionResult)}
+        ),
+        _legacy_result=result,
         _correspondence_authority=correspondence,
     )
     correspondence.bind(product)
@@ -670,18 +710,626 @@ def _derive_passage_compat(
     return cast(tuple[Passage, ...], tuple(records))
 
 
+def _section_passage_recess(
+    record: SectionPassage,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    """Project one accepted passage without rediscovering or weakening its physical proof."""
+
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted section passage lost its body authority")
+    line_only = all(vertex.bulge == 0.0 for vertex in record.section.boundary)
+    section_shape = (
+        _polygonal_shape(tuple(vertex.point for vertex in record.section.boundary))
+        if line_only
+        else "general"
+    )
+    geometry = SectionRecessGeometry(
+        "section_recess",
+        record.frame,
+        record.run_interval,
+        ClosedSectionProfile("closed", record.section.boundary),
+        SectionRecessEnds(
+            SectionEnd("open", record.ends.low_gradient),
+            SectionEnd("open", record.ends.high_gradient),
+        ),
+    )
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        geometry,
+        SectionRecessClassification("passage", section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _prismatic_pocket_recess(
+    record: PrismaticPocket,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    """Project one accepted pocket at the legacy publication grid."""
+
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted prismatic pocket lost its body authority")
+    geometry = legacy_section_geometry(record)
+    section_shape = _polygonal_shape(tuple(vertex.point for vertex in geometry.profile.boundary))
+    if len(geometry.profile.boundary) != len(record.section):
+        section_shape = "polygonal"
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        geometry,
+        SectionRecessClassification("pocket", section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _canonical_open_profile(
+    boundary: tuple[PassageSectionVertex, ...],
+) -> OpenSectionProfile:
+    reversed_boundary = tuple(
+        PassageSectionVertex(
+            boundary[-1 - index].point,
+            -boundary[-2 - index].bulge if index < len(boundary) - 1 else 0.0,
+        )
+        for index in range(len(boundary))
+    )
+    canonical = min(boundary, reversed_boundary)
+    return OpenSectionProfile(
+        "open",
+        canonical,
+        (canonical[-1].point, canonical[0].point),
+    )
+
+
+def _principal_open_geometry(
+    *,
+    axis: str,
+    run_interval: tuple[float, float],
+    open_sign: int,
+    boundary: tuple[PassageSectionVertex, ...],
+    placement: tuple[float, float, float] | None = None,
+) -> SectionRecessGeometry:
+    axis_index = "xyz".index(axis)
+    transverse = tuple(index for index in range(3) if index != axis_index)
+    points = tuple(vertex.point for vertex in boundary)
+    center2 = cast(
+        tuple[float, float],
+        tuple(
+            0.5 * (min(point[i] for point in points) + max(point[i] for point in points))
+            for i in range(2)
+        ),
+    )
+    center3 = [0.0, 0.0, 0.0]
+    center3[transverse[0]], center3[transverse[1]] = center2
+    if placement is not None:
+        center3 = list(placement)
+    frame_value = LocalFrame.principal(axis, cast(tuple[float, float, float], tuple(center3)))
+    coordinate_order = (1, 0) if axis == "y" else (0, 1)
+    local = tuple(
+        PassageSectionVertex(
+            vertex.point
+            if placement is not None
+            else cast(
+                tuple[float, float],
+                tuple(round(vertex.point[index] - center2[index], 4) for index in coordinate_order),
+            ),
+            -vertex.bulge if placement is None and axis == "y" else vertex.bulge,
+        )
+        for vertex in boundary
+    )
+    frame = PassageFrame(
+        cast(tuple[float, float, float], tuple(round(value, 3) for value in frame_value.origin)),
+        frame_value.run,
+        frame_value.u,
+        frame_value.v,
+    )
+    return SectionRecessGeometry(
+        "section_recess",
+        frame,
+        run_interval,
+        _canonical_open_profile(local),
+        SectionRecessEnds(
+            SectionEnd("open" if open_sign == -1 else "capped"),
+            SectionEnd("capped" if open_sign == -1 else "open"),
+        ),
+    )
+
+
+def _principal_local_point(axis: str, offsets: Mapping[str, float]) -> tuple[float, float]:
+    """Express principal-axis transverse offsets in ``LocalFrame.principal`` coordinates."""
+
+    transverse = {"x": ("y", "z"), "y": ("z", "x"), "z": ("x", "y")}[axis]
+    return (round(offsets.get(transverse[0], 0.0), 4), round(offsets.get(transverse[1], 0.0), 4))
+
+
+def _legacy_section_recess(
+    record: object,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+    geometry: SectionRecessGeometry,
+    feature_kind: str,
+    section_shape: str,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted legacy section recess lost its body authority")
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        geometry,
+        SectionRecessClassification(feature_kind, section_shape),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _corner_pocket_recess(
+    record: Pocket | Channel,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess | None:
+    if isinstance(record, Channel) or not record.edge_anchored:
+        channel = prove_open_channel(
+            context.graph, evidence.defining_of(record), evidence.constituent_of(record), record
+        )
+        if channel is None:
+            return None
+        geometry = _principal_open_geometry(
+            axis=channel.axis,
+            run_interval=channel.run_interval,
+            open_sign=1,
+            boundary=tuple(
+                PassageSectionVertex((round(p[0], 4), round(p[1], 4)), 0.0)
+                for p in channel.boundary
+            ),
+        )
+        geometry = replace(geometry, ends=SectionRecessEnds(SectionEnd("open"), SectionEnd("open")))
+        return _legacy_section_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+            geometry=geometry,
+            feature_kind="channel",
+            section_shape="rectangular",
+        )
+    proof = prove_corner_section(context.graph, evidence.defining_of(record), record.depth_axis)
+    if proof is None:
+        return None
+    geometry = _principal_open_geometry(
+        axis=record.depth_axis,
+        run_interval=proof.run_interval,
+        open_sign=proof.open_sign,
+        boundary=tuple(
+            PassageSectionVertex((round(point[0], 4), round(point[1], 4)), 0.0)
+            for point in proof.boundary
+        ),
+    )
+    return _legacy_section_recess(
+        record,
+        context=context,
+        evidence=evidence,
+        index=index,
+        geometry=geometry,
+        feature_kind="edge_open_recess",
+        section_shape="polygonal",
+    )
+
+
+def _rectangular_blind_slot_recess(
+    record: RectangularBlindSlot,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    half_width, half_depth = record.width / 2, record.depth / 2
+    opening = record.depth_sign * half_depth
+    floor = -opening
+    chain = tuple(
+        PassageSectionVertex(
+            _principal_local_point(
+                record.axis,
+                {record.width_axis: width, record.depth_axis: depth},
+            ),
+            0.0,
+        )
+        for width, depth in (
+            (-half_width, opening),
+            (-half_width, floor),
+            (half_width, floor),
+            (half_width, opening),
+        )
+    )
+    geometry = _principal_open_geometry(
+        axis=record.axis,
+        run_interval=(
+            round(record.at["xyz".index(record.axis)] - record.length / 2, 3),
+            round(record.at["xyz".index(record.axis)] + record.length / 2, 3),
+        ),
+        open_sign=record.open_sign,
+        boundary=chain,
+        placement=record.at,
+    )
+    return _legacy_section_recess(
+        record,
+        context=context,
+        evidence=evidence,
+        index=index,
+        geometry=geometry,
+        feature_kind="edge_open_recess",
+        section_shape="rectangular",
+    )
+
+
+def _round_bottom_blind_slot_recess(
+    record: RoundBottomBlindSlot,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    half_width = record.width / 2
+    half_flat = record.flat_width / 2
+    half_depth = record.radius / 2
+    opening = record.depth_sign * half_depth
+    floor = -opening
+
+    def point(width: float, depth: float) -> tuple[float, float]:
+        return _principal_local_point(
+            record.axis,
+            {record.width_axis: width, record.depth_axis: depth},
+        )
+
+    width_vector = point(1.0, 0.0)
+    depth_vector = point(0.0, 1.0)
+    determinant = width_vector[0] * depth_vector[1] - width_vector[1] * depth_vector[0]
+    orientation = 1 if determinant > 0 else -1
+    arc_bulge = round(math.tan(record.depth_sign * orientation * math.pi / 8), 12)
+    chain = (
+        PassageSectionVertex(point(-half_width, opening), arc_bulge),
+        PassageSectionVertex(point(-half_flat, floor), 0.0),
+        PassageSectionVertex(point(half_flat, floor), arc_bulge),
+        PassageSectionVertex(point(half_width, opening), 0.0),
+    )
+    geometry = _principal_open_geometry(
+        axis=record.axis,
+        run_interval=(
+            round(record.at["xyz".index(record.axis)] - record.length / 2, 3),
+            round(record.at["xyz".index(record.axis)] + record.length / 2, 3),
+        ),
+        open_sign=record.open_sign,
+        boundary=chain,
+        placement=record.at,
+    )
+    return _legacy_section_recess(
+        record,
+        context=context,
+        evidence=evidence,
+        index=index,
+        geometry=geometry,
+        feature_kind="edge_open_recess",
+        section_shape="general",
+    )
+
+
+def _edge_open_prismatic_recess(
+    record: EdgeOpenPrismaticRecess,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted edge-open prismatic recess lost its body authority")
+    boundary = tuple(PassageSectionVertex(point, 0.0) for point in record.section.wall_chain)
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        _principal_open_geometry(
+            axis=record.axis,
+            run_interval=record.run_interval,
+            open_sign=record.open_sign,
+            boundary=boundary,
+        ),
+        SectionRecessClassification(
+            "edge_open_recess",
+            _polygonal_shape(tuple(vertex.point for vertex in boundary))
+            if len(boundary) == 4
+            else "polygonal",
+        ),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _edge_open_circular_recess(
+    record: EdgeOpenCircularPocket,
+    *,
+    context: RecognitionContext,
+    evidence: EvidenceIndex,
+    index: int,
+) -> SectionRecess:
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted edge-open circular recess lost its body authority")
+    vertices = tuple(
+        PassageSectionVertex(
+            segment.start,
+            0.0 if segment.kind == "line" else round(math.tan(cast(float, segment.sweep) / 4), 12),
+        )
+        for segment in record.section.segments
+    ) + (PassageSectionVertex(record.section.segments[-1].end, 0.0),)
+    return SectionRecess(
+        index,
+        owner.ordinal,
+        _principal_open_geometry(
+            axis=record.axis,
+            run_interval=record.run_interval,
+            open_sign=record.open_sign,
+            boundary=vertices,
+        ),
+        SectionRecessClassification("edge_open_recess", "obround"),
+        SectionRecessEvidence(
+            tuple(sorted(node.index for node in defining)),
+            tuple(sorted(node.index for node in constituent)),
+        ),
+    )
+
+
+def _unique_section_recesses(records: Iterable[SectionRecess]) -> tuple[SectionRecess, ...]:
+    """Prefer the first truthful projection of one body-local physical face region."""
+
+    unique: list[SectionRecess] = []
+    seen: set[tuple[int, tuple[int, ...]]] = set()
+    for record in records:
+        key = (record.body, record.evidence.constituent_faces)
+        if key not in seen:
+            seen.add(key)
+            unique.append(replace(record, index=len(unique)))
+    return tuple(unique)
+
+
+def _accepted_region_key(
+    record: object, *, context: RecognitionContext, evidence: EvidenceIndex
+) -> tuple[int, tuple[int, ...]]:
+    defining = evidence.defining_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        raise ValueError("accepted section feature lost its body authority")
+    return (
+        owner.ordinal,
+        tuple(sorted(node.index for node in evidence.constituent_of(record))),
+    )
+
+
+def _matching_recesses(record, recesses, context, evidence):
+    defining = evidence.defining_of(record)
+    constituent = evidence.constituent_of(record)
+    owner = context.graph.common_valid_solid(defining)
+    if owner is None:
+        return ()
+    indices = {node.index for node in (*defining, *constituent)}
+    return tuple(
+        item
+        for item in recesses
+        if item.body == owner.ordinal
+        and indices
+        and indices <= set(item.evidence.constituent_faces)
+    )
+
+
+def _recess_refusals(accepted, recesses, *, context, evidence):
+    refusals = []
+    for definition in PHYSICAL_DEFINITIONS:
+        if definition.family not in RECESS_SOURCE_FAMILIES:
+            continue
+        for candidate in accepted.candidate_set(definition.family).candidates:
+            if _matching_recesses(candidate, recesses, context, evidence):
+                continue
+            defining = evidence.defining_of(candidate)
+            owner = context.graph.common_valid_solid(defining)
+            if owner is None:
+                raise ValueError("accepted recess candidate lost body authority")
+            refusal = SectionRecessRefusal(
+                owner.ordinal,
+                "unsupported_support_geometry",
+                SectionRecessEvidence(
+                    tuple(sorted(node.index for node in defining)),
+                    tuple(sorted(node.index for node in evidence.constituent_of(candidate))),
+                ),
+            )
+            if refusal not in refusals:
+                refusals.append(refusal)
+    return tuple(refusals)
+
+
+def _section_patterns(patterns, recesses, context, evidence):
+    result: list[SectionRecessArray | SectionRecessGrid] = []
+    for pattern in patterns:
+        matches = [
+            _matching_recesses(record, recesses, context, evidence) for record in pattern.pockets
+        ]
+        if any(len(match) != 1 for match in matches):
+            continue  # a pattern cannot refer to unproved or ambiguously projected geometry
+        members = tuple(match[0].index for match in matches)
+        if len(set(members)) != len(members):
+            continue
+        if isinstance(pattern, PocketArray):
+            result.append(SectionRecessArray(members, pattern.pitch, pattern.direction))
+        else:
+            u, v = plane_axes(pattern.pockets[0].depth_axis)
+            cosine, sine = (
+                math.cos(math.radians(pattern.angle)),
+                math.sin(math.radians(pattern.angle)),
+            )
+            col_direction = cast(
+                tuple[float, float, float],
+                tuple(cosine * a + sine * b for a, b in zip(u, v, strict=True)),
+            )
+            row_direction = cast(
+                tuple[float, float, float],
+                tuple(-sine * a + cosine * b for a, b in zip(u, v, strict=True)),
+            )
+            result.append(
+                SectionRecessGrid(
+                    members,
+                    pattern.rows,
+                    pattern.cols,
+                    pattern.row_pitch,
+                    pattern.col_pitch,
+                    row_direction,
+                    col_direction,
+                    pattern.center,
+                )
+            )
+    return tuple(result)
+
+
 def _project_result(
     context: RecognitionContext,
     accepted: CandidateInventory,
     derived: DerivedInventory,
-) -> RecognitionResult:
+    evidence: EvidenceIndex,
+) -> _LegacyRecognitionResult:
     """Project accepted and derived inventories without discovery or reconciliation."""
 
     z_cyls, cross_cyls = context.cylinders
     passage_definition = next(
         definition for definition in PHYSICAL_DEFINITIONS if definition.family is FamilyId.PASSAGES
     )
-    return RecognitionResult(
+    native_section_recesses = tuple(_records(accepted, FamilyId.SECTION_RECESSES, SectionRecess))
+    native_regions = {
+        (record.body, record.evidence.constituent_faces) for record in native_section_recesses
+    }
+    uncovered_prismatic = tuple(
+        record
+        for record in _records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)
+        if _accepted_region_key(record, context=context, evidence=evidence) not in native_regions
+    )
+    prismatic_recesses = tuple(
+        _prismatic_pocket_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(uncovered_prismatic)
+    )
+    passage_recesses = tuple(
+        _section_passage_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(_records(accepted, FamilyId.PASSAGES, SectionPassage))
+    )
+    open_prismatic_recesses = tuple(
+        _edge_open_prismatic_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(
+            _records(
+                accepted,
+                FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
+                EdgeOpenPrismaticRecess,
+            )
+        )
+    )
+    open_circular_recesses = tuple(
+        _edge_open_circular_recess(
+            record,
+            context=context,
+            evidence=evidence,
+            index=index,
+        )
+        for index, record in enumerate(
+            _records(
+                accepted,
+                FamilyId.EDGE_OPEN_CIRCULAR_POCKETS,
+                EdgeOpenCircularPocket,
+            )
+        )
+    )
+    rectangular_blind_recesses = tuple(
+        _rectangular_blind_slot_recess(record, context=context, evidence=evidence, index=index)
+        for index, record in enumerate(
+            _records(accepted, FamilyId.RECTANGULAR_BLIND_SLOTS, RectangularBlindSlot)
+        )
+    )
+    round_bottom_recesses = tuple(
+        _round_bottom_blind_slot_recess(record, context=context, evidence=evidence, index=index)
+        for index, record in enumerate(
+            _records(accepted, FamilyId.ROUND_BOTTOM_BLIND_SLOTS, RoundBottomBlindSlot)
+        )
+    )
+    legacy_candidates: tuple[Pocket | Channel, ...] = (
+        *_records(accepted, FamilyId.POCKETS, Pocket),
+        *_records(accepted, FamilyId.CHANNELS, Channel),
+    )
+    corner_recesses = tuple(
+        projected
+        for index, record in enumerate(legacy_candidates)
+        if (
+            projected := _corner_pocket_recess(
+                record, context=context, evidence=evidence, index=index
+            )
+        )
+        is not None
+    )
+    section_recesses = _unique_section_recesses(
+        (
+            *native_section_recesses,
+            *prismatic_recesses,
+            *passage_recesses,
+            *open_prismatic_recesses,
+            *open_circular_recesses,
+            *rectangular_blind_recesses,
+            *round_bottom_recesses,
+            *corner_recesses,
+        )
+    )
+    refusals = _recess_refusals(accepted, section_recesses, context=context, evidence=evidence)
+    patterns = _section_patterns(derived.pocket_patterns, section_recesses, context, evidence)
+    return _LegacyRecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
         holes=tuple(_records(accepted, FamilyId.HOLES, HoleRecord)),
@@ -711,6 +1359,9 @@ def _project_result(
         ),
         grooves=tuple(_records(accepted, FamilyId.GROOVES, Groove)),
         flats=tuple(_records(accepted, FamilyId.FLATS, Flat)),
+        section_recesses=section_recesses,
+        section_recess_refusals=refusals,
+        section_recess_patterns=patterns,
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),
         prismatic_pockets=tuple(_records(accepted, FamilyId.PRISMATIC_POCKETS, PrismaticPocket)),
         edge_open_circular_pockets=tuple(

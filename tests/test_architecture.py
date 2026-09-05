@@ -44,6 +44,7 @@ PUBLIC_MODULES = {
     "repeating_profiles",
     "rectangular_blind_slots",
     "round_bottom_slots",
+    "section_recesses",
     "result",
     "slots",
     "step_io",
@@ -59,6 +60,8 @@ def test_correspondence_matcher_remains_private_and_result_neutral() -> None:
 
 
 MODULE_SEAM_EDGES = {
+    "_corner_section": {"_adjacency", "_section_passages", "_sections"},
+    "_open_channel_section": {"_adjacency", "_recess_records", "_section_passages", "_sections"},
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
     "_body_identity": {"_typing"},
     "_analytic_surfaces": {"_geometry"},
@@ -284,6 +287,8 @@ MODULE_SEAM_EDGES = {
         "_hole_features",
         "_recess_features",
         "_run",
+        "_section_recess",
+        "_section_recess_discovery",
         "_typing",
         "angled_steps",
         "blends",
@@ -308,6 +313,7 @@ MODULE_SEAM_EDGES = {
         "repeating_profiles",
         "rectangular_blind_slots",
         "round_bottom_slots",
+        "section_recesses",
         "slots",
         "turned",
     },
@@ -326,7 +332,7 @@ MODULE_SEAM_EDGES = {
     # Epic 0004's private geometry values are a stdlib-only leaf. The adapter names exactly the
     # two polygonal records whose legacy values round-trip; production recognition does not use it.
     "_sections": set(),
-    "_section_adapters": {"_sections", "passages", "prismatic_pockets"},
+    "_section_adapters": {"_sections", "_section_recess", "passages", "prismatic_pockets"},
     # Effective analytic facts sit above original graph identity and below run orchestration.
     "_effective_surfaces": {"_adjacency", "_analytic_surfaces", "_geometry", "_typing"},
     # Neutral opt-in support bridges consume only original graph and effective-surface facts.
@@ -354,7 +360,7 @@ MODULE_SEAM_EDGES = {
     },
     # Supported issue-375 projection of one completed accepted inventory. It may translate
     # private run identity into opaque public references but owns no discovery or policy.
-    "evidence": {"_adjacency", "_candidates", "_registry", "_typing", "result"},
+    "evidence": {"_adjacency", "_candidates", "_registry", "_section_recess", "_typing", "result"},
     # The only graph/evidence translation seam. Feature consumers receive facade refs and
     # cannot import the concrete graph or writer themselves.
     "_geometry_evidence": {
@@ -420,6 +426,24 @@ ARC_READER_SITES = {
     "tools/audit_mfcadpp_cavity_enclosures:_expand:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_convex_mouth:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_one_ended_pockets:_mouth_wires:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:1": "exact-nonsmooth",
+    "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:2": "legacy-contract",
+    "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:3": "legacy-contract",
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:1": (
+        "exact-nonsmooth"
+    ),
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:2": (
+        "legacy-contract"
+    ),
+    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:3": (
+        "legacy-contract"
+    ),
+    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:1": (
+        "exact-nonsmooth"
+    ),
+    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:2": (
+        "legacy-contract"
+    ),
     "tools/audit_mfcadpp_floor_interrupted_pockets:_raw_regions:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_floor_interrupted_pockets:_probe_region:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_floor_interrupted_pockets:_probe_region:arc:2": "exact-nonsmooth",
@@ -761,7 +785,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
         "diagnose_residuals": {"reconciliation", "evidence", "return"},
         "_derive_patterns": {"accepted", "return"},
         "_derive_passage_compat": {"inputs", "projection", "return"},
-        "_project_result": {"context", "accepted", "derived", "return"},
+        "_project_result": {"context", "accepted", "derived", "evidence", "return"},
     }
     for name, parameters in expected.items():
         assert set(typing.get_type_hints(getattr(module, name))) == parameters
@@ -844,7 +868,7 @@ def test_only_result_orchestration_may_create_restricted_completed_inputs() -> N
     assert constructors == []
 
 
-def test_private_section_adapters_are_not_used_by_production_orchestration() -> None:
+def test_private_section_adapters_are_only_used_by_the_unified_projection() -> None:
     importers: list[str] = []
     for path in PACKAGE.glob("*.py"):
         if path.name in {"_section_adapters.py", "_sections.py"}:
@@ -856,7 +880,7 @@ def test_private_section_adapters_are_not_used_by_production_orchestration() -> 
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
-    assert importers == []
+    assert importers == ["result.py"]
 
 
 def test_projection_family_bindings_match_the_registry() -> None:
@@ -868,7 +892,7 @@ def test_projection_family_bindings_match_the_registry() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
-        and node.func.id == "RecognitionResult"
+        and node.func.id == "_LegacyRecognitionResult"
     )
     projected: dict[str, str] = {}
     for keyword in result_call.keywords:
@@ -884,10 +908,15 @@ def test_projection_family_bindings_match_the_registry() -> None:
             projected[typing.cast(str, keyword.arg)] = families.pop()
 
     registry = importlib.import_module("b123d_recognisers._registry")
-    assert projected == {
+    expected = {
         definition.result_field: definition.family.name
         for definition in registry.PHYSICAL_DEFINITIONS
     }
+    # ADR 0019 intentionally converges multiple independently discovered physical families into
+    # this one public result field; its native binding is therefore not visible in the constructor
+    # expression inspected above.
+    expected.pop("section_recesses")
+    assert projected == expected
 
 
 def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:
@@ -1017,7 +1046,9 @@ def test_every_defined_public_recogniser_is_exported_and_snapshotted():
         )
 
     exported = {name for name in recognition.__all__ if name.startswith("recognise_")}
-    assert exported == defined
+    from tools._legacy_recognition import __all__ as retired
+
+    assert exported == defined - set(retired)
 
 
 def test_module_graph_is_acyclic() -> None:
@@ -1360,22 +1391,22 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
     # made `tuple[float, ...] | None` and an equivalent spelling of the same type a test
     # failure, while a genuinely unresolvable annotation would have passed.
     for name in ("Channel", "Pocket", "Slot"):
-        hints = typing.get_type_hints(getattr(recognition, name))
+        hints = typing.get_type_hints(getattr(recess_facade, name))
         assert "width_axis" in hints
     assert typing.get_type_hints(recognition.recognise_slots)
 
     recess_records = importlib.import_module("b123d_recognisers._recess_records")
     recess_features = importlib.import_module("b123d_recognisers._recess_features")
     recess_patterns = importlib.import_module("b123d_recognisers._recess_patterns")
-    for name in ("Channel", "Pocket", "PocketArray", "PocketGrid", "Slot", "SlotArray", "SlotGrid"):
+    for name in ("Slot", "SlotArray", "SlotGrid"):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_records, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
-    for name in ("recognise_channels", "recognise_pockets", "recognise_slots"):
+    for name in ("recognise_slots",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_features, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
-    for name in ("recognise_pocket_patterns", "recognise_slot_patterns"):
+    for name in ("recognise_slot_patterns",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_patterns, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
@@ -1407,7 +1438,11 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         "SlotGrid",
     )
     for name in moved_records:
-        assert typing.get_type_hints(getattr(recognition, name))
+        owner = (
+            recess_facade if name in {"Channel", "Pocket", "PocketArray", "PocketGrid"}
+            else recognition
+        )
+        assert typing.get_type_hints(getattr(owner, name))
 
 
 def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() -> None:

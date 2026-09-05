@@ -31,7 +31,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import build_framed_recognition_result, recognise_pockets
+from b123d_recognisers import build_framed_recognition_result
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -75,6 +75,9 @@ from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._run import start
 from b123d_recognisers.frames import FramedRecognitionResult
 from b123d_recognisers.result import _discover_all
+from tools._legacy_recognition import (
+    recognise_pockets,
+)
 
 ROOT = Path(__file__).parents[1]
 AXIS = {"x": 0, "y": 1, "z": 2}
@@ -690,10 +693,14 @@ def test_corner_depth_survives_arbitrary_rigid_motion_through_the_framed_aggrega
     framed = build_framed_recognition_result(moved, rotational=False)
 
     assert isinstance(framed, FramedRecognitionResult)
-    corners = [pocket for pocket in framed.result.pockets if pocket.edge_anchored]
+    corners = [recess for recess in framed.result.section_recesses
+               if recess.classification.feature_kind == "edge_open_recess"]
     assert len(corners) == 1
-    assert corners[0].depth == 6
-    assert sorted((corners[0].width, corners[0].length, corners[0].depth)) == [6, 15, 15]
+    geometry = corners[0].geometry
+    assert geometry.run_interval[1] - geometry.run_interval[0] == pytest.approx(6)
+    points = [vertex.point for vertex in geometry.profile.boundary]
+    assert [max(p[i] for p in points) - min(p[i] for p in points)
+            for i in range(2)] == pytest.approx([15, 15])
 
 
 @pytest.mark.parametrize(

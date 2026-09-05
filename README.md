@@ -81,6 +81,23 @@ holes = recognise_holes(part, cyls=cylinders)
 patterns = recognise_hole_patterns(holes)
 ```
 
+### Consume recess geometry as JSON
+
+```python
+from b123d_recognisers import build_section_recess_document
+
+document = build_section_recess_document(part).to_dict()
+for occurrence in document["occurrences"]:
+    print(occurrence["classification"], occurrence["geometry"])
+```
+
+This uses caller coordinates and the accepted aggregate inventory. JSON schema 2 replaces the
+specialised pocket/recess/passage/channel records with a free frame, line/arc profile and explicit
+end conditions. `patterns` reference occurrence indices; `refusals` retain source evidence where
+an old detector cannot establish truthful section geometry. Face indices refer only
+to this document's input-face roster, not persistent CAD identities. See the
+[consumer migration guide](docs/section-recess-migration.md) for scope and counting rules.
+
 ### Inspect geometry for declared features
 
 CAD front ends that create a declared feature from a selected face can use the supported,
@@ -148,6 +165,11 @@ per-family union contributions, and the exact within-run references left unassoc
 contributions may overlap and are not additive. This is not an accuracy or recall score: accepted
 classifications may be wrong, stock faces may intentionally remain unassociated, and incomplete
 constituent publication produces incomplete association.
+
+The evidence view uses unified `SectionRecess` records and may also return `SectionRecessRefusal`
+for an accepted source association without reconstructible geometry. Check the record type before
+consuming geometry. Refusal evidence contributes to association but not to the public geometric
+`section_recess` census count.
 
 For the ordinary framed lifecycle, use the paired view rather than running raw evidence after
 framed recognition:

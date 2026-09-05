@@ -301,8 +301,11 @@ def test_the_three_rules_share_one_ledger_without_reading_each_others_claims():
     result = r.build_recognition_result(part)
 
     assert len(result.slots) == 1
-    assert r.recognise_passages(part), "the slot must be a passage too, or that rule is vacuous"
-    assert result.passages == (), "the slot still wins against the passage it is"
+    from tools._legacy_recognition import recognise_passages
+
+    assert recognise_passages(part), "the slot must be a passage too, or that rule is vacuous"
+    assert not any(item.classification.feature_kind == "passage"
+                   for item in result.section_recesses), "the slot still wins against the passage"
     assert len(result.angled_steps) == 1
     assert len(result.chamfers) == 1
     assert result.chamfers[0].at != result.angled_steps[0].at

@@ -6,6 +6,10 @@ from __future__ import annotations
 def recognition_snapshot(recognition, feature_census, part):
     """Run every public recogniser and required substrate with injected shared evidence."""
 
+    if getattr(recognition, "__name__", None) == "b123d_recognisers":
+        from tools._legacy_recognition import feature_census, namespace
+
+        recognition = namespace()
     cylinders = recognition.analyse_cylinders(part)
     countersinks = recognition.recognise_countersinks(part)
     holes = recognition.recognise_holes(part, cyls=cylinders, csinks=countersinks)
@@ -65,6 +69,7 @@ def recognition_snapshot(recognition, feature_census, part):
     # This legacy snapshot deliberately stays byte-identical to the Draftwright-era surface.
     post_baseline = {
         "recognise_section_passages",
+        "recognise_section_recesses",
         "recognise_edge_open_circular_pockets",
         "recognise_edge_open_prismatic_recesses",
         "recognise_oriented_slots",

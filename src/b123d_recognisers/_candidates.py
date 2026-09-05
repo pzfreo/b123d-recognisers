@@ -69,6 +69,7 @@ class FamilyId(Enum):
     REPEATING_RADIAL_PROFILES = "repeating_radial_profiles"
     RECTANGULAR_BLIND_SLOTS = "rectangular_blind_slots"
     ROUND_BOTTOM_BLIND_SLOTS = "round_bottom_blind_slots"
+    SECTION_RECESSES = "section_recesses"
     RISERS = "risers"
     SLOTS = "slots"
     STEP_LEVELS = "step_levels"

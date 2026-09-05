@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 from typing import cast
@@ -31,6 +32,9 @@ from b123d_recognisers.edge_open_prismatic_recesses import (
     _complete_wall_boundaries,
     recognise_edge_open_prismatic_recesses,
 )
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
+)
 
 
 def _edge_open_hexagon():
@@ -62,6 +66,25 @@ def _edge_open_polygon(chain: tuple[tuple[int, int], ...]):
 def _section() -> OpenPolygonalSection:
     chain = ((-2.0, 1.0), (-2.0, -1.0), (0.0, -2.0), (2.0, -1.0), (2.0, 1.0))
     return OpenPolygonalSection(chain, OpenSectionOpening(chain[-1], chain[0]))
+
+
+def test_y_axis_projection_preserves_world_wall_chain():
+    result = build_raw_recognition_result(Rot(90, 0, 0) * _edge_open_hexagon())
+    (source,) = result.edge_open_prismatic_recesses
+    (unified,) = tuple(
+        record for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    )
+    frame = unified.geometry.frame
+    world_points = tuple(
+        tuple(frame.origin[index] + vertex.point[0] * frame.u[index]
+              + vertex.point[1] * frame.v[index] for index in (0, 2))
+        for vertex in unified.geometry.profile.boundary
+    )
+    for expected in source.section.wall_chain:
+        assert any(point == pytest.approx(expected, abs=0.002) for point in world_points)
+    assert unified.geometry.ends.low.condition == "open"
+    assert unified.geometry.ends.high.condition == "capped"
 
 
 def test_edge_open_record_serializes_the_opening_separately_from_walls() -> None:
@@ -126,6 +149,24 @@ def test_recognises_six_physical_walls_without_inventing_a_closing_wall() -> Non
         found.section.wall_chain[-1], found.section.wall_chain[0]
     )
     assert found.section.opening.start[1] == found.section.opening.end[1] == 20.0
+
+
+def test_accepted_open_prismatic_recess_projects_to_unified_contract() -> None:
+    result = build_raw_recognition_result(_edge_open_hexagon())
+
+    projected = [
+        record
+        for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    ]
+    assert len(result.edge_open_prismatic_recesses) == len(projected) == 1
+    (record,) = projected
+    assert record.classification.section_shape == "polygonal"
+    assert record.geometry.profile.closure == "open"
+    assert record.geometry.profile.opening == (
+        record.geometry.profile.boundary[-1].point,
+        record.geometry.profile.boundary[0].point,
+    )
 
 
 def test_edge_open_payload_matches_dedicated_golden() -> None:

@@ -40,7 +40,6 @@ from b123d_recognisers import (
     BoltCircle,
     BossRecord,
     Chamfer,
-    Channel,
     CounterSink,
     DoubleDBore,
     FaceEdges,
@@ -52,9 +51,6 @@ from b123d_recognisers import (
     LinearArray,
     PairedRampStep,
     Plate,
-    Pocket,
-    PocketArray,
-    PocketGrid,
     PolygonalBoss,
     PolygonalStock,
     RaisedPad,
@@ -71,7 +67,6 @@ from b123d_recognisers import (
     recognise_angled_steps,
     recognise_bosses,
     recognise_chamfers,
-    recognise_channels,
     recognise_countersinks,
     recognise_double_d_bores,
     recognise_face_levels,
@@ -81,10 +76,7 @@ from b123d_recognisers import (
     recognise_hole_patterns,
     recognise_holes,
     recognise_paired_ramp_steps,
-    recognise_passages,
     recognise_plates,
-    recognise_pocket_patterns,
-    recognise_pockets,
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
     recognise_rectangular_pads,
@@ -96,6 +88,16 @@ from b123d_recognisers import (
     recognise_turned_steps,
 )
 from b123d_recognisers._record import Record
+from tools._legacy_recognition import (
+    Channel,
+    Pocket,
+    PocketArray,
+    PocketGrid,
+    recognise_channels,
+    recognise_passages,
+    recognise_pocket_patterns,
+    recognise_pockets,
+)
 
 # Every record class a recogniser returns. The coverage test asserts the drive-parts
 # below actually emit one of each — so a record type that silently stops being produced

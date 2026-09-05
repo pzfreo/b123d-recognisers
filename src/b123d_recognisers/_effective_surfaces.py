@@ -100,6 +100,10 @@ class MaterialSideRefusalReason(Enum):
 # the source-side set independently so adding another raw reader fails visibly. The rationale is
 # mandatory; a disposition is not permission to leave an undocumented acceptance path forever.
 SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_open_channel_section": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "open support projection requires original planar source patches",
+    ),
     "_adjacency": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "base graph caches original surface/topology facts; it cannot import this layer",
@@ -190,6 +194,14 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.PENDING_MIGRATION,
         "original planar opening, wall and floor roles in the bounded cavity proof",
     ),
+    "_section_recess": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "section-recess recognition intentionally requires audited original-face anatomy",
+    ),
+    "_corner_section": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "corner projection requires original rectangular faces and an original exterior mouth",
+    ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
     "repeating_profiles": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -217,6 +229,58 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_open_channel_section:_supports:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "verify complete source-face support area for each physical wall patch",
+    ),
+    "_open_channel_section:prove_open_channel:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "derive the opposed wall planes from original defining evidence",
+    ),
+    "_corner_section:prove_corner_section:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prove rectangular physical floor and wall faces before issuing an open chain",
+    ),
+    "_corner_section:prove_corner_section:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prove exterior planar mouth faces rather than assuming the opposite end is open",
+    ),
+    "_section_recess:_cylinder:adaptor:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser reads native cylinder parameters from the audited obround wall",
+    ),
+    "_section_recess:_edge_sweep:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser requires the original semicircular floor boundary",
+    ),
+    "_section_recess:_one_obround_candidate:graph_surface:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser classifies the two original cylindrical walls",
+    ),
+    "_section_recess:_one_obround_candidate:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser classifies the two original planar walls",
+    ),
+    "_section_recess:_one_obround_candidate:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser requires an original planar mouth",
+    ),
+    "_section_recess:_candidates:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser seeds only from an original planar floor",
+    ),
+    "_section_recess:_polygonal_section:geom_type:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser requires the observed polygonal floor boundary to be straight",
+    ),
+    "_section_recess:_one_polygonal_candidate:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser requires original planar polygonal wall supports",
+    ),
+    "_section_recess:_one_polygonal_candidate:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "recogniser requires one original planar exterior mouth",
+    ),
     "edge_open_circular_recesses:_segment:geom_type:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "retain the exact physical floor-to-wall boundary curve kind",

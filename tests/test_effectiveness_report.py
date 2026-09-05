@@ -26,6 +26,7 @@ from b123d_recognisers.result import _take_inventory
 from tools.effectiveness_report import (
     DatasetTruth,
     EffectivenessDataError,
+    _scoring_family,
     canonical_json,
     load_mfcadpp_truth,
     load_mfinstseg_truth,
@@ -64,6 +65,19 @@ TAXONOMY_V5 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v5.json"
 TAXONOMY_V6 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v6.json"
 TAXONOMY_V7 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v7.json"
 TAXONOMY_V8 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v8.json"
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected"),
+    (("obround", "pockets"), ("circular", "pockets"), ("hexagonal", "prismatic-pockets")),
+)
+def test_section_recess_keeps_one_physical_identity_while_scoring_taxonomy(shape, expected) -> None:
+    candidate = SimpleNamespace(
+        family=FamilyId.SECTION_RECESSES,
+        record=SimpleNamespace(classification=SimpleNamespace(section_shape=shape)),
+    )
+
+    assert _scoring_family(candidate) == expected
 TAXONOMY_V9 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v9.json"
 TAXONOMY_V10 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v10.json"
 TAXONOMY_V11 = ROOT / "docs" / "benchmarks" / "effectiveness-taxonomy-v11.json"
@@ -254,8 +268,12 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
     }
     assert mfcadpp[24] == {"families": [], "name": "Stock", "status": "incomparable"}
     manifest = json.loads((ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text())
-    public_families = {family["id"] for family in manifest["families"]}
-    assert {family for row in mfcadpp.values() for family in row["families"]} <= public_families
+    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+    from tools.effectiveness_report import _public_family_id
+
+    detector_families = {_public_family_id(item.family.value) for item in PHYSICAL_DEFINITIONS}
+    assert {family for row in mfcadpp.values() for family in row["families"]} <= detector_families
+    assert "section-recesses" in {family["id"] for family in manifest["families"]}
 
 
 def test_taxonomy_v2_moves_only_circular_blind_step_to_its_physical_family() -> None:
@@ -812,9 +830,7 @@ def test_taxonomy_loader_scores_from_captured_bytes(tmp_path: Path) -> None:
     assert loaded[7]["status"] == "supported"
 
 
-@pytest.mark.parametrize(
-    ("commit", "worktree_sha256"), (("b" * 40, None), ("a" * 40, "dirty"))
-)
+@pytest.mark.parametrize(("commit", "worktree_sha256"), (("b" * 40, None), ("a" * 40, "dirty")))
 def test_corpus_run_authority_refuses_source_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -830,9 +846,7 @@ def test_corpus_run_authority_refuses_source_drift(
         taxonomy_sha256=hashlib.sha256(b"mapping").hexdigest(),
     )
     monkeypatch.setattr(baseline_runner, "_git_commit", lambda: commit)
-    monkeypatch.setattr(
-        baseline_runner, "_git_worktree_sha256", lambda _commit: worktree_sha256
-    )
+    monkeypatch.setattr(baseline_runner, "_git_worktree_sha256", lambda _commit: worktree_sha256)
     monkeypatch.setattr(baseline_runner, "_source_digest", lambda: "source")
 
     with pytest.raises(EffectivenessDataError, match="source authority changed"):

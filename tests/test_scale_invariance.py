@@ -31,13 +31,13 @@ sys.path.insert(0, str(ROOT))
 from build123d import Box, Pos, import_step  # noqa: E402
 
 from b123d_recognisers import (  # noqa: E402
-    feature_census,
     recognise_risers,
     recognise_turned_steps,
     step_level_zs,
 )
 from b123d_recognisers._geometry import clears_threshold, quantise  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
+from tools._legacy_recognition import feature_census  # noqa: E402
 
 CASES = sorted(GOLDEN_ROOT.glob("*/fixture.py"))
 
@@ -55,6 +55,9 @@ FACTORS = (0.05, 5.0, 100.0)
 NOT_YET_SCALE_FREE = frozenset(
     {"blend", "fillet", "flat", "plate", "pocket", "channel"}
 )
+
+# This test partitions internal detectors by their admission thresholds. A unified public
+# section_recess can come from either partition and must not erase that distinction.
 
 
 def _scale_free_census(part) -> dict[str, int]:

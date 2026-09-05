@@ -26,7 +26,6 @@ from OCP.GeomAbs import GeomAbs_Plane
 
 import b123d_recognisers._recess_core as core_module
 import b123d_recognisers._recess_features as feature_module
-from b123d_recognisers import recognise_channels
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -52,6 +51,9 @@ from b123d_recognisers._recess_features import _discover_channels
 from b123d_recognisers._recess_records import Channel
 from b123d_recognisers.result import _take_inventory
 from tests.golden.open_channels.fixture import build_fixture
+from tools._legacy_recognition import (
+    recognise_channels,
+)
 
 ROOT = Path(__file__).parents[1]
 
@@ -840,8 +842,8 @@ def test_translated_stale_and_mixed_solid_wall_snapshots_refuse(monkeypatch) -> 
 def test_terminal_inventory_retains_channel_identity() -> None:
     product = _take_inventory(build_fixture())
     candidates = product.physical.candidate_set(FamilyId.CHANNELS).candidates
-    assert len(candidates) == len(product.result.channels) == 1
-    assert candidates[0].record is product.result.channels[0]
+    assert len(candidates) == len(product._legacy_result.channels) == 1
+    assert candidates[0].record is product._legacy_result.channels[0]
     assert len(product.evidence.defining_of(candidates[0])) == 2
 
 

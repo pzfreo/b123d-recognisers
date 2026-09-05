@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from build123d import Box, Compound, Cylinder, Plane, Polygon, Pos, Rot, chamfer, extrude, fillet
 
-from b123d_recognisers import recognise_pockets
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._recess_core import _pocket_proposals_one
 from b123d_recognisers._recess_faces import _cylinder_faces
+from tools._legacy_recognition import (
+    recognise_pockets,
+)
 from tools.audit_mfcadpp_circular_end_pocket_gaps import (
     _cylinder_end_result,
     _probe_component,

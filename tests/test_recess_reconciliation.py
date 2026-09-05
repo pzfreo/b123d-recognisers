@@ -22,12 +22,14 @@ from build123d import (
     import_step,
 )
 
-import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome
 from b123d_recognisers._passage_compat import PassageCompatibilityView
 from b123d_recognisers._recess_core import _has_smooth_depth_closure
+from tools._legacy_recognition import namespace
+
+r = namespace()
 
 
 def _obround(length: float, width: float, height: float):
@@ -137,9 +139,9 @@ def test_rotational_passage_reconciles_pockets_before_public_projection(monkeypa
 
     product = result_module._take_inventory(Box(20, 20, 10), rotational=True)
 
-    assert product.result.passages == ()
-    assert product.result.pockets == ()
-    assert product.result.pocket_patterns == ()
+    assert product._legacy_result.passages == ()
+    assert product._legacy_result.pockets == ()
+    assert product._legacy_result.pocket_patterns == ()
     assert pattern_inputs == [()]
     (passage_disposition,) = product.reconciliation.for_family(FamilyId.PASSAGES)
     assert passage_disposition.outcome is Outcome.ACCEPTED

@@ -130,7 +130,8 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
 
     assert isinstance(framed, FramedRecognitionResult)
     assert len(framed.result.slots) == len(legacy_before.slots) == 5
-    assert framed.result.section_passages == ()
+    assert not any(r.classification.feature_kind == "passage"
+                   for r in framed.result.section_recesses)
     assert build_recognition_result(part) == legacy_before
 
 

@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 
@@ -27,6 +28,9 @@ from b123d_recognisers.edge_open_circular_recesses import (
     recognise_edge_open_circular_pockets,
 )
 from b123d_recognisers.result import _take_inventory
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
+)
 
 
 def _open_circular_pocket(*, x: float = 16, y: float = 10, depth: float = 8):
@@ -161,6 +165,21 @@ def test_authored_open_circular_payload_matches_independent_golden() -> None:
     assert actual == expected
 
 
+def test_accepted_open_circular_recess_projects_to_unified_contract() -> None:
+    result = build_raw_recognition_result(_open_circular_pocket())
+
+    projected = [
+        record
+        for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    ]
+    assert len(result.edge_open_circular_pockets) == len(projected) == 1
+    (record,) = projected
+    assert record.classification.section_shape == "obround"
+    assert record.geometry.profile.closure == "open"
+    assert any(vertex.bulge != 0.0 for vertex in record.geometry.profile.boundary)
+
+
 @pytest.mark.parametrize(("x", "y"), ((14, 12), (16, 10), (18, 8)))
 def test_several_authored_interruption_shapes_are_supported(x: float, y: float) -> None:
     assert len(recognise_edge_open_circular_pockets(_open_circular_pocket(x=x, y=y))) == 1
@@ -219,5 +238,5 @@ def test_complete_open_circular_contract_supersedes_its_partial_pocket_fragment(
     assert fragment.outcome is Outcome.REJECTED
     assert fragment.reason is ReasonCode.POCKET_SUPERSEDED_BY_EDGE_OPEN_CIRCULAR_POCKET
     assert fragment.related == (open_pocket.candidate,)
-    assert len(product.result.edge_open_circular_pockets) == 1
-    assert product.result.pockets == ()
+    assert len(product._legacy_result.edge_open_circular_pockets) == 1
+    assert product._legacy_result.pockets == ()

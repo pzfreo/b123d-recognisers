@@ -20,8 +20,8 @@ from build123d import Shape
 from OCP.TopoDS import TopoDS_Shape
 
 from b123d_recognisers._adjacency import FaceNode
-from b123d_recognisers._candidates import Candidate, EvidenceIndex
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, RECESS_SOURCE_FAMILIES
 from b123d_recognisers._typing import CylinderInventory, FaceLike, Part
 from b123d_recognisers.result import InventoryProduct, RecognitionResult, _take_inventory
 
@@ -134,25 +134,27 @@ class RecognitionEvidence:
         "__authority",
         "__result",
         "__features",
-        "__feature_candidates",
+        "__feature_records",
+        "__feature_defining",
+        "__feature_constituent",
         "__feature_families",
         "__faces",
         "__face_nodes",
         "__node_refs",
         "__node_faces",
-        "__evidence",
         "__association",
     )
     __authority: object
     __result: RecognitionResult
     __features: tuple[FeatureRef, ...]
-    __feature_candidates: tuple[Candidate[object], ...]
+    __feature_records: tuple[RecognitionRecord, ...]
+    __feature_defining: tuple[frozenset[FaceNode], ...]
+    __feature_constituent: tuple[frozenset[FaceNode], ...]
     __feature_families: tuple[str, ...]
     __faces: frozenset[FaceRef]
     __face_nodes: dict[int, FaceNode]
     __node_refs: dict[FaceNode, FaceRef]
     __node_faces: dict[FaceNode, FaceLike]
-    __evidence: EvidenceIndex
     __association: GeometryAssociation
 
     def __init__(self) -> None:
@@ -166,7 +168,11 @@ class RecognitionEvidence:
 
     @property
     def features(self) -> tuple[FeatureRef, ...]:
-        """Accepted physical feature occurrences in stable registry/source order."""
+        """Accepted physical evidence, including explicit unified-geometry refusals.
+
+        A SectionRecessRefusal preserves an accepted detector's source association but is not
+        reconstructible geometry. Consumers must distinguish it from a SectionRecess.
+        """
 
         return self.__features
 
@@ -196,25 +202,22 @@ class RecognitionEvidence:
     def record(self, feature: FeatureRef) -> RecognitionRecord:
         """Return the existing immutable recognition record for *feature*."""
 
-        return cast(
-            RecognitionRecord,
-            self.__feature_candidates[self.__feature_position(feature)].record,
-        )
+        return self.__feature_records[self.__feature_position(feature)]
 
     def defining_faces(self, feature: FeatureRef) -> frozenset[FaceRef]:
         """Return the exact original faces that establish *feature*."""
 
-        candidate = self.__feature_candidates[self.__feature_position(feature)]
         return frozenset(
-            self.__node_refs[node] for node in self.__evidence.defining_of(candidate)
+            self.__node_refs[node]
+            for node in self.__feature_defining[self.__feature_position(feature)]
         )
 
     def constituent_faces(self, feature: FeatureRef) -> frozenset[FaceRef]:
         """Return the exact original faces physically belonging to *feature*."""
 
-        candidate = self.__feature_candidates[self.__feature_position(feature)]
         return frozenset(
-            self.__node_refs[node] for node in self.__evidence.constituent_of(candidate)
+            self.__node_refs[node]
+            for node in self.__feature_constituent[self.__feature_position(feature)]
         )
 
     def face(self, reference: FaceRef) -> FaceLike:
@@ -379,29 +382,51 @@ def _project_recognition_evidence(product: InventoryProduct) -> RecognitionEvide
         node_faces[node] = product.context.graph.face(node)
 
     feature_refs: list[FeatureRef] = []
-    candidates: list[Candidate[object]] = []
+    records: list[RecognitionRecord] = []
+    defining_sets: list[frozenset[FaceNode]] = []
+    constituent_sets: list[frozenset[FaceNode]] = []
     families: list[str] = []
     accepted = product.accepted
     for definition in PHYSICAL_DEFINITIONS:
+        if definition.family in RECESS_SOURCE_FAMILIES | {FamilyId.SECTION_RECESSES}:
+            continue
         for candidate in accepted.candidate_set(definition.family).candidates:
             feature_refs.append(cast(FeatureRef, _issue_reference(FeatureRef, authority)))
-            candidates.append(candidate)
+            records.append(cast(RecognitionRecord, candidate.record))
+            defining_sets.append(product.evidence.defining_of(candidate))
+            constituent_sets.append(product.evidence.constituent_of(candidate))
             families.append(definition.family.value)
 
+    from b123d_recognisers._section_recess import SectionRecess, SectionRecessRefusal
+
+    nodes_by_index = {node.index: node for node in product.context.graph.nodes}
+    recess_records: tuple[SectionRecess | SectionRecessRefusal, ...] = (
+        *product.result.section_recesses,
+        *product.result.section_recess_refusals,
+    )
+    for recess in recess_records:
+        feature_refs.append(cast(FeatureRef, _issue_reference(FeatureRef, authority)))
+        records.append(recess)
+        families.append(FamilyId.SECTION_RECESSES.value)
+        defining_sets.append(frozenset(nodes_by_index[i] for i in recess.evidence.defining_faces))
+        constituent_sets.append(
+            frozenset(nodes_by_index[i] for i in recess.evidence.constituent_faces)
+        )
     object.__setattr__(result, "_RecognitionEvidence__authority", authority)
     object.__setattr__(result, "_RecognitionEvidence__result", product.result)
     object.__setattr__(result, "_RecognitionEvidence__features", tuple(feature_refs))
-    object.__setattr__(result, "_RecognitionEvidence__feature_candidates", tuple(candidates))
+    object.__setattr__(result, "_RecognitionEvidence__feature_records", tuple(records))
+    object.__setattr__(result, "_RecognitionEvidence__feature_defining", tuple(defining_sets))
+    object.__setattr__(result, "_RecognitionEvidence__feature_constituent", tuple(constituent_sets))
     object.__setattr__(result, "_RecognitionEvidence__feature_families", tuple(families))
     object.__setattr__(result, "_RecognitionEvidence__faces", frozenset(node_refs.values()))
     object.__setattr__(result, "_RecognitionEvidence__face_nodes", face_nodes)
     object.__setattr__(result, "_RecognitionEvidence__node_refs", node_refs)
     object.__setattr__(result, "_RecognitionEvidence__node_faces", node_faces)
-    object.__setattr__(result, "_RecognitionEvidence__evidence", product.evidence)
     family_nodes: dict[str, set[FaceNode]] = {}
     associated_nodes: set[FaceNode] = set()
-    for candidate, family in zip(candidates, families, strict=True):
-        constituent = set(product.evidence.constituent_of(candidate))
+    for member_nodes, family in zip(constituent_sets, families, strict=True):
+        constituent = set(member_nodes)
         family_nodes.setdefault(family, set()).update(constituent)
         associated_nodes.update(constituent)
     all_nodes = set(node_refs)
@@ -486,8 +511,10 @@ def _validate_manifest(manifest: object) -> None:
     ):
         raise EvidenceApiManifestError("evidence API manifest format is unsupported")
     package = manifest["package"]
-    if not isinstance(package, dict) or set(package) != {"name", "version"} or (
-        package["name"] != "b123d-recognisers" or package["version"] != __version__
+    if (
+        not isinstance(package, dict)
+        or set(package) != {"name", "version"}
+        or (package["name"] != "b123d-recognisers" or package["version"] != __version__)
     ):
         raise EvidenceApiManifestError("evidence API package identity or version is invalid")
     api = manifest["api"]

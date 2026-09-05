@@ -24,16 +24,18 @@ from build123d import (
 )
 
 from b123d_recognisers import (
-    build_recognition_result,
     feature_census,
     recognise_oriented_slot_patterns,
     recognise_oriented_slots,
-    recognise_section_passages,
 )
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._dispositions import Outcome, ReasonCode
 from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
 from b123d_recognisers.result import _take_inventory
+from tools._legacy_recognition import (
+    build_recognition_result,
+    recognise_section_passages,
+)
 
 
 def _rectangular_through_slot(angle: float = 30.0):
@@ -85,7 +87,7 @@ def test_aggregate_reconciles_the_generic_source_passage() -> None:
     product = _take_inventory(part)
 
     assert product.result.oriented_slots == tuple(recognise_oriented_slots(part))
-    assert product.result.section_passages == ()
+    assert product._legacy_result.section_passages == ()
     (decision,) = tuple(
         item
         for item in product.reconciliation.for_family(FamilyId.PASSAGES)
@@ -331,7 +333,7 @@ def test_oriented_slot_semantic_golden() -> None:
             "pattern_type": type(pattern).__name__,
             "member_centers": [list(slot.center) for slot in pattern.slots],
             "pitch": pattern.pitch,
-            "section_passages": len(product.result.section_passages),
+            "section_passages": len(product._legacy_result.section_passages),
         },
         "reconciliation": sorted(
             decision.reason.value

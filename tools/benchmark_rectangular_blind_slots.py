@@ -10,7 +10,6 @@ import statistics
 import subprocess
 import sys
 import time
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +49,7 @@ def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
 def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
     from b123d_recognisers._candidates import FamilyId
     from b123d_recognisers._dispositions import Outcome, ReasonCode
+    from tools._legacy_recognition import detector_outputs_equal
 
     rows = []
     for index, (model_id, part) in enumerate(parts):
@@ -57,7 +57,7 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
         measurements = {enabled: _run_case(part, enabled) for enabled in order}
         disabled, disabled_seconds = measurements[False]
         enabled, enabled_seconds = measurements[True]
-        accepted = enabled.result.rectangular_blind_slots
+        accepted = enabled._legacy_result.rectangular_blind_slots
         raw = enabled.physical.candidate_set(FamilyId.RECTANGULAR_BLIND_SLOTS).candidates
         pocket_drops = tuple(
             disposition
@@ -65,14 +65,12 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
             if disposition.outcome is Outcome.REJECTED
             and disposition.reason is ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
         )
-        expected_pocket_delta = len(disabled.result.pockets) - len(enabled.result.pockets)
-        other_outputs_equal = (
-            replace(
-                enabled.result,
-                rectangular_blind_slots=(),
-                pockets=disabled.result.pockets,
-            )
-            == disabled.result
+        expected_pocket_delta = (
+            len(disabled._legacy_result.pockets) - len(enabled._legacy_result.pockets)
+        )
+        other_outputs_equal = detector_outputs_equal(
+            enabled._legacy_result, disabled._legacy_result,
+            excluding=("rectangular_blind_slots", "pockets"),
         )
         rows.append(
             {

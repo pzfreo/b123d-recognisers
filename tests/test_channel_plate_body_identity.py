@@ -10,9 +10,11 @@ from build123d import Box, Compound, Pos, Rot, export_step, import_step
 from b123d_recognisers import (
     FramedRecognitionResult,
     build_framed_recognition_result,
+    recognise_plates,
+)
+from tools._legacy_recognition import (
     build_raw_recognition_result,
     recognise_channels,
-    recognise_plates,
 )
 
 
@@ -104,14 +106,13 @@ def test_framed_rigid_motion_keeps_each_channel_plate_join_coherent() -> None:
     framed = build_framed_recognition_result(part)
     assert isinstance(framed, FramedRecognitionResult)
 
-    supported = _supported_body_keys(framed.result.plates)
-    observed = [
-        (channel.width, channel.body_key in supported) for channel in framed.result.channels
-    ]
-    assert observed == [
-        (20.0, False),
-        (25.0, True),
-    ]
+    channels = [r for r in framed.result.section_recesses
+                if r.classification.feature_kind == "channel"]
+    assert len(channels) == 2
+    assert {r.body for r in channels} == {0, 1}
+    # Unified records join by result-local body index, not the old geometric body signature.
+    assert all(r.evidence.defining_faces for r in channels)
+    assert framed.result.section_recess_refusals == ()
 
 
 def test_nested_single_solid_wrapper_uses_the_same_physical_scope() -> None:

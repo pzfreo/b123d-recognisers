@@ -84,7 +84,7 @@ def inventory_attribution(product):
         )
         disposition = definition.attribution
         result[definition.family.value] = {
-            "records": len(getattr(product.result, definition.result_field)),
+            "records": len(getattr(product._legacy_result, definition.result_field)),
             "candidates": len(proposed),
             "accepted": len(accepted),
             "attributed_candidates": len(attributed_candidates),

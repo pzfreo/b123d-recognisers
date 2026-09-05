@@ -1,5 +1,55 @@
 # Release notes
 
+## 0.4.15
+
+**Breaking API change despite the patch version.** Published as a patch at the maintainer's
+request, this release makes an explicit exception to the earlier promise to preserve the
+specialised recess APIs throughout 0.4.x. Consumers must follow the
+[migration guide](docs/section-recess-migration.md), or pin 0.4.14 until migrated.
+
+- Reject obround pocket claims obstructed by same-body material, including suspended bridges
+  and obstructions inside curved ends. Exact semicircular probes now verify the empty run,
+  open mouth and complete floor backing before unified geometry is published.
+
+- **Unified recess provider cutover:** specialised pocket, channel, recess and passage root
+  exports/result fields are replaced by `SectionRecess`; JSON schema 2 adds occurrence-indexed
+  patterns and explicit face-referenced geometry refusals. The public census counts unified recesses
+  once. Private detector benchmark identities remain unchanged. See the migration guide below.
+
+- Prove both remaining authored partial-support channels from actual source patches, empty runs,
+  lateral openings and two open ends. Unsupported extent summaries retain evidence as refusals,
+  never fabricated geometry.
+
+- Project proved corner notches as two physical wall segments with an explicit gap and one capped
+  run end in `SectionRecess`. The independent source-face proof retains body/face ownership and
+  refuses non-rectangular, perforated or doubly capped anatomy. No bounding-box closure is invented.
+  Material probes additionally refuse suspended and mouth-only obstructions within the owning body.
+
+- Preserve legacy polygon profiles on their publication grid, including collapsed micro-chamfer
+  edges, without changing strict section validation or discarding source face evidence. Explicit
+  bounded refusals distinguish genuinely unrepresentable geometry from normalization.
+
+- Add full JSON geometry goldens for all seven unified recess proof paths and migration checks
+  across the authored goldens and vendored MFCAD++ development corpus. See
+  [the migration guide](docs/section-recess-migration.md) for the completed public cutover and
+  explicit unsupported-geometry refusal contract.
+
+- Generalise the unified `SectionRecess` geometry to closed and truthfully open line/arc profiles,
+  pocket/edge-open/passage topology, and project accepted passages, prismatic pockets and exact
+  edge-open recess families while retaining their body and face evidence.
+
+- Add the public `build_section_recess_document(part)` JSON envelope builder. It projects accepted
+  aggregate `SectionRecess` records using result-local body and face rosters; the export CLI uses
+  this same path rather than running a separate detector.
+
+- **Promoted unified constant-section recess geometry.**
+  `recognise_section_recesses()` and `RecognitionResult.section_recesses` now publish the
+  ADR-0019 `SectionRecess` contract through the normal evidence, inventory and capability
+  surfaces. The production recogniser covers validated closed obround and intact polygonal
+  pockets in arbitrary rigid presentation, with reconstructible line/arc profiles and
+  result-local face/body indices. The effectiveness runner scores these physical records through
+  dataset taxonomy without an experimental overlay.
+
 ## 0.4.14
 
 - **Paired framed recognition with exact caller-face evidence.**

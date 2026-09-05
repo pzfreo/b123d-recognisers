@@ -137,7 +137,8 @@ def test_reconciliation_loss_is_counted_without_identity_leakage() -> None:
     assert (passage.proposed, passage.accepted, passage.rejected) == (1, 1, 0)
     assert passage.dispositions[0].reason is r.ReconciliationReason.DEFAULT_ACCEPTED
     assert report.result.slots == ()
-    assert len(report.result.passages) == 1
+    assert sum(record.classification.feature_kind == "passage"
+               for record in report.result.section_recesses) == 1
     assert all(item.proposed == item.accepted + item.rejected for item in report.families)
 
 

@@ -41,6 +41,8 @@ from b123d_recognisers._recess_features import (
     _discover_slots,
 )
 from b123d_recognisers._run import RecognitionContext
+from b123d_recognisers._section_recess import SectionRecess
+from b123d_recognisers._section_recess_discovery import discover_section_recesses
 from b123d_recognisers._typing import CylinderInventory
 from b123d_recognisers.angled_steps import AngledStep, recognise_angled_steps
 from b123d_recognisers.blends import Blend, _discover_blends
@@ -118,6 +120,15 @@ from b123d_recognisers.slots import (
 )
 from b123d_recognisers.through_steps import ThroughStep, recognise_through_steps
 from b123d_recognisers.turned import TurnedStep, recognise_turned_steps
+
+# Internal detector identities survive the public SectionRecess schema replacement so that
+# discovery, reconciliation and effectiveness scoring remain comparable across the cutover.
+RECESS_SOURCE_FAMILIES = frozenset({
+    FamilyId.POCKETS, FamilyId.CHANNELS, FamilyId.PRISMATIC_POCKETS,
+    FamilyId.PASSAGES, FamilyId.EDGE_OPEN_PRISMATIC_RECESSES,
+    FamilyId.EDGE_OPEN_CIRCULAR_POCKETS, FamilyId.RECTANGULAR_BLIND_SLOTS,
+    FamilyId.ROUND_BOTTOM_BLIND_SLOTS,
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -591,7 +602,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 )
             )
         ),
-        Counted("channel"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned Channel owns its exact two opposed side-wall faces"),
     ),
     PhysicalDefinition(
@@ -617,7 +628,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         (),
         prismatic,
         _simple(lambda s: list(recognise_rectangular_blind_slots(s.context.part, ledger=s.writer))),
-        Counted("rectangular_blind_slot"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned rectangular blind slot owns its two sides, floor, and cap"),
     ),
     PhysicalDefinition(
@@ -630,7 +641,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
         _simple(
             lambda s: list(recognise_round_bottom_blind_slots(s.context.part, ledger=s.writer))
         ),
-        Counted("round_bottom_blind_slot"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed(
             "every returned round-bottom blind slot owns its two curved sides, floor, and cap"
         ),
@@ -687,7 +698,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 _discover_pockets(s.context.part, writer=s.writer, face_edges=s.context.face_edges)
             )
         ),
-        Counted("pocket"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned Pocket owns its selected walls, corner floor, or caps"),
     ),
     PhysicalDefinition(
@@ -704,7 +715,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 )
             )
         ),
-        Counted("prismatic_pocket"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned prismatic pocket claims its defining boundary faces"),
     ),
     PhysicalDefinition(
@@ -721,7 +732,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 )
             )
         ),
-        Counted("edge_open_circular_pocket"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned open circular pocket claims its physical wall chain"),
     ),
     PhysicalDefinition(
@@ -738,8 +749,21 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 )
             )
         ),
-        Counted("edge_open_prismatic_recess"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned edge-open recess claims its physical wall supports"),
+    ),
+    PhysicalDefinition(
+        FamilyId.SECTION_RECESSES,
+        (SectionRecess,),
+        "section_recesses",
+        "recognise_section_recesses",
+        (),
+        always,
+        _simple(lambda s: list(discover_section_recesses(s.context.part, writer=s.writer))),
+        Counted("section_recess"),
+        FullyAttributed(
+            "every SectionRecess publishes its original wall faces and complete constituent set"
+        ),
     ),
     PhysicalDefinition(
         FamilyId.PADS,
@@ -914,7 +938,7 @@ PHYSICAL_DEFINITIONS: tuple[PhysicalDefinition, ...] = (
                 )
             )
         ),
-        Counted("passage"),
+        NotCounted("Counted once through the unified section_recess projection"),
         FullyAttributed("every returned passage claims its defining passage faces"),
         projected=prismatic,
     ),
@@ -1114,7 +1138,7 @@ def validate_definitions(
 
 
 def validate_result_fields(result_fields: frozenset[str]) -> None:
-    """Validate registry coverage against the independently declared public result fields."""
+    """Validate registry coverage against independently declared internal detector fields."""
 
     registered = {definition.result_field for definition in PHYSICAL_DEFINITIONS} | {
         definition.result_field for definition in DERIVED_DEFINITIONS

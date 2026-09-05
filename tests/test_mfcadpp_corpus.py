@@ -47,6 +47,7 @@ from b123d_recognisers._reconcile import (
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
 from b123d_recognisers._run import start
 from b123d_recognisers.result import _discover_all, _take_inventory
+from tools import _legacy_recognition as legacy_recognition
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
@@ -540,7 +541,7 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
     """The rich authority keeps only the truthful member of a mixed legacy roster."""
 
     part = next(part for name, part, *_rest in corpus if name == "10060.step")
-    legacy = recognition.recognise_passages(part)
+    legacy = legacy_recognition.recognise_passages(part)
     assert [(record.axis, record.length) for record in legacy] == [
         ("x", 11.886),
         ("z", 33.245),
@@ -549,8 +550,8 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
     product = _take_inventory(part)
     passages = product.physical.candidate_set(FamilyId.PASSAGES).candidates
     assert len(passages) == 1
-    assert product.result.section_passages == (passages[0].record,)
-    assert product.result.passages == (legacy[1],)
+    assert product._legacy_result.section_passages == (passages[0].record,)
+    assert product._legacy_result.passages == (legacy[1],)
     # Three-decimal endpoint serialization cannot encode this odd-quantum span's historical
     # midpoint: the issuer-frozen full-precision compatibility fact, not record rematching, owns
     # the exact legacy value.
@@ -579,8 +580,8 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
     assert product.physical.candidate_set(FamilyId.PRISMATIC_POCKETS).candidates == ()
     assert product.reconciliation.for_family(FamilyId.PRISMATIC_POCKETS) == ()
     assert product.result.slots == ()
-    assert len(product.result.pockets) == 2
-    assert product.result.prismatic_pockets == ()
+    assert len(product._legacy_result.pockets) == 2
+    assert product._legacy_result.prismatic_pockets == ()
 
     context = start(part)
     ledger = ClaimLedger(context.graph, definitions=PHYSICAL_DEFINITIONS)
@@ -594,7 +595,10 @@ def test_10060_legacy_false_positive_is_omitted_with_only_the_named_census_narro
     terminal = ledger.snapshot_index()
     assert all(item.family is not FamilyId.PASSAGES for item in terminal._observations)
 
-    census = recognition.feature_census(part)
+    public_census = recognition.feature_census(part)
+    assert public_census["section_recess"] == len(product.result.section_recesses)
+    assert "passage" not in public_census
+    census = legacy_recognition.feature_census(part)
     assert census["passage"] == 1
     assert census == {
         "hole": 1,
@@ -760,9 +764,9 @@ def test_accepted_recess_claims_have_no_containment_conflicts(corpus):
         graph = FaceGraph(part)
         ledger = ClaimLedger(graph)
         slots = recognition.recognise_slots(part, ledger=ledger)
-        pockets = recognition.recognise_pockets(part, ledger=ledger)
-        prismatic = recognition.recognise_prismatic_pockets(part, ledger=ledger)
-        passages = recognition.recognise_section_passages(part, ledger=ledger)
+        pockets = legacy_recognition.recognise_pockets(part, ledger=ledger)
+        prismatic = legacy_recognition.recognise_prismatic_pockets(part, ledger=ledger)
+        passages = legacy_recognition.recognise_section_passages(part, ledger=ledger)
         for family, records in (
             (FamilyId.SLOTS, slots),
             (FamilyId.POCKETS, pockets),

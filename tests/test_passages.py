@@ -30,9 +30,6 @@ from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
 from b123d_recognisers import (
-    build_recognition_result,
-    recognise_passages,
-    recognise_section_passages,
     recognise_slots,
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
@@ -40,6 +37,11 @@ from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import reconcile_recess_candidates
 from b123d_recognisers._rings import _canonical, _centroid, _interior_point
+from tools._legacy_recognition import (
+    build_recognition_result,
+    recognise_passages,
+    recognise_section_passages,
+)
 
 
 def _block() -> Box:

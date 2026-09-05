@@ -16,7 +16,6 @@ same recess is a reconciliation question and is tested as one.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -39,7 +38,6 @@ from build123d import (
     mirror,
 )
 
-import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -57,7 +55,9 @@ from b123d_recognisers.prismatic_pockets import (
     _section_prism,
     _void_open_and_floored,
 )
+from tools._legacy_recognition import namespace
 
+r = namespace()
 
 def _prism(*corners, height=14):
     with BuildPart() as built:
@@ -524,19 +524,15 @@ def test_principal_ring_contract_survives_arbitrary_rigid_presentation_in_framed
 
     assert isinstance(baseline, FramedRecognitionResult)
     assert isinstance(framed, FramedRecognitionResult)
-    if rectangular:
-        assert baseline.result.prismatic_pockets == framed.result.prismatic_pockets == ()
-        (baseline_pocket,) = baseline.result.pockets
-        (presented_pocket,) = framed.result.pockets
-        assert presented_pocket.body_key == pytest.approx(
-            baseline_pocket.body_key, abs=1e-9
-        )
-        assert replace(presented_pocket, body_key=baseline_pocket.body_key) == baseline_pocket
-    else:
-        assert framed.result.prismatic_pockets == baseline.result.prismatic_pockets
-        assert baseline.result.pockets == framed.result.pockets == ()
-        (pocket,) = framed.result.prismatic_pockets
-        assert (pocket.sides, pocket.depth) == (sides, 8.0)
+    (original,) = baseline.result.section_recesses
+    (pocket,) = framed.result.section_recesses
+    assert pocket.classification == original.classification
+    assert pocket.classification.feature_kind == "pocket"
+    assert len(pocket.geometry.profile.boundary) == sides
+    assert pocket.geometry.run_interval[1] - pocket.geometry.run_interval[0] == pytest.approx(
+        9 if rectangular else 8
+    )
+    assert pocket.geometry == original.geometry
 
 
 def test_a_void_open_at_both_ends_is_a_passage_and_not_reported_here():

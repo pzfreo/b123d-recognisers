@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+
 import json
 import math
 from dataclasses import FrozenInstanceError, replace
@@ -13,14 +14,16 @@ from b123d_recognisers import (
     CounterSink,
     FaceLevel,
     HoleRecord,
-    Passage,
-    Pocket,
     RecognitionResult,
     Slot,
     TurnedStep,
     build_recognition_result,
 )
 from b123d_recognisers._candidates import FamilyId
+from tools._legacy_recognition import (
+    Passage,
+    Pocket,
+)
 
 
 def _plate_with_holes():
@@ -355,6 +358,8 @@ def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> No
     assert set(result_module.PHYSICAL_FAMILIES) == set(FamilyId) - {FamilyId.LEGACY}
     nonphysical = {
         "cylinders",
+        "section_recess_patterns",
+        "section_recess_refusals",
         "rotational",
         "hole_patterns",
         "slot_patterns",
@@ -363,7 +368,7 @@ def test_physical_roster_matches_every_nonlegacy_family_and_result_field() -> No
         "passages",
     }
     assert {definition.result_field for definition in result_module.PHYSICAL_DEFINITIONS} == (
-        set(RecognitionResult.__dataclass_fields__) - nonphysical
+        set(result_module._LegacyRecognitionResult.__dataclass_fields__) - nonphysical
     )
 
 

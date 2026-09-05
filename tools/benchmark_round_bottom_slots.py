@@ -10,7 +10,6 @@ import statistics
 import subprocess
 import sys
 import time
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +48,7 @@ def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
 
 def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
     from b123d_recognisers._candidates import FamilyId
+    from tools._legacy_recognition import detector_outputs_equal
 
     rows = []
     for index, (model_id, part) in enumerate(parts):
@@ -56,13 +56,14 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
         measurements = {enabled: _run_case(part, enabled) for enabled in order}
         disabled, disabled_seconds = measurements[False]
         enabled, enabled_seconds = measurements[True]
-        accepted = enabled.result.round_bottom_blind_slots
+        accepted = enabled._legacy_result.round_bottom_blind_slots
         raw = enabled.physical.candidate_set(FamilyId.ROUND_BOTTOM_BLIND_SLOTS).candidates
         rows.append(
             {
                 "id": model_id,
-                "pre_existing_outputs_equal": (
-                    replace(enabled.result, round_bottom_blind_slots=()) == disabled.result
+                "pre_existing_outputs_equal": detector_outputs_equal(
+                    enabled._legacy_result, disabled._legacy_result,
+                    excluding=("round_bottom_blind_slots",),
                 ),
                 "raw_round_bottom_blind_slots": len(raw),
                 "accepted_round_bottom_blind_slots": len(accepted),

@@ -1,12 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""Private exact adapters between principal-axis records and section occurrences."""
+"""Legacy publication-grid projection and private exact section-occurrence adapters."""
 
 from __future__ import annotations
 
 import math
+from typing import cast
 
+from b123d_recognisers._section_recess import (
+    ClosedSectionProfile,
+    SectionEnd,
+    SectionRecessEnds,
+    SectionRecessGeometry,
+)
 from b123d_recognisers._sections import (
+    _OCCURRENCE_TOL,
     BodyRef,
     BodyRefIssuer,
     LocalFrame,
@@ -16,10 +24,152 @@ from b123d_recognisers._sections import (
     SectionVertex,
     validate_occurrence,
 )
-from b123d_recognisers.passages import Passage
+from b123d_recognisers.passages import Passage, PassageFrame, PassageSectionVertex
 from b123d_recognisers.prismatic_pockets import PrismaticPocket
 
 _AXES = "xyz"
+
+
+class LegacySectionProjectionError(ValueError):
+    def __init__(self, condition: str) -> None:
+        self.condition = condition
+        super().__init__(f"legacy section projection refused: {condition}")
+
+
+def _normalise_published_section(
+    section: tuple[tuple[float, float], ...],
+) -> PlanarSection:
+    if any(
+        len(point) != 2 or not all(math.isfinite(value) for value in point) for point in section
+    ):
+        raise LegacySectionProjectionError("non-finite or malformed vertices")
+    vertices = [(round(point[0] * 1000), round(point[1] * 1000)) for point in section]
+    changed = True
+    while changed and len(vertices) >= 3:
+        changed = False
+        for index, point in enumerate(vertices):
+            previous = vertices[index - 1]
+            following = vertices[(index + 1) % len(vertices)]
+            incoming = (point[0] - previous[0], point[1] - previous[1])
+            outgoing = (following[0] - point[0], following[1] - point[1])
+            backtrack = (
+                incoming[0] * outgoing[1] == incoming[1] * outgoing[0]
+                and incoming[0] * outgoing[0] + incoming[1] * outgoing[1] < 0
+            )
+            if point in (previous, following) or backtrack:
+                del vertices[index]
+                changed = True
+                break
+    if len(set(vertices)) < 3:
+        raise LegacySectionProjectionError("collapsed loop")
+    if len(set(vertices)) != len(vertices):
+        raise LegacySectionProjectionError(
+            "non-adjacent repeated vertex creates ambiguous topology"
+        )
+    try:
+        normalized = PlanarSection(
+            tuple(SectionVertex((point[0] / 1000, point[1] / 1000)) for point in vertices)
+        )
+    except ValueError as error:
+        raise LegacySectionProjectionError(f"invalid published loop: {error}") from error
+    for original in section:
+        distances = []
+        for index, vertex in enumerate(normalized.boundary):
+            start = vertex.point
+            end = normalized.boundary[(index + 1) % len(normalized.boundary)].point
+            direction = (end[0] - start[0], end[1] - start[1])
+            fraction = max(
+                0.0,
+                min(
+                    1.0,
+                    (
+                        (original[0] - start[0]) * direction[0]
+                        + (original[1] - start[1]) * direction[1]
+                    )
+                    / (direction[0] ** 2 + direction[1] ** 2),
+                ),
+            )
+            distances.append(
+                math.dist(
+                    original,
+                    (start[0] + fraction * direction[0], start[1] + fraction * direction[1]),
+                )
+            )
+        if min(distances) > _OCCURRENCE_TOL:
+            raise LegacySectionProjectionError("normalisation exceeds displacement bound")
+    return normalized
+
+
+def legacy_section_geometry(record: Passage | PrismaticPocket) -> SectionRecessGeometry:
+    """Project published-grid geometry without forcing an exact-centroid intermediate value."""
+
+    axis = record.axis
+    span = record.depth if isinstance(record, PrismaticPocket) else record.length
+    if axis not in _AXES or not math.isfinite(span) or span <= 0:
+        raise LegacySectionProjectionError("invalid axis or span")
+    if len(record.at) != 3 or not all(math.isfinite(value) for value in record.at):
+        raise LegacySectionProjectionError("invalid centre")
+    if record.sides != len(record.section) or record.sides < 3:
+        raise LegacySectionProjectionError("side count does not match published vertices")
+    if isinstance(record, PrismaticPocket) and record.open_sign not in (-1, 1):
+        raise LegacySectionProjectionError("invalid opening direction")
+    raw = _normalise_published_section(record.section)
+    transverse = tuple(index for index in range(3) if index != _AXES.index(axis))
+    centroid = raw.centroid
+    if any(
+        abs(centroid[index] - record.at[coordinate]) > 0.0008
+        for index, coordinate in enumerate(transverse)
+    ):
+        raise LegacySectionProjectionError("centre disagrees with published loop")
+    origin_grid = tuple(round(value * 1000) for value in centroid)
+    origin = [0.0, 0.0, 0.0]
+    for index, coordinate in enumerate(transverse):
+        origin[coordinate] = origin_grid[index] / 1000
+    frame = LocalFrame.principal(axis, cast(tuple[float, float, float], tuple(origin)))
+    coordinate_order = (1, 0) if axis == "y" else (0, 1)
+    try:
+        local = PlanarSection(
+            tuple(
+                SectionVertex(
+                    cast(
+                        tuple[float, float],
+                        tuple(
+                            (round(vertex.point[index] * 1000) - origin_grid[index]) / 1000
+                            for index in coordinate_order
+                        ),
+                    )
+                )
+                for vertex in raw.boundary
+            )
+        )
+        interval = tuple(
+            round(record.at[_AXES.index(axis)] + sign * span / 2, 3) for sign in (-1, 1)
+        )
+        return SectionRecessGeometry(
+            "section_recess",
+            PassageFrame(frame.origin, frame.run, frame.u, frame.v),
+            cast(tuple[float, float], interval),
+            ClosedSectionProfile(
+                "closed",
+                tuple(PassageSectionVertex(vertex.point, 0.0) for vertex in local.boundary),
+            ),
+            SectionRecessEnds(
+                SectionEnd(
+                    "capped"
+                    if isinstance(record, PrismaticPocket) and record.open_sign == 1
+                    else "open"
+                ),
+                SectionEnd(
+                    "capped"
+                    if isinstance(record, PrismaticPocket) and record.open_sign == -1
+                    else "open"
+                ),
+            ),
+        )
+    except ValueError as error:
+        raise LegacySectionProjectionError(
+            f"invalid projected loop or interval: {error}"
+        ) from error
 
 
 def _validate_record(
@@ -49,7 +199,10 @@ def _validate_record(
     raw = PlanarSection(tuple(SectionVertex((point[0], point[1])) for point in section))
     centroid = raw.centroid
     expected = (at[transverse[0]], at[transverse[1]])
-    if any(round(left, 3) != right for left, right in zip(centroid, expected, strict=True)):
+    # Both values are independently serialized at three decimal places.  The neutral section
+    # contract already publishes 0.0008 mm as the analytic-centroid displacement allowance for
+    # that double rounding; use the same bound rather than requiring identical rounded values.
+    if any(abs(left - right) > 0.0008 for left, right in zip(centroid, expected, strict=True)):
         raise ValueError("legacy centre disagrees with the section's analytic centroid")
     local = PlanarSection(
         tuple(

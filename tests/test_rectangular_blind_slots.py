@@ -33,7 +33,10 @@ from b123d_recognisers.rectangular_blind_slots import (
     _length_tolerance,
     recognise_rectangular_blind_slots,
 )
-from b123d_recognisers.result import _take_inventory, build_raw_recognition_result
+from b123d_recognisers.result import _take_inventory
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
+)
 
 
 def _slot(scale: float = 1.0):
@@ -50,6 +53,20 @@ def _slot(scale: float = 1.0):
         align=(Align.CENTER, Align.MIN, Align.MIN),
     )
     return stock - tool
+
+
+@pytest.mark.parametrize("rotation", [Rot(0, 0, 0), Rot(90, 0, 0), Rot(0, 90, 0), Rot(180, 0, 0)])
+def test_unified_slot_preserves_world_placement_and_ends(rotation):
+    result = build_raw_recognition_result(Pos(123, -57, 91) * rotation * _slot())
+    (source,) = result.rectangular_blind_slots
+    (unified,) = result.section_recesses
+    geometry = unified.geometry
+    frame = geometry.frame
+    midpoint = sum(geometry.run_interval) / 2
+    center = tuple(frame.origin[index] + midpoint * frame.run[index] for index in range(3))
+    assert center == pytest.approx(source.at, abs=0.002)
+    assert geometry.ends.low.condition == ("open" if source.open_sign == -1 else "capped")
+    assert geometry.ends.high.condition == ("open" if source.open_sign == 1 else "capped")
 
 
 def test_rectangular_blind_slot_has_truthful_dimensions_and_complete_evidence():
@@ -75,9 +92,16 @@ def test_rectangular_blind_slot_has_truthful_dimensions_and_complete_evidence():
     assert len(ledger.claims[0].defining) == 4
 
     evidence = build_recognition_evidence(part)
-    (feature,) = tuple(ref for ref in evidence.features if evidence.record(ref) == actual[0])
+    (feature,) = tuple(ref for ref in evidence.features
+                      if evidence.family(ref) == "section_recesses")
     assert evidence.constituent_faces(feature) == evidence.defining_faces(feature)
     assert len(evidence.defining_faces(feature)) == 4
+
+    (unified,) = build_raw_recognition_result(part).section_recesses
+    assert unified.classification.feature_kind == "edge_open_recess"
+    assert unified.classification.section_shape == "rectangular"
+    assert unified.geometry.profile.closure == "open"
+    assert unified.evidence.defining_faces == unified.evidence.constituent_faces
 
 
 def test_axis_sign_scale_translation_frame_and_step_roundtrip_are_stable(tmp_path):
@@ -103,7 +127,8 @@ def test_axis_sign_scale_translation_frame_and_step_roundtrip_are_stable(tmp_pat
     shifted = Pos(123, -57, 91) * base
     assert len(recognise_rectangular_blind_slots(shifted)) == 1
     framed = build_framed_recognition_result(Rot(17, 29, 11) * shifted)
-    assert len(framed.result.rectangular_blind_slots) == 1
+    assert len(framed.result.section_recesses) == 1
+    assert framed.result.section_recesses[0].geometry.profile.closure == "open"
 
     for scale in (0.001, 1000.0):
         (record,) = recognise_rectangular_blind_slots(_slot(scale))
@@ -121,8 +146,8 @@ def test_reconciliation_prefers_complete_edge_open_contract_over_pocket_fragment
     assert pocket.outcome is Outcome.REJECTED
     assert pocket.reason is ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
     assert pocket.related == (blind_slot.candidate,)
-    assert len(product.result.rectangular_blind_slots) == 1
-    assert product.result.pockets == ()
+    assert len(product._legacy_result.rectangular_blind_slots) == 1
+    assert product._legacy_result.pockets == ()
 
 
 def test_enclosed_pocket_doubly_open_channel_and_non_slot_role_are_refused():

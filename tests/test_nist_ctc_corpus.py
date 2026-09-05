@@ -35,7 +35,7 @@ pytest.importorskip("build123d")
 
 from build123d import import_step  # noqa: E402
 
-from b123d_recognisers import build_recognition_result  # noqa: E402
+from tools._legacy_recognition import build_recognition_result  # noqa: E402
 
 #: Recogniser families and counts as measured on 0.2.2, per the downstream report in issue #72.
 #: Only the families that moved under 0.2.3 are pinned — this is a regression guard, not a

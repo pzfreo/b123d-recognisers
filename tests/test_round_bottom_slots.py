@@ -34,7 +34,6 @@ from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers.evidence import build_recognition_evidence
 from b123d_recognisers.frames import FramedRecognitionResult, build_framed_recognition_result
-from b123d_recognisers.result import build_recognition_result
 from b123d_recognisers.round_bottom_slots import (
     RoundBottomBlindSlot,
     _alternating_profile_runs,
@@ -52,6 +51,10 @@ from b123d_recognisers.round_bottom_slots import (
     _same_cylinder,
     _same_span,
     recognise_round_bottom_blind_slots,
+)
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
+    build_recognition_result,
 )
 
 
@@ -89,6 +92,20 @@ def _split_faces(part, predicate, plane) -> Solid:
     return rebuilt
 
 
+@pytest.mark.parametrize("rotation", [Rot(0, 0, 0), Rot(90, 0, 0), Rot(0, 90, 0), Rot(180, 0, 0)])
+def test_unified_slot_preserves_world_placement_and_ends(rotation):
+    result = build_raw_recognition_result(Pos(123, -57, 91) * rotation * _slot())
+    (source,) = result.round_bottom_blind_slots
+    (unified,) = result.section_recesses
+    geometry = unified.geometry
+    frame = geometry.frame
+    midpoint = sum(geometry.run_interval) / 2
+    center = tuple(frame.origin[index] + midpoint * frame.run[index] for index in range(3))
+    assert center == pytest.approx(source.at, abs=0.002)
+    assert geometry.ends.low.condition == ("open" if source.open_sign == -1 else "capped")
+    assert geometry.ends.high.condition == ("open" if source.open_sign == 1 else "capped")
+
+
 def test_round_bottom_blind_slot_has_truthful_dimensions_and_evidence():
     part = _slot()
     ledger = ClaimLedger(FaceGraph(part))
@@ -113,9 +130,21 @@ def test_round_bottom_blind_slot_has_truthful_dimensions_and_evidence():
     assert len(ledger.claims[0].defining) == 4
 
     evidence = build_recognition_evidence(part)
-    (feature,) = tuple(ref for ref in evidence.features if evidence.record(ref) == actual[0])
+    (feature,) = tuple(ref for ref in evidence.features
+                      if evidence.family(ref) == "section_recesses")
     assert evidence.constituent_faces(feature) == evidence.defining_faces(feature)
     assert len(evidence.defining_faces(feature)) == 4
+
+    (unified,) = build_raw_recognition_result(part).section_recesses
+    assert unified.classification.feature_kind == "edge_open_recess"
+    assert unified.classification.section_shape == "general"
+    assert unified.geometry.profile.closure == "open"
+    assert [vertex.bulge != 0.0 for vertex in unified.geometry.profile.boundary] == [
+        True,
+        False,
+        True,
+        False,
+    ]
 
 
 def test_axis_open_sign_scale_and_step_roundtrip_are_stable(tmp_path):
@@ -267,8 +296,11 @@ def test_translation_mirror_and_arbitrary_framed_presentation_preserve_the_featu
     assert recognise_round_bottom_blind_slots(presented) == []
     framed = build_framed_recognition_result(presented, rotational=False)
     assert isinstance(framed, FramedRecognitionResult)
-    (record,) = framed.result.round_bottom_blind_slots
-    assert (record.radius, record.flat_width, record.length) == (3.0, 4.0, 20.0)
+    (record,) = framed.result.section_recesses
+    assert record.classification.feature_kind == "edge_open_recess"
+    assert record.geometry.profile.closure == "open"
+    assert record.geometry.run_interval[1] - record.geometry.run_interval[0] == pytest.approx(20)
+    assert sum(vertex.bulge != 0 for vertex in record.geometry.profile.boundary) == 2
 
 
 def test_opposite_depth_openings_have_distinct_public_records():
@@ -363,7 +395,7 @@ def test_compound_members_and_equal_occurrences_remain_distinct():
 
     evidence = build_recognition_evidence(Compound(children=[_slot(), _slot()]))
     refs = tuple(
-        ref for ref in evidence.features if isinstance(evidence.record(ref), RoundBottomBlindSlot)
+        ref for ref in evidence.features if evidence.family(ref) == "section_recesses"
     )
     assert len(refs) == 2
     assert refs[0] is not refs[1]
