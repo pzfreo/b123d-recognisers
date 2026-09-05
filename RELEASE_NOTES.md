@@ -2,7 +2,7 @@
 
 ## Next release
 
-## 0.2.1
+## 0.2.1 — Quiddity
 
 - Expand provider-owned grid-lattice and corner-notch regression coverage, and stabilize
   quadrature-derived NURBS report distances without changing recognition calculations.
