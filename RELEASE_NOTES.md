@@ -2,6 +2,10 @@
 
 ## Next release
 
+- Preserve native torus-axis precision during circular Blend proofs so arbitrary rigid
+  rotations no longer discard complete supported paths. Public rounding and partial-path
+  refusal contracts are unchanged (#491).
+
 - Add `quiddity part.step [-o recognition.json]`, `--capabilities` and `--version`.
   The shared `quiddity.document.build_recognition_document` projects one framed evidence run
   into JSON with unchanged feature records, explicit coordinate placement, document-local face
