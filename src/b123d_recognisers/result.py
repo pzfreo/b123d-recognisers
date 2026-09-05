@@ -20,6 +20,7 @@ from typing import TypeVar, cast
 
 from b123d_recognisers._candidates import CandidateSet, EvidenceIndex, FamilyId
 from b123d_recognisers._claims import ClaimLedger
+from b123d_recognisers._corner_section import prove_corner_section
 from b123d_recognisers._correspondence import _CorrespondenceSnapshotAuthority
 from b123d_recognisers._diagnostics import ResidualDiagnostic, diagnose_residuals
 from b123d_recognisers._dispositions import (
@@ -868,6 +869,29 @@ def _legacy_section_recess(
     )
 
 
+def _corner_pocket_recess(
+    record: Pocket, *, context: RecognitionContext, evidence: EvidenceIndex, index: int,
+) -> SectionRecess | None:
+    if not record.edge_anchored:
+        return None
+    proof = prove_corner_section(context.graph, evidence.defining_of(record), record.depth_axis)
+    if proof is None:
+        return None
+    geometry = _principal_open_geometry(
+        axis=record.depth_axis,
+        run_interval=proof.run_interval,
+        open_sign=proof.open_sign,
+        boundary=tuple(
+            PassageSectionVertex((round(point[0], 4), round(point[1], 4)), 0.0)
+            for point in proof.boundary
+        ),
+    )
+    return _legacy_section_recess(
+        record, context=context, evidence=evidence, index=index, geometry=geometry,
+        feature_kind="edge_open_recess", section_shape="polygonal",
+    )
+
+
 def _rectangular_blind_slot_recess(
     record: RectangularBlindSlot,
     *,
@@ -1152,6 +1176,13 @@ def _project_result(
             _records(accepted, FamilyId.ROUND_BOTTOM_BLIND_SLOTS, RoundBottomBlindSlot)
         )
     )
+    corner_recesses = tuple(
+        projected
+        for index, record in enumerate(_records(accepted, FamilyId.POCKETS, Pocket))
+        if (projected := _corner_pocket_recess(
+            record, context=context, evidence=evidence, index=index
+        )) is not None
+    )
     return RecognitionResult(
         cylinders=(tuple(z_cyls), tuple(cross_cyls)),
         countersinks=tuple(_records(accepted, FamilyId.COUNTERSINKS, CounterSink)),
@@ -1191,6 +1222,7 @@ def _project_result(
                 *open_circular_recesses,
                 *rectangular_blind_recesses,
                 *round_bottom_recesses,
+                *corner_recesses,
             )
         ),
         pockets=tuple(_records(accepted, FamilyId.POCKETS, Pocket)),

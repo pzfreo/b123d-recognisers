@@ -39,7 +39,7 @@ def snapshot(part):
         }
         for record in document.occurrences
     ]
-    return sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
+    return json.loads(json.dumps(sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))))
 
 
 @pytest.mark.parametrize("name", CASES)

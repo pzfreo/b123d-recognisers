@@ -60,6 +60,7 @@ FAMILIES = {
             "tests/test_section_recess_geometry_golden.py",
             "tests/test_section_recess_migration.py",
             "tests/test_section_adapter_rounding.py",
+            "tests/test_corner_section.py",
         ],
     },
     "paired-ramp-steps": {

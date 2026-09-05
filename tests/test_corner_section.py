@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+"""Corner-notch projection must recover physical walls, not close a bounding rectangle."""
+
+from itertools import combinations
+
+import pytest
+from build123d import Box, Compound, Cylinder, Pos, Rot, Vector, Vertex, export_step, import_step
+
+from b123d_recognisers._adjacency import FaceGraph
+from b123d_recognisers._candidates import FamilyId
+from b123d_recognisers._corner_section import prove_corner_section
+from b123d_recognisers.result import _take_inventory
+
+
+def corner(scale=1):
+    return Box(60 * scale, 40 * scale, 12 * scale) - Pos(25 * scale, 15 * scale, 4 * scale) * Box(
+        20 * scale, 20 * scale, 8 * scale
+    )
+
+
+def assert_truthful_corner(part):
+    product = _take_inventory(part)
+    (source,) = [
+        candidate for candidate in product.accepted.candidate_set(FamilyId.POCKETS).candidates
+        if candidate.record.edge_anchored
+    ]
+    defining = product.evidence.defining_of(source)
+    matches = [record for record in product.result.section_recesses
+               if set(record.evidence.defining_faces) == {node.index for node in defining}]
+    (record,) = matches
+    assert record.classification.feature_kind == "edge_open_recess"
+    assert record.classification.section_shape == "polygonal"
+    assert len(record.geometry.profile.boundary) == 3
+    assert len(record.evidence.constituent_faces) == 3
+    frame = record.geometry.frame
+    mid = sum(record.geometry.run_interval) / 2
+    chain = [tuple(frame.origin[i] + frame.run[i] * mid
+                   + frame.u[i] * vertex.point[0] + frame.v[i] * vertex.point[1]
+                   for i in range(3)) for vertex in record.geometry.profile.boundary]
+    for start, end in zip(chain, chain[1:], strict=False):
+        midpoint = Vertex(*((a + b) / 2 for a, b in zip(start, end, strict=True)))
+        assert min(product.context.graph.face(node).distance_to(midpoint)
+                   for node in defining) < 0.002
+    # Closing the chain would create a fictitious diagonal wall through empty space.
+    gap_middle = Vertex(*((a + b) / 2 for a, b in zip(chain[0], chain[-1], strict=True)))
+    assert min(product.context.graph.face(node).distance_to(gap_middle)
+               for node in defining) > 0.02
+    ends = record.geometry.ends
+    assert ends.low.condition == ("capped" if source.record.open_sign == 1 else "open")
+    assert ends.high.condition == ("open" if source.record.open_sign == 1 else "capped")
+
+
+@pytest.mark.parametrize("scale", [0.1, 1, 10])
+@pytest.mark.parametrize("rotation", [Rot(), Rot(90, 0, 0), Rot(0, 90, 0), Rot(180, 0, 0)])
+def test_source_corner_chain_is_covariant_and_scale_independent(scale, rotation):
+    assert_truthful_corner(Pos(123, -57, 91) * rotation * corner(scale))
+
+
+def test_corner_survives_step_round_trip(tmp_path):
+    path = tmp_path / "corner.step"
+    export_step(corner(), path)
+    assert_truthful_corner(import_step(path))
+
+
+def test_equal_corners_on_separate_bodies_keep_distinct_ownership():
+    product = _take_inventory(Compound([corner(), Pos(100, 0, 0) * corner()]))
+    records = product.result.section_recesses
+    assert len(records) == 2
+    assert {record.body for record in records} == {0, 1}
+    assert set(records[0].evidence.defining_faces).isdisjoint(records[1].evidence.defining_faces)
+
+
+def test_box_corners_are_not_recesses():
+    graph = FaceGraph(Box(10, 20, 30))
+    for nodes in combinations(graph.nodes, 3):
+        for axis in "xyz":
+            assert prove_corner_section(graph, frozenset(nodes), axis) is None
+
+
+def test_hole_in_corner_floor_is_not_replaced_by_a_full_rectangle():
+    part = corner() - Pos(22, 12, -3) * Cylinder(1, 20)
+    graph = FaceGraph(part)
+    # The two notch walls and their perforated floor still meet at the inner trihedral corner.
+    nodes = frozenset(node for node in graph.nodes
+                      if any(tuple(vertex) == pytest.approx((15, 5, 0))
+                             for vertex in graph.face(node).vertices()))
+    assert len(nodes) == 3
+    assert prove_corner_section(graph, nodes, "z") is None
+
+
+def test_non_owned_or_incomplete_face_sets_are_refused():
+    graph = FaceGraph(Compound([corner(), Pos(100, 0, 0) * corner()]))
+    assert prove_corner_section(graph, frozenset(), "z") is None
+    assert prove_corner_section(graph, frozenset(graph.nodes[:3]), "bad") is None
+    mixed = frozenset((graph.nodes[0], graph.nodes[1], graph.nodes[-1]))
+    assert prove_corner_section(graph, mixed, "z") is None
+
+
+def test_a_second_cap_is_not_called_an_open_run_end():
+    part = corner() + Pos(0, 0, 7) * Box(60, 40, 2)
+    graph = FaceGraph(part)
+    nodes = frozenset(node for node in graph.nodes
+                      if any(tuple(vertex) == pytest.approx((15, 5, 0))
+                             for vertex in graph.face(node).vertices()))
+    assert len(nodes) == 3
+    assert prove_corner_section(graph, nodes, "z") is None
+
+
+def test_remaining_step_summaries_are_laterally_open_not_closed_pockets():
+    from tests.golden.plates_pads_levels_and_slanted_steps.fixture import build_fixture
+
+    part = build_fixture()
+    product = _take_inventory(part)
+    summaries = product.result.pockets
+    assert len(summaries) == 2
+    assert not any(record.edge_anchored for record in summaries)
+    assert product.result.section_recesses == ()
+    # Under the overhang and between the wall and step: void persists beyond both lateral
+    # ends of the opposed-wall overlap. No third/fourth closing walls exist at those ends.
+    for x, z, lateral in ((37, 8, 10), (-25, 8, 26)):
+        assert not part.is_inside(Vector(x, 0, z))
+        assert not part.is_inside(Vector(x, -lateral, z))
+        assert not part.is_inside(Vector(x, lateral, z))
+    assert part.is_inside(Vector(37, 0, 14))  # pad above the overhang region
+    assert part.is_inside(Vector(37, 0, 2))   # base below
+    assert part.is_inside(Vector(-50, 0, 8))  # tall wall beside the second region
+    assert part.is_inside(Vector(0, 0, 8))    # lower step on its other side

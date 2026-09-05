@@ -13,6 +13,7 @@ runs raw/caller-coordinate recognition once; it does not automatically frame the
 | `SectionPassage` | Closed profile, both ends open, `passage` |
 | `EdgeOpenPrismaticRecess`, `EdgeOpenCircularPocket` | Physical open chain, one capped end, `edge_open_recess` |
 | `RectangularBlindSlot`, `RoundBottomBlindSlot` | Physical U chain, one capped end, `edge_open_recess` |
+| Corner-anchored `Pocket` with an independently proved rectangular trihedral boundary | Two-wall L chain, one capped end, `edge_open_recess` / `polygonal` |
 | Extent-only `Pocket` | No automatic section conversion; an independent exact proof is required |
 
 A section point `(u, v)` at run coordinate `s` reconstructs as
@@ -52,12 +53,29 @@ The exact-proof families above project to the unified result. Their old public r
 fields have **not yet been removed**. No consumer should interpret their coexistence as two
 independent occurrences or a permanent compatibility guarantee.
 
-The authored migration audit found four accepted extent-only Pocket summaries without a unified
-counterpart: two in `plates_pads_levels_and_slanted_steps` and two corner notches in `slanted_steps`.
-Deleting `RecognitionResult.pockets` now would discard those supported results. Publishing their
-bounding boxes as closed sections would instead fabricate geometry. The final cutover therefore
-requires a decision to retain explicit extent-only output, deliberately remove that output, or
-implement an additional proved representation. That decision is separate from Draftwright adoption.
+The two corner notches in `slanted_steps` now have independently proved two-wall open profiles.
+The proof checks three same-body, mutually adjacent, rectangular planar faces, inward-facing wall
+normals, equal wall run spans, the actual floor at the capped end and exterior planar mouth faces
+at the other end. It reads actual source geometry, not the old Pocket's rounded dimensions. A
+perforated floor or second cap is refused. The opening joins the loose chain endpoints only as an
+absence of boundary: it does not imply a diagonal wall or the floor's footprint.
+
+Two summaries remain in `plates_pads_levels_and_slanted_steps`; individual source inspection shows:
+
+| Region | Actual anatomy | Why not an ordinary pocket |
+| --- | --- | --- |
+| Under the raised pad overhang, x=32.5..42, y=-9..9, z=4..12 | Base below, pad underside above, lower-step wall at x=32.5 | Open toward +X and at both Y ends |
+| Between tall wall and lower step, x=-45..-12.5, y=-25..25, z=4..12 | Opposed walls and base floor | Open toward +Z and at both Y ends |
+
+Both are channel-like partial-support regions. Existing `RaisedPad`, `FaceLevel` and `RiserEvidence`
+records describe surrounding structure, but none is an exact replacement for either void. The
+current `Channel` recogniser requires an envelope-spanning run; these run intervals instead end
+where a shorter wall stops. Reclassifying them as existing Channels would weaken that contract.
+Representing either using an open profile with **both run ends open** would require a new admitted
+interpretation under ADR 0019 and a proof of the bounded support span. That is the specific remaining
+geometry question, not a reason to retain a permanent second extent-only schema. The old results
+remain until their replacement or explicit retirement is decided; no bounding box is promoted to a
+closed pocket and no existing recognition is silently dropped.
 
 Run the small provider migration audit without a new benchmark or taxonomy checkpoint:
 

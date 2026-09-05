@@ -194,6 +194,10 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "section-recess recognition intentionally requires audited original-face anatomy",
     ),
+    "_corner_section": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "corner projection requires original rectangular faces and an original exterior mouth",
+    ),
     "profiled_bores": (SurfaceReaderDisposition.PENDING_MIGRATION, "planar profile-face gate"),
     "repeating_profiles": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
@@ -221,6 +225,14 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_corner_section:prove_corner_section:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prove rectangular physical floor and wall faces before issuing an open chain",
+    ),
+    "_corner_section:prove_corner_section:is_planar:2": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "prove exterior planar mouth faces rather than assuming the opposite end is open",
+    ),
     "_section_recess:_cylinder:adaptor:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "recogniser reads native cylinder parameters from the audited obround wall",

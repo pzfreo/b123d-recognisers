@@ -29,7 +29,6 @@ def test_every_exact_accepted_golden_recess_has_a_unified_region(name):
     # Keep the outstanding cutover decision visible rather than silently deleting the output.
     expected_unrepresented = {
         "plates_pads_levels_and_slanted_steps": 2,
-        "slanted_steps": 2,
     }
     assert report["counts"]["unrepresented"] == expected_unrepresented.get(name, 0)
 

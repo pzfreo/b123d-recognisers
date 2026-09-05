@@ -320,9 +320,17 @@ is no overlay path or second implementation.
 
 The provider cutover audit and consumer instructions are recorded in
 [`docs/section-recess-migration.md`](../section-recess-migration.md). Exact accepted regions are
-checked independently of benchmark scores. The audit identifies four authored extent-only Pocket
-summaries without a unified counterpart; their removal or replacement remains an explicit public
-contract decision, not a consequence of obtaining green CI. Existing census and physical-candidate
+checked independently of benchmark scores. The two authored corner notches now project from an
+independent source-face proof to an L-shaped physical open chain with one capped run end. Their
+gap is not an observed diagonal wall or a floor outline. No new topology combination or vocabulary
+is needed: they are `edge_open_recess` / `polygonal`.
+
+Individual assessment of the other two summaries identifies channel-like regions with lateral
+openings at both ends of a partial support span. Existing structural records are not exact void
+replacements. Open profiles with two open run ends remain excluded pending their own bounded
+geometry proof and explicit admitted interpretation; this change does not silently broaden that
+decision. The remaining summaries' removal or replacement is an explicit public contract decision,
+not a consequence of obtaining green CI. Existing census and physical-candidate
 scoring identities remain unchanged during this output-only migration.
 
 The developer may use MFCAD++ repeatedly. A person outside the implementation loop runs MFInstSeg
