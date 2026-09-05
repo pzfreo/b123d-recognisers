@@ -1,5 +1,18 @@
 # b123d-recognisers
 
+> **Deprecated: this project is now [Quiddity](https://pypi.org/project/quiddity/).**
+> Version 0.4.16 is the final old-name notice release. Its recognition code and dependencies
+> are unchanged from 0.4.15; existing installations keep working. New development and fixes
+> are published as `quiddity`. Existing releases will remain available.
+
+To migrate, replace your dependency with `quiddity>=0.2.0` and Python imports with
+`quiddity` instead of `b123d_recognisers`. The capability command becomes
+`quiddity-capabilities`, and public manifest identifiers change too. See the
+[migration guide](https://github.com/pzfreo/quiddity/blob/quiddity-v0.2.0/docs/quiddity-migration.md).
+There is no forwarding shim, automatic dependency replacement, or import-time warning.
+
+The documentation below describes the frozen old-name package.
+
 [![CI](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
 [![PyPI](https://img.shields.io/pypi/v/b123d-recognisers.svg)](https://pypi.org/project/b123d-recognisers/)

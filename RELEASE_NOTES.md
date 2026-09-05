@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.4.16 — final old-name notice release
+
+`b123d-recognisers` is deprecated in favour of [Quiddity](https://pypi.org/project/quiddity/).
+Recognition code, geometry contracts and dependencies are unchanged from 0.4.15.
+Only publication identity and deprecation documentation change; there is no import shim,
+automatic replacement dependency, or runtime warning. Existing releases remain available.
+See the [migration guide](https://github.com/pzfreo/quiddity/blob/quiddity-v0.2.0/docs/quiddity-migration.md).
+
+This maintenance release is built from the old package line. Its post-release bump is disabled
+and has no repository write permissions, so it cannot change Quiddity's main version.
+
 ## 0.4.15
 
 **Breaking API change despite the patch version.** Published as a patch at the maintainer's

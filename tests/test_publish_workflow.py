@@ -106,7 +106,7 @@ def test_publish_workflow_uses_oidc_environments_and_one_promoted_artifact() -> 
     # no RELEASE_TAG-in-the-wrong-scope bug to have. An earlier attempt derived it from the tag
     # and read that variable in a step where it was not defined, which would have failed every
     # release after PyPI had accepted the artifact.
-    assert "actions: write" in _job(workflow, "bump-version")
+    assert _parsed(WORKFLOW)["jobs"]["bump-version"]["permissions"] == {}
     target = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in target
     # Two publish steps: the main-push snapshot to TestPyPI, and the release to PyPI.
@@ -308,5 +308,7 @@ def test_each_job_runs_only_on_its_own_event() -> None:
     # records as the source of an earlier chain of defects -- and was green.
     checkout = next(s for s in jobs["bump-version"]["steps"] if "checkout" in s.get("uses", ""))
     assert checkout["with"]["ref"] == "main"
-    for name in ("build-release", "publish-pypi", "bump-version"):
+    assert jobs["bump-version"]["if"] == "${{ false }}"
+    assert jobs["bump-version"]["permissions"] == {}
+    for name in ("build-release", "publish-pypi"):
         assert jobs[name]["if"] == "github.event_name == 'release'"

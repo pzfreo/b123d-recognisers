@@ -104,12 +104,10 @@ jobs:
 
   bump-version:
     needs: publish-pypi
-    if: github.event_name == 'release'
+    # Final old-name release: never check out or bump Quiddity's main branch.
+    if: ${{ false }}
     runs-on: ubuntu-latest
-    permissions:
-      actions: write # Dispatch CI against the pushed branch; see below.
-      contents: write # Push only the generated post-release branch.
-      pull-requests: write # Open a PR rather than pushing to main directly.
+    permissions: {}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         # zizmor: ignore[artipacked] -- this job pushes; it uploads no artifacts.

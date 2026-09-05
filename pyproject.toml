@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "b123d-recognisers"
-version = "0.4.15.dev0"
-description = "Deterministic, geometry-only feature recognition for build123d solids"
+version = "0.4.16"
+description = "Deprecated: use quiddity. Final old-name release of deterministic CAD feature recognition."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
@@ -28,8 +28,9 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/pzfreo/b123d-recognisers"
-Issues = "https://github.com/pzfreo/b123d-recognisers/issues"
+Repository = "https://github.com/pzfreo/quiddity"
+Issues = "https://github.com/pzfreo/quiddity/issues"
+Migration = "https://github.com/pzfreo/quiddity/blob/quiddity-v0.2.0/docs/quiddity-migration.md"
 
 [project.scripts]
 b123d-recognisers-capabilities = "b123d_recognisers.capabilities:main"
