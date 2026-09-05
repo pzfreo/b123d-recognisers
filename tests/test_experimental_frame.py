@@ -40,12 +40,10 @@ from b123d_recognisers.frames import (
 )
 from b123d_recognisers.result import (
     RecognitionResult,
-)
-from tests.golden._common import load_fixture
-from tools._legacy_recognition import (
     build_raw_recognition_result,
     build_recognition_result,
 )
+from tests.golden._common import load_fixture
 from tools.frame_handling_prototype import evaluate_goldens, evaluate_translated_goldens
 
 

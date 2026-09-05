@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Axis, Vector  # noqa: E402
 
-from b123d_recognisers.census import CENSUS_BINDINGS  # noqa: E402
+from b123d_recognisers.census import _LEGACY_CENSUS_BINDINGS  # noqa: E402
 from b123d_recognisers.result import PHYSICAL_FAMILIES, _take_inventory  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 
@@ -94,7 +94,8 @@ def _occurrences(part) -> tuple[Occurrence, ...]:
             )
 
     occurrences: list[Occurrence] = []
-    for census_family, result_field in CENSUS_BINDINGS:
+    # Keep the pinned detector-baseline identities paired with the private detector result.
+    for census_family, result_field in _LEGACY_CENSUS_BINDINGS:
         records = (
             tuple(candidate.record for candidate in product.distinct_steps.candidates)
             if census_family == "step"

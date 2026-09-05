@@ -161,7 +161,8 @@ CASES = (
 
 
 def _records(part) -> dict[str, list[dict[str, Any]]]:
-    result = _take_inventory(part).result
+    # This pinned report measures historical detector families, not the public API census.
+    result = _take_inventory(part)._legacy_result
     records: dict[str, list[dict[str, Any]]] = {}
     for family in _FAMILIES:
         projected = []
