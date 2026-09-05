@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import product
 
-from build123d import Face, Plane, Solid, Vector, Wire
+from build123d import Face, Plane, Shape, ShapeList, Solid, Vector, Wire
 
 from quiddity._adjacency import FaceGraph, FaceNode
 from quiddity._recess_records import Channel, Pocket
@@ -37,7 +37,7 @@ def _supports(graph: FaceGraph, nodes: frozenset[FaceNode], bounds, axis, at, si
         xyz[axis], xyz[transverse[0]], xyz[transverse[1]] = at, a, b
         points.append(Vector(*xyz))
     patch = Face(Wire.make_polygon((*points, points[0])))
-    uncovered = patch
+    uncovered: list[Shape] = [patch]
     for node in nodes:
         normal = graph.normal(node) if graph.is_planar(node) else None
         if normal is None or normal[axis] * sign < 1 - 1e-8:
@@ -47,8 +47,18 @@ def _supports(graph: FaceGraph, nodes: frozenset[FaceNode], bounds, axis, at, si
             continue
         # Subtract supporting source faces rather than summing areas (which double counts
         # overlaps). Holes, split trims and unrelated coplanar faces cannot fill a missing patch.
-        uncovered = uncovered.cut(graph.face(node))
-        if uncovered is None or uncovered.area <= patch.area * 1e-9:
+        remaining: list[Shape] = []
+        for fragment in uncovered:
+            difference = fragment.cut(graph.face(node))
+            # Older supported build123d returns ShapeList for empty/split results; newer
+            # versions may return one shape (including a compound). Keep every fragment
+            # for subsequent subtraction, not just its area or the first returned shape.
+            if isinstance(difference, ShapeList):
+                remaining.extend(difference)
+            elif difference is not None:
+                remaining.append(difference)
+        uncovered = remaining
+        if sum(fragment.area for fragment in uncovered) <= patch.area * 1e-9:
             return True
     return False
 
