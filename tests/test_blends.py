@@ -178,7 +178,7 @@ def test_internal_rounds_are_public_concave_chains_with_exact_evidence() -> None
         assert view.face(next(iter(view.defining_faces(feature)))).geom_type.name == "CYLINDER"
 
     pocket_ref = next(
-        feature for feature in view.features if view.family(feature) == "prismatic_pockets"
+        feature for feature in view.features if view.family(feature) == "section_recesses"
     )
     pocket_faces = view.constituent_faces(pocket_ref)
     assert all(view.constituent_faces(feature) <= pocket_faces for feature in blend_refs)

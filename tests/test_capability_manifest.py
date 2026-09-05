@@ -414,8 +414,9 @@ def test_additional_format2_container_and_order_refusals() -> None:
         validate_capability_manifest(manifest)
 
     manifest = capability_manifest()
-    passages = next(family for family in manifest["families"] if family["id"] == "passages")
-    passages["recognisers"].reverse()
+    passages = manifest["families"][0]
+    passages["recognisers"].append(copy.deepcopy(manifest["families"][1]["recognisers"][0]))
+    passages["recognisers"].sort(key=lambda item: item["entry_point"], reverse=True)
     with pytest.raises(CapabilityManifestError, match="recognisers are not sorted"):
         validate_capability_manifest(manifest)
 
@@ -431,12 +432,11 @@ def test_additional_format2_container_and_order_refusals() -> None:
 )
 def test_compatibility_recogniser_contract_fails_closed(changes, message: str) -> None:
     manifest = capability_manifest()
-    passages = next(family for family in manifest["families"] if family["id"] == "passages")
-    compatibility = next(
-        recogniser
-        for recogniser in passages["recognisers"]
-        if recogniser["role"] == "compatibility"
-    )
+    # No retired compatibility entrypoints ship now; exercise the schema with a synthetic
+    # compatibility declaration rather than keeping a removed public function alive.
+    compatibility = manifest["families"][0]["recognisers"][0]
+    compatibility.update(role="compatibility", ledger_state="unavailable", remove_in="1.0.0",
+                         replacement="b123d_recognisers.recognise_section_recesses")
     if changes.get("role") == "unknown":
         for key in ("ledger_state", "remove_in", "replacement"):
             compatibility.pop(key)
@@ -566,7 +566,7 @@ def test_reserved_family_shape_and_global_uniqueness_rules_fail_closed() -> None
         validate_capability_manifest(manifest)
 
     manifest = capability_manifest()
-    next(family for family in manifest["families"] if family["id"] == "passages")[
+    next(family for family in manifest["families"] if family["id"] == "section-recesses")[
         "records"
     ].reverse()
     with pytest.raises(CapabilityManifestError, match="records are not sorted"):

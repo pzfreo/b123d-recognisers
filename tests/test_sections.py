@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+
 import copy
 import importlib.util
 import json
@@ -41,7 +42,9 @@ from b123d_recognisers._sections import (
 )
 from b123d_recognisers.passages import Passage, recognise_passages
 from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
-from b123d_recognisers.result import build_recognition_result
+from tools._legacy_recognition import (
+    build_recognition_result,
+)
 
 
 def _square() -> tuple[tuple[float, float], ...]:

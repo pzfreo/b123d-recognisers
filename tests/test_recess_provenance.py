@@ -15,7 +15,7 @@ import pytest
 from build123d import Box, Compound, Cylinder, Edge, Pos, Rot, export_step, import_step
 from OCP.BRepFeat import BRepFeat_SplitShape
 
-from b123d_recognisers import recognise_pockets, recognise_slots
+from b123d_recognisers import recognise_slots
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -54,6 +54,9 @@ from b123d_recognisers._recess_reduce import (
 )
 from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
 from b123d_recognisers._volume_probe import PRISM_PROBE_FLOOR
+from tools._legacy_recognition import (
+    recognise_pockets,
+)
 
 ROOT = Path(__file__).parents[1]
 

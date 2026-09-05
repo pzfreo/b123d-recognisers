@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 from typing import cast
@@ -21,7 +22,6 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import build_raw_recognition_result
 from b123d_recognisers._adjacency import FaceGraph, FaceNode
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -31,6 +31,9 @@ from b123d_recognisers.edge_open_prismatic_recesses import (
     OpenSectionOpening,
     _complete_wall_boundaries,
     recognise_edge_open_prismatic_recesses,
+)
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
 )
 
 

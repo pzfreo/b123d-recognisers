@@ -37,7 +37,7 @@ from b123d_recognisers._registry import (
     validate_result_fields,
 )
 from b123d_recognisers.census import CENSUS_BINDINGS, CENSUS_KEYS
-from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, RecognitionResult, _take_inventory
+from b123d_recognisers.result import MIGRATED, PHYSICAL_FAMILIES, _take_inventory
 
 
 def test_registry_is_the_closed_ordered_internal_roster() -> None:
@@ -317,17 +317,22 @@ def test_inapplicable_family_completes_as_an_empty_dependency(monkeypatch) -> No
 
 
 def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> None:
-    result_fields = {item.name for item in fields(RecognitionResult)}
-    orchestration_context = {"cylinders", "rotational"}
+    result_fields = {item.name for item in fields(result_module._LegacyRecognitionResult)}
+    orchestration_context = {"cylinders", "rotational", "section_recess_patterns",
+                             "section_recess_refusals"}
     validate_result_fields(frozenset(result_fields - orchestration_context))
+    from tools._legacy_recognition import __all__ as retired
+
     assert {
         item.public_entrypoint
         for item in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS)
-        if item.public_entrypoint is not None
+        if item.public_entrypoint is not None and item.public_entrypoint not in retired
     } == MIGRATED
-    assert all(hasattr(public, item.public_entrypoint) for item in PHYSICAL_DEFINITIONS)
+    assert all(hasattr(public, item.public_entrypoint) for item in PHYSICAL_DEFINITIONS
+               if item.public_entrypoint not in retired)
     assert all(
-        item.public_entrypoint is None or hasattr(public, item.public_entrypoint)
+        item.public_entrypoint is None or item.public_entrypoint in retired
+        or hasattr(public, item.public_entrypoint)
         for item in DERIVED_DEFINITIONS
     )
     manifest_entrypoints = {
@@ -335,7 +340,7 @@ def test_registry_fields_and_public_entrypoints_have_independent_coverage() -> N
         for family in public.capability_manifest()["families"]
         for recogniser in family["recognisers"]
     }
-    assert manifest_entrypoints == MIGRATED | {"recognise_passages"}
+    assert manifest_entrypoints == MIGRATED
 
 
 def _record_types(annotation: object) -> set[type[Record]]:
@@ -348,13 +353,15 @@ def _record_types(annotation: object) -> set[type[Record]]:
 
 
 def test_registry_record_types_match_public_entrypoints_and_result_fields() -> None:
-    result_hints = typing.get_type_hints(RecognitionResult)
+    from tools._legacy_recognition import namespace
+
+    detector_api = namespace()
+    result_hints = typing.get_type_hints(result_module._LegacyRecognitionResult)
     for definition in (*PHYSICAL_DEFINITIONS, *DERIVED_DEFINITIONS):
         declared = set(definition.record_types)
         if definition.public_entrypoint is not None:
-            public_return = typing.get_type_hints(getattr(public, definition.public_entrypoint))[
-                "return"
-            ]
+            entrypoint = getattr(detector_api, definition.public_entrypoint)
+            public_return = typing.get_type_hints(entrypoint)["return"]
             assert declared == _record_types(public_return), definition.public_entrypoint
         assert declared == _record_types(result_hints[definition.result_field]), (
             definition.result_field

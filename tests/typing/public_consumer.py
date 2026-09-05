@@ -22,6 +22,11 @@ from b123d_recognisers import (
     RecognitionReport,
     RecognitionResult,
     RefusedFramedEvidence,
+    SectionRecess,
+    SectionRecessArray,
+    SectionRecessDocument,
+    SectionRecessGrid,
+    SectionRecessRefusal,
     build_framed_recognition_evidence,
     build_framed_recognition_report,
     build_framed_recognition_result,
@@ -29,6 +34,7 @@ from b123d_recognisers import (
     build_raw_recognition_result,
     build_recognition_report,
     build_recognition_result,
+    build_section_recess_document,
     classify_bevel,
     feature_census,
     prepare_framed_part,
@@ -65,6 +71,11 @@ def consume_bevel_rejection(error: BevelReject) -> None:
 
 
 def consume(part: Solid, face: Face, bounds: BoundBox) -> None:
+    document = build_section_recess_document(part)
+    assert_type(document, SectionRecessDocument)
+    assert_type(document.occurrences, tuple[SectionRecess, ...])
+    assert_type(document.refusals, tuple[SectionRecessRefusal, ...])
+    assert_type(document.patterns, tuple[SectionRecessArray | SectionRecessGrid, ...])
     holes = recognise_holes(part)
     bosses = recognise_bosses(part)
     paired_ramp_steps = recognise_paired_ramp_steps(part)

@@ -61,6 +61,7 @@ def test_correspondence_matcher_remains_private_and_result_neutral() -> None:
 
 MODULE_SEAM_EDGES = {
     "_corner_section": {"_adjacency", "_section_passages", "_sections"},
+    "_open_channel_section": {"_adjacency", "_recess_records", "_section_passages", "_sections"},
     # Base layer: the kernel, the shared type aliases, and `_geometry`'s alignment threshold.
     "_body_identity": {"_typing"},
     "_analytic_surfaces": {"_geometry"},
@@ -359,7 +360,7 @@ MODULE_SEAM_EDGES = {
     },
     # Supported issue-375 projection of one completed accepted inventory. It may translate
     # private run identity into opaque public references but owns no discovery or policy.
-    "evidence": {"_adjacency", "_candidates", "_registry", "_typing", "result"},
+    "evidence": {"_adjacency", "_candidates", "_registry", "_section_recess", "_typing", "result"},
     # The only graph/evidence translation seam. Feature consumers receive facade refs and
     # cannot import the concrete graph or writer themselves.
     "_geometry_evidence": {
@@ -891,7 +892,7 @@ def test_projection_family_bindings_match_the_registry() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
-        and node.func.id == "RecognitionResult"
+        and node.func.id == "_LegacyRecognitionResult"
     )
     projected: dict[str, str] = {}
     for keyword in result_call.keywords:
@@ -1045,7 +1046,9 @@ def test_every_defined_public_recogniser_is_exported_and_snapshotted():
         )
 
     exported = {name for name in recognition.__all__ if name.startswith("recognise_")}
-    assert exported == defined
+    from tools._legacy_recognition import __all__ as retired
+
+    assert exported == defined - set(retired)
 
 
 def test_module_graph_is_acyclic() -> None:
@@ -1388,22 +1391,22 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
     # made `tuple[float, ...] | None` and an equivalent spelling of the same type a test
     # failure, while a genuinely unresolvable annotation would have passed.
     for name in ("Channel", "Pocket", "Slot"):
-        hints = typing.get_type_hints(getattr(recognition, name))
+        hints = typing.get_type_hints(getattr(recess_facade, name))
         assert "width_axis" in hints
     assert typing.get_type_hints(recognition.recognise_slots)
 
     recess_records = importlib.import_module("b123d_recognisers._recess_records")
     recess_features = importlib.import_module("b123d_recognisers._recess_features")
     recess_patterns = importlib.import_module("b123d_recognisers._recess_patterns")
-    for name in ("Channel", "Pocket", "PocketArray", "PocketGrid", "Slot", "SlotArray", "SlotGrid"):
+    for name in ("Slot", "SlotArray", "SlotGrid"):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_records, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
-    for name in ("recognise_channels", "recognise_pockets", "recognise_slots"):
+    for name in ("recognise_slots",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_features, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
-    for name in ("recognise_pocket_patterns", "recognise_slot_patterns"):
+    for name in ("recognise_slot_patterns",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_patterns, name)
         assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
@@ -1435,7 +1438,11 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         "SlotGrid",
     )
     for name in moved_records:
-        assert typing.get_type_hints(getattr(recognition, name))
+        owner = (
+            recess_facade if name in {"Channel", "Pocket", "PocketArray", "PocketGrid"}
+            else recognition
+        )
+        assert typing.get_type_hints(getattr(owner, name))
 
 
 def test_recess_families_keep_one_shared_face_inventory_and_patterns_are_pure() -> None:

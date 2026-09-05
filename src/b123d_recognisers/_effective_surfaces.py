@@ -100,6 +100,10 @@ class MaterialSideRefusalReason(Enum):
 # the source-side set independently so adding another raw reader fails visibly. The rationale is
 # mandatory; a disposition is not permission to leave an undocumented acceptance path forever.
 SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_open_channel_section": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "open support projection requires original planar source patches",
+    ),
     "_adjacency": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "base graph caches original surface/topology facts; it cannot import this layer",
@@ -225,6 +229,14 @@ SURFACE_READER_ROSTER: dict[str, tuple[SurfaceReaderDisposition, str]] = {
 # Every site has its own disposition and rationale, including mixed modules whose reads cannot be
 # truthfully covered by one module-level label.
 SURFACE_READER_SITES: dict[str, tuple[SurfaceReaderDisposition, str]] = {
+    "_open_channel_section:_supports:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "verify complete source-face support area for each physical wall patch",
+    ),
+    "_open_channel_section:prove_open_channel:is_planar:1": (
+        SurfaceReaderDisposition.RAW_TOPOLOGY,
+        "derive the opposed wall planes from original defining evidence",
+    ),
     "_corner_section:prove_corner_section:is_planar:1": (
         SurfaceReaderDisposition.RAW_TOPOLOGY,
         "prove rectangular physical floor and wall faces before issuing an open chain",

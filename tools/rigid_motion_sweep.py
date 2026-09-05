@@ -98,7 +98,7 @@ def _occurrences(part) -> tuple[Occurrence, ...]:
         records = (
             tuple(candidate.record for candidate in product.distinct_steps.candidates)
             if census_family == "step"
-            else getattr(product.result, result_field)
+            else getattr(product._legacy_result, result_field)
         )
         for record in records:
             evidence = _record_evidence(record, by_record)

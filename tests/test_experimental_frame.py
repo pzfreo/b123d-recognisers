@@ -40,10 +40,12 @@ from b123d_recognisers.frames import (
 )
 from b123d_recognisers.result import (
     RecognitionResult,
+)
+from tests.golden._common import load_fixture
+from tools._legacy_recognition import (
     build_raw_recognition_result,
     build_recognition_result,
 )
-from tests.golden._common import load_fixture
 from tools.frame_handling_prototype import evaluate_goldens, evaluate_translated_goldens
 
 
@@ -130,7 +132,8 @@ def test_framed_recognition_is_opt_in_and_does_not_mutate_legacy_behavior() -> N
 
     assert isinstance(framed, FramedRecognitionResult)
     assert len(framed.result.slots) == len(legacy_before.slots) == 5
-    assert framed.result.section_passages == ()
+    assert not any(r.classification.feature_kind == "passage"
+                   for r in framed.result.section_recesses)
     assert build_recognition_result(part) == legacy_before
 
 

@@ -13,7 +13,8 @@ CANONICALIZER_VERSION = 1
 FLOAT_DIGITS = 8
 _OMIT_MAPPING_KEYS = frozenset({"face", "solid_idx", "oriented_slot"})
 _POST_BASELINE_RESULT_FIELDS = frozenset(
-    {"section_passages", "section_recesses", "oriented_slots", "oriented_slot_patterns"}
+    {"section_passages", "section_recesses", "section_recess_refusals", "section_recess_patterns",
+     "oriented_slots", "oriented_slot_patterns"}
 )
 
 
@@ -36,11 +37,14 @@ def canonicalize(value: Any) -> Any:
             field.name: canonicalize(getattr(value, field.name))
             for field in dataclasses.fields(value)
             if not (
-                type(value).__name__ == "RecognitionResult"
+                type(value).__name__ in {"RecognitionResult", "_LegacyRecognitionResult"}
                 and field.name in _POST_BASELINE_RESULT_FIELDS
             )
         }
-        return {"_type": type(value).__name__, **fields}
+        name = type(value).__name__
+        if name == "_LegacyRecognitionResult":
+            name = "RecognitionResult"  # frozen historical detector-snapshot vocabulary
+        return {"_type": name, **fields}
     if isinstance(value, Enum):
         return canonicalize(value.value)
     if value is None or isinstance(value, (bool, int, str)):

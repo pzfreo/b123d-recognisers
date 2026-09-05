@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 
@@ -16,7 +17,6 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers import build_raw_recognition_result
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._candidates import FamilyId
 from b123d_recognisers._claims import ClaimLedger
@@ -28,6 +28,9 @@ from b123d_recognisers.edge_open_circular_recesses import (
     recognise_edge_open_circular_pockets,
 )
 from b123d_recognisers.result import _take_inventory
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
+)
 
 
 def _open_circular_pocket(*, x: float = 16, y: float = 10, depth: float = 8):
@@ -235,5 +238,5 @@ def test_complete_open_circular_contract_supersedes_its_partial_pocket_fragment(
     assert fragment.outcome is Outcome.REJECTED
     assert fragment.reason is ReasonCode.POCKET_SUPERSEDED_BY_EDGE_OPEN_CIRCULAR_POCKET
     assert fragment.related == (open_pocket.candidate,)
-    assert len(product.result.edge_open_circular_pockets) == 1
-    assert product.result.pockets == ()
+    assert len(product._legacy_result.edge_open_circular_pockets) == 1
+    assert product._legacy_result.pockets == ()

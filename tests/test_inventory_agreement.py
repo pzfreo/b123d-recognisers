@@ -49,20 +49,13 @@ CORPUS = Path(__file__).parent / "corpus"
 #: Census key -> result field, for every family both inventories report. `step` is absent
 #: deliberately; see the module docstring.
 SHARED = {
+    "section_recess": "section_recesses",
     "hole": "holes",
     "hole_pattern": "hole_patterns",
     "boss": "bosses",
     "slot": "slots",
     "oriented_slot": "oriented_slots",
-    "rectangular_blind_slot": "rectangular_blind_slots",
-    "round_bottom_blind_slot": "round_bottom_blind_slots",
     "groove": "grooves",
-    "channel": "channels",
-    "pocket": "pockets",
-    "prismatic_pocket": "prismatic_pockets",
-    "edge_open_circular_pocket": "edge_open_circular_pockets",
-    "edge_open_prismatic_recess": "edge_open_prismatic_recesses",
-    "passage": "section_passages",
     "chamfer": "chamfers",
     "angled_step": "angled_steps",
     "paired_ramp_step": "paired_ramp_steps",
@@ -142,8 +135,8 @@ RESULT_ONLY = {
     # what a distinct machined feature is, and one worth revisiting rather than inheriting.
     "slot_patterns": "census counts hole patterns only",
     "oriented_slot_patterns": "census counts hole patterns only",
-    "pocket_patterns": "census counts hole patterns only",
-    "passages": "accepted-only compatibility projection; section_passages is counted",
+    "section_recess_patterns": "census counts hole patterns only",
+    "section_recess_refusals": "evidence without reconstructible geometry is not an occurrence",
     # Families with no census key at all. Each is a gap rather than a decision, and naming
     # them here is what makes that visible.
     "double_d_bores": "no census key",
@@ -151,10 +144,6 @@ RESULT_ONLY = {
     "polygonal_bosses": "no census key",
     "polygonal_stock": "no census key",
     "repeating_radial_profiles": "no census key",
-    "section_recesses": (
-        "neutral geometry contract; specialised pocket families remain the census authority "
-        "during migration"
-    ),
 }
 
 

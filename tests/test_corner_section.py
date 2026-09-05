@@ -112,10 +112,13 @@ def test_remaining_step_summaries_are_laterally_open_not_closed_pockets():
 
     part = build_fixture()
     product = _take_inventory(part)
-    summaries = product.result.pockets
+    summaries = product._legacy_result.pockets
     assert len(summaries) == 2
     assert not any(record.edge_anchored for record in summaries)
-    assert product.result.section_recesses == ()
+    assert len(product.result.section_recesses) == 2
+    assert all(item.classification.feature_kind == "channel"
+               and item.geometry.ends.low.condition == item.geometry.ends.high.condition == "open"
+               for item in product.result.section_recesses)
     # Under the overhang and between the wall and step: void persists beyond both lateral
     # ends of the opposed-wall overlap. No third/fourth closing walls exist at those ends.
     for x, z, lateral in ((37, 8, 10), (-25, 8, 26)):
@@ -144,7 +147,7 @@ def test_suspended_material_in_run_or_mouth_refuses_corner_projection(xy, post_z
     product = _take_inventory(Pos(123, -57, 91) * rotation * part)
     # Discovery is unchanged: the accepted legacy summary must not become an unsupported
     # constant-section JSON occurrence merely because its three defining faces still exist.
-    assert any(record.edge_anchored for record in product.result.pockets)
+    assert any(record.edge_anchored for record in product._legacy_result.pockets)
     assert not any(record.classification.feature_kind == "edge_open_recess"
                    for record in product.result.section_recesses)
 
@@ -157,7 +160,7 @@ def test_material_probe_failure_refuses_projection_without_dropping_legacy_recor
 
     monkeypatch.setattr(adapter, "_material_fraction", failure)
     product = _take_inventory(corner())
-    assert any(record.edge_anchored for record in product.result.pockets)
+    assert any(record.edge_anchored for record in product._legacy_result.pockets)
     assert product.result.section_recesses == ()
 
 

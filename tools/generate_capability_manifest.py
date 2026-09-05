@@ -47,20 +47,28 @@ FAMILIES = {
             ("SectionRecessEvidence", "nested", []),
             ("SectionRecessFaceRef", "nested", []),
             ("SectionRecessGeometry", "nested", []),
+            ("PassageFrame", "nested", []),
+            ("PassageSection", "nested", []),
+            ("PassageSectionVertex", "nested", []),
+            ("SectionRecessRefusal", "projection", ["RecognitionResult.section_recess_refusals"]),
+            ("SectionRecessArray", "projection", ["RecognitionResult.section_recess_patterns"]),
+            ("SectionRecessGrid", "projection", ["RecognitionResult.section_recess_patterns"]),
         ],
-        "census": None,
+        "census": "section_recess",
         "goldens": [],
         "golden_paths": [
             "tests/section_recess_expected.json",
             "tests/section_recess_geometry_expected.json",
         ],
-        "introduced": "0.4.15",
+        "introduced": "0.5.0",
         "tests": [
             "tests/test_section_recesses.py",
             "tests/test_section_recess_geometry_golden.py",
             "tests/test_section_recess_migration.py",
             "tests/test_section_adapter_rounding.py",
             "tests/test_corner_section.py",
+            "tests/test_section_recess_cutover.py",
+            "tests/test_open_channel_section.py",
         ],
     },
     "paired-ramp-steps": {
@@ -86,66 +94,6 @@ FAMILIES = {
         "goldens": ["circular_blind_step"],
         "introduced": "0.4.6",
         "tests": ["tests/test_circular_blind_steps.py"],
-    },
-    "prismatic-pockets": {
-        "recognisers": [("recognise_prismatic_pockets", "part")],
-        "records": [("PrismaticPocket", "output", ["RecognitionResult.prismatic_pockets"])],
-        "census": "prismatic_pocket",
-        "goldens": ["triangular_and_hex_pockets"],
-        "introduced": "0.2.6",
-        "tests": ["tests/test_prismatic_pockets.py"],
-    },
-    "edge-open-prismatic-recesses": {
-        "recognisers": [("recognise_edge_open_prismatic_recesses", "part")],
-        "records": [
-            (
-                "EdgeOpenPrismaticRecess",
-                "output",
-                ["RecognitionResult.edge_open_prismatic_recesses"],
-            ),
-            ("OpenPolygonalSection", "nested", []),
-            ("OpenSectionOpening", "nested", []),
-        ],
-        "census": "edge_open_prismatic_recess",
-        "goldens": [],
-        "golden_paths": ["tests/edge_open_prismatic_recess_expected.json"],
-        "introduced": "0.4.15",
-        "tests": ["tests/test_edge_open_prismatic_recesses.py"],
-    },
-    "edge-open-circular-pockets": {
-        "recognisers": [("recognise_edge_open_circular_pockets", "part")],
-        "records": [
-            (
-                "EdgeOpenCircularPocket",
-                "output",
-                ["RecognitionResult.edge_open_circular_pockets"],
-            ),
-            ("OpenCircularSection", "nested", []),
-            ("OpenCircularSectionSegment", "nested", []),
-        ],
-        "census": "edge_open_circular_pocket",
-        "goldens": [],
-        "golden_paths": ["tests/edge_open_circular_pocket_expected.json"],
-        "introduced": "0.4.15",
-        "tests": ["tests/test_edge_open_circular_recesses.py"],
-    },
-    "passages": {
-        "recognisers": [
-            ("recognise_passages", "part", "compatibility"),
-            ("recognise_section_passages", "part", "physical"),
-        ],
-        "records": [
-            ("Passage", "projection", ["RecognitionResult.passages"]),
-            ("PassageEnds", "nested", []),
-            ("PassageFrame", "nested", []),
-            ("PassageSection", "nested", []),
-            ("PassageSectionVertex", "nested", []),
-            ("SectionPassage", "output", ["RecognitionResult.section_passages"]),
-        ],
-        "census": "passage",
-        "goldens": ["hexagonal_passage"],
-        "introduced": "0.2.6",
-        "tests": ["tests/test_passages.py", "tests/test_section_passages.py"],
     },
     "bosses": {
         "recognisers": [("recognise_bosses", "part")],
@@ -176,13 +124,6 @@ FAMILIES = {
         "census": "chamfer",
         "goldens": ["chamfers_fillets_and_flats"],
         "tests": ["tests/test_turned_chamfers.py"],
-    },
-    "channels": {
-        "recognisers": [("recognise_channels", "part")],
-        "records": [("Channel", "output", ["RecognitionResult.channels"])],
-        "census": "channel",
-        "goldens": ["open_channels"],
-        "tests": ["tests/test_channel_plate_body_identity.py"],
     },
     "countersinks": {
         "recognisers": [("recognise_countersinks", "part")],
@@ -258,21 +199,6 @@ FAMILIES = {
         "goldens": ["plates_pads_levels_and_slanted_steps"],
         "tests": ["tests/test_channel_plate_body_identity.py"],
     },
-    "pocket-patterns": {
-        "recognisers": [("recognise_pocket_patterns", "derived")],
-        "records": [
-            ("PocketArray", "output", ["RecognitionResult.pocket_patterns"]),
-            ("PocketGrid", "output", ["RecognitionResult.pocket_patterns"]),
-        ],
-        "census": None,
-        "goldens": ["blind_pockets_and_pocket_patterns"],
-    },
-    "pockets": {
-        "recognisers": [("recognise_pockets", "part")],
-        "records": [("Pocket", "output", ["RecognitionResult.pockets"])],
-        "census": "pocket",
-        "goldens": ["blind_pockets_and_pocket_patterns"],
-    },
     "polygonal-bosses": {
         "recognisers": [("recognise_polygonal_bosses", "part")],
         "records": [("PolygonalBoss", "output", ["RecognitionResult.polygonal_bosses"])],
@@ -295,20 +221,6 @@ FAMILIES = {
             "tests/test_nurbs_conversion_sweep.py",
             "tests/test_pad_attribution.py",
         ],
-    },
-    "rectangular-blind-slots": {
-        "recognisers": [("recognise_rectangular_blind_slots", "part")],
-        "records": [
-            (
-                "RectangularBlindSlot",
-                "output",
-                ["RecognitionResult.rectangular_blind_slots"],
-            )
-        ],
-        "census": "rectangular_blind_slot",
-        "goldens": ["rectangular_blind_slot"],
-        "introduced": "0.4.10",
-        "tests": ["tests/test_rectangular_blind_slots.py"],
     },
     "repeating-radial-profiles": {
         "recognisers": [("recognise_repeating_radial_profiles", "part")],
@@ -376,20 +288,6 @@ FAMILIES = {
         "records": [("Slot", "output", ["RecognitionResult.slots"])],
         "census": "slot",
         "goldens": ["straight_and_obround_slots"],
-    },
-    "round-bottom-blind-slots": {
-        "recognisers": [("recognise_round_bottom_blind_slots", "part")],
-        "records": [
-            (
-                "RoundBottomBlindSlot",
-                "output",
-                ["RecognitionResult.round_bottom_blind_slots"],
-            )
-        ],
-        "census": "round_bottom_blind_slot",
-        "goldens": ["round_bottom_blind_slot"],
-        "introduced": "0.4.10",
-        "tests": ["tests/test_round_bottom_slots.py"],
     },
     "turned-steps": {
         "recognisers": [("recognise_turned_steps", "part")],
@@ -492,6 +390,8 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         "flat_direction",
         "flat_directions",
         "long_direction",
+        "row_direction",
+        "col_direction",
         "normal",
         "run",
         "u",
@@ -508,6 +408,7 @@ def _units(field: dataclasses.Field, annotation: object) -> str:
         in {
             "bulge",
             "constituent_faces",
+            "members",
             "defining_faces",
             "gradient",
             "low_gradient",
@@ -561,7 +462,7 @@ def build_manifest() -> dict[str, object]:
     families = []
     for family_id, spec in sorted(FAMILIES.items()):
         census = spec["census"]
-        records = [_record(*record) for record in spec["records"]]
+        records = [_record(*record) for record in sorted(spec["records"])]
         census_output = None
         if census is not None:
             outputs = [record for record in records if record["role"] == "output"]

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **0.5.0 breaking provider cutover:** specialised pocket, channel, recess and passage root
+  exports/result fields are replaced by `SectionRecess`; JSON schema 2 adds occurrence-indexed
+  patterns and explicit face-referenced geometry refusals. The public census counts unified recesses
+  once. Private detector benchmark identities remain unchanged. See the migration guide below.
+
+- Prove both remaining authored partial-support channels from actual source patches, empty runs,
+  lateral openings and two open ends. Unsupported extent summaries retain evidence as refusals,
+  never fabricated geometry. Package version prepared as 0.5.0.dev0; no release published.
+
 - Project proved corner notches as two physical wall segments with an explicit gap and one capped
   run end in `SectionRecess`. The independent source-face proof retains body/face ownership and
   refuses non-rectangular, perforated or doubly capped anatomy. No bounding-box closure is invented.
@@ -13,8 +22,8 @@
 
 - Add full JSON geometry goldens for all seven unified recess proof paths and migration checks
   across the authored goldens and vendored MFCAD++ development corpus. See
-  [the migration guide](docs/section-recess-migration.md) for the outstanding extent-only Pocket
-  cutover; superseded public fields have not yet been removed.
+  [the migration guide](docs/section-recess-migration.md) for the completed public cutover and
+  explicit unsupported-geometry refusal contract.
 
 - Generalise the unified `SectionRecess` geometry to closed and truthfully open line/arc profiles,
   pocket/edge-open/passage topology, and project accepted passages, prismatic pockets and exact

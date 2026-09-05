@@ -34,7 +34,7 @@ from b123d_recognisers.passages import PassageFrame, PassageSection, PassageSect
 
 _DIRECTION_TOL = 1e-6
 _SEMICIRCLE_TOL = 1e-4
-_FEATURE_KINDS = frozenset({"pocket", "edge_open_recess", "passage"})
+_FEATURE_KINDS = frozenset({"pocket", "edge_open_recess", "passage", "channel"})
 _SECTION_SHAPES = frozenset(
     {
         "rectangular",
@@ -100,8 +100,7 @@ class OpenSectionProfile(Record):
         opening = cast(
             tuple[Vector2, Vector2],
             tuple(
-                cast(Vector2, _numbers(point, 2, name="opening endpoint"))
-                for point in self.opening
+                cast(Vector2, _numbers(point, 2, name="opening endpoint")) for point in self.opening
             ),
         )
         if opening != (self.boundary[-1].point, self.boundary[0].point):
@@ -247,9 +246,85 @@ class SectionRecess(Record):
                 isinstance(self.geometry.profile, OpenSectionProfile) and capped == 1
             ),
             "passage": isinstance(self.geometry.profile, ClosedSectionProfile) and capped == 0,
+            "channel": isinstance(self.geometry.profile, OpenSectionProfile) and capped == 0,
         }
         if not admitted[self.classification.feature_kind]:
             raise ValueError("classification, profile closure and end topology are inconsistent")
+
+
+@dataclass(frozen=True, slots=True)
+class SectionRecessRefusal(Record):
+    """Source evidence for an internal candidate that cannot issue truthful unified geometry."""
+
+    body: int
+    reason: str
+    evidence: SectionRecessEvidence
+
+    def __post_init__(self) -> None:
+        if type(self.body) is not int or self.body < 0:
+            raise ValueError("refusal body must be a non-negative integer")
+        if self.reason != "unsupported_support_geometry":
+            raise ValueError("unsupported section projection refusal")
+        if not isinstance(self.evidence, SectionRecessEvidence):
+            raise ValueError("refusal requires source-face evidence")
+
+
+@dataclass(frozen=True, slots=True)
+class SectionRecessArray(Record):
+    members: tuple[int, ...]
+    pitch: float
+    direction: Vector3
+
+    def __post_init__(self) -> None:
+        _pattern_members(self.members)
+        (pitch,) = _numbers((self.pitch,), 1, name="array pitch")
+        if pitch <= 0:
+            raise ValueError("array pitch must be positive")
+        direction = _numbers(self.direction, 3, name="array direction")
+        if not math.isclose(sum(value * value for value in direction), 1.0, abs_tol=1e-6):
+            raise ValueError("array direction must be unit length")
+
+
+@dataclass(frozen=True, slots=True)
+class SectionRecessGrid(Record):
+    members: tuple[int, ...]
+    rows: int
+    cols: int
+    row_pitch: float
+    col_pitch: float
+    row_direction: Vector3
+    col_direction: Vector3
+    center: Vector3
+
+    def __post_init__(self) -> None:
+        _pattern_members(self.members)
+        if any(type(n) is not int or n < 2 for n in (self.rows, self.cols)):
+            raise ValueError("grid requires at least two rows and columns")
+        if self.rows * self.cols != len(self.members):
+            raise ValueError("grid dimensions must match member count")
+        pitches = _numbers((self.row_pitch, self.col_pitch), 2, name="grid pitches")
+        if any(n <= 0 for n in pitches):
+            raise ValueError("grid pitches must be positive")
+        row = _numbers(self.row_direction, 3, name="grid row direction")
+        col = _numbers(self.col_direction, 3, name="grid column direction")
+        if any(
+            not math.isclose(sum(v * v for v in direction), 1.0, abs_tol=1e-6)
+            for direction in (row, col)
+        ):
+            raise ValueError("grid directions must be unit length")
+        if abs(sum(a * b for a, b in zip(row, col, strict=True))) > 1e-6:
+            raise ValueError("grid directions must be perpendicular")
+        _numbers(self.center, 3, name="grid center")
+
+
+def _pattern_members(members: tuple[int, ...]) -> None:
+    if (
+        not isinstance(members, tuple)
+        or len(members) < 2
+        or any(type(n) is not int or n < 0 for n in members)
+        or len(set(members)) != len(members)
+    ):
+        raise ValueError("pattern requires distinct non-negative occurrence indices")
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,17 +334,36 @@ class SectionRecessDocument(Record):
     bodies: tuple[SectionRecessBodyRef, ...]
     faces: tuple[SectionRecessFaceRef, ...]
     occurrences: tuple[SectionRecess, ...]
+    refusals: tuple[SectionRecessRefusal, ...] = ()
+    patterns: tuple[SectionRecessArray | SectionRecessGrid, ...] = ()
 
     def __post_init__(self) -> None:
-        if self.schema_version != 1 or self.reference_scope != "result":
+        if type(self.schema_version) is not int or self.schema_version != 2:
             raise ValueError("unsupported section-recess document")
+        if self.reference_scope != "result":
+            raise ValueError("unsupported section-recess document")
+        for roster, record_type in (
+            (self.bodies, SectionRecessBodyRef),
+            (self.faces, SectionRecessFaceRef),
+            (self.occurrences, SectionRecess),
+            (self.refusals, SectionRecessRefusal),
+            (self.patterns, (SectionRecessArray, SectionRecessGrid)),
+        ):
+            if not isinstance(roster, tuple) or not all(
+                isinstance(item, record_type) for item in roster
+            ):
+                raise ValueError("document rosters require immutable typed records")
         if tuple(item.index for item in self.bodies) != tuple(range(len(self.bodies))):
             raise ValueError("body roster must be dense and ordered")
         if tuple(item.index for item in self.faces) != tuple(range(len(self.faces))):
             raise ValueError("face roster must be dense and ordered")
         if tuple(item.index for item in self.occurrences) != tuple(range(len(self.occurrences))):
             raise ValueError("occurrence roster must be dense and ordered")
-        for occurrence in self.occurrences:
+        referenced: tuple[SectionRecess | SectionRecessRefusal, ...] = (
+            *self.occurrences,
+            *self.refusals,
+        )
+        for occurrence in referenced:
             if occurrence.body >= len(self.bodies):
                 raise ValueError("occurrence body index is outside the document roster")
             if any(
@@ -280,6 +374,11 @@ class SectionRecessDocument(Record):
                 )
             ):
                 raise ValueError("occurrence face index is outside the document roster")
+        for pattern in self.patterns:
+            if not isinstance(pattern, SectionRecessArray | SectionRecessGrid):
+                raise ValueError("unsupported section pattern")
+            if any(index >= len(self.occurrences) for index in pattern.members):
+                raise ValueError("pattern member is outside the occurrence roster")
 
 
 @dataclass(frozen=True, slots=True)
@@ -602,8 +701,7 @@ def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | No
 def _polygonal_shape(points: tuple[Vector2, ...]) -> str:
     if len(points) == 4:
         edges = tuple(
-            (points[(index + 1) % 4][0] - point[0],
-             points[(index + 1) % 4][1] - point[1])
+            (points[(index + 1) % 4][0] - point[0], points[(index + 1) % 4][1] - point[1])
             for index, point in enumerate(points)
         )
         if all(

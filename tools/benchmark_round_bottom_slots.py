@@ -56,13 +56,14 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
         measurements = {enabled: _run_case(part, enabled) for enabled in order}
         disabled, disabled_seconds = measurements[False]
         enabled, enabled_seconds = measurements[True]
-        accepted = enabled.result.round_bottom_blind_slots
+        accepted = enabled._legacy_result.round_bottom_blind_slots
         raw = enabled.physical.candidate_set(FamilyId.ROUND_BOTTOM_BLIND_SLOTS).candidates
         rows.append(
             {
                 "id": model_id,
                 "pre_existing_outputs_equal": (
-                    replace(enabled.result, round_bottom_blind_slots=()) == disabled.result
+                    replace(enabled._legacy_result, round_bottom_blind_slots=())
+                    == disabled._legacy_result
                 ),
                 "raw_round_bottom_blind_slots": len(raw),
                 "accepted_round_bottom_blind_slots": len(accepted),

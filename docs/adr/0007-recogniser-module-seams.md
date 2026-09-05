@@ -507,3 +507,15 @@ introduced by this edge.
 family projection modules but imports no recogniser, graph, orchestration or reconciliation layer.
 The recess reducer and facade use it for existing and Channel body keys; Plate consumes the same
 leaf directly. This keeps cross-family ownership correlation below feature policy.
+
+## Amendment (unified provider cutover, PR #498)
+
+`_open_channel_section` is a private source-geometry proof leaf. It may read the graph, legacy
+recess values, neutral section primitives and material probes, but not the registry, candidates,
+evidence index, reconciliation or results. `result` owns its invocation and projects the proved
+support into the ADR-0019 public record.
+
+`evidence` may import immutable `_section_recess` record types to expose the completed public
+geometry and explicit refusal roster. It performs no recognition or geometry inference. The
+private detector result remains available only to internal inventory/scoring tools; the public
+result and evidence view do not publish retired detector records.

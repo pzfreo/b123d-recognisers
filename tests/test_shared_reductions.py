@@ -22,8 +22,10 @@ from __future__ import annotations
 
 from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, Pos, Rot, extrude
 
-import b123d_recognisers as r
 from b123d_recognisers._recess_faces import _planar_faces
+from tools._legacy_recognition import namespace
+
+r = namespace()
 
 
 def _triangular_pocket():

@@ -25,15 +25,12 @@ def test_every_exact_accepted_golden_recess_has_a_unified_region(name):
     part = load_fixture(GOLDEN / name / "fixture.py").build_fixture()
     report = audit_product(_take_inventory(part))
     assert _missing_exact(report) == []
-    # These are supported extent summaries, not licence to fabricate a closed section.
-    # Keep the outstanding cutover decision visible rather than silently deleting the output.
-    expected_unrepresented = {
-        "plates_pads_levels_and_slanted_steps": 2,
-    }
-    assert report["counts"]["unrepresented"] == expected_unrepresented.get(name, 0)
+    assert report["counts"]["unrepresented"] == 0
+    assert report["counts"]["explicit_refusal"] == 0
 
 
 @pytest.mark.parametrize("path", sorted(CORPUS.glob("*.step")), ids=lambda path: path.stem)
 def test_every_exact_accepted_development_recess_has_a_unified_region(path):
     report = audit_product(_take_inventory(import_step(path)))
     assert _missing_exact(report) == []
+    assert report["counts"]["unrepresented"] == 0

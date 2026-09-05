@@ -38,7 +38,7 @@ from b123d_recognisers.result import _take_inventory
 
 # Publicly stable order remains an explicit census contract; registry metadata is checked against
 # it but does not generate, publish, or reorder keys.
-CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
+_LEGACY_CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
     ("hole", "holes"),
     ("hole_pattern", "hole_patterns"),
     ("boss", "bosses"),
@@ -65,6 +65,23 @@ CENSUS_BINDINGS: tuple[tuple[str, str], ...] = (
     ("countersink", "countersinks"),
     ("plate", "plates"),
 )
+CENSUS_BINDINGS = tuple(
+    (key, source)
+    for key, source in _LEGACY_CENSUS_BINDINGS
+    if source
+    not in [
+        "channels",
+        "rectangular_blind_slots",
+        "round_bottom_blind_slots",
+        "pockets",
+        "prismatic_pockets",
+        "edge_open_circular_pockets",
+        "edge_open_prismatic_recesses",
+        "pocket_patterns",
+        "section_passages",
+        "passages",
+    ]
+) + (("section_recess", "section_recesses"),)
 CENSUS_KEYS: tuple[str, ...] = tuple(key for key, _source in CENSUS_BINDINGS)
 validate_census_contract({source: key for key, source in CENSUS_BINDINGS})
 

@@ -1,24 +1,27 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
 
+
 from dataclasses import replace
 
 import build123d.topology.shape_core as shape_core
 from build123d import Align, Axis, Box, Cylinder, GeomType, Pos, fillet
 
 from b123d_recognisers import (
-    Pocket,
-    PocketArray,
-    PocketGrid,
     Slot,
     SlotArray,
     SlotGrid,
     recognise_fillets,
     recognise_flats,
-    recognise_pocket_patterns,
-    recognise_pockets,
     recognise_slot_patterns,
     recognise_slots,
+)
+from tools._legacy_recognition import (
+    Pocket,
+    PocketArray,
+    PocketGrid,
+    recognise_pocket_patterns,
+    recognise_pockets,
 )
 
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)

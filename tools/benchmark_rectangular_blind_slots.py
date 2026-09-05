@@ -57,7 +57,7 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
         measurements = {enabled: _run_case(part, enabled) for enabled in order}
         disabled, disabled_seconds = measurements[False]
         enabled, enabled_seconds = measurements[True]
-        accepted = enabled.result.rectangular_blind_slots
+        accepted = enabled._legacy_result.rectangular_blind_slots
         raw = enabled.physical.candidate_set(FamilyId.RECTANGULAR_BLIND_SLOTS).candidates
         pocket_drops = tuple(
             disposition
@@ -65,14 +65,16 @@ def _measure(parts: list[tuple[str, Any]]) -> dict[str, Any]:
             if disposition.outcome is Outcome.REJECTED
             and disposition.reason is ReasonCode.POCKET_SUPERSEDED_BY_RECTANGULAR_BLIND_SLOT
         )
-        expected_pocket_delta = len(disabled.result.pockets) - len(enabled.result.pockets)
+        expected_pocket_delta = (
+            len(disabled._legacy_result.pockets) - len(enabled._legacy_result.pockets)
+        )
         other_outputs_equal = (
             replace(
-                enabled.result,
+                enabled._legacy_result,
                 rectangular_blind_slots=(),
-                pockets=disabled.result.pockets,
+                pockets=disabled._legacy_result.pockets,
             )
-            == disabled.result
+            == disabled._legacy_result
         )
         rows.append(
             {

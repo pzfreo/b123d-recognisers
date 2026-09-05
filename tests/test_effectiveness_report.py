@@ -268,8 +268,12 @@ def test_taxonomy_is_closed_and_shared_without_claiming_stock() -> None:
     }
     assert mfcadpp[24] == {"families": [], "name": "Stock", "status": "incomparable"}
     manifest = json.loads((ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text())
-    public_families = {family["id"] for family in manifest["families"]}
-    assert {family for row in mfcadpp.values() for family in row["families"]} <= public_families
+    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+    from tools.effectiveness_report import _public_family_id
+
+    detector_families = {_public_family_id(item.family.value) for item in PHYSICAL_DEFINITIONS}
+    assert {family for row in mfcadpp.values() for family in row["families"]} <= detector_families
+    assert "section-recesses" in {family["id"] for family in manifest["families"]}
 
 
 def test_taxonomy_v2_moves_only_circular_blind_step_to_its_physical_family() -> None:

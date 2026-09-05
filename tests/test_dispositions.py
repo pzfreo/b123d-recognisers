@@ -309,8 +309,8 @@ def test_rectangular_slot_passage_precedence_is_a_real_rejected_trace() -> None:
     assert len(rejected[0].related) == 1
     assert rejected[0].related[0].family is FamilyId.SLOTS
     assert product.result.slots
-    assert product.result.section_passages == ()
-    assert product.result.passages == ()
+    assert product._legacy_result.section_passages == ()
+    assert product._legacy_result.passages == ()
 
 
 def test_empty_pocket_evidence_proves_neither_passage_nor_ring_containment() -> None:

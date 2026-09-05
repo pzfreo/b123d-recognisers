@@ -30,15 +30,9 @@ from build123d import (
 )
 
 from b123d_recognisers import (
-    PassageCompatibilityError,
-    PassageEnds,
     PassageFrame,
     PassageSection,
     PassageSectionVertex,
-    SectionPassage,
-    build_recognition_result,
-    recognise_passages,
-    recognise_section_passages,
 )
 from b123d_recognisers._adjacency import FaceEdges, FaceGraph
 from b123d_recognisers._candidates import FamilyId
@@ -54,6 +48,14 @@ from b123d_recognisers._section_passages import (
 from b123d_recognisers._sections import LocalFrame, PlanarSection, SectionVertex
 from b123d_recognisers.passages import _section_passage_record
 from b123d_recognisers.result import _discover_all
+from tools._legacy_recognition import (
+    PassageCompatibilityError,
+    PassageEnds,
+    SectionPassage,
+    build_recognition_result,
+    recognise_passages,
+    recognise_section_passages,
+)
 
 
 def _square():

@@ -25,15 +25,18 @@ import random
 
 from build123d import Box, BuildPart, BuildSketch, Plane, Polygon, Pos, Rot, extrude
 
-import b123d_recognisers as r
 from b123d_recognisers._adjacency import FaceGraph
 from b123d_recognisers._claims import ClaimLedger
 from b123d_recognisers._reconcile import (
     chamfers_that_are_not_angled_steps,
     prismatic_pockets_that_are_not_pockets,
 )
+from tools._legacy_recognition import namespace
 
 _WEDGE = 5.657
+
+
+r = namespace()
 
 
 def _busy_part():

@@ -30,7 +30,7 @@ def audit_product(product: InventoryProduct) -> dict:
 
     rows = []
     accepted = product.accepted
-    for family in (*EXACT_FAMILIES, FamilyId.POCKETS):
+    for family in (*EXACT_FAMILIES, FamilyId.POCKETS, FamilyId.CHANNELS):
         for ordinal, candidate in enumerate(accepted.candidate_set(family).candidates):
             defining = product.evidence.defining_of(candidate.record)
             constituent = product.evidence.constituent_of(candidate.record)
@@ -46,16 +46,22 @@ def audit_product(product: InventoryProduct) -> dict:
                 and defining_indices <= set(record.evidence.constituent_faces)
                 and constituent_indices <= set(record.evidence.constituent_faces)
                 and (
-                    family is FamilyId.POCKETS
+                    family in {FamilyId.POCKETS, FamilyId.CHANNELS}
                     or constituent_indices == set(record.evidence.constituent_faces)
                 )
             ]
+            refused = any(
+                owner is not None and record.body == owner.ordinal
+                and defining_indices == set(record.evidence.defining_faces)
+                and constituent_indices == set(record.evidence.constituent_faces)
+                for record in product.result.section_recess_refusals
+            )
             rows.append({
                 "family": family.value,
                 "candidate": ordinal,
                 "status": (
-                    "unrepresented" if not matches
-                    else "evidence_only" if family is FamilyId.POCKETS
+                    ("explicit_refusal" if refused else "unrepresented") if not matches
+                    else "evidence_only" if family in {FamilyId.POCKETS, FamilyId.CHANNELS}
                     else "exact_region"
                 ),
                 "section_recess_indices": [record.index for record in matches],
@@ -64,7 +70,7 @@ def audit_product(product: InventoryProduct) -> dict:
         "section_recesses": len(product.result.section_recesses),
         "counts": {
             status: sum(row["status"] == status for row in rows)
-            for status in ("exact_region", "evidence_only", "unrepresented")
+            for status in ("exact_region", "evidence_only", "explicit_refusal", "unrepresented")
         },
         "candidates": rows,
     }
@@ -89,7 +95,7 @@ def main() -> int:
             )
     print(json.dumps({"format_version": 1, "models": models}, indent=2, sort_keys=True))
     return int(any(
-        row["status"] == "unrepresented" and row["family"] != FamilyId.POCKETS.value
+        row["status"] == "unrepresented"
         for model in models.values() for row in model["candidates"]
     ))
 

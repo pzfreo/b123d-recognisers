@@ -16,6 +16,7 @@ from b123d_recognisers._section_recess import (
     OpenSectionProfile,
     SectionEnd,
     SectionRecess,
+    SectionRecessArray,
     SectionRecessBodyRef,
     SectionRecessClassification,
     SectionRecessDocument,
@@ -23,6 +24,8 @@ from b123d_recognisers._section_recess import (
     SectionRecessEvidence,
     SectionRecessFaceRef,
     SectionRecessGeometry,
+    SectionRecessGrid,
+    SectionRecessRefusal,
 )
 from b123d_recognisers._typing import Part
 
@@ -54,11 +57,13 @@ def build_section_recess_document(part: Part) -> SectionRecessDocument:
         replace(record, index=index) for index, record in enumerate(result.section_recesses)
     )
     return SectionRecessDocument(
-        1,
+        2,
         "result",
         tuple(SectionRecessBodyRef(index) for index, _ in enumerate(part.solids())),
         tuple(SectionRecessFaceRef(index) for index, _ in enumerate(part.faces())),
         occurrences,
+        result.section_recess_refusals,
+        result.section_recess_patterns,
     )
 
 
@@ -74,6 +79,9 @@ __all__ = [
     "SectionRecessEvidence",
     "SectionRecessFaceRef",
     "SectionRecessGeometry",
+    "SectionRecessRefusal",
+    "SectionRecessArray",
+    "SectionRecessGrid",
     "build_section_recess_document",
     "recognise_section_recesses",
 ]

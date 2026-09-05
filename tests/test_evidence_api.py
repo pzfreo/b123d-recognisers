@@ -156,7 +156,7 @@ def test_public_prismatic_pocket_projection_includes_its_proved_floor() -> None:
     part = Box(80, 60, 20) - Pos(0, 0, 2) * extrude(RegularPolygon(10, 3), 30)
     view = build_recognition_evidence(part)
     (pocket,) = tuple(
-        feature for feature in view.features if view.family(feature) == "prismatic_pockets"
+        feature for feature in view.features if view.family(feature) == "section_recesses"
     )
 
     defining = view.defining_faces(pocket)

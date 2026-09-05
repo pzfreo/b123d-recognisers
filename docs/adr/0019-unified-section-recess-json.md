@@ -74,8 +74,9 @@ The initially admitted interpretations are:
 | `pocket` | closed | exactly one capped |
 | `edge_open_recess` | open | exactly one capped |
 | `passage` | closed | both open |
+| `channel` | open | both open |
 
-An enclosed cavity, open profile with both ends open, or any other combination is refused until a
+An enclosed cavity or any other combination is refused until a
 recogniser proves it and the schema explicitly admits its `feature_kind`.
 
 ### Authoritative classification
@@ -149,7 +150,7 @@ For example:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "reference_scope": "result",
   "bodies": [
     {"index": 0}
@@ -330,13 +331,28 @@ floor support and a thin exterior mouth slab. These closed volumes are internal 
 not published geometry. Checking only the wall/floor incidence would miss suspended obstructions
 that leave those faces intact. A failed material check refuses the unified projection.
 
-Individual assessment of the other two summaries identifies channel-like regions with lateral
-openings at both ends of a partial support span. Existing structural records are not exact void
-replacements. Open profiles with two open run ends remain excluded pending their own bounded
-geometry proof and explicit admitted interpretation; this change does not silently broaden that
-decision. The remaining summaries' removal or replacement is an explicit public contract decision,
-not a consequence of obtaining green CI. Existing census and physical-candidate
-scoring identities remain unchanged during this output-only migration.
+### Completed provider cutover in #498
+
+The remaining two authored summaries now have an independent three-source-support proof. The
+bounded wall overlap defines the run, full source-face patches establish the U chain, and owning-body
+material probes verify the section and all three openings. Schema 2 explicitly admits these
+open-profile, two-open-end occurrences as `channel`; it does not weaken the old envelope-spanning
+Channel detector or invent a fourth wall.
+
+The 0.5.0 public API removes the specialised records, result fields and root entrypoints. Arrays
+and grids reference unified occurrence indices rather than embedded Pocket values. Patterns are
+published only when every member has one unambiguous unified geometric occurrence.
+
+An accepted internal extent summary without a truthful section produces `SectionRecessRefusal`
+with body and face evidence, not geometry or substitute dimensions. This is an explicit retirement
+of weak geometry claims, not silent loss of evidence. Refusals are included in the JSON envelope
+and Python evidence view but excluded from the geometric occurrence census. Source association
+coverage includes their evidence and must not be described as reconstructible geometry coverage.
+
+Public census keys now count unified `section_recess` occurrences once. The private physical
+candidate inventory and benchmark taxonomy retain historical identities; benchmark baselines do
+not change just because output records change. The internal test/scoring adapter is not a supported
+consumer compatibility layer. The migration guide specifies the complete new public boundary.
 
 The developer may use MFCAD++ repeatedly. A person outside the implementation loop runs MFInstSeg
 once after the branch and test command are frozen and returns only the aggregate JSON. A favourable

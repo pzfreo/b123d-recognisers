@@ -28,7 +28,6 @@ from b123d_recognisers import (
     SectionEnd,
     SectionRecess,
     SectionRecessEnds,
-    build_raw_recognition_result,
     build_section_recess_document,
     recognise_section_recesses,
 )
@@ -43,6 +42,9 @@ from b123d_recognisers._sections import (
     SectionEnds,
     SectionOccurrence,
     SectionVertex,
+)
+from tools._legacy_recognition import (
+    build_raw_recognition_result,
 )
 
 
@@ -197,7 +199,8 @@ def test_document_projects_completed_aggregate_inventory(monkeypatch) -> None:
 
     def completed_inventory(supplied):
         assert supplied is part
-        return SimpleNamespace(section_recesses=(sentinel,))
+        return SimpleNamespace(section_recesses=(sentinel,), section_recess_refusals=(),
+                               section_recess_patterns=())
 
     monkeypatch.setattr(
         result_module,
@@ -237,11 +240,14 @@ def test_unified_contract_admits_only_decided_profile_and_end_combinations() -> 
     assert occurrence("pocket", closed, one_cap)
     assert occurrence("edge_open_recess", open_profile, one_cap)
     assert occurrence("passage", closed, no_caps)
+    assert occurrence("channel", open_profile, no_caps)
     for kind, profile, ends in (
         ("pocket", open_profile, one_cap),
         ("edge_open_recess", closed, one_cap),
         ("passage", closed, one_cap),
         ("pocket", closed, two_caps),
+        ("channel", closed, no_caps),
+        ("channel", open_profile, one_cap),
     ):
         with pytest.raises(ValueError, match="profile closure and end topology"):
             occurrence(kind, profile, ends)

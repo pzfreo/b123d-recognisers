@@ -104,18 +104,6 @@ from b123d_recognisers.countersinks import (
     countersink_matches_hole,
     recognise_countersinks,
 )
-from b123d_recognisers.edge_open_circular_recesses import (
-    EdgeOpenCircularPocket,
-    OpenCircularSection,
-    OpenCircularSectionSegment,
-    recognise_edge_open_circular_pockets,
-)
-from b123d_recognisers.edge_open_prismatic_recesses import (
-    EdgeOpenPrismaticRecess,
-    OpenPolygonalSection,
-    OpenSectionOpening,
-    recognise_edge_open_prismatic_recesses,
-)
 from b123d_recognisers.explanations import (
     DispositionExplanation,
     ExplanationCoverage,
@@ -176,15 +164,9 @@ from b123d_recognisers.oriented_slots import (
 from b123d_recognisers.pads import RaisedPad, recognise_rectangular_pads
 from b123d_recognisers.paired_ramp_steps import PairedRampStep, recognise_paired_ramp_steps
 from b123d_recognisers.passages import (
-    Passage,
-    PassageCompatibilityError,
-    PassageEnds,
     PassageFrame,
     PassageSection,
     PassageSectionVertex,
-    SectionPassage,
-    recognise_passages,
-    recognise_section_passages,
 )
 from b123d_recognisers.plates import Plate, has_multi_axis_plates, recognise_plates
 from b123d_recognisers.polygonal_bosses import (
@@ -193,15 +175,7 @@ from b123d_recognisers.polygonal_bosses import (
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
 )
-from b123d_recognisers.prismatic_pockets import (
-    PrismaticPocket,
-    recognise_prismatic_pockets,
-)
 from b123d_recognisers.profiled_bores import DoubleDBore, recognise_double_d_bores
-from b123d_recognisers.rectangular_blind_slots import (
-    RectangularBlindSlot,
-    recognise_rectangular_blind_slots,
-)
 from b123d_recognisers.repeating_profiles import (
     RepeatingRadialProfile,
     recognise_repeating_radial_profiles,
@@ -211,15 +185,12 @@ from b123d_recognisers.result import (
     build_raw_recognition_result,
     build_recognition_result,
 )
-from b123d_recognisers.round_bottom_slots import (
-    RoundBottomBlindSlot,
-    recognise_round_bottom_blind_slots,
-)
 from b123d_recognisers.section_recesses import (
     ClosedSectionProfile,
     OpenSectionProfile,
     SectionEnd,
     SectionRecess,
+    SectionRecessArray,
     SectionRecessBodyRef,
     SectionRecessClassification,
     SectionRecessDocument,
@@ -227,20 +198,15 @@ from b123d_recognisers.section_recesses import (
     SectionRecessEvidence,
     SectionRecessFaceRef,
     SectionRecessGeometry,
+    SectionRecessGrid,
+    SectionRecessRefusal,
     build_section_recess_document,
     recognise_section_recesses,
 )
 from b123d_recognisers.slots import (
-    Channel,
-    Pocket,
-    PocketArray,
-    PocketGrid,
     Slot,
     SlotArray,
     SlotGrid,
-    recognise_channels,
-    recognise_pocket_patterns,
-    recognise_pockets,
     recognise_slot_patterns,
     recognise_slots,
 )
@@ -256,7 +222,7 @@ from b123d_recognisers.turned import (
 try:
     __version__ = version("b123d-recognisers")
 except PackageNotFoundError:  # pragma: no cover - only a bare, uninstalled source tree
-    __version__ = "0.4.15.dev0"
+    __version__ = "0.5.0.dev0"
 
 # Imported after the recognition surface because census consumes that public orchestration.
 from b123d_recognisers.capabilities import (  # noqa: E402
@@ -276,19 +242,18 @@ __all__ = [
     "CapabilityManifestError",
     "STEP_LADDER_BOUNDARY_MARGIN",
     "AngledStep",
-    "Passage",
-    "PassageCompatibilityError",
-    "PassageEnds",
     "PassageFrame",
     "PassageSection",
     "PassageSectionVertex",
     "PairedRampStep",
-    "SectionPassage",
     "SectionRecess",
     "SectionRecessClassification",
     "SectionRecessEnds",
     "SectionRecessEvidence",
     "SectionRecessGeometry",
+    "SectionRecessRefusal",
+    "SectionRecessArray",
+    "SectionRecessGrid",
     "SectionEnd",
     "ClosedSectionProfile",
     "OrientedSlot",
@@ -298,7 +263,6 @@ __all__ = [
     "Blend",
     "CircularBlendPath",
     "Chamfer",
-    "Channel",
     "Fillet",
     "Flat",
     "FrameGauge",
@@ -336,14 +300,10 @@ __all__ = [
     "Plate",
     "PartFrame",
     "PreparedFramedPart",
-    "Pocket",
-    "PocketArray",
-    "PocketGrid",
     "PolygonalBoss",
     "PolygonalStock",
     "RaisedPad",
     "RepeatingRadialProfile",
-    "RoundBottomBlindSlot",
     "RectGrid",
     "Slot",
     "SlotArray",
@@ -381,15 +341,6 @@ __all__ = [
     "recognise_paired_ramp_steps",
     "ThroughStep",
     "recognise_through_steps",
-    "PrismaticPocket",
-    "EdgeOpenCircularPocket",
-    "OpenCircularSection",
-    "OpenCircularSectionSegment",
-    "EdgeOpenPrismaticRecess",
-    "OpenPolygonalSection",
-    "OpenSectionOpening",
-    "recognise_passages",
-    "recognise_section_passages",
     "recognise_section_recesses",
     "OpenSectionProfile",
     "build_section_recess_document",
@@ -398,13 +349,9 @@ __all__ = [
     "SectionRecessFaceRef",
     "recognise_oriented_slots",
     "recognise_oriented_slot_patterns",
-    "recognise_prismatic_pockets",
-    "recognise_edge_open_circular_pockets",
-    "recognise_edge_open_prismatic_recesses",
     "recognise_bosses",
     "recognise_blends",
     "recognise_chamfers",
-    "recognise_channels",
     "recognise_fillets",
     "recognise_flats",
     "recognise_grooves",
@@ -413,15 +360,10 @@ __all__ = [
     "recognise_hole_patterns",
     "recognise_holes",
     "recognise_plates",
-    "recognise_pocket_patterns",
-    "recognise_pockets",
     "recognise_polygonal_bosses",
     "recognise_polygonal_stock",
     "recognise_rectangular_pads",
     "recognise_repeating_radial_profiles",
-    "RectangularBlindSlot",
-    "recognise_rectangular_blind_slots",
-    "recognise_round_bottom_blind_slots",
     "recognise_slot_patterns",
     "recognise_slots",
     "recognise_turned_steps",
