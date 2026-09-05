@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Paul Fremantle
+"""JSON document projection of one ordinary framed recognition and evidence run."""
+
+from __future__ import annotations
+
+from dataclasses import asdict
+
+from quiddity import __version__
+from quiddity._typing import Part
+from quiddity.evidence import FaceRef, FramedRecognitionEvidence
+from quiddity.frames import build_framed_recognition_evidence
+
+
+def build_recognition_document(part: Part, *, rotational: bool = False) -> dict[str, object]:
+    """Recognise once and project existing records, evidence and association to JSON values.
+
+    Coordinates and embedded face/body indices refer to the local working shape. The frame
+    maps local coordinates back to the caller; each face also carries its caller roster index.
+    Indices are document-local, not persistent STEP identifiers. Frame/evidence refusal raises
+    ValueError rather than silently switching to raw coordinates.
+    """
+    view = build_framed_recognition_evidence(part, rotational=rotational)
+    if not isinstance(view, FramedRecognitionEvidence):
+        raise ValueError(f"framed recognition refused: {view.reason.value}")
+
+    local_faces = tuple(view.part.faces())
+    caller_faces = tuple(part.faces())
+    indices: dict[FaceRef, int] = {}
+    caller_indices: dict[int, int] = {}
+    for reference in view.faces:
+        local = view.face(reference)
+        caller = view.caller_face(reference)
+        matches = [i for i, face in enumerate(local_faces) if local.wrapped.IsSame(face.wrapped)]
+        originals = [
+            i for i, face in enumerate(caller_faces) if caller.wrapped.IsSame(face.wrapped)
+        ]
+        if len(matches) != 1 or len(originals) != 1:
+            raise ValueError("document face mapping is not one-to-one")
+        indices[reference] = matches[0]
+        caller_indices[matches[0]] = originals[0]
+    if len(caller_indices) != len(local_faces) or len(set(caller_indices.values())) != len(
+        caller_faces
+    ):
+        raise ValueError("document face mapping is incomplete")
+
+    bodies = tuple(view.part.solids())
+    body_faces = [tuple(body.faces()) for body in bodies]
+    faces = [
+        {
+            "index": index,
+            "caller_index": caller_indices[index],
+            "body_indices": [
+                body_index
+                for body_index, members in enumerate(body_faces)
+                if any(face.wrapped.IsSame(member.wrapped) for member in members)
+            ],
+        }
+        for index, face in enumerate(local_faces)
+    ]
+    features = [
+        {
+            "index": index,
+            "family": view.family(feature),
+            "record_type": type(view.record(feature)).__name__,
+            "record": view.record(feature).to_dict(),
+            "defining_faces": sorted(indices[face] for face in view.defining_faces(feature)),
+            "constituent_faces": sorted(indices[face] for face in view.constituent_faces(feature)),
+        }
+        for index, feature in enumerate(view.features)
+    ]
+    association = view.association
+    frame = view.frame
+    return {
+        "format": "quiddity-recognition",
+        "format_version": 1,
+        "package": {"name": "quiddity", "version": __version__},
+        "coordinate_space": "local",
+        "rotational": rotational,
+        "frame": {
+            "origin": list(frame.origin),
+            "x": list(frame.x),
+            "y": list(frame.y),
+            "z": list(frame.z),
+            "gauge": frame.gauge.value,
+        },
+        "bodies": [{"index": index} for index in range(len(bodies))],
+        "faces": faces,
+        "features": features,
+        "derived": {
+            name: [record.to_dict() for record in getattr(view.result, name)]
+            for name in (
+                "hole_patterns",
+                "slot_patterns",
+                "oriented_slot_patterns",
+                "section_recess_patterns",
+                "turned_profiles",
+            )
+        },
+        "association": {
+            "face_count": {**asdict(association.face_count), "ratio": association.face_count.ratio},
+            "surface_area": {
+                **asdict(association.surface_area),
+                "ratio": association.surface_area.ratio,
+            },
+            "families": [asdict(family) for family in association.families],
+            "unassociated_faces": sorted(indices[face] for face in association.unassociated_faces),
+        },
+    }

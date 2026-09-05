@@ -1,6 +1,13 @@
 # Release notes
 
-## 0.2.0 — Quiddity second alpha (unreleased)
+## Next release
+
+- Add `quiddity part.step [-o recognition.json]`, `--capabilities` and `--version`.
+  The shared `quiddity.document.build_recognition_document` projects one framed evidence run
+  into JSON with unchanged feature records, explicit coordinate placement, document-local face
+  references, derived records and association accounting. Recognition algorithms are unchanged.
+
+## 0.2.0 — Quiddity second alpha
 
 Quiddity starts its own version history at 0.2.0. The earlier `b123d-recognisers`
 release line below records the first alpha; those versions and artifacts are unchanged.
