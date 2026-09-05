@@ -99,6 +99,34 @@ def test_section_recess_emits_reconstructible_indexed_json() -> None:
     json.dumps(document.to_dict())
 
 
+def test_trapezoid_is_not_classified_as_rectangle() -> None:
+    part = _polygonal_pocket(((-5, -3), (5, -3), (3, 3), (-3, 3)))
+    records = build_section_recess_document(part).occurrences
+    assert records
+    assert all(record.classification.section_shape == "polygonal" for record in records)
+
+
+@pytest.mark.parametrize("chamfer", [0.0002, 0.0004, 0.0006])
+def test_micro_chamfer_projection_preserves_occurrence_and_evidence(chamfer, tmp_path):
+    with BuildSketch() as sketch:
+        Polygon((-6, -4), (6, -4), (6, 4 - chamfer), (6 - chamfer, 4), (-6, 4), align=None)
+    part = Box(30, 20, 10) - Pos(0, 0, 1) * extrude(sketch.sketch, amount=6)
+    path = tmp_path / "micro-chamfer.step"
+    export_step(part, path)
+    for source in (part, import_step(path)):
+        result = build_raw_recognition_result(source)
+        (legacy,) = result.prismatic_pockets
+        (unified,) = result.section_recesses
+        assert legacy.sides == 5
+        assert len(unified.evidence.defining_faces) == 5
+        assert len(unified.evidence.constituent_faces) == 6
+        assert unified.classification.section_shape == "polygonal"
+        boundary = unified.geometry.profile.boundary
+        assert len(boundary) == (4 if chamfer < 0.0005 else 5)
+        assert len({vertex.point for vertex in boundary}) == len(boundary)
+        assert unified.geometry.run_interval == (1.0, 5.0)
+
+
 def test_section_recess_output_matches_committed_golden() -> None:
     document = build_section_recess_document(_blind_pocket())
     actual = document.to_dict()

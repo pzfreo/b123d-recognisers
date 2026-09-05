@@ -52,6 +52,20 @@ def _slot(scale: float = 1.0):
     return stock - tool
 
 
+@pytest.mark.parametrize("rotation", [Rot(0, 0, 0), Rot(90, 0, 0), Rot(0, 90, 0), Rot(180, 0, 0)])
+def test_unified_slot_preserves_world_placement_and_ends(rotation):
+    result = build_raw_recognition_result(Pos(123, -57, 91) * rotation * _slot())
+    (source,) = result.rectangular_blind_slots
+    (unified,) = result.section_recesses
+    geometry = unified.geometry
+    frame = geometry.frame
+    midpoint = sum(geometry.run_interval) / 2
+    center = tuple(frame.origin[index] + midpoint * frame.run[index] for index in range(3))
+    assert center == pytest.approx(source.at, abs=0.002)
+    assert geometry.ends.low.condition == ("open" if source.open_sign == -1 else "capped")
+    assert geometry.ends.high.condition == ("open" if source.open_sign == 1 else "capped")
+
+
 def test_rectangular_blind_slot_has_truthful_dimensions_and_complete_evidence():
     part = _slot()
     ledger = ClaimLedger(FaceGraph(part))

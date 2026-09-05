@@ -70,6 +70,7 @@ from b123d_recognisers._section_recess import (
     SectionRecessEnds,
     SectionRecessEvidence,
     SectionRecessGeometry,
+    _polygonal_shape,
 )
 from b123d_recognisers._sections import BodyRefIssuer, LocalFrame
 from b123d_recognisers._typing import Bounds, CylinderInventory, FrozenCylinderInventory, Part
@@ -704,10 +705,9 @@ def _section_passage_recess(
     owner = context.graph.common_valid_solid(defining)
     if owner is None:
         raise ValueError("accepted section passage lost its body authority")
-    side_count = len(record.section.boundary)
     line_only = all(vertex.bulge == 0.0 for vertex in record.section.boundary)
     section_shape = (
-        {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(side_count, "polygonal")
+        _polygonal_shape(tuple(vertex.point for vertex in record.section.boundary))
         if line_only
         else "general"
     )
@@ -748,14 +748,19 @@ def _prismatic_pocket_recess(
     if owner is None:
         raise ValueError("accepted prismatic pocket lost its body authority")
     issuer = BodyRefIssuer()
+    vertices = tuple(
+        point for index, point in enumerate(record.section)
+        if point != record.section[index - 1]
+    )
+    projected_record = replace(record, section=vertices, sides=len(vertices))
     occurrence = prismatic_pocket_to_occurrence(
-        record,
+        projected_record,
         body_ref=issuer.issue(),
         body_refs=issuer,
     )
-    section_shape = {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(
-        record.sides, "polygonal"
-    )
+    section_shape = _polygonal_shape(tuple(vertex.point for vertex in occurrence.section.boundary))
+    if len(vertices) != len(record.section):
+        section_shape = "polygonal"
     return SectionRecess(
         index,
         owner.ordinal,
@@ -873,6 +878,7 @@ def _principal_open_geometry(
     run_interval: tuple[float, float],
     open_sign: int,
     boundary: tuple[PassageSectionVertex, ...],
+    placement: tuple[float, float, float] | None = None,
 ) -> SectionRecessGeometry:
     axis_index = "xyz".index(axis)
     transverse = tuple(index for index in range(3) if index != axis_index)
@@ -886,14 +892,20 @@ def _principal_open_geometry(
     )
     center3 = [0.0, 0.0, 0.0]
     center3[transverse[0]], center3[transverse[1]] = center2
+    if placement is not None:
+        center3 = list(placement)
+    frame_value = LocalFrame.principal(axis, cast(tuple[float, float, float], tuple(center3)))
+    coordinate_order = (1, 0) if axis == "y" else (0, 1)
     local = tuple(
         PassageSectionVertex(
-            (round(vertex.point[0] - center2[0], 4), round(vertex.point[1] - center2[1], 4)),
-            vertex.bulge,
+            vertex.point if placement is not None else cast(
+                tuple[float, float],
+                tuple(round(vertex.point[index] - center2[index], 4) for index in coordinate_order),
+            ),
+            -vertex.bulge if placement is None and axis == "y" else vertex.bulge,
         )
         for vertex in boundary
     )
-    frame_value = LocalFrame.principal(axis, cast(tuple[float, float, float], tuple(center3)))
     frame = PassageFrame(
         cast(tuple[float, float, float], tuple(round(value, 3) for value in frame_value.origin)),
         frame_value.run,
@@ -906,8 +918,8 @@ def _principal_open_geometry(
         run_interval,
         _canonical_open_profile(local),
         SectionRecessEnds(
-            SectionEnd("capped" if open_sign == -1 else "open"),
             SectionEnd("open" if open_sign == -1 else "capped"),
+            SectionEnd("capped" if open_sign == -1 else "open"),
         ),
     )
 
@@ -981,6 +993,7 @@ def _rectangular_blind_slot_recess(
         ),
         open_sign=record.open_sign,
         boundary=chain,
+        placement=record.at,
     )
     return _legacy_section_recess(
         record,
@@ -1031,6 +1044,7 @@ def _round_bottom_blind_slot_recess(
         ),
         open_sign=record.open_sign,
         boundary=chain,
+        placement=record.at,
     )
     return _legacy_section_recess(
         record,
@@ -1069,7 +1083,8 @@ def _edge_open_prismatic_recess(
         ),
         SectionRecessClassification(
             "edge_open_recess",
-            "rectangular" if len(boundary) == 4 else "polygonal",
+            _polygonal_shape(tuple(vertex.point for vertex in boundary))
+            if len(boundary) == 4 else "polygonal",
         ),
         SectionRecessEvidence(
             tuple(sorted(node.index for node in defining)),

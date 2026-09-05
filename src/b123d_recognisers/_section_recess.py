@@ -599,6 +599,24 @@ def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | No
     )
 
 
+def _polygonal_shape(points: tuple[Vector2, ...]) -> str:
+    if len(points) == 4:
+        edges = tuple(
+            (points[(index + 1) % 4][0] - point[0],
+             points[(index + 1) % 4][1] - point[1])
+            for index, point in enumerate(points)
+        )
+        if all(
+            math.hypot(*edge) > 0
+            and abs(edge[0] * following[0] + edge[1] * following[1])
+            <= _DIRECTION_TOL * math.hypot(*edge) * math.hypot(*following)
+            for edge, following in zip(edges, (*edges[1:], edges[0]), strict=True)
+        ):
+            return "rectangular"
+        return "polygonal"
+    return {3: "triangular", 6: "hexagonal"}.get(len(points), "polygonal")
+
+
 def _one_polygonal_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
     normal = graph.normal(floor)
     if normal is None:
@@ -689,8 +707,7 @@ def _one_polygonal_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | 
         geometry = project_section_recess_geometry(occurrence, body_refs=issuer)
     except ValueError:
         return None
-    sides = len(section.boundary)
-    shape = {3: "triangular", 4: "rectangular", 6: "hexagonal"}.get(sides, "polygonal")
+    shape = _polygonal_shape(tuple(vertex.point for vertex in section.boundary))
     defining = tuple(sorted(node.index for node in walls))
     return _Candidate(
         defining,

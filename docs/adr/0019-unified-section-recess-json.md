@@ -297,6 +297,13 @@ Claiming a rectangular section from that value would fabricate geometry. Such an
 the unified inventory only when a geometry-bearing native or prismatic proof establishes its real
 section.
 
+Legacy polygon vertices can coincide after their three-decimal serialization (for example,
+a sub-micron corner chamfer). The unified projection removes only exact adjacent duplicates
+from that rounded boundary before validation. This does not change its geometric locus or discard
+source-face evidence. A simplified boundary retains `polygonal` classification; it does not prove
+the original feature rectangular. Distinct vertices and other invalid sections remain subject to
+the normal validation and displacement bounds.
+
 The normal effectiveness runner now scores ``SectionRecess`` from the production inventory. There
 is no overlay path or second implementation.
 

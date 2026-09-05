@@ -65,6 +65,25 @@ def _section() -> OpenPolygonalSection:
     return OpenPolygonalSection(chain, OpenSectionOpening(chain[-1], chain[0]))
 
 
+def test_y_axis_projection_preserves_world_wall_chain():
+    result = build_raw_recognition_result(Rot(90, 0, 0) * _edge_open_hexagon())
+    (source,) = result.edge_open_prismatic_recesses
+    (unified,) = tuple(
+        record for record in result.section_recesses
+        if record.classification.feature_kind == "edge_open_recess"
+    )
+    frame = unified.geometry.frame
+    world_points = tuple(
+        tuple(frame.origin[index] + vertex.point[0] * frame.u[index]
+              + vertex.point[1] * frame.v[index] for index in (0, 2))
+        for vertex in unified.geometry.profile.boundary
+    )
+    for expected in source.section.wall_chain:
+        assert any(point == pytest.approx(expected, abs=0.002) for point in world_points)
+    assert unified.geometry.ends.low.condition == "open"
+    assert unified.geometry.ends.high.condition == "capped"
+
+
 def test_edge_open_record_serializes_the_opening_separately_from_walls() -> None:
     record = EdgeOpenPrismaticRecess("z", (2.0, 10.0), 1, _section())
 
